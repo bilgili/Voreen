@@ -46,32 +46,8 @@ win32 {
     LIBS += /NODEFAULTLIB:libc.lib
   }
 
-  contains(DEFINES, VRN_WITH_DCMTK) {
-    LIBS += "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/dcmimage.lib" \
-            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/dcmimgle.lib" \
-            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/dcmnet.lib" \
-            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/dcmdata.lib" \
-            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/dcmjpeg.lib" \
-            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/ijg8.lib" \
-            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/ijg12.lib" \
-            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/ijg16.lib" \
-            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/ofstd.lib" \
-            "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/dcmtls.lib"
-
-    contains(DEFINES, VRN_DCMTK_VERSION_355) {
-         LIBS += "$${DCMTK_DIR}/lib/$${MSC_CONFIG}/oflog.lib" 
-    }
-  }
-
   contains(DEFINES, VRN_WITH_DEVIL) {
     LIBS += "$${DEVIL_DIR}/lib/DevIL.lib"
-  }
-
-  contains(DEFINES, VRN_WITH_MATLAB) {
-    LIBS += "$${MATLAB_DIR}/extern/lib/win32/microsoft/libeng.lib" \
-            "$${MATLAB_DIR}/extern/lib/win32/microsoft/libmat.lib" \
-            "$${MATLAB_DIR}/extern/lib/win32/microsoft/libut.lib" \
-            "$${MATLAB_DIR}/extern/lib/win32/microsoft/libmx.lib"
   }
 
   contains(DEFINES, VRN_WITH_TIFF) {
@@ -96,10 +72,6 @@ win32 {
     INCLUDEPATH += "$${FTGL_DIR}/include"
   }
 
-  contains(DEFINES, VRN_MODULE_HPMC) {
-    LIBS += "$${HPMC_DIR}/lib/hpmc.lib"
-  }
-
   contains(DEFINES, VRN_WITH_FFMPEG) {
     LIBS += "$${FFMPEG_DIR}/win32/avcodec.lib"
     LIBS += "$${FFMPEG_DIR}/win32/avdevice.lib"
@@ -108,16 +80,6 @@ win32 {
     LIBS += "$${FFMPEG_DIR}/win32/swscale.lib"
   }
   
-  contains(DEFINES, VRN_WITH_DCMTK) {
-    LIBS += "$${VRN_HOME}/ext/openssl/lib/$${MSC_CONFIG}/dcmtkeay.lib"
-    LIBS += "$${VRN_HOME}/ext/openssl/lib/$${MSC_CONFIG}/dcmtkssl.lib"
-  }
-
-  contains(DEFINES, VRN_WITH_BOX2D) {
-    QMAKE_LIBDIR  += "$${BOX2D_DIR}/Library"
-  }
-
-
   LIBS += -lnetapi32 -lopengl32 -lglu32
 
   # For reading file version, file date and making registry calls
@@ -146,35 +108,18 @@ unix {
   contains(DEFINES, VRN_WITH_TIFF) {
     LIBS += -ltiff
   }
+
   contains(DEFINES, VRN_WITH_ZLIB) {
     LIBS += -lz
   }
-  contains(DEFINES, VRN_WITH_CLIBPDF) {
-    LIBS += -lcpdf
-  }
+
   contains(DEFINES, VRN_WITH_FONTRENDERING) {
     LIBS += -lfreetype -lftgl
   }
-  contains(DEFINES, VRN_WITH_DCMTK) {
 
-    LIBS += -lz -lssl
-    !without_libwrap: LIBS += -lwrap
-
-    LIBS += -ldcmimage -ldcmimgle -ldcmnet -ldcmdata \
-            -ldcmjpeg -lijg8 -lijg12 -lijg16 -lofstd
-
-    LIBS += -ldcmtls
-
-    macx: LIBS += -lcrypto
-  }
-  
   contains(DEFINES, VRN_WITH_FFMPEG) {
     # It is important that this comes after linking the voreen_* libs.
     LIBS += -lbz2 -lavformat -lavcodec -lavutil -lswscale
-  }
-
-  contains(DEFINES, VRN_MODULE_HPMC) {
-    LIBS += -lhpmc
   }
 
   contains(DEFINES, VRN_WITH_LZO) {
@@ -185,6 +130,19 @@ unix {
     target.path = $$INSTALLPATH_BIN
     INSTALLS += target
   }
+}
+
+macx {
+  LIBS += -framework OpenGL
+  LIBS += -framework ApplicationServices
+}
+
+
+# Include modules which are selected in local configuration. The entry
+# 'foo' in VRN_MODULES must correspond to a subdir 'modules/foo' and a
+# file 'foo_app.pri' there.
+for(i, VRN_MODULES) : exists($${VRN_HOME}/src/modules/$${i}/$${i}_app.pri) {
+  include($${VRN_HOME}/src/modules/$${i}/$${i}_app.pri)
 }
 
 ### Local Variables:

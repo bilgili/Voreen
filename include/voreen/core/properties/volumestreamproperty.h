@@ -39,6 +39,8 @@ public:
     VolumeStreamProperty(const std::string& id);
     virtual PropertyWidget* createWidget(PropertyWidgetFactory* f);
 
+    virtual std::string getTypeString() const;
+
     virtual std::string toString() const { return ""; }
 };
 

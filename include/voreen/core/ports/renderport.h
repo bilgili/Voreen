@@ -30,118 +30,207 @@
 #ifndef VRN_RENDERPORT_H
 #define VRN_RENDERPORT_H
 
-#include "tgt/shadermanager.h"
-#include "voreen/core/ports/genericport.h"
+#include "voreen/core/ports/port.h"
+#include "tgt/textureunit.h"
+#include "tgt/tgt_gl.h"
 
 namespace tgt {
     class FramebufferObject;
+    class Texture;
+    class Shader;
 }
 
 namespace voreen {
 
 class RenderTarget;
 
-class RenderPort : public GenericPort<RenderTarget> {
+class RenderPort : public Port {
+
     friend class RenderProcessor;
+    friend class NetworkEvaluator;
+
 public:
-    explicit RenderPort(PortDirection direction, const std::string& name, bool allowMultipleConnections = false,
-                        Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT,
-                        GLint internalColorFormat=GL_RGBA16, GLint internalDepthFormat=GL_DEPTH_COMPONENT24);
-    ~RenderPort();
+    RenderPort(PortDirection direction, const std::string& name, bool allowMultipleConnections = false,
+               Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT,
+               GLint internalColorFormat=GL_RGBA16, GLint internalDepthFormat=GL_DEPTH_COMPONENT24);
+    virtual ~RenderPort();
 
     /**
-     * Initializes the RenderTarget, if the port is an outport.
-     */
-    virtual void initialize() throw (VoreenException);
-
-    /**
-     * Deinitializes the RenderTarget, if the port is an outport.
-     */
-    virtual void deinitialize() throw (VoreenException);
-
-    /**
-     * Re-create and initialize the RenderTarget with the given format.
-     * The RenderTarget is resized to the old resolution.
-     */
-    void changeFormat(GLint internalColorFormat, GLint internalDepthFormat=GL_DEPTH_COMPONENT24);
-
-    void sizeOriginChanged(void* so);
-    void* getSizeOrigin() const;
-    void resize(const tgt::ivec2& newsize);
-
-    virtual bool connect(Port* inport);
-    virtual bool testConnectivity(const Port* inport) const;
-    virtual void disconnect(Port* other);
-
-    bool hasValidResult() const;
-    void validateResult();
-    void invalidateResult();
-
-    bool doesSizeOriginConnectFailWithPort(Port* inport) const;
-
-    /**
-     * Returns true, if the port is connected and (if this is an inport) a valid rendering.
-     */
-    virtual bool isReady() const;
-
-    tgt::ivec2 getSize() const;
-    /**
-     * @brief Activate the RenderTarget in this port.
+     * @brief Activates the outport's RenderTarget, so that all subsequent rendering operations
+     * are performed on this target. The target has to be deactivated after all rendering operations
+     * have been finished or before any other RenderPort is activated.
      *
-     * @param debugLabel An additional description shown in the STC widget.
+     * @note Must not be called on an inport.
+     *
+     * @see deactivateTarget
+     *
+     * @param debugLabel Additional description to be presented in the GUI.
      */
     void activateTarget(const std::string& debugLabel = "");
+
+    /**
+     * Deactivates the outport's RenderTarget after rendering
+     * has been finished.
+     *
+     * @note Must not be called on an inport.
+     */
     void deactivateTarget();
 
     /**
-     * @brief Set a TEXTURE_PARAMETERS struct in glsl.
+     * Clears the contents of an activated outport's RenderTarget,
+     * by calling glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT).
      *
-     * @param uniform The name of the uniform.
+     * @note May only be called on an activated outport.
      */
-    void setTextureParameters(tgt::Shader* shader, std::string uniform);
-    /**
-     * @brief Bind the color texture of this rendertarget to the currently active textureunit.
-     */
-    void bindColorTexture() const;
-    /**
-     * @brief Bind the color texture of this rendertarget to a specific textureunit.
-     *
-     * @param texUnit The textureunit to activate beforce binding.
-     */
-    void bindColorTexture(GLint texUnit) const;
+    void clearTarget();
 
     /**
-     * @brief Bind the depth texture of this rendertarget to the currently active textureunit.
+     * Returns true, if the port is connected and (if it is an inport) has a valid rendering.
      */
-    void bindDepthTexture() const;
+    virtual bool isReady() const;
 
     /**
-     * @brief Bind the depth texture of this rendertarget to a specific textureunit.
-     *
-     * @param texUnit The texture unit to activate beforce binding.
+     * Returns true, if the port is an outport and stores a valid rendering,
+     * or if is an inport, and its (first) connected outport stores a valid rendering.
      */
-    void bindDepthTexture(GLint texUnit) const;
+    bool hasValidResult() const;
 
-    ///Equivalent to bindColorTexture(colorUnit); bindDepthTexture(depthUnit);
-    void bindTextures(GLint colorUnit, GLint depthUnit) const;
+    /**
+     * Returns the dimensions of the associated RenderTarget.
+     *
+     * If no RenderTarget is associated, ivec2(0) is returned.
+     */
+    tgt::ivec2 getSize() const;
+
+    /**
+     * Returns true, if the associated RenderTarget is currently active.
+     *
+     * @see activateTarget, deactivateTarget
+     */
+    bool isActive() const;
+
+    /**
+     * Returns the port's RenderTarget, may be null.
+     *
+     * If this function is called on an outport, its own RenderTarget is returned.
+     * If it is called on an inport, the RenderTarget of the (first) connected outport is returned.
+     *
+     * @see hasRenderTarget
+     */
+    RenderTarget* getRenderTarget();
+
+    /// @overload
+    const RenderTarget* getRenderTarget() const;
 
     /**
      * Returns the associated color texture.
      *
-     * @see hasData
-     *
      * @return The color texture or null, if none is present.
      */
-    tgt::Texture* getColorTexture() const;
+    const tgt::Texture* getColorTexture() const;
+
+    /// @overload
+    tgt::Texture* getColorTexture();
 
     /**
-     * Returns the associated color texture.
+     * Returns the associated depth texture.
      *
-     * @see hasData
-     *
-     * @return The color texture or null, if none is present.
+     * @return The depth texture or null, if none is present.
      */
-    tgt::Texture* getDepthTexture() const;
+    const tgt::Texture* getDepthTexture() const;
+
+    /// @overload
+    tgt::Texture* getDepthTexture();
+
+    /**
+     * Returns true, if a RenderTarget is assigned to the RenderPort.
+     *
+     * If this function is called on an inport, it checks whether
+     * its (first) connected outport has a RenderTarget.
+     */
+    bool hasRenderTarget() const;
+
+    /**
+     * Resizes the associated RenderTarget to the passed dimensions.
+     *
+     * If this function is called on an inport, the call is propagated to
+     * all connected outports.
+     */
+    void resize(const tgt::ivec2& newsize);
+
+    /**
+     * Re-create and initialize the outport's RenderTarget with the given format.
+     * The RenderTarget's resolution is preserved.
+     *
+     * @note This function must not be called on an inport.
+     */
+    void changeFormat(GLint internalColorFormat, GLint internalDepthFormat=GL_DEPTH_COMPONENT24);
+
+    /**
+     * Flags the outport's rendering as valid.
+     *
+     * @note It is normally not necessary to call this function,
+     *  since it is called implicitly by activateTarget/deactivateTarget.
+     *
+     * @note Must not be called on an inport.
+     */
+    void validateResult();
+
+    /**
+     * Flags the outport's rendering as invalid.
+     *
+     * @note It is normally not necessary to call this function,
+     *  since it is called implicitly.
+     *
+     * @note Must not be called on an inport.
+     */
+    void invalidateResult();
+
+    /**
+     * @brief Passes the assigned textures' TEXTURE_PARAMETERS struct to the passed shader.
+     *  Needs to be called for each inport whose textures are to be accessed by the shader.
+     *
+     * @param uniform The name of the struct used in the shader.
+     */
+    void setTextureParameters(tgt::Shader* shader, const std::string& uniform);
+
+    /**
+     * Bind the color texture of this port's RenderTarget to the currently active texture unit.
+     */
+    void bindColorTexture();
+
+    /**
+     * Bind the color texture of this port's RenderTarget to a specific texture unit.
+     *
+     * @param texUnit The texture unit to activate before binding.
+     */
+    void bindColorTexture(GLint texUnit);
+
+    /// @overload
+    void bindColorTexture(tgt::TextureUnit& texUnit);
+
+    /**
+     * Bind the depth texture of this port's RenderTarget to the currently active texture unit.
+     */
+    void bindDepthTexture();
+
+    /**
+     * Bind the depth texture of this port's RenderTarget to a specific texture unit.
+     *
+     * @param texUnit The texture unit to activate before binding.
+     */
+    void bindDepthTexture(GLint texUnit);
+
+    /// @overload
+    void bindDepthTexture(tgt::TextureUnit& texUnit);
+
+    /**
+     * Convenience function, calling bindColorTexture(colorUnit) and bindDepthTexture(depthUnit).
+     */
+    void bindTextures(GLint colorUnit, GLint depthUnit);
+
+    /// @overload
+    void bindTextures(tgt::TextureUnit& colorUnit, tgt::TextureUnit& depthUnit);
 
     /**
      * Writes the currently stored rendering to an image file.
@@ -168,11 +257,64 @@ public:
      * @throw VoreenException if the color buffer content could not be read
      *        or converted
      */
-    tgt::col4* readColorBuffer() const throw (VoreenException);
+    tgt::col4* readColorBuffer() throw (VoreenException);
+
+    // administrative stuff regarding RenderPort size origins.
+    void sizeOriginChanged(void* so);
+    void* getSizeOrigin() const;
+    virtual bool testConnectivity(const Port* inport) const;
+    bool doesSizeOriginConnectFailWithPort(Port* inport) const;
 
 protected:
+    /**
+     * Assigns the passed RenderTarget to this RenderPort.
+     *
+     * Is called by the NetworkEvaluator.
+     */
+    virtual void setRenderTarget(RenderTarget* renderTarget);
+
+    /**
+     * Initializes the RenderTarget, if the port is an outport.
+     *
+     * @see Port::initialize
+     */
+    virtual void initialize() throw (VoreenException);
+
+    /**
+     * Deinitializes the RenderTarget, if the port is an outport.
+     *
+     * @see Port::deinitialize
+     */
+    virtual void deinitialize() throw (VoreenException);
+
+    /**
+     * Additionally propagates the connected port's size origin.
+     *
+     * @see Port::connect
+     */
+    virtual bool connect(Port* inport);
+
+    /**
+     * Additionally propagates itself as size origin.
+     *
+     * @see Port::disconnect
+     */
+    virtual void disconnect(Port* other);
+
+    /**
+     * Additionally checks, if the passed processor is of type RenderProcessor.
+     *
+     * @see Port::setProcessor
+     */
     virtual void setProcessor(Processor* p);
+
+    void setRenderTargetSharing(bool sharing);
+
+    bool getRenderTargetSharing() const;
+
 private:
+    RenderTarget* renderTarget_;
+
     bool validResult_;
     tgt::ivec2 size_; //neccessary for inports
     void* sizeOrigin_;
@@ -180,8 +322,14 @@ private:
     GLint internalColorFormat_;
     GLint internalDepthFormat_;
 
+    bool renderTargetSharing_;
+
     static const std::string loggerCat_; ///< category used in logging
 };
+
+
+//------------------------------------------------------------------------------------------------------
+
 
 /**
  * @brief This class groups RenderPorts to allow easy rendering to multiple targets.
@@ -211,6 +359,17 @@ public:
      * @param debugLabel @see RenderPort::activateTarget
      */
     void activateTargets(const std::string& debugLabel = "");
+
+    void deactivateTargets();
+
+    /**
+     * Clears the contents of the associated RenderPorts,
+     * by calling glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT).
+     *
+     * @note May only be called on an activated port group.
+     */
+    void clearTargets();
+
     ///Resize all attached ports.
     void resize(const tgt::ivec2& newsize);
 

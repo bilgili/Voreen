@@ -41,10 +41,10 @@ class IOProgress;
  */
 class TiffVolumeReader : public VolumeReader {
 public:
-    TiffVolumeReader(IOProgress* progress = 0);
+    TiffVolumeReader(ProgressBar* progress = 0);
     ~TiffVolumeReader() {}
 
-    virtual VolumeReader* create(IOProgress* progress = 0) const;
+    virtual VolumeReader* create(ProgressBar* progress = 0) const;
 
     virtual VolumeCollection* read(const std::string& url)
         throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);

@@ -68,12 +68,9 @@
                         <Property name="lightSpecular">
                             <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
                         </Property>
-                        <Property name="masking" lod="1" value="none" />
                         <Property name="materialShininess" value="60" />
                         <Property name="samplingRate" value="4" />
-                        <Property name="setSegment" value="0" />
                         <Property name="shading" value="phong" />
-                        <Property name="switchSegmentation" value="false" />
                         <Property name="transferFunction">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
@@ -205,7 +202,23 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-583" y="237" />
                     </MetaData>
                     <Properties>
+                        <Property name="enableLighting" value="false" />
+                        <Property name="lightAmbient">
+                            <value x="0.40000001" y="0.40000001" z="0.40000001" w="1" />
+                        </Property>
+                        <Property name="lightDiffuse">
+                            <value x="0.80000001" y="0.80000001" z="0.80000001" w="1" />
+                        </Property>
+                        <Property name="lightPosition">
+                            <value x="2.29999995" y="1.5" z="1.5" w="1" />
+                        </Property>
+                        <Property name="lightSpecular">
+                            <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
+                        </Property>
+                        <Property name="mapTexture" value="false" />
+                        <Property name="materialShininess" value="60" />
                         <Property name="polygonMode" value="line" />
+                        <Property name="textureMode" value="replace" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>

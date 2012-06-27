@@ -30,6 +30,7 @@
 #include "voreen/qt/widgets/processor/qprocessorwidgetfactory.h"
 #include "voreen/qt/widgets/processor/qprocessorwidget.h"
 #include "voreen/qt/widgets/processor/canvasrendererwidget.h"
+#include "voreen/qt/widgets/processor/imageanalyzerwidget.h"
 
 namespace voreen {
 
@@ -41,6 +42,8 @@ ProcessorWidget* QProcessorWidgetFactory::createWidget(Processor* processor) con
 
     if (dynamic_cast<CanvasRenderer*>(processor))
         return new CanvasRendererWidget(parent_, static_cast<CanvasRenderer*>(processor), nwe_);
+    else if (dynamic_cast<ImageAnalyzer*>(processor))
+       return new ImageAnalyzerWidget(parent_, static_cast<ImageAnalyzer*>(processor));
     else
         return 0;
 }

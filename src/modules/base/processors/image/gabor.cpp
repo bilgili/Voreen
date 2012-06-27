@@ -56,6 +56,10 @@ std::string Gabor::getProcessorInfo() const {
     return "Generates a Gabor filter. See Convolution.";
 }
 
+Processor* Gabor::create() const {
+    return new Gabor();
+}
+
 void Gabor::process() {
     outport_.resize(tgt::ivec2(resolution_.get(), resolution_.get()));
     // activate and clear output render target
@@ -78,6 +82,7 @@ void Gabor::process() {
     glDepthFunc(GL_LESS);
 
     program_->deactivate();
+    outport_.deactivateTarget();
     LGL_ERROR;
 }
 

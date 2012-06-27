@@ -30,14 +30,21 @@
 #include "modules/mod_sampler2d.frag"
 #include "modules/mod_filtering.frag"
 
-uniform SAMPLER2D_TYPE shadeTex_;
+uniform SAMPLER2D_TYPE colorTex_;
 uniform SAMPLER2D_TYPE depthTex_;
 uniform TEXTURE_PARAMETERS textureParameters_;
 
 uniform float saturation_;
 
 void main() {
+    // determine normalized fragment position
     vec2 p = gl_FragCoord.xy * screenDimRCP_;
-    gl_FragColor = rgbToGrayScaleSaturated(textureLookup2Dnormalized(shadeTex_, textureParameters_, p), saturation_);
-    gl_FragDepth = textureLookup2Dnormalized(depthTex_, textureParameters_, p).z;
+
+    // lookup input color and depth value (see mod_sampler2d.frag)
+    vec4 color = textureLookup2Dnormalized(colorTex_, textureParameters_, p);
+    float depth = textureLookup2Dnormalized(depthTex_, textureParameters_, p).z;
+
+    // compute gray value (see mod_filtering.frag) and pass-through depth value
+    gl_FragColor = rgbToGrayScaleSaturated(color, saturation_);
+    gl_FragDepth = depth;
 }

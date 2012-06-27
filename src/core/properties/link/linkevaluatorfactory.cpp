@@ -33,12 +33,14 @@
 #endif
 
 #include "voreen/core/properties/link/linkevaluatorfactory.h"
+
+
+#include "voreen/core/properties/property.h"
+#include "voreen/core/properties/link/boxobject.h"
+#include "voreen/core/properties/link/dependencylinkevaluator.h"
 #include "voreen/core/properties/link/linkevaluatorboolinvert.h"
 #include "voreen/core/properties/link/linkevaluatorid.h"
 #include "voreen/core/properties/link/linkevaluatoridnormalized.h"
-#include "voreen/core/properties/link/boxobject.h"
-#include "voreen/core/properties/allproperties.h"
-#include "voreen/core/properties/property.h"
 #include "voreen/core/properties/link/linkevaluatorpython.h"
 #include "voreen/core/properties/link/scriptmanagerlinking.h"
 
@@ -56,25 +58,29 @@ LinkEvaluatorFactory::LinkEvaluatorFactory() {
 }
 
 LinkEvaluatorBase* LinkEvaluatorFactory::createLinkEvaluator(std::string functionName) {
-    if(std::strcmp("boolInvert", functionName.c_str()) == 0)
+    if (std::strcmp("boolInvert", functionName.c_str()) == 0)
         return new LinkEvaluatorBoolInvert();
-    else if(std::strcmp("id", functionName.c_str()) == 0)
+    else if (std::strcmp("id", functionName.c_str()) == 0)
         return new LinkEvaluatorId();
-    else if(std::strcmp("idNormalized", functionName.c_str()) == 0)
+    else if (std::strcmp("idNormalized", functionName.c_str()) == 0)
         return new LinkEvaluatorIdNormalized();
+    else if (std::strcmp("DependencyLink", functionName.c_str()) == 0)
+        return new DependencyLinkEvaluator();
     else
         return new LinkEvaluatorPython(functionName);
 }
 
 std::string LinkEvaluatorFactory::getFunctionName(LinkEvaluatorBase* linkEvaluator) {
-    if(typeid(LinkEvaluatorBoolInvert) == typeid(*linkEvaluator))
+    if (typeid(LinkEvaluatorBoolInvert) == typeid(*linkEvaluator))
         return "boolInvert";
-    else if(typeid(LinkEvaluatorId) == typeid(*linkEvaluator))
+    else if (typeid(LinkEvaluatorId) == typeid(*linkEvaluator))
         return "id";
-    else if(typeid(LinkEvaluatorIdNormalized) == typeid(*linkEvaluator))
+    else if (typeid(LinkEvaluatorIdNormalized) == typeid(*linkEvaluator))
         return "idNormalized";
-    else if(typeid(LinkEvaluatorPython) == typeid(*linkEvaluator))
+    else if (typeid(LinkEvaluatorPython) == typeid(*linkEvaluator))
         return static_cast<LinkEvaluatorPython*>(linkEvaluator)->getFunctionName();
+    else if (typeid(DependencyLinkEvaluator) == typeid(*linkEvaluator))
+        return "DependencyLink";
     else
         return "";
 }
@@ -84,6 +90,7 @@ std::vector<std::string> LinkEvaluatorFactory::listFunctionNames() {
     result.push_back("boolInvert");
     result.push_back("id");
     result.push_back("idNormalized");
+    result.push_back("DependencyLink");
     sort(result.begin(), result.end());
     return result;
 }
@@ -115,6 +122,8 @@ const std::string LinkEvaluatorFactory::getTypeString(const std::type_info& type
         return "LinkEvaluatorIdNormalized";
     else if (type == typeid(LinkEvaluatorPython))
         return "LinkEvaluatorPython";
+    else if (type == typeid(DependencyLinkEvaluator))
+        return "DependencyLinkEvaluator";
     else
         return "";
 }
@@ -128,6 +137,8 @@ Serializable* LinkEvaluatorFactory::createType(const std::string& typeString) {
         return new LinkEvaluatorIdNormalized();
     else if (typeString == "LinkEvaluatorPython")
         return new LinkEvaluatorPython();
+    else if (typeString == "DependencyLinkEvaluator")
+        return new DependencyLinkEvaluator();
     else
         return 0;
 }

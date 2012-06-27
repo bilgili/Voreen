@@ -30,6 +30,7 @@
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QGroupBox>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QSlider>
 #include <QSpinBox>
@@ -55,8 +56,9 @@ TimelineWidget::TimelineWidget(Animation* animation, AnimationEditor* parent, Ne
         : QWidget(parent)
         , animation_(animation)
         , currentTime_(0)
-        {
-    // register as Observer in the core
+        , changed_(false)
+{
+    // register as observer in the core
     animation_->addObserver(this);
     setMinimumWidth(550);
 
@@ -124,7 +126,7 @@ void TimelineWidget::rebuildAnimation(Animation* animation) {
     overviewTimeline_->reset();
     emit setAnimationEditorDuration(static_cast<int>(animation_->getDuration() * 30.0f));
     emit(resizeSignal(scrollArea_->width()));
-    if(!animation_->empty()) {
+    if (!animation_->isEmpty()) {
         emit showActiveTimelines();
         overviewTimeline_->renderPreviews();
     }
@@ -132,11 +134,10 @@ void TimelineWidget::rebuildAnimation(Animation* animation) {
 }
 
 void TimelineWidget::populateProcessors() {
-const std::vector<AnimatedProcessor*> procs = animation_->getAnimatedProcessors();
+    const std::vector<AnimatedProcessor*> procs = animation_->getAnimatedProcessors();
 
-    for(size_t i=0; i<procs.size();i++)
-    {
-        if(procs.at(i)->getPropertyTimelines().size() != 0) {
+    for(size_t i=0; i<procs.size();i++) {
+        if (procs.at(i)->getPropertyTimelines().size() != 0) {
             animatedProcessorAdded(procs.at(i));
         }
     }
@@ -169,6 +170,15 @@ void TimelineWidget::animatedProcessorAdded(const AnimatedProcessor* processor) 
     connect(this, SIGNAL(durationChanged(int)), processorTimelineWidget, SIGNAL(durationChanged(int)));
     connect(processorTimelineWidget, SIGNAL(viewResizeSignal(int)), this, SIGNAL(viewResizeSignal(int)));
     connect(processorTimelineWidget, SIGNAL(viewFrameChange(int)), overviewTimeline_, SIGNAL(currentFrameChanged(int)));
+
+    // Disable canvas size for animation
+    std::vector<PropertyTimeline*> vec = proc->getPropertyTimelines();
+    std::vector<PropertyTimeline*>::iterator it = vec.begin();
+    while (it != vec.end()) {
+        if ((*it)->getPropertyName() == "Canvas Size" && dynamic_cast<TemplatePropertyTimeline<tgt::ivec2>*>(*it))
+            (*it)->setActiveOnRendering(false);
+        ++it;
+    }
 }
 
 void TimelineWidget::animatedProcessorRemoved(const AnimatedProcessor* processor) {
@@ -198,6 +208,25 @@ void TimelineWidget::renderAt(float time) {
 
 void TimelineWidget::currentFrame(int frame) {
     timeCounter_->setText(getTimeString(frame));
+}
+
+void TimelineWidget::checkForChanges() {
+    if (overviewTimeline_->getCurrentFrame() == 0 && !changed_) {
+        for (size_t i= 0; i < processorTimelineWidgets_.size(); i++) {
+            if(processorTimelineWidgets_.at(i)->getTimelineCount() != 0)
+                changed_ = true;
+            break;
+        }
+
+        if (!changed_) {
+            QMessageBox* box = new QMessageBox(this);
+            box->setText(tr("The animation is already up to date. "
+                            "To show the timelines either modify properties and "
+                            "press the snapshot button or use the buttons in front "
+                            "of the processor name to add timelines manually."));
+            box->exec();
+        }
+    }
 }
 
 QString TimelineWidget::getTimeString(int frame) {

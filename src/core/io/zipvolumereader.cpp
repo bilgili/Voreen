@@ -31,7 +31,7 @@
 
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/io/datvolumereader.h" // used to determine related .raw file name
-#include "voreen/core/io/ioprogress.h"
+#include "voreen/core/io/progressbar.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/io/volumeserializer.h"
 
@@ -48,7 +48,7 @@ namespace voreen {
 
 const std::string ZipVolumeReader::loggerCat_("voreen.io.ZipVolumeReader");
 
-ZipVolumeReader::ZipVolumeReader(VolumeSerializerPopulator* populator, IOProgress* progress)
+ZipVolumeReader::ZipVolumeReader(VolumeSerializerPopulator* populator, ProgressBar* progress)
   : VolumeReader(progress),
     populator_(populator)
 {
@@ -137,7 +137,7 @@ VolumeCollection* ZipVolumeReader::read(const std::string& url)
     zip.extractFilesToDirectory(temporaryPath);
 
     // Load the volumes with the help of a temporary multivolumereader
-    VolumeCollection* volumeCollection = MultiVolumeReader(populator_, getProgress()).read(indexFilePath);
+    VolumeCollection* volumeCollection = MultiVolumeReader(populator_, getProgressBar()).read(indexFilePath);
 
     // Set the correct origins
     for (size_t iter = 0; volumeCollection && iter < volumeCollection->size(); ++iter) {
@@ -192,7 +192,7 @@ VolumeOrigin ZipVolumeReader::convertOriginToAbsolutePath(const VolumeOrigin& or
         return origin;
 }
 
-VolumeReader* ZipVolumeReader::create(IOProgress* progress) const {
+VolumeReader* ZipVolumeReader::create(ProgressBar* progress) const {
     return new ZipVolumeReader(0, progress);
 }
 

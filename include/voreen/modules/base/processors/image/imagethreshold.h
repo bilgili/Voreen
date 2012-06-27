@@ -32,6 +32,9 @@
 
 #include "voreen/core/processors/imageprocessor.h"
 
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
+
 namespace voreen {
 
 /**
@@ -59,8 +62,8 @@ protected:
 
     FloatProperty lowerThreshold_;  ///< The lower intensity threshold
     FloatProperty upperThreshold_;  ///< The upper intensity threshold
-    ColorProperty lowerMaskColor_;  ///< Color to assign to pixels below the lower threshold
-    ColorProperty upperMaskColor_;  ///< Color to assign to pixels above the upper threshold
+    FloatVec4Property lowerMaskColor_;  ///< Color to assign to pixels below the lower threshold
+    FloatVec4Property upperMaskColor_;  ///< Color to assign to pixels above the upper threshold
 };
 
 

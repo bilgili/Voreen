@@ -33,6 +33,9 @@
 #include "voreen/core/processors/imageprocessordepth.h"
 #include "voreen/core/voreenapplication.h"
 
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+
 namespace voreen {
 
 /**

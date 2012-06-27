@@ -40,64 +40,23 @@
 
 namespace voreen {
 
-// forward declarations
-class TransFunc;
-
 /**
  * This class is the OpenGL interface for volume objects.
- * One or several 3D-textures are created which hold the complete dataset.
- * Furthermore VolumeGL handles the application of the
- * TransFunc, see enum TFSupport.
+ * One or several 3D textures, which hold the complete data set, are created.
  */
 class VolumeGL {
 public:
-    /**
-     * Indicates what must be done for the underlying hardware.
-     */
-    enum TFSupport {
-        /// The TransFunc will be implemented via texture lookup in the fragment shader.
-        SHADER,
-        /// If no fragment shader is available, but support for paletted textures is, this will be used.
-        PALETTED_TEXTURES,
-        /// If neither fragment shaders nor paletted textures are available a software implementation must be used.
-        SOFTWARE
-    };
 
     /**
-     * Indicates how large datasets are handled. Default is BRICK.
-     */
-    enum LargeVolumeSupport {
-        /// Large datasets are handled via resizing to \a getMax3DTexSize using a nearest filter
-        RESIZE_NEAREST,
-        /// Large datasets are handled via resizing to \a getMax3DTexSize using a linear filter
-        RESIZE_LINEAR,
-        /// Large datasets are handled via splitting the Volume into several \a getMax3DTexSize -ed VolumeTexture objects.
-        BRICK
-    };
-
-    //
-    // constructor and destructor
-    //
-
-    /**
-     * Creates the VolumeTexture instances and applies the TransFunc.
-     * \p tf is only needed, when \a tfSupport_ isn't \A SHADER. You can set
-     * Set this parameter to 0 if you want to apply the TransFunc later. Use
-     * \a applyTransFunc for this. However, if \a tfSupport_ is \A SHADER
-     * everthing will work fine and a call to \a applyTransFunc isn't
-     * necessary at all.
+     * Creates the VolumeTexture instances.
      *
      * @note The volume must have a size greater one in all dimensions
      */
-    VolumeGL(Volume* volume, TransFunc* tf = 0, float alphaScale = 1.f,
-             tgt::Texture::Filter filter = tgt::Texture::LINEAR) throw (std::bad_alloc);
+    VolumeGL(Volume* volume, tgt::Texture::Filter filter = tgt::Texture::LINEAR)
+        throw (std::bad_alloc);
 
     /// This class will not delete its \a volume_.
     virtual ~VolumeGL();
-
-    //
-    //    getters and setters
-    //
 
     /// Returns the number of textures which are held by this class
     size_t getNumTextures() const;
@@ -145,102 +104,19 @@ public:
      */
     void setFilter(tgt::Texture::Filter filter);
 
-    //
-    // static getters and setters
-    //
-
-    /**
-     * Use this method to tell VolumeGL how large datasets should be handled.
-     * Default is BRICK.
-     *
-     * @param lvSupport How should large datasets be handled?
-     */
-    static void setLargeVolumeSupport(LargeVolumeSupport lvSupport);
-
-    /// How are large datasets being handled?
-    static LargeVolumeSupport getLargeVolumeSupport();
-
-    /**
-     * Use this method to tell VolumeGL what maximum 3D texture size
-     * should be used for the handling of large datasets. Setting this to 0
-     * (the default value) will indicate VolumeGL to use
-     * GpuCaps.getMax3DTextureSize() instead. Using a greater value than this will
-     * cause errors. Furthermore, it is assumed that \p max3DTexSize is a power
-     * of two.
-     *
-     * @param max3DTexSize Maximum texture size
-     *
-     * FIXME: to prevent mixing up texture size with memory, this should be renamed to
-     * something like texture "dimensions". joerg
-     */
-    static void setMax3DTexSize(int max3DTexSize);
-
-    /**
-     * Return the maximum 3D textures size in VolumeGL
-     */
-    static int getMax3DTexSize();
-
-    /**
-     * Use this method to tell VolumeGL how much memory on the video card
-     * is available for textures.
-     *
-     * @param Available memory (in megabytes)
-     */
-    static void setAvailableGpuMemory(int availableGpuMemory);
-
-    /**
-     * Return the maximal memory size VolumeGL can use on the video card (in megabytes)
-     */
-    static int getAvailableGpuMemory();
-
-    //
-    // further methods
-    //
-
-    /// Type used to access sorted textures
-    typedef std::vector<const VolumeTexture*> SortedTextures;
-
-    /**
-     * Use this method to sort textures by distance with a given matrix
-     * to transform the position of each VolumeTexture in the internal
-     * data structure.
-     *
-     * @param m The matrix used to transform the Volume into camera system.
-     * @param eye The eye point.
-     * @return A std::vector\<const VolumeTexture*> sorted by distance, farest first
-     */
-    SortedTextures getSortedTextures(const tgt::mat4& m, tgt::vec3 eye = tgt::vec3::zero);
-
-    /**
-     * Use this method in order to apply the TransFunc to the volume. If your
-     * Renderer just works with a fragment shader you don't need to call this method.
-     * On the other hand it won't harm if you do it anyway.
-     * Invoke it when you want either support for paletted textures or a
-     * software implementation of the transfer function.
-     *
-     * @param tf The TransFunc which should be applied.
-     * @param alphaScale You can scale the alpha values. This is useful
-     *      if you have a different sampling rate then 1.f. <br>
-     *      \e Warinng This will only have an effect when tfSupport_ is \e NOT
-     *      equal SHADER!.
-     */
-    void applyTransFunc(TransFunc* tf, float alphaScale = 1.f) throw(std::bad_alloc);
-
 protected:
     /**
-     * Used internally by the constructor and applyTransFunc.
+     * Used internally by the constructor.
      */
-    void generateTextures(TransFunc* tf, float alphaScale = 1.f) throw(std::bad_alloc);
+    void generateTextures() throw(std::bad_alloc);
 
     /**
-     * Used internally to upload newly created textures. If there is no Fragment
-     * Shader support available a paletted Texture will be created.
+     * Used internally to upload newly created textures.
      */
-    void uploadTexture( TransFunc* tf, float alphaScale,
-                        Volume* v,
-                        const tgt::mat4& matrix,
-                        const tgt::vec3& llf,
-                        const tgt::vec3& urb);
+    void uploadTexture(Volume* v,
+                       const tgt::mat4& matrix,
+                       const tgt::vec3& llf,
+                       const tgt::vec3& urb);
 
     Volume* origVolume_; ///< The original Volume which was specified when calling the constructor.
     Volume* volume_;     ///< All work is done on this Volume. Can be just a pointer to *origVolume_ or a resized Volume.
@@ -248,8 +124,6 @@ protected:
     const std::type_info& volumeType_;///< The type_info of the Volume which is used to create this class.
 
     tgt::Texture::Filter filter_; ///< Filter mode used when creating textures.
-
-    TFSupport tfSupport_; ///< Which method is used to implement the TransFunc?
 
     GLint format_;        ///< The format of textures which will are created.
     GLint internalFormat_;///< The internal format of the textures which are created.
@@ -264,12 +138,6 @@ private:
     /// Used internally for destruction of the data.
     void destroy();
 
-    static LargeVolumeSupport lvSupport_;
-    static int max3DTexSize_;
-    /**
-    * The memory available on the video card in megabyte
-    */
-    static int availableGpuMemory_;
 };
 
 } // namespace voreen

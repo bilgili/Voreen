@@ -110,6 +110,8 @@ public:
     virtual void getGLFocus();
     virtual void toggleFullScreen();
 
+    virtual void enterEvent(QEvent* e);
+    virtual void leaveEvent(QEvent* e);
     virtual void mousePressEvent(QMouseEvent* e);
     virtual void mouseReleaseEvent (QMouseEvent* e);
     virtual void mouseMoveEvent(QMouseEvent*  e);

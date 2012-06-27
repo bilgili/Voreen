@@ -30,25 +30,37 @@
 #ifndef CUSTOMLABEL_H
 #define CUSTOMLABEL_H
 
+#include "voreen/qt/widgets/property/qpropertywidget.h"
+
 #include <QLabel>
 #include <QWidget>
 
+class QLineEdit;
+
 namespace voreen {
 
-class CustomLabel : public QLabel
-{
+class CustomLabel : public QLabel {
 Q_OBJECT
 public:
-    CustomLabel(QWidget* parent = 0, Qt::WindowFlags f = 0);
-    CustomLabel(const QString&, QWidget* parent = 0, Qt::WindowFlags f = 0, bool disallowWordwrap = false);
+    CustomLabel(const char* text, QPropertyWidget* pw = 0, QWidget* parent = 0,
+                Qt::WindowFlags f = 0, bool disallowWordwrap = false, bool editable = false);
+    CustomLabel(QPropertyWidget* pw = 0, QWidget* parent = 0, Qt::WindowFlags f = 0, bool editable = false);
+    void init();
+
+protected slots:
+    void editingFinished();
 
 protected:
     void initFont();
     void processText();
+    virtual void contextMenuEvent (QContextMenuEvent*);
 
+    QPropertyWidget* propertyWidget_;
+    QLineEdit* edit_;
     bool disallowWordwrap_;
+    bool editable_;
 };
 
-}
+} // namespace
 
-#endif
+#endif // CUSTOMLABEL_H

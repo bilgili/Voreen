@@ -40,21 +40,18 @@ TransFuncPrimitive::TransFuncPrimitive()
     , cpSize_(0.02f)
     , grabbed_(-1)
     , scaleFactor_(1.f)
-{
-}
+{}
 
-TransFuncPrimitive::TransFuncPrimitive(tgt::col4 color, float scaleFactor)
+TransFuncPrimitive::TransFuncPrimitive(const tgt::col4& color, float scaleFactor)
     : color_(color)
     , selected_(false)
     , fuzziness_(1.f)
     , cpSize_(0.02f)
     , grabbed_(-1)
     , scaleFactor_(scaleFactor)
-{
-}
+{}
 
-TransFuncPrimitive::~TransFuncPrimitive() {
-}
+TransFuncPrimitive::~TransFuncPrimitive() {}
 
 void TransFuncPrimitive::setColor(const tgt::col4& c) {
     color_ = c;
@@ -76,7 +73,7 @@ float TransFuncPrimitive::getControlPointSize() const {
     return cpSize_;
 }
 
-void TransFuncPrimitive::select(tgt::vec2 pos) {
+void TransFuncPrimitive::select(const tgt::vec2& pos) {
     selected_ = true;
     selectControlPoint(pos);
 }
@@ -134,7 +131,7 @@ TransFuncQuad::TransFuncQuad()
 {
 }
 
-TransFuncQuad::TransFuncQuad(tgt::vec2 center, float size, tgt::col4 col, float scaleFactor)
+TransFuncQuad::TransFuncQuad(const tgt::vec2& center, float size, const tgt::col4& col, float scaleFactor)
     : TransFuncPrimitive(col, scaleFactor)
     , scaleCoords_(true)
 {
@@ -145,8 +142,7 @@ TransFuncQuad::TransFuncQuad(tgt::vec2 center, float size, tgt::col4 col, float 
     coords_[3] = center + tgt::vec2(-size,  size);
 }
 
-TransFuncQuad::~TransFuncQuad() {
-}
+TransFuncQuad::~TransFuncQuad() {}
 
 void TransFuncQuad::setScaleFactor(float scaleFactor) {
     scaleFactor_ = scaleFactor;
@@ -226,7 +222,7 @@ void TransFuncQuad::paintInEditor() {
     paintControlPoint(coords_[3]);
 }
 
-float TransFuncQuad::getClosestControlPointDist(tgt::vec2 pos) {
+float TransFuncQuad::getClosestControlPointDist(const tgt::vec2& pos) {
     float min = distance(pos, coords_[0]);
     float d;
     for (int i = 1; i < 4; ++i) {
@@ -237,7 +233,7 @@ float TransFuncQuad::getClosestControlPointDist(tgt::vec2 pos) {
     return min;
 }
 
-bool TransFuncQuad::selectControlPoint(tgt::vec2 pos) {
+bool TransFuncQuad::selectControlPoint(const tgt::vec2& pos) {
     grabbed_ = -1;
     int n = 0;
     float min = distance(pos, coords_[0]);
@@ -268,7 +264,7 @@ void TransFuncQuad::deserialize(XmlDeserializer& s) {
         s.deserialize("coords", coords_[i]);
 }
 
-bool TransFuncQuad::move(tgt::vec2 offset) {
+bool TransFuncQuad::move(const tgt::vec2& offset) {
     // only move the control point when one is grabbed
     if (grabbed_ > -1) {
         tgt::vec2 temp = coords_[grabbed_] + offset;
@@ -304,10 +300,9 @@ TransFuncBanana::TransFuncBanana()
     : TransFuncPrimitive()
     , steps_(20)
     , scaleCoords_(true)
-{
-}
+{}
 
-TransFuncBanana::TransFuncBanana(tgt::vec2 a, tgt::vec2 b1, tgt::vec2 b2, tgt::vec2 c, tgt::col4 col, float scaleFactor)
+TransFuncBanana::TransFuncBanana(const tgt::vec2& a, const tgt::vec2& b1, const tgt::vec2& b2, const tgt::vec2& c, const tgt::col4& col, float scaleFactor)
     : TransFuncPrimitive(col, scaleFactor)
     , steps_(20)
     , scaleCoords_(true)
@@ -318,8 +313,7 @@ TransFuncBanana::TransFuncBanana(tgt::vec2 a, tgt::vec2 b1, tgt::vec2 b2, tgt::v
     coords_[3] = c;
 }
 
-TransFuncBanana::~TransFuncBanana() {
-}
+TransFuncBanana::~TransFuncBanana() {}
 
 void TransFuncBanana::setScaleFactor(float scaleFactor) {
     scaleFactor_ = scaleFactor;
@@ -458,7 +452,7 @@ void TransFuncBanana::paintInEditor() {
     paintControlPoint(coords_[3]);
 }
 
-float TransFuncBanana::getClosestControlPointDist(tgt::vec2 pos) {
+float TransFuncBanana::getClosestControlPointDist(const tgt::vec2& pos) {
     float min = distance(pos, coords_[0]);
     float d;
     for (int i = 1; i < 4; ++i) {
@@ -469,7 +463,7 @@ float TransFuncBanana::getClosestControlPointDist(tgt::vec2 pos) {
     return min;
 }
 
-bool TransFuncBanana::selectControlPoint(tgt::vec2 pos) {
+bool TransFuncBanana::selectControlPoint(const tgt::vec2& pos) {
     grabbed_ = -1;
     int n = 0;
     float min = distance(pos, coords_[0]);
@@ -500,7 +494,7 @@ void TransFuncBanana::deserialize(XmlDeserializer& s) {
         s.deserialize("coords", coords_[i]);
 }
 
-bool TransFuncBanana::move(tgt::vec2 offset) {
+bool TransFuncBanana::move(const tgt::vec2& offset) {
     if (grabbed_ > -1) {
         tgt::vec2 temp = coords_[grabbed_] + offset;
         // do not move control point when it is outside of allowed region

@@ -32,8 +32,12 @@
 
 #include "voreen/modules/base/processors/render/slicerendererbase.h"
 #include "voreen/core/properties/cameraproperty.h"
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/interaction/camerainteractionhandler.h"
 #include "tgt/camera.h"
+
+#include "voreen/core/ports/genericcoprocessorport.h"
 
 namespace voreen {
 

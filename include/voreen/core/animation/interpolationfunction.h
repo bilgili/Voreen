@@ -46,14 +46,14 @@ template <class T> class PropertyKeyValue;
 /**
  * This class represents an interpolation function between two values.
  */
-template <class T> class InterpolationFunction : public PropertyOwner, public InterpolationFunctionBase {
+template <class T>
+class InterpolationFunction : public PropertyOwner, public InterpolationFunctionBase {
 public:
-
     /**
      * Constructor.
      */
     InterpolationFunction<T>();
-    virtual ~InterpolationFunction<T>() {}
+    virtual ~InterpolationFunction<T>();
 
     /**
      * returns a copy of itself.
@@ -91,7 +91,8 @@ public:
     virtual void deserialize(XmlDeserializer& s);
 };
 
-template <class T> class MultiPointInterpolationFunction : public InterpolationFunction<T> {
+template <class T>
+class MultiPointInterpolationFunction : public InterpolationFunction<T> {
 public:
     virtual InterpolationFunction<T>* clone() const = 0;
 
@@ -99,8 +100,6 @@ public:
      * Interpolation (using several controlpoints).
      */
     virtual T interpolate(std::vector<PropertyKeyValue<T>*> controlpoints, float time) const = 0;
-
-protected:
 };
 
 } // namespace voreen

@@ -32,9 +32,14 @@
 
 #include "voreen/core/processors/renderprocessor.h"
 #include "voreen/core/ports/allports.h"
-#include "voreen/core/properties/allproperties.h"
 #include "voreen/core/interaction/idmanager.h"
 #include "voreen/core/properties/eventproperty.h"
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/buttonproperty.h"
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
+#include "voreen/core/properties/cameraproperty.h"
 
 #include "voreen/core/datastructures/geometry/meshlistgeometry.h"
 #include <stack>
@@ -77,8 +82,8 @@ public:
     virtual Processor* create() const;
 
     virtual std::string getClassName() const    { return "ExplosionProxyGeometry"; }
-    virtual std::string getCategory() const     { return "Volume Proxy Geometry"; }
-    virtual CodeState getCodeState() const      { return CODE_STATE_TESTING; }
+    virtual std::string getCategory() const     { return "Volume Proxy Geometry";  }
+    virtual CodeState getCodeState() const      { return CODE_STATE_STABLE;        }
 
     virtual std::string getProcessorInfo() const;
     virtual bool isReady() const;
@@ -431,12 +436,12 @@ protected:
     /**
      * Color of the bounding-boxes of the non-selected bricks property.
      */
-    ColorProperty brickColor_;
+    FloatVec4Property brickColor_;
 
     /**
      * Color of the bounding-boxes of the selected bricks property.
      */
-    ColorProperty selectedBrickColor_;
+    FloatVec4Property selectedBrickColor_;
 
     /**
      * Hide non-selected bricks property.

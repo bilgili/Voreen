@@ -30,6 +30,9 @@
 #include "tgt/types.h"
 
 #include <cmath>
+#include <cfloat>
+
+#include <algorithm>
 
 /*
     work around for windows.h
@@ -202,6 +205,34 @@ inline double clamp(double f, double min, double max) {
 /// Clamps \p f to range [\p min, \p max].
 inline int clamp(int f, int min, int max) {
     return std::min(std::max(f, min), max);
+}
+
+/* 
+    floating point checks
+ */
+
+/// Returns false, if \p f is not a number (NaN).
+inline bool isNumber(float f) {
+    // according to the IEEE-754 floating-point standard
+    // comparisons with NaN always fail
+    return f == f;
+}
+
+/// Returns false, if \p d is not a number (NaN).
+inline bool isNumber(double d) {
+    // according to the IEEE-754 floating-point standard
+    // comparisons with NaN always fail
+    return d == d;
+}
+
+/// Returns false, if \p f is NaN or infinity.
+inline bool isFiniteNumber(float f) {
+    return (f <= FLT_MAX && f >= -FLT_MAX);
+}
+
+/// Returns false, if \p d is NaN or infinity.
+inline bool isFiniteNumber(double d) {
+    return (d <= DBL_MAX && d >= -DBL_MAX);
 }
 
 } // namespace tgt

@@ -33,6 +33,9 @@
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/processors/imageprocessor.h"
 
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+
 namespace voreen {
 
 /// Composites the the images at the two inports using the selected blending method.

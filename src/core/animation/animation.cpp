@@ -40,11 +40,10 @@ namespace voreen {
 
 const std::string Animation::loggerCat_("voreen.Animation");
 
-Animation::Animation() {
-}
+Animation::Animation() {}
 
-Animation::Animation(ProcessorNetwork* network) :
-      fps_(25)
+Animation::Animation(ProcessorNetwork* network)
+    : fps_(25)
     , undoSteps_(100)
     , currentTime_(0)
     , duration_(5*60)
@@ -53,49 +52,47 @@ Animation::Animation(ProcessorNetwork* network) :
     const std::vector<Processor*> procs = network->getProcessors();
 
     std::vector<Processor*>::const_iterator it2;
-    for(it2=procs.begin();it2!= procs.end();it2++) {
+    for (it2=procs.begin();it2!= procs.end();it2++) {
         processors_.push_back(new AnimatedProcessor(*it2));
     }
 
     // register this as observer on all propertytimelines for undo / redo
     const std::vector<AnimatedProcessor*> animproc = getAnimatedProcessors();
     std::vector<AnimatedProcessor*>::const_iterator it;
-    for (it = animproc.begin(); it != animproc.end(); it++) {
+    for (it = animproc.begin(); it != animproc.end(); ++it) {
         const std::vector<PropertyTimeline*> timelines = (*it)->getPropertyTimelines();
         std::vector<PropertyTimeline*>::const_iterator it2;
-        for (it2 = timelines.begin(); it2 != timelines.end(); it2++) {
+        for (it2 = timelines.begin(); it2 != timelines.end(); ++it2) {
             (*it2)->registerUndoObserver(this);
         }
     }
 
     // register this as observer in the processornetwork to register added and removed processors
-    ProcessorNetwork* net = const_cast<ProcessorNetwork*>(network);
-    net->addObserver(this);
-
+    network->addObserver(this);
 }
 
-Animation::~Animation(){
+Animation::~Animation() {
     std::vector<AnimatedProcessor*>::const_iterator it;
-    for (it = processors_.begin(); it!=processors_.end(); it++) {
+    for (it = processors_.begin(); it!=processors_.end(); ++it) {
         delete (*it);
     }
     processors_.clear();
 }
 
-bool Animation::empty() const {
+bool Animation::isEmpty() const {
     std::vector<AnimatedProcessor*>::const_iterator it;
     bool result = true;
-    for (it = processors_.begin(); it!=processors_.end(); it++) {
+    for (it = processors_.begin(); it!=processors_.end(); ++it) {
         const std::vector<PropertyTimeline*> propertyTimelines = (*it)->getPropertyTimelines();
         std::vector<PropertyTimeline*>::const_iterator ptit;
-        for(ptit = propertyTimelines.begin(); ptit != propertyTimelines.end(); ptit++) {
-            result = result && (*ptit)->empty();
+        for (ptit = propertyTimelines.begin(); ptit != propertyTimelines.end(); ++ptit) {
+            result &= (*ptit)->isEmpty();
         }
     }
     return result;
 }
 
-const std::vector<AnimatedProcessor*> Animation::getAnimatedProcessors() const {
+const std::vector<AnimatedProcessor*>& Animation::getAnimatedProcessors() const {
     return processors_;
 }
 
@@ -107,7 +104,7 @@ void Animation::renderAt(float time) {
     isRendering_ = true;
 
     std::vector<AnimatedProcessor*>::const_iterator it;
-    for (it = processors_.begin(); it!=processors_.end(); it++) {
+    for (it = processors_.begin(); it!=processors_.end(); ++it) {
         (*it)->renderAt(time);
     }
 
@@ -117,7 +114,7 @@ void Animation::renderAt(float time) {
 void Animation::animationChanged(UndoableAnimation* changedObject) {
     std::deque<UndoableAnimation*>::iterator it;
     // change made -> delete all redostates
-    for (it = lastUndos_.begin(); it != lastUndos_.end(); it++) {
+    for (it = lastUndos_.begin(); it != lastUndos_.end(); ++it) {
         (*it)->clearRedoStates();
     }
     lastUndos_.clear();
@@ -126,7 +123,7 @@ void Animation::animationChanged(UndoableAnimation* changedObject) {
     lastChanges_.push_back(changedObject);
 
     // if there are already too many undosteps -> delete oldest states
-    while (lastChanges_.size()>undoSteps_) {
+    while (lastChanges_.size() > static_cast<size_t>(undoSteps_)) {
         UndoableAnimation* tmp = lastChanges_.front();
         tmp->removeOldestUndoState();
         lastChanges_.pop_front();
@@ -141,13 +138,11 @@ void Animation::undoLastChange() {
         lastUndos_.push_back(temp);
         temp->undo();
     }
-    else {
+    else
         LWARNING("Undo impossible: No last changes");
-    }
-
 }
 
-void Animation::redoLastUndo(){
+void Animation::redoLastUndo() {
     if (lastUndos_.size() > 0) {
         // call the redo-function of the last undid-propertytimeline
         UndoableAnimation* temp = lastUndos_.back();
@@ -155,28 +150,26 @@ void Animation::redoLastUndo(){
         lastChanges_.push_back(temp);
         temp->redo();
     }
-    else {
+    else
         LWARNING("Redo impossible: No last undo state");
-    }
-
 }
 
 float Animation::getFPS() const {
     return fps_;
 }
 
-void Animation::setFPS(float fps){
-    fps_=fps;
+void Animation::setFPS(float fps) {
+    fps_ = fps;
 }
 
 void Animation::setUndoSteps(int steps) {
     if (steps < 1)
         undoSteps_ = 1;
     else
-        undoSteps_= static_cast<unsigned int>(steps);
+        undoSteps_= steps;
 
     // if the new value is smaller than the number of undostates -> delete oldest states
-    while (lastChanges_.size()>undoSteps_) {
+    while (lastChanges_.size() > static_cast<size_t>(undoSteps_)) {
         UndoableAnimation* tmp = lastChanges_.front();
         tmp->removeOldestUndoState();
         lastChanges_.pop_front();
@@ -197,30 +190,30 @@ void Animation::processorAdded(const Processor *processor) {
     processors_.push_back(proc);
 
     // registration of this class for undo / redo at the new propertytimelines
-    const std::vector<PropertyTimeline*> timelines = proc->getPropertyTimelines();
+    const std::vector<PropertyTimeline*>& timelines = proc->getPropertyTimelines();
     std::vector<PropertyTimeline*>::const_iterator it2;
-    for (it2 = timelines.begin(); it2 != timelines.end(); it2++) {
+    for (it2 = timelines.begin(); it2 != timelines.end(); ++it2) {
         (*it2)->registerUndoObserver(this);
     }
     // inform animationobservers of the new processor
     const std::vector<AnimationObserver*> observer = getObservers();
     std::vector<AnimationObserver*>::const_iterator it;
-    for (it = observer.begin(); it != observer.end(); it++) {
+    for (it = observer.begin(); it != observer.end(); ++it) {
         (*it)->animatedProcessorAdded(proc);
     }
 }
 
-void Animation::processorRemoved(const voreen::Processor *processor) {
+void Animation::processorRemoved(const voreen::Processor* processor) {
     // calles if a processor is removed from the rendernetwork
 
     // delete all undo and redo pointers to propertytimelines belonging to the removed processor
     std::vector<AnimatedProcessor*>::iterator it;
-    for (it = processors_.begin(); it != processors_.end(); it++) {
+    for (it = processors_.begin(); it != processors_.end(); ++it) {
         if (processor == (*it)->getCorrespondingProcessor()) {
 
             const std::vector<AnimationObserver*> observer = getObservers();
             std::vector<AnimationObserver*>::const_iterator itObserver;
-            for (itObserver = observer.begin(); itObserver != observer.end(); itObserver++) {
+            for (itObserver = observer.begin(); itObserver != observer.end(); ++itObserver) {
                 (*itObserver)->animatedProcessorRemoved(*it);
             }
 
@@ -228,12 +221,12 @@ void Animation::processorRemoved(const voreen::Processor *processor) {
             std::deque<UndoableAnimation*> newLastChanges;
             std::deque<UndoableAnimation*>::iterator undoIt;
             std::vector<PropertyTimeline*>::const_iterator tlIt;
-            for (undoIt = lastChanges_.begin(); undoIt != lastChanges_.end(); undoIt++) {
+            for (undoIt = lastChanges_.begin(); undoIt != lastChanges_.end(); ++undoIt) {
                 PropertyTimeline* tl = dynamic_cast<PropertyTimeline*>(*undoIt);
                 if (tl) {
-                    const std::vector<PropertyTimeline*> timelines = (*it)->getPropertyTimelines();
+                    const std::vector<PropertyTimeline*>& timelines = (*it)->getPropertyTimelines();
                     bool toBoDeleted = false;
-                    for (tlIt = timelines.begin(); tlIt != timelines.end(); tlIt++) {
+                    for (tlIt = timelines.begin(); tlIt != timelines.end(); ++tlIt) {
                         if ((tl) == (*tlIt)) {
                             toBoDeleted = true;
                             break;
@@ -249,12 +242,12 @@ void Animation::processorRemoved(const voreen::Processor *processor) {
 
             //remove corresponding redos
             std::deque<UndoableAnimation*> newLastUndos;
-            for (undoIt = lastUndos_.begin(); undoIt != lastUndos_.end(); undoIt++) {
+            for (undoIt = lastUndos_.begin(); undoIt != lastUndos_.end(); ++undoIt) {
                 PropertyTimeline* tl = dynamic_cast<PropertyTimeline*>(*undoIt);
                 if (tl) {
-                    const std::vector<PropertyTimeline*> timelines = (*it)->getPropertyTimelines();
+                    const std::vector<PropertyTimeline*>& timelines = (*it)->getPropertyTimelines();
                     bool toBoDeleted = false;
-                    for (tlIt = timelines.begin(); tlIt != timelines.end(); tlIt++) {
+                    for (tlIt = timelines.begin(); tlIt != timelines.end(); ++tlIt) {
                         if ((tl) == (*tlIt)) {
                             toBoDeleted = true;
                             break;
@@ -271,72 +264,63 @@ void Animation::processorRemoved(const voreen::Processor *processor) {
             break;
         }
     }
-
 }
 
 float Animation::getCurrentTime() const {
     return currentTime_;
 }
 
-
-void Animation::setActualNetworkAsKeyvalues(float time)
-{
+void Animation::setActualNetworkAsKeyvalues(float time) {
     // snapshotfunction
     // calls the corresponding function of all propertytimelines
-    const std::vector<AnimatedProcessor*> animproc = getAnimatedProcessors();
+    const std::vector<AnimatedProcessor*>& animproc = getAnimatedProcessors();
     std::vector<AnimatedProcessor*>::const_iterator it;
-    for (it = animproc.begin();it != animproc.end();it++)
+    for (it = animproc.begin(); it != animproc.end(); ++it)
     {
-        const std::vector<PropertyTimeline*> timelines = (*it)->getPropertyTimelines();
+        const std::vector<PropertyTimeline*>& timelines = (*it)->getPropertyTimelines();
         std::vector<PropertyTimeline*>::const_iterator it2;
-        for (it2 = timelines.begin(); it2 != timelines.end(); it2++) {
-            (*it2)->setCurrentSettingAsKeyvalue(time,false);
+        for (it2 = timelines.begin(); it2 != timelines.end(); ++it2) {
+            (*it2)->setCurrentSettingAsKeyvalue(time, false);
         }
     }
 }
 
-void Animation::setInteractionMode(bool interactionmode)
-{
+void Animation::setInteractionMode(bool interactionmode) {
     // calls the corresponding function of all propertytimelines
-    const std::vector<AnimatedProcessor*> animproc = getAnimatedProcessors();
+    const std::vector<AnimatedProcessor*>& animproc = getAnimatedProcessors();
     std::vector<AnimatedProcessor*>::const_iterator it;
-    for (it = animproc.begin();it != animproc.end();it++) {
-        const std::vector<PropertyTimeline*> timelines = (*it)->getPropertyTimelines();
+    for (it = animproc.begin(); it != animproc.end(); ++it) {
+        const std::vector<PropertyTimeline*>& timelines = (*it)->getPropertyTimelines();
         std::vector<PropertyTimeline*>::const_iterator it2;
-        for (it2 = timelines.begin(); it2 != timelines.end(); it2++) {
-            (*it2)->setInteractionMode(interactionmode,this);
+        for (it2 = timelines.begin(); it2 != timelines.end(); ++it2) {
+            (*it2)->setInteractionMode(interactionmode, this);
         }
     }
 }
 
-float Animation::getDuration() const
-{
+float Animation::getDuration() const {
     return duration_;
 }
 
-void Animation::setDuration(float duration)
-{
-    this->duration_ = floor(duration*10000)/10000;
+void Animation::setDuration(float duration) {
+    duration_ = floor(duration*10000.f)/10000.f;
 
     // delete all undo- / redosteps
-    const std::vector<AnimatedProcessor*> animproc = getAnimatedProcessors();
+    const std::vector<AnimatedProcessor*>& animproc = getAnimatedProcessors();
     std::vector<AnimatedProcessor*>::const_iterator it;
-    for (it = animproc.begin(); it != animproc.end(); it++) {
-        const std::vector<PropertyTimeline*> timelines = (*it)->getPropertyTimelines();
+    for (it = animproc.begin(); it != animproc.end(); ++it) {
+        const std::vector<PropertyTimeline*>& timelines = (*it)->getPropertyTimelines();
         std::vector<PropertyTimeline*>::const_iterator it2;
-        for (it2 = timelines.begin(); it2 != timelines.end(); it2++) {
+        for (it2 = timelines.begin(); it2 != timelines.end(); ++it2) {
             (*it2)->clearAllStates();
             (*it2)->setDuration(duration);
         }
     }
-
     // delete all keyvalues after duration
 }
 
 void Animation::serialize(XmlSerializer& s) const {
-
-    if(!empty()) {
-
+    if (!isEmpty()) {
         s.registerFactory(PropertyTimelineFactory::getInstance());
         s.registerFactory(TemplatePropertyTimelineStateFactory::getInstance());
         s.registerFactory(KeyValueFactory::getInstance());
@@ -368,11 +352,9 @@ void Animation::serialize(XmlSerializer& s) const {
         s.serialize("currentTime", currentTime_);
         s.serialize("isRendering", isRendering_);
     }
-
 }
 
 void Animation::deserialize(XmlDeserializer& s) {
-
     s.registerFactory(PropertyTimelineFactory::getInstance());
     s.registerFactory(TemplatePropertyTimelineStateFactory::getInstance());
     s.registerFactory(KeyValueFactory::getInstance());

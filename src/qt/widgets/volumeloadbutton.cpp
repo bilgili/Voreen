@@ -47,7 +47,7 @@
 #include "voreen/qt/widgets/volumeloadbutton.h"
 
 #include "voreen/qt/voreenapplicationqt.h"
-#include "voreen/qt/ioprogressdialog.h"
+#include "voreen/qt/progressdialog.h"
 
 #ifdef _MSC_VER
 #include "tgt/gpucapabilitieswindows.h"
@@ -63,7 +63,7 @@ VolumeLoadButton::VolumeLoadButton(VolumeContainer* vc, QWidget* parent)
     , rawVolumeFilesFilter_("Raw Volume Files (*)")
     , philipsUSFilesFilter_("Philips US Files (*.dcm)")
     , rawSliceFilesFilter_("Raw Slice Files (*)")
-#ifdef VRN_WITH_DCMTK
+#ifdef VRN_MODULE_DICOM
     , dicomDirDialog_(0)
 #endif
 {
@@ -75,13 +75,13 @@ VolumeLoadButton::VolumeLoadButton(VolumeContainer* vc, QWidget* parent)
 
     loadDatAction_ = new QAction("Load Volume", this);
     loadRawAction_ = new QAction("Load Raw Volume", this);
-    #ifdef VRN_WITH_DCMTK
+    #ifdef VRN_MODULE_DICOM
         loadDicomAction_ = new QAction("Load DICOM Slices", this);
     #endif
     QMenu* loadMenu = new QMenu(this);
     loadMenu->addAction(loadDatAction_);
     loadMenu->addAction(loadRawAction_);
-    #ifdef VRN_WITH_DCMTK
+    #ifdef VRN_MODULE_DICOM
         loadMenu->addAction(loadDicomAction_);
     #endif
     setMenu(loadMenu);
@@ -191,11 +191,11 @@ void VolumeLoadButton::loadRawSlices(std::vector<std::string> sliceFiles){
             else if (format == "UINT" || format == "INT")
                 formatBytes = 4;
 
-            int numChannels = 1;
-            if (objectModel == "RGB")
-                numChannels = 3;
-            else if (objectModel == "RGBA")
-                numChannels = 4;
+            //int numChannels = 1;
+            //if (objectModel == "RGB")
+            //    numChannels = 3;
+            //else if (objectModel == "RGBA")
+            //    numChannels = 4;
 
             uint rawSize = headerSkip + formatBytes * (dim.x * dim.y);
 
@@ -248,7 +248,7 @@ std::string VolumeLoadButton::getExtensions() const {
         out+= "*."+extensionVec[i]+" ";
     }
 
-#ifdef VRN_WITH_DCMTK
+#ifdef VRN_MODULE_DICOM
     out+=" DICOMDIR";
 #endif
     out+=")";
@@ -270,7 +270,7 @@ void VolumeLoadButton::loadActionTriggered(QAction* action) {
         loadVolume();
     else if (action == loadRawAction_)
         loadVolumeRawFilter();
-#ifdef VRN_WITH_DCMTK
+#ifdef VRN_MODULE_DICOM
     else if (action == loadDicomAction_)
         loadDicomFiles();
 #endif
@@ -330,7 +330,7 @@ void VolumeLoadButton::addMultipleVolumes(std::vector<std::string> filenames) {
                         return;
                 }
 
-#ifdef VRN_WITH_DCMTK
+#ifdef VRN_MODULE_DICOM
                 if (tgt::FileSystem::fileName(filenames[i]) == "DICOMDIR" || tgt::FileSystem::fileName(filenames[i]) == "dicomdir")
                     loadDicomDir(filenames[i]);
                 else
@@ -424,6 +424,7 @@ std::vector<std::string> VolumeLoadButton::openFileDialog() {
 
     QList<QUrl> urls;
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getVolumePath().c_str());
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getDataPath().c_str());
     dlg.setSidebarUrls(urls);
 
     std::vector<std::string> filenames;
@@ -442,7 +443,7 @@ void VolumeLoadButton::filterChanged(QString filter) {
 }
 
 void VolumeLoadButton::loadDicomFiles() {
-#ifdef VRN_WITH_DCMTK
+#ifdef VRN_MODULE_DICOM
     std::string openPath;
     if (volumeContainer_ && !volumeContainer_->empty())
         openPath = volumeContainer_->at(volumeContainer_->size()-1)->getOrigin().getPath();
@@ -461,14 +462,14 @@ void VolumeLoadButton::loadDicomFiles() {
 #endif
 }
 
-#ifdef VRN_WITH_DCMTK
+#ifdef VRN_MODULE_DICOM
 
 void VolumeLoadButton::loadDicomDir(const std::string& file) {
 
     if (file.empty())
         return;
 
-    IOProgress* progress = new IOProgressDialog(reinterpret_cast<QWidget *>(VoreenApplicationQt::qtApp()->getMainWindow()));
+    ProgressBar* progress = new ProgressDialog(reinterpret_cast<QWidget *>(VoreenApplicationQt::qtApp()->getMainWindow()));
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     DicomVolumeReader dicomReader(progress);
@@ -490,7 +491,7 @@ void VolumeLoadButton::dicomDirDialogFinished() {
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-    IOProgress* progress = new IOProgressDialog(VoreenApplicationQt::qtApp()->getMainWindow());
+    ProgressBar* progress = new ProgressDialog(VoreenApplicationQt::qtApp()->getMainWindow());
     DicomVolumeReader dicomReader(progress);
     VolumeCollection* volumeCollection = 0;
     try {
@@ -526,7 +527,7 @@ void VolumeLoadButton::loadDicomFiles(const std::string& dir) {
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-    IOProgress* progress = new IOProgressDialog(VoreenApplicationQt::qtApp()->getMainWindow());
+    ProgressBar* progress = new ProgressDialog(VoreenApplicationQt::qtApp()->getMainWindow());
     DicomVolumeReader volumeReader(progress);
     VolumeCollection* volumeCollection = 0;
     try {
@@ -561,6 +562,6 @@ void VolumeLoadButton::loadDicomDir(const std::string& /*file*/) { }
 
 void VolumeLoadButton::loadDicomFiles(const std::string& /*dir*/) { }
 
-#endif // VRN_WITH_DCMTK
+#endif // VRN_MODULE_DICOM
 
 } // namespace voreen

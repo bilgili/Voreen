@@ -72,11 +72,13 @@ void TextGraphicsItem::keyPressEvent(QKeyEvent* event) {
     if (event->key() == Qt::Key_Escape) {
         // restore saved text
         setPlainText(previousText_);
+        emit textChanged();
         emit renameFinished();
     }
     else if ((event->key() == Qt::Key_Return) && (event->modifiers() == Qt::NoModifier)) {
         previousText_ = toPlainText();
         setPlainText(previousText_); // clears the selection as textCursor().clearSelection() should
+        emit textChanged();
         emit renameFinished();
     }
     else {

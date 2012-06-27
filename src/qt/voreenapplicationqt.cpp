@@ -29,7 +29,7 @@
 
 #include "voreen/qt/voreenapplicationqt.h"
 #include "voreen/qt/versionqt.h"
-#include "voreen/qt/ioprogressdialog.h"
+#include "voreen/qt/progressdialog.h"
 #include "tgt/init.h"
 #include "tgt/qt/qttimer.h"
 #include "tgt/filesystem.h"
@@ -46,14 +46,6 @@
 using std::string;
 
 namespace {
-
-string findShaderPath(const string& basePath) {
-#ifdef VRN_INSTALL_PREFIX
-    return basePath + "/share/voreen/shaders";
-#else
-    return basePath + "/src/qt/glsl";
-#endif
-}
 
 } // namespace
 
@@ -92,7 +84,15 @@ void VoreenApplicationQt::init() {
 
     // shader path
     if (appType_ & APP_SHADER) {
-        shaderPathQt_ = findShaderPath(basePath_);
+#ifdef VRN_INSTALL_PREFIX
+        shaderPathQt_ = basePath_ + "/share/voreen/shaders";
+#else
+    #if defined(__APPLE__) && defined(VRN_DISTRIBUTION)
+        shaderPathQt_ = appBundleResourcesPath_ + "/glsl/qt";
+    #else
+        shaderPathQt_ = basePath_ + "/src/qt/glsl";
+    #endif
+#endif
     }
 }
 
@@ -117,8 +117,8 @@ tgt::Timer* VoreenApplicationQt::createTimer(tgt::EventHandler* handler) const {
     return new tgt::QtTimer(handler);
 }
 
-IOProgressDialog* VoreenApplicationQt::createProgressDialog() const {
-    return new IOProgressDialog(getMainWindow());
+ProgressDialog* VoreenApplicationQt::createProgressDialog() const {
+    return new ProgressDialog(getMainWindow());
 }
 
 std::string VoreenApplicationQt::getShaderPathQt(const std::string& filename) const {

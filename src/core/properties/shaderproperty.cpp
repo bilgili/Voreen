@@ -33,49 +33,49 @@
 
 namespace voreen {
 
-    void ShaderSource::serialize(XmlSerializer& s) const {
-        //fragment:
-        s.serialize("fragmentModified", fragmentModified_);
-        s.serialize("fragmentFilename", fragmentFilename_);
-        if (fragmentModified_)
-            s.serialize("fragmentSource", fragmentSource_);
+void ShaderSource::serialize(XmlSerializer& s) const {
+    //fragment:
+    s.serialize("fragmentModified", fragmentModified_);
+    s.serialize("fragmentFilename", fragmentFilename_);
+    if (fragmentModified_)
+        s.serialize("fragmentSource", fragmentSource_);
 
-        //vertex:
-        s.serialize("vertexModified", vertexModified_);
-        s.serialize("vertexFilename", vertexFilename_);
-        if (vertexModified_)
-            s.serialize("vertexSource", vertexSource_);
+    //vertex:
+    s.serialize("vertexModified", vertexModified_);
+    s.serialize("vertexFilename", vertexFilename_);
+    if (vertexModified_)
+        s.serialize("vertexSource", vertexSource_);
 
-        //geometry:
-        s.serialize("geometryModified", geometryModified_);
-        s.serialize("geometryFilename", geometryFilename_);
-        if (geometryModified_)
-            s.serialize("geometrySource", geometrySource_);
-    }
+    //geometry:
+    s.serialize("geometryModified", geometryModified_);
+    s.serialize("geometryFilename", geometryFilename_);
+    if (geometryModified_)
+        s.serialize("geometrySource", geometrySource_);
+}
 
-    void ShaderSource::deserialize(XmlDeserializer& s) {
-        //current format:
-        s.deserialize("fragmentModified", fragmentModified_);
-        s.deserialize("fragmentFilename", fragmentFilename_);
-        if (fragmentModified_)
-            s.deserialize("fragmentSource", fragmentSource_);
-        //else
-            //resetfragmentShader();
+void ShaderSource::deserialize(XmlDeserializer& s) {
+    //current format:
+    s.deserialize("fragmentModified", fragmentModified_);
+    s.deserialize("fragmentFilename", fragmentFilename_);
+    if (fragmentModified_)
+        s.deserialize("fragmentSource", fragmentSource_);
+    //else
+        //resetfragmentShader();
 
-        s.deserialize("vertexModified", vertexModified_);
-        s.deserialize("vertexFilename", vertexFilename_);
-        if (vertexModified_)
-            s.deserialize("vertexSource", vertexSource_);
-        //else
-            //resetVertexShader();
+    s.deserialize("vertexModified", vertexModified_);
+    s.deserialize("vertexFilename", vertexFilename_);
+    if (vertexModified_)
+        s.deserialize("vertexSource", vertexSource_);
+    //else
+        //resetVertexShader();
 
-        s.deserialize("geometryModified", geometryModified_);
-        s.deserialize("geometryFilename", geometryFilename_);
-        if (geometryModified_)
-            s.deserialize("geometrySource", geometrySource_);
-        //else
-            //resetGeometryShader();
-    }
+    s.deserialize("geometryModified", geometryModified_);
+    s.deserialize("geometryFilename", geometryFilename_);
+    if (geometryModified_)
+        s.deserialize("geometrySource", geometrySource_);
+    //else
+        //resetGeometryShader();
+}
 
 //---------------------------------------------------------------------------------------------------------------
 
@@ -99,7 +99,7 @@ ShaderProperty::ShaderProperty(const std::string& id, const std::string& guiText
 
 ShaderProperty::~ShaderProperty() {
     if (shader_) {
-        LERRORC("voreen.ShaderProperty",
+        LWARNINGC("voreen.ShaderProperty",
             getFullyQualifiedGuiName() << " has not been deinitialized before destruction.");
     }
 }
@@ -111,7 +111,7 @@ void ShaderProperty::initialize() throw (VoreenException) {
 }
 
 void ShaderProperty::deinitialize() throw (VoreenException) {
-    ShdrMgr.dispose(shader_);
+    delete shader_;
     shader_ = 0;
     LGL_ERROR;
 
@@ -167,11 +167,6 @@ void ShaderProperty::deserialize(XmlDeserializer& s) {
 
 PropertyWidget* ShaderProperty::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
-}
-
-std::string ShaderProperty::toString() const {
-    //return source_;
-    return "";
 }
 
 void ShaderProperty::setHeader(std::string header) {
@@ -296,19 +291,19 @@ void ShaderProperty::setGeometryFilename(const std::string& geometryFilename) {
 }
 
 void ShaderProperty::rebuild() {
-    ShdrMgr.dispose(shader_);
+    delete shader_;
     shader_ = 0;
     vert_ = 0;
     frag_ = 0;
     geom_ = 0;
 
     shader_ = new tgt::Shader();
-    bool failedCompile = false;
+    //bool failedCompile = false;
 
-    if(!value_.vertexFilename_.empty()) {
+    if (!value_.vertexFilename_.empty()) {
         vert_ = new tgt::ShaderObject(value_.vertexFilename_, tgt::ShaderObject::VERTEX_SHADER);
         vert_->setHeader(header_);
-        if(!value_.vertexModified_) {
+        if (!value_.vertexModified_) {
             vert_->loadSourceFromFile(ShdrMgr.completePath(value_.vertexFilename_));
             value_.vertexSource_ = vert_->getSource();
         }
@@ -316,18 +311,18 @@ void ShaderProperty::rebuild() {
             vert_->setSource(value_.vertexSource_);
         }
         vert_->compileShader();
-        if(vert_->isCompiled())
+        if (vert_->isCompiled())
             shader_->attachObject(vert_);
         else {
-            failedCompile = true;
+            //failedCompile = true;
             LWARNINGC("voreen.shaderproperty", "Failed to compile vertex shader: " << vert_->getCompilerLog());
         }
     }
 
-    if(!value_.fragmentFilename_.empty()) {
+    if (!value_.fragmentFilename_.empty()) {
         frag_ = new tgt::ShaderObject(value_.fragmentFilename_, tgt::ShaderObject::FRAGMENT_SHADER);
         frag_->setHeader(header_);
-        if(!value_.fragmentModified_) {
+        if (!value_.fragmentModified_) {
             frag_->loadSourceFromFile(ShdrMgr.completePath(value_.fragmentFilename_));
             value_.fragmentSource_ = frag_->getSource();
         }
@@ -335,18 +330,18 @@ void ShaderProperty::rebuild() {
             frag_->setSource(value_.fragmentSource_);
         }
         frag_->compileShader();
-        if(frag_->isCompiled())
+        if (frag_->isCompiled())
             shader_->attachObject(frag_);
         else {
-            failedCompile = true;
+            //failedCompile = true;
             LWARNINGC("voreen.shaderproperty", "Failed to compile fragment shader: " << frag_->getCompilerLog());
         }
     }
 
-    if(!value_.geometryFilename_.empty()) {
+    if (!value_.geometryFilename_.empty()) {
         geom_ = new tgt::ShaderObject(value_.geometryFilename_, tgt::ShaderObject::GEOMETRY_SHADER);
         geom_->setHeader(header_);
-        if(!value_.geometryModified_) {
+        if (!value_.geometryModified_) {
             geom_->loadSourceFromFile(ShdrMgr.completePath(value_.geometryFilename_));
             value_.geometrySource_ = geom_->getSource();
         }
@@ -354,10 +349,10 @@ void ShaderProperty::rebuild() {
             geom_->setSource(value_.geometrySource_);
         }
         geom_->compileShader();
-        if(geom_->isCompiled())
+        if (geom_->isCompiled())
             shader_->attachObject(geom_);
         else {
-            failedCompile = true;
+            //failedCompile = true;
             LWARNINGC("voreen.shaderproperty", "Failed to compile geometry shader: " << geom_->getCompilerLog());
         }
     }
@@ -374,6 +369,10 @@ void ShaderProperty::rebuild() {
 
 tgt::Shader* ShaderProperty::getShader() {
    return shader_;
+}
+
+std::string ShaderProperty::getTypeString() const {
+    return "Shader";
 }
 
 }   // namespace

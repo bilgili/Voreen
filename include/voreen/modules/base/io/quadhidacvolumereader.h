@@ -41,13 +41,13 @@ class Volume;
  */
 class QuadHidacVolumeReader : public VolumeReader {
 public:
-    QuadHidacVolumeReader(IOProgress* progress = 0) :
+    QuadHidacVolumeReader(ProgressBar* progress = 0) :
         VolumeReader(progress)
     {
         extensions_.push_back("i4d");
     }
 
-    virtual VolumeReader* create(IOProgress* progress = 0) const;
+    virtual VolumeReader* create(ProgressBar* progress = 0) const;
 
     virtual VolumeCollection* read(const std::string& url)
         throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);

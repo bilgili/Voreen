@@ -48,7 +48,7 @@ public:
      * Constructor which sets certain default values:</br>
      * <ul>
      * <li>Minimum Size: 640, 480</li>
-     * <li>Maximum Size: 640, 480</li>
+     * <li>Maximum Height: 480</li>
      * <li>Mouse Tracking: true</li>
      * <li>Background Brush: Qt::darkGray</li>
      * <li>Creates a context menu with a single <code>Delete</code> action</li>

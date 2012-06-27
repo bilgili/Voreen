@@ -33,6 +33,11 @@
 #include <string>
 #include "voreen/core/processors/renderprocessor.h"
 #include "voreen/modules/flowreen/flowreenprocessor.h"
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
 
 namespace voreen {
 
@@ -137,7 +142,7 @@ private:
     OptionProperty<Thresholding>* thresholdingProp_;
     FloatVec2Property lineLengthProp_;
     FloatVec2Property intensityProp_;
-    ColorProperty lineColorProp_;
+    FloatVec4Property lineColorProp_;
     IntProperty segmentLengthProp_;
     FloatProperty integrationStepProp_;
     FloatProperty timestepProp_;          /** intended to be linked with a clock processor. */

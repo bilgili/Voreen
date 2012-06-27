@@ -34,6 +34,7 @@
 #include "tgt/light.h"
 #include "tgt/material.h"
 
+#include <math.h>
 
 namespace tgt {
 
@@ -300,7 +301,7 @@ public:
     Disk(   GLdouble innerRadius, GLdouble outerRadius, GLint slices, GLint loops,
             bool visible = true, bool _static = true)
 
-      : Quadric(Bounds(vec3(), vec3()), _static, visible),
+      : Quadric(Bounds(), _static, visible),
         innerRadius_(innerRadius),
         outerRadius_(outerRadius),
         slices_(slices),
@@ -392,7 +393,7 @@ public:
   	Cylinder(   GLdouble baseRadius, GLdouble topRadius, GLdouble height, GLint slices, GLint stacks,
                 bool visible = true, bool _static = true)
 
-      : Quadric(Bounds(vec3(), vec3()), _static, visible),
+      : Quadric(Bounds(), _static, visible),
         baseRadius_(baseRadius),
          topRadius_( topRadius),
         height_(height),
@@ -604,7 +605,7 @@ public:
 	/// \param _static A static object is not expected to move.
     Rect(   GLdouble width, GLdouble height,
 		bool visible = true, bool _static = true)
-      : Quadric(Bounds(vec3(), vec3()), _static, visible)
+      : Quadric(Bounds(), _static, visible)
 	{
 		setWidth(width);
 		setHeight(height);
@@ -645,9 +646,17 @@ public:
 			}
 
 			// render the rectangle
+            if (getTextureEnabled())
+                glTexCoord2f(0.f, 0.f);
 			glVertex3d(-h_width_, -h_height_, 0);
+            if (getTextureEnabled())
+                glTexCoord2f(0.f, 1.f);
 			glVertex3d(-h_width_,  h_height_, 0);
+            if (getTextureEnabled())
+                glTexCoord2f(1.f, 1.f);
 			glVertex3d( h_width_,  h_height_, 0);
+            if (getTextureEnabled())
+                glTexCoord2f(1.f, 0.f);
 			glVertex3d( h_width_, -h_height_, 0);
 
 			if ((getDrawStyle() == LINE) || (getDrawStyle() == SILHOUETTE)) {
@@ -733,7 +742,7 @@ public:
 	/// \param _static A static object is not expected to move.
 	Quad(   GLdouble width, GLdouble height, GLdouble depth,
 		bool visible = true, bool _static = true)
-      : Quadric(Bounds(vec3(), vec3()), _static, visible)
+      : Quadric(Bounds(), _static, visible)
 	{
             initializeRects();
             
@@ -947,6 +956,245 @@ public:
 	}
 
 };
+
+/**
+	An equilateral traingle oriented at x-y-plane. \n
+	The center (i.e. center of inscribed circle) of the rectangle is placed at x = 0, y = 0, z = 0.
+*/
+class Triangle : public Quadric {
+protected:
+
+    GLdouble    size_;
+
+public:
+
+	/// Constructor.
+	/// \param size The size of the triangle.
+	/// \param visible An invisible object is not rendered.
+	/// \param _static A static object is not expected to move.
+    Triangle(   GLdouble size, bool visible = true, bool _static = true)
+      : Quadric(Bounds(), _static, visible)
+	{
+		setSize(size);
+	}
+
+	/// Renders the triangle in the x-y-plane.
+	/// The center of the rectangle is in (0,0,0)
+	virtual void render(){
+		if (visible_) {
+
+			Quadric::render();
+            
+            glPushMatrix();
+            //move the center to the right position
+            glTranslated(0,-size_*sqrt(3.0)/6,0);
+			switch (getDrawStyle()) {
+			case LINE:
+				glBegin(GL_LINE_STRIP);
+				break;
+			case SILHOUETTE:
+				glBegin(GL_LINE_STRIP);
+				break;
+			case POINT:
+				glBegin(GL_POINTS);
+				break;
+			default:
+				glBegin(GL_TRIANGLES);
+				break;
+			}
+
+
+			// if FLAT or SMOOTH set normals
+			if (getNormalStyle() != NONE) {
+				//set normal (inside or outside)
+				if (getOrientation() == INSIDE) {
+					glNormal3f(0,0,-1);
+				} else {
+					glNormal3f(0,0, 1);
+				}
+			}
+
+			// render the triangle
+            if (getTextureEnabled())
+                glTexCoord2f(1.f, 0.f);
+            glVertex3d(size_/2,0,0);
+            if (getTextureEnabled())
+                glTexCoord2f(0.5f, 1.f);            
+            glVertex3d(0,size_*sqrt(3.0)/2,0);
+            if (getTextureEnabled())
+                glTexCoord2f(0.f, 0.f);            
+            glVertex3d(-size_/2,0,0);
+
+			if ((getDrawStyle() == LINE) || (getDrawStyle() == SILHOUETTE)) {
+				glVertex3d(size_/2,0,0);
+			}
+
+			glEnd();
+            glPopMatrix();
+		}
+	}
+
+	/// Returns the size of the triangle
+	GLdouble getSize() {
+		return size_;
+	}
+
+	/// Sets the size of the triangle
+	void setSize(GLdouble s) {
+		size_ = s;
+	}
+
+};
+
+/**
+	A tetrahedron centered around the origin. \n
+	It is created of four triangle objects.
+*/
+class Tetrahedron : public Quadric {
+protected:
+
+    GLdouble size_;
+
+private:
+
+	Triangle* front_;
+	Triangle* bottom_;
+	Triangle* right_;
+	Triangle* left_;
+
+	void initializeTriangles() {
+        front_  = new Triangle(size_);
+        bottom_ = new Triangle(size_);
+        right_  = new Triangle(size_);
+        left_   = new Triangle(size_);
+	}
+
+	void deleteTriangles() {
+        delete front_;
+        delete bottom_;
+        delete right_;
+        delete left_;
+	}
+
+public:
+
+	/// Constructor.
+	/// \param size The size of the tetrahedron.
+	/// \param visible An invisible object is not rendered.
+	/// \param _static A static object is not expected to move.
+	Tetrahedron(   GLdouble size, bool visible = true, bool _static = true)
+      : Quadric(Bounds(), _static, visible)
+	{
+            initializeTriangles();
+            setSize(size);
+	}
+
+        /// Destructor
+        ~Tetrahedron() {
+            deleteTriangles();
+        }
+
+	/// Renders the etrahedron.
+	/// The center of the etrahedron is in (0,0,0)
+	virtual void render(){
+		if (visible_) {
+
+			Quadric::render();
+            // for angles, lengths etc. see http://en.wikipedia.org/wiki/Tetrahedron
+            float faceAngle = 70.5288;
+            double length = size_*sqrt(3.0)/6;
+
+            glPushMatrix();
+            glTranslated(0,0,-size_/sqrt(24.0));
+
+			glPushMatrix();
+                glTranslated(0,-length,0);
+                glRotatef(faceAngle,1.0,0,0);
+                glTranslated(0,length,0);
+				front_->render();
+			glPopMatrix();
+
+			glPushMatrix();
+				bottom_->render();
+			glPopMatrix();
+
+			glPushMatrix();
+                glRotatef(120,0,0,1);
+                glTranslated(0,-length,0);
+                glRotatef(faceAngle,1.0,0,0);
+                glTranslated(0,length,0);
+				right_->render();
+			glPopMatrix();
+
+			glPushMatrix();
+                glRotatef(240,0,0,1);
+                glTranslated(0,-length,0);
+                glRotatef(faceAngle,1.0,0,0);
+                glTranslated(0,length,0);
+				left_->render();
+			glPopMatrix();
+
+            glPopMatrix();
+		}
+    }
+
+	/// Returns the size of the tetrahedron
+	GLdouble getSize() {
+		return size_;
+	}
+
+	/// Sets the size of the tetrahedron
+	void setSize(GLdouble s) {
+		size_ = s;
+		deleteTriangles();
+		initializeTriangles();
+	}
+
+	NormalStyle getNormalStyle() {
+		return front_->getNormalStyle();
+	}
+
+	void setNormalStyle(NormalStyle normalStyle) {
+		front_->setNormalStyle(normalStyle);
+		bottom_->setNormalStyle(normalStyle);
+		right_->setNormalStyle(normalStyle);
+		left_->setNormalStyle(normalStyle);
+	}
+
+	bool getTextureEnabled() {
+		return front_->getTextureEnabled();
+	}
+
+	void setTextureEnabled(bool _enabled){
+		front_->setTextureEnabled(_enabled);
+		bottom_->setTextureEnabled(_enabled);
+		right_->setTextureEnabled(_enabled);
+		left_->setTextureEnabled(_enabled);
+	}
+
+	Orientation getOrientation() {
+		return front_->getOrientation();
+	}
+
+	void setOrientation(Orientation orientation){
+		front_->setOrientation(orientation);
+		bottom_->setOrientation(orientation);
+		right_->setOrientation(orientation);
+		left_->setOrientation(orientation);
+	}
+
+	DrawStyle getDrawStyle() {
+		return front_->getDrawStyle();
+	}
+
+	void setDrawStyle(DrawStyle drawStyle){
+		front_->setDrawStyle(drawStyle);
+		bottom_->setDrawStyle(drawStyle);
+		right_->setDrawStyle(drawStyle);
+		left_->setDrawStyle(drawStyle);
+	}
+};
+
 
 }
 

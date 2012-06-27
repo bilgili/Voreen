@@ -113,6 +113,15 @@ public:
     void addVertex(const VertexGeometry& vertex);
 
     /**
+     * Returns a const reference to the vertex geometry at the given @c index.
+     *
+     * @param index the vertex geometry index
+     *
+     * @returns the vertex geometry at the given @c index
+     */
+    const VertexGeometry& getVertex(size_t index) const;
+
+    /**
      * Returns the vertex geometry at the given @c index.
      *
      * @attention If the face geometry is changed by using the @c operator[]

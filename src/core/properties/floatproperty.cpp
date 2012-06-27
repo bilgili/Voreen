@@ -33,16 +33,20 @@
 namespace voreen {
 
 FloatProperty::FloatProperty(const std::string& id, const std::string& guiText,
-                     float value, float minValue, float maxValue, bool instantValueChange,
+                     float value, float minValue, float maxValue,
                      Processor::InvalidationLevel invalidationLevel)
-    : NumericProperty<float>(id, guiText, value, minValue, maxValue, 0.05f,
+    : NumericProperty<float>(id, guiText, value, minValue, maxValue, 0.01f,
                                invalidationLevel)
 {
-    setInstantValueChange(instantValueChange);
+    setViews(Property::View(Property::SLIDER | Property::SPINBOX));
 }
 
 PropertyWidget* FloatProperty::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
+}
+
+std::string FloatProperty::getTypeString() const {
+    return "Float";
 }
 
 }   // namespace

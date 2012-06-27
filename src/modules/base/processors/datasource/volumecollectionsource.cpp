@@ -36,7 +36,7 @@
 #include "voreen/core/ports/allports.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/io/volumeserializer.h"
-#include "voreen/core/io/ioprogress.h"
+#include "voreen/core/io/progressbar.h"
 #include "voreen/core/voreenapplication.h"
 
 namespace voreen {
@@ -53,12 +53,18 @@ VolumeCollectionSource::VolumeCollectionSource()
     addProperty(volumeCollection_);
 }
 
-std::string VolumeCollectionSource::getProcessorInfo() const {
-    return "Loads multiple volumes and provides them as VolumeCollection through its outport.";
+VolumeCollectionSource::~VolumeCollectionSource() {
+    delete volumeCollection_.get();
+    volumeCollection_.set(0);
 }
 
 Processor* VolumeCollectionSource::create() const {
     return new VolumeCollectionSource();
+}
+
+std::string VolumeCollectionSource::getProcessorInfo() const {
+    return "Loads multiple volumes and provides them as VolumeCollection through its outport. " 
+           "<p>See VolumeSeriesSource for dealing with large data series.</p>";
 }
 
 void VolumeCollectionSource::process() {

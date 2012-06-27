@@ -35,6 +35,12 @@
 #include "voreen/core/utils/stringconversion.h"
 #include "tgt/font.h"
 #include "tgt/glmath.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/stringproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/intproperty.h"
+
+#include "voreen/core/ports/volumeport.h"
 
 namespace voreen {
 

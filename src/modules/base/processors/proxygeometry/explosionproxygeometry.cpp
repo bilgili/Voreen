@@ -45,20 +45,20 @@ ExplosionProxyGeometry::ExplosionProxyGeometry()
     , hideNonSelectedBricks_("hideNonSelectedBricks", "Hide non-selected bricks")
     , hideSelectedBricks_("hideSelectedBricks", "Hide selected bricks")
     , showAllBricks_("showAllBricks", "Show all bricks")
-    , numBricksXp_("numberBricksX", "Number of bricks on X", 1, 1, 10, true)
-    , numBricksYp_("numberBricksY", "Number of bricks on Y", 1, 1, 10, true)
-    , numBricksZp_("numberBricksZ", "Number of bricks on Z", 1, 1, 10, true)
+    , numBricksXp_("numberBricksX", "Number of bricks on X", 1, 1, 10)
+    , numBricksYp_("numberBricksY", "Number of bricks on Y", 1, 1, 10)
+    , numBricksZp_("numberBricksZ", "Number of bricks on Z", 1, 1, 10)
     , regularExplosionGap_("regularBrickExplosionGap", "Explosion-gap between bricks", 0.f, 0.f, 10.f)
     , manualExplosionGap_("manualBrickExplosionGap", "Explosion-gap between bricks", 0.f, 0.f, 10.f)
-    , XbrickingPlane_("XbrickingPlane", "X-brickingplane", 0, 0, 100000, true)
+    , XbrickingPlane_("XbrickingPlane", "X-brickingplane", 0, 0, 100000)
     , addXbrickingPlane_("addXbrickingPlane", "Add X-brickingplane")
     , deleteLastXbrickingPlane_("deleteLastXbrickingPlane", "Delete last X-brickingplane")
     , clearXbrickingList_("clearXbrickingList", "Clear X-bricking list")
-    , YbrickingPlane_("YbrickingPlane", "Y-brickingplane", 0, 0, 100000, true)
+    , YbrickingPlane_("YbrickingPlane", "Y-brickingplane", 0, 0, 100000)
     , addYbrickingPlane_("addYbrickingPlane", "Add Y-brickingplane")
     , deleteLastYbrickingPlane_("deleteLastYbrickingPlane", "Delete last Y-brickingplane")
     , clearYbrickingList_("clearYbrickingList", "Clear Y-bricking list")
-    , ZbrickingPlane_("ZbrickingPlane", "Z-brickingplane", 0, 0, 100000, true)
+    , ZbrickingPlane_("ZbrickingPlane", "Z-brickingplane", 0, 0, 100000)
     , addZbrickingPlane_("addZbrickingPlane", "Add Z-brickingplane")
     , deleteLastZbrickingPlane_("deleteLastZbrickingPlane", "Delete last Z-brickingplane")
     , clearZbrickingList_("clearZbrickingList", "Clear Z-bricking list")
@@ -67,9 +67,6 @@ ExplosionProxyGeometry::ExplosionProxyGeometry()
     , takeForCustom_("takeForCustomMode", "Take this for custom mode")
     , translation_("translation", "Translation", tgt::vec3(0.f, 0.f, 0.f), tgt::vec3(-10.f), tgt::vec3(10.f))
     , camera_("camera", "Camera", new tgt::Camera())
-    #ifdef _MSC_VER
-        #pragma warning(disable:4355)  // passing 'this' is safe here
-    #endif
     , selectingOneBrickEvent_("mouseEvent.selectingOneBrick", "Select one brick", this,
                                &ExplosionProxyGeometry::onSelectingOneBrickEvent,
                                tgt::MouseEvent::MOUSE_BUTTON_LEFT, tgt::MouseEvent::PRESSED, tgt::Event::CTRL)
@@ -87,6 +84,8 @@ ExplosionProxyGeometry::ExplosionProxyGeometry()
     , outportRenderGeometry_(Port::OUTPORT, "geometry.render")
     , pickingBuffer_(Port::OUTPORT, "pickingBuffer")
 {
+    brickColor_.setViews(Property::COLOR);
+    selectedBrickColor_.setViews(Property::COLOR);
     proxyGeometry_ = new MeshListGeometry();
     renderGeometry_ = new MeshListGeometry();
 
@@ -231,7 +230,7 @@ std::string ExplosionProxyGeometry::getProcessorInfo() const {
 void ExplosionProxyGeometry::initialize() throw (VoreenException) {
     RenderProcessor::initialize();
 
-    idManager_.setRenderTarget(pickingBuffer_.getData());
+    idManager_.setRenderTarget(pickingBuffer_.getRenderTarget());
     idManager_.initializeTarget();
 
     onBrickingModeChange();
@@ -1379,7 +1378,7 @@ void ExplosionProxyGeometry::registerForSelecting(std::vector<Brick> bricklist) 
 }
 
 void ExplosionProxyGeometry::onSelectingOneBrickEvent(tgt::MouseEvent * e) {
-    if (!pickingBuffer_.hasData()) {
+    if (!pickingBuffer_.hasRenderTarget()) {
         return;
     }
     registerForSelecting(customBricklist_);
@@ -1418,7 +1417,7 @@ void ExplosionProxyGeometry::onSelectingOneBrickEvent(tgt::MouseEvent * e) {
 }
 
 void ExplosionProxyGeometry::onSelectingSeveralBricksEvent(tgt::MouseEvent * e) {
-    if (!pickingBuffer_.hasData()) {
+    if (!pickingBuffer_.hasRenderTarget()) {
         return;
     }
     registerForSelecting(customBricklist_);
@@ -1495,7 +1494,7 @@ void ExplosionProxyGeometry::onSelectingSeveralBricksEvent(tgt::MouseEvent * e) 
 }
 
 void ExplosionProxyGeometry::onTranslateSelectedBricksEvent(tgt::MouseEvent * e) {
-    if (!pickingBuffer_.hasData()) {
+    if (!pickingBuffer_.hasRenderTarget()) {
         return;
     }
 

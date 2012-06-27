@@ -41,9 +41,6 @@ Q_OBJECT;
 public:
     FloatVec4PropertyWidget(FloatVec4Property* prop, QWidget* parent = 0);
 
-protected:
-    void mousePressEvent(QMouseEvent*);
-
 public slots:
     void setProperty(double value);
 

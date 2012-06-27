@@ -62,6 +62,8 @@ MarchingCubesRenderer::MarchingCubesRenderer()
     , lightSpecular_("lightSpecular", "Specular light", tgt::Color(0.4f, 0.4f, 0.4f, 1.f))
     , materialShininess_("materialShininess", "Shininess", 60.f, 0.1f, 128.f)
 {
+    addPort(volumeInport_);
+    addPrivateRenderPort(privatePort_);
 
     gridSizeOption_.addOption("64", "64", 64);
     gridSizeOption_.addOption("96", "96", 96);
@@ -86,15 +88,19 @@ MarchingCubesRenderer::MarchingCubesRenderer()
     addProperty(lightSpecular_);
     addProperty(materialShininess_);
 
-    addPort(volumeInport_);
-    addPrivateRenderPort(privatePort_);
+    surfaceColor_.setViews(Property::COLOR);
+    surfaceAlpha_.setViews(Property::COLOR);
+    lightPosition_.setViews(Property::View(Property::LIGHT_POSITION | Property::DEFAULT));
+    lightAmbient_.setViews(Property::COLOR);
+    lightDiffuse_.setViews(Property::COLOR);
+    lightSpecular_.setViews(Property::COLOR);
 }
 
 MarchingCubesRenderer::~MarchingCubesRenderer() {
 }
 
 std::string MarchingCubesRenderer::getProcessorInfo() const {
-    return "";
+    return "Extracts and renders an isosurface directly on the GPU using the HPMC library.";
 }
 
 void MarchingCubesRenderer::initialize() throw (VoreenException) {
@@ -135,8 +141,8 @@ bool MarchingCubesRenderer::isReady() const {
 }
 
 void MarchingCubesRenderer::loadShader() {
-    mcExtractPrg_ = ShdrMgr.loadSeparate("mc_extract.vert", "", generateExtractHeader(), false, false);
-    mcRenderPrg_ = ShdrMgr.loadSeparate("mc_render.vert", "mc_render.frag", generateRenderHeader(), false, false);
+    mcExtractPrg_ = ShdrMgr.loadSeparate("mc_extract.vert", "", generateExtractHeader(), false);
+    mcRenderPrg_ = ShdrMgr.loadSeparate("mc_render.vert", "mc_render.frag", generateRenderHeader(), false);
 }
 
 void MarchingCubesRenderer::compile(VolumeHandle* volumeHandle) {
@@ -149,12 +155,12 @@ void MarchingCubesRenderer::compile(VolumeHandle* volumeHandle) {
     glActiveVaryingNV(mcExtractPrg_->getID(), "normal");
     glActiveVaryingNV(mcExtractPrg_->getID(), "position");
 
-    mcExtractPrg_->setHeaders(generateExtractHeader(volumeHandle), false);
+    mcExtractPrg_->setHeaders(generateExtractHeader(volumeHandle));
     if (!hpmcTraversalHandle_)
         return;
     mcExtractPrg_->rebuild();
 
-    mcRenderPrg_->setHeaders(generateRenderHeader(), false);
+    mcRenderPrg_->setHeaders(generateRenderHeader());
     mcRenderPrg_->rebuild();
 
     // determine the location of the varyings, and let OpenGL know
@@ -290,7 +296,7 @@ void MarchingCubesRenderer::process() {
     glDisable(GL_RASTERIZER_DISCARD_NV);
 
     mcExtractPrg_->deactivate();
-
+    privatePort_.deactivateTarget();
     TextureUnit::setZeroUnit();
     LGL_ERROR;
 }

@@ -70,8 +70,8 @@ Q_OBJECT
 public:
     NodeChainView(QWidget* parent);
 
-    bool addNewNodeChainItem(const std::string nodeChainItemIdentifier, bool isSelected,
-                             tgt::vec3 position, tgt::vec3 focus, tgt::vec3 up);
+    bool addNewNodeChainItem(const std::string& nodeChainItemIdentifier, bool isSelected,
+                             const tgt::vec3& position, const tgt::vec3& focus, const tgt::vec3& up);
     bool addNewInterpolationBoxItem(const std::string interpolationBoxIdentifier,
                                     const std::string foregoingNodeChainItemIdentifier);
 

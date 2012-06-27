@@ -1,6 +1,3 @@
-# module class
-SOURCES += $${VRN_MODULE_SRC_DIR}/connectedcomponents/connectedcomponentsmodule.cpp
-HEADERS += $${VRN_MODULE_INC_DIR}/connectedcomponents/connectedcomponentsmodule.h
 
 # processors
 SOURCES += $${VRN_MODULE_SRC_DIR}/connectedcomponents/connectedcomponents2d.cpp

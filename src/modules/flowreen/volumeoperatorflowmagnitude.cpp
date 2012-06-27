@@ -31,7 +31,7 @@
 
 namespace voreen {
 
-template<typename T>
+/*template<typename T>
 VolumeUInt8* VolumeOperatorFlowMagnitude::apply_internal(const VolumeAtomic<T>* const volume) const {
     const VolumeFlow3D* const v = dynamic_cast<const VolumeFlow3D* const>(volume);
     if (v == 0)
@@ -48,6 +48,6 @@ VolumeUInt8* VolumeOperatorFlowMagnitude::apply_internal(const VolumeAtomic<T>* 
     return new VolumeUInt8(magnitudes, flow.dimensions_);
 }
 
-template class VolumeOperatorUnary<VolumeOperatorFlowMagnitude>;
+template class VolumeOperatorUnary<VolumeOperatorFlowMagnitude>;*/
 
 }   // namespace

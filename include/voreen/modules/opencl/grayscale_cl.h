@@ -31,35 +31,36 @@
 #define VRN_GRAYSCALE_CL_H
 
 #include "voreen/core/processors/renderprocessor.h"
-#include "voreen/core/utils/clwrapper.h"
+#include "voreen/modules/opencl/clwrapper.h"
+
+#include "voreen/core/ports/allports.h"
+#include "voreen/core/properties/allproperties.h"
 
 namespace voreen {
 
 /**
- * Simple color to grayscale image processor.
+ * Simple color to grayscale image processor using OpenCL.
  */
 class GrayscaleCL : public RenderProcessor {
 public:
     GrayscaleCL();
-    ~GrayscaleCL();
+    virtual Processor* create() const;
 
-    virtual std::string getCategory() const { return "Image Processing"; }
+    virtual std::string getCategory() const  { return "Image Processing"; }
     virtual std::string getClassName() const { return "GrayscaleCL"; }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_EXPERIMENTAL; }
+    virtual CodeState getCodeState() const   { return CODE_STATE_EXPERIMENTAL; }
     virtual std::string getProcessorInfo() const;
-    virtual Processor* create() const { return new GrayscaleCL(); }
 
-    virtual void initialize() throw (VoreenException);
-    void process();
 protected:
+    virtual void process();
+    virtual void initialize() throw (VoreenException);
+    virtual void deinitialize() throw (VoreenException);
+
     FloatProperty saturation_;
 
     RenderPort inport_;
     RenderPort outport_;
 
-    cl::OpenCL* opencl_;
-    cl::Context* context_;
-    cl::CommandQueue* queue_;
     cl::Program* prog_;
 };
 

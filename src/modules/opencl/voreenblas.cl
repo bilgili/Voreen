@@ -27,6 +27,8 @@
  *                                                                    *
  **********************************************************************/
 
+#pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
+
 /**
  * Single-precision vector sum: z = alpha*X + Y;
  */

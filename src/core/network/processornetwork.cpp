@@ -37,6 +37,8 @@
 #include "voreen/core/properties/link/linkevaluatorfactory.h"
 #include "voreen/core/datastructures/transfunc/transfuncfactory.h"
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
+#include "voreen/core/plotting/aggregationfunctionfactory.h"
+#include "voreen/core/plotting/plotpredicatefactory.h"
 #include <sstream>
 
 using std::vector;
@@ -70,9 +72,9 @@ void ProcessorNetwork::addProcessor(Processor* processor, const std::string& nam
     else
         processorName = name;
 
-    if (getProcessorByName(processorName))
+    if (getProcessor(processorName))
         processorName = generateUniqueProcessorName(processorName);
-    tgtAssert(!getProcessorByName(processorName), "Generated processor name should be unique here");
+    tgtAssert(!getProcessor(processorName), "Generated processor name should be unique here");
 
     // everything fine => rename and add processor
     processor->setName(processorName);
@@ -221,7 +223,7 @@ void ProcessorNetwork::setProcessorName(Processor* processor, const std::string&
         return;
 
     // check whether passed name is already assigned to a processor in the network
-    if (getProcessorByName(name)) {
+    if (getProcessor(name)) {
         throw VoreenException("Passed processor name is not unique in the network: " + name);
     }
 
@@ -235,15 +237,15 @@ void ProcessorNetwork::setProcessorName(Processor* processor, const std::string&
 
 std::string ProcessorNetwork::generateUniqueProcessorName(const std::string& name) const {
 
-    if (!getProcessorByName(name))
+    if (!getProcessor(name))
         return name;
 
     int num = 2;
-    while (getProcessorByName(name)) {
+    while (getProcessor(name)) {
         std::ostringstream stream;
         stream << name << " " << num;
         std::string newName = stream.str();
-        if (!getProcessorByName(newName))
+        if (!getProcessor(newName))
             return newName;
         else
             num++;
@@ -253,12 +255,16 @@ std::string ProcessorNetwork::generateUniqueProcessorName(const std::string& nam
     return "";
 }
 
-Processor* ProcessorNetwork::getProcessorByName(const std::string& name) const {
+Processor* ProcessorNetwork::getProcessor(const std::string& name) const {
     for (size_t i=0; i<processors_.size(); ++i)
         if (processors_[i]->getName() == name)
             return processors_[i];
 
     return 0;
+}
+
+Processor* ProcessorNetwork::getProcessorByName(const std::string& name) const {
+    return getProcessor(name);
 }
 
 int ProcessorNetwork::numProcessors() const {
@@ -387,10 +393,13 @@ void ProcessorNetwork::removePropertyLinks(Processor* processor) {
 PropertyLink* ProcessorNetwork::createPropertyLink(Property* src, Property* dest, LinkEvaluatorBase* linkEvaluator) {
     tgtAssert(src && dest, "Null pointer passed");
     tgtAssert(src != dest, "Source and destination property are the same");
-    tgtAssert(dynamic_cast<Processor*>(src->getOwner()), "passed src property is not owned by a processor");
-    tgtAssert(contains(dynamic_cast<Processor*>(src->getOwner())), "passed src property's owner is not part of the network");
-    tgtAssert(dynamic_cast<Processor*>(dest->getOwner()), "passed dest property is not owned by a processor");
-    tgtAssert(contains(dynamic_cast<Processor*>(dest->getOwner())), "passed dest property's owner is not part of the network");
+    if (linkEvaluator) {
+        tgtAssert(!containsLink(src, dest, linkEvaluator), "Link already existed in the network");
+    }
+    //tgtAssert(dynamic_cast<Processor*>(src->getOwner()), "passed src property is not owned by a processor");
+    //tgtAssert(contains(dynamic_cast<Processor*>(src->getOwner())), "passed src property's owner is not part of the network");
+    //tgtAssert(dynamic_cast<Processor*>(dest->getOwner()), "passed dest property is not owned by a processor");
+    //tgtAssert(contains(dynamic_cast<Processor*>(dest->getOwner())), "passed dest property's owner is not part of the network");
 
     // check for event properties
     if (dynamic_cast<EventPropertyBase*>(src)) {
@@ -546,6 +555,20 @@ bool ProcessorNetwork::isPropertyLinked(const Property* property) const {
     return false;
 }
 
+bool ProcessorNetwork::containsLink(const Property* src, const Property* dest, LinkEvaluatorBase* evaluator) const {
+    for (size_t i = 0; i < propertyLinks_.size(); ++i) {
+        PropertyLink* link = propertyLinks_[i];
+        bool sourcePropertyMatches = (link->getSourceProperty() == src);
+        bool destinationPropertyMatches = (link->getDestinationProperty() == dest);
+        bool evaluatorMatches = (typeid(*(link->getLinkEvaluator())) == typeid(*evaluator));
+
+        if (sourcePropertyMatches && destinationPropertyMatches && evaluatorMatches)
+            return true;
+    }
+
+    return false;
+}
+
 void ProcessorNetwork::setVersion(int version) {
     version_ = version;
 }
@@ -560,6 +583,8 @@ void ProcessorNetwork::serialize(XmlSerializer& s) const {
     s.registerFactory(ProcessorFactory::getInstance());
     s.registerFactory(TransFuncFactory::getInstance());
     s.registerFactory(LinkEvaluatorFactory::getInstance());
+    s.registerFactory(AggregationFunctionFactory::getInstance());
+    s.registerFactory(PlotPredicateFactory::getInstance());
 
     // meta data
     metaDataContainer_.serialize(s);
@@ -607,6 +632,8 @@ void ProcessorNetwork::deserialize(XmlDeserializer& s) {
     s.registerFactory(ProcessorFactory::getInstance());
     s.registerFactory(TransFuncFactory::getInstance());
     s.registerFactory(LinkEvaluatorFactory::getInstance());
+    s.registerFactory(AggregationFunctionFactory::getInstance());
+    s.registerFactory(PlotPredicateFactory::getInstance());
 
     // deserialize Processors
     s.deserialize("Processors", processors_, "Processor");
@@ -762,24 +789,24 @@ void ProcessorNetwork::setErrors(const std::vector<std::string>& errorList) {
 std::vector<Property*> ProcessorNetwork::getPropertiesByID(const std::string& id) const {
     std::vector<Property*> result;
     for (size_t i = 0; i < processors_.size(); ++i) {
-        if (processors_[i]->getPropertyByID(id))
-            result.push_back(processors_[i]->getPropertyByID(id));
+        if (processors_[i]->getProperty(id))
+            result.push_back(processors_[i]->getProperty(id));
     }
     return result;
 }
 
 // -----------------------------------------------------------------------------------
 
-ProcessorNetwork::PortConnection::PortEntry::PortEntry(Port* port)
+PortConnection::PortEntry::PortEntry(Port* port)
     : port_(port)
 {}
 
-void ProcessorNetwork::PortConnection::PortEntry::serialize(XmlSerializer& s) const {
+void PortConnection::PortEntry::serialize(XmlSerializer& s) const {
     s.serialize("name", port_->getName());
     s.serialize("Processor", port_->getProcessor());
 }
 
-void ProcessorNetwork::PortConnection::PortEntry::deserialize(XmlDeserializer& s) {
+void PortConnection::PortEntry::deserialize(XmlDeserializer& s) {
     std::string name;
     Processor* processor;
 
@@ -800,43 +827,43 @@ void ProcessorNetwork::PortConnection::PortEntry::deserialize(XmlDeserializer& s
     }
 }
 
-Port* ProcessorNetwork::PortConnection::PortEntry::getPort() const {
+Port* PortConnection::PortEntry::getPort() const {
     return port_;
 }
 
-ProcessorNetwork::PortConnection::PortConnection(Port* outport, Port* inport)
+PortConnection::PortConnection(Port* outport, Port* inport)
     : outport_(outport)
     , inport_(inport)
 {}
 
-ProcessorNetwork::PortConnection::PortConnection()
+PortConnection::PortConnection()
     : outport_(0)
     , inport_(0)
 {}
 
-void ProcessorNetwork::PortConnection::serialize(XmlSerializer& s) const {
+void PortConnection::serialize(XmlSerializer& s) const {
     s.serialize("Outport", outport_);
     s.serialize("Inport", inport_);
 }
 
-void ProcessorNetwork::PortConnection::deserialize(XmlDeserializer& s) {
+void PortConnection::deserialize(XmlDeserializer& s) {
     s.deserialize("Outport", outport_);
     s.deserialize("Inport", inport_);
 }
 
-void ProcessorNetwork::PortConnection::setOutport(Port* value) {
+void PortConnection::setOutport(Port* value) {
     outport_ = PortEntry(value);
 }
 
-Port* ProcessorNetwork::PortConnection::getOutport() const {
+Port* PortConnection::getOutport() const {
     return outport_.getPort();
 }
 
-void ProcessorNetwork::PortConnection::setInport(Port* value) {
+void PortConnection::setInport(Port* value) {
     inport_ = PortEntry(value);
 }
 
-Port* ProcessorNetwork::PortConnection::getInport() const {
+Port* PortConnection::getInport() const {
     return inport_.getPort();
 }
 

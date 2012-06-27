@@ -36,8 +36,8 @@ namespace voreen {
 LinkDialogGraphicsView::LinkDialogGraphicsView(QWidget* parent)
     : QGraphicsView(parent)
 {
-    setMinimumSize(640, 480);
-    setMaximumSize(640, 480);
+    setMinimumSize(700, 480);
+    setMaximumHeight(480);
     setScene(new QGraphicsScene);
     setMouseTracking(true);
     setBackgroundBrush(QBrush(Qt::darkGray));

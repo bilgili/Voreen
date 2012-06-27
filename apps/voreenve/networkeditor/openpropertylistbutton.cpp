@@ -30,6 +30,7 @@
 #include "openpropertylistbutton.h"
 
 #include "networkeditor_common.h"
+#include "rootgraphicsitem.h"
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
@@ -69,6 +70,10 @@ OpenPropertyListButton::OpenPropertyListButton(QGraphicsItem* parent)
     setToolTip(tr("show/hide list of properties"));
 }
 
+int OpenPropertyListButton::type() const {
+    return Type;
+}
+
 QRectF OpenPropertyListButton::boundingRect() const {
     return QRect(0, 0, size.width(), size.height());
 }
@@ -106,6 +111,16 @@ void OpenPropertyListButton::mousePressEvent(QGraphicsSceneMouseEvent* event) {
         emit pressed();
     else
         QGraphicsItem::mousePressEvent(event);
+}
+
+void OpenPropertyListButton::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
+    RootGraphicsItem* parent = static_cast<RootGraphicsItem*>(parentItem());
+    parent->mouseMoveEvent(event);
+}
+
+void OpenPropertyListButton::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
+    RootGraphicsItem* parent = static_cast<RootGraphicsItem*>(parentItem());
+    parent->mouseReleaseEvent(event);
 }
 
 } // namespace voreen

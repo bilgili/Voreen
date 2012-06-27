@@ -87,6 +87,8 @@ int main(int argc, char** argv) {
     VoreenApplication app("simple-memcheckinit", "simple-memcheckinit", argc, argv,
                           (VoreenApplication::ApplicationType) (VoreenApplication::APP_DEFAULT & ~VoreenApplication::APP_PYTHON));
     app.init();
+    LogMgr.getConsoleLog()->enableColors(false);
+
     addAllModules(&app);
 
     glutInit(&argc, argv);

@@ -137,7 +137,7 @@ public:
      * @param pos position of the mouse cursor
      * @return primitive that is under the mouse cursor or 0 if there is none
      */
-    TransFuncPrimitive* getPrimitiveForClickedControlPoint(tgt::vec2 pos) const;
+    TransFuncPrimitive* getPrimitiveForClickedControlPoint(const tgt::vec2& pos) const;
 
     /**
      * Calls paint for all primitives

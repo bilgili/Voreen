@@ -101,7 +101,7 @@ IntensityMeasure::IntensityMeasure()
     mousePos2D_ = tgt::ivec2(0, 0);
     mousePos3D_ = tgt::Color(0.0f);
 
-    font_ = new tgt::Font(VoreenApplication::app()->getFontPath("VeraMono.ttf"), 11, tgt::BitmapFont);
+    font_ = new tgt::Font(VoreenApplication::app()->getFontPath("VeraMono.ttf"), 11, tgt::Font::BitmapFont);
 }
 
 IntensityMeasure::~IntensityMeasure() {
@@ -197,7 +197,7 @@ void IntensityMeasure::process() {
         compile();
 
     outport_.activateTarget();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    outport_.clearTarget();
 
     TextureUnit shadeUnit, depthUnit;
     imgInport_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
@@ -281,9 +281,9 @@ void IntensityMeasure::process() {
         float scaleFactorY = 2.0f / static_cast<float>(imgInport_.getSize().y);
         glScalef(scaleFactorX, scaleFactorY, 1);
         glColor3f(0.0f, 0.0f, 0.0f);
-        font_->renderWithLayout(tgt::vec3(static_cast<float>(mousePos2D_.x+11), static_cast<float>(mousePos2D_.y+11), 0.0f), label);
+        font_->render(tgt::vec3(static_cast<float>(mousePos2D_.x+11), static_cast<float>(mousePos2D_.y+11), 0.0f), label);
         glColor3f(1.0f, 1.0f, 1.0f);
-        font_->renderWithLayout(tgt::vec3(static_cast<float>(mousePos2D_.x+10), static_cast<float>(mousePos2D_.y+10), 0.0f), label);
+        font_->render(tgt::vec3(static_cast<float>(mousePos2D_.x+10), static_cast<float>(mousePos2D_.y+10), 0.0f), label);
 
         glBegin(GL_LINES);
             glColor3f(0.0f, 0.0f, 0.0f);
@@ -300,6 +300,8 @@ void IntensityMeasure::process() {
         glPopMatrix();
         glEnable(GL_DEPTH_TEST);
     }
+
+    LGL_ERROR;
 }
 
 } // namespace voreen

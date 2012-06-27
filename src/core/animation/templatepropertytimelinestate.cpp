@@ -43,13 +43,13 @@ TemplatePropertyTimelineState<T>::TemplatePropertyTimelineState() {
 }
 
 template <class T>
-TemplatePropertyTimelineState<T>::~TemplatePropertyTimelineState(){
+TemplatePropertyTimelineState<T>::~TemplatePropertyTimelineState() {
     // delete all saved keyvalues and the interpolationfunctions between them
     typename std::map<float,PropertyKeyValue<T>*>::iterator it;
-    for (it = values_.begin();it != values_.end();it++) {
-        if ((*it).second->getFollowingInterpolationFunction()) {
+    for (it = values_.begin(); it != values_.end(); ++it) {
+        if ((*it).second->getFollowingInterpolationFunction())
             delete ((*it).second->getFollowingInterpolationFunction());
-        }
+
         delete ((*it).second);
     }
     values_.clear();
@@ -62,15 +62,16 @@ TemplatePropertyTimelineState<T>::TemplatePropertyTimelineState(PropertyKeyValue
 }
 
 template <class T>
-const std::map<float,PropertyKeyValue<T>*>& TemplatePropertyTimelineState<T>::getKeyValues() const{
+const std::map<float,PropertyKeyValue<T>*>& TemplatePropertyTimelineState<T>::getKeyValues() const {
     return values_;
 }
 
 template <class T>
-const PropertyKeyValue<T>* TemplatePropertyTimelineState<T>::newKeyValue(float time){
-    time = floor(time*10000)/10000;
+const PropertyKeyValue<T>* TemplatePropertyTimelineState<T>::newKeyValue(float time) {
+    time = floor(time * 10000.f) / 10000.f;
     // if there already exists a keyvalue at the given point of time -> do nothing
-    if (values_.find(time) != values_.end()) return 0;
+    if (values_.find(time) != values_.end())
+        return 0;
 
     // calculates the value of the property at the given time to set this value into the new keyvalue
     T value = getPropertyAt(time);
@@ -89,10 +90,7 @@ const PropertyKeyValue<T>* TemplatePropertyTimelineState<T>::newKeyValue(float t
     if (it == values_.begin()) {
         // if new value is the only value:
         it++;
-        if (it == values_.end()) {
-            // do nothing
-        }
-        else {
+        if (it != values_.end()) {
             InterpolationFunction<T>* func = new InterpolationFunction<T>();
             (*it).second->setForegoingInterpolationFunction(func);
             it--;
@@ -129,7 +127,7 @@ const PropertyKeyValue<T>* TemplatePropertyTimelineState<T>::newKeyValue(float t
 }
 
 template <class T>
-bool TemplatePropertyTimelineState<T>::changeValueOfKeyValue(T value, const PropertyKeyValue<T>* keyvalue){
+bool TemplatePropertyTimelineState<T>::changeValueOfKeyValue(T value, const PropertyKeyValue<T>* keyvalue) {
     const float time = keyvalue->getTime();
     typename std::map<float,PropertyKeyValue<T>*>::iterator it;
     it = values_.find(time);
@@ -141,7 +139,7 @@ bool TemplatePropertyTimelineState<T>::changeValueOfKeyValue(T value, const Prop
 }
 
 template <class T>
-bool TemplatePropertyTimelineState<T>::changeSmoothnessOfKeyValue(bool smooth, const PropertyKeyValue<T>* keyvalue){
+bool TemplatePropertyTimelineState<T>::changeSmoothnessOfKeyValue(bool smooth, const PropertyKeyValue<T>* keyvalue) {
     const float time = keyvalue->getTime();
     typename std::map<float,PropertyKeyValue<T>*>::iterator it;
     it = values_.find(time);
@@ -153,31 +151,28 @@ bool TemplatePropertyTimelineState<T>::changeSmoothnessOfKeyValue(bool smooth, c
 }
 
 template <class T>
-ChangeTimeOfKeyValueReturn TemplatePropertyTimelineState<T>::changeTimeOfKeyValue(float time, const PropertyKeyValue<T>* keyvalue){
-    time = floor(time*10000)/10000;
+ChangeTimeOfKeyValueReturn TemplatePropertyTimelineState<T>::changeTimeOfKeyValue(float time, const PropertyKeyValue<T>* keyvalue) {
+    time = floor(time * 10000.f) / 10000.f;
     const float oldTime = keyvalue->getTime();
     typename std::map<float,PropertyKeyValue<T>*>::iterator it;
     it = values_.find(oldTime);
 
     // if the given keyvalue is not in the timeline
-    if (it == values_.end()) {
+    if (it == values_.end())
         return KV_NOT_FOUND;
-    }
 
     // if the times are equal -> nothing to do
-    if (time == oldTime) {
+    if (time == oldTime)
         return KV_EQUAL_TO_OLD;
-    }
 
     // set the new time of the keyvalue
     PropertyKeyValue<T>* keyvalueToChange = (*it).second;
     keyvalueToChange->setTime(time);
 
-
     // adapt all the interpolationfunctions between the keyvalues
     if (time > oldTime) {
         it++;
-        if ((it==values_.end()) || ((*it).first > time )) {
+        if ((it == values_.end()) || ((*it).first > time )) {
             values_.erase(oldTime);
             values_.insert(std::pair<float,PropertyKeyValue<T>*>(time,keyvalueToChange));
             return KV_TIME_CHANGED;
@@ -242,14 +237,11 @@ ChangeTimeOfKeyValueReturn TemplatePropertyTimelineState<T>::changeTimeOfKeyValu
 
     it = values_.find(time);
 
-            // if new value is the first value:
+    // if new value is the first value:
     if (it == values_.begin()) {
-            // if new value is the only value:
+        // only do something if there are multiple values
         it++;
-        if (it == values_.end()) {
-            // do nothing
-        }
-        else {
+        if (it != values_.end()) {
             InterpolationFunction<T>* func = new InterpolationFunction<T>();
             (*it).second->setForegoingInterpolationFunction(func);
             it--;
@@ -259,7 +251,7 @@ ChangeTimeOfKeyValueReturn TemplatePropertyTimelineState<T>::changeTimeOfKeyValu
     else {
         it++;
         // if the new value is the last one
-        if ( it == values_.end()) {
+        if (it == values_.end()) {
             it--;
             InterpolationFunction<T>* func = new InterpolationFunction<T>();
             (*it).second->setForegoingInterpolationFunction(func);
@@ -296,14 +288,13 @@ DeleteKeyValueReturn TemplatePropertyTimelineState<T>::deleteKeyValue(const Prop
     // if keyvalue ist the only value do nothing
     if (it == values_.begin()) {
         it++;
-        if (it == values_.end()) {
+        if (it == values_.end())
             return KV_IS_THE_ONLY_ONE;
-        }
         it--;
     }
 
     // if value is the first one
-    if ( it == values_.begin() ) {
+    if (it == values_.begin()) {
         it++;
         delete ((*it).second->getForegoingInterpolationFunction());
         (*it).second->setForegoingInterpolationFunction(0);
@@ -312,7 +303,7 @@ DeleteKeyValueReturn TemplatePropertyTimelineState<T>::deleteKeyValue(const Prop
     }
     // if value is the last one
     it++;
-    if (it == values_.end()) {
+    if (it == values_.end()){
         it--;
         it--;
         delete ((*it).second->getFollowingInterpolationFunction());
@@ -336,13 +327,13 @@ template <class T>
 void TemplatePropertyTimelineState<T>::setInterpolationFunctionBefore(InterpolationFunction<T>* func,PropertyKeyValue<T>* keyvalue) {
     typename std::map<float,PropertyKeyValue<T>*>::iterator it;
     it = values_.find(keyvalue->getTime());
-    if (it == values_.end()) {
+    if (it == values_.end())
         return;
-    }
-    if (it==values_.begin()) {
+
+    if (it == values_.begin())
         // there cannot be an interpolationfunction before the first keyvalue
         return;
-    }
+
     (*it).second->setForegoingInterpolationFunction(func);
     it--;
     (*it).second->setFollowingInterpolationFunction(func);
@@ -352,14 +343,13 @@ template <class T>
 void TemplatePropertyTimelineState<T>::setInterpolationFunctionAfter(InterpolationFunction<T>* func,PropertyKeyValue<T>* keyvalue) {
     typename std::map<float,PropertyKeyValue<T>*>::iterator it;
     it = values_.find(keyvalue->getTime());
-    if (it == values_.end()) {
+    if (it == values_.end())
         return;
-    }
     it++;
-    if (it == values_.end()) {
+    if (it == values_.end())
         // there cannot be an interpolationfunction after the last keyvalue
         return;
-    }
+
     (*it).second->setForegoingInterpolationFunction(func);
     it--;
     (*it).second->setFollowingInterpolationFunction(func);
@@ -371,15 +361,14 @@ const T TemplatePropertyTimelineState<T>::getPropertyAt(float time) {
     it = values_.find(time);
 
     // if the given point of time is exactly on a keyvalue
-    if (it!=values_.end()) {
+    if (it != values_.end())
         return ((*it).second->getValue());
-    }
 
     // if the given point of time is earlier than the first keyalue
     it = values_.upper_bound(time);
-    if (it == values_.begin()) {
+    if (it == values_.begin())
         return ((*it).second->getValue());
-    }
+
     // if the given point of time is later than the last keyalue
     if (it == values_.end()) {
         it--;
@@ -397,28 +386,25 @@ const T TemplatePropertyTimelineState<T>::getPropertyAt(float time) {
         // create vector of the used keyvalues
         std::vector<PropertyKeyValue<T>*> keys;
         // search for the first value in the multi-point interval
-        while ((it!=values_.begin()) && (it->second->isSmoothed())) {
+        while ((it!=values_.begin()) && (it->second->isSmoothed()))
             it--;
-        }
+
         do {
             keys.push_back((*it).second->clone());
             it++;
         }
-        while ((it!=values_.end()) && (it->second->isSmoothed()));
+        while ((it != values_.end()) && it->second->isSmoothed());
 
-        if (it!=values_.end()) {
+        if (it != values_.end())
             keys.push_back((*it).second->clone());
-        }
 
         // interpolate value
-
         T returnvalue = multifunc->interpolate(keys,time);
 
         // delete all copied keys
         typename std::vector<PropertyKeyValue<T>*>::const_iterator delIt;
-        for (delIt = keys.begin(); delIt!=keys.end(); ++delIt) {
+        for (delIt = keys.begin(); delIt != keys.end(); ++delIt)
             delete (*delIt);
-        }
         keys.clear();
 
         // return
@@ -428,7 +414,7 @@ const T TemplatePropertyTimelineState<T>::getPropertyAt(float time) {
         return func->interpolate(
             it->second->getValue(),
             it2->second->getValue(),
-            (time-(it->first))/(it2->first-it->first));
+            (time- (it->first)) / ((it2->first) - (it->first)));
     }
 }
 
@@ -438,14 +424,13 @@ TemplatePropertyTimelineState<T>* TemplatePropertyTimelineState<T>::clone() cons
 
     // copy all keyvalues
     typename std::map<float,PropertyKeyValue<T>*>::const_iterator it;
-    for (it = values_.begin(); it != values_.end(); ++it) {
+    for (it = values_.begin(); it != values_.end(); ++it)
         timeline->values_.insert(std::pair<float,PropertyKeyValue<T>*>(it->first, it->second->clone()));
-    }
 
     // copy all interpolationfunctions between the keyvalues
     typename std::map<float,PropertyKeyValue<T>*>::const_iterator it2;
     it2 = timeline->values_.begin();
-    for (it = values_.begin(); it != values_.end(); ) {
+    for (it = values_.begin(); it != values_.end();) {
         const InterpolationFunction<T>* func;
         InterpolationFunction<T>* func2;
         func = (*it).second->getFollowingInterpolationFunction();
@@ -466,7 +451,6 @@ TemplatePropertyTimelineState<T>* TemplatePropertyTimelineState<T>::clone() cons
 
 template <class T>
 void TemplatePropertyTimelineState<T>::setDuration(float duration) {
-
     std::map<float,PropertyKeyValue<T>*> newValues;
 
     typename std::map<float,PropertyKeyValue<T>*>::const_iterator it = values_.begin();
@@ -480,7 +464,7 @@ void TemplatePropertyTimelineState<T>::setDuration(float duration) {
     it = values_.begin();
 
     // copy all keyvalues with time<=duration
-    while((it != values_.end()) && (it->first<=duration)) {
+    while((it != values_.end()) && (it->first <= duration)) {
         newValues.insert(std::pair<float,PropertyKeyValue<T>*>(it->first, it->second->clone()));
         it++;
     }
@@ -517,9 +501,9 @@ void TemplatePropertyTimelineState<T>::setDuration(float duration) {
 
     // delete all old keyvalues
     for (it = values_.begin(); it != values_.end(); ++it) {
-        if (it->second->getFollowingInterpolationFunction()) {
+        if (it->second->getFollowingInterpolationFunction())
             delete (it->second->getFollowingInterpolationFunction());
-        }
+
         delete (it->second);
     }
     values_.clear();
@@ -537,21 +521,18 @@ void TemplatePropertyTimelineState<T>::deserialize(XmlDeserializer& s) {
     s.deserialize("values", values_);
 }
 
-
-
 TransFuncPropertyTimelineState::TransFuncPropertyTimelineState(PropertyKeyValue<TransFunc*>* kv) {
     values_.insert(std::pair<float,PropertyKeyValue<TransFunc*>*>(kv->getTime(),kv));
 }
 
-TransFuncPropertyTimelineState::TransFuncPropertyTimelineState() {
-}
+TransFuncPropertyTimelineState::TransFuncPropertyTimelineState() {}
 
-TransFuncPropertyTimelineState::~TransFuncPropertyTimelineState(){
+TransFuncPropertyTimelineState::~TransFuncPropertyTimelineState() {
     std::map<float,PropertyKeyValue<TransFunc*>*>::iterator it;
     for (it = values_.begin(); it != values_.end(); ++it) {
-        if (it->second->getFollowingInterpolationFunction()) {
+        if (it->second->getFollowingInterpolationFunction())
             delete (it->second->getFollowingInterpolationFunction());
-        }
+
         delete (it->second->getValue());
         delete (it->second);
     }
@@ -560,9 +541,10 @@ TransFuncPropertyTimelineState::~TransFuncPropertyTimelineState(){
 
 /////////////////// Special implementation for TransFunc*-Property
 
-const PropertyKeyValue<TransFunc*>* TransFuncPropertyTimelineState::newKeyValue(float time){
-    time = floor(time*10000)/10000;
-    if (values_.find(time) != values_.end()) return 0;
+const PropertyKeyValue<TransFunc*>* TransFuncPropertyTimelineState::newKeyValue(float time) {
+    time = floor(time * 10000.f) / 10000.f;
+    if (values_.find(time) != values_.end())
+        return 0;
 
     TransFunc* value = const_cast<TransFunc*>(getPropertyAt(time));
 
@@ -575,12 +557,9 @@ const PropertyKeyValue<TransFunc*>* TransFuncPropertyTimelineState::newKeyValue(
 
     // if new value is the first value:
     if (it == values_.begin()) {
-        // if new value is the only value:
+        // only do something if there are multiple values
         it++;
-        if (it == values_.end()) {
-            // do nothing
-        }
-        else {
+        if (it != values_.end()) {
             InterpolationFunction<TransFunc*>* func = new InterpolationFunction<TransFunc*>();
             it->second->setForegoingInterpolationFunction(func);
             it--;
@@ -615,20 +594,13 @@ const PropertyKeyValue<TransFunc*>* TransFuncPropertyTimelineState::newKeyValue(
     return kv;
 }
 
-bool TransFuncPropertyTimelineState::changeValueOfKeyValue(TransFunc* value, const PropertyKeyValue<TransFunc*>* keyvalue){
+bool TransFuncPropertyTimelineState::changeValueOfKeyValue(TransFunc* value, const PropertyKeyValue<TransFunc*>* keyvalue) {
     const float time = keyvalue->getTime();
     std::map<float,PropertyKeyValue<TransFunc*>*>::iterator it;
     it = values_.find(time);
     if (it != values_.end()) {
-        if (value == it->second->getValue()) {
-        }
-        else {
-            try{
-                delete (it->second->getValue());
-            }
-            catch(...){
-
-            }
+        if (value != it->second->getValue()) {
+            delete (it->second->getValue());
             it->second->setValue(value->clone());
         }
         return true;
@@ -636,27 +608,25 @@ bool TransFuncPropertyTimelineState::changeValueOfKeyValue(TransFunc* value, con
     return false;
 }
 
-DeleteKeyValueReturn TransFuncPropertyTimelineState::deleteKeyValue(const PropertyKeyValue<TransFunc*>* keyvalue){
+DeleteKeyValueReturn TransFuncPropertyTimelineState::deleteKeyValue(const PropertyKeyValue<TransFunc*>* keyvalue) {
     const float time = keyvalue->getTime();
     std::map<float,PropertyKeyValue<TransFunc*>*>::iterator it;
     it = values_.find(time);
 
     // if wrong parameter do nothing
-    if (it == values_.end()) {
+    if (it == values_.end())
         return KV_NOT_THERE;
-    }
 
     // if keyvalue ist the only value do nothing
     if (it == values_.begin()) {
         it++;
-        if (it == values_.end()) {
+        if (it == values_.end())
             return KV_IS_THE_ONLY_ONE;
-        }
         it--;
     }
 
     // if value is the first one
-    if ( it == values_.begin() ) {
+    if (it == values_.begin()) {
         it++;
         delete (it->second->getForegoingInterpolationFunction());
         it->second->setForegoingInterpolationFunction(0);
@@ -690,7 +660,7 @@ DeleteKeyValueReturn TransFuncPropertyTimelineState::deleteKeyValue(const Proper
     return KV_DELETED;
 }
 
-const TransFunc* TransFuncPropertyTimelineState::getPropertyAt(float time){
+const TransFunc* TransFuncPropertyTimelineState::getPropertyAt(float time) {
     std::map<float,PropertyKeyValue<TransFunc*>*>::iterator it;
     it = values_.find(time);
     if (it != values_.end()) {
@@ -704,9 +674,9 @@ const TransFunc* TransFuncPropertyTimelineState::getPropertyAt(float time){
     }
 
     it = values_.upper_bound(time);
-    if (it == values_.begin()) {
+    if (it == values_.begin())
         return (it->second->getValue()->clone());
-    }
+
     if (it == values_.end()) {
         it--;
         return (it->second->getValue()->clone());
@@ -717,33 +687,30 @@ const TransFunc* TransFuncPropertyTimelineState::getPropertyAt(float time){
 
     const InterpolationFunction<TransFunc*>* func = (*it).second->getFollowingInterpolationFunction();
     const MultiPointInterpolationFunction<TransFunc*>* multifunc = dynamic_cast<const MultiPointInterpolationFunction<TransFunc*>*>(func);
-    if (multifunc)
-    {
+    if (multifunc) {
         // call a function with multiple points
         // create vector of the used keyvalues
         std::vector<PropertyKeyValue<TransFunc*>*> keys;
         // search for the first value in the multi-point interval
-        while ((it!=values_.begin()) && (it->second->isSmoothed())) {
+        while ((it!=values_.begin()) && (it->second->isSmoothed()))
             it--;
-        }
+
         do {
             keys.push_back((*it).second->clone());
             it++;
-        } while ((it!=values_.end())&&(it->second->isSmoothed()));
+        } while ((it != values_.end()) && (it->second->isSmoothed()));
 
-        if (it!=values_.end()) {
+        if (it != values_.end())
             keys.push_back(it->second->clone());
-        }
 
         // interpolate value
-
         TransFunc* returnvalue = multifunc->interpolate(keys,time);
 
         // delete all copied keys
         std::vector<PropertyKeyValue<TransFunc*>*>::const_iterator delIt;
-        for (delIt = keys.begin(); delIt!=keys.end(); ++delIt) {
+        for (delIt = keys.begin(); delIt != keys.end(); ++delIt)
             delete (*delIt);
-        }
+
         keys.clear();
 
         // return
@@ -753,10 +720,10 @@ const TransFunc* TransFuncPropertyTimelineState::getPropertyAt(float time){
         return func->interpolate(
             it->second->getValue(),
             it2->second->getValue(),
-            (time-(it->first))/(it2->first-(it->first)));
+            (time - (it->first))/((it2->first) - (it->first)));
     }
 }
-TemplatePropertyTimelineState<TransFunc*>* TransFuncPropertyTimelineState::clone(){
+TemplatePropertyTimelineState<TransFunc*>* TransFuncPropertyTimelineState::clone() {
     TransFuncPropertyTimelineState* timeline = new TransFuncPropertyTimelineState();
 
     std::map<float,PropertyKeyValue<TransFunc*>*>::const_iterator it;
@@ -796,7 +763,7 @@ void TransFuncPropertyTimelineState::deserialize(XmlDeserializer& s) {
 
 /////////////////// Special implementation for Camera*-Property
 
-CameraPropertyTimelineState::CameraPropertyTimelineState(PropertyKeyValue<Camera*>* kv){
+CameraPropertyTimelineState::CameraPropertyTimelineState(PropertyKeyValue<Camera*>* kv) {
     values_.insert(std::pair<float,PropertyKeyValue<Camera*>*>(kv->getTime(),kv));
 }
 
@@ -806,21 +773,22 @@ CameraPropertyTimelineState::CameraPropertyTimelineState(std::map<float,Property
 
 CameraPropertyTimelineState::CameraPropertyTimelineState() {}
 
-CameraPropertyTimelineState::~CameraPropertyTimelineState(){
+CameraPropertyTimelineState::~CameraPropertyTimelineState() {
     std::map<float,PropertyKeyValue<Camera*>*>::iterator it;
-    for (it = values_.begin();it != values_.end();it++) {
-        if (it->second->getFollowingInterpolationFunction()) {
+    for (it = values_.begin(); it != values_.end(); ++it) {
+        if (it->second->getFollowingInterpolationFunction())
             delete (it->second->getFollowingInterpolationFunction());
-        }
+
         delete (it->second->getValue());
         delete (it->second);
     }
     values_.clear();
 }
 
-const PropertyKeyValue<Camera*>* CameraPropertyTimelineState::newKeyValue(float time){
-    time = floor(time*10000)/10000;
-    if (values_.find(time) != values_.end()) return 0;
+const PropertyKeyValue<Camera*>* CameraPropertyTimelineState::newKeyValue(float time) {
+    time = floor(time * 10000.f) / 10000.f;
+    if (values_.find(time) != values_.end())
+        return 0;
 
     Camera* value = const_cast<Camera*>(getPropertyAt(time));
 
@@ -837,15 +805,12 @@ const PropertyKeyValue<Camera*>* CameraPropertyTimelineState::newKeyValue(float 
 
     std::map<float,PropertyKeyValue<Camera*>*>::iterator it;
     it = values_.find(time);
-            tgt::vec3 ownPosition = value->getPosition();
+    tgt::vec3 ownPosition = value->getPosition();
     // if new value is the first value:
-    if ( it == values_.begin()) {
-        // if new value is the only value:
+    if (it == values_.begin()) {
+        // only do something if there are multiple values
         it++;
-        if (it == values_.end()) {
-            // do nothing
-        }
-        else {
+        if (it != values_.end()) {
             InterpolationFunction<Camera*>* func = new InterpolationFunction<Camera*>();
             it->second->setForegoingInterpolationFunction(func);
             tgt::vec3 followingPosition = (*it).second->getValue()->getPosition();
@@ -865,7 +830,7 @@ const PropertyKeyValue<Camera*>* CameraPropertyTimelineState::newKeyValue(float 
             it->second->setFollowingInterpolationFunction(func);
             tgt::vec3 foregoingPosition = it->second->getValue()->getPosition();
             it++;
-            if (values_.size() >= 3){
+            if (values_.size() >= 3) {
                 // set direction of predecessor
                 tgt::vec3 followingPosition = it->second->getValue()->getPosition();
                 it--;
@@ -896,21 +861,14 @@ const PropertyKeyValue<Camera*>* CameraPropertyTimelineState::newKeyValue(float 
     return kv;
 }
 
-bool CameraPropertyTimelineState::changeValueOfKeyValue(Camera* value, const PropertyKeyValue<Camera*>* keyvalue){
+bool CameraPropertyTimelineState::changeValueOfKeyValue(Camera* value, const PropertyKeyValue<Camera*>* keyvalue) {
     const float time = keyvalue->getTime();
     std::map<float,PropertyKeyValue<Camera*>*>::iterator it;
     it = values_.find(time);
 
     if (it != values_.end()) {
-        if (value == it->second->getValue()) {
-        }
-        else {
-            try {
-                delete (it->second->getValue());
-            }
-            catch(...){
-
-            }
+        if (value != it->second->getValue()) {
+            delete (it->second->getValue());
             it->second->setValue(value->clone());
         }
         return true;
@@ -924,16 +882,14 @@ DeleteKeyValueReturn CameraPropertyTimelineState::deleteKeyValue(const PropertyK
     it = values_.find(time);
 
     // if wrong parameter do nothing
-    if (it == values_.end()) {
+    if (it == values_.end())
         return KV_NOT_THERE;
-    }
 
     // if keyvalue ist the only value do nothing
     if (it == values_.begin()) {
         it++;
-        if (it == values_.end()) {
+        if (it == values_.end())
             return KV_IS_THE_ONLY_ONE;
-        }
         it--;
     }
 
@@ -977,14 +933,13 @@ const tgt::Camera* CameraPropertyTimelineState::getPropertyAt(float time){
 
     std::map<float,PropertyKeyValue<tgt::Camera*>*>::iterator it;
     it = values_.find(time);
-    if (it!=values_.end()) {
+    if (it!=values_.end())
         return getPropertyAt(time + 0.001f);//((*it).second->getValue()->clone());
-    }
 
     it = values_.upper_bound(time);
-    if (it == values_.begin()) {
+    if (it == values_.begin())
         return (it->second->getValue()->clone());
-    }
+
     if (it == values_.end()) {
         it--;
         return (it->second->getValue()->clone());
@@ -1000,26 +955,25 @@ const tgt::Camera* CameraPropertyTimelineState::getPropertyAt(float time){
         // create vector of the used keyvalues
         std::vector<PropertyKeyValue<tgt::Camera*>*> keys;
         // search for the first value in the multi-point interval
-        while ((it!=values_.begin()) && (it->second->isSmoothed())) {
+        while ((it!=values_.begin()) && (it->second->isSmoothed()))
             it--;
-        }
+
         do {
             keys.push_back((*it).second->clone());
             it++;
-        } while ((it!=values_.end()) && (it->second->isSmoothed()));
-        if (it!=values_.end()) {
+        } while ((it != values_.end()) && (it->second->isSmoothed()));
+
+        if (it != values_.end())
             keys.push_back(it->second->clone());
-        }
 
         // interpolate value
-
         tgt::Camera* returnvalue = multifunc->interpolate(keys,time);
 
         // delete all copied keys
         std::vector<PropertyKeyValue<tgt::Camera*>*>::const_iterator delIt;
-        for (delIt = keys.begin(); delIt!=keys.end(); ++delIt) {
+        for (delIt = keys.begin(); delIt != keys.end(); ++delIt)
             delete (*delIt);
-        }
+
         keys.clear();
 
         // return
@@ -1036,13 +990,12 @@ const tgt::Camera* CameraPropertyTimelineState::getPropertyAt(float time){
 TemplatePropertyTimelineState<tgt::Camera*>* CameraPropertyTimelineState::clone(){
     CameraPropertyTimelineState* timeline = new CameraPropertyTimelineState();
     std::map<float,PropertyKeyValue<tgt::Camera*>*>::const_iterator it;
-    for (it = values_.begin(); it != values_.end(); ++it) {
+    for (it = values_.begin(); it != values_.end(); ++it)
         timeline->values_.insert(std::pair<float,PropertyKeyValue<tgt::Camera*>*>(it->first, it->second->clone()));
-    }
 
     std::map<float,PropertyKeyValue<tgt::Camera*>*>::const_iterator it2;
     it2 = timeline->values_.begin();
-    for (it = values_.begin(); it != values_.end(); ) {
+    for (it = values_.begin(); it != values_.end();) {
         const InterpolationFunction<tgt::Camera*>* func;
         InterpolationFunction<tgt::Camera*>* func2;
         func = it->second->getFollowingInterpolationFunction();

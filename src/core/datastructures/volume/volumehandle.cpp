@@ -287,10 +287,6 @@ VolumeHandle::VolumeHandle(Volume* const volume, const float time)
 #ifndef VRN_NO_OPENGL
     volumeGL_ = 0;
 #endif
-
-#ifdef VRN_MODULE_CUDA
-    volumeCUDA_ = 0;
-#endif
 }
 
 VolumeHandle::VolumeHandle()
@@ -304,9 +300,6 @@ VolumeHandle::VolumeHandle()
     volumeGL_ = 0;
 #endif
 
-#ifdef VRN_MODULE_CUDA
-    volumeCUDA_ = 0;
-#endif
 }
 
 VolumeHandle::~VolumeHandle() {
@@ -325,10 +318,6 @@ void VolumeHandle::releaseVolumes() {
     hardwareVolumeMask_ &= ~VolumeHandle::HARDWARE_VOLUME_GL; // remove bit
 #endif
 
-#ifdef VRN_MODULE_CUDA
-    volumeCUDA_ = 0;
-    hardwareVolumeMask_ &= ~VolumeHandle::HARDWARE_VOLUME_CUDA; // remove bit
-#endif
 
 }
 
@@ -430,14 +419,6 @@ void VolumeHandle::generateHardwareVolumes(int volumeMask) {
     }
 #endif
 
-#ifdef VRN_MODULE_CUDA
-    if (volumeMask & VolumeHandle::HARDWARE_VOLUME_CUDA) {
-        LDEBUG("generate CUDA hardware volume");
-        delete volumeCUDA_;
-        volumeCUDA_ = new VolumeCUDA(volume_);
-        hardwareVolumeMask_ |= VolumeHandle::HARDWARE_VOLUME_CUDA; // set bit
-    }
-#endif
 }
 
 void VolumeHandle::freeHardwareVolumes(int volumeMask) {
@@ -452,13 +433,6 @@ void VolumeHandle::freeHardwareVolumes(int volumeMask) {
     }
 #endif
 
-#ifdef VRN_MODULE_CUDA
-    if (volumeMask & VolumeHandle::HARDWARE_VOLUME_CUDA) {
-        delete volumeCUDA_;
-        volumeCUDA_ = 0;
-        hardwareVolumeMask_ &= ~VolumeHandle::HARDWARE_VOLUME_CUDA; // remove bit
-    }
-#endif
 }
 
 #ifndef VRN_NO_OPENGL
@@ -472,16 +446,6 @@ VolumeGL* VolumeHandle::getVolumeGL() {
 
 #endif // VRN_NO_OPENGL
 
-#ifdef VRN_MODULE_CUDA
-
-VolumeCUDA* VolumeHandle::getVolumeCUDA() {
-    if (volumeCUDA_ == 0)
-        generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_CUDA);
-
-    return volumeCUDA_;
-}
-
-#endif // VRN_MODULE_CUDA
 
 const VolumeOrigin& VolumeHandle::getOrigin() const {
     return origin_;

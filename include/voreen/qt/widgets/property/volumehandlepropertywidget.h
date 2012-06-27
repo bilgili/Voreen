@@ -74,17 +74,11 @@ protected:
 
     static const std::string loggerCat_;
     VolumeLoadButton* volumeLoadButton_;
-/*
-#ifdef VRN_WITH_DCMTK
-    QAction* loadDicomAction_;
-#endif
-*/
 
 protected slots:
     void changeVolume(int);
 
 private:
-    //void loadDicomFiles(const std::string&);
     VolumeHandle* getVolume() const;
 
     QLabel* previewLabel_;

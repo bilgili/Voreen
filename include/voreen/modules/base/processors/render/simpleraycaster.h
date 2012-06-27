@@ -32,30 +32,30 @@
 
 #include "voreen/core/processors/volumeraycaster.h"
 
+#include "voreen/core/properties/cameraproperty.h"
+#include "voreen/core/properties/transfuncproperty.h"
+
 namespace voreen {
 
 /**
- * Performs a simple single pass raycasting with only some capabilites.
+ * Performs a simple single pass raycasting without lighting.
  */
 class SimpleRaycaster : public VolumeRaycaster {
 public:
     SimpleRaycaster();
-    virtual ~SimpleRaycaster();
     virtual Processor* create() const;
 
-    virtual std::string getCategory() const   { return "Raycasting"; }
+    virtual std::string getCategory() const   { return "Raycasting";      }
     virtual std::string getClassName() const  { return "SimpleRaycaster"; }
     virtual CodeState getCodeState() const    { return CODE_STATE_STABLE; }
     virtual std::string getProcessorInfo() const;
 
 protected:
+    virtual void beforeProcess();
     virtual void process();
     virtual void initialize() throw (VoreenException);
 
-    virtual void loadShader();
-
     virtual std::string generateHeader(VolumeHandle* volumeHandle = 0);
-    virtual void compile(VolumeHandle* volumeHandle);
 
 private:
     VolumePort volumePort_;
@@ -64,7 +64,7 @@ private:
     RenderPort outport_;
 
     TransFuncProperty transferFunc_;  ///< the property that controls the transfer-function
-    CameraProperty camera_;
+    CameraProperty camera_;           ///< necessary for depth value calculation
 };
 
 

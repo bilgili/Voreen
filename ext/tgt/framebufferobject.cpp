@@ -96,7 +96,7 @@ void FramebufferObject::detachAll() {
 	}
 }
 
-bool FramebufferObject::isComplete()
+bool FramebufferObject::isComplete() const
 {
   bool complete = false;
 
@@ -130,6 +130,22 @@ bool FramebufferObject::isComplete()
 		  LERROR("Unknown error!");
   }
   return complete;
+}
+
+bool FramebufferObject::isActive() const {
+    return ((getActiveObject() == id_) && (id_ != 0));
+}
+
+GLuint FramebufferObject::getActiveObject() {
+    GLint fbo;
+    glGetIntegerv (GL_FRAMEBUFFER_BINDING_EXT, &fbo);
+    return static_cast<GLuint>(fbo);
+}
+
+GLuint FramebufferObject::generateId() {
+    id_ = 0; 
+    glGenFramebuffersEXT(1, &id_);
+    return id_;
 }
 
 } // namespace

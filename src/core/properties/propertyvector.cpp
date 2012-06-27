@@ -47,6 +47,10 @@ PropertyVector::~PropertyVector() {
         delete properties_[i];
 }
 
+std::string PropertyVector::getName() const {
+    return "PropertyVector";
+}
+
 PropertyWidget* PropertyVector::createWidget(PropertyWidgetFactory* f) {
 
     return f->createWidget(this);
@@ -56,14 +60,15 @@ const std::vector<Property*>& PropertyVector::getProperties() const {
     return properties_;
 }
 
-void PropertyVector::setOwner(Processor* processor){
-    Property::setOwner(processor);
+void PropertyVector::setOwner(PropertyOwner* owner){
+    Property::setOwner(owner);
     for (size_t i=0; i < properties_.size(); ++i)
-        properties_[i]->setOwner(processor);
+        properties_[i]->setOwner(owner);
 }
 
 void PropertyVector::addProperty(Property* prop) {
     properties_.push_back(prop);
+    prop->setOwner(this);
 }
 
 void PropertyVector::serialize(XmlSerializer& s) const {
@@ -73,7 +78,7 @@ void PropertyVector::serialize(XmlSerializer& s) const {
     typedef std::map<std::string, Property*> PropertyMapType;
 
     PropertyMapType propertyMap;
-    for (Properties::const_iterator it = properties_.begin(); it != properties_.end(); ++it)
+    for (std::vector<Property*>::const_iterator it = properties_.begin(); it != properties_.end(); ++it)
         propertyMap[(*it)->getID()] = *it;
 
     const bool usePointerContentSerialization = s.getUsePointerContentSerialization();
@@ -89,8 +94,9 @@ void PropertyVector::deserialize(XmlDeserializer& s) {
     typedef std::map<std::string, Property*> PropertyMapType;
 
     PropertyMapType propertyMap;
-    for (Properties::const_iterator it = properties_.begin(); it != properties_.end(); ++it)
+    for (std::vector<Property*>::const_iterator it = properties_.begin(); it != properties_.end(); ++it) {
         propertyMap[(*it)->getID()] = *it;
+    }
 
     const bool usePointerContentSerialization = s.getUsePointerContentSerialization();
     s.setUsePointerContentSerialization(true);
@@ -110,6 +116,10 @@ void PropertyVector::initialize() throw (VoreenException) {
 void PropertyVector::deinitialize() throw (VoreenException) {
     for (std::vector<Property*>::iterator it = properties_.begin(); it != properties_.end(); ++it)
         (*it)->deinitialize();
+}
+
+std::string PropertyVector::getTypeString() const {
+    return "PropertyVector";
 }
 
 }   // namespace

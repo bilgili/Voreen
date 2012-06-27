@@ -38,6 +38,7 @@ VolumeInformation::VolumeInformation()
     : VolumeProcessor()
     , volume_(Port::INPORT, "volume.inport", false, Processor::INVALID_RESULT)
     , computeButton_("compute", "Compute information")
+    , computeContinuously_("computeContinuously", "Compute Continuously")
     , numVoxels_("numVoxels", "Num voxels", 0, 0, 1<<30)
     , numSignificant_("numSignificant", "Num significant voxels", 0, 0, 1<<30)
     , minValue_("min", "Min intensity", 0.f, -1e16, 1e16)
@@ -58,6 +59,7 @@ VolumeInformation::VolumeInformation()
     computeButton_.onChange(CallMemberAction<VolumeInformation>(this, &VolumeInformation::computeInformation));
 
     addProperty(computeButton_);
+    addProperty(computeContinuously_);
     addProperty(numVoxels_);
     addProperty(numSignificant_);
     addProperty(minValue_);
@@ -77,7 +79,8 @@ std::string VolumeInformation::getProcessorInfo() const {
 }
 
 void VolumeInformation::process() {
-    // nothing
+    if (volume_.hasChanged() && computeContinuously_.get())
+        computeInformation();
 }
 
 void VolumeInformation::computeInformation() {

@@ -41,6 +41,8 @@ class QButtonGroup;
 class QComboBox;
 class QGraphicsItem;
 class QGraphicsView;
+class QLabel;
+class QSlider;
 
 namespace voreen {
 
@@ -53,22 +55,6 @@ class Property;
 class PropertyGraphicsItem;
 class PropertyLink;
 class RootGraphicsItem;
-
-class EnterExitPushButton : public QPushButton {
-    Q_OBJECT
-public:
-    EnterExitPushButton(QWidget* parent = 0);
-    EnterExitPushButton(const QString& text, QWidget* parent = 0);
-    EnterExitPushButton(const QIcon& icon, const QString& text, QWidget* parent = 0);
-
-protected:
-    void enterEvent(QEvent* event);
-    void leaveEvent(QEvent* event);
-
-signals:
-    void enterEventSignal();
-    void leaveEventSignal();
-};
 
 class PropertyLinkDialog : public QDialog {
 Q_OBJECT
@@ -84,6 +70,9 @@ public:
     PropertyLinkDialog(QWidget* parent, PropertyGraphicsItem* sourceGraphicsItem, PropertyGraphicsItem* destGraphicsItem,
                        const PropertyLink* link, PropertyLinkDirection selectedButton = PropertyLinkDirectionBidirectional);
 
+    bool getNewArrowIsBirectional() const;
+    bool allowConnectionBetweenProperties(const Property* p1, const Property* p2) const;
+
 signals:
     void createLink(const Property* sourceProp, const Property* destProp, LinkEvaluatorBase* eval);
     void removeLink(PropertyLink* link);
@@ -98,10 +87,12 @@ private slots:
      void deleteArrow(QGraphicsItem* arrow);
      void deleteSelectedArrow();
      void controlButtonClicked(QAbstractButton* button);
+     void modeButtonClicked(QAbstractButton* button);
      void showAutoLinksByName();
      void hideAutoLinks();
      void confirmAutoLinks();
      void deleteAllLinks();
+     void setDependencyHistoryLengthLabel(int newValue);
 
 private:
     struct ConnectionInfo {
@@ -126,17 +117,25 @@ private:
     RootGraphicsItem* sourceGraphicsItem_;
     RootGraphicsItem* destinationGraphicsItem_;
 
-    bool isEditing_;
     LinkDialogPropertyGraphicsItem* sourcePropertyItem_;
     LinkDialogPropertyGraphicsItem* destinationPropertyItem_;
 
+    QPushButton* propertyLinkModeButton_;
+    QPushButton* dependencyLinkModeButton_;
     LinkDialogGraphicsView* view_;
-    QComboBox* functionCB_;
     QButtonGroup* arrowButtonGroup_;
     QPushButton* deleteArrowButton_;
     QPushButton* leftArrowButton_;
     QPushButton* bidirectionalArrowButton_;
     QPushButton* rightArrowButton_;
+
+    QWidget* dependencyLinkHistoryContainer_;
+    QLabel* dependencyHistoryLengthLabel_;
+    QSlider* dependencyHistoryLengthSlider_;
+
+    QPushButton* autolinkName_;
+
+    QComboBox* functionCB_;
 
     QMap<LinkDialogArrowGraphicsItem*, ConnectionInfo> connectionMap_;
     QMap<LinkDialogArrowGraphicsItem*, ConnectionInfo> probationalConnectionMap_;

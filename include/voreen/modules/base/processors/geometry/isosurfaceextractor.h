@@ -32,7 +32,9 @@
 
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/ports/allports.h"
-#include "voreen/core/properties/allproperties.h"
+
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
 
 #include "voreen/core/datastructures/geometry/meshlistgeometry.h"
 
@@ -58,7 +60,7 @@ protected:
     GeometryPort outport_;
 
     IntProperty isoValue_;
-    ColorProperty isoColor_;
+    FloatVec4Property isoColor_;
 
     MeshListGeometry geometry_;
 

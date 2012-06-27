@@ -40,7 +40,11 @@
 #include "voreen/core/version.h"
 #include "voreen/qt/voreenapplicationqt.h"
 
+#ifdef VRN_NO_MODULE_AUTO_REGISTRATION
 #include "voreen/modules/moduleregistration.h"
+#else
+#include "voreen/modules/gen_moduleregistration.h"
+#endif
 
 using namespace voreen;
 
@@ -145,6 +149,7 @@ int main(int argc, char** argv) {
 #ifdef VRN_SPLASHSCREEN
     VoreenSplashScreen splash;
     splash.show();
+    qApp->processEvents();
 #endif
 
     VoreenVEApplication vapp(argc, argv);

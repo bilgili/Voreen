@@ -43,6 +43,10 @@ PropertyWidget* FloatMat2Property::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 
+std::string FloatMat2Property::getTypeString() const {
+    return "FloatMatrix2x2";
+}
+
 //---------------------------------------------------------------------------
 
 FloatMat3Property::FloatMat3Property( const std::string& id, const std::string& guiText,
@@ -56,6 +60,10 @@ PropertyWidget* FloatMat3Property::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 
+std::string FloatMat3Property::getTypeString() const {
+    return "FloatMatrix3x3";
+}
+
 //---------------------------------------------------------------------------
 
 FloatMat4Property::FloatMat4Property(const std::string& id, const std::string& guiText,
@@ -67,6 +75,10 @@ FloatMat4Property::FloatMat4Property(const std::string& id, const std::string& g
 
 PropertyWidget* FloatMat4Property::createWidget(PropertyWidgetFactory* f)  {
     return f->createWidget(this);
+}
+
+std::string FloatMat4Property::getTypeString() const {
+    return "FloatMatrix4x4";
 }
 
 } // namespace voreen

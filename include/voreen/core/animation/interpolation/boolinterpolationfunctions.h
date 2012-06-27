@@ -38,7 +38,6 @@ namespace voreen {
  * This class offers an interpolation function for bool-values. Interpolation: focus on startvalue.
  */
 class BoolStartInterpolationFunction : public InterpolationFunction<bool> {
-
 public:
     BoolStartInterpolationFunction();
     InterpolationFunction<bool>* clone() const;
@@ -52,7 +51,6 @@ public:
  * This class offers an interpolation function for bool-values. Interpolation: focus on endvalue.
  */
 class BoolEndInterpolationFunction : public InterpolationFunction<bool> {
-
 public:
     BoolEndInterpolationFunction();
     InterpolationFunction<bool>* clone() const;
@@ -66,7 +64,6 @@ public:
  * This class offers an interpolation function for bool-values. Interpolation: bisection.
  */
 class BoolStartEndInterpolationFunction : public InterpolationFunction<bool> {
-
 public:
     BoolStartEndInterpolationFunction();
     InterpolationFunction<bool>* clone() const;
@@ -77,4 +74,5 @@ public:
 };
 
 } // namespace voreen
+
 #endif

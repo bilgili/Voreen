@@ -46,14 +46,13 @@ void ImageProcessor::initialize() throw (VoreenException) {
     RenderProcessor::initialize();
 
     if (!shaderFilename_.empty()) {
-        program_ = ShdrMgr.loadSeparate("passthrough.vert", shaderFilename_ + ".frag", generateHeader(), false, false);
+        program_ = ShdrMgr.loadSeparate("passthrough.vert", shaderFilename_ + ".frag", generateHeader(), false);
         if (program_) {
             invalidate(Processor::INVALID_PROGRAM);
             if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
                 compile();
         }
         if (!program_) {
-            LERROR("Failed to load shaders!");
             initialized_ = false;
             throw VoreenException(getClassName() + ": Failed to load shaders!");
         }

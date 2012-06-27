@@ -50,6 +50,7 @@ class VolumeCollectionSource : public Processor {
 
 public:
     VolumeCollectionSource();
+    virtual ~VolumeCollectionSource();
     virtual Processor* create() const;
 
     virtual std::string getClassName() const  { return "VolumeCollectionSource"; }

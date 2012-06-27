@@ -123,11 +123,11 @@ void VolumeMorphology::applyOperator() {
 
         if (morphologicOperator_.isSelected("dilation")) {
             VolumeOperatorDilation volOpDilation(kernelSize_.getValue());
-            volOpDilation(transformed);
+            volOpDilation.apply<void>(transformed);
         }
         else if (morphologicOperator_.isSelected("erosion")) {
             VolumeOperatorErosion volOpErosion(kernelSize_.getValue());
-            volOpErosion(transformed);
+            volOpErosion.apply<void>(transformed);
         }
         else {
             LERROR("Unknown operator: " << morphologicOperator_.get());

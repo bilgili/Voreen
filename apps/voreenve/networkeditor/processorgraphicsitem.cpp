@@ -40,6 +40,7 @@
 #include "networkeditor.h"
 #include "portgraphicsitem.h"
 #include "textgraphicsitem.h"
+#include "progressbargraphicsitem.h"
 
 #include <iostream>
 #include <typeinfo>
@@ -77,14 +78,18 @@ ProcessorGraphicsItem::ProcessorGraphicsItem(Processor* processor, NetworkEditor
     if (processor_->isUtility())
         setOpacity(utilityOpacityValue);
 
-    processor_->setIOProgress(this);
-
     createChildItems();
 
-    // start timer for progress bar
-    time_ = new QTime();
-    time_->start();
-    maxProgress_ = 0;
+    QPointF center(boundingRect().x() + boundingRect().width() / 2.0, boundingRect().y() + boundingRect().height() * 0.775);
+    qreal width = boundingRect().width() * 0.8;
+    qreal height = 8;
+
+    if (processor_->usesExpensiveComputation()) {
+        progressBar_ = new ProgressBarGraphicsItem(this, center, width, height);
+        processor_->setProgressBar(progressBar_);
+    }
+
+    processor_->addObserver(this);
 }
 
 QList<Port*> ProcessorGraphicsItem::getInports() const {
@@ -114,6 +119,17 @@ RootGraphicsItem* ProcessorGraphicsItem::clone() const {
     ProcessorGraphicsItem* copy = new ProcessorGraphicsItem(copyProcessor, copyNetworkEditor);
 
     return copy;
+}
+
+void ProcessorGraphicsItem::layoutChildItems() {
+    if (progressBar_) {
+        QPointF center(boundingRect().x() + boundingRect().width() / 2.0, boundingRect().y() + boundingRect().height() * 0.775);
+        qreal width = boundingRect().width() * 0.8;
+        qreal height = 8;
+
+        progressBar_->resize(center, width, height);
+    }
+    RootGraphicsItem::layoutChildItems();
 }
 
 bool ProcessorGraphicsItem::contains(RootGraphicsItem* rootItem) const {
@@ -181,7 +197,7 @@ void ProcessorGraphicsItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* even
     if (currentLayer() == NetworkEditorLayerDataflow) {
         // toggle visibility of processor widget
         if (processor_->getProcessorWidget())
-            processor_->getProcessorWidget()->setVisible(!processor_->getProcessorWidget()->isVisible());
+            toggleProcessorWidget();
     }
     else {
         togglePropertyList();
@@ -189,48 +205,34 @@ void ProcessorGraphicsItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* even
     event->accept();
 }
 
-void ProcessorGraphicsItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* ) {
-    RootGraphicsItem::paint(painter, option, 0);
-    //std::cout << "paint: " << progress_ << "/" << maxProgress_ << std::endl;
-    if (maxProgress_ != 0) {
-        // TODO: draw progress bar here
-        //std::cout << processor_->getName() << "p" << std::endl;
+void ProcessorGraphicsItem::processorWidgetCreated(const Processor* processor) {
+    widgetIndicatorButton_.show();
+    widgetIndicatorButton_.setProcessorWidget(processor->getProcessorWidget());
+}
+
+void ProcessorGraphicsItem::processorWidgetDeleted(const Processor*) {
+    widgetIndicatorButton_.hide();
+    widgetIndicatorButton_.setProcessorWidget(0);
+}
+
+void ProcessorGraphicsItem::toggleProcessorWidget() {
+    processor_->getProcessorWidget()->setVisible(!processor_->getProcessorWidget()->isVisible());
+    widgetIndicatorButton_.update();
+}
+
+QList<QAction*> ProcessorGraphicsItem::getProcessorWidgetContextMenuActions() {
+    if (processor_->getProcessorWidget()) {
+        QAction* action = new QAction(tr("Processor Widget"), this);
+        action->setCheckable(true);
+        QObject::connect(action, SIGNAL(triggered()), this, SLOT(toggleProcessorWidget()));
+        if (processor_->getProcessorWidget()->isVisible())
+            action->setChecked(true);
+        QList<QAction*> result;
+        result.append(action);
+        return result;
     }
-}
-
-void ProcessorGraphicsItem::update() {
-    // time to wait between progress bar updates
-    const int MINIMAL_UPDATE_WAIT = 50;
-
-    if (time_->elapsed() > MINIMAL_UPDATE_WAIT || progress_ == maxProgress_) {
-        time_->restart();
-        std::cout << "updating: ";
-        // FIXME: somehow the next two lines do not call the paint method
-        RootGraphicsItem::update(QRectF());
-        if (scene()) scene()->invalidate();
-   }
-}
-
-void ProcessorGraphicsItem::setTotalSteps(int numSteps) {
-    //std::cout << "setTotalSteps" << std::endl;
-    maxProgress_ = numSteps - 1;
-    time_->restart();
-}
-
-void ProcessorGraphicsItem::show() {
-    //std::cout << "show" << std::endl;
-    setProgress(0);
-    if (scene()) scene()->invalidate();
-}
-
-void ProcessorGraphicsItem::hide() {
-    //std::cout << "hide" << std::endl;
-    setProgress(maxProgress_);
-    if (scene()) scene()->invalidate();
-}
-
-void ProcessorGraphicsItem::forceUpdate() {
-    if (scene()) scene()->invalidate();
+    else
+        return RootGraphicsItem::getProcessorWidgetContextMenuActions();
 }
 
 } // namespace voreen

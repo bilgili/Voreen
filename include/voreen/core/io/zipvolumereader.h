@@ -44,9 +44,9 @@ class VolumeSerializerPopulator;
  */
 class ZipVolumeReader : public VolumeReader {
 public:
-    ZipVolumeReader(VolumeSerializerPopulator* populator_, IOProgress* progress = 0);
+    ZipVolumeReader(VolumeSerializerPopulator* populator_, ProgressBar* progress = 0);
 
-    virtual VolumeReader* create(IOProgress* progress = 0) const;
+    virtual VolumeReader* create(ProgressBar* progress = 0) const;
 
     virtual VolumeCollection* read(const std::string& url)
         throw (tgt::FileException, std::bad_alloc);

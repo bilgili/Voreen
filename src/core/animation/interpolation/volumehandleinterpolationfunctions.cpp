@@ -31,67 +31,67 @@
 
 namespace voreen {
 
-VolumeHandleStartInterpolationFunction::VolumeHandleStartInterpolationFunction() {
-}
+VolumeHandleStartInterpolationFunction::VolumeHandleStartInterpolationFunction() {}
+
 std::string VolumeHandleStartInterpolationFunction::getMode() const {
     return "focus on startvalue";
 }
+
 std::string VolumeHandleStartInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 VolumeHandle* VolumeHandleStartInterpolationFunction::interpolate(VolumeHandle* startvalue, VolumeHandle* endvalue, float time) const {
-    if (time<1){
+    if (time < 1.f)
         return startvalue;
-    }
-    else{
+    else
         return endvalue;
-    }
 }
-InterpolationFunction<VolumeHandle*>* VolumeHandleStartInterpolationFunction::clone() const{
+
+InterpolationFunction<VolumeHandle*>* VolumeHandleStartInterpolationFunction::clone() const {
     return new VolumeHandleStartInterpolationFunction();
 }
 
+VolumeHandleEndInterpolationFunction::VolumeHandleEndInterpolationFunction() {}
 
-VolumeHandleEndInterpolationFunction::VolumeHandleEndInterpolationFunction() {
-}
 std::string VolumeHandleEndInterpolationFunction::getMode() const {
     return "focus on endvalue";
 }
+
 std::string VolumeHandleEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 VolumeHandle* VolumeHandleEndInterpolationFunction::interpolate(VolumeHandle* startvalue, VolumeHandle* endvalue, float time) const {
-    if (time>0){
+    if (time > 0.f)
         return endvalue;
-    }
-    else{
+    else
         return startvalue;
-    }
 }
-InterpolationFunction<VolumeHandle*>* VolumeHandleEndInterpolationFunction::clone() const{
+
+InterpolationFunction<VolumeHandle*>* VolumeHandleEndInterpolationFunction::clone() const {
     return new VolumeHandleEndInterpolationFunction();
 }
 
+VolumeHandleStartEndInterpolationFunction::VolumeHandleStartEndInterpolationFunction() {}
 
-VolumeHandleStartEndInterpolationFunction::VolumeHandleStartEndInterpolationFunction() {
-}
 std::string VolumeHandleStartEndInterpolationFunction::getMode() const {
     return "bisection";
 }
+
 std::string VolumeHandleStartEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 VolumeHandle* VolumeHandleStartEndInterpolationFunction::interpolate(VolumeHandle* startvalue, VolumeHandle* endvalue, float time) const {
-    if (time<0.5){
+    if (time < 0.5f)
         return startvalue;
-    }
-    else{
+    else
         return endvalue;
-    }
 }
-InterpolationFunction<VolumeHandle*>* VolumeHandleStartEndInterpolationFunction::clone() const{
+
+InterpolationFunction<VolumeHandle*>* VolumeHandleStartEndInterpolationFunction::clone() const {
     return new VolumeHandleStartEndInterpolationFunction();
 }
 
 } // namespace voreen
-

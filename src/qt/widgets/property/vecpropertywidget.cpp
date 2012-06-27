@@ -32,6 +32,9 @@
 #include "voreen/core/properties/vectorproperty.h"
 #include "voreen/qt/widgets/sliderspinboxwidget.h"
 
+#include <QMouseEvent>
+#include <QMenu>
+
 namespace voreen {
 
 template<class WIDGETTYPE, class VECTORPROP, typename ELEMTYPE>
@@ -51,6 +54,7 @@ VecPropertyWidget<WIDGETTYPE, VECTORPROP, ELEMTYPE>::VecPropertyWidget(VECTORPRO
     widgets_ = new WIDGETTYPE*[numComponents_];
     for (size_t i = 0; i < numComponents_; ++i) {
         widgets_[i] = new WIDGETTYPE(this);
+        widgets_[i]->setSliderTracking(vectorProp_->hasTracking());
         myLayout_->addWidget(widgets_[i], 1);
         connect((const QObject*) widgets_[i], SIGNAL(sliderPressedChanged(bool)), this, SLOT(toggleInteractionMode(bool)));
     }
@@ -58,6 +62,15 @@ VecPropertyWidget<WIDGETTYPE, VECTORPROP, ELEMTYPE>::VecPropertyWidget(VECTORPRO
     QPropertyWidget::addLayout(myLayout_);
     QPropertyWidget::addVisibilityControls();
     updateFromProperty();
+
+    precisionMenu_ = new QMenu(this);
+    highAction_ = precisionMenu_->addAction("High Precision");
+    highAction_->setCheckable(true);
+    precisionMenu_->addSeparator();
+    instantValueChangeAction_ = precisionMenu_->addAction("Tracking Mode");
+    instantValueChangeAction_->setCheckable(true);
+    if(vectorProp_->hasTracking())
+        instantValueChangeAction_->toggle();
 }
 
 template<class WIDGETTYPE, class VECTORPROP, typename ELEMTYPE>
@@ -89,6 +102,7 @@ void VecPropertyWidget<WIDGETTYPE, VECTORPROP, ELEMTYPE>::updateFromProperty() {
         widgets_[i]->setMaxValue(maxValues[i]);
         widgets_[i]->setMinValue(minValues[i]);
         widgets_[i]->setSingleStep(steppings[i]);
+        widgets_[i]->setSliderTracking(vectorProp_->hasTracking());
         widgets_[i]->blockSignals(false);
     }
 }
@@ -107,6 +121,28 @@ VecPropertyWidget<WIDGETTYPE, VECTORPROP, ELEMTYPE>::setPropertyComponent(QObjec
         }
     }
     return newValue;
+}
+
+template<class WIDGETTYPE, class VECTORPROP, typename ELEMTYPE>
+void VecPropertyWidget<WIDGETTYPE, VECTORPROP, ELEMTYPE>::mousePressEvent(QMouseEvent* event) {
+    if(event->button() == Qt::RightButton) {
+        QAction* prec = precisionMenu_->exec(QCursor::pos());
+        if(prec == highAction_){
+            if(highAction_->isChecked()) {
+                vectorProp_->setStepping(typename VECTORPROP::ElemType(0.0001f));
+                vectorProp_->setNumDecimals(4);
+            }
+            else {
+                vectorProp_->setStepping(typename VECTORPROP::ElemType(0.05f));
+                vectorProp_->setNumDecimals(2);
+            }
+        }
+        else if(prec == instantValueChangeAction_) {
+            vectorProp_->setTracking(!vectorProp_->hasTracking());
+        }
+        updateFromProperty();
+    }
+    QWidget::mousePressEvent(event);
 }
 
 template class VecPropertyWidget<SliderSpinBoxWidget, IntVec2Property, int>;

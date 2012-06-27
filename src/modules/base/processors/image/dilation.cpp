@@ -44,16 +44,20 @@ Dilation::Dilation()
     addPort(outport_);
 }
 
+Processor* Dilation::create() const {
+    return new Dilation();
+}
+
 std::string Dilation::getProcessorInfo() const {
     return "Image dilation operator with 3x3 kernel.";
 }
 
 void Dilation::process() {
     outport_.activateTarget();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    outport_.clearTarget();
 
     TextureUnit shadeUnit, depthUnit;
-    inport_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
+    inport_.bindTextures(shadeUnit, depthUnit);
 
     // initialize shader
     program_->activate();
@@ -65,6 +69,8 @@ void Dilation::process() {
     renderQuad();
 
     program_->deactivate();
+    outport_.deactivateTarget();
+    TextureUnit::setZeroUnit();
     LGL_ERROR;
 }
 

@@ -1,0 +1,15 @@
+
+win32 {
+  # location of DCMTK headers
+  DCMTK_INC_DIR = "$${VRN_MODULE_INC_DIR}/dicom/ext"
+    
+  # location of DCMTK library files
+  DCMTK_LIB_DIR = "$${VRN_MODULE_SRC_DIR}/dicom/ext/dcmtk/win32"
+}
+
+# Disable usage of libwrap, sometimes needed with DCMTK
+#CONFIG += without_libwrap
+
+### Local Variables:
+### mode:conf-unix
+### End:

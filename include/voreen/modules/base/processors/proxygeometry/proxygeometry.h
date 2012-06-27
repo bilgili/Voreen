@@ -32,6 +32,8 @@
 
 #include "voreen/core/processors/volumerenderer.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
+#include "voreen/core/ports/volumeport.h"
+#include "voreen/core/ports/genericcoprocessorport.h"
 
 namespace voreen {
 

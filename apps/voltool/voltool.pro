@@ -28,11 +28,6 @@ unix {
   }
 }
 
-macx {
-  LIBS += -framework OpenGL
-  LIBS += -framework ApplicationServices
-}
-
 SOURCES	+= voltool.cpp \
            commands_grad.cpp \
            commands_convert.cpp \
@@ -45,3 +40,4 @@ HEADERS +=  commands_grad.h \
             commands_create.h \
             commands_modify.h \
             commands_registration.h
+

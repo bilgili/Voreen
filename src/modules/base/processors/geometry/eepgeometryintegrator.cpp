@@ -40,6 +40,7 @@ EEPGeometryIntegrator::EEPGeometryIntegrator()
     , inport0_(Port::INPORT, "image.entry")
     , inport1_(Port::INPORT, "image.exit")
     , geometryPort_(Port::INPORT, "image.geometry")
+    , volumeInport_(Port::INPORT, "volumehandle.volumehandle", false, Processor::INVALID_RESULT)
     , entryPort_(Port::OUTPORT, "image.postentry", true, Processor::INVALID_PROGRAM)
     , exitPort_(Port::OUTPORT, "image.postexit", true, Processor::INVALID_PROGRAM)
     , tmpPort_(Port::OUTPORT, "image.tmp", false)
@@ -49,6 +50,7 @@ EEPGeometryIntegrator::EEPGeometryIntegrator()
     addPort(inport0_);
     addPort(inport1_);
     addPort(geometryPort_);
+    addPort(volumeInport_);
     addPort(entryPort_);
     addPort(exitPort_);
     addPrivateRenderPort(&tmpPort_);
@@ -57,75 +59,40 @@ EEPGeometryIntegrator::EEPGeometryIntegrator()
     addProperty(camera_);
 }
 
-EEPGeometryIntegrator::~EEPGeometryIntegrator() {
-}
-
 std::string EEPGeometryIntegrator::getProcessorInfo() const {
-    return "Combines entry-exit-parameters for a raycaster with geometry.";
+    return "Modifies raycasting entry/exit points with regard to the input geometry rendering "
+           "such that alpha compositing of the geometry rendering with the raycasted image "
+           "gives correct results (for opaque geometry). "
+           "The raycasted volume has to be passed to the volume inport.<br/>"
+           "See Compositor.";
 }
 
 Processor* EEPGeometryIntegrator::create() const {
     return new EEPGeometryIntegrator();
 }
 
-void EEPGeometryIntegrator::initialize() throw (VoreenException) {
-    ImageProcessor::initialize();//FIXME: twice?
+void EEPGeometryIntegrator::beforeProcess() {
+    RenderProcessor::beforeProcess();
 
-    //loadShader();
-}
+    RenderPort& refPort = (entryPort_.isReady() ? entryPort_ : exitPort_);
 
-void EEPGeometryIntegrator::loadShader() {
-    //program_->rebuild();
-}
-
-void EEPGeometryIntegrator::compileShader() {
-    //program_->setHeader(generateHeader());
-    //program_->rebuild();
-}
-
-void EEPGeometryIntegrator::process() {
-    //TODO: move somewhere else (stefan)
-    if(useFloatRenderTargets_.get()) {
-        if(entryPort_.getData()->getColorTexture()->getDataType() != GL_FLOAT) {
-            tgt::ivec2 s = entryPort_.getSize();
-
-            entryPort_.setData(new RenderTarget());
-            entryPort_.getData()->initialize(GL_RGBA16F_ARB);
-            entryPort_.getData()->resize(s);
-
-
-            exitPort_.setData(new RenderTarget());
-            exitPort_.getData()->initialize(GL_RGBA16F_ARB);
-            exitPort_.getData()->resize(s);
-
-            tmpPort_.setData(new RenderTarget());
-            tmpPort_.getData()->initialize(GL_RGBA16F_ARB);
-            tmpPort_.getData()->resize(s);
+    if (useFloatRenderTargets_.get()) {
+        if (refPort.getRenderTarget()->getColorTexture()->getDataType() != GL_FLOAT) {
+            entryPort_.changeFormat(GL_RGBA16F_ARB);
+            exitPort_.changeFormat(GL_RGBA16F_ARB);
+            tmpPort_.changeFormat(GL_RGBA16F_ARB);
         }
     }
     else {
-        if(entryPort_.getData()->getColorTexture()->getDataType() == GL_FLOAT) {
-            tgt::ivec2 s = entryPort_.getSize();
-
-            entryPort_.setData(new RenderTarget());
-            entryPort_.getData()->initialize(GL_RGBA16);
-            entryPort_.getData()->resize(s);
-
-
-            exitPort_.setData(new RenderTarget());
-            exitPort_.getData()->initialize(GL_RGBA16);
-            exitPort_.getData()->resize(s);
-
-            tmpPort_.setData(new RenderTarget());
-            tmpPort_.getData()->initialize(GL_RGBA16);
-            tmpPort_.getData()->resize(s);
+        if (refPort.getRenderTarget()->getColorTexture()->getDataType() == GL_FLOAT) {
+            entryPort_.changeFormat(GL_RGBA16);
+            exitPort_.changeFormat(GL_RGBA16);
+            tmpPort_.changeFormat(GL_RGBA16);
         }
     }
+}
 
-    // compile program if needed
-   // if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
-     //   compileShader();
-    //LGL_ERROR;
+void EEPGeometryIntegrator::process() {
 
     entryPort_.activateTarget();
 
@@ -147,6 +114,14 @@ void EEPGeometryIntegrator::process() {
     program_->setUniform("exitParamsDepth_", shadeUnitDepth1.getUnitNumber());
     program_->setUniform("geometryTex_", shadeUnit2.getUnitNumber());
     program_->setUniform("geometryTexDepth_", shadeUnitDepth2.getUnitNumber());
+
+    // assume cube-formed dataset if the port is not connected
+    if(volumeInport_.isReady())
+        program_->setUniform("volumeSize_", volumeInport_.getData()->getVolume()->getCubeSize());
+    else {
+        LWARNING("Volume inport not connected: assuming cubic volume");    
+        program_->setUniform("volumeSize_", tgt::vec3(2.f));
+    }
 
     inport0_.setTextureParameters(program_, "entryInfo_");
     inport1_.setTextureParameters(program_, "exitInfo_");
@@ -173,8 +148,23 @@ void EEPGeometryIntegrator::process() {
     glDepthFunc(GL_LESS);
 
     program_->deactivate();
+    entryPort_.deactivateTarget();
     glActiveTexture(GL_TEXTURE0);
+
     LGL_ERROR;
+}
+
+bool EEPGeometryIntegrator::isReady() const {
+    if (!isInitialized())
+        return false;
+
+    if (!inport0_.isReady() || !inport1_.isReady() || !geometryPort_.isReady())
+        return false;
+
+    if(!entryPort_.isReady() || !exitPort_.isReady())
+        return false;
+
+    return true;
 }
 
 } // voreen namespace

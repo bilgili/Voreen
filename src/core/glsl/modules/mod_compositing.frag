@@ -76,7 +76,7 @@ vec4 compositeMIP(in vec4 curResult, in vec4 color, in float t, inout float tDep
  */
 vec4 compositeISO(in vec4 curResult, in vec4 color, in float t, inout float tDepth, in float isoValue) {
     vec4 result = curResult;
-    float epsilon = 0.05;
+    float epsilon = 0.02;
     if (color.a >= isoValue-epsilon && color.a <= isoValue+epsilon) {
         result = color;
         result.a = 1.0;

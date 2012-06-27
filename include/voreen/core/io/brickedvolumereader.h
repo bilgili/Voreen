@@ -37,9 +37,9 @@ namespace voreen {
 
     class BrickedVolumeReader : public VolumeReader {
     public:
-        BrickedVolumeReader(IOProgress* progress = 0);
+        BrickedVolumeReader(ProgressBar* progress = 0);
 
-        virtual VolumeReader* create(IOProgress* progress = 0) const;
+        virtual VolumeReader* create(ProgressBar* progress = 0) const;
 
         /**
         * Opens the Information file (bvi = bricked volume information) and
@@ -113,7 +113,7 @@ namespace voreen {
 
         bool persistent_;
 
-        static IOProgress* ioProgress_;
+        static ProgressBar* progressBar_;
 
     private:
         static const std::string loggerCat_;

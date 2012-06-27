@@ -37,10 +37,7 @@
 #include "voreen/core/io/datvolumewriter.h"
 #include "voreen/core/io/rawvolumereader.h"
 #include "voreen/core/io/brickedvolumereader.h"
-
-#ifdef VRN_WITH_DCMTK
-    #include "voreen/core/io/dicomvolumereader.h"
-#endif
+#include "voreen/core/io/progressbar.h"
 
 #ifdef VRN_WITH_TIFF
     #include "voreen/core/io/tiffvolumereader.h"
@@ -86,10 +83,6 @@ VolumeSerializerPopulator::VolumeSerializerPopulator(bool showProgress)
     readers_.push_back(new DatVolumeReader(progressDialog_));
     readers_.push_back(new RawVolumeReader(progressDialog_));
     readers_.push_back(new BrickedVolumeReader(progressDialog_) );
-
-#ifdef VRN_WITH_DCMTK
-    readers_.push_back(new DicomVolumeReader(progressDialog_));
-#endif
 
 #ifdef VRN_WITH_TIFF
     readers_.push_back(new TiffVolumeReader(progressDialog_));

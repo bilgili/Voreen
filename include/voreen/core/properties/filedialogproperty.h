@@ -49,6 +49,8 @@ public:
 
     virtual ~FileDialogProperty() {}
 
+    virtual std::string getTypeString() const;
+
     const std::string& getDialogCaption() const { return dialogCaption_; }
     const std::string& getDirectory() const { return directory_; }
     const std::string& getFileFilter() const { return fileFilter_; }

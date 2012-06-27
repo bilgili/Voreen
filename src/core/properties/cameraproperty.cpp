@@ -132,4 +132,8 @@ void CameraProperty::deserialize(XmlDeserializer& s) {
     value_->setUpVector(vector);
 }
 
+std::string CameraProperty::getTypeString() const {
+    return "Camera";
+}
+
 } // namespace voreen

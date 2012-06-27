@@ -54,6 +54,8 @@ public:
     VolumeHandleProperty(const std::string& id, const std::string& guiText, VolumeHandle* const value = 0,
        Processor::InvalidationLevel invalidationLevel = Processor::INVALID_PARAMETERS);
 
+     virtual std::string getTypeString() const;
+
     /**
      * Sets the stored volume handle to the given one.
      *

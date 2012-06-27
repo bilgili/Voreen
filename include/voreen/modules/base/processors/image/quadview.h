@@ -32,6 +32,9 @@
 
 #include "voreen/core/processors/renderprocessor.h"
 #include "voreen/core/properties/eventproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
 
 namespace voreen {
 
@@ -45,7 +48,7 @@ public:
 
     virtual std::string getCategory() const { return "View"; }
     virtual std::string getClassName() const { return "QuadView"; }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
     virtual std::string getProcessorInfo() const;
     virtual Processor* create() const;
 
@@ -62,11 +65,14 @@ protected:
     void toggleMaximization(tgt::MouseEvent* me);
     void updateSizes();
 
+    void mouseMove(tgt::MouseEvent* e);
+
     BoolProperty showGrid_;
-    ColorProperty gridColor_;
+    FloatVec4Property gridColor_;
     IntProperty maximized_;
     BoolProperty maximizeOnDoubleClick_;
     EventProperty<QuadView> maximizeEventProp_;
+    EventProperty<QuadView> mouseMoveEventProp_;
 
     /// Inport whose rendering is mapped to the frame buffer.
     RenderPort outport_;
@@ -75,6 +81,10 @@ protected:
     RenderPort inport2_;
     RenderPort inport3_;
     RenderPort inport4_;
+
+    int currentPort_;
+
+    bool isDragging_;
 };
 
 } // namespace voreen

@@ -69,9 +69,9 @@ GridType:       EQUIDISTANT
  */
 class DatVolumeReader : public VolumeReader {
 public:
-    DatVolumeReader(IOProgress* progress = 0);
+    DatVolumeReader(ProgressBar* progress = 0);
 
-    virtual VolumeReader* create(IOProgress* progress = 0) const;
+    virtual VolumeReader* create(ProgressBar* progress = 0) const;
 
     /**
      * Reads the file name called 'ObjectFileName' from the .dat file and

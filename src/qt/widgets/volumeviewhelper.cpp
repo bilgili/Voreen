@@ -70,8 +70,8 @@ QPixmap VolumeViewHelper::generatePreview(Volume* volume, int height) {
 }
 
 QPixmap VolumeViewHelper::generateBorderedPreview(Volume* volume, int height, int border) {
-    int xDimension = volume->getDimensions()[0];
-    int yDimension = volume->getDimensions()[1];
+    float xDimension = volume->getDimensions()[0];
+    float yDimension = volume->getDimensions()[1];
     int zDimension = volume->getDimensions()[2]/2;
     float step;
     if (yDimension > xDimension) {
@@ -249,6 +249,20 @@ std::string VolumeViewHelper::getVolumeMemorySize(Volume* volume) {
         out << bytes << " bytes";
     }
     return out.str();
+}
+
+
+long VolumeViewHelper::getVolumeMemorySizeByte(Volume* volume) {
+    long volumeBytes = 0;
+    BrickedVolume* brick = dynamic_cast<BrickedVolume*>(volume);
+    if (brick) {
+        volumeBytes = brick->getNumBytes();
+        return volumeBytes;
+    }
+
+    volumeBytes = volume->getNumBytes();
+    return volumeBytes;
+
 }
 
 } // namespace

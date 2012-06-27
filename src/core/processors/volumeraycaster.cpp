@@ -38,12 +38,6 @@ using tgt::mat4;
 
 namespace voreen {
 
-/*
-    init statics
-*/
-const std::string VolumeRaycaster::setSegment_              = "setSegment";
-const std::string VolumeRaycaster::switchSegmentation_      = "switchSegmentation";
-
 const std::string VolumeRaycaster::loggerCat_("voreen.VolumeRaycaster");
 
 /*
@@ -54,9 +48,9 @@ VolumeRaycaster::VolumeRaycaster()
     : VolumeRenderer()
     , raycastPrg_(0)
     , samplingRate_("samplingRate", "Sampling Rate", 4.f, 0.01f, 20.f)
-    , isoValue_("isoValue", "Iso value", 0.5f, 0.0f, 1.0f)
+    , isoValue_("isoValue", "Iso Value", 0.5f, 0.0f, 1.0f)
     , maskingMode_("masking", "Masking", Processor::INVALID_PROGRAM)
-    , gradientMode_("gradient", "Gradient calculation", Processor::INVALID_PROGRAM)
+    , gradientMode_("gradient", "Gradient Calculation", Processor::INVALID_PROGRAM)
     , classificationMode_("classification", "Classification", Processor::INVALID_PROGRAM)
     , shadeMode_("shading", "Shading", Processor::INVALID_PROGRAM)
     , compositingMode_("compositing", "Compositing", Processor::INVALID_PROGRAM)
@@ -65,11 +59,11 @@ VolumeRaycaster::VolumeRaycaster()
     , brickingUpdateStrategy_("bricking.update.strategy", "Update Bricks")
     , brickLodSelector_("brickLodSelector", "Brick LOD Selection")
     , useAdaptiveSampling_("adaptive.sampling", "Use Adaptive Sampling", false, Processor::INVALID_PROGRAM)
-    , segment_(setSegment_, "Active segment", 0)
-    , useSegmentation_(switchSegmentation_, "Use Segmentation", false, Processor::INVALID_PROGRAM)
-    , interactionCoarseness_("interactionCoarseness","Interaction Coarseness", 4, 1, 16, true, Processor::VALID)
-    , interactionQuality_("interactionQuality","Interaction Quality", 1.0f, 0.01f, 1.0f, true, Processor::VALID)
-    , useInterpolationCoarseness_("interpolation.coarseness","Use Interpolation Coarseness",false, Processor::INVALID_PROGRAM)
+    , segment_("setSegment", "Active Segment", 0)
+    , useSegmentation_("switchSegmentation", "Use Segmentation", false, Processor::INVALID_PROGRAM)
+    , interactionCoarseness_("interactionCoarseness","Interaction Coarseness", 4, 1, 16, Processor::VALID)
+    , interactionQuality_("interactionQuality","Interaction Quality", 1.0f, 0.01f, 1.0f, Processor::VALID)
+    , useInterpolationCoarseness_("interpolation.coarseness","Use Interpolation Coarseness", false, Processor::INVALID_PROGRAM)
     , size_(128, 128)
     , switchToInteractionMode_(false)
     , brickingParametersChanged_(false)
@@ -450,14 +444,16 @@ void VolumeRaycaster::addBrickedVolumeModalities(VolumeHandle* volumeHandle, std
             packedVolumeGL,
             unit1,
             "packedVolume_",
-            "packedVolumeParameters_")
+            "packedVolumeParameters_",
+            true)
         );
 
         volumeTextures.push_back(VolumeStruct(
             indexVolumeGL,
             unit2,
             "indexVolume_",
-            "indexVolumeParameters_")
+            "indexVolumeParameters_",
+            true)
         );
 
     }
@@ -561,8 +557,10 @@ void VolumeRaycaster::invalidate(int inv) {
     VolumeRenderer::invalidate(inv);
 }
 
-void VolumeRaycaster::bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct> &volumes) {
-    VolumeRenderer::bindVolumes(shader, volumes);
+void VolumeRaycaster::bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct> &volumes,
+        const tgt::Camera* camera, const tgt::vec4& lightPosition) {
+
+    VolumeRenderer::bindVolumes(shader, volumes, camera, lightPosition);
 
     shader->setIgnoreUniformLocationError(true);
 

@@ -33,7 +33,7 @@ The author's contact address is:
 #define DDS_ISINTEL 1
     // (*((unsigned char *)(&DDS_INTEL)+1)==0)
 
-#include "voreen/core/io/ioprogress.h"
+#include "voreen/core/io/progressbar.h"
 #include "tgt/exception.h"
 
 FILE *DDS_file;
@@ -378,7 +378,7 @@ void writeDDSfile(char *filename, unsigned char *data, unsigned int bytes, unsig
 }
 
 // read a Differential Data Stream
-unsigned char *readDDSfile(char *filename, voreen::IOProgress* progress, unsigned int *bytes) {
+unsigned char *readDDSfile(char *filename, voreen::ProgressBar* progress, unsigned int *bytes) {
     int version = 1;
 
     unsigned int skip, strip;
@@ -419,12 +419,9 @@ unsigned char *readDDSfile(char *filename, voreen::IOProgress* progress, unsigne
     data = NULL;
     cnt = act = 0;
 
-    if (progress)
-        progress->setTotalSteps(DDS_BLOCKSIZE - 1);
-
     while ((cnt1 = readbits(DDS_file, DDS_RL)) != 0) {
         if (progress)
-            progress->setProgress(cnt);
+            progress->setProgress(static_cast<float>(cnt) / static_cast<float>(DDS_BLOCKSIZE - 1));
 
         bits = DDS_decode(readbits(DDS_file, 3));
 
@@ -579,7 +576,7 @@ void writePNMimage(char *filename, unsigned char *image, unsigned int width, uns
 }
 
 // read a possibly compressed PNM image
-unsigned char *readPNMimage(char *filename, voreen::IOProgress* progress, unsigned int *width, unsigned int *height, unsigned int *components) {
+unsigned char *readPNMimage(char *filename, voreen::ProgressBar* progress, unsigned int *width, unsigned int *height, unsigned int *components) {
     const int maxstr = 100;
 
     char str[maxstr];
@@ -743,7 +740,7 @@ void writePVMvolume(char *filename, unsigned char *volume,
 }
 
 // read a compressed PVM volume
-unsigned char *readPVMvolume(char *filename, voreen::IOProgress* progress,
+unsigned char *readPVMvolume(char *filename, voreen::ProgressBar* progress,
                              unsigned int *width, unsigned int *height, unsigned int *depth, unsigned int *components,
                              float *scalex, float *scaley, float *scalez,
                              unsigned char **description,

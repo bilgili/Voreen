@@ -35,11 +35,7 @@
 namespace voreen {
 
 /**
- * Stores a parameter value and additional information regarding the parameter.
- *
- * If shader recompiling is needed when the parameter changed, pass a pointer
- * to the appropriate shader variable.
- * If the parameter should not be changeable, the isChangeable to false.
+ * Template for a property that stores a single value.
  */
 template<class T>
 class TemplateProperty : public Property {
@@ -47,7 +43,7 @@ public:
     TemplateProperty(const std::string& id, const std::string& guiText,
                      T value, Processor::InvalidationLevel = Processor::INVALID_RESULT);
 
-    TemplateProperty(const TemplateProperty*);      //copy constructor for usage in qt animation part for automatically instantiating propertywidgets
+    TemplateProperty(const TemplateProperty*);
 
     virtual ~TemplateProperty();
 
@@ -177,7 +173,7 @@ TemplateProperty<T>::~TemplateProperty() {
 template<class T>
 void TemplateProperty<T>::set(const T& value) {
     if (value_ != value) {
-        const T& prevValue = value_;
+        const T prevValue = value_;
 
         validate(value, false);
 

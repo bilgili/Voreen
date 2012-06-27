@@ -32,6 +32,10 @@
 
 #include "voreen/core/processors/renderprocessor.h"
 
+#include "voreen/core/properties/intproperty.h"
+
+#include "voreen/core/ports/volumeport.h"
+
 namespace voreen {
 
 class ImageSequence;

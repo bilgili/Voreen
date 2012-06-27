@@ -89,7 +89,17 @@ public:
      */
     QGraphicsItem* tooltip() const;
 
+    /**
+     * This method returns the old \sa PortGraphicsItem if this arrow is dragged away from a connection
+     * the return value is 0 otherwise
+     */
+    PortGraphicsItem* getOldPortGraphicsItem() const;
+
 protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent* event);
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
+
     /// Returns the path describing this arrow.
     QPainterPath shape() const;
 
@@ -98,6 +108,12 @@ protected:
 
     /// Returns the center of the destination item
     QPointF getDestinationPoint() const;
+
+private:
+    PortGraphicsItem* oldDestinationItem_; ///<< this item stores the old PortItem if this arrow is dragged away from a connection
+
+    QPointF clickedPoint_;
+    bool movedAwayInEvent_;
 };
 
 } // namespace

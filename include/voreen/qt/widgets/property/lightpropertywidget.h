@@ -39,7 +39,7 @@
 class FloatVec4Property;
 
 namespace voreen {
-class LightPropertyWidget : public FloatVec4PropertyWidget {
+    class LightPropertyWidget : public QPropertyWidget {
 Q_OBJECT
 public:
     LightPropertyWidget(FloatVec4Property*, QWidget* parent = 0);
@@ -47,6 +47,7 @@ public:
 protected:
     //tgt::mat4 viewMatrix_;
     FloatVec4Property* property_;
+    tgt::Vector4f vector_;
     tgt::Camera* camera_;
     int hemisphere_;
     LightWidget* light_;

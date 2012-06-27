@@ -53,6 +53,12 @@ int MouseEvent::getEventType() {
 		case WHEEL:
 			return WHEELEVENT;
 			break;
+        case ENTER:
+            return MOUSEENTEREVENT;
+            break;
+        case EXIT:
+            return MOUSEEXITEVENT;
+            break;
 		default:
 			return 0;
 	}

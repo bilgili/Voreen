@@ -114,14 +114,26 @@ PropertyTimelineWidget::PropertyTimelineWidget(std::string name, PropertyTimelin
     activateTimelineButton_ = new QPushButton(QIcon(":/icons/apply.png"), "", this);
     showFrameHUD(false);
 
+    activateTimelineButton_->setToolTip(tr("Activate or deactivate timeline"));
     activateTimelineButton_->setStyleSheet("QToolButton { border: none; padding: 1px; }");
     activateTimelineButton_->setFlat(true);
+    activateTimelineButton_->setFocusPolicy(Qt::NoFocus);
     activateTimelineButton_->setCheckable(true);
-    activateTimelineButton_->toggle();
     activateTimelineButton_->setMaximumWidth(16);
     activateTimelineButton_->setMaximumHeight(16);
+    activateTimelineButton_->setChecked(propertyTimeline->getActiveOnRendering());
+
+    // note: this is duplicated in activateTimeline() below
+    if (!propertyTimeline->getActiveOnRendering())
+        activateTimelineButton_->setIcon(QIcon(":/icons/button_cancel.png"));
+    else
+        activateTimelineButton_->setIcon(QIcon(":/icons/apply.png"));
+
+    
     connect(activateTimelineButton_, SIGNAL(toggled(bool)), this, SLOT(activateTimeline(bool)));
+    
     setFps(30.0f);
+    
     mainLayout_->addWidget(propertyTimelineView_);
     mainLayout_->addWidget(activateTimelineButton_);
     QLabel* nameLabel = new QLabel(this);
@@ -212,7 +224,7 @@ KeyframeGraphicsItem* PropertyTimelineWidget::addKeyframeScene(PropertyKeyValueB
     connect(kfgi, SIGNAL(itemClicked(KeyframeGraphicsItem*)), this, SLOT(itemClicked(KeyframeGraphicsItem*)));
     connect(kfgi, SIGNAL(itemReleased(KeyframeGraphicsItem*)), this, SLOT(itemReleased(KeyframeGraphicsItem*)));
     connect(kfgi, SIGNAL(itemMoving(KeyframeGraphicsItem*)), this, SLOT(itemMoving(KeyframeGraphicsItem*)));
-    // Adds Keyframe to propertytimelinescene and puts it into map<graphicsitem, keyvalue>
+    // adds keyframe to propertytimelinescene and puts it into map<graphicsitem, keyvalue>
     addTemplateKeyframeScene(kfgi, key);
     return kfgi;
 }
@@ -223,7 +235,7 @@ void PropertyTimelineWidget::snapshot(int pos, bool force) {
 
 void PropertyTimelineWidget::activateTimeline(bool active) {
     activateTemplateTimeline(active);
-    if(!active)
+    if (!active)
         activateTimelineButton_->setIcon(QIcon(":/icons/button_cancel.png"));
     else
         activateTimelineButton_->setIcon(QIcon(":/icons/apply.png"));

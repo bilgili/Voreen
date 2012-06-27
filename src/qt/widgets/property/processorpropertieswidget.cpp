@@ -32,8 +32,10 @@
 #include "voreen/qt/widgets/expandableheaderbutton.h"
 #include "voreen/qt/widgets/property/lightpropertywidget.h"
 #include "voreen/qt/widgets/property/processorpropertieswidget.h"
+#include "voreen/qt/widgets/property/propertyvectorwidget.h"
 #include "voreen/qt/widgets/property/qpropertywidget.h"
 #include "voreen/qt/widgets/property/qpropertywidgetfactory.h"
+#include "voreen/qt/widgets/property/grouppropertywidget.h"
 #include "voreen/qt/widgets/property/transfuncpropertywidget.h"
 #include "voreen/qt/widgets/property/volumecollectionpropertywidget.h"
 #include "voreen/qt/widgets/property/volumehandlepropertywidget.h"
@@ -48,7 +50,6 @@
 namespace voreen {
 
 ProcessorPropertiesWidget::ProcessorPropertiesWidget(QWidget* parent, const Processor* processor,
-                                                     PropertyWidgetFactory* widgetFactory,
                                                      bool expanded, bool userExpandable)
     : QWidget(parent)
     , propertyWidget_(0)
@@ -56,7 +57,7 @@ ProcessorPropertiesWidget::ProcessorPropertiesWidget(QWidget* parent, const Proc
     , volumeContainer_(0)
     , expanded_(expanded)
     , userExpandable_(userExpandable)
-    , widgetFactory_(widgetFactory)
+    , widgetFactory_(0)
     , widgetInstantiationState_(NONE)
 {
 
@@ -120,6 +121,13 @@ void ProcessorPropertiesWidget::setLevelOfDetail(Property::LODSetting lod) {
     setVisible(headerVisible);
 }
 
+void ProcessorPropertiesWidget::showHeader(bool visible) {
+    if (visible)
+        header_->showLODControls();
+    else
+        header_->hideLODControls();
+}
+
 void ProcessorPropertiesWidget::setVolumeContainer(VolumeContainer* volCon) {
     volumeContainer_ = volCon;
 }
@@ -147,6 +155,7 @@ void ProcessorPropertiesWidget::setLODHidden() {
             }
         }
     }
+    header_->hideLODControls();
 }
 
 void ProcessorPropertiesWidget::setLODVisible() {
@@ -167,6 +176,7 @@ void ProcessorPropertiesWidget::setLODVisible() {
             }
         }
     }
+    header_->showLODControls();
 }
 
 bool ProcessorPropertiesWidget::isExpanded() const {
@@ -224,7 +234,6 @@ if(widgetInstantiationState_ == NONE) {
                         widgets_.push_back(w);
                         connect(w, SIGNAL(modified()), this, SLOT(propertyModified()));
                         QLabel* nameLabel = const_cast<QLabel*>(w->getNameLabel());
-
                         gridLayout->addWidget(w, rows, 1, 1, 1);
                         gridLayout->addWidget(nameLabel, rows, 0, 1, 1);
                     }
@@ -234,6 +243,7 @@ if(widgetInstantiationState_ == NONE) {
     gridLayout->setEnabled(true);
 
     delete widgetFactory_;
+    widgetFactory_ = 0;
     mainLayout_->addWidget(propertyWidget_);
     setUpdatesEnabled(true);
     updateState();
@@ -254,28 +264,55 @@ else if(widgetInstantiationState_ == ONLY_TF) {
                     if (w != 0) {
                         widgets_.push_back(w);
                         connect(w, SIGNAL(modified()), this, SLOT(propertyModified()));
-                        QLabel* nameLabel = const_cast<QLabel*>(w->getNameLabel());
-
-                        if(dynamic_cast<LightPropertyWidget*>(w)) {     // HACK: this prevents a cut off gui element e.g. seen in the clipping plane widget
-                            gridLayout->setRowStretch(rows, 1);
-                        }
-
-                        if (nameLabel) {
-                            gridLayout->addWidget(nameLabel, rows, 0, 1, 1);
-                            gridLayout->addWidget(w, rows, 1, 1, 1);
+                        // we are dealing with a propertygroup
+                        if((*iter)->getGroupID() != "") {
+                            std::map<std::string, GroupPropertyWidget*>::iterator it = propertyGroupsMap_.find((*iter)->getGroupID());
+                            // the group does not exist
+                            if(it == propertyGroupsMap_.end()) {
+                                std::string guiName = (*iter)->getOwner()->getPropertyGroupGuiName((*iter)->getGroupID());
+                                propertyGroupsMap_[(*iter)->getGroupID()] = new GroupPropertyWidget((*iter), false, guiName, this);
+                                (*iter)->getOwner()->setPropertyGroupWidget((*iter)->getGroupID(), propertyGroupsMap_[(*iter)->getGroupID()]);
+                                // the group is not visible
+                                if(!(*iter)->getOwner()->isPropertyGroupVisible((*iter)->getGroupID())) {
+                                    propertyGroupsMap_[(*iter)->getGroupID()]->setVisible(false);
+                                }
+                            }
+                            propertyGroupsMap_[(*iter)->getGroupID()]->addWidget(w, const_cast<QLabel*>(w->getNameLabel()), QString::fromStdString(w->getPropertyGuiName()));
+                            const_cast<QLabel*>(w->getNameLabel())->setMinimumWidth(60);
+                            gridLayout->addWidget(propertyGroupsMap_[(*iter)->getGroupID()], rows, 0, 1, 2);
+                            propertyGroupsMap_[(*iter)->getGroupID()]->setVisible((*iter)->getOwner()->isPropertyGroupVisible((*iter)->getGroupID()));
                         }
                         else {
-                            gridLayout->addWidget(w, rows, 0, 1, 2);
-                        }
+                            QLabel* nameLabel = const_cast<QLabel*>(w->getNameLabel());
 
-                        if (dynamic_cast<VolumeHandlePropertyWidget*>(w)){
-                            if(volumeContainer_)
-                                static_cast<VolumeHandlePropertyWidget*>(w)->setVolumeContainer(volumeContainer_);
-                        }
-                        else if (dynamic_cast<VolumeCollectionPropertyWidget*>(w)){
-                            if(volumeContainer_)
-                                static_cast<VolumeCollectionPropertyWidget*>(w)->setVolumeContainer(volumeContainer_);
-                        }
+                            if(dynamic_cast<LightPropertyWidget*>(w)) {     // HACK: this prevents a cut off gui element e.g. seen in the clipping plane widget
+                                gridLayout->setRowStretch(rows, 1);
+                            }
+                            if(!dynamic_cast<PropertyVectorWidget*>(w)) {
+                                if (nameLabel) {
+                                    gridLayout->addWidget(nameLabel, rows, 0, 1, 1);
+                                    gridLayout->addWidget(w, rows, 1, 1, 1);
+                                }
+                                else {
+                                    gridLayout->addWidget(w, rows, 0, 1, 2);
+                                }
+                            }
+                            else {
+                                gridLayout->addWidget(nameLabel, rows, 0, 1, 1);
+                                ++rows;
+                                gridLayout->addWidget(w, rows, 0, 1, 2);
+
+                            }
+
+                            if (dynamic_cast<VolumeHandlePropertyWidget*>(w)){
+                                if(volumeContainer_)
+                                    static_cast<VolumeHandlePropertyWidget*>(w)->setVolumeContainer(volumeContainer_);
+                            }
+                            else if (dynamic_cast<VolumeCollectionPropertyWidget*>(w)){
+                                if(volumeContainer_)
+                                    static_cast<VolumeCollectionPropertyWidget*>(w)->setVolumeContainer(volumeContainer_);
+                            }
+                    }
 
                     }
             }
@@ -283,7 +320,7 @@ else if(widgetInstantiationState_ == ONLY_TF) {
         }
 
         delete widgetFactory_;
-        //mainLayout_->addWidget(propertyWidget_);
+        widgetFactory_ = 0;
         setUpdatesEnabled(true);
         updateState();
         widgetInstantiationState_ = ALL;

@@ -33,7 +33,8 @@
 #include "voreen/core/properties/propertyowner.h"
 #include "tgt/event/eventlistener.h"
 #include "voreen/core/processors/profiling.h"
-#include "voreen/core/io/ioprogress.h"
+#include "voreen/core/io/progressbar.h"
+#include "voreen/core/utils/observer.h"
 
 #include <vector>
 
@@ -41,6 +42,7 @@ namespace voreen {
 
 class VoreenModule;
 class ProcessorFactory;
+class Processor;
 
 class Port;
 class CoProcessorPort;
@@ -50,10 +52,16 @@ class InteractionHandler;
 
 class ProcessorWidget;
 
+class ProcessorObserver : public Observer {
+public:
+    virtual void processorWidgetCreated(const Processor* processor) = 0;
+    virtual void processorWidgetDeleted(const Processor* processor) = 0;
+};
+
 /**
  * The base class for all processor classes used in Voreen.
  */
-class Processor : public PropertyOwner, public tgt::EventListener {
+class Processor : public PropertyOwner, public tgt::EventListener, public Observable<ProcessorObserver> {
 
     friend class NetworkEvaluator;
     friend class VoreenModule;
@@ -63,22 +71,21 @@ class Processor : public PropertyOwner, public tgt::EventListener {
     friend class ProcessorWidget;
 
 public:
-
     /**
-     * @brief This enum specifies how invalid the processor is.
+     * @brief Specifies the invalidation status of the processor.
      * The NetworkEvaluator and Processor will only do as much as needed to get a Processor into a valid state.
      */
     enum InvalidationLevel {
         VALID = 0,
         INVALID_RESULT = 1,         ///< invalid rendering, volumes => call process()
         INVALID_PARAMETERS = 10,    ///< invalid uniforms => set uniforms
-        INVALID_PROGRAM = 20,       ///< invalid shaders, cuda/opencl program => rebuild program
+        INVALID_PROGRAM = 20,       ///< invalid shaders, CUDA/OpenCL program => rebuild program
         INVALID_PORTS = 30,         ///< ports added/removed  => check connections, re-evaluate network
         INVALID_PROCESSOR = 40      ///< invalid python/matlab processor => re-create processor, re-connect ports (if possible)
     };
 
     /**
-     * @brief Identifies the state of the code of this processor.
+     * @brief Identifies the code stability of this processor implementation.
      * The default is CODE_STATE_EXPERIMENTAL
      */
     enum CodeState {
@@ -104,7 +111,7 @@ public:
     virtual Processor* create() const = 0;
 
     /**
-     * Supposed to return the C++ class name of the derived class.
+     * Returns the name of this class as a string.
      * Necessary due to the lack of code reflection in C++.
      *
      * This method is expected to be re-implemented by each concrete subclass.
@@ -112,7 +119,7 @@ public:
     virtual std::string getClassName() const = 0;
 
     /**
-     * Supposed to return the general category the processor belongs to.
+     * Returns the general category the processor belongs to.
      *
      * This method is not intended to be re-implemented by each subclass,
      * but is rather defined by the more concrete base classes,
@@ -121,7 +128,7 @@ public:
     virtual std::string getCategory() const = 0;
 
     /**
-     * Supposed to return an enum indicating the development state of the processor.
+     * Returns the development state of the processor implementation.
      *
      * This method is expected to be re-implemented by each concrete subclass.
      * The default value for all classes not re-writing this method is
@@ -130,7 +137,7 @@ public:
     virtual CodeState getCodeState() const;
 
     /**
-     * Supposed to returns a description of the processor's functionality.
+     * Returns a description of the processor's functionality.
      *
      * This method is expected to be re-implemented by each concrete subclass.
      */
@@ -181,7 +188,7 @@ public:
     virtual void invalidate(int inv = INVALID_RESULT);
 
     /**
-     * Marks the processor as valid by setting its invalidation level to VALID.
+     * Marks the processor as valid.
      */
     virtual void setValid();
 
@@ -235,6 +242,11 @@ public:
     std::vector<Port*> getPorts() const;
 
     /**
+     * Returns the port with the given name, or null if such a port does not exist.
+     */
+    Port* getPort(const std::string& name) const;
+
+    /**
      * Processors may overwrite this function in order to gain access to
      * events that are propagated through the network.
      *
@@ -271,6 +283,30 @@ public:
     ProcessorWidget* getProcessorWidget() const;
 
     /**
+     * A derived class should return true, if its process() method 
+     * is time-consuming, i.e., causes noticable delay. 
+     *
+     * Normal renderers without expensive data processing should return false (default).
+     */
+    virtual bool usesExpensiveComputation() const;
+
+    /**
+     * Updates the progress bar, if one has been assigned.
+     *
+     * @param progress The overall progress of the operations
+     *  performed in process(). Range: [0.0, 1.0]
+     * 
+     * @see usesExpensiveComputation
+     */
+    void setProgress(float progress);
+
+    /**
+     * Assigns a progress handler that the processor may use for indicating progress
+     * of time-consuming operations. Usually assigned by the GUI layer.
+     */
+    virtual void setProgressBar(ProgressBar* progressBar);
+
+    /**
      * @see PropertyOwner::serialize
      */
     virtual void serialize(XmlSerializer& s) const;
@@ -286,15 +322,9 @@ public:
      * to store and retrieve persistent meta data without
      * having to bother with the serialization themselves.
      */
-    MetaDataContainer& getMetaDataContainer() const;
-
-    void setIOProgress(IOProgress* ioProgress) {
-        ioProgress_ = ioProgress;
-    }
-
+    virtual MetaDataContainer& getMetaDataContainer() const;
 
 protected:
-
     /**
      * @brief This method is called by the NetworkEvaluator when the processor should be processed.
      *        All rendering and volume/image processing is to be done here.
@@ -375,8 +405,8 @@ protected:
     /**
      * This method is called if the Processor is switched into or out of interaction mode.
      *
-     * Overwrite this method if a processor needs to react to this event. (e.g., resize RenderPorts, change samplingrate...)
-     * The default implementation does nothing.
+     * Overwrite this method if a processor needs to react to this event (e.g., resize
+     * RenderPorts, change samplingrate, etc.). The default implementation does nothing.
      */
     virtual void interactionModeToggled();
 
@@ -411,8 +441,13 @@ protected:
     /// Used for performance profiling (experimental).
     PerformanceRecord performanceRecord_;
 
-    /// Allows to display a progress bar on top of the processor item (experimental).
-    IOProgress* ioProgress_;
+    /**
+     * Used by the processor for indicating progress
+     * of time-consuming operations.
+     *
+     * @see setProgress  
+     */
+    ProgressBar* progressBar_;
 
 private:
 

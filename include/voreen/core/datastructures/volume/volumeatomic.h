@@ -46,6 +46,7 @@ namespace voreen {
 
 template<class T>
 class VolumeAtomic : public Volume {
+
 public:
     typedef T VoxelType;
 
@@ -69,6 +70,7 @@ public:
      */
     VolumeAtomic(const tgt::ivec3& dimensions,
                  const tgt::vec3& spacing = tgt::vec3(1.f),
+                 const tgt::mat4& transformation = tgt::mat4::identity,
                  int bitsStored = BITS_PER_VOXEL, bool allocMem=true) throw (std::bad_alloc);
 
     /**
@@ -78,6 +80,7 @@ public:
     VolumeAtomic(T* data,
                  const tgt::ivec3& dimensions,
                  const tgt::vec3& spacing = tgt::vec3(1.f),
+                 const tgt::mat4& transformation = tgt::mat4::identity,
                  int bitsStored = BITS_PER_VOXEL);
 
     /// Deletes the \a data_ array
@@ -182,18 +185,6 @@ public:
 
     virtual void clear();
     virtual void* getData();
-    virtual void resize(tgt::ivec3 newDims, bool allocMem = true)
-        throw (std::bad_alloc);
-    virtual VolumeAtomic<T>* resample(tgt::ivec3 newDims, Filter filter) const
-        throw (std::bad_alloc);
-    virtual VolumeAtomic<T>* createSubset(tgt::ivec3 pos, tgt::ivec3 size) const
-        throw (std::bad_alloc);
-
-    /**
-    * Reduces the Volume's resolution by half, by linearly downsampling 8 voxels
-    * to 1 voxel. This does not necessarily happen when using the scale(..) function.
-    */
-    virtual VolumeAtomic<T>* halfsample() const throw (std::bad_alloc);
 
     /**
      * Invalidates cached values (e.g. min/max), should be called when the volume was modified.
@@ -260,13 +251,14 @@ typedef VolumeAtomic<tgt::dvec4> Volume4xDouble;
 
 template<class T>
 VolumeAtomic<T>::VolumeAtomic(const tgt::ivec3& dimensions, const tgt::vec3& spacing,
+                              const tgt::mat4& transformation,
                               int bitsStored, bool allocMem)
     throw (std::bad_alloc)
-    : Volume(dimensions, bitsStored, spacing),
-      data_(0),
-      elementRange_(static_cast<float>(VolumeElement<T>::rangeMinElement()),
-        static_cast<float>(VolumeElement<T>::rangeMaxElement())),
-      minMaxValid_(false)
+    : Volume(dimensions, bitsStored, spacing, transformation)
+    , data_(0)
+    , elementRange_(static_cast<float>(VolumeElement<T>::rangeMinElement()),
+        static_cast<float>(VolumeElement<T>::rangeMaxElement()))
+    , minMaxValid_(false)
 {
 
     // special treatment for 12 bit volumes stored in 16 bit
@@ -288,12 +280,13 @@ template<class T>
 VolumeAtomic<T>::VolumeAtomic(T* data,
                               const tgt::ivec3& dimensions,
                               const tgt::vec3& spacing,
+                              const tgt::mat4& transformation,
                               int bitsStored)
-    : Volume(dimensions, bitsStored, spacing),
-      data_(data),
-      elementRange_(static_cast<float>(VolumeElement<T>::rangeMinElement()),
-      static_cast<float>(VolumeElement<T>::rangeMaxElement())),
-      minMaxValid_(false)
+    : Volume(dimensions, bitsStored, spacing, transformation)
+    , data_(data)
+    , elementRange_(static_cast<float>(VolumeElement<T>::rangeMinElement()),
+         static_cast<float>(VolumeElement<T>::rangeMaxElement()))
+    , minMaxValid_(false)
 {
     // special treatment for 12 bit volumes stored in 16 bit
     if (typeid(T) == typeid(uint16_t) && bitsStored == 12)
@@ -307,7 +300,7 @@ VolumeAtomic<T>* VolumeAtomic<T>::clone() const
     // create clone
     VolumeAtomic<T>* newVolume = 0;
     try {
-        newVolume = new VolumeAtomic<T>(dimensions_, spacing_, bitsStored_); // allocate a chunk of data
+        newVolume = new VolumeAtomic<T>(dimensions_, spacing_, transformationMatrix_, bitsStored_); // allocate a chunk of data
     }
     catch (const std::bad_alloc&) {
         LERROR("Failed to clone volume: bad allocation");
@@ -334,11 +327,11 @@ VolumeAtomic<T>* VolumeAtomic<T>::clone(void* data) const
     VolumeAtomic<T>* newVolume = 0;
     if (data) {
         // use preallocated data
-        newVolume = new VolumeAtomic<T>((T*) data, dimensions_, spacing_, bitsStored_);
+        newVolume = new VolumeAtomic<T>((T*) data, dimensions_, spacing_, transformationMatrix_, bitsStored_);
     }
     else {
         // create volume without allocating memory
-        newVolume = new VolumeAtomic<T>(dimensions_, spacing_, bitsStored_, false);
+        newVolume = new VolumeAtomic<T>(dimensions_, spacing_, transformationMatrix_, bitsStored_, false);
     }
 
     // copy over transformation matrix
@@ -499,194 +492,6 @@ void VolumeAtomic<T>::invalidate() const {
 template<class T>
 void* VolumeAtomic<T>::getData() {
     return reinterpret_cast<void*>(data_);
-}
-
-template<class T>
-void voreen::VolumeAtomic<T>::resize(tgt::ivec3 newDims, bool allocMem)
-    throw (std::bad_alloc)
-{
-    if (newDims == getDimensions() && (data_ || !allocMem))
-        return;
-
-    LDEBUG("Resizing from dimensions " << dimensions_ << " to " << newDims);
-
-    delete[] data_;
-    data_ = 0;
-
-    dimensions_ = newDims;
-    calculateProperties();
-
-    if (allocMem) {
-        try {
-            data_ = new T[numVoxels_];
-        }
-        catch (std::bad_alloc) {
-            LERROR("Failed to resize volume: bad allocation");
-            throw; // throw it to the caller
-        }
-    }
-}
-
-template<class T>
-VolumeAtomic<T>* VolumeAtomic<T>::resample(tgt::ivec3 newDims, Filter filter) const
-    throw (std::bad_alloc)
-{
-    using tgt::vec3;
-    using tgt::ivec3;
-
-    LINFO("Resampling from dimensions " << dimensions_ << " to " << newDims);
-
-    vec3 ratio = vec3(dimensions_) / vec3(newDims);
-    vec3 invDims = 1.f / vec3(dimensions_);
-
-    ivec3 pos = ivec3::zero; // iteration variable
-    vec3 nearest; // knows the new position of the target volume
-
-    // build target volume
-    VolumeAtomic<T>* v;
-    try {
-         v = new VolumeAtomic(newDims, spacing_*ratio, bitsStored_);
-    }
-    catch (std::bad_alloc) {
-        throw; // throw it to the caller
-    }
-
-    v->setTransformation(getTransformation());
-    v->meta() = meta();
-
-    /*
-        Filter from the source volume to the target volume.
-    */
-    switch (filter) {
-    case NEAREST:
-        for (pos.z = 0; pos.z < newDims.z; ++pos.z) {
-            nearest.z = static_cast<float>(pos.z) * ratio.z;
-
-            for (pos.y = 0; pos.y < newDims.y; ++pos.y) {
-                nearest.y = static_cast<float>(pos.y) * ratio.y;
-
-                for (pos.x = 0; pos.x < newDims.x; ++pos.x) {
-                    nearest.x = static_cast<float>(pos.x) * ratio.x;
-
-                    ivec3 index = tgt::clamp(ivec3(nearest + 0.5f), ivec3(0), dimensions_ - 1);
-                    v->voxel(pos) = voxel(index); // round and do the lookup
-                }
-            }
-        }
-        break;
-
-    case LINEAR:
-        for (pos.z = 0; pos.z < newDims.z; ++pos.z) {
-            nearest.z = static_cast<float>(pos.z) * ratio.z;
-
-            for (pos.y = 0; pos.y < newDims.y; ++pos.y) {
-                nearest.y = static_cast<float>(pos.y) * ratio.y;
-
-                for (pos.x = 0; pos.x < newDims.x; ++pos.x) {
-                    nearest.x = static_cast<float>(pos.x) * ratio.x;
-                    vec3 p = nearest - floor(nearest); // get decimal part
-                    ivec3 llb = ivec3(nearest);
-                    ivec3 urf = ivec3(ceil(nearest));
-                    urf = tgt::min(urf, dimensions_ - 1); // clamp so the lookups do not exceed the dimensions
-
-                    /*
-                      interpolate linearly
-                    */
-                    typedef typename VolumeElement<T>::DoubleType Double;
-                    v->voxel(pos) =
-                        T(  Double(voxel(llb.x, llb.y, llb.z)) * static_cast<double>((1.f-p.x)*(1.f-p.y)*(1.f-p.z))  // llB
-                          + Double(voxel(urf.x, llb.y, llb.z)) * static_cast<double>((    p.x)*(1.f-p.y)*(1.f-p.z))  // lrB
-                          + Double(voxel(urf.x, urf.y, llb.z)) * static_cast<double>((    p.x)*(    p.y)*(1.f-p.z))  // urB
-                          + Double(voxel(llb.x, urf.y, llb.z)) * static_cast<double>((1.f-p.x)*(    p.y)*(1.f-p.z))  // ulB
-                          + Double(voxel(llb.x, llb.y, urf.z)) * static_cast<double>((1.f-p.x)*(1.f-p.y)*(    p.z))  // llF
-                          + Double(voxel(urf.x, llb.y, urf.z)) * static_cast<double>((    p.x)*(1.f-p.y)*(    p.z))  // lrF
-                          + Double(voxel(urf.x, urf.y, urf.z)) * static_cast<double>((    p.x)*(    p.y)*(    p.z))  // urF
-                          + Double(voxel(llb.x, urf.y, urf.z)) * static_cast<double>((1.f-p.x)*(    p.y)*(    p.z)));// ulF
-                }
-            }
-        }
-        break;
-    }
-
-    return v;
-}
-
-template<class T>
-VolumeAtomic<T>* VolumeAtomic<T>::createSubset(tgt::ivec3 pos, tgt::ivec3 size) const
-    throw (std::bad_alloc)
-{
-
-    VolumeAtomic<T>* subset;
-    try {
-        subset = new VolumeAtomic<T>(size, spacing_, bitsStored_);
-    }
-    catch (std::bad_alloc) {
-        LERROR("Failed to create subset: bad allocation");
-        throw; // throw it to the caller
-    }
-
-    subset->meta() = meta();
-
-    // calculate new imageposition
-    if (pos.z != 0.f)
-        subset->meta().setImagePositionZ(meta().getImagePositionZ() - spacing_.z * pos.z);
-
-    LINFO("Creating subset " << size << " from position " << pos);
-
-    // create values for ranges less than zero and greater equal dimensions_
-    subset->clear(); // TODO: This can be optomized by avoiding to clear the values in range
-
-    // now the rest
-    tgt::ivec3 start = tgt::max(pos, tgt::ivec3::zero);// clamp values
-    tgt::ivec3 end   = tgt::min(pos + size, dimensions_);    // clamp values
-
-    VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), end - start)
-        subset->voxel(i) = voxel(i+start);
-
-    return subset;
-}
-
-/**
-* Calculates to which position the given position relates in a smaller volume. This
-* is used in the calcError function to determine to which position in the smaller volume
-* a voxel position corresponds, in order to compute the difference between the voxels.
-*/
-inline static tgt::ivec3 calcPosInSmallerVolume(tgt::ivec3 pos, tgt::ivec3 factor) {
-    tgt::ivec3 result;
-    result.x = static_cast<int>( floor(pos.x / (float)factor.x));
-    result.y = static_cast<int>( floor(pos.y / (float)factor.y));
-    result.z = static_cast<int>( floor(pos.z / (float)factor.z));
-    return result;
-}
-
-template<class T>
-VolumeAtomic<T>* VolumeAtomic<T>::halfsample() const
-    throw (std::bad_alloc) {
-    tgt::ivec3 dims = dimensions_;
-    tgt::ivec3 halfDims = dimensions_ / 2;
-
-    VolumeAtomic<T>* newVolume = new VolumeAtomic<T>(halfDims,spacing_*2.f,bitsStored_);
-
-    for (int z=0; z<halfDims.z; z++) {
-        for (int y=0; y<halfDims.y; y++) {
-            for (int x=0; x<halfDims.x; x++) {
-                tgt::ivec3 pos = tgt::ivec3(2*x,2*y,2*z);
-                typedef typename VolumeElement<T>::DoubleType Double;
-                newVolume->voxel(x,y,z) =
-                        T(  Double(voxel(pos.x, pos.y, pos.z))          * (1.0/8.0) //LLF
-                          + Double(voxel(pos.x, pos.y, pos.z+1))        * (1.0/8.0) //LLB
-                          + Double(voxel(pos.x, pos.y+1, pos.z))        * (1.0/8.0) //ULF
-                          + Double(voxel(pos.x, pos.y+1, pos.z+1))      * (1.0/8.0) //ULB
-                          + Double(voxel(pos.x+1, pos.y, pos.z))        * (1.0/8.0) //LRF
-                          + Double(voxel(pos.x+1, pos.y, pos.z+1))      * (1.0/8.0) //LRB
-                          + Double(voxel(pos.x+1, pos.y+1, pos.z))      * (1.0/8.0) //URF
-                          + Double(voxel(pos.x+1, pos.y+1, pos.z+1))    * (1.0/8.0)); //URB
-
-            }
-        }
-    }
-
-    return newVolume;
 }
 
 /*

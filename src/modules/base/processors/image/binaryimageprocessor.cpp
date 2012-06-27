@@ -86,8 +86,7 @@ void BinaryImageProcessor::process() {
         return;
 
     outport_.activateTarget();
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    outport_.clearTarget();
 
     TextureUnit shadeUnit0, shadeUnitDepth0, shadeUnit1, shadeUnitDepth1;
     inport0_.bindTextures(shadeUnit0.getEnum(), shadeUnitDepth0.getEnum());
@@ -111,7 +110,8 @@ void BinaryImageProcessor::process() {
     glDepthFunc(GL_LESS);
 
     sh->deactivate();
-    glActiveTexture(GL_TEXTURE0);
+    outport_.deactivateTarget();
+    TextureUnit::setZeroUnit();
     LGL_ERROR;
 }
 

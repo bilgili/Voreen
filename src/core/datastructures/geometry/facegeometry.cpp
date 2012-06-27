@@ -54,6 +54,10 @@ void FaceGeometry::addVertex(const VertexGeometry& vertex) {
     setHasChanged(true);
 }
 
+const VertexGeometry& FaceGeometry::getVertex(size_t index) const {
+    return vertices_.at(index);
+}
+
 VertexGeometry& FaceGeometry::getVertex(size_t index) {
     return vertices_.at(index);
 }

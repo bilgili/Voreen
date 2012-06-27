@@ -49,7 +49,7 @@ OrientationOverlay::OrientationOverlay()
     , outport_(Port::OUTPORT, "image.output")
     , privatePort_(Port::OUTPORT, "image.tmp", false)
     , drawCube_("drawCube", "Draw Cube", true)
-    , drawAxes_("drawAxes", "Draw Axes", true)
+    , drawAxes_("drawAxes", "Draw Axes", false)
     , drawTextures_("drawTextures", "Draw Cube Textures", true)
     , colorizeTextures_("colorizeTextures", "Colorize Textures", false)
     , filenameFront_("filenameFront", "Front Texture", "Select texture",
@@ -70,9 +70,9 @@ OrientationOverlay::OrientationOverlay()
     , filenameRight_("filenameRight", "Right Texture", "Select texture",
                 VoreenApplication::app()->getTexturePath(), "*.jpg;*.png;*.bmp",
                 FileDialogProperty::OPEN_FILE)
-    , shiftX_("shiftX", "Horizontal Position", -0.5f, -1.5f, 1.5f)
-    , shiftY_("shiftY", "Vertical Position", -0.5f, -1.5f, 1.5f)
-    , cubeSize_("cubeSize", "Cube Size", 0.2f, 0.1, 1)
+    , shiftX_("shiftX", "Horizontal Position", 0.85f, 0.0f, 1.0f)
+    , shiftY_("shiftY", "Vertical Position", 0.15f, 0.0f, 1.0f)
+    , cubeSize_("cubeSize", "Cube Size", 0.15f, 0.05, 1)
     , axisLength_("axisLength", "Axes Length", 0.5f, 0.1, 4.f)
     , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
     , frontTex_(0)
@@ -81,6 +81,7 @@ OrientationOverlay::OrientationOverlay()
     , leftTex_(0)
     , bottomTex_(0)
     , rightTex_(0)
+    , reloadTextures_(false)
     , loadingTextures_(false)
 {
     addPort(inport_);
@@ -90,18 +91,18 @@ OrientationOverlay::OrientationOverlay()
     addProperty(drawCube_);
     addProperty(drawAxes_);
     addProperty(drawTextures_);
-    filenameFront_.onChange(CallMemberAction<OrientationOverlay>(this, &OrientationOverlay::loadTextures));
+    filenameFront_.onChange(CallMemberAction<OrientationOverlay>(this, &OrientationOverlay::reloadTextures));
     addProperty(colorizeTextures_);
     addProperty(filenameFront_);
-    filenameBack_.onChange(CallMemberAction<OrientationOverlay>(this, &OrientationOverlay::loadTextures));
+    filenameBack_.onChange(CallMemberAction<OrientationOverlay>(this, &OrientationOverlay::reloadTextures));
     addProperty(filenameBack_);
-    filenameTop_.onChange(CallMemberAction<OrientationOverlay>(this, &OrientationOverlay::loadTextures));
+    filenameTop_.onChange(CallMemberAction<OrientationOverlay>(this, &OrientationOverlay::reloadTextures));
     addProperty(filenameTop_);
-    filenameBottom_.onChange(CallMemberAction<OrientationOverlay>(this, &OrientationOverlay::loadTextures));
+    filenameBottom_.onChange(CallMemberAction<OrientationOverlay>(this, &OrientationOverlay::reloadTextures));
     addProperty(filenameBottom_);
-    filenameLeft_.onChange(CallMemberAction<OrientationOverlay>(this, &OrientationOverlay::loadTextures));
+    filenameLeft_.onChange(CallMemberAction<OrientationOverlay>(this, &OrientationOverlay::reloadTextures));
     addProperty(filenameLeft_);
-    filenameRight_.onChange(CallMemberAction<OrientationOverlay>(this, &OrientationOverlay::loadTextures));
+    filenameRight_.onChange(CallMemberAction<OrientationOverlay>(this, &OrientationOverlay::reloadTextures));
     addProperty(filenameRight_);
     addProperty(shiftX_);
     addProperty(shiftY_);
@@ -157,6 +158,11 @@ bool OrientationOverlay::isReady() const {
     return outport_.isReady();
 }
 
+void OrientationOverlay::beforeProcess() {
+    if (reloadTextures_)
+        loadTextures();
+}
+
 void OrientationOverlay::process() {
     if (!inport_.isReady())
         outport_.activateTarget();
@@ -167,13 +173,16 @@ void OrientationOverlay::process() {
     // set modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
-    tgt::loadMatrix(camera_.get()->getProjectionMatrix());
+
+    tgt::loadMatrix(tgt::mat4::createOrtho(-1,1,1,-1,2,-2));
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    glTranslatef(shiftX_.get(), shiftY_.get(), 0);
-    tgt::mat4 view = camera_.get()->getViewMatrix();
-    view.t23 = -2.7f;
+    glTranslatef(shiftX_.get()*2.0f-1.0f, shiftY_.get()*2.0f-1.0f, 0);
+    tgt::mat4 view = camera_.get()->getViewMatrix().getRotationalPart();
+
+    glScalef((float)outport_.getSize().y / (float)outport_.getSize().x, 1, 1);
+
     tgt::multMatrix(view);
 
     glClearDepth(1);
@@ -508,6 +517,7 @@ void OrientationOverlay::loadTextures() {
 
         LGL_ERROR;
         loadingTextures_ = false;
+        reloadTextures_ = false;
 
         invalidate();
     }
@@ -516,8 +526,11 @@ void OrientationOverlay::loadTextures() {
 void OrientationOverlay::loadTextures() {
 }
 
-
 #endif //VRN_WITH_DEVIL
 
+void OrientationOverlay::reloadTextures() {
+    reloadTextures_ = true;
+    invalidate();
+}
 
 } // namespace

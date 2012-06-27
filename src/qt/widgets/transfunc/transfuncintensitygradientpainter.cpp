@@ -34,6 +34,7 @@
 #include "voreen/core/datastructures/volume/gradient.h"
 #include "voreen/core/datastructures/volume/histogram.h"
 #include "voreen/core/datastructures/volume/volume.h"
+#include "voreen/core/datastructures/volume/volumeoperator.h"
 
 #include "tgt/qt/qtcanvas.h"
 #include "tgt/glcanvas.h"
@@ -322,6 +323,7 @@ void TransFuncIntensityGradientPainter::paint() {
     glActiveTexture(GL_TEXTURE0);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDisable(GL_DEPTH_TEST);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
@@ -337,6 +339,7 @@ void TransFuncIntensityGradientPainter::paint() {
             glTexCoord2f(1.f, 1.f); glVertex3f(1.f, 1.f, -0.5f);  // Top Right Of The Texture and Quad
             glTexCoord2f(0.f, 1.f); glVertex3f(0.f, 1.f, -0.5f);  // Top Left Of The Texture and Quad
         glEnd();
+        histogramTex_->disable();
         glDisable(GL_TEXTURE_2D);
     }
 
@@ -353,10 +356,11 @@ void TransFuncIntensityGradientPainter::paint() {
         glEnd();
     }
 
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     tf_->paintInEditor();
 
     glDisable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
 }
 
 void TransFuncIntensityGradientPainter::initialize() {
@@ -459,7 +463,8 @@ void TransFuncIntensityGradientPainter::createHistogram() {
         } else {
             // HACK!
             tgt::ivec3 newDims = tgt::ivec3(tgt::vec3(volume_->getDimensions()) / (tgt::max(volume_->getDimensions()) / 128.f));
-            intensityVolume = volume_->resample(newDims, Volume::LINEAR);
+            VolumeOperatorResample voResample(newDims, Volume::LINEAR);
+            intensityVolume = voResample.apply<Volume*>(volume_);
         }
         gradientVolume = calcGradients<tgt::col3>(intensityVolume);
 

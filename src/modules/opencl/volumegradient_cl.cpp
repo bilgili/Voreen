@@ -33,6 +33,9 @@
 #include "voreen/core/datastructures/volume/gradient.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 
+#include "voreen/modules/opencl/openclmodule.h"
+#include "voreen/core/voreenapplication.h"
+
 namespace voreen {
 
 using namespace cl;
@@ -51,8 +54,8 @@ VolumeGradientCL::VolumeGradientCL()
     prog_(0)
 {
     technique_.addOption("central-differences", "Central differences");
-    technique_.addOption("sobel", "Sobel");
-    technique_.addOption("linear-regression", "Linear regression");
+    //technique_.addOption("sobel", "Sobel");
+    //technique_.addOption("linear-regression", "Linear regression");
     addProperty(technique_);
     addProperty(copyIntensityChannel_);
 
@@ -60,61 +63,43 @@ VolumeGradientCL::VolumeGradientCL()
     addPort(outport_);
 }
 
-VolumeGradientCL::~VolumeGradientCL() {
-    clearCL();
+Processor* VolumeGradientCL::create() const {
+    return new VolumeGradientCL();
 }
 
 std::string VolumeGradientCL::getProcessorInfo() const {
     return std::string("OpenCL-based version of the VolumeGradient processor.");
 }
 
-void VolumeGradientCL::clearCL() {
-    delete prog_;
-    delete queue_;
-    delete context_;
-    delete opencl_;
-    prog_ = 0;
-    queue_ = 0;
-    context_ = 0;
-    opencl_ = 0;
-}
-
 void VolumeGradientCL::initialize() throw(VoreenException) {
-    //TODO: Central OpenCL init in voreen
     VolumeProcessor::initialize();
 
-    opencl_ = new OpenCL();
+    OpenCLModule::getInstance()->initCL();
+    if (!OpenCLModule::getInstance()->getCLContext()) 
+        throw VoreenException("No OpenCL context created");
 
-    const std::vector<Platform>& platforms = opencl_->getPlatforms();
-    if (platforms.empty()) {
-        LERROR("No OpenCL platforms found");
-        clearCL();
-        initialized_ = false;
-        throw VoreenException("No OpenCL platforms found");
-    }
+    opencl_ = OpenCLModule::getInstance()->getOpenCL();
+    context_ = OpenCLModule::getInstance()->getCLContext();
+    queue_ = OpenCLModule::getInstance()->getCLCommandQueue();
 
-    const std::vector<Device*>& devices = platforms[0].getDevices();
-    if (devices.empty()) {
-        LERROR("No devices in platform found");
-        clearCL();
-        initialized_ = false;
-        throw VoreenException("No devices in platform found");
-    }
-
-    context_ = new Context(Context::generateGlSharingProperties(), devices[0]);
-    queue_ = new CommandQueue(context_, devices.back());
-
-    std::string kernelFile = "../../src/modules/opencl/gradient.cl";
-    LINFO("Loading program: " << kernelFile);
-    prog_ = new Program(context_);
-    bool success = (prog_->loadSource(kernelFile) && prog_->build(devices.back()));
-    if (!success) {
-        clearCL();
-        initialized_ = false;
-        LERROR("Unable to load program: " << kernelFile);
+    std::string kernelFile = VoreenApplication::app()->getModulePath() + "/opencl/gradient.cl";
+    LINFO("Loading program " << kernelFile);
+    prog_ = new Program(OpenCLModule::getInstance()->getCLContext());
+    prog_->loadSource(kernelFile);
+    bool success = prog_->build(OpenCLModule::getInstance()->getCLDevice());
+    if (!success) 
         throw VoreenException("Unable to load program: " + kernelFile);
-    }
+
+    if (!prog_->getKernel("gradient"))
+        throw VoreenException("Kernel 'gradient' not found");
 }
+
+void VolumeGradientCL::deinitialize() throw (VoreenException) {
+    delete prog_;
+    prog_ = 0;
+
+    VolumeProcessor::deinitialize();
+}   
 
 void VolumeGradientCL::process() {
 
@@ -123,100 +108,42 @@ void VolumeGradientCL::process() {
     Volume* inputVolume = inport_.getData()->getVolume();
     Volume* outputVolume = 0;
 
-    // expecting a single-channel volume
-    /*if (inputVolume->getNumChannels() == 1) {
+    if (dynamic_cast<VolumeUInt8*>(inputVolume)) { 
 
-        bool bit16 = inputVolume->getBitsAllocated() > 8;
+        Kernel* kernel = prog_->getKernel("gradient");
+        if (kernel) {
+            glFinish();
 
-        if (technique_.get() == "central-differences") {
-            if (copyIntensityChannel_.get() && bit16)
-                outputVolume = calcGradients<tgt::Vector4<uint16_t> >(inputVolume);
-            else if (copyIntensityChannel_.get() && !bit16)
-                outputVolume = calcGradients<tgt::col4>(inputVolume);
-            else if (!copyIntensityChannel_.get() && bit16)
-                outputVolume = calcGradients<tgt::Vector3<uint16_t> >(inputVolume);
-            else if (!copyIntensityChannel_.get() && !bit16)
-                outputVolume = calcGradients<tgt::col3>(inputVolume);
-            else {
-                tgtAssert(false, "Should not get here");
-            }
-        }
-        else if (technique_.get() == "sobel") {
-            if (copyIntensityChannel_.get() && bit16)
-                outputVolume = calcGradientsSobel<tgt::Vector4<uint16_t> >(inputVolume);
-            else if (copyIntensityChannel_.get() && !bit16)
-                outputVolume = calcGradientsSobel<tgt::col4>(inputVolume);
-            else if (!copyIntensityChannel_.get() && bit16)
-                outputVolume = calcGradientsSobel<tgt::Vector3<uint16_t> >(inputVolume);
-            else if (!copyIntensityChannel_.get() && !bit16)
-                outputVolume = calcGradientsSobel<tgt::col3>(inputVolume);
-            else {
-                tgtAssert(false, "Should not get here");
-            }
-        }
-        else if (technique_.get() == "linear-regression") {
-            if (copyIntensityChannel_.get() && bit16)
-                outputVolume = calcGradientsLinearRegression<tgt::Vector4<uint16_t> >(inputVolume);
-            else if (copyIntensityChannel_.get() && !bit16)
-                outputVolume = calcGradientsLinearRegression<tgt::col4>(inputVolume);
-            else if (!copyIntensityChannel_.get() && bit16)
-                outputVolume = calcGradientsLinearRegression<tgt::Vector3<uint16_t> >(inputVolume);
-            else if (!copyIntensityChannel_.get() && !bit16)
-                outputVolume = calcGradientsLinearRegression<tgt::col3>(inputVolume);
-            else {
-                tgtAssert(false, "Should not get here");
-            }
+            if (copyIntensityChannel_.get())
+                outputVolume = new Volume4xUInt8(inputVolume->getDimensions()); 
+            else
+                outputVolume = new Volume3xUInt8(inputVolume->getDimensions()); 
+
+            Buffer inputBuffer(context_, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, inputVolume->getNumBytes(), inputVolume->getData());
+                Buffer outputBuffer(context_, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, outputVolume->getNumBytes());
+
+            kernel->setArg(0, inputBuffer);
+            kernel->setArg(1, outputBuffer);
+            kernel->setArg(2, copyIntensityChannel_.get() ? 1 : 0);
+
+            queue_->enqueue(kernel, inputVolume->getDimensions());
+            queue_->enqueueRead(&outputBuffer, outputVolume->getData(), true);
+
+            queue_->finish();
         }
         else {
-            LERROR("Unknown technique");
+            LERROR("Kernel 'gradient' not found");
         }
     }
     else {
-        LWARNING("Intensity volume expected, but passed volume consists of " << inputVolume->getNumChannels() << " channels.");
+        LERROR("Currently only VolumeUInt8 supported");
     }
-    */
 
-    Kernel* kernel = prog_->getKernel("gradient");
-    if (kernel) {
-        glFinish();
-
-        outputVolume = new Volume3xUInt8(inputVolume->getDimensions());
-
-        Buffer inputBuffer(context_, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, inputVolume->getNumBytes(), inputVolume->getData());
-        Buffer outputBuffer(context_, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, inputVolume->getNumBytes()*3);
-
-        kernel->setArg(0, inputBuffer);
-        kernel->setArg(1, outputBuffer);
-
-        queue_->enqueue(kernel, inputVolume->getDimensions());
-
-        queue_->enqueueRead(&outputBuffer, outputVolume->getData(), true);
-        //outport_.getData()->generateHardwareVolumes(VolumeHandle::HARDWARE_VOLUME_GL);
-
-        //SharedTexture in(context_, CL_MEM_READ_ONLY, inport_.getData()->getVolumeGL()->getTexture());
-        //SharedTexture out(context_, CL_MEM_WRITE_ONLY, outport_.getColorTexture());
-
-        //kernel->setArg(0, in);
-        //k->setArg(1, out);
-        //k->setArg(2, saturation_.get());
-
-        //queue_->enqueueAcquireGLObject(&in);
-        //queue_->enqueueAcquireGLObject(&out);
-        //queue_->enqueue(kernel, inputVolume->getDimensions());
-        //queue_->enqueueReleaseGLObject(&in);
-        //queue_->enqueueReleaseGLObject(&out);
-
-        queue_->finish();
-
-        // assign computed volume to outport
-        VolumeHandle* prevVolume = outport_.getData();
-        VolumeHandle* newHandle = new VolumeHandle(outputVolume);
-        if (outputVolume)
-            outport_.setData(newHandle);
-        else
-            outport_.setData(0);
-        delete prevVolume;
-    }
+    // assign computed volume to outport
+    if (outputVolume)
+        outport_.setData(new VolumeHandle(outputVolume), true);
+    else
+        outport_.setData(0, true);
 
 }
 

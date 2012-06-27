@@ -29,8 +29,6 @@
 
 #include "voreen/qt/widgets/property/colorpropertywidget.h"
 
-#include "voreen/core/properties/colorproperty.h"
-
 #include <QColorDialog>
 #include <QLabel>
 #include <QMouseEvent>
@@ -58,7 +56,22 @@ void ClickableColorLabel::paintEvent(QPaintEvent* /*event*/) {
     painter.drawRect(1, 1, rect().width() - 2, rect().height() - 2);
 }
 
-ColorPropertyWidget::ColorPropertyWidget(ColorProperty* prop, QWidget* parent)
+/*ColorPropertyWidget::ColorPropertyWidget(ColorProperty* prop, QWidget* parent)
+    : QPropertyWidget(prop, parent)
+    , property_(prop)
+    , colorLbl_(new ClickableColorLabel(""))
+    , currentColor_(toQColor(prop->get()))
+{
+    updateColorLabel();
+    addWidget(colorLbl_);
+    connect(colorLbl_, SIGNAL(clicked(void)), this, SLOT(setProperty(void)));
+    connect(colorLbl_, SIGNAL(clicked(void)), this, SIGNAL(widgetChanged(void)));
+
+    addVisibilityControls();
+    setMinimumHeight(18);
+}*/
+
+ColorPropertyWidget::ColorPropertyWidget(TemplateProperty<tgt::vec4>* prop, QWidget* parent)
     : QPropertyWidget(prop, parent)
     , property_(prop)
     , colorLbl_(new ClickableColorLabel(""))

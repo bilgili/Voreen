@@ -32,6 +32,7 @@
 
 #include "tgt/vector.h"
 #include "tgt/logmanager.h"
+#include "voreen/core/properties/propertyowner.h"
 #include "voreen/core/properties/templateproperty.h"
 #include "voreen/core/properties/condition.h"
 
@@ -40,12 +41,16 @@
 
 namespace voreen {
 
-class PropertyVector : public Property {
+class PropertyVector : public Property, PropertyOwner{
 public:
 
     PropertyVector(const std::string& id, const std::string& guiText, std::vector<Property*> properties);
 
     virtual ~PropertyVector();
+
+    virtual std::string getTypeString() const;
+
+    virtual std::string getName() const;
 
     void addProperty(Property* prop);
 
@@ -81,9 +86,7 @@ public:
 
     PropertyWidget* createWidget(PropertyWidgetFactory* f);
 
-    void setOwner(Processor* processor);
-
-    std::string toString() const;
+    virtual void setOwner(PropertyOwner* owner);
 
 protected:
 

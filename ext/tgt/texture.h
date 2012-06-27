@@ -124,6 +124,9 @@ public:
     /// calculates the bytes per pixel from format dataType and dataType
     static int calcBpp(GLint format, GLenum dataType);
 
+    /// calculates the bytes per pixel from the internal format
+    static int calcBpp(GLint internalformat);
+
 	///calculates size on the GPU (using internalformat)
 	int getSizeOnGPU() const;
 

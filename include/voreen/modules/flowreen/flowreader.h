@@ -40,10 +40,10 @@ class VolumeFlow3D;     // make use of pimpl-idiom
 
 class FlowReader : public VolumeReader {
 public:
-    FlowReader(IOProgress* const progress = 0);
+    FlowReader(ProgressBar* const progress = 0);
     virtual ~FlowReader() {}
 
-    virtual VolumeReader* create(IOProgress* progress = 0) const;
+    virtual VolumeReader* create(ProgressBar* progress = 0) const;
 
     virtual VolumeCollection* read(const std::string& url)
         throw(tgt::FileException, std::bad_alloc);

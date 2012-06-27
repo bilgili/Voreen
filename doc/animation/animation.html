@@ -1,0 +1,262 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta name="generator" content="HTML Tidy for Windows (vers 14 February 2006), see www.w3.org" />
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<title>Voreen Animation Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.75.2" />
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084"
+alink="#0000FF">
+<div class="article" title="Voreen Animation Manual">
+<div class="titlepage">
+<div>
+    <h1 class="title"><a name="d0e1" id="d0e1"></a>VoreenVE - Animation</h1>
+</div>
+<div>
+<div class="toc">
+<p><b>Table of Contents</b></p>
+<dl>
+<dt><span class="sect1"><a href="#d0e30">Key
+Features</a></span></dt>
+<dt><span class="sect1"><a href="#d0e123">Basic Animation
+Editing</a></span></dt>
+<dt><span class="sect1"><a href="#d0e188">Advanced Animation
+Editing</a></span></dt>
+</dl>
+</div>
+</div>
+
+<div class="sect1" title="Key Features">
+<div class="titlepage">
+<div>
+<div>
+<h2 class="title" style="clear: both"><a name="d0e30" id=
+"d0e30"></a>Key Features</h2>
+</div>
+</div>
+</div>
+<p>The main aspect of the animation concept in Voreen is the
+manipulation of properties based on key values. Each property in a
+network is associated with a timeline consisting of key values,
+each of them assigning a property value to a point in time.
+Property values between these key values are calculated by applying
+one of several pre-defined interpolation schemes, such as linear or
+spline interpolation.</p>
+<p>For a convenient manipulation of animations VoreenVE provides an
+animation editor that allows creation, editing and deletion of
+keyframes for (almost) all property types available in Voreen. You
+can also undo or redo editing actions, adjust the animation's
+duration, preview the result, load and save the animation, and
+render it to an image sequence or a video file. Additionally,
+animations can be created efficiently by taking snapshots of the
+whole network state. Figure 1 shows an overview of the editor's
+most common functions.</p>
+<div class="mediaobject"><img src="images/overview.png" />
+<div class="caption">
+<p>Figure 1: Overview of the animation editor</p>
+</div>
+</div>
+<div class="orderedlist">
+<ol class="orderedlist" type="1">
+<li class="listitem">
+<p>New animation</p>
+</li>
+<li class="listitem">
+<p>Settings</p>
+</li>
+<li class="listitem">
+<p>Export video</p>
+</li>
+<li class="listitem">
+<p>Undo</p>
+</li>
+<li class="listitem">
+<p>Redo</p>
+</li>
+<li class="listitem">
+<p>Goto first frame</p>
+</li>
+<li class="listitem">
+<p>Rewind animation</p>
+</li>
+<li class="listitem">
+<p>Pause animation</p>
+</li>
+<li class="listitem">
+<p>Play animation</p>
+</li>
+<li class="listitem">
+<p>Stop animation</p>
+</li>
+<li class="listitem">
+<p>Forward animation</p>
+</li>
+<li class="listitem">
+<p>Goto last frame</p>
+</li>
+<li class="listitem">
+<p>Take snapshot of network state</p>
+</li>
+<li class="listitem">
+<p>Current time</p>
+</li>
+<li class="listitem">
+<p>Current frame</p>
+</li>
+<li class="listitem">
+<p>Refresh previews</p>
+</li>
+<li class="listitem">
+<p>Select renderport for preview generation</p>
+</li>
+<li class="listitem">
+<p>Current position indicator</p>
+</li>
+<li class="listitem">
+<p>Processors</p>
+</li>
+<li class="listitem">
+<p>Add property timeline</p>
+</li>
+<li class="listitem">
+<p>Property timeline</p>
+</li>
+<li class="listitem">
+<p>Selected keyframe with interpolation selectors for in- and
+outgoing functions</p>
+</li>
+<li class="listitem">
+<p>Interpolation modes</p>
+</li>
+<li class="listitem">
+<p>Interpolation functions</p>
+</li>
+<li class="listitem">
+<p>Property widgets for manipulation of the currently selected
+property key value</p>
+</li>
+</ol>
+</div>
+<p>In the following, we will refer to these fields by "(overview
+xx)" with xx indicating the respective number. For example
+"(overview 10)" would refer to the forward button.</p>
+</div>
+<div class="sect1" title="Basic Animation Editing">
+<div class="titlepage">
+<div>
+<div>
+<h2 class="title" style="clear: both"><a name="d0e123" id=
+"d0e123"></a>Basic Animation Editing</h2>
+</div>
+</div>
+</div>
+<p>Open the animation editor by either clicking the appropriate
+button in the toolbar or by selecting the Animation entry in the
+Tools menu (see Figure 2).</p>
+<div class="mediaobject"><img src="images/voreen_cut_200.png" />
+<div class="caption">
+<p>Figure 2: Opening the animation editor</p>
+</div>
+</div>
+<p>We start by adjusting the duration of our animation in the
+Settings menu (overview 2).</p>
+<p>As shown in Figure 3, timelines for properties to animate can be
+added by clicking the "Add property timeline" button (overview
+20).</p>
+<div class="mediaobject"><img src="images/voreen_cut2_200.png" />
+<div class="caption">
+<p>Figure 3: Adding property timelines</p>
+</div>
+</div>
+<p>Initially every property timeline has a key value at the time
+00:00, which represents the processor network state at the moment
+we created the animation. By clicking on this keyframe the
+corresponding property widget (overview 25) becomes active, so that
+the property value at the selected key time can be edited. You also
+can move the key value to change the key value's time.</p>
+<p>A new key value can be created by two different ways as shown in
+Figure 4:</p>
+<div class="mediaobject"><img src="images/voreen_cut3_200.png" />
+<div class="caption">
+<p>Figure 4: Adding a key value</p>
+</div>
+</div>
+<p>1. Do a right-click inside the property timeline (overview 21)
+and select "Add key frame". This will create a keyframe at the time
+represented by the mouse position with the value given by the
+current timeline state at this time (interpolated value). For
+example, if we have an int property and two key values with linear
+interpolation, one at the time 00:00 with the value 0 and one at
+the time 00:10 and the value 100, the added key value 00:05 will
+have the value 50.</p>
+<p>2. Do a right-click inside the property timeline and select
+"Take snapshot". This will take the property value from the current
+network state.</p>
+<p>Now we can manipulate this key value by selecting it with a
+left-click and editing the property widget to its right (overview
+25).</p>
+<p>Furthermore, we can edit the interpolation function that is to
+be applied before and after the key value by clicking the left- or
+right interpolation selector (overview 22). This displays the
+context menu for the selection of the desired interpolation mode
+(overview 23) and interpolation function (overview 24).</p>
+<p>It is also possible to change the time of a key value by simply
+dragging it to the favored position in its timeline.</p>
+<p>To delete a keyframe select it via left-click and press del.</p>
+<p>You can preview the changes via the animation control (overview
+06 - 12) or by clicking any valid position in the overview.</p>
+<p>If the animation looks choppy try to activate the interaction
+mode.</p>
+<p>All of these basic editing techniques support an undo/redo
+feature accessible via the undo (overview 4) and redo button
+(overview 5).</p>
+</div>
+<div class="sect1" title="Advanced Animation Editing">
+<div class="titlepage">
+<div>
+<div>
+<h2 class="title" style="clear: both"><a name="d0e188" id=
+"d0e188"></a>Advanced Animation Editing</h2>
+</div>
+</div>
+</div>
+<p>To save an animation simply save the whole workspace. Animations
+are serialized within the workspace so loading or saving one is
+part of the workspace serialization.</p>
+<p>For a faster animation creation you can take a snapshot of the
+whole network state by selecting a time in the overview widget and
+then clicking the "Take snapshot button" (overview 13). This adds
+key values for all properties whose value in the network deviate
+from their value in the timeline. If the timeline of a modified
+property is not present, it will be added automatically. If you
+forgot to put the current time indicator (overview 18) to the right
+position you can also right-click the desired position in the
+overview timeline and select "Take snapshot" to snapshot the render
+network's state at the corresponding time.</p>
+<p>Snapshotting a single property is possible by a right-click in
+the property timeline at the desired time. This is for instance
+useful for basic camera movement.</p>
+<p>You can disable property timelines by clicking the red icon
+between the timeline and the property widget. A property whose
+timeline is disabled is completely ignored by the animation.</p>
+<p>To export your animation into a video file or a series of
+pictures just press the "Export animation" button (overview 03). A
+dialog will pop up that lets you define the export parameters, such
+as duration and frame rate. Note: If your Voreen version is
+compiled without ffmpeg support, you can only export to a picture
+series.</p>
+<p>As a little hint of the actual animation outcome, there is a
+semi-automatic preview rendering generation available within the
+overview timeline. The canvas to be used for generating the
+previews are selected with the "Select renderport button" (overview
+17). The preview renderings can be refreshed with the "Refresh
+button" (overview 16).</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

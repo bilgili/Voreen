@@ -1,6 +1,79 @@
 Voreen Changelog
 ----------------
 
+2010-09-16: Voreen 2.55 (r37, internal r12039)
+----------------------------------------------
+   * Architectural/infrastructure changes:
+     o The module registration file is now auto-generated; therefore manual registration of 
+       custom modules is no longer necessary.
+       - Instead, the module class has to be specified in the module's *_common.pri project file. 
+         See src/modules/base/base_common.pri or the module tutorial on www.voreen.org.
+       - In case of problems with the auto-registration, it can be disabled in config.txt:
+           DEFINES += VRN_NO_MODULE_AUTO_REGISTRATION
+     o Property semantics can be reflected by views, removing the need to introduce redundant 
+       property types as GUI hints:
+       - ColorProperties and LightProperties are replaced by FloatVec4Properties with views 
+         Property::COLOR or Property::LIGHT_POSITION, respectively. See VolumeRenderer base class.
+     o DICOM volume reader and writer have been encapsulated in the new DICOM module.
+       - DICOM support is enabled with VRN_MODULE_DICOM instead of VRN_WITH_DCMTK.
+       - A pre-compiled DCMTK library for Visual Studio 2008 is now available on www.voreen.org.
+     o The OpenCL module has been revised:
+       - Centralized OpenCL initialization in OpenCLModule class (see GrayscaleCL processor).
+       - Moved OpenCL wrapper from core to OpenCL module.
+
+   * Features improvements:
+     o NetworkEditor:
+       - Processors may utilize a progress bar for indicating progress of time-consuming operations.
+         See VolumeResample or VolumeCombine processor.
+       - Auto-evaluation of the network can be temporarily disabled.
+       - Presence and state of a processor widget (e.g. canvas) is indicated by an icon that is 
+         displayed on top of the processor item.
+     o Related properties can be visually grouped (see SingleVolumeRaycaster).
+     o Property GUI name is changeable in VoreenVE by a right-click on the property's label.
+     o Tracking of numeric properties (continuous updates during slider dragging) can be disabled
+       on code level as well as in the context menu of the property's slider.
+     o Added LinePlot processor as preview of the upcoming plotting feature (see "plotsample.vws"). 
+       Further plot types including height maps and scatter plots will follow in the next release.
+     o Processors:
+       - Added VolumePicking processor for 3D volume picking.
+       - Added VolumeRegistration processor for landmark-based registration.
+         (experimental, see "tools/volumeregistration.vws")
+       - Added QuadricRenderer for rendering GLU quadrics, currently supports cylinders and spheres.
+       - Added VolumeSeriesSource for loading large series of (time-varying) volumes.
+       - GeometryRenderer supports texturing and lighting (merged with TexturedGeometryRenderer).
+       - VolumeMirrorZ supports mirroring along each axis (renamed to VolumeMirror).
+     o The Windows binary now ships with the HPMC module.
+     
+   * Documentation:
+     o Added animation manual, accessible via VoreenVE help menu.
+
+   * Minor changes:
+     o Moved VolumeProcessor base class from base module to core.
+     o RenderPort is derived from Port instead of GenericPort.
+     o Non-canvas end processors trigger network processing.
+     o Workspace archives are always extracted to disc before loading.
+     o Progress dialog is shown during extraction of workspace archives.
+     o Volume::convert/resize/resample/createSubset have been converted into VolumeOperators.
+     o ImageOverlay retrieves overlay image through inport instead of loading it directly.     
+     o Serializer supports std::pair.
+     o Renamed VolumeConvert to VolumeBitScale .
+     o Renamed ClippingPlaneWidget to PlaneWidgetProcessor.
+
+   * Bug fixes:
+     o Volume lighting routines consider volume transformation matrix.
+     o 2D transfer function transparency bug after reloading.
+     o Invalid camera state after certain trackball interactions.
+     o Incorrect results of EEPGeometryIntegrator for non-cubic volumes.
+     o Invalid state of RenderTargetViewer after changing network topology.
+     o Broken rendering after loading of workspace archives.
+     o Unintended reloading of the assigned data set on copy&paste of a VolumeSource processor.
+     o Flickering during video export.
+     o Processors are deinitialized after failed initialization.
+     o Volume clone operations also copy transformation matrix.
+     o Refresh of multiple volumes in the volume container widget.
+     o Serialization of tif volumes.
+          
+
 2010-07-14: Voreen 2.5 (r35, internal r11040)
 ---------------------------------------------
 

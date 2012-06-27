@@ -32,8 +32,8 @@
 namespace voreen {
 
 Convolution::Convolution()
-    : ImageProcessor("pp_convolution"), 
-      filterSize_("filtersize", "Filter Size (NxN)", 0),
+    : ImageProcessor("pp_convolution"),
+      filterSize_("filtersize", "Filter Size (NxN)", 7),
       inport_(Port::INPORT, "inport"),
       filterPort_(Port::INPORT, "filterport"),
       outport_(Port::OUTPORT, "outport")
@@ -87,6 +87,7 @@ void Convolution::process() {
     glDepthFunc(GL_LESS);
 
     program_->deactivate();
+    outport_.deactivateTarget();
     glActiveTexture(GL_TEXTURE0);
     LGL_ERROR;
 }

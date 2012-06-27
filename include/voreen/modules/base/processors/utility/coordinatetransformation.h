@@ -32,7 +32,8 @@
 
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/ports/allports.h"
-#include "voreen/core/properties/allproperties.h"
+
+#include "voreen/core/properties/optionproperty.h"
 
 namespace voreen {
 

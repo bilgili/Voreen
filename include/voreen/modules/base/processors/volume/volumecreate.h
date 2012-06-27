@@ -31,7 +31,7 @@
 #define VRN_VOLUMECREATE_H
 
 #include <string>
-#include "voreen/modules/base/processors/volume/volumeprocessor.h"
+#include "voreen/core/processors/volumeprocessor.h"
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/buttonproperty.h"
@@ -50,7 +50,7 @@ public:
 
     virtual std::string getClassName() const  { return "VolumeCreate";      }
     virtual std::string getCategory() const   { return "Volume Processing"; }
-    virtual CodeState getCodeState() const    { return CODE_STATE_TESTING;  }
+    virtual CodeState getCodeState() const    { return CODE_STATE_STABLE;  }
     virtual std::string getProcessorInfo() const;
 
 protected:

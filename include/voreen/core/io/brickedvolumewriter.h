@@ -44,7 +44,7 @@ namespace voreen {
     public:
         BrickedVolumeWriter(BrickingInformation& brickingInformation);
 
-        virtual VolumeWriter* create(IOProgress* progress = 0) const;
+        virtual VolumeWriter* create(ProgressBar* progress = 0) const;
 
         ~BrickedVolumeWriter();
 

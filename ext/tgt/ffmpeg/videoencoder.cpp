@@ -40,12 +40,6 @@ namespace tgt {
 
 namespace {
 
-/**
- * seperated by whitespace
- * @see VideoEncoder#getSupportedFormatsByFileEnding()
- */
-const char* supportedFormatsFileEndings = "mpeg mpg wmv avi flv ogg";
-
 enum PixelOrderManipulation {
     NONE, FLIP_VERT, REVERSE
 };
@@ -187,7 +181,7 @@ unsigned int videoOutBufferSize;
  */
 const int defaultGopSize = 10;
 const int defaultMaxBFrame = 1;
-const int minimalFps = 25;
+const int minimalFps = 1;
 const int minimalBitrate = 400000;
 
 /*
@@ -195,50 +189,50 @@ const int minimalBitrate = 400000;
  * @see tgt::ContainerCodecPair
  * @see VEAVContext#initFormatContext(tgt::ContainerCodecPair)
  */
-const char* mpegAppendix = "mpeg";
+const char* mpegAppendix = "mpg";
 const char* aviAppendix = "avi";
 const char* flvAppendix = "flv";
 const char* wmvAppendix = "wmv";
 const char* oggAppendix = "ogg";
 
-const char* containerAppendix(ContainerCodecPair preset) {
+const char* containerAppendix(VideoEncoder::ContainerCodecPair preset) {
     switch (preset) {
-    case MPEG4AVI:
-    case HUFFYUVAVI:
+    case VideoEncoder::MPEG4AVI:
+    case VideoEncoder::HUFFYUVAVI:
         return aviAppendix;
-    case WMVWMV:
+    case VideoEncoder::WMVWMV:
         return wmvAppendix;
-    case FLVFLV:
+    case VideoEncoder::FLVFLV:
         return flvAppendix;
-    case OGGTHEORA:
+    case VideoEncoder::OGGTHEORA:
         return oggAppendix;
     default:
         return mpegAppendix;
     }
 }
 
-CodecID containerCodecId(ContainerCodecPair preset) {
+CodecID containerCodecId(VideoEncoder::ContainerCodecPair preset) {
     switch (preset) {
     default:
         return CODEC_ID_MPEG2VIDEO;
-    case FLVFLV:
+    case VideoEncoder::FLVFLV:
         return CODEC_ID_FLV1;
-    case MPEG4AVI:
+    case VideoEncoder::MPEG4AVI:
         return CODEC_ID_MPEG4;
-    case WMVWMV:
+    case VideoEncoder::WMVWMV:
         return CODEC_ID_WMV2;
-    case HUFFYUVAVI:
+    case VideoEncoder::HUFFYUVAVI:
         return CODEC_ID_HUFFYUV;
-    case OGGTHEORA:
+    case VideoEncoder::OGGTHEORA:
         return CODEC_ID_THEORA;
     }
 }
 
-PixelFormat codecPixFmt(ContainerCodecPair preset) {
+PixelFormat codecPixFmt(VideoEncoder::ContainerCodecPair preset) {
     switch (preset) {
     default:
         return PIX_FMT_YUV420P;
-    case HUFFYUVAVI:
+    case VideoEncoder::HUFFYUVAVI:
         return PIX_FMT_YUV422P;
     }
 }
@@ -299,8 +293,9 @@ struct VEAVContext {
     /**
      * init video codec
      */
-    bool initCodec(ContainerCodecPair preset, const int bitRate,
-            const int width, const int height, const int fps) {
+    bool initCodec(VideoEncoder::ContainerCodecPair preset, const int bitRate,
+                   const int width, const int height, const int fps)
+    {
         AVCodecContext* codecContext = videoStream->codec;
         codecContext->codec_id = formatContext_->video_codec_id;
         codecContext->codec_type = CODEC_TYPE_VIDEO;
@@ -379,8 +374,7 @@ struct VEAVContext {
         return true;
     }
 
-    std::string initFormatContext(ContainerCodecPair preset,
-            std::string filePath) {
+    std::string initFormatContext(VideoEncoder::ContainerCodecPair preset, std::string filePath) {
 
         // init format-context
         formatContext_ = avformat_alloc_context();
@@ -389,7 +383,7 @@ struct VEAVContext {
         // let ffmpeg guess what stream-format matches to container-format
         AVOutputFormat* outputFormat;
 
-        if (preset == GUESS) {
+        if (preset == VideoEncoder::GUESS) {
             outputFormat = guess_format(0, filePath.c_str(), 0);
 
             if (!outputFormat) {
@@ -420,9 +414,9 @@ struct VEAVContext {
     }
 
     VEAVContext(std::string filePath, const int fps, const int width,
-            const int height, GLenum pixelFormat, GLenum pixelType,
-            const int bitRate, ContainerCodecPair preset) {
-
+                const int height, GLenum pixelFormat, GLenum pixelType,
+                const int bitRate, VideoEncoder::ContainerCodecPair preset) throw (Exception)
+    {
         // loggerCat_
         // std::string-s concat with "+", but iostream-string-s concat with "<<"
         loggerCat_ = "";
@@ -434,7 +428,7 @@ struct VEAVContext {
 #endif
 
         if (!checkParams(fps, width, height, pixelFormat, pixelType, bitRate)) {
-            return;
+            throw Exception("invalid parameters, see log for details");
         }
 
         //
@@ -458,15 +452,13 @@ struct VEAVContext {
             videoStream = av_new_stream(formatContext_, 1);
 
             if (!videoStream) {
-                LERRORC(loggerCat_, "Could not allocate stream");
-                return;
+                throw Exception("Could not allocate stream");
             }
-            if (!(initCodec(preset, bitRate, width, height, fps)
-                    && initBuffers())) {
-                return;
+            if (!(initCodec(preset, bitRate, width, height, fps) && initBuffers())) {
+                throw Exception("Could not init codec, see log for details");
             }
         } else {
-            LERRORC(loggerCat_, "Failed to allocate format-context");
+            throw Exception("Failed to allocate format-context");
             return;
         }
 
@@ -481,9 +473,8 @@ struct VEAVContext {
 #endif
 
         // open video's file (will overwrite)
-        if (int err = url_fopen(&formatContext_->pb, filePath.c_str(), URL_WRONLY) < 0) {
-            LERRORC(loggerCat_, filePath << " is not accessible (with write-access):  "<< err);
-            return;
+        if (url_fopen(&formatContext_->pb, filePath.c_str(), URL_WRONLY) < 0) {
+            throw Exception("file " + filePath + " is not accessible for write-access");
         }
 
         /*
@@ -585,7 +576,7 @@ VideoEncoder::~VideoEncoder() {
 
 void VideoEncoder::startVideoEncoding(std::string filePath, const int fps,
                                       const int width, const int height,
-                                      GLint pixelFormat, GLenum pixelType) {
+                                      GLint pixelFormat, GLenum pixelType) throw (Exception) {
     if (encoderContext != 0) {
         LWARNING("already encoding a video");
         return;
@@ -595,10 +586,6 @@ void VideoEncoder::startVideoEncoding(std::string filePath, const int fps,
     // TODO consider reusing everything but videoStream
     encoderContext = new VEAVContext(filePath, fps, width, height, pixelFormat,
             pixelType, bitrate_, preset_);
-
-    if (!encoderContext) {
-        LWARNING("Encoding NOT started due to previous error");
-    }
 }
 
 void VideoEncoder::stopVideoEncoding() {
@@ -658,16 +645,24 @@ void VideoEncoder::setup(int preset, int bitrate) {
     bitrate_ = bitrate;
 }
 
-/**
- * static
- */
 std::vector<std::string> VideoEncoder::getSupportedFormatsByFileEnding() {
-    std::stringstream ss(supportedFormatsFileEndings);
     std::vector<std::string> formats;
-    std::string format;
+    formats.push_back("avi");
+    formats.push_back("mpg");
+    formats.push_back("wmv");
+    formats.push_back("flv");
+    formats.push_back("ogg");
 
-    while (ss >> format)
-        formats.push_back(format);
+    return formats;
+}
+
+std::vector<std::string> VideoEncoder::getSupportedFormatDescriptions() {
+    std::vector<std::string> formats;
+    formats.push_back("AVI video files");
+    formats.push_back("MPEG video files");
+    formats.push_back("WMV video files");
+    formats.push_back("Flash FLV video files");
+    formats.push_back("OGG video files");
 
     return formats;
 }

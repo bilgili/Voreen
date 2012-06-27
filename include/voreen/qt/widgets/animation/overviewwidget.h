@@ -100,6 +100,7 @@ public:
     OverviewWidget(QWidget* = 0, NetworkEvaluator* = 0);
     // resets the Overview to its start status
     void reset();
+    int getCurrentFrame();
 
 public slots:
     void contextMenuRequest(QPoint);

@@ -3,45 +3,48 @@
 # Rename this file to 'config.txt' and edit.
 ####################################################
 
-#
-# General configuration
-#
-CONFIG += warn_on
+######################
+# Module configuration
+######################
+# See src/modules for a list of all available modules.
 
-#
 # We definitely need this.
-#
 VRN_MODULES += base
 
-#
-# Modules
-#
 # We add most Voreen modules here, i.e., those which do not depend on
-# non-standard external libraries. See src/modules for a list of all
-# available modules.
-#
+# non-standard external libraries. 
 VRN_MODULES += most
 
-#
+# DICOM volume reader and writer, requires the DCMTK library.
+#VRN_MODULES += dicom 
+
+# GPU-based isosurface extraction and rendering, requires the HPMC library.
+#VRN_MODULES += hpmc 
+
+# OpenCL wrapper and OpenCL-based processors.
+#VRN_MODULES += opencl 
+
+
+###################
 # Projects to build
-#
+###################
 VRN_PROJECTS = core qt voreenve
 
 # Also build the voltool application?
 #VRN_PROJECTS += voltool
 
-#
+
+####################
 # External libraries
-#
+####################
 # You may adjust the paths in the section "Paths" at the bottom of this file.
-#
 
 # We activate some libraries by default on Windows, as they are
 # included in the distribution.
 win32 {
   DEFINES += VRN_WITH_DEVIL VRN_WITH_TIFF VRN_WITH_FONTRENDERING
   !win32-g++ : DEFINES += VRN_WITH_PYTHON
-}
+} 
 
 # Do we have the devil library for image processing?
 #DEFINES += VRN_WITH_DEVIL
@@ -52,46 +55,43 @@ win32 {
 # Do we have the libtiff?
 #DEFINES += VRN_WITH_TIFF
 
-# Do we have the dcmtk libraries (DICOM support)?
-#DEFINES += VRN_WITH_DCMTK
-
 # Do we support fonts via the freetype/ftgl libraries?
 #DEFINES += VRN_WITH_FONTRENDERING
 
 # Python scripting support
 #DEFINES += VRN_WITH_PYTHON
 
-# Do we have the ffmpeg library for video output?
-#DEFINES += VRN_WITH_FFMPEG
-
 # Do we use the zlib library?
 DEFINES += VRN_WITH_ZLIB
 
 
-#
-# Basic features
-#
-
-# Use Windows Management Instrumentation (WMI) for hardware detection
-# on Windows? (Not supported for MinGW)
-win32: !win32-g++: DEFINES += TGT_WITH_WMI
-
-
-#
+#####################
 # Additional settings
-#
+#####################
+
+# Enable compiler warnings
+CONFIG += warn_on
 
 # Disable this line in case of problems with PCH
 CONFIG += precompile_header
 
-# Activate additional debug code in Voreen (also sets TGT_DEBUG and activated assertions)
+# Activate additional debug code in Voreen (also sets TGT_DEBUG and activates assertions)
 #DEFINES += VRN_DEBUG
 
-# Write log output into a file
+# Write log output into a HTML file
 DEFINES += VRN_ADD_FILE_LOGGER
 
-# Compile Voreen for distribution (loads shaders from tarball)
+# Compile Voreen for distribution
 #DEFINES += VRN_DISTRIBUTION
+
+# Extract SVN revision from working copy into svnversion.h
+#DEFINES += VRN_WITH_SVNVERSION
+
+# Show splash screen
+DEFINES += VRN_SPLASHSCREEN
+
+# Do not use stylesheet in VoreenVE
+# DEFINES += VRN_NO_STYLESHEET
 
 # Add additional include paths
 INCLUDEPATH +=
@@ -104,26 +104,17 @@ LIBDIR +=
 #CONFIG -= staticlib
 #CONFIG += dll
 
-unix: !macx {
-  # It is the default on Linux
-  CONFIG -= staticlib
-  CONFIG += dll
-}
+# Disable optimization (useful for debugging)
+#QMAKE_CXXFLAGS_RELEASE -= -O2
+#QMAKE_CXXFLAGS_RELEASE += -O0
+
+# Make all warnings into errors
+#QMAKE_CXXFLAGS += -Werror
 
 
-# Extract SVN revision from working copy into svnversion.h
-#DEFINES += VRN_WITH_SVNVERSION
-
-# Show splash screen
-DEFINES += VRN_SPLASHSCREEN
-
-# Do not use stylesheet:
-# DEFINES += VRN_NO_STYLESHEET
-
-
-#
-# Settings for Linux
-#
+############################
+# Platform-specific settings
+############################
 unix {
 #  CONFIG -= release
 #  CONFIG += debug
@@ -134,43 +125,40 @@ unix {
 #  INSTALL_PREFIX = /usr/local
 }
 
+unix: !macx {
+  # Building shared library is the default on Linux
+  CONFIG -= staticlib
+  CONFIG += dll
+}
+
 # Disable usage of libwrap, sometimes needed with DCMTK
 #CONFIG += without_libwrap
 
-# Disable optimization (useful for debugging)
-#QMAKE_CXXFLAGS_RELEASE -= -O2
-#QMAKE_CXXFLAGS_RELEASE += -O0
+# Use Windows Management Instrumentation (WMI) for hardware detection
+# on Windows? (Not supported for MinGW)
+win32: !win32-g++: DEFINES += TGT_WITH_WMI
 
-# Make all warnings into errors
-#QMAKE_CXXFLAGS += -Werror
 
-DEFINES += VRN_SNAPSHOT
-
-#
-# Defaults paths
-#
+###############
+# Default paths
+###############
 
 # Path to Voreen home, detected automatically
 VRN_HOME = $$PWD
 
 win32 {
-  DCMTK_DIR    = $${VRN_HOME}/ext/dcmtk
   DEVIL_DIR    = $${VRN_HOME}/ext/il
   FFMPEG_DIR   = $${VRN_HOME}/ext/ffmpeg
   FREETYPE_DIR = $${VRN_HOME}/ext/freetype
   FTGL_DIR     = $${VRN_HOME}/ext/ftgl
   PYTHON_DIR   = $${VRN_HOME}/ext/python
   TIFF_DIR     = $${VRN_HOME}/ext/tiff
-  TINYXML_DIR  = $${VRN_HOME}/ext/tinyxml
   ZLIB_DIR     = $${VRN_HOME}/ext/zlib
-  NVIDIA_GPU_COMPUTING_SDK = ""
 }
 
 unix {
   FREETYPE_DIR = /usr/include/freetype2
-  
-  # these need to be adapted according the the Python version
-  PYTHON_DIR = /usr/include/python2.6
+  PYTHON_DIR = /usr/include/python
   PYTHON_LIBS = -lpython2.6
 }
 
@@ -179,6 +167,8 @@ macx {
   GLEW_DIR = 
   GLEW_LIBS = 
 }
+
+DEFINES += VRN_SNAPSHOT
 
 ### Local Variables:
 ### mode:conf-unix

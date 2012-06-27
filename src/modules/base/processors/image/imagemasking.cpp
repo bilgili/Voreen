@@ -40,8 +40,9 @@ ImageMasking::ImageMasking()
     , inport_(Port::INPORT, "image.input")
     , inportMask_(Port::INPORT, "image.mask")
     , outport_(Port::OUTPORT, "image.output", true)
-    , maskColor_("maskColor", "Mask Color")
+    , maskColor_("maskColor", "Mask Color", tgt::Color(0.0f, 0.0f, 0.0f, 0.0f))
 {
+    maskColor_.setViews(Property::COLOR);
     addPort(inport_);
     addPort(inportMask_);
     addPort(outport_);
@@ -59,8 +60,7 @@ Processor* ImageMasking::create() const {
 
 void ImageMasking::process() {
     outport_.activateTarget();
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    outport_.clearTarget();
 
     TextureUnit colorUnit, depthUnit, maskUnit;
     inport_.bindTextures(colorUnit.getEnum(), depthUnit.getEnum());
@@ -90,6 +90,7 @@ void ImageMasking::process() {
     glDepthFunc(GL_LESS);
 
     program_->deactivate();
+    outport_.deactivateTarget();
     glActiveTexture(GL_TEXTURE0);
     LGL_ERROR;
 }

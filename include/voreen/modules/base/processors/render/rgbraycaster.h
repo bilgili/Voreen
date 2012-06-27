@@ -32,6 +32,12 @@
 
 #include "voreen/core/processors/volumeraycaster.h"
 
+#include "voreen/core/properties/transfuncproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/cameraproperty.h"
+
+#include "voreen/core/ports/volumeport.h"
+
 namespace voreen {
 
 /**

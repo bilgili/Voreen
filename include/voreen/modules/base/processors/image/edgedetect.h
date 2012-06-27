@@ -33,6 +33,11 @@
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/processors/imageprocessordepth.h"
 
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
+
 namespace voreen {
 
 /**
@@ -61,11 +66,11 @@ public:
 
 protected:
     FloatProperty edgeThreshold_; ///< Threshold value for the gradient length to be considered as an edge
-    ColorProperty backgroundColor_; ///< the color of the background
+    FloatVec4Property backgroundColor_; ///< the color of the background
     BoolProperty showImage_; ///< Whether to show the original image or just the edge
     IntOptionProperty blendMode_; ///< Specifies how the edge is colored
     IntOptionProperty edgeStyle_; ///< The edge style can be: contour, silhouette, depth-dependent contour
-    ColorProperty edgeColor_; ///< The color used for drawing the edges
+    FloatVec4Property edgeColor_; ///< The color used for drawing the edges
 
     RenderPort inport_;
     RenderPort outport_;

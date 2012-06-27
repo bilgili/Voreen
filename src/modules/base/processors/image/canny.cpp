@@ -47,6 +47,7 @@ Canny::Canny()
     addProperty(startThreshold_);
     addProperty(runThreshold_);
     addProperty(edgeColor_);
+    edgeColor_.setViews(Property::COLOR);
 
     addPort(inport_);
     addPort(outport_);
@@ -146,6 +147,7 @@ void Canny::process() {
         }
     }
     glPopMatrix();
+    outport_.deactivateTarget();
     glMatrixMode(GL_MODELVIEW);
     privatePort_.getColorTexture()->destroy();
     delete[] processed;

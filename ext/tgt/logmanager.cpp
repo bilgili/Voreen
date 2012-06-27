@@ -97,8 +97,8 @@ std::string Log::getLevelString(LogLevel level) {
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-void TextLog::logFiltered(const std::string &cat, LogLevel level, const std::string &msg,
-                          const std::string &/*extendedInfo*/)
+void TextLog::logFiltered(const std::string& cat, LogLevel level, const std::string& msg,
+                          const std::string& /*extendedInfo*/)
 {
     if (!file_)
         return;
@@ -140,7 +140,20 @@ bool TextLog::isOpen() {
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+ConsoleLog::ConsoleLog(bool dateStamping, bool timeStamping, bool showCat, bool showLevel) {
+    timeStamping_ = timeStamping;
+    dateStamping_ = dateStamping;
+    showCat_ = showCat;
+    showLevel_ = showLevel;
+    std::cout << getLevelColor(Info);
+
 #ifdef __unix__
+    colorOutput_ = true;
+#else
+    colorOutput_ = false;
+#endif
+}
+
 std::string ConsoleLog::getLevelColor(LogLevel level) {
     switch (level) {
     case Debug:   return "\033[22;32m";    // green
@@ -151,16 +164,13 @@ std::string ConsoleLog::getLevelColor(LogLevel level) {
     default:      return "";
     }
 }
-#else
-std::string ConsoleLog::getLevelColor(LogLevel) {
-    return "";
-}
-#endif
 
-void ConsoleLog::logFiltered(const std::string &cat, LogLevel level, const std::string &msg,
-                             const std::string &/*extendedInfo*/)
+void ConsoleLog::logFiltered(const std::string& cat, LogLevel level, const std::string& msg,
+                             const std::string& /*extendedInfo*/)
 {
-    std::string output = getLevelColor(level);
+    std::string output;
+    if (colorOutput_)
+        output = getLevelColor(level);
 
     if (dateStamping_)
         output += "[" + getDateString() + "] ";
@@ -174,18 +184,14 @@ void ConsoleLog::logFiltered(const std::string &cat, LogLevel level, const std::
         output += '\t';
 
     output += msg;
-#ifdef __unix__
-    output += "\033[00m"; // return to default color (Reset all attributes)
-#endif
+    if (colorOutput_)
+        output += "\033[00m"; // return to default color (Reset all attributes)
+
     std::cout << output << std::endl;
 }
 
-ConsoleLog::ConsoleLog(bool dateStamping, bool timeStamping, bool showCat, bool showLevel) {
-    timeStamping_ = timeStamping;
-    dateStamping_ = dateStamping;
-    showCat_ = showCat;
-    showLevel_ = showLevel;
-    std::cout << getLevelColor(Info);
+void ConsoleLog::enableColors(bool enable) {
+    colorOutput_ = enable;
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++

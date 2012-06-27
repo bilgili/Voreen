@@ -42,7 +42,7 @@ class DatVolumeWriter : public VolumeWriter {
 public:
     DatVolumeWriter();
 
-    virtual VolumeWriter* create(IOProgress* progress = 0) const;
+    virtual VolumeWriter* create(ProgressBar* progress = 0) const;
 
     std::string getDatFileString(VolumeHandle* const volumeHandle,
         const std::string& rawFileName, char** volData, size_t& numBytes);

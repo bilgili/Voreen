@@ -62,7 +62,20 @@ TextOverlay::TextOverlay()
     , layout1_("layout1", "Text position 2:")
     , layout2_("layout2", "Text position 3:")
     , layout3_("layout3", "Text position 4:")
-    , font_(0)
+#ifdef _MSC_VER
+#pragma warning(disable:4355)  // passing 'this' is safe here
+#endif
+    , mouseMoveEventProp_("mouseEvent.move", "Move Event", this, &TextOverlay::mouseMove,
+        tgt::MouseEvent::MOUSE_BUTTON_NONE, tgt::MouseEvent::MOTION, tgt::MouseEvent::MODIFIER_NONE)
+#ifdef _MSC_VER
+#pragma warning(disable:4355)  // passing 'this' is safe here
+#endif
+    , mouseEnterExitEventProp_("mouseEvent.EnterExit", "Enter/Exit Event", this, &TextOverlay::mouseEnterExit,
+        tgt::MouseEvent::MOUSE_BUTTON_NONE, tgt::MouseEvent::ENTER_EXIT, tgt::MouseEvent::MODIFIER_NONE)
+    , viewportSize_(0,0)
+    , mousePos_(0,0)
+    , fontProp_("voreen.fontprop", "Font:")
+    , renderFollowMouseText_(false)
 {
     addPort(inport_);
     addPort(outport_);
@@ -73,6 +86,7 @@ TextOverlay::TextOverlay()
     addPort(text3_);
 
     std::vector<Option<std::string> > options;
+    options.push_back(Option<std::string>("FOLLOW", "Follow mouse", ""));
     options.push_back(Option<std::string>("N", "North", ""));
     options.push_back(Option<std::string>("NE", "North-East", ""));
     options.push_back(Option<std::string>("E", "East", ""));
@@ -96,6 +110,11 @@ TextOverlay::TextOverlay()
     addProperty(layout1_);
     addProperty(layout2_);
     addProperty(layout3_);
+
+    addEventProperty(mouseMoveEventProp_);
+    addEventProperty(mouseEnterExitEventProp_);
+
+    addProperty(fontProp_);
 }
 
 TextOverlay::~TextOverlay() {
@@ -112,25 +131,13 @@ Processor* TextOverlay::create() const {
 
 void TextOverlay::initialize() throw (VoreenException) {
     ImageProcessor::initialize();
-
-    std::string fontFile = VoreenApplication::app()->getFontPath("VeraMono.ttf");
-    font_ = new tgt::Font(fontFile, fontSize, tgt::BitmapFont);
-    if (!font_) {
-        LERRORC("voreen.TextOverlay", "Failed to load font " << fontFile);
-        initialized_ = false;
-        throw VoreenException("Failed to load font " + fontFile);
-    }
 }
 
 void TextOverlay::deinitialize() throw (VoreenException) {
-    delete font_;
-    font_ = 0;
-
     ImageProcessor::deinitialize();
 }
 
 bool TextOverlay::isReady() const {
-
     if (!isInitialized())
         return false;
 
@@ -207,7 +214,8 @@ void TextOverlay::process() {
 }
 
 void TextOverlay::renderOverlay() {
-    tgtAssert(font_, "No font object");
+    glPushMatrix();
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     glDisable(GL_LIGHTING);
     glDisable(GL_TEXTURE_2D);
@@ -217,35 +225,71 @@ void TextOverlay::renderOverlay() {
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     // render font(s)
-    glPushMatrix();
     glTranslatef(-1,-1,0);
     float scaleFactorX = 2.0f / (float)inport_.getSize().x;
     float scaleFactorY = 2.0f / (float)inport_.getSize().y;
     glScalef(scaleFactorX, scaleFactorY, 1);
 
-    font_->setLineWidth((float)inport_.getSize().x - 5);
+    float offsetY = 7;
 
-    font_->setTextAlignment(tgt::Left);
-    font_->renderWithLayout(tgt::vec3(5, (float)inport_.getSize().y - fontSize - 3, 0), collectText("NW"));
-    font_->renderWithLayout(tgt::vec3(5, ((float)inport_.getSize().y * 0.5f)
-                                      + (getNumberOfLines(collectText("W")) - 1) * 0.5f * font_->getLineHeight(), 0), collectText("W"));
-    font_->renderWithLayout(tgt::vec3(5, (getNumberOfLines(collectText("SW")) - 1) * font_->getLineHeight(), 0), collectText("SW"));
+    fontProp_.get()->setLineWidth((float)inport_.getSize().x - 10);
 
-    font_->setTextAlignment(tgt::Right);
-    font_->renderWithLayout(tgt::vec3(0, (float)inport_.getSize().y - fontSize - 3, 0), collectText("NE"));
-    font_->renderWithLayout(tgt::vec3(5, ((float)inport_.getSize().y * 0.5f)
-                                      + (getNumberOfLines(collectText("E")) - 1) * 0.5f * font_->getLineHeight(), 0), collectText("E"));
-    font_->renderWithLayout(tgt::vec3(5, (getNumberOfLines(collectText("SE")) - 1) * font_->getLineHeight(), 0), collectText("SE"));
+    fontProp_.get()->setTextAlignment(tgt::Font::Left);
 
-    font_->setLineWidth((float)inport_.getSize().x - 10);
+    fontProp_.get()->setVerticalTextAlignment(tgt::Font::Bottom);
+    fontProp_.get()->render(tgt::vec3(5, (float)inport_.getSize().y - offsetY, 0), collectText("NW"));
 
-    font_->setTextAlignment(tgt::Center);
-    font_->renderWithLayout(tgt::vec3(5, (float)inport_.getSize().y - fontSize - 3, 0), collectText("N"));
-    font_->renderWithLayout(tgt::vec3(5, ((float)inport_.getSize().y * 0.5f)
-                                      + (getNumberOfLines(collectText("CENTER")) - 1) * 0.5f * font_->getLineHeight(), 0),
-                            collectText("CENTER"));
-    font_->renderWithLayout(tgt::vec3(5, (getNumberOfLines(collectText("S")) - 1) * font_->getLineHeight(), 0), collectText("S"));
+    fontProp_.get()->setVerticalTextAlignment(tgt::Font::Middle);
+    fontProp_.get()->render(tgt::vec3(5, (float)inport_.getSize().y * 0.5f, 0), collectText("W"));
 
+    fontProp_.get()->setVerticalTextAlignment(tgt::Font::Top);
+    fontProp_.get()->render(tgt::vec3(5, 5, 0), collectText("SW"));
+
+    fontProp_.get()->setTextAlignment(tgt::Font::Center);
+
+    fontProp_.get()->setVerticalTextAlignment(tgt::Font::Bottom);
+    fontProp_.get()->render(tgt::vec3(5, (float)inport_.getSize().y - offsetY, 0), collectText("N"));
+
+    fontProp_.get()->setVerticalTextAlignment(tgt::Font::Middle);
+    fontProp_.get()->render(tgt::vec3(5, (float)inport_.getSize().y * 0.5f, 0), collectText("CENTER"));
+
+    fontProp_.get()->setVerticalTextAlignment(tgt::Font::Top);
+    fontProp_.get()->render(tgt::vec3(5, 5, 0), collectText("S"));
+
+    fontProp_.get()->setTextAlignment(tgt::Font::Right);
+
+    fontProp_.get()->setVerticalTextAlignment(tgt::Font::Bottom);
+    fontProp_.get()->render(tgt::vec3(5, (float)inport_.getSize().y - offsetY, 0), collectText("NE"));
+
+    fontProp_.get()->setVerticalTextAlignment(tgt::Font::Middle);
+    fontProp_.get()->render(tgt::vec3(5, (float)inport_.getSize().y * 0.5f, 0), collectText("E"));
+
+    fontProp_.get()->setVerticalTextAlignment(tgt::Font::Top);
+    fontProp_.get()->render(tgt::vec3(5, 5, 0), collectText("SE"));
+
+    // Follow mouse
+    if(renderFollowMouseText_) {
+        fontProp_.get()->setLineWidth(((float)inport_.getSize().x / 2.0f) - 12);
+        float deltaX = 0;
+        if(mousePos_.x < (float)viewportSize_.x / 2.0f) {
+            fontProp_.get()->setTextAlignment(tgt::Font::Left);
+            deltaX = 12;
+            if(mousePos_.y >= (float)viewportSize_.y / 2.0f)
+                fontProp_.get()->setVerticalTextAlignment(tgt::Font::Bottom);
+            else
+                fontProp_.get()->setVerticalTextAlignment(tgt::Font::Top);
+        } else {
+            fontProp_.get()->setTextAlignment(tgt::Font::Right);
+            deltaX = -(float)viewportSize_.x / 2.0f;
+            if(mousePos_.y >= (float)viewportSize_.y / 2.0f)
+                fontProp_.get()->setVerticalTextAlignment(tgt::Font::Bottom);
+            else
+                fontProp_.get()->setVerticalTextAlignment(tgt::Font::Top);
+        }
+        fontProp_.get()->render(tgt::vec3((float)mousePos_.x + deltaX, (float)mousePos_.y, 0), collectText("FOLLOW"));
+    }
+
+    glPopAttrib();
     glPopMatrix();
 }
 
@@ -295,6 +339,19 @@ int TextOverlay::getNumberOfLines(std::string s) {
         numLines++;
 
     return numLines;
+}
+
+void TextOverlay::mouseMove(tgt::MouseEvent* e) {
+    viewportSize_ = tgt::ivec2(e->viewport().x, e->viewport().y);
+    mousePos_ = tgt::ivec2(e->coord().x, e->viewport().y - e->coord().y);
+    invalidate();
+    e->ignore();
+}
+
+void TextOverlay::mouseEnterExit(tgt::MouseEvent* e) {
+    renderFollowMouseText_ = e->action() == tgt::MouseEvent::ENTER;
+    invalidate();
+    e->ignore();
 }
 
 } // namespace

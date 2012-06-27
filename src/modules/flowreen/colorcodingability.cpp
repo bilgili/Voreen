@@ -39,6 +39,7 @@ ColorCodingAbility::ColorCodingAbility()
       colorTableProp_("colorTableProp_", "color table: "),
       colorProp_("colorProp_", "color: ", tgt::vec4(1.0f))
 {
+    colorProp_.setViews(Property::COLOR);
     colorCodingModeProp_.addOption("magnitude", "magnitude", COLOR_CODING_MODE_MAGNITUDE);
     colorCodingModeProp_.addOption("direction", "direction", COLOR_CODING_MODE_DIRECTION);
     colorCodingModeProp_.addOption("monochrome", "monochrome", COLOR_CODING_MODE_MONOCHROME);

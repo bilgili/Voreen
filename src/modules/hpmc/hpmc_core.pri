@@ -1,6 +1,3 @@
-# module class
-SOURCES += $${VRN_MODULE_SRC_DIR}/hpmc/hpmcmodule.cpp
-HEADERS += $${VRN_MODULE_INC_DIR}/hpmc/hpmcmodule.h
 
 SOURCES += $${VRN_MODULE_SRC_DIR}/hpmc/marchingcubesrenderer.cpp
 SOURCES += $${VRN_MODULE_SRC_DIR}/hpmc/multisurfacerenderer.cpp

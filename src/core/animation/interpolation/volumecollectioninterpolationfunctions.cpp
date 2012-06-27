@@ -31,68 +31,67 @@
 
 namespace voreen {
 
-VolumeCollectionStartInterpolationFunction::VolumeCollectionStartInterpolationFunction() {
-}
+VolumeCollectionStartInterpolationFunction::VolumeCollectionStartInterpolationFunction() {}
+
 std::string VolumeCollectionStartInterpolationFunction::getMode() const {
     return "focus on startvalue";
 }
+
 std::string VolumeCollectionStartInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 VolumeCollection* VolumeCollectionStartInterpolationFunction::interpolate(VolumeCollection* startvalue, VolumeCollection* endvalue, float time) const {
-    if (time<1){
+    if (time < 1.f)
         return startvalue;
-    }
-    else{
+    else
         return endvalue;
-    }
 }
-InterpolationFunction<VolumeCollection*>* VolumeCollectionStartInterpolationFunction::clone() const{
+
+InterpolationFunction<VolumeCollection*>* VolumeCollectionStartInterpolationFunction::clone() const {
     return new VolumeCollectionStartInterpolationFunction();
 }
 
+VolumeCollectionEndInterpolationFunction::VolumeCollectionEndInterpolationFunction() {}
 
-VolumeCollectionEndInterpolationFunction::VolumeCollectionEndInterpolationFunction() {
-}
 std::string VolumeCollectionEndInterpolationFunction::getMode() const {
     return "focus on endvalue";
 }
+
 std::string VolumeCollectionEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 VolumeCollection* VolumeCollectionEndInterpolationFunction::interpolate(VolumeCollection* startvalue, VolumeCollection* endvalue, float time) const {
-    if (time>0){
+    if (time > 0.f)
         return endvalue;
-    }
-    else{
+    else
         return startvalue;
-    }
 }
-InterpolationFunction<VolumeCollection*>* VolumeCollectionEndInterpolationFunction::clone() const{
+
+InterpolationFunction<VolumeCollection*>* VolumeCollectionEndInterpolationFunction::clone() const {
     return new VolumeCollectionEndInterpolationFunction();
 }
 
+VolumeCollectionStartEndInterpolationFunction::VolumeCollectionStartEndInterpolationFunction() {}
 
-VolumeCollectionStartEndInterpolationFunction::VolumeCollectionStartEndInterpolationFunction() {
-}
 std::string VolumeCollectionStartEndInterpolationFunction::getMode() const {
     return "bisection";
 }
+
 std::string VolumeCollectionStartEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 VolumeCollection* VolumeCollectionStartEndInterpolationFunction::interpolate(VolumeCollection* startvalue, VolumeCollection* endvalue, float time) const {
-    if (time<0.5){
+    if (time < 0.5f)
         return startvalue;
-    }
-    else{
+    else
         return endvalue;
-    }
 }
-InterpolationFunction<VolumeCollection*>* VolumeCollectionStartEndInterpolationFunction::clone() const{
+
+InterpolationFunction<VolumeCollection*>* VolumeCollectionStartEndInterpolationFunction::clone() const {
     return new VolumeCollectionStartEndInterpolationFunction();
 }
 
 } // namespace voreen
-
-

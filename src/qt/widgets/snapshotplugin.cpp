@@ -44,6 +44,7 @@
 #include <QToolButton>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <QDesktopServices>
 
 namespace voreen {
 
@@ -157,12 +158,14 @@ void SnapshotPlugin::sizeComboChanged(int index) {
     }
     else {
         // create int from string and set Spinboxes to that values
-        QString curText = sizeCombo_->currentText();
-        int xIndex = curText.indexOf("x");
-        int width = curText.left(xIndex).toInt();
-        int height = curText.right(curText.size()-xIndex-1).toInt();
-        spWidth_->setValue(width);
-        spHeight_->setValue(height);
+        if(!sizeCombo_->currentText().contains("native")) {
+            QString curText = sizeCombo_->currentText();
+            int xIndex = curText.indexOf("x");
+            int width = curText.left(xIndex).toInt();
+            int height = curText.right(curText.size()-xIndex-1).toInt();
+            spWidth_->setValue(width);
+            spHeight_->setValue(height);
+        }
     }
 
     spWidth_->blockSignals(false);
@@ -181,14 +184,19 @@ void SnapshotPlugin::takeSnapshot() {
     filedialog.setAcceptMode(QFileDialog::AcceptSave);
 
     QList<QUrl> urls;
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getSnapshotPath().c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getDocumentsPath().c_str());
+    urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
+    urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
     filedialog.setSidebarUrls(urls);
 
-    if (path_.isEmpty())
-        filedialog.setDirectory(VoreenApplication::app()->getSnapshotPath().c_str());
-    else
-        filedialog.setDirectory(path_);
-    filedialog.selectFile(tr("snapshot.png"));
+    struct tm* Tm;
+    time_t currentTime = time(NULL);
+    Tm = localtime(&currentTime);
+    std::stringstream timestamp;
+    timestamp << "snapshot " << (Tm->tm_year+1900) << "-" << (Tm->tm_mon+1) << "-" << Tm->tm_mday << "-" << Tm->tm_hour << "-" << Tm->tm_min << "-" << Tm->tm_sec;
+    timestamp << ".png";
+    filedialog.selectFile(tr(timestamp.str().c_str()));
 
     QStringList fileList;
     if (filedialog.exec())

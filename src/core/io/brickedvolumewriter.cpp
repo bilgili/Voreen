@@ -200,7 +200,8 @@ void BrickedVolumeWriter::writeVolume(VolumeHandle* volumeHandle) {
     while (!finished) {
         newDims = temp->getDimensions() / 2;
         //scaledVolume = temp->scale(newDims,Volume::LINEAR);
-        scaledVolume = temp->halfsample();
+        VolumeOperatorHalfsample voHalfsample;
+        scaledVolume = voHalfsample.apply<Volume*>(temp);
         volumeVector.push_back(scaledVolume);
         numVoxels = scaledVolume->getNumVoxels();
         temp = scaledVolume;
@@ -239,7 +240,7 @@ void BrickedVolumeWriter::writeVolume(VolumeHandle* volumeHandle) {
 
 }
 
-VolumeWriter* BrickedVolumeWriter::create(IOProgress* /*progress*/) const {
+VolumeWriter* BrickedVolumeWriter::create(ProgressBar* /*progress*/) const {
     BrickingInformation i;
     return new BrickedVolumeWriter(i);
 }

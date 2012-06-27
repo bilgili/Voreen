@@ -64,13 +64,13 @@ std::string RenderStore::getProcessorInfo() const {
 }
 
 bool RenderStore::isReady() const {
-    return (inport_.isReady() && privatePort_.hasData());
+    return (inport_.isReady() && privatePort_.hasRenderTarget());
 }
 
 void RenderStore::process() {
 
     tgtAssert(inport_.isReady(), "Inport not ready");
-    tgtAssert(privatePort_.hasData(), "Private port has no data");
+    tgtAssert(privatePort_.hasRenderTarget(), "Private port has no data");
 
     //
     // render private port to outport, if connected
@@ -146,7 +146,7 @@ void RenderStore::initialize() throw (VoreenException) {
     RenderProcessor::initialize();
 
     shaderPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "copyimage.frag",
-        generateHeader(), false, false);
+        generateHeader(), false);
 
     if (!shaderPrg_) {
         LERROR("Failed to load shaders!");
@@ -170,7 +170,7 @@ tgt::vec4 RenderStore::getStoredTargetPixel(const tgt::ivec2 &pos) {
         return tgt::vec4(-1.f);
     }
     else {
-        return privatePort_.getData()->getColorAtPos(pos);
+        return privatePort_.getRenderTarget()->getColorAtPos(pos);
     }
 }
 

@@ -30,7 +30,7 @@
 #ifndef VRN_VOLUMEFILTERING_H
 #define VRN_VOLUMEFILTERING_H
 
-#include "voreen/modules/base/processors/volume/volumeprocessor.h"
+#include "voreen/core/processors/volumeprocessor.h"
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/optionproperty.h"
 
@@ -42,9 +42,10 @@ public:
     virtual ~VolumeFiltering();
     virtual Processor* create() const;
 
-    virtual std::string getClassName() const    { return "VolumeFiltering"; }
-    virtual std::string getCategory() const     { return "Volume Processing"; }
-    virtual CodeState getCodeState() const      { return CODE_STATE_TESTING; }
+    virtual std::string getClassName() const      { return "VolumeFiltering"; }
+    virtual std::string getCategory() const       { return "Volume Processing"; }
+    virtual CodeState getCodeState() const        { return CODE_STATE_TESTING; }
+    virtual bool usesExpensiveComputation() const { return true; }
     virtual std::string getProcessorInfo() const;
 
 protected:

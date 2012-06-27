@@ -154,14 +154,15 @@ void InputMappingDialog::addProcessorToLayout(const Processor* processor) {
     // add widgets for collected interaction handler's normal properties
     QPropertyWidgetFactory propFactory;
     for (size_t j=0; j<handlerProps.size(); j++) {
-        PropertyWidget* propWidget = handlerProps[j]->createWidget(&propFactory);
-        if (dynamic_cast<QPropertyWidget*>(propWidget)) {
+        PropertyWidget* propWidget = handlerProps[j]->createAndAddWidget(&propFactory);
+        if (QPropertyWidget* qPropWidget = dynamic_cast<QPropertyWidget*>(propWidget)) {
             QHBoxLayout* layoutTemp = new QHBoxLayout();
             layoutTemp->setContentsMargins(2,2,2,2);
-            QLabel* label = new QLabel(QString::fromStdString(handlerProps[j]->getGuiName()));
-            layoutTemp->addWidget(label);
+            QLabel* nameLabel = const_cast<QLabel*>(qPropWidget->getNameLabel());
+            nameLabel->setMinimumWidth(0);
+            layoutTemp->addWidget(nameLabel);
             layoutTemp->addSpacing(5);
-            layoutTemp->addWidget(static_cast<QPropertyWidget*>(propWidget));
+            layoutTemp->addWidget(qPropWidget);
             layoutTemp->addStretch();
             boxLayout->addLayout(layoutTemp);
         }

@@ -32,6 +32,10 @@
 
 #include "voreen/core/processors/renderprocessor.h"
 
+#include "voreen/core/ports/genericcoprocessorport.h"
+
+#include "voreen/core/properties/cameraproperty.h"
+
 namespace voreen {
 
 class GeometryRendererBase;

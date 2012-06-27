@@ -34,6 +34,7 @@
 
 namespace voreen {
 
+class AggregationMetaData;
 class Processor;
 class PropertyLink;
 
@@ -51,7 +52,7 @@ typedef std::pair<const PropertyLink*, const PropertyLink*> ArrowLinkInformation
  * however must be filled from the class responsible for creating the AggregationGraphicsItem
  * in the first place (e.g. NetworkEditor).
  */
-class AggregationGraphicsItem : public RootGraphicsItem {
+class AggregationGraphicsItem : public RootGraphicsItem, public ProcessorObserver {
 Q_OBJECT
 public:
     /**
@@ -67,9 +68,6 @@ public:
      * list.
      */
     AggregationGraphicsItem(QList<RootGraphicsItem*> items, NetworkEditor* networkEditor);
-
-    /// The destructor will not delete any processor or contained RootGraphicsItem on its own
-    virtual ~AggregationGraphicsItem();
 
     /**
      * Returns a deep copy of all processors and contained RootGraphicsItem of this aggregation.
@@ -166,12 +164,40 @@ public:
      */
     void renameFinished(bool changeChildItems = true);
 
-    //void addAggregationPrefix(const QString& prefix);
-    //void removeAggregationPrefix();
-    //void removeAllAggregationPrefixes();
+    /**
+     * This callback is called if a certain processor has created its processor widget \sa ProcessorWidget
+     * so this item can reset it's widget indicator button \sa WidgetIndicatorButton
+     *
+     * \param processor The processor which created its widget
+     */
+    void processorWidgetCreated(const Processor* processor);
+
+    /**
+     * This callback is called if a certain processor deleted its processor widget \sa ProcessorWidget
+     * so this item can reste it's widget indicator button \sa WidgetIndicatorButton
+     *
+     * \param processor The processor which deleted its widget
+     */
+    void processorWidgetDeleted(const Processor* processor);
+
+    /**
+     * This method returns QActions for every ProcessorWidget contained in this Aggregation
+     */
+    QList<QAction*> getProcessorWidgetContextMenuActions();
+
+    void setAggregationMetaData(AggregationMetaData* metaData);
+    AggregationMetaData* getAggregationMetaData() const;
+
+protected slots:
+    /**
+     * This methods looks for this sender (must be a QAction) in the \sa processorWidgetMap_ and
+     * toggles the visiblity of the relevant \sa ProcessorWidget
+     */
+    void toggleSingleProcessorWidget();
 
 protected:
-    virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
 
     /// Returns a list of all directly or indirectly contained inports (\sa Port)
     QList<Port*> getInports() const;
@@ -181,6 +207,8 @@ protected:
     QList<CoProcessorPort*> getCoProcessorInports() const;
     /// Returns a list of all directly or indirectly contained coprocessor outports (\sa CoProcessorPort)
     QList<CoProcessorPort*> getCoProcessorOutports() const;
+
+    void toggleProcessorWidget();
 
 private:
     /// the list of all contained child items
@@ -199,6 +227,15 @@ private:
     QList<PortArrowGraphicsItem*> internalPortArrows_;
     /// list list of all internally maintained \sa LinkArrowGraphicsItems with their PropertyLinks
     QList<QPair<LinkArrowGraphicsItem*, ArrowLinkInformation> > internalLinkArrows_;
+
+    /// this ivar maps every action to its processor widget, used in toggleSingleProcessorWidget
+    QMap<QAction*, ProcessorWidget*> processorWidgetMap_;
+
+    /// This map stores the relative position of the childitems in respect to this aggregation
+    QMap<RootGraphicsItem*, QPointF> relativePositionMap_;
+
+    /// The MetaDataContainer belonging to this Aggregation. Necessary for serializing the name
+    AggregationMetaData* metaData_;
 };
 
 } // namespace

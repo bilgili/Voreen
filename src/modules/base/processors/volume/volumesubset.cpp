@@ -30,6 +30,7 @@
 #include "voreen/modules/base/processors/volume/volumesubset.h"
 #include "voreen/core/datastructures/volume/volume.h"
 #include "voreen/core/datastructures/volume/volumehandle.h"
+#include "voreen/core/datastructures/volume/volumeoperator.h"
 #include "voreen/core/datastructures/volume/gradient.h"
 
 namespace voreen {
@@ -44,12 +45,12 @@ VolumeSubSet::VolumeSubSet()
     : VolumeProcessor()
     , inport_(Port::INPORT, "volumehandle.input")
     , outport_(Port::OUTPORT, "volumehandle.output", 0)
-    , clipRight_("rightClippingPlane", "Right clipping plane (x)", 0, 0, 100000, true)
-    , clipLeft_("leftClippingPlane", "Left clipping plane (x)", 1, 1, 100000, true)
-    , clipFront_("frontClippingPlane", "Front clipping plane (y)", 0, 0, 100000, true)
-    , clipBack_("backClippingPlane", "Back clipping plane (y)", 1, 1, 100000, true)
-    , clipBottom_("bottomClippingPlane", "Bottom clipping plane (z)", 0, 0, 100000, true)
-    , clipTop_("topClippingPlane", "Top clipping plane (z)", 1, 1, 100000, true)
+    , clipRight_("rightClippingPlane", "Right clipping plane (x)", 0, 0, 100000)
+    , clipLeft_("leftClippingPlane", "Left clipping plane (x)", 1, 1, 100000)
+    , clipFront_("frontClippingPlane", "Front clipping plane (y)", 0, 0, 100000)
+    , clipBack_("backClippingPlane", "Back clipping plane (y)", 1, 1, 100000)
+    , clipBottom_("bottomClippingPlane", "Bottom clipping plane (z)", 0, 0, 100000)
+    , clipTop_("topClippingPlane", "Top clipping plane (z)", 1, 1, 100000)
     , preserveLocation_("preserveLocation", "Preserve location", true)
     , continuousCropping_("continuousCropping", "Continuous cropping", false)
     , button_("button", "Crop")
@@ -135,7 +136,8 @@ void VolumeSubSet::crop() {
     dimensions.y = clipBack_.get() - clipFront_.get() + 1;
     dimensions.z = clipTop_.get() - clipBottom_.get() + 1;
 
-    outputVolume = inputVolume->createSubset(start, dimensions);
+    VolumeOperatorCreateSubset voCreateSubset(start, dimensions);
+    outputVolume = voCreateSubset.apply<Volume*>(inputVolume);
     outputVolume->setSpacing(inputVolume->getSpacing());
 
     // assign computed volume to outport

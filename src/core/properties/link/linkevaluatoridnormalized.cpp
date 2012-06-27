@@ -28,7 +28,9 @@
  **********************************************************************/
 
 #include "voreen/core/properties/link/linkevaluatoridnormalized.h"
-#include "voreen/core/properties/allproperties.h"
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
 
 namespace voreen {
 

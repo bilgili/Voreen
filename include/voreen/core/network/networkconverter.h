@@ -85,11 +85,22 @@ public:
 
 /**
  * The @c NetworkConverter4to5 converts the serialized XML data for a
- * version 4 @c ProcessorNetwork to XML data for a version 5 @c ProcessorNetwork.
+ * version 5 @c ProcessorNetwork to XML data for a version 6 @c ProcessorNetwork.
  *
  * @see NetworkConverter
  */
 class NetworkConverter5to6 : public NetworkConverter {
+public:
+    virtual void convert(TiXmlElement* elem);
+};
+
+/**
+ * The @c NetworkConverter4to5 converts the serialized XML data for a
+ * version 6 @c ProcessorNetwork to XML data for a version 7 @c ProcessorNetwork.
+ *
+ * @see NetworkConverter
+ */
+class NetworkConverter6to7 : public NetworkConverter {
 public:
     virtual void convert(TiXmlElement* elem);
 };

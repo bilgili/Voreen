@@ -32,6 +32,11 @@
 
 #include "voreen/core/processors/geometryrendererbase.h"
 
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
+
 namespace voreen {
 
 /**
@@ -41,7 +46,6 @@ namespace voreen {
 class GeometryRenderer : public GeometryRendererBase {
 public:
     GeometryRenderer();
-    ~GeometryRenderer();
     virtual Processor* create() const;
 
     virtual std::string getCategory() const   { return "Geometry";         }
@@ -49,42 +53,30 @@ public:
     virtual CodeState getCodeState() const    { return CODE_STATE_STABLE;  }
     virtual std::string getProcessorInfo() const;
 
+    virtual bool isReady() const;
+
     /**
      * Calls render() on the Geometry object.
      */
     virtual void render();
 
 protected:
+    virtual void updatePropertyVisibilities();
+
     GeometryPort inport_;
-    GLEnumOptionProperty polygonMode_;
-};
-
-//---------------------------------------------------------------------------
-
-/**
- * Renders a geometry with a texture applied to it.
- */
-class TexturedGeometryRenderer : public GeometryRenderer {
-public:
-    TexturedGeometryRenderer();
-    ~TexturedGeometryRenderer();
-
-    virtual std::string getCategory() const { return "Geometry"; }
-    virtual std::string getClassName() const { return "TexturedGeometryRenderer"; }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_EXPERIMENTAL; }
-    virtual std::string getProcessorInfo() const {
-        return "Renders a geometry with a texture.";
-    }
-
-    virtual Processor* create() const { return new TexturedGeometryRenderer(); }
-
-    /**
-     * Binds the texture on the inport and calls render() on the Geometry object.
-     */
-    virtual void render();
-
-protected:
     RenderPort texPort_;
+    GLEnumOptionProperty polygonMode_;
+
+    BoolProperty mapTexture_;
+    IntOptionProperty textureMode_;
+
+    BoolProperty enableLighting_;
+    FloatVec4Property lightPosition_;       ///< The position of the light source in world coordinates
+    FloatVec4Property lightAmbient_;        ///< The light source's ambient color
+    FloatVec4Property lightDiffuse_;        ///< The light source's diffuse color
+    FloatVec4Property lightSpecular_;       ///< The light source's specular color
+    FloatProperty materialShininess_;   /// The material's specular exponent
+
 };
 
 }

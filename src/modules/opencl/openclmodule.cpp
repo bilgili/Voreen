@@ -28,6 +28,7 @@
  **********************************************************************/
 
 #include "voreen/modules/opencl/openclmodule.h"
+#include "voreen/modules/opencl/clwrapper.h"
 
 #include "voreen/modules/opencl/grayscale_cl.h"
 #include "voreen/modules/opencl/raytracingentryexitpoints.h"
@@ -35,14 +36,91 @@
 
 namespace voreen {
 
+OpenCLModule* OpenCLModule::instance_ = 0;
+
 OpenCLModule::OpenCLModule()
     : VoreenModule()
+    , opencl_(0)
+    , context_(0)
+    , queue_(0)
+    , device_(0)
 {
     setName("OpenCL");
 
     addProcessor(new GrayscaleCL());
     addProcessor(new RaytracingEntryExitPoints());
     addProcessor(new VolumeGradientCL());
+
+    instance_ = this;
 }
+
+void OpenCLModule::deinitialize() throw (VoreenException) {
+    delete queue_;
+    delete context_;
+    delete opencl_;
+    queue_ = 0;
+    context_ = 0;
+    opencl_ = 0;
+
+    VoreenModule::deinitialize();
+}
+
+void OpenCLModule::initCL() throw (VoreenException) {
+    if (opencl_)
+        return;
+
+    opencl_ = new cl::OpenCL();
+
+    const std::vector<cl::Platform>&  platforms = opencl_->getPlatforms();
+    if (platforms.empty()) {
+        LERRORC("voreen.OpenCLModule", "Found no OpenCL platforms!");
+        throw VoreenException("Found no OpenCL platforms");
+    }
+
+    const std::vector<cl::Device*>& devices = platforms[0].getDevices();
+    if (devices.empty()) {
+        LERRORC("voreen.OpenCLModule", "Found no devices in platform!");
+        throw VoreenException("Found no devices in platform");
+    }
+    //Device* dev = OpenCL::getCurrentDeviceForGlContext();
+
+    device_ = devices[0];
+    context_ = new cl::Context(cl::Context::generateGlSharingProperties(), device_);
+    queue_ = new cl::CommandQueue(context_, device_);
+    //context_ = new Context(Context::generateGlSharingProperties(), dev);
+    //queue_ = new CommandQueue(context_, dev);
+}
+
+cl::OpenCL* OpenCLModule::getOpenCL() const {
+    if (!opencl_) 
+        LERRORC("voreen.OpenCLModule", "No OpenCL wrapper. Call initCL first!");
+    return opencl_;
+}
+
+cl::Context* OpenCLModule::getCLContext() const {
+    if (!context_)
+        LERRORC("voreen.OpenCLModule", "No OpenCL context. Call initCL first!");
+     return context_;
+}
+
+cl::CommandQueue* OpenCLModule::getCLCommandQueue() const {
+    if (!queue_) 
+        LERRORC("voreen.OpenCLModule", "No OpenCL queue. Call initCL first!");
+    return queue_;
+}
+
+cl::Device* OpenCLModule::getCLDevice() const {
+    if (!device_) 
+        LERRORC("voreen.OpenCLModule", "No OpenCL device. Call initCL first!");
+    return device_;
+}
+
+OpenCLModule* OpenCLModule::getInstance() {
+    if (!instance_) 
+        LERRORC("voreen.OpenCLModule", "not instantiated");
+
+    return instance_;
+}
+
 
 } // namespace

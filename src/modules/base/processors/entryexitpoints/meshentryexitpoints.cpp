@@ -33,6 +33,8 @@
 
 #include "tgt/glmath.h"
 #include "tgt/gpucapabilities.h"
+#include "tgt/texturemanager.h"
+#include "tgt/shadermanager.h"
 #include "tgt/textureunit.h"
 
 using tgt::vec3;
@@ -49,16 +51,14 @@ const std::string MeshEntryExitPoints::loggerCat_("voreen.MeshEntryExitPoints");
 MeshEntryExitPoints::MeshEntryExitPoints()
     : RenderProcessor(),
       shaderProgram_(0),
-      shaderProgramInsideVolume_(0),
       shaderProgramJitter_(0),
-      shaderProgramClipping_(0),
       supportCameraInsideVolume_("supportCameraInsideVolume",
                                  "Support camera in volume", true),
       jitterEntryPoints_("jitterEntryPoints", "Jitter entry params", false),
       filterJitterTexture_("filterJitterTexture", "Filter jitter texture", true),
       useFloatRenderTargets_("useFloatRenderTargets", "Use float render targets", false),
       jitterStepLength_("jitterStepLength", "Jitter step length",
-                        0.005f, 0.0005f, 0.025f, true),
+                        0.005f, 0.0005f, 0.025f),
       jitterTexture_(0),
       camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f))),
       entryPort_(Port::OUTPORT, "image.entrypoints"),
@@ -93,24 +93,7 @@ MeshEntryExitPoints::MeshEntryExitPoints()
     addPrivateRenderPort(&tmpPort_);
 }
 
-std::string MeshEntryExitPoints::getProcessorInfo() const {
-    return "This is the standard processor for generating entry- and exit-points within Voreen. "
-           "The generated image color-codes the ray parameters for a subsequent VolumeRaycaster.<br/>"
-           "See CubeMeshProxyGeometry.";
-}
-
 MeshEntryExitPoints::~MeshEntryExitPoints() {
-    if (shaderProgram_)
-        ShdrMgr.dispose(shaderProgram_);
-    if (shaderProgramInsideVolume_)
-        ShdrMgr.dispose(shaderProgramInsideVolume_);
-    if (shaderProgramJitter_)
-        ShdrMgr.dispose(shaderProgramJitter_);
-    if (shaderProgramClipping_)
-        ShdrMgr.dispose(shaderProgramClipping_);
-    if (jitterTexture_)
-        TexMgr.dispose(jitterTexture_);
-
     delete cameraHandler_;
 }
 
@@ -118,24 +101,36 @@ Processor* MeshEntryExitPoints::create() const {
     return new MeshEntryExitPoints();
 }
 
+std::string MeshEntryExitPoints::getProcessorInfo() const {
+    return "This is the standard processor for generating entry- and exit-points within Voreen. "
+           "The generated image color-codes the ray parameters for a subsequent VolumeRaycaster.<br/>"
+           "See CubeMeshProxyGeometry.";
+}
+
 void MeshEntryExitPoints::initialize() throw (VoreenException) {
     RenderProcessor::initialize();
 
-    shaderProgram_ = ShdrMgr.load("eep_simple", generateHeader(), false, false);
-    shaderProgramInsideVolume_ = ShdrMgr.load("eep_inside_volume", generateHeader(), false, false);
+    shaderProgram_ = ShdrMgr.load("eep_simple", generateHeader(), false);
 
     shaderProgramJitter_ = ShdrMgr.loadSeparate("passthrough.vert", "eep_jitter.frag",
-                                                generateHeader(), false, false);
-    shaderProgramClipping_ = ShdrMgr.loadSeparate("eep_simple.vert", "eep_clipping.frag",
-                                                  generateHeader() , false, false);
+                                                generateHeader(), false);
 
-    if (!shaderProgram_ || !shaderProgramInsideVolume_ || !shaderProgramJitter_ || !shaderProgramClipping_) {
-        LERROR("Failed to load shaders!");
-        initialized_ = false;
-        throw VoreenException(getClassName() + ": Failed to load shaders!");
+    if (!shaderProgram_ || !shaderProgramJitter_) {
+        throw VoreenException("Failed to load shaders");
     }
+}
 
-    initialized_ = true;
+void MeshEntryExitPoints::deinitialize() throw (VoreenException) {
+    ShdrMgr.dispose(shaderProgram_);
+    shaderProgram_ = 0;
+
+    ShdrMgr.dispose(shaderProgramJitter_);
+    shaderProgramJitter_ = 0;
+
+    TexMgr.dispose(jitterTexture_);
+    jitterTexture_ = 0;
+
+    RenderProcessor::deinitialize();
 }
 
 bool MeshEntryExitPoints::isReady() const {
@@ -149,14 +144,14 @@ void MeshEntryExitPoints::beforeProcess() {
     RenderPort& refPort = (entryPort_.isReady() ? entryPort_ : exitPort_);
 
     if (useFloatRenderTargets_.get()) {
-        if (refPort.getData()->getColorTexture()->getDataType() != GL_FLOAT) {
+        if (refPort.getRenderTarget()->getColorTexture()->getDataType() != GL_FLOAT) {
             entryPort_.changeFormat(GL_RGBA16F_ARB);
             exitPort_.changeFormat(GL_RGBA16F_ARB);
             tmpPort_.changeFormat(GL_RGBA16F_ARB);
         }
     }
     else {
-        if (refPort.getData()->getColorTexture()->getDataType() == GL_FLOAT) {
+        if (refPort.getRenderTarget()->getColorTexture()->getDataType() == GL_FLOAT) {
             entryPort_.changeFormat(GL_RGBA16);
             exitPort_.changeFormat(GL_RGBA16);
             tmpPort_.changeFormat(GL_RGBA16);
@@ -194,14 +189,8 @@ void MeshEntryExitPoints::process() {
     glEnable(GL_CULL_FACE);
 
     // activate shader program
-    if (supportCameraInsideVolume_.get()) {
-        shaderProgramInsideVolume_->activate();
-        setGlobalShaderParameters(shaderProgramInsideVolume_, camera_.get());
-    }
-    else {
-        shaderProgram_->activate();
-        setGlobalShaderParameters(shaderProgram_, camera_.get());
-    }
+    shaderProgram_->activate();
+    setGlobalShaderParameters(shaderProgram_, camera_.get());
     LGL_ERROR;
 
     //
@@ -271,10 +260,7 @@ void MeshEntryExitPoints::process() {
     }
 
     // deactivate shader program
-    if (supportCameraInsideVolume_.get())
-        shaderProgramInsideVolume_->deactivate();
-    else
-        shaderProgram_->deactivate();
+    shaderProgram_->deactivate();
 
     // restore OpenGL state
     glCullFace(GL_BACK);
@@ -320,6 +306,7 @@ void MeshEntryExitPoints::jitterEntryPoints() {
                                      tgt::vec2(jitterTexture_->getDimensions().xy()));
     shaderProgramJitter_->setUniform("jitterParameters_.dimensionsRCP_",
                                      tgt::vec2(1.0f) / tgt::vec2(jitterTexture_->getDimensions().xy()));
+    shaderProgramJitter_->setUniform("jitterParameters_.matrix_", tgt::mat4::identity);
     shaderProgramJitter_->setIgnoreUniformLocationError(false);
 
     // bind entry points texture and depth texture (have been rendered to temporary port)

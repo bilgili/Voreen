@@ -37,8 +37,9 @@
 
 #include "voreen/core/datastructures/rendertarget.h"
 #include "voreen/core/processors/processor.h"
-#include "voreen/core/ports/allports.h"
-#include "voreen/core/properties/allproperties.h"
+#include "voreen/core/ports/renderport.h"
+#include "voreen/core/ports/genericport.h"
+
 
 namespace voreen {
 
@@ -152,7 +153,7 @@ protected:
      * @param screenDim dimensions of the render target's viewport. Is no parameter is passed,
      *      the dimensions of the first outport is chosen.
      */
-    virtual void setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera* camera = 0, tgt::ivec2 screenDim = tgt::ivec2(-1));
+    virtual void setGlobalShaderParameters(tgt::Shader* shader, const tgt::Camera* camera = 0, tgt::ivec2 screenDim = tgt::ivec2(-1));
     //---------------------------------------------------------
 
     /// used for cycle prevention during render port size propagation

@@ -30,18 +30,30 @@
 #include "portarrowgraphicsitem.h"
 
 #include "portgraphicsitem.h"
+#include "rootgraphicsitem.h"
 #include "voreen/core/ports/coprocessorport.h"
+#include "arrowheadselectiongraphicsitem.h"
 
 #include <QPainterPath>
+#include <QGraphicsSceneMouseEvent>
 
 namespace {
     const QColor transparentColor(80, 80, 80, 100);
+
+    const qreal eventRadius = 15.f;
+
+    qreal distance(const QPointF& p1, const QPointF& p2) {
+        qreal a = p1.x() - p2.x();
+        qreal b = p1.y() - p2.y();
+        return sqrt(a*a + b*b);
+    }
 }
 
 namespace voreen {
 
 PortArrowGraphicsItem::PortArrowGraphicsItem(PortGraphicsItem* sourceItem)
     : ArrowGraphicsItem(sourceItem, 0)
+    , oldDestinationItem_(0)
 {
     if (!dynamic_cast<CoProcessorPort*>(sourceItem->getPort()))
         destinationHeadDirection_ = ArrowHeadDirectionNS;
@@ -151,11 +163,24 @@ PortGraphicsItem* PortArrowGraphicsItem::getDestinationItem() const {
         return 0;
 }
 
+PortGraphicsItem* PortArrowGraphicsItem::getOldPortGraphicsItem() const {
+    return oldDestinationItem_;
+}
+
 void PortArrowGraphicsItem::setLayer(NetworkEditorLayer layer) {
     switch (layer) {
     case NetworkEditorLayerDataflow:
         setFlag(ItemIsSelectable);
         setAcceptsHoverEvents(true);
+
+        if (sourceSelectionItem_) {
+            sourceSelectionItem_->setFlag(ItemIsSelectable);
+            sourceSelectionItem_->setAcceptHoverEvents(true);
+        }
+        if (destinationSelectionItem_) {
+            destinationSelectionItem_->setFlag(ItemIsSelectable);
+            destinationSelectionItem_->setAcceptHoverEvents(true);
+        }
 
         if (getSourceItem()->getPort()->isLoopPort())
             setNormalColor(Qt::lightGray);
@@ -166,11 +191,50 @@ void PortArrowGraphicsItem::setLayer(NetworkEditorLayer layer) {
         setFlag(ItemIsSelectable, false);
         setAcceptsHoverEvents(false);
 
+        if (sourceSelectionItem_) {
+            sourceSelectionItem_->setFlag(ItemIsSelectable, false);
+            sourceSelectionItem_->setAcceptHoverEvents(false);
+        }
+        if (destinationSelectionItem_) {
+            destinationSelectionItem_->setFlag(ItemIsSelectable,false );
+            destinationSelectionItem_->setAcceptHoverEvents(false);
+        }
+
         setNormalColor(transparentColor);
         break;
     default:
         tgtAssert(false, "shouldn't get here");
     }
+}
+
+void PortArrowGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
+    clickedPoint_ = event->scenePos();
+    movedAwayInEvent_ = false;
+    emit getSourceItem()->startedArrow();
+    QGraphicsItem::mousePressEvent(event);
+}
+
+void PortArrowGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
+    if (!movedAwayInEvent_) {
+        if (distance(event->scenePos(), clickedPoint_) > eventRadius)
+            movedAwayInEvent_ = true;
+    }
+
+    if (movedAwayInEvent_) {
+        getSourceItem()->setCurrentArrow(this);
+        if (getDestinationItem())
+            oldDestinationItem_ = getDestinationItem();
+        getSourceItem()->mouseMoveEvent(event);
+    }
+    else
+        QGraphicsItem::mouseMoveEvent(event);
+}
+
+void PortArrowGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
+    if (movedAwayInEvent_)
+        getSourceItem()->mouseReleaseEvent(event);
+    else
+        QGraphicsItem::mouseReleaseEvent(event);
 }
 
 } // namespace

@@ -59,7 +59,7 @@ RESOURCES = $${VRN_HOME}/resource/qt/vrn_qt.qrc
 SOURCES += \
     aboutbox.cpp \
     helpbrowser.cpp \
-    ioprogressdialog.cpp \
+    progressdialog.cpp \
     pyvoreenqt.cpp \
     versionqt.cpp \
     voreenapplicationqt.cpp
@@ -69,6 +69,7 @@ SOURCES += \
     widgets/codeedit.cpp \
     widgets/consoleplugin.cpp \
     widgets/customlabel.cpp \
+    widgets/enterexitpushbutton.cpp \
     widgets/eventpropertywidget.cpp \
     widgets/expandableheaderbutton.cpp \
     widgets/glslhighlighter.cpp \
@@ -90,6 +91,12 @@ SOURCES += \
     widgets/volumeviewhelper.cpp \
     widgets/voreentoolwindow.cpp
 SOURCES += \
+    widgets/plotting/plotdatasimpletablemodel.cpp \
+    widgets/plotting/extendedtable.cpp \
+    widgets/plotting/plotdataextendedtablemodel.cpp \
+    widgets/plotting/plotdatawidget.cpp \
+    widgets/plotting/plotpredicatedialog.cpp 
+SOURCES += \
     widgets/animation/animationeditor.cpp \
     widgets/animation/animationexportwidget.cpp \
     widgets/animation/currentframegraphicsitem.cpp \
@@ -105,6 +112,7 @@ SOURCES += \
     widgets/property/boolpropertywidget.cpp \
     widgets/property/buttonpropertywidget.cpp \
     widgets/property/camerapropertywidget.cpp \
+    widgets/property/colormappropertywidget.cpp \
     widgets/property/colorpropertywidget.cpp \
     widgets/property/filedialogpropertywidget.cpp \
     widgets/property/floatmat2propertywidget.cpp \
@@ -114,13 +122,19 @@ SOURCES += \
     widgets/property/floatvec2propertywidget.cpp \
     widgets/property/floatvec3propertywidget.cpp \
     widgets/property/floatvec4propertywidget.cpp \
+    widgets/property/fontpropertywidget.cpp \
     widgets/property/intpropertywidget.cpp \
     widgets/property/intvec2propertywidget.cpp \
     widgets/property/intvec3propertywidget.cpp \
     widgets/property/intvec4propertywidget.cpp \
+    widgets/property/plotentitiespropertywidget.cpp \
+    widgets/property/plotentitysettingswidget.cpp \
     widgets/property/lightpropertywidget.cpp \
     widgets/property/matrixpropertywidget.cpp \
     widgets/property/optionpropertywidget.cpp \
+    widgets/property/plotdatapropertywidget.cpp \
+    widgets/property/plotpredicatepropertywidget.cpp \
+    widgets/property/plotzoompropertywidget.cpp \
     widgets/property/processorpropertieswidget.cpp \
     widgets/property/propertyvectorwidget.cpp \
     widgets/property/qpropertywidget.cpp \
@@ -128,6 +142,7 @@ SOURCES += \
     widgets/property/qpropertywidgetwitheditorwindow.cpp \
     widgets/property/shaderpropertywidget.cpp \
     widgets/property/stringpropertywidget.cpp \
+    widgets/property/grouppropertywidget.cpp \
     widgets/property/transfuncpropertywidget.cpp \
     widgets/property/vecpropertywidget.cpp \
     widgets/property/volumecollectionpropertywidget.cpp \
@@ -139,7 +154,9 @@ SOURCES += \
 SOURCES += \
     widgets/processor/canvasrendererwidget.cpp \
     widgets/processor/qprocessorwidget.cpp \
-    widgets/processor/qprocessorwidgetfactory.cpp
+    widgets/processor/qprocessorwidgetfactory.cpp \
+    widgets/processor/imageanalyzerwidget.cpp \
+    widgets/processor/plotdataprocessorwidget.cpp
 SOURCES += \
     widgets/property/camerawidget.cpp 
 
@@ -178,7 +195,7 @@ visual_studio: SOURCES += $$SHADER_SOURCES $$SHADER_SOURCES_RENDERTARGETVIEWER
 HEADERS += \
     ../../include/voreen/qt/aboutbox.h \
     ../../include/voreen/qt/helpbrowser.h \
-    ../../include/voreen/qt/ioprogressdialog.h \
+    ../../include/voreen/qt/progressdialog.h \
     ../../include/voreen/qt/pyvoreenqt.h \
     ../../include/voreen/qt/versionqt.h \
     ../../include/voreen/qt/voreenapplicationqt.h
@@ -189,6 +206,7 @@ HEADERS += \
     ../../include/voreen/qt/widgets/codeedit.h \
     ../../include/voreen/qt/widgets/consoleplugin.h \
     ../../include/voreen/qt/widgets/customlabel.h \
+    ../../include/voreen/qt/widgets/enterexitpushbutton.h \
     ../../include/voreen/qt/widgets/eventpropertywidget.h \
     ../../include/voreen/qt/widgets/expandableheaderbutton.h \
     ../../include/voreen/qt/widgets/glslhighlighter.h \
@@ -209,6 +227,12 @@ HEADERS += \
     ../../include/voreen/qt/widgets/volumeloadbutton.h \
     ../../include/voreen/qt/widgets/volumeviewhelper.h \
     ../../include/voreen/qt/widgets/voreentoolwindow.h
+HEADERS += \
+    ../../include/voreen/qt/widgets/plotting/plotdatasimpletablemodel.h \
+    ../../include/voreen/qt/widgets/plotting/extendedtable.h \
+    ../../include/voreen/qt/widgets/plotting/plotdataextendedtablemodel.h \
+    ../../include/voreen/qt/widgets/plotting/plotdatawidget.h \
+    ../../include/voreen/qt/widgets/plotting/plotpredicatedialog.h 
 HEADERS +=  \
     ../../include/voreen/qt/widgets/animation/animationeditor.h \
     ../../include/voreen/qt/widgets/animation/currentframegraphicsitem.h \
@@ -224,6 +248,7 @@ HEADERS += \
     ../../include/voreen/qt/widgets/property/boolpropertywidget.h \
     ../../include/voreen/qt/widgets/property/buttonpropertywidget.h \
     ../../include/voreen/qt/widgets/property/camerapropertywidget.h \
+    ../../include/voreen/qt/widgets/property/colormappropertywidget.h \
     ../../include/voreen/qt/widgets/property/colorpropertywidget.h \
     ../../include/voreen/qt/widgets/property/filedialogpropertywidget.h \
     ../../include/voreen/qt/widgets/property/floatmat2propertywidget.h \
@@ -233,13 +258,19 @@ HEADERS += \
     ../../include/voreen/qt/widgets/property/floatvec2propertywidget.h \
     ../../include/voreen/qt/widgets/property/floatvec3propertywidget.h \
     ../../include/voreen/qt/widgets/property/floatvec4propertywidget.h \
+    ../../include/voreen/qt/widgets/property/fontpropertywidget.h \
     ../../include/voreen/qt/widgets/property/intpropertywidget.h \
     ../../include/voreen/qt/widgets/property/intvec2propertywidget.h \
     ../../include/voreen/qt/widgets/property/intvec3propertywidget.h \
     ../../include/voreen/qt/widgets/property/intvec4propertywidget.h \
+    ../../include/voreen/qt/widgets/property/plotentitiespropertywidget.h \
+    ../../include/voreen/qt/widgets/property/plotentitysettingswidget.h \
     ../../include/voreen/qt/widgets/property/lightpropertywidget.h \
     ../../include/voreen/qt/widgets/property/matrixpropertywidget.h \
     ../../include/voreen/qt/widgets/property/optionpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/plotdatapropertywidget.h \
+    ../../include/voreen/qt/widgets/property/plotpredicatepropertywidget.h \
+    ../../include/voreen/qt/widgets/property/plotzoompropertywidget.h \
     ../../include/voreen/qt/widgets/property/processorpropertieswidget.h \
     ../../include/voreen/qt/widgets/property/propertyvectorwidget.h \
     ../../include/voreen/qt/widgets/property/qpropertywidget.h \
@@ -247,6 +278,7 @@ HEADERS += \
     ../../include/voreen/qt/widgets/property/qpropertywidgetwitheditorwindow.h \
     ../../include/voreen/qt/widgets/property/shaderpropertywidget.h \
     ../../include/voreen/qt/widgets/property/stringpropertywidget.h \
+    ../../include/voreen/qt/widgets/property/grouppropertywidget.h \
     ../../include/voreen/qt/widgets/property/transfuncpropertywidget.h \
     ../../include/voreen/qt/widgets/property/vecpropertywidget.h \
     ../../include/voreen/qt/widgets/property/volumecollectionpropertywidget.h \
@@ -258,7 +290,9 @@ HEADERS += \
 HEADERS += \
     ../../include/voreen/qt/widgets/processor/canvasrendererwidget.h \
     ../../include/voreen/qt/widgets/processor/qprocessorwidget.h \
-    ../../include/voreen/qt/widgets/processor/qprocessorwidgetfactory.h
+    ../../include/voreen/qt/widgets/processor/qprocessorwidgetfactory.h \
+    ../../include/voreen/qt/widgets/processor/imageanalyzerwidget.h \
+    ../../include/voreen/qt/widgets/processor/plotdataprocessorwidget.h 
 HEADERS += \
     ../../include/voreen/qt/widgets/property/camerawidget.h 
 
@@ -285,11 +319,6 @@ HEADERS += \
 MSVC_IDE: SOURCES += \
     ../core/glsl/rendertargetdebugwidget/color.frag \
     ../core/glsl/rendertargetdebugwidget/inversecolor.frag
-
-contains(DEFINES, VRN_WITH_DCMTK) {
-  HEADERS += ../../include/voreen/qt/dicomdialog.h
-  SOURCES += dicomdialog.cpp
-}
 
 FORMS += aboutbox.ui
 

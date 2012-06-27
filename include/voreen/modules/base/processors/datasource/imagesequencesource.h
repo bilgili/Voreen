@@ -34,6 +34,9 @@
 #include "voreen/core/ports/allports.h"
 #include "voreen/core/properties/filedialogproperty.h"
 #include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/filedialogproperty.h"
+#include "voreen/core/properties/buttonproperty.h"
 
 namespace voreen {
 
@@ -118,6 +121,7 @@ protected:
     FileDialogProperty imageDirectory_; ///< Directory the images are loaded from.
     BoolProperty textureFiltering_;     ///< Enable linear filtering of loaded textures.
     BoolProperty uploadTextureData_;    ///< Determines whether the images' texture data is uploaded to the GPU.
+    BoolProperty showProgressBar_;      ///< Determines whether a progress dialog is shown during image loading.
     ButtonProperty reloadSequence_;     ///< Button for reloading the current sequence.
     ButtonProperty clearSequence_;      ///< Button for clearing the current sequence.
     IntProperty numImages_;             ///< Read-only property providing the size of the sequence.

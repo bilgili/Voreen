@@ -31,7 +31,7 @@
 #define VRN_VOLUMEHALFSAMPLE_H
 
 #include <string>
-#include "voreen/modules/base/processors/volume/volumeprocessor.h"
+#include "voreen/core/processors/volumeprocessor.h"
 
 namespace voreen {
 

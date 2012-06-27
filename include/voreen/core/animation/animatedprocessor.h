@@ -59,7 +59,7 @@ public:
     /**
      * Returns an array of all propertytimelines which belong to this processor.
      */
-    const std::vector<PropertyTimeline*> getPropertyTimelines() const;
+    const std::vector<PropertyTimeline*>& getPropertyTimelines() const;
 
     /**
      * Renders the complete Animation at a given time - respectively sets all properties of all processors to the value defined in the animation
@@ -90,7 +90,6 @@ protected:
     static const std::string loggerCat_; ///< category used in logging
 
 private:
-
     friend class XmlDeserializer;
 
     /**
@@ -105,7 +104,6 @@ private:
 
     Processor* processor_;
     std::vector<PropertyTimeline*> properties_;
-
 };
 
 } // namespace voreen

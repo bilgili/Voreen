@@ -31,68 +31,67 @@
 
 namespace voreen {
 
-StringStartInterpolationFunction::StringStartInterpolationFunction() {
-}
+StringStartInterpolationFunction::StringStartInterpolationFunction() {}
+
 std::string StringStartInterpolationFunction::getMode() const {
     return "focus on startvalue";
 }
+
 std::string StringStartInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 std::string StringStartInterpolationFunction::interpolate(std::string startvalue, std::string endvalue, float time) const {
-    if (time<1){
+    if (time < 1.f)
         return startvalue;
-    }
-    else{
+    else
         return endvalue;
-    }
 }
-InterpolationFunction<std::string>* StringStartInterpolationFunction::clone() const{
+
+InterpolationFunction<std::string>* StringStartInterpolationFunction::clone() const {
     return new StringStartInterpolationFunction();
 }
 
+StringEndInterpolationFunction::StringEndInterpolationFunction() {}
 
-StringEndInterpolationFunction::StringEndInterpolationFunction() {
-}
 std::string StringEndInterpolationFunction::getMode() const {
     return "focus on endvalue";
 }
+
 std::string StringEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 std::string StringEndInterpolationFunction::interpolate(std::string startvalue, std::string endvalue, float time) const {
-    if (time>0){
+    if (time > 0.f)
         return endvalue;
-    }
-    else{
+    else
         return startvalue;
-    }
 }
-InterpolationFunction<std::string>* StringEndInterpolationFunction::clone() const{
+
+InterpolationFunction<std::string>* StringEndInterpolationFunction::clone() const {
     return new StringEndInterpolationFunction();
 }
 
+StringStartEndInterpolationFunction::StringStartEndInterpolationFunction() {}
 
-StringStartEndInterpolationFunction::StringStartEndInterpolationFunction() {
-}
 std::string StringStartEndInterpolationFunction::getMode() const {
     return "bisection";
 }
+
 std::string StringStartEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 std::string StringStartEndInterpolationFunction::interpolate(std::string startvalue, std::string endvalue, float time) const {
-    if (time<0.5){
+    if (time < 0.5f)
         return startvalue;
-    }
-    else{
+    else
         return endvalue;
-    }
 }
-InterpolationFunction<std::string>* StringStartEndInterpolationFunction::clone() const{
+
+InterpolationFunction<std::string>* StringStartEndInterpolationFunction::clone() const {
     return new StringStartEndInterpolationFunction();
 }
 
 } // namespace voreen
-
-

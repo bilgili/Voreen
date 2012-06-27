@@ -30,10 +30,13 @@
 #ifndef VRN_VOLUMEGRADIENT_CL_H
 #define VRN_VOLUMEGRADIENT_CL_H
 
-#include "voreen/modules/base/processors/volume/volumeprocessor.h"
-#include "voreen/core/utils/clwrapper.h"
+#include "voreen/core/processors/volumeprocessor.h"
+#include "voreen/modules/opencl/clwrapper.h"
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/boolproperty.h"
+
+#include "voreen/core/ports/allports.h"
+#include "voreen/core/properties/allproperties.h"
 
 #include <string>
 
@@ -44,20 +47,19 @@ class VolumeHandle;
 class VolumeGradientCL : public VolumeProcessor {
 public:
     VolumeGradientCL();
-    virtual ~VolumeGradientCL();
+    virtual Processor* create() const;
 
-    virtual std::string getCategory() const { return "Volume Processing"; }
-    virtual std::string getClassName() const { return "VolumeGradientCL"; }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_EXPERIMENTAL; }
+    virtual std::string getCategory() const   { return "Volume Processing"; }
+    virtual std::string getClassName() const  { return "VolumeGradientCL";  }
+    virtual CodeState getCodeState() const    { return CODE_STATE_EXPERIMENTAL; }
     virtual std::string getProcessorInfo() const;
 
-private:
-    virtual Processor* create() const { return new VolumeGradientCL(); }
+protected:
     virtual void process();
     virtual void initialize() throw(VoreenException);
+    virtual void deinitialize() throw (VoreenException);
 
-    void clearCL();
-
+private:
     StringOptionProperty technique_;
     BoolProperty copyIntensityChannel_;  ///< if true, a four channel volume is created including the original intensity channel
 

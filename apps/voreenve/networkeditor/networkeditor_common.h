@@ -59,7 +59,11 @@ enum UserTypes {
     UserTypesLinkDialogArrowGraphicsItem = 9,
     UserTypesLinkDialogProcessorGraphicsItem = 10,
     UserTypesPortArrowGraphicsItem = 11,
-    UserTypesAggregationGraphicsItem = 12
+    UserTypesAggregationGraphicsItem = 12,
+    UserTypesProgressBarGraphicsItem = 13,
+    UserTypesWidgetIndicatorButton = 14,
+    UserTypesArrowHeadSelectionGraphicsItem = 15,
+    UserTypesOpenPropertyListButton = 16
 };
 
 template<class T>

@@ -1,0 +1,10 @@
+ObjectFileName:	walnut-transformed.raw
+Resolution:	130 73 128
+SliceThickness:	1.32308 1.31507 1.32813
+Format:		USHORT
+ObjectModel:	I
+Modality:	unknown
+#TransformMatrix: row0	1.02404 0 0.863586 7.45058e-009
+#TransformMatrix: row1	0 1.34375 0 0
+#TransformMatrix: row2	-0.862068 0 1.02584 1.49012e-008
+#TransformMatrix: row3	0 0 0 1

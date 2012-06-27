@@ -40,6 +40,7 @@ IsosurfaceExtractor::IsosurfaceExtractor()
     , isoValue_("isoValue", "ISO value", 128, 0, 256)
     , isoColor_("isoColor", "ISO color", tgt::Color(0.5f,0.5f,0.5f,1.0f))
 {
+    isoColor_.setViews(Property::COLOR);
     addPort(inport_);
     addPort(outport_);
 

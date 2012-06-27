@@ -32,7 +32,7 @@
 
 namespace voreen {
 
-HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
+HistogramIntensity::HistogramIntensity(const Volume* volume, int bucketCount) {
     tgtAssert(volume, "HistogramIntensity: No volume");
     tgtAssert(bucketCount > 0, "HistogramIntensity: Invalid bucket count");
 
@@ -46,14 +46,14 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
     maxValue_ = 0;
     significantRange_ = tgt::ivec2(bucketCount, -1);
 
-    Volume* currentVolume = volume;
+    const Volume* currentVolume = volume;
 
-    BrickedVolume* brickedVolume = dynamic_cast<BrickedVolume*>(volume);
+    const BrickedVolume* brickedVolume = dynamic_cast<const BrickedVolume*>(volume);
     if (brickedVolume) {
         currentVolume = brickedVolume->getPackedVolume();
     }
 
-    VolumeUInt8* sourceDataset8Bit = dynamic_cast<VolumeUInt8*>(currentVolume);
+    const VolumeUInt8* sourceDataset8Bit = dynamic_cast<const VolumeUInt8*>(currentVolume);
     if (sourceDataset8Bit) {
         int bucket;
         float m = (bucketCount - 1.f) / 255.f;
@@ -73,7 +73,7 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
         }
     }
 
-    Volume4xUInt8* sourceDataset32Bit = dynamic_cast<Volume4xUInt8*>(currentVolume);
+    const Volume4xUInt8* sourceDataset32Bit = dynamic_cast<const Volume4xUInt8*>(currentVolume);
     if (sourceDataset32Bit) {
         int bucket;
         float m = (bucketCount - 1.f) / 255.f;
@@ -93,7 +93,7 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
         }
     }
 
-    VolumeUInt16* sourceDataset16Bit = dynamic_cast<VolumeUInt16*>(currentVolume);
+    const VolumeUInt16* sourceDataset16Bit = dynamic_cast<const VolumeUInt16*>(currentVolume);
     if (sourceDataset16Bit) {
         int bucket;
         float maxValue = (sourceDataset16Bit->getBitsStored() == 12) ? 4095.f : 65535.f;
@@ -116,7 +116,7 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
         }
     }
 
-    VolumeFloat* sourceDatasetFloat = dynamic_cast<VolumeFloat*>(currentVolume);
+    const VolumeFloat* sourceDatasetFloat = dynamic_cast<const VolumeFloat*>(currentVolume);
     if (sourceDatasetFloat) {
         float m = (bucketCount - 1.f);
         int count = static_cast<int>(hist_.size());
@@ -139,20 +139,45 @@ HistogramIntensity::HistogramIntensity(Volume* volume, int bucketCount) {
     }
 }
 
-size_t HistogramIntensity::getBucketCount() {
+size_t HistogramIntensity::getBucketCount() const {
     return hist_.size();
 }
 
-int HistogramIntensity::getValue(int i) {
+int HistogramIntensity::getValue(int i) const {
     return hist_[i];
 }
 
-float HistogramIntensity::getNormalized(int i) {
+int HistogramIntensity::getValue(size_t i) const {
+    return getValue(static_cast<int>(i));
+}
+
+int HistogramIntensity::getValue(float i) const {
+    size_t bucketCount = hist_.size();
+    float m = (bucketCount - 1.f);
+    int bucket = static_cast<int>(floor(i * m));
+    return getValue(bucket);
+}
+
+float HistogramIntensity::getNormalized(int i) const {
     return (static_cast<float>(hist_[i]) / static_cast<float>(maxValue_));
 }
 
-float HistogramIntensity::getLogNormalized(int i) {
+float HistogramIntensity::getNormalized(float i) const {
+    size_t bucketCount = hist_.size();
+    float m = (bucketCount - 1.f);
+    int bucket = static_cast<int>(floor(i * m));
+    return getNormalized(bucket);
+}
+
+float HistogramIntensity::getLogNormalized(int i) const {
      return (logf(static_cast<float>(1+hist_[i]) ) / log( static_cast<float>(1+maxValue_)));
+}
+
+float HistogramIntensity::getLogNormalized(float i) const {
+    size_t bucketCount = hist_.size();
+    float m = (bucketCount - 1.f);
+    int bucket = static_cast<int>(floor(i * m));
+    return getLogNormalized(bucket);
 }
 
 tgt::ivec2 HistogramIntensity::getSignificantRange() const {
@@ -162,21 +187,21 @@ tgt::ivec2 HistogramIntensity::getSignificantRange() const {
 
 //-----------------------------------------------------------------------------
 
-HistogramIntensityGradient::HistogramIntensityGradient(Volume* volumeGrad, Volume* volumeIntensity,
+HistogramIntensityGradient::HistogramIntensityGradient(const Volume* volumeGrad, const Volume* volumeIntensity,
                                                        int bucketCounti, int bucketCountg, bool scale)
     : scaleFactor_(1.f)
 {
-    if (dynamic_cast<Volume3xUInt8*>(volumeGrad)) {
-        calcHG(static_cast<Volume3xUInt8*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
+    if (dynamic_cast<const Volume3xUInt8*>(volumeGrad)) {
+        calcHG(static_cast<const Volume3xUInt8*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
     }
-    else if (dynamic_cast<Volume4xUInt8*>(volumeGrad)) {
-        calcHG(static_cast<Volume4xUInt8*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
+    else if (dynamic_cast<const Volume4xUInt8*>(volumeGrad)) {
+        calcHG(static_cast<const Volume4xUInt8*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
     }
-    else if (dynamic_cast<Volume3xUInt16*>(volumeGrad)) {
-        calcHG(static_cast<Volume3xUInt16*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
+    else if (dynamic_cast<const Volume3xUInt16*>(volumeGrad)) {
+        calcHG(static_cast<const Volume3xUInt16*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
     }
-    else if (dynamic_cast<Volume4xUInt16*>(volumeGrad)) {
-        calcHG(static_cast<Volume4xUInt16*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
+    else if (dynamic_cast<const Volume4xUInt16*>(volumeGrad)) {
+        calcHG(static_cast<const Volume4xUInt16*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
     }
     else {
         LERRORC("voreen.HistogramIntensityGradient",
@@ -221,7 +246,7 @@ float HistogramIntensityGradient::getScaleFactor() const {
 }
 
 template<class U>
-void HistogramIntensityGradient::calcHG(VolumeAtomic<U>* volumeGrad, Volume* volumeIntensity, int bucketCounti, int bucketCountg, bool scale) {
+void HistogramIntensityGradient::calcHG(const VolumeAtomic<U>* volumeGrad, const Volume* volumeIntensity, int bucketCounti, int bucketCountg, bool scale) {
     // bits used for gradients
     int bitsG = volumeGrad->getBitsStored() / volumeGrad->getNumChannels();
     float halfMax = (pow(2.f, bitsG) - 1.f) / 2.f;

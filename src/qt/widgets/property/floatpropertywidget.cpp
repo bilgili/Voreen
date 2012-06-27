@@ -40,9 +40,12 @@ namespace voreen {
 FloatPropertyWidget::FloatPropertyWidget(FloatProperty* prop, QWidget* parent, bool addVisibilityControl)
     : QPropertyWidget(prop, parent),
     property_(prop),
-    widget_(new DoubleSliderSpinBoxWidget)
+      widget_(new DoubleSliderSpinBoxWidget(this))
 {
+    tgtAssert(property_, "no property");
     widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    widget_->setSliderTracking(property_->hasTracking());
+    widget_->setView(prop->getViews());
     QPropertyWidget::layout_->addWidget(widget_, Qt::AlignLeft);
 
     updateFromProperty();
@@ -53,6 +56,15 @@ FloatPropertyWidget::FloatPropertyWidget(FloatProperty* prop, QWidget* parent, b
 
     if (addVisibilityControl)
         QPropertyWidget::addVisibilityControls();
+
+    precisionMenu_ = new QMenu(this);
+    highAction_ = precisionMenu_->addAction("High Precision");
+    highAction_->setCheckable(true);
+    precisionMenu_->addSeparator();
+    instantValueChangeAction_ = precisionMenu_->addAction("Tracking Mode");
+    instantValueChangeAction_->setCheckable(true);
+    if(property_->hasTracking())
+        instantValueChangeAction_->toggle();
 }
 
 FloatPropertyWidget::~FloatPropertyWidget() {
@@ -68,6 +80,7 @@ void FloatPropertyWidget::updateFromProperty() {
         widget_->setMaxValue(property_->getMaxValue());
         widget_->setSingleStep(property_->getStepping());
         widget_->setValue(property_->get());
+        widget_->setSliderTracking(property_->hasTracking());
         widget_->blockSignals(false);
     }
 }
@@ -93,17 +106,20 @@ void FloatPropertyWidget::setProperty(double value) {
 
 void FloatPropertyWidget::mousePressEvent(QMouseEvent* event) {
     if(event->button() == Qt::RightButton) {
-        QMenu* precisionMenu = new QMenu(this);
-        QAction* normalAction = precisionMenu->addAction("Normal Precision");
-        QAction* highAction = precisionMenu->addAction("High Precision");
-        QAction* prec = precisionMenu->exec(mapToGlobal(event->pos()));
-        if(prec == normalAction) {
-            property_->setStepping(0.05f);
-            property_->setNumDecimals(2);
+
+        QAction* prec = precisionMenu_->exec(mapToGlobal(event->pos()));
+        if (prec == highAction_){
+            if(highAction_->isChecked()) {
+                property_->setStepping(0.0001f);
+                property_->setNumDecimals(4);
+            }
+            else {
+                property_->setStepping(0.05f);
+                property_->setNumDecimals(2);
+            }
         }
-        else if (prec == highAction){
-            property_->setStepping(0.0001f);
-            property_->setNumDecimals(4);
+        else if(prec == instantValueChangeAction_) {
+            property_->setTracking(!property_->hasTracking());
         }
         updateFromProperty();
     }

@@ -59,6 +59,7 @@ PointSegmentListRenderer::PointSegmentListRenderer()
       sphereSlicesStacks_("sphereSlicesStacks", "Sphere Slices/Stacks", 20, 10, 100),
       geometryInport_(Port::INPORT, "geometry.input")
 {
+    color_.setViews(Property::COLOR);
 
     // Coordinate systems
     coordinateSystem_.addOption("world", "World coordinates");
@@ -76,12 +77,14 @@ PointSegmentListRenderer::PointSegmentListRenderer()
     for (int i=0; i<100; ++i) {
         std::ostringstream segmentID;
         segmentID << i;
-        ColorProperty* colorProp = new ColorProperty("segmentColor" + segmentID.str(), "Segment " + segmentID.str(),
+        FloatVec4Property* colorProp = new FloatVec4Property("segmentColor" + segmentID.str(), "Segment " + segmentID.str(),
             tgt::Color(0.75f, 0.25f, 0.f, 1.f));
+        colorProp->setViews(Property::COLOR);
         colorProp->onChange(CallMemberAction<PointSegmentListRenderer>(this, &PointSegmentListRenderer::invalidateDisplayList));
         colorProps.push_back(colorProp);
     }
     segmentColors_ = new PropertyVector("segmentColors", "Segment Colors:", colorProps);
+    segmentColors_->setViews(Property::COLOR);
     initializeColorMap();
 
     // display list invalidation callback
@@ -211,7 +214,7 @@ void PointSegmentListRenderer::generateDisplayList(const std::vector<std::vector
         glBegin(GL_POINTS);
         for (size_t i=0; i<segmentList.size(); ++i) {
             if (!applyUniformColor_.get())
-                glColor4fv(segmentColors_->getProperty<ColorProperty*>(i % segmentColors_->size())->get().elem);
+                glColor4fv(segmentColors_->getProperty<FloatVec4Property*>(i % segmentColors_->size())->get().elem);
             for (size_t j=0; j<segmentList[i].size(); ++j) {
                 tgt::vertex(segmentList[i][j]);
             }
@@ -231,7 +234,7 @@ void PointSegmentListRenderer::generateDisplayList(const std::vector<std::vector
         for (size_t i=0; i<segmentList.size(); ++i) {
             glBegin(GL_LINE_STRIP);
             if (!applyUniformColor_.get())
-                glColor4fv(segmentColors_->getProperty<ColorProperty*>(i % segmentColors_->size())->get().elem);
+                glColor4fv(segmentColors_->getProperty<FloatVec4Property*>(i % segmentColors_->size())->get().elem);
             for (size_t j=0; j<segmentList[i].size(); ++j) {
                 tgt::vertex(segmentList[i][j]);
             }
@@ -259,7 +262,7 @@ void PointSegmentListRenderer::generateDisplayList(const std::vector<std::vector
 
                 // apply segment color
                 if (!applyUniformColor_.get()) {
-                    tgt::Color segColor = segmentColors_->getProperty<ColorProperty*>(i % segmentColors_->size())->get();
+                    tgt::Color segColor = segmentColors_->getProperty<FloatVec4Property*>(i % segmentColors_->size())->get();
                     if (renderingPrimitiveProp_.get() == "spheres")
                         glColor4fv(segColor.elem);
                     else if (renderingPrimitiveProp_.get() == "illuminated-spheres") {
@@ -321,7 +324,7 @@ void PointSegmentListRenderer::initializeColorMap() {
     colorMap.push_back(vec4(30,30,30,255) / 255.f);
 
     for (int i=0; i<segmentColors_->size(); ++i)
-        segmentColors_->getProperty<ColorProperty*>(i)->set(colorMap[i % colorMap.size()]);
+        segmentColors_->getProperty<FloatVec4Property*>(i)->set(colorMap[i % colorMap.size()]);
 
 }
 

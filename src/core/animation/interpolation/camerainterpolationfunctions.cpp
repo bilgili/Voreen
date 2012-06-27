@@ -38,14 +38,16 @@ using tgt::Camera;
 
 namespace voreen {
 
-CameraLinearInterpolationFunction::CameraLinearInterpolationFunction() {
-}
+CameraLinearInterpolationFunction::CameraLinearInterpolationFunction() {}
+
 std::string CameraLinearInterpolationFunction::getMode() const {
     return "linear interpolation";
 }
+
 std::string CameraLinearInterpolationFunction::getIdentifier() const {
     return "linear";
 }
+
 Camera* CameraLinearInterpolationFunction::interpolate(Camera* startvalue, Camera* endvalue, float time) const {
     Vec3LinearInterpolationFunction* intfunc = new Vec3LinearInterpolationFunction();
     Vec3SphericalLinearInterpolationFunction* intfunc2 = new Vec3SphericalLinearInterpolationFunction();
@@ -59,18 +61,21 @@ Camera* CameraLinearInterpolationFunction::interpolate(Camera* startvalue, Camer
         node->setTangential(true); */
     return node;
 }
+
 InterpolationFunction<Camera*>* CameraLinearInterpolationFunction::clone() const {
         return new CameraLinearInterpolationFunction();
 }
 
-CameraSphericalLinearInterpolationFunction::CameraSphericalLinearInterpolationFunction() {
-}
+CameraSphericalLinearInterpolationFunction::CameraSphericalLinearInterpolationFunction() {}
+
 std::string CameraSphericalLinearInterpolationFunction::getMode() const {
     return "spherical linear interpolation";
 }
+
 std::string CameraSphericalLinearInterpolationFunction::getIdentifier() const {
     return "linear";
 }
+
 Camera* CameraSphericalLinearInterpolationFunction::interpolate(Camera* startvalue, Camera* endvalue, float time) const {
     Vec3SphericalLinearInterpolationFunction* sphericalintfunc = new Vec3SphericalLinearInterpolationFunction();
 
@@ -96,26 +101,29 @@ Camera* CameraSphericalLinearInterpolationFunction::interpolate(Camera* startval
         node->setTangential(true); */
     return node;
 }
+
 InterpolationFunction<Camera*>* CameraSphericalLinearInterpolationFunction::clone() const {
     return new CameraSphericalLinearInterpolationFunction();
 }
 
-CameraCubicSplineInterpolationFunction::CameraCubicSplineInterpolationFunction() {
-}
+CameraCubicSplineInterpolationFunction::CameraCubicSplineInterpolationFunction() {}
+
 std::string CameraCubicSplineInterpolationFunction::getMode() const{
     return "cubic Bezier spline";
 }
+
 std::string CameraCubicSplineInterpolationFunction::getIdentifier() const{
     return "spline";
 }
+
 Camera* CameraCubicSplineInterpolationFunction::interpolate(std::vector<PropertyKeyValue<Camera*>*> controlpoints, float time) const{
     Camera* startvalue;
     Camera* endvalue;
     std::vector<PropertyKeyValue<Camera*>*>::iterator it;
     it = controlpoints.begin();
-    while ((*it)->getTime() < time){
+    while ((*it)->getTime() < time)
         it++;
-    }
+
     float time2 = (*it)->getTime();
     tgt::vec3 f2 = (*it)->getValue()->getFocus();
     endvalue = (*it)->getValue()->clone();
@@ -124,27 +132,26 @@ Camera* CameraCubicSplineInterpolationFunction::interpolate(std::vector<Property
     tgt::vec3 f1 = (*it)->getValue()->getFocus();
     startvalue = (*it)->getValue()->clone();
     tgt::vec3 fm1;
-    if (it!= controlpoints.begin()){
+    if (it!= controlpoints.begin()) {
         it--;
         tgt::vec3 p0 = (*it)->getValue()->getPosition();
         tgt::vec3 f0 = (*it)->getValue()->getFocus();
         fm1 = 0.5f*(f2 - f0);
         it++;
-    } else {
+    } else
         fm1 = f2 - f1;
-    }
+
     it++;
     it++;
     tgt::vec3 f3;//, p3;
     tgt::vec3 m2, fm2;
-    if (it!= controlpoints.end()){
+    if (it!= controlpoints.end()) {
         f3 = (*it)->getValue()->getFocus();
         fm2 = 0.5f*(f3 - f1);
-    }else {
+    } else
         fm2 = f2 - f1;
-    }
 
-    float t = (time - time1)/(time2 - time1);
+    float t = (time - time1) / (time2 - time1);
 
     vec3 p0 = startvalue->getPosition();
 /*    vec3 p1 = startvalue->getPosition() + startvalue->getTangenteHead();
@@ -185,88 +192,88 @@ Camera* CameraCubicSplineInterpolationFunction::interpolate(std::vector<Property
         node->setTangential(true); */
     return node;
 }
-MultiPointInterpolationFunction<Camera*>* CameraCubicSplineInterpolationFunction::clone() const{
+MultiPointInterpolationFunction<Camera*>* CameraCubicSplineInterpolationFunction::clone() const {
     return new CameraCubicSplineInterpolationFunction();
 }
 
-CameraStartInterpolationFunction::CameraStartInterpolationFunction() {
-}
+CameraStartInterpolationFunction::CameraStartInterpolationFunction() {}
+
 std::string CameraStartInterpolationFunction::getMode() const {
     return "focus on startvalue";
 }
+
 std::string CameraStartInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 Camera* CameraStartInterpolationFunction::interpolate(Camera* startvalue, Camera* endvalue, float time) const {
-    if (time < 1) {
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else {
+    else
         return endvalue->clone();
-    }
 }
+
 InterpolationFunction<Camera*>* CameraStartInterpolationFunction::clone() const {
-        return new CameraStartInterpolationFunction();
+    return new CameraStartInterpolationFunction();
 }
 
+CameraEndInterpolationFunction::CameraEndInterpolationFunction() {}
 
-CameraEndInterpolationFunction::CameraEndInterpolationFunction() {
-}
 std::string CameraEndInterpolationFunction::getMode() const {
-        return "focus on endvalue";
+    return "focus on endvalue";
 }
 std::string CameraEndInterpolationFunction::getIdentifier() const {
-        return "boolean";
+    return "boolean";
 }
 Camera* CameraEndInterpolationFunction::interpolate(Camera* startvalue, Camera* endvalue, float time) const {
-        if (time > 0){
-                return endvalue->clone();
-        }
-        else{
-                return startvalue->clone();
-        }
+    if (time > 0.f)
+        return endvalue->clone();
+    else
+        return startvalue->clone();
 }
 InterpolationFunction<Camera*>* CameraEndInterpolationFunction::clone() const {
-        return new CameraEndInterpolationFunction();
+    return new CameraEndInterpolationFunction();
 }
 
+CameraStartEndInterpolationFunction::CameraStartEndInterpolationFunction() {}
 
-CameraStartEndInterpolationFunction::CameraStartEndInterpolationFunction() {
-}
 std::string CameraStartEndInterpolationFunction::getMode() const {
     return "bisection";
 }
+
 std::string CameraStartEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 Camera* CameraStartEndInterpolationFunction::interpolate(Camera* startvalue, Camera* endvalue, float time) const {
-    if (time < 0.5) {
-            return startvalue->clone();
-    }
-    else{
-            return endvalue->clone();
-    }
+    if (time < 0.5f)
+        return startvalue->clone();
+    else
+        return endvalue->clone();
 }
+
 InterpolationFunction<Camera*>* CameraStartEndInterpolationFunction::clone() const {
     return new CameraStartEndInterpolationFunction();
 }
 
-CameraCatmullRomInterpolationFunction::CameraCatmullRomInterpolationFunction(){
-}
-std::string CameraCatmullRomInterpolationFunction::getMode() const{
+CameraCatmullRomInterpolationFunction::CameraCatmullRomInterpolationFunction() {}
+
+std::string CameraCatmullRomInterpolationFunction::getMode() const {
     return "Catmull-Rom spline";
 }
-std::string CameraCatmullRomInterpolationFunction::getIdentifier() const{
+
+std::string CameraCatmullRomInterpolationFunction::getIdentifier() const {
     return "spline";
 }
-Camera* CameraCatmullRomInterpolationFunction::interpolate(std::vector<PropertyKeyValue<Camera*>*> controlpoints, float time) const{
+
+Camera* CameraCatmullRomInterpolationFunction::interpolate(std::vector<PropertyKeyValue<Camera*>*> controlpoints, float time) const {
     Camera* camera1;
     Camera* camera2;
     std::vector<PropertyKeyValue<Camera*>*>::iterator it;
     it = controlpoints.begin();
-    while ((*it)->getTime() < time){
+    while ((*it)->getTime() < time)
         it++;
-    }
+
     float time2 = (*it)->getTime();
     tgt::vec3 p2 = (*it)->getValue()->getPosition();
     tgt::vec3 f2 = (*it)->getValue()->getFocus();
@@ -278,7 +285,7 @@ Camera* CameraCatmullRomInterpolationFunction::interpolate(std::vector<PropertyK
     camera1 = (*it)->getValue()->clone();
     tgt::vec3 m1;
     tgt::vec3 fm1;
-    if (it!= controlpoints.begin()){
+    if (it!= controlpoints.begin()) {
         it--;
         tgt::vec3 p0 = (*it)->getValue()->getPosition();
         tgt::vec3 f0 = (*it)->getValue()->getFocus();
@@ -293,7 +300,7 @@ Camera* CameraCatmullRomInterpolationFunction::interpolate(std::vector<PropertyK
     it++;
     tgt::vec3 p3, f3;
     tgt::vec3 m2, fm2;
-    if (it!= controlpoints.end()){
+    if (it!= controlpoints.end()) {
         p3 = (*it)->getValue()->getPosition();
         f3 = (*it)->getValue()->getFocus();
         m2 = 0.5f*(p3 - p1);
@@ -338,20 +345,21 @@ Camera* CameraCatmullRomInterpolationFunction::interpolate(std::vector<PropertyK
     return node;
 }
 
-MultiPointInterpolationFunction<Camera*>* CameraCatmullRomInterpolationFunction::clone() const{
+MultiPointInterpolationFunction<Camera*>* CameraCatmullRomInterpolationFunction::clone() const {
     return new CameraCatmullRomInterpolationFunction();
 }
 
+CameraSquadInterpolationFunction::CameraSquadInterpolationFunction() {}
 
-CameraSquadInterpolationFunction::CameraSquadInterpolationFunction(){
-}
-std::string CameraSquadInterpolationFunction::getMode() const{
+std::string CameraSquadInterpolationFunction::getMode() const {
     return "spherical cubic interpolation";
 }
-std::string CameraSquadInterpolationFunction::getIdentifier() const{
+
+std::string CameraSquadInterpolationFunction::getIdentifier() const {
     return "spline";
 }
-Camera* CameraSquadInterpolationFunction::interpolate(std::vector<PropertyKeyValue<Camera*>*> controlpoints, float time) const{
+
+Camera* CameraSquadInterpolationFunction::interpolate(std::vector<PropertyKeyValue<Camera*>*> controlpoints, float time) const {
     Camera* camera1;
     Camera* camera2;
     tgt::vec3 p0;
@@ -364,9 +372,9 @@ Camera* CameraSquadInterpolationFunction::interpolate(std::vector<PropertyKeyVal
     tgt::quat q3;
     std::vector<PropertyKeyValue<Camera*>*>::iterator it;
     it = controlpoints.begin();
-    while ((*it)->getTime() < time){
+    while ((*it)->getTime() < time)
         it++;
-    }
+
     float time2 = (*it)->getTime();
     p2 = (*it)->getValue()->getPosition();
     q2 = tgt::quat(normalize(p2), 0.0f);
@@ -376,7 +384,7 @@ Camera* CameraSquadInterpolationFunction::interpolate(std::vector<PropertyKeyVal
     p1 = (*it)->getValue()->getPosition();
     q1 = tgt::quat(normalize(p1), 0.0f);
     camera1 = (*it)->getValue()->clone();
-    if (it!= controlpoints.begin()){
+    if (it!= controlpoints.begin()) {
         it--;
         p0 = (*it)->getValue()->getPosition();
         q0 = tgt::quat(normalize(p0), 0.0f);
@@ -388,7 +396,7 @@ Camera* CameraSquadInterpolationFunction::interpolate(std::vector<PropertyKeyVal
     it++;
     it++;
     tgt::vec3 m2;
-    if (it!= controlpoints.end()){
+    if (it!= controlpoints.end()) {
         p3 = (*it)->getValue()->getPosition();
         q3 = tgt::quat(normalize(p3), 0.0f);
     }
@@ -431,4 +439,3 @@ MultiPointInterpolationFunction<Camera*>* CameraSquadInterpolationFunction::clon
 }
 
 }
-

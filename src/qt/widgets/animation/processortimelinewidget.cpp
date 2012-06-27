@@ -34,8 +34,6 @@
 #include "voreen/core/properties/transfuncproperty.h"
 #include "voreen/core/properties/volumecollectionproperty.h"
 
-//#include "voreen/core/processors/paths/cameranode.h"
-
 #include "voreen/qt/widgets/animation/processortimelinewidget.h"
 #include "voreen/qt/widgets/animation/propertytimelinewidget.h"
 #include "voreen/qt/widgets/animation/templatepropertytimelinewidget.h"
@@ -56,16 +54,18 @@ using tgt::Camera;
 
 namespace voreen {
 
-ProcessorTimelineWidget::ProcessorTimelineWidget(std::string name, AnimatedProcessor* animatedProcessor, int position,  QWidget* parent)
+ProcessorTimelineWidget::ProcessorTimelineWidget(std::string name, AnimatedProcessor* animatedProcessor,
+                                                 int position,  QWidget* parent)
         : QWidget(parent)
         , animatedProcessor_(animatedProcessor)
         , hiddenTimelines_(true)
-        {
+{
     QHBoxLayout* mainLayout = new QHBoxLayout(this);
     QHBoxLayout* infoLabelLayout = new QHBoxLayout();
     infoLabelLayout->setAlignment(Qt::AlignLeft);
     timelineLayout_ = new QVBoxLayout();
-    timelineWidget_ = new QWidget(this);            // this is a Design helper widget for easy hiding of all propertytimlinewidgets
+    timelineWidget_ = new QWidget(this);            // this is a design helper widget for easy
+                                                    // hiding of all propertytimlinewidgets
     propertyContainer_ = new QWidget(this);         // encapsulates propertywidgets
 
     mainLayout->setMargin(0);
@@ -77,18 +77,16 @@ ProcessorTimelineWidget::ProcessorTimelineWidget(std::string name, AnimatedProce
 
     QLabel* processorInfo = new QLabel(this);
 
-    //processorInfo->setGeometry(0, 0, 180, 20);
     processorInfo->setGeometry(0, 0, 205, 20);
-    //infoLabelLayout->setGeometry(QRect(0,0,position, 0));//setMinimumWidth(position);
     QIcon icon = QIcon(":/icons/expand-plus.png");
     hidePropertyTimelines_ = new QPushButton(icon, "", processorInfo);
     hidePropertyTimelines_->hide();
     hidePropertyTimelines_->setStyleSheet("QToolButton { border: none; padding: 1px; }");
     hidePropertyTimelines_->setFlat(true);
+    hidePropertyTimelines_->setFocusPolicy(Qt::NoFocus);
     hidePropertyTimelines_->setGeometry(10, 10, 10, 10);
     hidePropertyTimelines_->move(position-11,-1);
     hideTimelines();
-    //hidePropertyTimelines_->toggle();
 
     processorInfo->setIndent(35);
     processorInfo->setText(QString::fromStdString("<p style=\"font-size:8pt\">"+name+"</p>"));
@@ -101,13 +99,12 @@ ProcessorTimelineWidget::ProcessorTimelineWidget(std::string name, AnimatedProce
     availablePropertiesButton_->setIcon(QIcon(":/icons/add.png"));
     availablePropertiesButton_->setFlat(true);
     availablePropertiesButton_->setMaximumWidth(30);
-    //availablePropertiesButton_->move(160, 0);
+    availablePropertiesButton_->setToolTip(tr("Add a property timeline for this processor"));
     connect(availablePropertiesButton_, SIGNAL(clicked()), this, SLOT(showAvailableProperties()));
     connect(this, SIGNAL(currentFrameChanged(int)), this, SLOT(currentFrameChangedSlot(int)));
     connect(hidePropertyTimelines_, SIGNAL(pressed()),this, SLOT(hideTimelines()) );
 
     mainLayout->addLayout(infoLabelLayout);
-    //mainLayout->addWidget(availablePropertiesButton_);
     mainLayout->addWidget(timelineWidget_);
     mainLayout->addWidget(propertyContainer_);
     timelineWidget_->setLayout(timelineLayout_);
@@ -208,7 +205,10 @@ void ProcessorTimelineWidget::createPropertyTimelineWidget(PropertyTimeline* tl)
     else {
         propertyTimelineWidget = new PropertyTimelineWidget("not working", tl, this);      // this should never happen. maybe propertytimelines should be made virtual = 0
     }
-    propertyTimelineWidget->activateTimeline(tl->getActiveOnRendering());
+
+    // Checking whether this is a canvas size
+    if (!(tl->getPropertyName() == "Canvas Size" && dynamic_cast<TemplatePropertyTimeline<tgt::ivec2>*>(tl)))
+        propertyTimelineWidget->activateTimeline(tl->getActiveOnRendering());
 
     timelineLayout_->addWidget(propertyTimelineWidget);
     propertyTimelineWidget->show();
@@ -271,29 +271,27 @@ void ProcessorTimelineWidget::showPropertyTimeline(QString name) {
         it++;
     }
     populatePropertyMenu();
-    /*if(!timelineWidget_->isVisible()) {
-        hidePropertyTimelines_->toggle();
-    }*/
+}
+int ProcessorTimelineWidget::getTimelineCount() {
+    return timelineCount_;
 }
 
 void ProcessorTimelineWidget::showAnimatedPropertyTimelines() {
+    timelineCount_ = 0;
     const std::vector<PropertyTimeline*> timelines = animatedProcessor_->getPropertyTimelines();
     bool altered = false;
     for (uint i = 0; i < timelines.size(); i++) {
         if(propertyTimelines_[timelines.at(i)] == false) {  // Widget not instantiated yet
             if(timelines.at(i)->isChanged()) {
-
+                ++timelineCount_;
                 createPropertyTimelineWidget(timelines.at(i));
                 propertyTimelines_[timelines.at(i)] = true;
                 altered = true;
             }
         }
     }
-    if(altered) {
+    if(altered)
         populatePropertyMenu();
-        /*if(!timelineWidget_->isVisible())
-            hidePropertyTimelines_->toggle();*/
-    }
 }
 
 void ProcessorTimelineWidget::showAvailableProperties() {

@@ -142,6 +142,38 @@ void TransFuncMappingKey::setIntensity(float i) {
     intensity_ = i;
 }
 
+tgt::Texture* TransFuncMappingKey::getTextureL() const {
+    return texL_;
+}
+
+tgt::Texture* TransFuncMappingKey::getTextureR() const {
+    return texR_;
+}
+
+void TransFuncMappingKey::setTextureL(tgt::Texture* tex) {
+    texL_ = tex;
+}
+
+void TransFuncMappingKey::setTextureR(tgt::Texture* tex) {
+    texR_ = tex;
+}
+
+const std::string& TransFuncMappingKey::getTexNameLeft() const {
+    return texNameLeft_;
+}
+
+const std::string& TransFuncMappingKey::getTexNameRight() const {
+    return texNameRight_;
+}
+
+void TransFuncMappingKey::setTexNameLeft(std::string& name) {
+    texNameLeft_ = name;
+}
+
+void TransFuncMappingKey::setTexNameRight(std::string& name) {
+    texNameRight_ = name;
+}
+
 void TransFuncMappingKey::serialize(XmlSerializer& s) const {
     s.serialize("intensity", intensity_);
     s.serialize("split", split_);

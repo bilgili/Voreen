@@ -3,7 +3,7 @@
     <Workspace version="2" readonly="true">
         <VolumeContainer>
             <VolumeHandles>
-                <VolumeHandle modality="unknown" timestep="0.000000" id="ref14">
+                <VolumeHandle modality="unknown" timestep="0" id="ref14">
                     <Origin filename="../volumes/walnut.dat" />
                 </VolumeHandle>
             </VolumeHandles>
@@ -19,9 +19,9 @@
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="722" y="373" />
                             </MetaData>
-                            <position x="-2.016888" y="-2.888319" z="1.674219" />
-                            <focus x="-0.050576" y="0.128565" z="-0.264327" />
-                            <upVector x="0.291230" y="0.375543" z="0.879859" />
+                            <position x="-2.0168879" y="-2.88831902" z="1.67421901" />
+                            <focus x="-0.050576" y="0.128565" z="-0.26432699" />
+                            <upVector x="0.29123008" y="0.37554315" z="0.87985927" />
                         </Property>
                         <Property name="filterJitterTexture" value="true" />
                         <Property name="jitterEntryPoints" lod="1" value="false" />
@@ -106,12 +106,9 @@
                         <Property name="lightSpecular">
                             <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
                         </Property>
-                        <Property name="masking" lod="1" value="none" />
                         <Property name="materialShininess" value="60" />
                         <Property name="samplingRate" value="9.75609779" />
-                        <Property name="setSegment" lod="1" value="1" />
                         <Property name="shading" value="phong" />
-                        <Property name="switchSegmentation" lod="1" value="false" />
                         <Property name="transferFunction">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
@@ -188,6 +185,7 @@
                         <Property name="maximizeOnDoubleClick" value="true" />
                         <Property name="maximized" value="0" />
                         <Property name="mouseEvent.maximize" enabled="true" mouseAction="8" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                        <Property name="mouseEvent.move" lod="1" enabled="true" mouseAction="103" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="showGrid" value="true" />
                     </Properties>
                     <InteractionHandlers />
@@ -203,7 +201,7 @@
                             </MetaData>
                             <position x="-2.0168879" y="-2.88831902" z="1.67421901" />
                             <focus x="-0.050576" y="0.128565" z="-0.26432699" />
-                            <upVector x="0.29123008" y="0.37554315" z="0.87985927" />
+                            <upVector x="0.29123011" y="0.37554321" z="0.87985939" />
                         </Property>
                     </Properties>
                     <InteractionHandlers>
@@ -232,7 +230,6 @@
                         <Property name="boundingBoxStippleFactor" value="1" />
                         <Property name="boundingBoxStipplePattern" value="65535" />
                         <Property name="boundingBoxWidth" value="1" />
-                        <Property name="useDatasetTrafoMatrix" value="true" />
                         <Property name="xColor" lod="1" id="ref29">
                             <value x="1" y="0" z="0" w="1" />
                         </Property>
@@ -443,7 +440,6 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-714" y="66" />
                     </MetaData>
                     <Properties>
-                        <Property name="applyDatasetTrafoMatrix" value="true" />
                         <Property name="boundingBoxStippleFactor" value="0" />
                         <Property name="boundingBoxStipplePattern" value="65472" />
                         <Property name="boundingBoxWidth" value="1" />

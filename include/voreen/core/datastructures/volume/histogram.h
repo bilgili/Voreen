@@ -50,18 +50,30 @@ class Histogram {
 class HistogramIntensity : public Histogram {
 public:
     /// Create new histogram with bucketCount buckets from volume
-    HistogramIntensity(Volume* volume, int bucketCount);
+    HistogramIntensity(const Volume* volume, int bucketCount);
 
-    size_t getBucketCount();
+    size_t getBucketCount() const;
 
     /// get value in bucket i
-    int getValue(int i);
+    int getValue(int i) const;
+
+    /// get value in bucket i
+    int getValue(size_t i) const;
+
+    /// get value in bucket nearest to i
+    int getValue(float i) const;
 
     /// Returns normalized (with max.) histogram value at bucket i
-    float getNormalized(int i);
+    float getNormalized(int i) const;
+
+    /// Returns normalized (with max.) histogram value at bucket nearest to i
+    float getNormalized(float i) const;
 
     /// Returns normalized logarithmic histogram value at bucket i
-    float getLogNormalized(int i);
+    float getLogNormalized(int i) const;
+
+    /// Returns normalized logarithmic histogram value at bucket nearest to i
+    float getLogNormalized(float i) const;
 
     /// Returns the significant range of the histogram, i.e.
     /// the minimal / maximal non-zero bucket
@@ -87,7 +99,7 @@ public:
      * @param bucketCountg Gradient strength bucket count
      * @param scale should the histogram scaled to maximum gradient length in the dataset?
      */
-    HistogramIntensityGradient(Volume* volumeGrad, Volume* volumeIntensity,
+    HistogramIntensityGradient(const Volume* volumeGrad, const Volume* volumeIntensity,
                                int bucketCounti, int bucketCountg, bool scale = false);
 
     /// Returns voxels in bucket.
@@ -125,7 +137,7 @@ protected:
 
     // calculate the histogram
     template<class U>
-    void calcHG(VolumeAtomic<U>* volumeGrad, Volume* volumeIntensity, int bucketCounti, int bucketCountg, bool scale);
+    void calcHG(const VolumeAtomic<U>* volumeGrad, const Volume* volumeIntensity, int bucketCounti, int bucketCountg, bool scale);
 };
 
 } // namespace voreen

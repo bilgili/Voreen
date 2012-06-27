@@ -38,9 +38,11 @@ using tgt::TextureUnit;
 
 namespace voreen {
 
+const std::string SingleVolumeRaycaster::loggerCat_("voreen.SingleVolumeRaycaster");
+
 SingleVolumeRaycaster::SingleVolumeRaycaster()
     : VolumeRaycaster()
-    , transferFunc_("transferFunction", "Transfer function")
+    , transferFunc_("transferFunction", "Transfer Function")
     , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
     , compositingMode1_("compositing1", "Compositing (OP2)", Processor::INVALID_PROGRAM)
     , compositingMode2_("compositing2", "Compositing (OP3)", Processor::INVALID_PROGRAM)
@@ -51,16 +53,9 @@ SingleVolumeRaycaster::SingleVolumeRaycaster()
     , outport1_(Port::OUTPORT, "image.output1", true, Processor::INVALID_PROGRAM)
     , outport2_(Port::OUTPORT, "image.output2", true, Processor::INVALID_PROGRAM)
 {
-
-    // VolumeRaycaster Props
-    addProperty(useSegmentation_);
-    addProperty(segment_);
-    addProperty(isoValue_);
-
     addProperty(transferFunc_);
     addProperty(camera_);
 
-    addProperty(maskingMode_);
     addProperty(gradientMode_);
     addProperty(classificationMode_);
     addProperty(shadeMode_);
@@ -80,6 +75,8 @@ SingleVolumeRaycaster::SingleVolumeRaycaster()
     compositingMode2_.addOption("fhn", "FHN");
     addProperty(compositingMode2_);
 
+    addProperty(isoValue_);
+
     addProperty(lightPosition_);
     addProperty(lightAmbient_);
     addProperty(lightDiffuse_);
@@ -87,6 +84,23 @@ SingleVolumeRaycaster::SingleVolumeRaycaster()
     addProperty(materialShininess_);
     addProperty(applyLightAttenuation_);
     addProperty(lightAttenuation_);
+
+    // assign lighting properties to property group
+    lightPosition_.setGroupID("lighting");
+    lightAmbient_.setGroupID("lighting");
+    lightDiffuse_.setGroupID("lighting");
+    lightSpecular_.setGroupID("lighting");
+    materialShininess_.setGroupID("lighting");
+    applyLightAttenuation_.setGroupID("lighting");
+    lightAttenuation_.setGroupID("lighting");
+    setPropertyGroupGuiName("lighting", "Lighting Parameters");
+
+    classificationMode_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
+    shadeMode_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
+    compositingMode_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
+    compositingMode1_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
+    compositingMode2_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
+    applyLightAttenuation_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
 
     addPort(volumeInport_);
     addPort(entryPort_);
@@ -100,7 +114,7 @@ SingleVolumeRaycaster::~SingleVolumeRaycaster() {
 }
 
 std::string SingleVolumeRaycaster::getProcessorInfo() const {
-    return "This is the standard volume renderer in Voreen. It allows to generate three output "
+    return "This is the standard volume renderer in Voreen. It generates up to three output "
            "renderings, where the first one also provides depth values. Several "
            "shading and compositing modes are supported.<br/>"
            "See CubeMeshProxyGeometry, MeshEntryExitPoints.";
@@ -115,17 +129,15 @@ void SingleVolumeRaycaster::initialize() throw (VoreenException) {
 
     loadShader();
 
-    if (!raycastPrg_) {
-        LERROR("Failed to load shaders!");
-        initialized_ = false;
-        throw VoreenException(getClassName() + ": Failed to load shaders!");
-    }
-    initialized_ = true;
+    if (!raycastPrg_)
+        throw VoreenException("failed to load shaders");
 
     portGroup_.initialize();
     portGroup_.addPort(outport_);
     portGroup_.addPort(outport1_);
     portGroup_.addPort(outport2_);
+
+    adjustPropertyVisibilities();
 }
 
 void SingleVolumeRaycaster::deinitialize() throw (VoreenException) {
@@ -136,11 +148,11 @@ void SingleVolumeRaycaster::deinitialize() throw (VoreenException) {
 
 void SingleVolumeRaycaster::loadShader() {
     raycastPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "rc_singlevolume.frag",
-                                       generateHeader(), false, false);
+                                       generateHeader(), false);
 }
 
 void SingleVolumeRaycaster::compile(VolumeHandle* volumeHandle) {
-    raycastPrg_->setHeaders(generateHeader(volumeHandle), false);
+    raycastPrg_->setHeaders(generateHeader(volumeHandle));
     raycastPrg_->rebuild();
 }
 
@@ -173,18 +185,18 @@ void SingleVolumeRaycaster::process() {
         transferFunc_.get()->bind();
 
     portGroup_.activateTargets();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    portGroup_.clearTargets();
     LGL_ERROR;
 
     transferFunc_.setVolumeHandle(volumeInport_.getData());
 
     // bind entry params
     tgt::TextureUnit entryUnit, entryDepthUnit, exitUnit, exitDepthUnit;
-    entryPort_.bindTextures(entryUnit.getEnum(), entryDepthUnit.getEnum());
+    entryPort_.bindTextures(entryUnit, entryDepthUnit);
     LGL_ERROR;
 
     // bind exit params
-    exitPort_.bindTextures(exitUnit.getEnum(), exitDepthUnit.getEnum());
+    exitPort_.bindTextures(exitUnit, exitDepthUnit);
     LGL_ERROR;
 
     // vector containing the volumes to bind; is passed to bindVolumes()
@@ -196,32 +208,13 @@ void SingleVolumeRaycaster::process() {
         volumeInport_.getData()->getVolumeGL(),
         &volUnit,
         "volume_",
-        "volumeParameters_")
+        "volumeParameters_",
+        true)
     );
 
     updateBrickingParameters(volumeInport_.getData());
     TextureUnit brickUnit1, brickUnit2;
     addBrickedVolumeModalities(volumeInport_.getData(), volumeTextures, &brickUnit1, &brickUnit2);
-
-    // segmentation volume
-    //VolumeHandle* volumeSeg = volumeInport_.getData()->getRelatedVolumeHandle(Modality::MODALITY_SEGMENTATION);
-    VolumeHandle* volumeSeg = 0;
-
-    bool usingSegmentation = (maskingMode_.get() == "Segmentation") && volumeSeg;
-    TextureUnit segUnit;
-    if (usingSegmentation) {
-        // Important to set the correct texture unit before getVolumeGL() is called or
-        // glTexParameter() might influence the wrong texture.
-        segUnit.activate();
-        volumeTextures.push_back(VolumeStruct(volumeSeg->getVolumeGL(),
-                                              &segUnit,
-                                              "segmentation_",
-                                              "segmentationParameters_"));
-
-        // set texture filtering for this texture unit
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    }
 
     // initialize shader
     raycastPrg_->activate();
@@ -229,7 +222,7 @@ void SingleVolumeRaycaster::process() {
     // set common uniforms used by all shaders
     setGlobalShaderParameters(raycastPrg_, camera_.get());
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(raycastPrg_, volumeTextures);
+    bindVolumes(raycastPrg_, volumeTextures, camera_.get(), lightPosition_.get());
 
     // pass the remaining uniforms to the shader
     raycastPrg_->setUniform("entryPoints_", entryUnit.getUnitNumber());
@@ -247,11 +240,6 @@ void SingleVolumeRaycaster::process() {
     if (classificationMode_.get() == "transfer-function")
         raycastPrg_->setUniform("transferFunc_", transferUnit.getUnitNumber());
 
-    if (usingSegmentation) {
-        GLfloat seg = segment_.get() / 255.f;
-        raycastPrg_->setUniform("segment_", seg);
-    }
-
     setBrickedVolumeUniforms(volumeInport_.getData());
     LGL_ERROR;
 
@@ -265,13 +253,7 @@ void SingleVolumeRaycaster::process() {
 
     glPopAttrib();
     raycastPrg_->deactivate();
-
-    if (usingSegmentation) {
-        // restore default texture filtering mode
-        segUnit.activate();
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    }
+    portGroup_.deactivateTargets();
 
     TextureUnit::setZeroUnit();
     LGL_ERROR;
@@ -311,6 +293,18 @@ std::string SingleVolumeRaycaster::generateHeader(VolumeHandle* volumeHandle) {
     portGroup_.reattachTargets();
     headerSource += portGroup_.generateHeader();
     return headerSource;
+}
+
+void SingleVolumeRaycaster::adjustPropertyVisibilities() {
+    bool useLighting = !shadeMode_.isSelected("none");
+    setPropertyGroupVisible("lighting", useLighting);
+
+    bool useIsovalue = (compositingMode_.isSelected("iso")  ||
+                        compositingMode1_.isSelected("iso") ||
+                        compositingMode2_.isSelected("iso")   );
+    isoValue_.setVisible(useIsovalue);
+
+    lightAttenuation_.setVisible(applyLightAttenuation_.get());
 }
 
 } // namespace

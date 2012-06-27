@@ -38,15 +38,14 @@ CubeMeshProxyGeometry::CubeMeshProxyGeometry()
     : Processor()
     , inport_(Port::INPORT, "volumehandle.volumehandle")
     , outport_(Port::OUTPORT, "proxygeometry.geometry")
-    , applyDatasetTransformationMatrix_("useDatasetTrafoMatrix", "Apply data set trafo matrix", true)
-    , enableClipping_("useClipping", "Enable clipping", false)
-    , clipRight_("rightClippingPlane", "Right clipping plane (x)", 0.0f, 0.0f, 100000.0f, true)
-    , clipLeft_("leftClippingPlane", "Left clipping plane (x)", 0.0f, 0.0f, 100000.0f, true)
-    , clipFront_("frontClippingPlane", "Front clipping plane (y)", 0.0f, 0.0f, 100000.0f, true)
-    , clipBack_("backClippingPlane", "Back clipping plane (y)", 0.0f, 0.0f, 100000.0f, true)
-    , clipBottom_("bottomClippingPlane", "Bottom clipping plane (z)", 0.0f, 0.0f, 100000.0f, true)
-    , clipTop_("topClippingPlane", "Top clipping plane (z)", 0.0f, 0.0f, 100000.0f, true)
-    , resetClipPlanes_("resetClipPlanes", "Reset planes")
+    , enableClipping_("useClipping", "Enable Clipping", true)
+    , clipRight_("rightClippingPlane", "Right clipping plane (x)", 0.0f, 0.0f, 100000.0f)
+    , clipLeft_("leftClippingPlane", "Left clipping plane (x)", 0.0f, 0.0f, 100000.0f)
+    , clipFront_("frontClippingPlane", "Front clipping plane (y)", 0.0f, 0.0f, 100000.0f)
+    , clipBack_("backClippingPlane", "Back clipping plane (y)", 0.0f, 0.0f, 100000.0f)
+    , clipBottom_("bottomClippingPlane", "Bottom clipping plane (z)", 0.0f, 0.0f, 100000.0f)
+    , clipTop_("topClippingPlane", "Top clipping plane (z)", 0.0f, 0.0f, 100000.0f)
+    , resetClipPlanes_("resetClipPlanes", "Reset Planes")
     , geometry_(new MeshListGeometry())
 {
 
@@ -62,7 +61,6 @@ CubeMeshProxyGeometry::CubeMeshProxyGeometry()
     enableClipping_.onChange(CallMemberAction<CubeMeshProxyGeometry>(this, &CubeMeshProxyGeometry::adjustClipPropertiesVisibility));
     resetClipPlanes_.onChange(CallMemberAction<CubeMeshProxyGeometry>(this, &CubeMeshProxyGeometry::resetClipPlanes));
 
-    addProperty(applyDatasetTransformationMatrix_);
     addProperty(enableClipping_);
     addProperty(clipRight_);
     addProperty(clipLeft_);
@@ -72,7 +70,17 @@ CubeMeshProxyGeometry::CubeMeshProxyGeometry()
     addProperty(clipTop_);
     addProperty(resetClipPlanes_);
 
+    clipRight_.setGroupID("clipping");
+    clipLeft_.setGroupID("clipping");
+    clipFront_.setGroupID("clipping");
+    clipBack_.setGroupID("clipping");
+    clipBottom_.setGroupID("clipping");
+    clipTop_.setGroupID("clipping");
+    resetClipPlanes_.setGroupID("clipping");
+    setPropertyGroupGuiName("clipping", "Clipping Planes");
     adjustClipPropertiesVisibility();
+
+    oldVolumeDimensions_ = tgt::ivec3(0,0,0);
 }
 
 CubeMeshProxyGeometry::~CubeMeshProxyGeometry() {
@@ -96,6 +104,8 @@ void CubeMeshProxyGeometry::process() {
     Volume* inputVolume = inport_.getData()->getVolume();
     tgt::vec3 volumeSize = inputVolume->getCubeSize();
     tgt::ivec3 numSlices = inputVolume->getDimensions();
+    if (oldVolumeDimensions_ == tgt::ivec3(0,0,0))
+        oldVolumeDimensions_ = inputVolume->getDimensions();
 
     // adapt clipping plane properties on volume change
     if (inport_.hasChanged()) {
@@ -132,8 +142,7 @@ void CubeMeshProxyGeometry::process() {
     // create output mesh
     geometry_->clear();
     geometry_->addMesh(MeshGeometry::createCube(coordLlf, coordUrb, texLlf, texUrb, texLlf, texUrb));
-    if (applyDatasetTransformationMatrix_.get())
-        geometry_->transform(inputVolume->getTransformation());
+    geometry_->transform(inputVolume->getTransformation());
 
     outport_.setData(geometry_);
 }
@@ -194,17 +203,25 @@ void CubeMeshProxyGeometry::adjustClipPropertiesRanges() {
     clipBottom_.setMaxValue(numSlices.z-1.0f);
     clipTop_.setMaxValue(numSlices.z-1.0f);
 
-    if ((clipRight_.get() == 0.0f)
-        && (clipLeft_.get() == 0.0f)
-        && (clipFront_.get() == 0.0f)
-        && (clipBack_.get() == 0.0f)
-        && (clipBottom_.get() == 0.0f)
-        && (clipTop_.get() == 0.0f))
-    {
-        clipLeft_.set(numSlices.x-1.0f);
-        clipBack_.set(numSlices.y-1.0f);
-        clipTop_.set(numSlices.z-1.0f);
-    }
+    // assign new clipping values while taking care that the right>left validation
+    // does not alter the assigned values
+    float rightVal = clipRight_.get()/static_cast<float>(oldVolumeDimensions_.x-1) * (numSlices.x-1);
+    float leftVal = clipLeft_.get()/static_cast<float>(oldVolumeDimensions_.x-1) * (numSlices.x-1);
+    clipLeft_.set(clipLeft_.getMaxValue());
+    clipRight_.set(rightVal);
+    clipLeft_.set(leftVal);
+
+    float frontVal = clipFront_.get()/static_cast<float>(oldVolumeDimensions_.y-1) * (numSlices.y-1);
+    float backVal = clipBack_.get()/static_cast<float>(oldVolumeDimensions_.y-1) * (numSlices.y-1);
+    clipBack_.set(clipBack_.getMaxValue());
+    clipFront_.set(frontVal);
+    clipBack_.set(backVal);
+
+    float bottomVal = clipBottom_.get()/static_cast<float>(oldVolumeDimensions_.z-1) * (numSlices.z-1);
+    float topVal = clipTop_.get()/static_cast<float>(oldVolumeDimensions_.z-1) * (numSlices.z-1);
+    clipTop_.set(clipTop_.getMaxValue());
+    clipBottom_.set(bottomVal);
+    clipTop_.set(topVal);
 
     if (clipRight_.get() > clipRight_.getMaxValue())
         clipRight_.set(clipRight_.getMaxValue());
@@ -223,17 +240,21 @@ void CubeMeshProxyGeometry::adjustClipPropertiesRanges() {
 
     if (clipTop_.get() > clipTop_.getMaxValue())
         clipTop_.set(clipTop_.getMaxValue());
+
+    oldVolumeDimensions_ = numSlices;
 }
 
 void CubeMeshProxyGeometry::adjustClipPropertiesVisibility() {
     bool clipEnabled = enableClipping_.get();
-    clipRight_.setVisible(clipEnabled);
+    /*clipRight_.setVisible(clipEnabled);
     clipLeft_.setVisible(clipEnabled);
     clipFront_.setVisible(clipEnabled);
     clipBack_.setVisible(clipEnabled);
     clipBottom_.setVisible(clipEnabled);
     clipTop_.setVisible(clipEnabled);
-    resetClipPlanes_.setVisible(clipEnabled);
+    resetClipPlanes_.setVisible(clipEnabled);*/
+    setPropertyGroupVisible("clipping", clipEnabled);
 }
+
 
 } // namespace

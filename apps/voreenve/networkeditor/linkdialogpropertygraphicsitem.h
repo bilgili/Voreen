@@ -36,6 +36,7 @@
 namespace voreen {
 
 class LinkDialogArrowGraphicsItem;
+class PropertyLinkDialog;
 
 enum ColumnPosition {
     ColumnPositionLeft,
@@ -60,6 +61,8 @@ enum ColumnPosition {
  */
 class LinkDialogPropertyGraphicsItem : public PropertyGraphicsItem {
 Q_OBJECT
+    friend class LinkDialogArrowGraphicsItem;
+
 public:
     /**
      * Simple constructor
@@ -80,6 +83,10 @@ public:
     /// Returns the position of the LinkDialogPropertyGraphicsItem
     ColumnPosition getPosition() const;
 
+    void setDelegate(PropertyLinkDialog* dialog);
+
+    void setCurrentArrow(LinkDialogArrowGraphicsItem* arrow);
+
 signals:
     /**
      * This signal is emitted, as soon as a valid LinkDialogArrowGraphicsItem
@@ -88,12 +95,22 @@ signals:
      */
     void createdArrow(LinkDialogArrowGraphicsItem* arrow);
 
+    /**
+     * This signal is emitted if a \sa LinkDialogArrowGraphicsItem is dragged
+     * away from its existing connection and dropped someplace without a new
+     * connection.
+     * \param arrow The arrow which is to be deleted
+     */
+    void deleteArrow(QGraphicsItem* arrow);
+
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event);
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
 
 private:
+    PropertyLinkDialog* delegate_;
+
     LinkDialogArrowGraphicsItem* currentArrow_;
     ColumnPosition position_;
     QRectF oldBounds_;

@@ -36,10 +36,6 @@
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/eventproperty.h"
 
-namespace tgt {
-    class EventListener;
-}
-
 namespace voreen {
 
 class Processor;
@@ -170,6 +166,13 @@ public:
      * Internally calls setEnabled() on its event property.
      */
     void setEnabled(bool enabled);
+
+    /**
+     * Determines whether its properties are visible.
+     * Internally calls setVisible() on its event properties
+     * and PropertyOwner::setPropertiesVisible.
+     */
+    void setVisible(bool state);
 
     /**
      * Determines whether the handler shares events, i.e., does not accept() events it reacts to.

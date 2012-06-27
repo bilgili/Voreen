@@ -35,6 +35,7 @@
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/rawvolumereader.h"
+#include "voreen/core/io/progressbar.h"
 
 
 namespace voreen {
@@ -128,7 +129,7 @@ VolumeHandle* VolumeContainer::loadRawVolume(const std::string& filename, const 
     throw (tgt::FileException, std::bad_alloc)
 {
 
-    IOProgress* progress = VoreenApplication::app()->createProgressDialog();
+    ProgressBar* progress = VoreenApplication::app()->createProgressDialog();
     RawVolumeReader rawReader(progress);
     rawReader.setReadHints(dimensions, spacing, 0, objectModel, format, headerskip, bigEndian);
 

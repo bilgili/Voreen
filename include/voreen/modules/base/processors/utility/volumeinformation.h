@@ -30,9 +30,9 @@
 #ifndef VRN_VOLUMEINFORMATION_H
 #define VRN_VOLUMEINFORMATION_H
 
-#include "voreen/modules/base/processors/volume/volumeprocessor.h"
-#include "voreen/core/ports/volumeport.h"
+#include "voreen/core/processors/volumeprocessor.h"
 #include "voreen/core/properties/buttonproperty.h"
+#include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/floatproperty.h"
 
@@ -62,6 +62,7 @@ private:
     VolumePort volume_;
 
     ButtonProperty computeButton_;
+    BoolProperty computeContinuously_;
     IntProperty numVoxels_;
     IntProperty numSignificant_;
     FloatProperty minValue_;

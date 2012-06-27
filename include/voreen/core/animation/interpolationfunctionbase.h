@@ -41,7 +41,6 @@ namespace voreen {
  */
 class InterpolationFunctionBase {
 public:
-
     virtual ~InterpolationFunctionBase() {}
 
     /**

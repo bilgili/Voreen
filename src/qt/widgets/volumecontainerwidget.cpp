@@ -59,13 +59,13 @@
 #include "voreen/core/datastructures/volume/volumehandle.h"
 #include "voreen/core/datastructures/volume/bricking/largevolumemanager.h"
 #include "voreen/core/io/datvolumewriter.h"
-#include "voreen/core/io/dicomvolumereader.h"
-#include "voreen/core/io/ioprogress.h"
+#include "voreen/modules/dicom/dicomvolumereader.h"
+#include "voreen/core/io/progressbar.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/voreenapplication.h"
 
 #include "voreen/qt/voreenapplicationqt.h"
-#include "voreen/qt/ioprogressdialog.h"
+#include "voreen/qt/progressdialog.h"
 
 #ifdef _MSC_VER
 #include "tgt/gpucapabilitieswindows.h"
@@ -85,6 +85,7 @@ namespace voreen {
 
 QRCTreeWidget::QRCTreeWidget(QWidget* parent) : QTreeWidget(parent) {
     setSelectionMode(QAbstractItemView::ExtendedSelection);
+    setTextElideMode(Qt::ElideMiddle);
 }
 
 void QRCTreeWidget::contextMenuEvent(QContextMenuEvent* cmevent) {
@@ -112,13 +113,22 @@ void QRCTreeWidget::contextMenuEvent(QContextMenuEvent* cmevent) {
     }
 }
 
+void QRCTreeWidget::keyPressEvent(QKeyEvent* event) {
+    if ((event->key() == Qt::Key_Delete) || (event->key() == Qt::Key_Backspace)) {
+        event->accept();
+        emit remove();
+    }
+
+    QTreeWidget::keyPressEvent(event);
+}
+
 // ---------------------------------------------------------------------------
 
 const std::string VolumeContainerWidget::loggerCat_("voreen.qt.VolumeContainerWidget");
 
 VolumeContainerWidget::VolumeContainerWidget(VolumeContainer* volumeContainer, QWidget* parent)
-        : QWidget(parent, Qt::Tool)
-        , volumeContainer_(volumeContainer)
+    : QWidget(parent, Qt::Tool)
+    , volumeContainer_(volumeContainer)
 {
 
     if (volumeContainer_)
@@ -142,6 +152,7 @@ VolumeContainerWidget::VolumeContainerWidget(VolumeContainer* volumeContainer, Q
 
     volumeLoadButton_ = new VolumeLoadButton(volumeContainer_, this);
     volumeLoadButton_->setMinimumWidth(125);
+    containerInfo_ = new QLabel(this);
 
     connect(volumeInfos_, SIGNAL(refresh(QTreeWidgetItem*)), this, SLOT(volumeRefresh(QTreeWidgetItem*)));
     connect(volumeInfos_, SIGNAL(add()), volumeLoadButton_, SLOT(loadVolume()));
@@ -151,13 +162,14 @@ VolumeContainerWidget::VolumeContainerWidget(VolumeContainer* volumeContainer, Q
     buttonLayout->addWidget(volumeLoadButton_);
 
     buttonLayout->addStretch();
+    buttonLayout->addWidget(containerInfo_);
 
     mainLayout->addWidget(volumeInfos_);
     mainLayout->addLayout(buttonLayout);
     mainLayout->addLayout(dicomLayout);
 
     setMinimumWidth(250);
-    setMinimumHeight(200);
+    setMinimumHeight(125);
     update();
 }
 
@@ -191,48 +203,57 @@ void VolumeContainerWidget::setVolumeContainer(VolumeContainer* volumeContainer)
 
 void VolumeContainerWidget::update() {
     volumeInfos_->clear();
+    int volumeSize = 0;
+    int volumeCount = 0;
 
-    if (!volumeContainer_ || volumeContainer_->empty())
+    if (!volumeContainer_ || volumeContainer_->empty()) {
+        containerInfo_->setText("");
         return;
+    }
 
-    for(size_t i = 0 ; i< volumeContainer_->size(); i++) {
+    for(size_t i = 0 ; i< volumeContainer_->size(); ++i) {
         VolumeHandle* handle = volumeContainer_->at(i);
         Volume* volume = volumeContainer_->at(i)->getVolume();
         QTreeWidgetItem* qtwi = new QTreeWidgetItem(volumeInfos_);
         std::string name = VolumeViewHelper::getStrippedVolumeName(handle);
         std::string path = VolumeViewHelper::getVolumePath(handle);
 
+        ++volumeCount;
+        volumeSize += VolumeViewHelper::getVolumeMemorySizeByte(volume);
 
-        uint stringLength = 24;
-        if(name.size() > stringLength) {
-            int end = name.size();
-            std::string startString;
-            std::string endString;
-            for(size_t i = 0; i < 12; i++){
-                 startString += name.at(i);
-                 endString += name.at(end-12+i);
-            }
-            name = startString+"..."+endString;
-        }
-        if(path.size() > stringLength) {
-            int end = path.size();
-            std::string startString;
-            std::string endString;
-            for(size_t i = 0; i < 12; i++){
-                 startString += path.at(i);
-                 endString += path.at(end-12+i);
-            }
-            path = startString+"..."+endString;
-        }
+        // uint stringLength = 22;
+        // if(name.size() > stringLength) {
+        //     int end = name.size();
+        //     std::string startString;
+        //     std::string endString;
+        //     for(size_t i = 0; i < stringLength/2; i++){
+        //          startString += name.at(i);
+        //          endString += name.at(end-stringLength/2+i);
+        //     }
+        //     name = startString+"..."+endString;
+        // }
+        // if(path.size() > stringLength) {
+        //     int end = path.size();
+        //     std::string startString;
+        //     std::string endString;
+        //     for(size_t i = 0; i < stringLength/2; i++){
+        //          startString += path.at(i);
+        //          endString += path.at(end-stringLength/2+i);
+        //     }
+        //     path = startString+"..."+endString;
+        // }
 
         QFontInfo fontInfo(qtwi->font(0));
         qtwi->setFont(0, QFont(fontInfo.family(), fontSize));
-        //qtwi->setFont(0, QFont(QString("Arial"), 7));
-        qtwi->setText(0, QString::fromStdString(name
-            + " ("+VolumeViewHelper::getVolumeType(volume)+")"+"\n"+path
-            +"\nDimensions: " + VolumeViewHelper::getVolumeDimension(volume) + "\nVoxel Spacing: "
-            + VolumeViewHelper::getVolumeSpacing(volume) +"\nMemory Size: "
-            + VolumeViewHelper::getVolumeMemorySize(volume)));
+        qtwi->setText(0, QString(name.c_str()) + " (" + QString(VolumeViewHelper::getVolumeType(volume).c_str()) + ")" + QString(QChar::LineSeparator)
+                      + QString(path.c_str()) + QString(QChar::LineSeparator)
+                      + "Dimension: " + QString(VolumeViewHelper::getVolumeDimension(volume).c_str()));
+                      
+            //                                     + "afdjkl ajdsflj alsdfj lasdjflakjdsf\n"
+            // + " ("+VolumeViewHelper::getVolumeType(volume)+")"+"\n"+path
+            // +"\nDimensions: " + VolumeViewHelper::getVolumeDimension(volume) + "\nVoxel Spacing: "
+            // + VolumeViewHelper::getVolumeSpacing(volume) +"\nMemory Size: "
+            // + VolumeViewHelper::getVolumeMemorySize(volume)));
 
         qtwi->setIcon(0, QIcon(VolumeViewHelper::generateBorderedPreview(volume, 63, 0)));
         qtwi->setSizeHint(0,QSize(65,65));
@@ -244,6 +265,26 @@ void VolumeContainerWidget::update() {
 
         volumeInfos_->addTopLevelItem(qtwi);
     }
+    long bytes = volumeSize;
+    std::stringstream out;
+    if(volumeCount == 1) {
+        out << volumeCount << " Volume (";
+    }
+    else if (volumeCount > 1) {
+        out << volumeCount << " Volumes (";
+    }
+    float mb = tgt::round(bytes/104857.6f) / 10.f;    //calculate mb with 0.1f precision
+    float kb = tgt::round(bytes/102.4f) / 10.f;
+    if (mb >= 0.5f) {
+        out << mb << " MB)";
+    }
+    else if (kb >= 0.5f) {
+        out << kb << " kB)";
+    }
+    else {
+        out << bytes << " bytes)";
+    }
+    containerInfo_->setText(QString::fromStdString(out.str()));
 }
 
 void VolumeContainerWidget::removeVolume() {
@@ -285,10 +326,17 @@ void VolumeContainerWidget::volumeRefresh(QTreeWidgetItem* /*item*/) {
     QApplication::setOverrideCursor(Qt::WaitCursor);
     QList<QTreeWidgetItem *> allItems = volumeInfos_->selectedItems();
     QList<QTreeWidgetItem *>::iterator it = allItems.begin();
+    std::vector<VolumeHandle*> volumePointer;
     while(it != allItems.end())
     {
-        volumeContainer_->at(volumeInfos_->indexOfTopLevelItem(*it))->reloadVolume();
+        volumePointer.push_back(volumeContainer_->at(volumeInfos_->indexOfTopLevelItem(*it)));
         it++;
+    }
+    std::vector<VolumeHandle*>::iterator vit = volumePointer.begin();
+    while(vit != volumePointer.end())
+    {
+        (*vit)->reloadVolume();
+        vit++;
     }
     QApplication::restoreOverrideCursor();
 }

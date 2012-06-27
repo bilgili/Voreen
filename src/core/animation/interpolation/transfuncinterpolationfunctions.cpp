@@ -38,83 +38,82 @@
 
 namespace voreen {
 
-TransFuncStartInterpolationFunction::TransFuncStartInterpolationFunction() {
-}
+TransFuncStartInterpolationFunction::TransFuncStartInterpolationFunction() {}
+
 std::string TransFuncStartInterpolationFunction::getMode() const {
     return "focus on startvalue";
 }
+
 std::string TransFuncStartInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 TransFunc* TransFuncStartInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else {
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncStartInterpolationFunction::clone() const{
+InterpolationFunction<TransFunc*>* TransFuncStartInterpolationFunction::clone() const {
     return new TransFuncStartInterpolationFunction();
 }
 
+TransFuncEndInterpolationFunction::TransFuncEndInterpolationFunction() {}
 
-TransFuncEndInterpolationFunction::TransFuncEndInterpolationFunction() {
-}
 std::string TransFuncEndInterpolationFunction::getMode() const {
     return "focus on endvalue";
 }
+
 std::string TransFuncEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 TransFunc* TransFuncEndInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    if (time>0){
+    if (time > 0.f)
         return endvalue->clone();
-    }
-    else{
+    else
         return startvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncEndInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncEndInterpolationFunction::clone() const {
     return new TransFuncEndInterpolationFunction();
 }
 
+TransFuncStartEndInterpolationFunction::TransFuncStartEndInterpolationFunction() {}
 
-TransFuncStartEndInterpolationFunction::TransFuncStartEndInterpolationFunction() {
-}
 std::string TransFuncStartEndInterpolationFunction::getMode() const {
     return "bisection";
 }
+
 std::string TransFuncStartEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 TransFunc* TransFuncStartEndInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    if (time<0.5){
+    if (time < 0.5f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncStartEndInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncStartEndInterpolationFunction::clone() const {
     return new TransFuncStartEndInterpolationFunction();
 }
 
+TransFuncKeyWiseInterpolationFunction::TransFuncKeyWiseInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseInterpolationFunction::TransFuncKeyWiseInterpolationFunction() {
-}
 std::string TransFuncKeyWiseInterpolationFunction::getMode() const {
     return "keywise linear";
 }
+
 std::string TransFuncKeyWiseInterpolationFunction::getIdentifier() const {
     return "keywise linear";
 }
+
 TransFunc* TransFuncKeyWiseInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -129,21 +128,21 @@ TransFunc* TransFuncKeyWiseInterpolationFunction::interpolate(TransFunc* startva
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) ((1-time)*(*it1)->getColorL().r + time*(*it2)->getColorL().r);
-                col.g = (uint8_t) ((1-time)*(*it1)->getColorL().g + time*(*it2)->getColorL().g);
-                col.b = (uint8_t) ((1-time)*(*it1)->getColorL().b + time*(*it2)->getColorL().b);
-                col.a = (uint8_t) ((1-time)*(*it1)->getColorL().a + time*(*it2)->getColorL().a);
+                col.r = static_cast<uint8_t>((1-time)*(*it1)->getColorL().r + time*(*it2)->getColorL().r);
+                col.g = static_cast<uint8_t>((1-time)*(*it1)->getColorL().g + time*(*it2)->getColorL().g);
+                col.b = static_cast<uint8_t>((1-time)*(*it1)->getColorL().b + time*(*it2)->getColorL().b);
+                col.a = static_cast<uint8_t>((1-time)*(*it1)->getColorL().a + time*(*it2)->getColorL().a);
                 key->setColorL(col);
 
-                col.r = (uint8_t) ((1-time)*(*it1)->getColorR().r + time*(*it2)->getColorR().r);
-                col.g = (uint8_t) ((1-time)*(*it1)->getColorR().g + time*(*it2)->getColorR().g);
-                col.b = (uint8_t) ((1-time)*(*it1)->getColorR().b + time*(*it2)->getColorR().b);
-                col.a = (uint8_t) ((1-time)*(*it1)->getColorR().a + time*(*it2)->getColorR().a);
+                col.r = static_cast<uint8_t>((1-time)*(*it1)->getColorR().r + time*(*it2)->getColorR().r);
+                col.g = static_cast<uint8_t>((1-time)*(*it1)->getColorR().g + time*(*it2)->getColorR().g);
+                col.b = static_cast<uint8_t>((1-time)*(*it1)->getColorR().b + time*(*it2)->getColorR().b);
+                col.a = static_cast<uint8_t>((1-time)*(*it1)->getColorR().a + time*(*it2)->getColorR().a);
                 key->setColorR(col);
 
                 key->setIntensity((1-time)*(*it1)->getIntensity()+time*(*it2)->getIntensity());
@@ -157,32 +156,30 @@ TransFunc* TransFuncKeyWiseInterpolationFunction::interpolate(TransFunc* startva
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseInterpolationFunction::clone() const {
     return new TransFuncKeyWiseInterpolationFunction();
 }
 
+TransFuncKeyWiseQuadInInterpolationFunction::TransFuncKeyWiseQuadInInterpolationFunction() {}
 
-
-TransFuncKeyWiseQuadInInterpolationFunction::TransFuncKeyWiseQuadInInterpolationFunction() {
-}
 std::string TransFuncKeyWiseQuadInInterpolationFunction::getMode() const {
     return "easing in";
 }
+
 std::string TransFuncKeyWiseQuadInInterpolationFunction::getIdentifier() const {
     return "keywise quadratic";
 }
-TransFunc* TransFuncKeyWiseQuadInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseQuadInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -197,21 +194,21 @@ TransFunc* TransFuncKeyWiseQuadInInterpolationFunction::interpolate(TransFunc* s
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inQuadInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::inQuadInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -225,34 +222,30 @@ TransFunc* TransFuncKeyWiseQuadInInterpolationFunction::interpolate(TransFunc* s
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadInInterpolationFunction::clone() const {
     return new TransFuncKeyWiseQuadInInterpolationFunction();
 }
 
+TransFuncKeyWiseQuadOutInterpolationFunction::TransFuncKeyWiseQuadOutInterpolationFunction() {}
 
-
-
-
-TransFuncKeyWiseQuadOutInterpolationFunction::TransFuncKeyWiseQuadOutInterpolationFunction() {
-}
 std::string TransFuncKeyWiseQuadOutInterpolationFunction::getMode() const {
     return "easing out";
 }
+
 std::string TransFuncKeyWiseQuadOutInterpolationFunction::getIdentifier() const {
     return "keywise quadratic";
 }
-TransFunc* TransFuncKeyWiseQuadOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseQuadOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -267,21 +260,21 @@ TransFunc* TransFuncKeyWiseQuadOutInterpolationFunction::interpolate(TransFunc* 
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outQuadInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::outQuadInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -295,33 +288,30 @@ TransFunc* TransFuncKeyWiseQuadOutInterpolationFunction::interpolate(TransFunc* 
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadOutInterpolationFunction::clone() const {
     return new TransFuncKeyWiseQuadOutInterpolationFunction();
 }
 
+TransFuncKeyWiseQuadInOutInterpolationFunction::TransFuncKeyWiseQuadInOutInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseQuadInOutInterpolationFunction::TransFuncKeyWiseQuadInOutInterpolationFunction() {
-}
 std::string TransFuncKeyWiseQuadInOutInterpolationFunction::getMode() const {
     return "first easing in, then easing out";
 }
+
 std::string TransFuncKeyWiseQuadInOutInterpolationFunction::getIdentifier() const {
     return "keywise quadratic";
 }
-TransFunc* TransFuncKeyWiseQuadInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseQuadInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -336,21 +326,21 @@ TransFunc* TransFuncKeyWiseQuadInOutInterpolationFunction::interpolate(TransFunc
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::inOutQuadInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -364,33 +354,30 @@ TransFunc* TransFuncKeyWiseQuadInOutInterpolationFunction::interpolate(TransFunc
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadInOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadInOutInterpolationFunction::clone() const {
     return new TransFuncKeyWiseQuadInOutInterpolationFunction();
 }
 
+TransFuncKeyWiseQuadOutInInterpolationFunction::TransFuncKeyWiseQuadOutInInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseQuadOutInInterpolationFunction::TransFuncKeyWiseQuadOutInInterpolationFunction() {
-}
 std::string TransFuncKeyWiseQuadOutInInterpolationFunction::getMode() const {
     return "first easing out, then easing in";
 }
+
 std::string TransFuncKeyWiseQuadOutInInterpolationFunction::getIdentifier() const {
     return "keywise quadratic";
 }
-TransFunc* TransFuncKeyWiseQuadOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseQuadOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -405,21 +392,21 @@ TransFunc* TransFuncKeyWiseQuadOutInInterpolationFunction::interpolate(TransFunc
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outInQuadInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::outInQuadInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -433,33 +420,30 @@ TransFunc* TransFuncKeyWiseQuadOutInInterpolationFunction::interpolate(TransFunc
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadOutInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadOutInInterpolationFunction::clone() const {
     return new TransFuncKeyWiseQuadOutInInterpolationFunction();
 }
 
+TransFuncKeyWiseCubicInInterpolationFunction::TransFuncKeyWiseCubicInInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseCubicInInterpolationFunction::TransFuncKeyWiseCubicInInterpolationFunction() {
-}
 std::string TransFuncKeyWiseCubicInInterpolationFunction::getMode() const {
     return "easing in";
 }
+
 std::string TransFuncKeyWiseCubicInInterpolationFunction::getIdentifier() const {
     return "keywise cubic";
 }
-TransFunc* TransFuncKeyWiseCubicInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseCubicInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -474,21 +458,21 @@ TransFunc* TransFuncKeyWiseCubicInInterpolationFunction::interpolate(TransFunc* 
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inCubicInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::inCubicInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -502,34 +486,30 @@ TransFunc* TransFuncKeyWiseCubicInInterpolationFunction::interpolate(TransFunc* 
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicInInterpolationFunction::clone() const {
     return new TransFuncKeyWiseCubicInInterpolationFunction();
 }
 
+TransFuncKeyWiseCubicOutInterpolationFunction::TransFuncKeyWiseCubicOutInterpolationFunction() {}
 
-
-
-
-TransFuncKeyWiseCubicOutInterpolationFunction::TransFuncKeyWiseCubicOutInterpolationFunction() {
-}
 std::string TransFuncKeyWiseCubicOutInterpolationFunction::getMode() const {
     return "easing out";
 }
+
 std::string TransFuncKeyWiseCubicOutInterpolationFunction::getIdentifier() const {
     return "keywise cubic";
 }
-TransFunc* TransFuncKeyWiseCubicOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseCubicOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -544,21 +524,21 @@ TransFunc* TransFuncKeyWiseCubicOutInterpolationFunction::interpolate(TransFunc*
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outCubicInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::outCubicInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -572,33 +552,30 @@ TransFunc* TransFuncKeyWiseCubicOutInterpolationFunction::interpolate(TransFunc*
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicOutInterpolationFunction::clone() const {
     return new TransFuncKeyWiseCubicOutInterpolationFunction();
 }
 
+TransFuncKeyWiseCubicInOutInterpolationFunction::TransFuncKeyWiseCubicInOutInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseCubicInOutInterpolationFunction::TransFuncKeyWiseCubicInOutInterpolationFunction() {
-}
 std::string TransFuncKeyWiseCubicInOutInterpolationFunction::getMode() const {
     return "first easing in, then easing out";
 }
+
 std::string TransFuncKeyWiseCubicInOutInterpolationFunction::getIdentifier() const {
     return "keywise cubic";
 }
-TransFunc* TransFuncKeyWiseCubicInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseCubicInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -613,21 +590,21 @@ TransFunc* TransFuncKeyWiseCubicInOutInterpolationFunction::interpolate(TransFun
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::inOutCubicInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -641,33 +618,30 @@ TransFunc* TransFuncKeyWiseCubicInOutInterpolationFunction::interpolate(TransFun
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicInOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicInOutInterpolationFunction::clone() const {
     return new TransFuncKeyWiseCubicInOutInterpolationFunction();
 }
 
+TransFuncKeyWiseCubicOutInInterpolationFunction::TransFuncKeyWiseCubicOutInInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseCubicOutInInterpolationFunction::TransFuncKeyWiseCubicOutInInterpolationFunction() {
-}
 std::string TransFuncKeyWiseCubicOutInInterpolationFunction::getMode() const {
     return "first easing out, then easing in";
 }
+
 std::string TransFuncKeyWiseCubicOutInInterpolationFunction::getIdentifier() const {
     return "keywise cubic";
 }
-TransFunc* TransFuncKeyWiseCubicOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseCubicOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -682,21 +656,21 @@ TransFunc* TransFuncKeyWiseCubicOutInInterpolationFunction::interpolate(TransFun
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outInCubicInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::outInCubicInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -710,32 +684,30 @@ TransFunc* TransFuncKeyWiseCubicOutInInterpolationFunction::interpolate(TransFun
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicOutInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicOutInInterpolationFunction::clone() const {
     return new TransFuncKeyWiseCubicOutInInterpolationFunction();
 }
 
+TransFuncKeyWiseQuartInInterpolationFunction::TransFuncKeyWiseQuartInInterpolationFunction() {}
 
-
-TransFuncKeyWiseQuartInInterpolationFunction::TransFuncKeyWiseQuartInInterpolationFunction() {
-}
 std::string TransFuncKeyWiseQuartInInterpolationFunction::getMode() const {
     return "easing in";
 }
+
 std::string TransFuncKeyWiseQuartInInterpolationFunction::getIdentifier() const {
     return "keywise quartetic";
 }
-TransFunc* TransFuncKeyWiseQuartInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseQuartInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -750,21 +722,21 @@ TransFunc* TransFuncKeyWiseQuartInInterpolationFunction::interpolate(TransFunc* 
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inQuartInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::inQuartInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -778,34 +750,30 @@ TransFunc* TransFuncKeyWiseQuartInInterpolationFunction::interpolate(TransFunc* 
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartInInterpolationFunction::clone() const {
     return new TransFuncKeyWiseQuartInInterpolationFunction();
 }
 
+TransFuncKeyWiseQuartOutInterpolationFunction::TransFuncKeyWiseQuartOutInterpolationFunction() {}
 
-
-
-
-TransFuncKeyWiseQuartOutInterpolationFunction::TransFuncKeyWiseQuartOutInterpolationFunction() {
-}
 std::string TransFuncKeyWiseQuartOutInterpolationFunction::getMode() const {
     return "easing out";
 }
+
 std::string TransFuncKeyWiseQuartOutInterpolationFunction::getIdentifier() const {
     return "keywise quartetic";
 }
-TransFunc* TransFuncKeyWiseQuartOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseQuartOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -820,21 +788,21 @@ TransFunc* TransFuncKeyWiseQuartOutInterpolationFunction::interpolate(TransFunc*
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outQuartInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::outQuartInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -848,33 +816,30 @@ TransFunc* TransFuncKeyWiseQuartOutInterpolationFunction::interpolate(TransFunc*
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartOutInterpolationFunction::clone() const {
     return new TransFuncKeyWiseQuartOutInterpolationFunction();
 }
 
+TransFuncKeyWiseQuartInOutInterpolationFunction::TransFuncKeyWiseQuartInOutInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseQuartInOutInterpolationFunction::TransFuncKeyWiseQuartInOutInterpolationFunction() {
-}
 std::string TransFuncKeyWiseQuartInOutInterpolationFunction::getMode() const {
     return "first easing in, then easing out";
 }
+
 std::string TransFuncKeyWiseQuartInOutInterpolationFunction::getIdentifier() const {
     return "keywise quartetic";
 }
-TransFunc* TransFuncKeyWiseQuartInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseQuartInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -889,21 +854,21 @@ TransFunc* TransFuncKeyWiseQuartInOutInterpolationFunction::interpolate(TransFun
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::inOutQuartInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -917,33 +882,30 @@ TransFunc* TransFuncKeyWiseQuartInOutInterpolationFunction::interpolate(TransFun
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartInOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartInOutInterpolationFunction::clone() const {
     return new TransFuncKeyWiseQuartInOutInterpolationFunction();
 }
 
+TransFuncKeyWiseQuartOutInInterpolationFunction::TransFuncKeyWiseQuartOutInInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseQuartOutInInterpolationFunction::TransFuncKeyWiseQuartOutInInterpolationFunction() {
-}
 std::string TransFuncKeyWiseQuartOutInInterpolationFunction::getMode() const {
     return "first easing out, then easing in";
 }
+
 std::string TransFuncKeyWiseQuartOutInInterpolationFunction::getIdentifier() const {
     return "keywise quartetic";
 }
-TransFunc* TransFuncKeyWiseQuartOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseQuartOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -958,21 +920,21 @@ TransFunc* TransFuncKeyWiseQuartOutInInterpolationFunction::interpolate(TransFun
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outInQuartInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::outInQuartInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -986,32 +948,30 @@ TransFunc* TransFuncKeyWiseQuartOutInInterpolationFunction::interpolate(TransFun
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartOutInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartOutInInterpolationFunction::clone() const {
     return new TransFuncKeyWiseQuartOutInInterpolationFunction();
 }
 
+TransFuncKeyWiseQuintInInterpolationFunction::TransFuncKeyWiseQuintInInterpolationFunction() {}
 
-
-TransFuncKeyWiseQuintInInterpolationFunction::TransFuncKeyWiseQuintInInterpolationFunction() {
-}
 std::string TransFuncKeyWiseQuintInInterpolationFunction::getMode() const {
     return "easing in";
 }
+
 std::string TransFuncKeyWiseQuintInInterpolationFunction::getIdentifier() const {
     return "keywise quintic";
 }
-TransFunc* TransFuncKeyWiseQuintInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseQuintInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1026,21 +986,21 @@ TransFunc* TransFuncKeyWiseQuintInInterpolationFunction::interpolate(TransFunc* 
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inQuintInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::inQuintInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -1054,34 +1014,30 @@ TransFunc* TransFuncKeyWiseQuintInInterpolationFunction::interpolate(TransFunc* 
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintInInterpolationFunction::clone() const {
     return new TransFuncKeyWiseQuintInInterpolationFunction();
 }
 
+TransFuncKeyWiseQuintOutInterpolationFunction::TransFuncKeyWiseQuintOutInterpolationFunction() {}
 
-
-
-
-TransFuncKeyWiseQuintOutInterpolationFunction::TransFuncKeyWiseQuintOutInterpolationFunction() {
-}
 std::string TransFuncKeyWiseQuintOutInterpolationFunction::getMode() const {
     return "easing out";
 }
+
 std::string TransFuncKeyWiseQuintOutInterpolationFunction::getIdentifier() const {
     return "keywise quintic";
 }
-TransFunc* TransFuncKeyWiseQuintOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseQuintOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1096,21 +1052,21 @@ TransFunc* TransFuncKeyWiseQuintOutInterpolationFunction::interpolate(TransFunc*
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outQuintInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::outQuintInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -1124,33 +1080,30 @@ TransFunc* TransFuncKeyWiseQuintOutInterpolationFunction::interpolate(TransFunc*
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintOutInterpolationFunction::clone() const {
     return new TransFuncKeyWiseQuintOutInterpolationFunction();
 }
 
+TransFuncKeyWiseQuintInOutInterpolationFunction::TransFuncKeyWiseQuintInOutInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseQuintInOutInterpolationFunction::TransFuncKeyWiseQuintInOutInterpolationFunction() {
-}
 std::string TransFuncKeyWiseQuintInOutInterpolationFunction::getMode() const {
     return "first easing in, then easing out";
 }
+
 std::string TransFuncKeyWiseQuintInOutInterpolationFunction::getIdentifier() const {
     return "keywise quintic";
 }
-TransFunc* TransFuncKeyWiseQuintInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseQuintInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1165,21 +1118,21 @@ TransFunc* TransFuncKeyWiseQuintInOutInterpolationFunction::interpolate(TransFun
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::inOutQuintInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -1193,33 +1146,31 @@ TransFunc* TransFuncKeyWiseQuintInOutInterpolationFunction::interpolate(TransFun
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintInOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintInOutInterpolationFunction::clone() const {
     return new TransFuncKeyWiseQuintInOutInterpolationFunction();
 }
 
-
-
-
 TransFuncKeyWiseQuintOutInInterpolationFunction::TransFuncKeyWiseQuintOutInInterpolationFunction() {
 }
+
 std::string TransFuncKeyWiseQuintOutInInterpolationFunction::getMode() const {
     return "first easing out, then easing in";
 }
+
 std::string TransFuncKeyWiseQuintOutInInterpolationFunction::getIdentifier() const {
     return "keywise quintic";
 }
-TransFunc* TransFuncKeyWiseQuintOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseQuintOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1234,21 +1185,21 @@ TransFunc* TransFuncKeyWiseQuintOutInInterpolationFunction::interpolate(TransFun
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outInQuintInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::outInQuintInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -1262,32 +1213,30 @@ TransFunc* TransFuncKeyWiseQuintOutInInterpolationFunction::interpolate(TransFun
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintOutInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintOutInInterpolationFunction::clone() const {
     return new TransFuncKeyWiseQuintOutInInterpolationFunction();
 }
 
+TransFuncKeyWiseSineInInterpolationFunction::TransFuncKeyWiseSineInInterpolationFunction() {}
 
-
-TransFuncKeyWiseSineInInterpolationFunction::TransFuncKeyWiseSineInInterpolationFunction() {
-}
 std::string TransFuncKeyWiseSineInInterpolationFunction::getMode() const {
     return "easing in";
 }
+
 std::string TransFuncKeyWiseSineInInterpolationFunction::getIdentifier() const {
     return "keywise sineousidal";
 }
-TransFunc* TransFuncKeyWiseSineInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseSineInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1302,21 +1251,21 @@ TransFunc* TransFuncKeyWiseSineInInterpolationFunction::interpolate(TransFunc* s
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inSineInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inSineInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inSineInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inSineInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inSineInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inSineInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inSineInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inSineInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inSineInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inSineInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inSineInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inSineInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inSineInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inSineInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inSineInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inSineInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::inSineInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -1330,34 +1279,30 @@ TransFunc* TransFuncKeyWiseSineInInterpolationFunction::interpolate(TransFunc* s
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineInInterpolationFunction::clone() const {
     return new TransFuncKeyWiseSineInInterpolationFunction();
 }
 
+TransFuncKeyWiseSineOutInterpolationFunction::TransFuncKeyWiseSineOutInterpolationFunction() {}
 
-
-
-
-TransFuncKeyWiseSineOutInterpolationFunction::TransFuncKeyWiseSineOutInterpolationFunction() {
-}
 std::string TransFuncKeyWiseSineOutInterpolationFunction::getMode() const {
     return "easing out";
 }
+
 std::string TransFuncKeyWiseSineOutInterpolationFunction::getIdentifier() const {
     return "keywise sineousidal";
 }
-TransFunc* TransFuncKeyWiseSineOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseSineOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1372,21 +1317,21 @@ TransFunc* TransFuncKeyWiseSineOutInterpolationFunction::interpolate(TransFunc* 
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outSineInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outSineInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outSineInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outSineInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outSineInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outSineInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outSineInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outSineInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outSineInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outSineInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outSineInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outSineInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outSineInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outSineInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outSineInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outSineInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::outSineInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -1400,33 +1345,30 @@ TransFunc* TransFuncKeyWiseSineOutInterpolationFunction::interpolate(TransFunc* 
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineOutInterpolationFunction::clone() const {
     return new TransFuncKeyWiseSineOutInterpolationFunction();
 }
 
+TransFuncKeyWiseSineInOutInterpolationFunction::TransFuncKeyWiseSineInOutInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseSineInOutInterpolationFunction::TransFuncKeyWiseSineInOutInterpolationFunction() {
-}
 std::string TransFuncKeyWiseSineInOutInterpolationFunction::getMode() const {
     return "first easing in, then easing out";
 }
+
 std::string TransFuncKeyWiseSineInOutInterpolationFunction::getIdentifier() const {
     return "keywise sineousidal";
 }
-TransFunc* TransFuncKeyWiseSineInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseSineInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1441,21 +1383,21 @@ TransFunc* TransFuncKeyWiseSineInOutInterpolationFunction::interpolate(TransFunc
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inOutSineInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::inOutSineInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -1469,33 +1411,30 @@ TransFunc* TransFuncKeyWiseSineInOutInterpolationFunction::interpolate(TransFunc
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineInOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineInOutInterpolationFunction::clone() const {
     return new TransFuncKeyWiseSineInOutInterpolationFunction();
 }
 
+TransFuncKeyWiseSineOutInInterpolationFunction::TransFuncKeyWiseSineOutInInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseSineOutInInterpolationFunction::TransFuncKeyWiseSineOutInInterpolationFunction() {
-}
 std::string TransFuncKeyWiseSineOutInInterpolationFunction::getMode() const {
     return "first easing out, then easing in";
 }
+
 std::string TransFuncKeyWiseSineOutInInterpolationFunction::getIdentifier() const {
     return "keywise sineousidal";
 }
-TransFunc* TransFuncKeyWiseSineOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseSineOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1510,21 +1449,21 @@ TransFunc* TransFuncKeyWiseSineOutInInterpolationFunction::interpolate(TransFunc
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outInSineInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::outInSineInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -1538,32 +1477,30 @@ TransFunc* TransFuncKeyWiseSineOutInInterpolationFunction::interpolate(TransFunc
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineOutInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineOutInInterpolationFunction::clone() const {
     return new TransFuncKeyWiseSineOutInInterpolationFunction();
 }
 
+TransFuncKeyWiseExponentInInterpolationFunction::TransFuncKeyWiseExponentInInterpolationFunction() {}
 
-
-TransFuncKeyWiseExponentInInterpolationFunction::TransFuncKeyWiseExponentInInterpolationFunction() {
-}
 std::string TransFuncKeyWiseExponentInInterpolationFunction::getMode() const {
     return "easing in";
 }
+
 std::string TransFuncKeyWiseExponentInInterpolationFunction::getIdentifier() const {
     return "keywise exponential";
 }
-TransFunc* TransFuncKeyWiseExponentInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseExponentInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1578,21 +1515,21 @@ TransFunc* TransFuncKeyWiseExponentInInterpolationFunction::interpolate(TransFun
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inExponentInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::inExponentInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -1606,34 +1543,30 @@ TransFunc* TransFuncKeyWiseExponentInInterpolationFunction::interpolate(TransFun
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentInInterpolationFunction::clone() const {
     return new TransFuncKeyWiseExponentInInterpolationFunction();
 }
 
+TransFuncKeyWiseExponentOutInterpolationFunction::TransFuncKeyWiseExponentOutInterpolationFunction() {}
 
-
-
-
-TransFuncKeyWiseExponentOutInterpolationFunction::TransFuncKeyWiseExponentOutInterpolationFunction() {
-}
 std::string TransFuncKeyWiseExponentOutInterpolationFunction::getMode() const {
     return "easing out";
 }
+
 std::string TransFuncKeyWiseExponentOutInterpolationFunction::getIdentifier() const {
     return "keywise exponential";
 }
-TransFunc* TransFuncKeyWiseExponentOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseExponentOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1648,21 +1581,21 @@ TransFunc* TransFuncKeyWiseExponentOutInterpolationFunction::interpolate(TransFu
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outExponentInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::outExponentInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -1676,33 +1609,30 @@ TransFunc* TransFuncKeyWiseExponentOutInterpolationFunction::interpolate(TransFu
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentOutInterpolationFunction::clone() const {
     return new TransFuncKeyWiseExponentOutInterpolationFunction();
 }
 
+TransFuncKeyWiseExponentInOutInterpolationFunction::TransFuncKeyWiseExponentInOutInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseExponentInOutInterpolationFunction::TransFuncKeyWiseExponentInOutInterpolationFunction() {
-}
 std::string TransFuncKeyWiseExponentInOutInterpolationFunction::getMode() const {
     return "first easing in, then easing out";
 }
+
 std::string TransFuncKeyWiseExponentInOutInterpolationFunction::getIdentifier() const {
     return "keywise exponential";
 }
-TransFunc* TransFuncKeyWiseExponentInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseExponentInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1717,21 +1647,21 @@ TransFunc* TransFuncKeyWiseExponentInOutInterpolationFunction::interpolate(Trans
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::inOutExponentInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -1745,33 +1675,30 @@ TransFunc* TransFuncKeyWiseExponentInOutInterpolationFunction::interpolate(Trans
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentInOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentInOutInterpolationFunction::clone() const {
     return new TransFuncKeyWiseExponentInOutInterpolationFunction();
 }
 
+TransFuncKeyWiseExponentOutInInterpolationFunction::TransFuncKeyWiseExponentOutInInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseExponentOutInInterpolationFunction::TransFuncKeyWiseExponentOutInInterpolationFunction() {
-}
 std::string TransFuncKeyWiseExponentOutInInterpolationFunction::getMode() const {
     return "first easing out, then easing in";
 }
+
 std::string TransFuncKeyWiseExponentOutInInterpolationFunction::getIdentifier() const {
     return "keywise exponential";
 }
-TransFunc* TransFuncKeyWiseExponentOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseExponentOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1786,21 +1713,21 @@ TransFunc* TransFuncKeyWiseExponentOutInInterpolationFunction::interpolate(Trans
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outInExponentInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::outInExponentInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -1814,32 +1741,30 @@ TransFunc* TransFuncKeyWiseExponentOutInInterpolationFunction::interpolate(Trans
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentOutInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentOutInInterpolationFunction::clone() const {
     return new TransFuncKeyWiseExponentOutInInterpolationFunction();
 }
 
+TransFuncKeyWiseCircInInterpolationFunction::TransFuncKeyWiseCircInInterpolationFunction() {}
 
-
-TransFuncKeyWiseCircInInterpolationFunction::TransFuncKeyWiseCircInInterpolationFunction() {
-}
 std::string TransFuncKeyWiseCircInInterpolationFunction::getMode() const {
     return "easing in";
 }
+
 std::string TransFuncKeyWiseCircInInterpolationFunction::getIdentifier() const {
     return "keywise circular";
 }
-TransFunc* TransFuncKeyWiseCircInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseCircInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1854,21 +1779,21 @@ TransFunc* TransFuncKeyWiseCircInInterpolationFunction::interpolate(TransFunc* s
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inCircInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inCircInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inCircInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inCircInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inCircInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inCircInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inCircInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inCircInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inCircInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inCircInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inCircInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inCircInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inCircInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inCircInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inCircInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inCircInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::inCircInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -1882,34 +1807,30 @@ TransFunc* TransFuncKeyWiseCircInInterpolationFunction::interpolate(TransFunc* s
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircInInterpolationFunction::clone() const {
     return new TransFuncKeyWiseCircInInterpolationFunction();
 }
 
+TransFuncKeyWiseCircOutInterpolationFunction::TransFuncKeyWiseCircOutInterpolationFunction() {}
 
-
-
-
-TransFuncKeyWiseCircOutInterpolationFunction::TransFuncKeyWiseCircOutInterpolationFunction() {
-}
 std::string TransFuncKeyWiseCircOutInterpolationFunction::getMode() const {
     return "easing out";
 }
+
 std::string TransFuncKeyWiseCircOutInterpolationFunction::getIdentifier() const {
     return "keywise circular";
 }
-TransFunc* TransFuncKeyWiseCircOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseCircOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1924,21 +1845,21 @@ TransFunc* TransFuncKeyWiseCircOutInterpolationFunction::interpolate(TransFunc* 
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outCircInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outCircInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outCircInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outCircInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outCircInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outCircInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outCircInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outCircInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outCircInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outCircInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outCircInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outCircInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outCircInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outCircInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outCircInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outCircInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::outCircInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -1952,33 +1873,30 @@ TransFunc* TransFuncKeyWiseCircOutInterpolationFunction::interpolate(TransFunc* 
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircOutInterpolationFunction::clone() const {
     return new TransFuncKeyWiseCircOutInterpolationFunction();
 }
 
+TransFuncKeyWiseCircInOutInterpolationFunction::TransFuncKeyWiseCircInOutInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseCircInOutInterpolationFunction::TransFuncKeyWiseCircInOutInterpolationFunction() {
-}
 std::string TransFuncKeyWiseCircInOutInterpolationFunction::getMode() const {
     return "first easing in, then easing out";
 }
+
 std::string TransFuncKeyWiseCircInOutInterpolationFunction::getIdentifier() const {
     return "keywise circular";
 }
-TransFunc* TransFuncKeyWiseCircInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseCircInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -1993,21 +1911,21 @@ TransFunc* TransFuncKeyWiseCircInOutInterpolationFunction::interpolate(TransFunc
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::inOutCircInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::inOutCircInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -2021,33 +1939,30 @@ TransFunc* TransFuncKeyWiseCircInOutInterpolationFunction::interpolate(TransFunc
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircInOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircInOutInterpolationFunction::clone() const {
     return new TransFuncKeyWiseCircInOutInterpolationFunction();
 }
 
+TransFuncKeyWiseCircOutInInterpolationFunction::TransFuncKeyWiseCircOutInInterpolationFunction() {}
 
-
-
-TransFuncKeyWiseCircOutInInterpolationFunction::TransFuncKeyWiseCircOutInInterpolationFunction() {
-}
 std::string TransFuncKeyWiseCircOutInInterpolationFunction::getMode() const {
     return "first easing out, then easing in";
 }
+
 std::string TransFuncKeyWiseCircOutInInterpolationFunction::getIdentifier() const {
     return "keywise circular";
 }
-TransFunc* TransFuncKeyWiseCircOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
 
-    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*> (startvalue);
-    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*> (endvalue);
-    if ((func1)&&(func2)) {
+TransFunc* TransFuncKeyWiseCircOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
+    TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -2062,21 +1977,21 @@ TransFunc* TransFuncKeyWiseCircOutInInterpolationFunction::interpolate(TransFunc
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorL().r,(*it2)->getColorL().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorL().g,(*it2)->getColorL().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorL().b,(*it2)->getColorL().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorL().a,(*it2)->getColorL().a,time));
                 key->setColorL(col);
 
-                col.r = (uint8_t) BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time);
-                col.g = (uint8_t) BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time);
-                col.b = (uint8_t) BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time);
-                col.a = (uint8_t) BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time);
+                col.r = static_cast<uint8_t>(BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorR().r,(*it2)->getColorR().r,time));
+                col.g = static_cast<uint8_t>(BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorR().g,(*it2)->getColorR().g,time));
+                col.b = static_cast<uint8_t>(BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorR().b,(*it2)->getColorR().b,time));
+                col.a = static_cast<uint8_t>(BasicFloatInterpolation::outInCircInterpolation((*it1)->getColorR().a,(*it2)->getColorR().a,time));
                 key->setColorR(col);
 
                 key->setIntensity(BasicFloatInterpolation::outInCircInterpolation((*it1)->getIntensity(),(*it2)->getIntensity(),time));
@@ -2090,28 +2005,28 @@ TransFunc* TransFuncKeyWiseCircOutInInterpolationFunction::interpolate(TransFunc
             return func;
         }
     }
-    if (time<1){
+    if (time < 1.f)
         return startvalue->clone();
-    }
-    else{
+    else
         return endvalue->clone();
-    }
 }
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircOutInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircOutInInterpolationFunction::clone() const {
     return new TransFuncKeyWiseCircOutInInterpolationFunction();
 }
 
+TransFuncTextureLinearInterpolationFunction::TransFuncTextureLinearInterpolationFunction() {}
 
-TransFuncTextureLinearInterpolationFunction::TransFuncTextureLinearInterpolationFunction() {
-}
 std::string TransFuncTextureLinearInterpolationFunction::getMode() const {
     return "texturebased linear";
 }
+
 std::string TransFuncTextureLinearInterpolationFunction::getIdentifier() const {
     return "texture linear";
 }
+
 TransFunc* TransFuncTextureLinearInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::linearInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::linearInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -2132,15 +2047,12 @@ TransFunc* TransFuncTextureLinearInterpolationFunction::interpolate(TransFunc* s
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2149,21 +2061,23 @@ TransFunc* TransFuncTextureLinearInterpolationFunction::interpolate(TransFunc* s
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureLinearInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureLinearInterpolationFunction::clone() const {
     return new TransFuncTextureLinearInterpolationFunction();
 }
 
+TransFuncTextureQuadInInterpolationFunction::TransFuncTextureQuadInInterpolationFunction() {}
 
-TransFuncTextureQuadInInterpolationFunction::TransFuncTextureQuadInInterpolationFunction() {
-}
 std::string TransFuncTextureQuadInInterpolationFunction::getMode() const {
     return "easing in";
 }
+
 std::string TransFuncTextureQuadInInterpolationFunction::getIdentifier() const {
     return "texture quadratic";
 }
+
 TransFunc* TransFuncTextureQuadInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::inQuadInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::inQuadInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -2184,15 +2098,12 @@ TransFunc* TransFuncTextureQuadInInterpolationFunction::interpolate(TransFunc* s
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2201,25 +2112,24 @@ TransFunc* TransFuncTextureQuadInInterpolationFunction::interpolate(TransFunc* s
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureQuadInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureQuadInInterpolationFunction::clone() const {
     return new TransFuncTextureQuadInInterpolationFunction();
 }
 
+TransFuncTextureQuadOutInterpolationFunction::TransFuncTextureQuadOutInterpolationFunction() {}
 
-
-
-TransFuncTextureQuadOutInterpolationFunction::TransFuncTextureQuadOutInterpolationFunction() {
-}
 std::string TransFuncTextureQuadOutInterpolationFunction::getMode() const {
     return "easing out";
 }
+
 std::string TransFuncTextureQuadOutInterpolationFunction::getIdentifier() const {
     return "texture quadratic";
 }
-TransFunc* TransFuncTextureQuadOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::outQuadInterpolation(0,1,time);
-    float a1 = 1-a2;
 
+TransFunc* TransFuncTextureQuadOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    float a2 = BasicFloatInterpolation::outQuadInterpolation(0, 1, time);
+    float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
     tgt::ivec3 dimensions_start = startvalue->getDimensions();
@@ -2239,15 +2149,12 @@ TransFunc* TransFuncTextureQuadOutInterpolationFunction::interpolate(TransFunc* 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2256,22 +2163,23 @@ TransFunc* TransFuncTextureQuadOutInterpolationFunction::interpolate(TransFunc* 
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureQuadOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureQuadOutInterpolationFunction::clone() const {
     return new TransFuncTextureQuadOutInterpolationFunction();
 }
 
+TransFuncTextureQuadInOutInterpolationFunction::TransFuncTextureQuadInOutInterpolationFunction() {}
 
-
-TransFuncTextureQuadInOutInterpolationFunction::TransFuncTextureQuadInOutInterpolationFunction() {
-}
 std::string TransFuncTextureQuadInOutInterpolationFunction::getMode() const {
     return "first easing in, then easing out";
 }
+
 std::string TransFuncTextureQuadInOutInterpolationFunction::getIdentifier() const {
     return "texture quadratic";
 }
+
 TransFunc* TransFuncTextureQuadInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::inOutQuadInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::inOutQuadInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -2292,15 +2200,12 @@ TransFunc* TransFuncTextureQuadInOutInterpolationFunction::interpolate(TransFunc
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2309,23 +2214,23 @@ TransFunc* TransFuncTextureQuadInOutInterpolationFunction::interpolate(TransFunc
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureQuadInOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureQuadInOutInterpolationFunction::clone() const {
     return new TransFuncTextureQuadInOutInterpolationFunction();
 }
 
+TransFuncTextureQuadOutInInterpolationFunction::TransFuncTextureQuadOutInInterpolationFunction() {}
 
-
-
-TransFuncTextureQuadOutInInterpolationFunction::TransFuncTextureQuadOutInInterpolationFunction() {
-}
 std::string TransFuncTextureQuadOutInInterpolationFunction::getMode() const {
     return "first easing out, then easing in";
 }
+
 std::string TransFuncTextureQuadOutInInterpolationFunction::getIdentifier() const {
     return "texture quadratic";
 }
+
 TransFunc* TransFuncTextureQuadOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::outInQuadInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::outInQuadInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -2346,15 +2251,12 @@ TransFunc* TransFuncTextureQuadOutInInterpolationFunction::interpolate(TransFunc
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2363,23 +2265,23 @@ TransFunc* TransFuncTextureQuadOutInInterpolationFunction::interpolate(TransFunc
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureQuadOutInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureQuadOutInInterpolationFunction::clone() const {
     return new TransFuncTextureQuadOutInInterpolationFunction();
 }
 
+TransFuncTextureCubicInInterpolationFunction::TransFuncTextureCubicInInterpolationFunction() {}
 
-
-
-TransFuncTextureCubicInInterpolationFunction::TransFuncTextureCubicInInterpolationFunction() {
-}
 std::string TransFuncTextureCubicInInterpolationFunction::getMode() const {
     return "easing in";
 }
+
 std::string TransFuncTextureCubicInInterpolationFunction::getIdentifier() const {
     return "texture cubic";
 }
+
 TransFunc* TransFuncTextureCubicInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::inCubicInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::inCubicInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -2400,15 +2302,12 @@ TransFunc* TransFuncTextureCubicInInterpolationFunction::interpolate(TransFunc* 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2417,23 +2316,23 @@ TransFunc* TransFuncTextureCubicInInterpolationFunction::interpolate(TransFunc* 
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureCubicInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureCubicInInterpolationFunction::clone() const {
     return new TransFuncTextureCubicInInterpolationFunction();
 }
 
+TransFuncTextureCubicOutInterpolationFunction::TransFuncTextureCubicOutInterpolationFunction() {}
 
-
-
-TransFuncTextureCubicOutInterpolationFunction::TransFuncTextureCubicOutInterpolationFunction() {
-}
 std::string TransFuncTextureCubicOutInterpolationFunction::getMode() const {
     return "easing out";
 }
+
 std::string TransFuncTextureCubicOutInterpolationFunction::getIdentifier() const {
     return "texture cubic";
 }
+
 TransFunc* TransFuncTextureCubicOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::outCubicInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::outCubicInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -2454,15 +2353,12 @@ TransFunc* TransFuncTextureCubicOutInterpolationFunction::interpolate(TransFunc*
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2471,22 +2367,23 @@ TransFunc* TransFuncTextureCubicOutInterpolationFunction::interpolate(TransFunc*
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureCubicOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureCubicOutInterpolationFunction::clone() const {
     return new TransFuncTextureCubicOutInterpolationFunction();
 }
 
+TransFuncTextureCubicInOutInterpolationFunction::TransFuncTextureCubicInOutInterpolationFunction() {}
 
-
-TransFuncTextureCubicInOutInterpolationFunction::TransFuncTextureCubicInOutInterpolationFunction() {
-}
 std::string TransFuncTextureCubicInOutInterpolationFunction::getMode() const {
     return "first easing in, then easing out";
 }
+
 std::string TransFuncTextureCubicInOutInterpolationFunction::getIdentifier() const {
     return "texture cubic";
 }
+
 TransFunc* TransFuncTextureCubicInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::inOutCubicInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::inOutCubicInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -2507,15 +2404,12 @@ TransFunc* TransFuncTextureCubicInOutInterpolationFunction::interpolate(TransFun
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2524,23 +2418,23 @@ TransFunc* TransFuncTextureCubicInOutInterpolationFunction::interpolate(TransFun
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureCubicInOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureCubicInOutInterpolationFunction::clone() const {
     return new TransFuncTextureCubicInOutInterpolationFunction();
 }
 
+TransFuncTextureCubicOutInInterpolationFunction::TransFuncTextureCubicOutInInterpolationFunction() {}
 
-
-
-TransFuncTextureCubicOutInInterpolationFunction::TransFuncTextureCubicOutInInterpolationFunction() {
-}
 std::string TransFuncTextureCubicOutInInterpolationFunction::getMode() const {
     return "first easing out, then easing in";
 }
+
 std::string TransFuncTextureCubicOutInInterpolationFunction::getIdentifier() const {
     return "texture cubic";
 }
+
 TransFunc* TransFuncTextureCubicOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::outInCubicInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::outInCubicInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -2561,15 +2455,12 @@ TransFunc* TransFuncTextureCubicOutInInterpolationFunction::interpolate(TransFun
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2578,21 +2469,23 @@ TransFunc* TransFuncTextureCubicOutInInterpolationFunction::interpolate(TransFun
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureCubicOutInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureCubicOutInInterpolationFunction::clone() const {
     return new TransFuncTextureCubicOutInInterpolationFunction();
 }
 
+TransFuncTextureQuartInInterpolationFunction::TransFuncTextureQuartInInterpolationFunction() {}
 
-TransFuncTextureQuartInInterpolationFunction::TransFuncTextureQuartInInterpolationFunction() {
-}
 std::string TransFuncTextureQuartInInterpolationFunction::getMode() const {
     return "easing in";
 }
+
 std::string TransFuncTextureQuartInInterpolationFunction::getIdentifier() const {
     return "texture quartetic";
 }
+
 TransFunc* TransFuncTextureQuartInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::inQuartInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::inQuartInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -2613,15 +2506,12 @@ TransFunc* TransFuncTextureQuartInInterpolationFunction::interpolate(TransFunc* 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2630,25 +2520,24 @@ TransFunc* TransFuncTextureQuartInInterpolationFunction::interpolate(TransFunc* 
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureQuartInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureQuartInInterpolationFunction::clone() const {
     return new TransFuncTextureQuartInInterpolationFunction();
 }
 
+TransFuncTextureQuartOutInterpolationFunction::TransFuncTextureQuartOutInterpolationFunction() {}
 
-
-
-TransFuncTextureQuartOutInterpolationFunction::TransFuncTextureQuartOutInterpolationFunction() {
-}
 std::string TransFuncTextureQuartOutInterpolationFunction::getMode() const {
     return "easing out";
 }
+
 std::string TransFuncTextureQuartOutInterpolationFunction::getIdentifier() const {
     return "texture quartetic";
 }
-TransFunc* TransFuncTextureQuartOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::outQuartInterpolation(0,1,time);
-    float a1 = 1-a2;
 
+TransFunc* TransFuncTextureQuartOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    float a2 = BasicFloatInterpolation::outQuartInterpolation(0, 1, time);
+    float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
     tgt::ivec3 dimensions_start = startvalue->getDimensions();
@@ -2668,15 +2557,12 @@ TransFunc* TransFuncTextureQuartOutInterpolationFunction::interpolate(TransFunc*
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2685,22 +2571,23 @@ TransFunc* TransFuncTextureQuartOutInterpolationFunction::interpolate(TransFunc*
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureQuartOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureQuartOutInterpolationFunction::clone() const {
     return new TransFuncTextureQuartOutInterpolationFunction();
 }
 
+TransFuncTextureQuartInOutInterpolationFunction::TransFuncTextureQuartInOutInterpolationFunction() {}
 
-
-TransFuncTextureQuartInOutInterpolationFunction::TransFuncTextureQuartInOutInterpolationFunction() {
-}
 std::string TransFuncTextureQuartInOutInterpolationFunction::getMode() const {
     return "first easing in, then easing out";
 }
+
 std::string TransFuncTextureQuartInOutInterpolationFunction::getIdentifier() const {
     return "texture quartetic";
 }
+
 TransFunc* TransFuncTextureQuartInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::inOutQuartInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::inOutQuartInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -2721,15 +2608,12 @@ TransFunc* TransFuncTextureQuartInOutInterpolationFunction::interpolate(TransFun
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2738,23 +2622,23 @@ TransFunc* TransFuncTextureQuartInOutInterpolationFunction::interpolate(TransFun
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureQuartInOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureQuartInOutInterpolationFunction::clone() const {
     return new TransFuncTextureQuartInOutInterpolationFunction();
 }
 
+TransFuncTextureQuartOutInInterpolationFunction::TransFuncTextureQuartOutInInterpolationFunction() {}
 
-
-
-TransFuncTextureQuartOutInInterpolationFunction::TransFuncTextureQuartOutInInterpolationFunction() {
-}
 std::string TransFuncTextureQuartOutInInterpolationFunction::getMode() const {
     return "first easing out, then easing in";
 }
+
 std::string TransFuncTextureQuartOutInInterpolationFunction::getIdentifier() const {
     return "texture quartetic";
 }
+
 TransFunc* TransFuncTextureQuartOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::outInQuartInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::outInQuartInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -2775,15 +2659,12 @@ TransFunc* TransFuncTextureQuartOutInInterpolationFunction::interpolate(TransFun
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2792,22 +2673,23 @@ TransFunc* TransFuncTextureQuartOutInInterpolationFunction::interpolate(TransFun
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureQuartOutInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureQuartOutInInterpolationFunction::clone() const {
     return new TransFuncTextureQuartOutInInterpolationFunction();
 }
 
+TransFuncTextureQuintInInterpolationFunction::TransFuncTextureQuintInInterpolationFunction() {}
 
-
-TransFuncTextureQuintInInterpolationFunction::TransFuncTextureQuintInInterpolationFunction() {
-}
 std::string TransFuncTextureQuintInInterpolationFunction::getMode() const {
     return "easing in";
 }
+
 std::string TransFuncTextureQuintInInterpolationFunction::getIdentifier() const {
     return "texture quintic";
 }
+
 TransFunc* TransFuncTextureQuintInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::inQuintInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::inQuintInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -2828,15 +2710,12 @@ TransFunc* TransFuncTextureQuintInInterpolationFunction::interpolate(TransFunc* 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2845,25 +2724,24 @@ TransFunc* TransFuncTextureQuintInInterpolationFunction::interpolate(TransFunc* 
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureQuintInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureQuintInInterpolationFunction::clone() const {
     return new TransFuncTextureQuintInInterpolationFunction();
 }
 
+TransFuncTextureQuintOutInterpolationFunction::TransFuncTextureQuintOutInterpolationFunction() {}
 
-
-
-TransFuncTextureQuintOutInterpolationFunction::TransFuncTextureQuintOutInterpolationFunction() {
-}
 std::string TransFuncTextureQuintOutInterpolationFunction::getMode() const {
     return "easing out";
 }
+
 std::string TransFuncTextureQuintOutInterpolationFunction::getIdentifier() const {
     return "texture quintic";
 }
-TransFunc* TransFuncTextureQuintOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::outQuintInterpolation(0,1,time);
-    float a1 = 1-a2;
 
+TransFunc* TransFuncTextureQuintOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    float a2 = BasicFloatInterpolation::outQuintInterpolation(0, 1, time);
+    float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
     tgt::ivec3 dimensions_start = startvalue->getDimensions();
@@ -2883,15 +2761,12 @@ TransFunc* TransFuncTextureQuintOutInterpolationFunction::interpolate(TransFunc*
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2900,22 +2775,23 @@ TransFunc* TransFuncTextureQuintOutInterpolationFunction::interpolate(TransFunc*
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureQuintOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureQuintOutInterpolationFunction::clone() const {
     return new TransFuncTextureQuintOutInterpolationFunction();
 }
 
+TransFuncTextureQuintInOutInterpolationFunction::TransFuncTextureQuintInOutInterpolationFunction() {}
 
-
-TransFuncTextureQuintInOutInterpolationFunction::TransFuncTextureQuintInOutInterpolationFunction() {
-}
 std::string TransFuncTextureQuintInOutInterpolationFunction::getMode() const {
     return "first easing in, then easing out";
 }
+
 std::string TransFuncTextureQuintInOutInterpolationFunction::getIdentifier() const {
     return "texture quintic";
 }
+
 TransFunc* TransFuncTextureQuintInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::inOutQuintInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::inOutQuintInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -2936,15 +2812,12 @@ TransFunc* TransFuncTextureQuintInOutInterpolationFunction::interpolate(TransFun
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -2953,23 +2826,23 @@ TransFunc* TransFuncTextureQuintInOutInterpolationFunction::interpolate(TransFun
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureQuintInOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureQuintInOutInterpolationFunction::clone() const {
     return new TransFuncTextureQuintInOutInterpolationFunction();
 }
 
+TransFuncTextureQuintOutInInterpolationFunction::TransFuncTextureQuintOutInInterpolationFunction() {}
 
-
-
-TransFuncTextureQuintOutInInterpolationFunction::TransFuncTextureQuintOutInInterpolationFunction() {
-}
 std::string TransFuncTextureQuintOutInInterpolationFunction::getMode() const {
     return "first easing out, then easing in";
 }
+
 std::string TransFuncTextureQuintOutInInterpolationFunction::getIdentifier() const {
     return "texture quintic";
 }
+
 TransFunc* TransFuncTextureQuintOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::outInQuintInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::outInQuintInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -2990,15 +2863,12 @@ TransFunc* TransFuncTextureQuintOutInInterpolationFunction::interpolate(TransFun
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -3007,20 +2877,23 @@ TransFunc* TransFuncTextureQuintOutInInterpolationFunction::interpolate(TransFun
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureQuintOutInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureQuintOutInInterpolationFunction::clone() const {
     return new TransFuncTextureQuintOutInInterpolationFunction();
 }
 
-TransFuncTextureSineInInterpolationFunction::TransFuncTextureSineInInterpolationFunction() {
-}
+TransFuncTextureSineInInterpolationFunction::TransFuncTextureSineInInterpolationFunction() {}
+
 std::string TransFuncTextureSineInInterpolationFunction::getMode() const {
     return "easing in";
 }
+
 std::string TransFuncTextureSineInInterpolationFunction::getIdentifier() const {
     return "texture sineousidal";
 }
+
 TransFunc* TransFuncTextureSineInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::inSineInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::inSineInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -3041,15 +2914,12 @@ TransFunc* TransFuncTextureSineInInterpolationFunction::interpolate(TransFunc* s
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -3058,25 +2928,24 @@ TransFunc* TransFuncTextureSineInInterpolationFunction::interpolate(TransFunc* s
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureSineInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureSineInInterpolationFunction::clone() const {
     return new TransFuncTextureSineInInterpolationFunction();
 }
 
+TransFuncTextureSineOutInterpolationFunction::TransFuncTextureSineOutInterpolationFunction() {}
 
-
-
-TransFuncTextureSineOutInterpolationFunction::TransFuncTextureSineOutInterpolationFunction() {
-}
 std::string TransFuncTextureSineOutInterpolationFunction::getMode() const {
     return "easing out";
 }
+
 std::string TransFuncTextureSineOutInterpolationFunction::getIdentifier() const {
     return "texture sineousidal";
 }
-TransFunc* TransFuncTextureSineOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::outSineInterpolation(0,1,time);
-    float a1 = 1-a2;
 
+TransFunc* TransFuncTextureSineOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    float a2 = BasicFloatInterpolation::outSineInterpolation(0, 1, time);
+    float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
     tgt::ivec3 dimensions_start = startvalue->getDimensions();
@@ -3096,15 +2965,12 @@ TransFunc* TransFuncTextureSineOutInterpolationFunction::interpolate(TransFunc* 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -3113,22 +2979,22 @@ TransFunc* TransFuncTextureSineOutInterpolationFunction::interpolate(TransFunc* 
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureSineOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureSineOutInterpolationFunction::clone() const {
     return new TransFuncTextureSineOutInterpolationFunction();
 }
 
+TransFuncTextureSineInOutInterpolationFunction::TransFuncTextureSineInOutInterpolationFunction() {}
 
-
-TransFuncTextureSineInOutInterpolationFunction::TransFuncTextureSineInOutInterpolationFunction() {
-}
 std::string TransFuncTextureSineInOutInterpolationFunction::getMode() const {
     return "first easing in, then easing out";
 }
+
 std::string TransFuncTextureSineInOutInterpolationFunction::getIdentifier() const {
     return "texture sineousidal";
 }
 TransFunc* TransFuncTextureSineInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::inOutSineInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::inOutSineInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -3149,15 +3015,12 @@ TransFunc* TransFuncTextureSineInOutInterpolationFunction::interpolate(TransFunc
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -3166,23 +3029,23 @@ TransFunc* TransFuncTextureSineInOutInterpolationFunction::interpolate(TransFunc
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureSineInOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureSineInOutInterpolationFunction::clone() const {
     return new TransFuncTextureSineInOutInterpolationFunction();
 }
 
+TransFuncTextureSineOutInInterpolationFunction::TransFuncTextureSineOutInInterpolationFunction() {}
 
-
-
-TransFuncTextureSineOutInInterpolationFunction::TransFuncTextureSineOutInInterpolationFunction() {
-}
 std::string TransFuncTextureSineOutInInterpolationFunction::getMode() const {
     return "first easing out, then easing in";
 }
+
 std::string TransFuncTextureSineOutInInterpolationFunction::getIdentifier() const {
     return "texture sineousidal";
 }
+
 TransFunc* TransFuncTextureSineOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::outInSineInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::outInSineInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -3203,15 +3066,12 @@ TransFunc* TransFuncTextureSineOutInInterpolationFunction::interpolate(TransFunc
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -3220,22 +3080,23 @@ TransFunc* TransFuncTextureSineOutInInterpolationFunction::interpolate(TransFunc
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureSineOutInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureSineOutInInterpolationFunction::clone() const {
     return new TransFuncTextureSineOutInInterpolationFunction();
 }
 
+TransFuncTextureExponentInInterpolationFunction::TransFuncTextureExponentInInterpolationFunction() {}
 
-
-TransFuncTextureExponentInInterpolationFunction::TransFuncTextureExponentInInterpolationFunction() {
-}
 std::string TransFuncTextureExponentInInterpolationFunction::getMode() const {
     return "easing in";
 }
+
 std::string TransFuncTextureExponentInInterpolationFunction::getIdentifier() const {
     return "texture exponential";
 }
+
 TransFunc* TransFuncTextureExponentInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::inExponentInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::inExponentInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -3256,15 +3117,12 @@ TransFunc* TransFuncTextureExponentInInterpolationFunction::interpolate(TransFun
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -3273,25 +3131,24 @@ TransFunc* TransFuncTextureExponentInInterpolationFunction::interpolate(TransFun
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureExponentInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureExponentInInterpolationFunction::clone() const {
     return new TransFuncTextureExponentInInterpolationFunction();
 }
 
+TransFuncTextureExponentOutInterpolationFunction::TransFuncTextureExponentOutInterpolationFunction() {}
 
-
-
-TransFuncTextureExponentOutInterpolationFunction::TransFuncTextureExponentOutInterpolationFunction() {
-}
 std::string TransFuncTextureExponentOutInterpolationFunction::getMode() const {
     return "easing out";
 }
+
 std::string TransFuncTextureExponentOutInterpolationFunction::getIdentifier() const {
     return "texture exponential";
 }
-TransFunc* TransFuncTextureExponentOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::outExponentInterpolation(0,1,time);
-    float a1 = 1-a2;
 
+TransFunc* TransFuncTextureExponentOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    float a2 = BasicFloatInterpolation::outExponentInterpolation(0, 1, time);
+    float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
     tgt::ivec3 dimensions_start = startvalue->getDimensions();
@@ -3311,15 +3168,12 @@ TransFunc* TransFuncTextureExponentOutInterpolationFunction::interpolate(TransFu
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -3328,22 +3182,23 @@ TransFunc* TransFuncTextureExponentOutInterpolationFunction::interpolate(TransFu
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureExponentOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureExponentOutInterpolationFunction::clone() const {
     return new TransFuncTextureExponentOutInterpolationFunction();
 }
 
+TransFuncTextureExponentInOutInterpolationFunction::TransFuncTextureExponentInOutInterpolationFunction() {}
 
-
-TransFuncTextureExponentInOutInterpolationFunction::TransFuncTextureExponentInOutInterpolationFunction() {
-}
 std::string TransFuncTextureExponentInOutInterpolationFunction::getMode() const {
     return "first easing in, then easing out";
 }
+
 std::string TransFuncTextureExponentInOutInterpolationFunction::getIdentifier() const {
     return "texture exponential";
 }
+
 TransFunc* TransFuncTextureExponentInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::inOutExponentInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::inOutExponentInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -3364,15 +3219,12 @@ TransFunc* TransFuncTextureExponentInOutInterpolationFunction::interpolate(Trans
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -3381,23 +3233,23 @@ TransFunc* TransFuncTextureExponentInOutInterpolationFunction::interpolate(Trans
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureExponentInOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureExponentInOutInterpolationFunction::clone() const {
     return new TransFuncTextureExponentInOutInterpolationFunction();
 }
 
+TransFuncTextureExponentOutInInterpolationFunction::TransFuncTextureExponentOutInInterpolationFunction() {}
 
-
-
-TransFuncTextureExponentOutInInterpolationFunction::TransFuncTextureExponentOutInInterpolationFunction() {
-}
 std::string TransFuncTextureExponentOutInInterpolationFunction::getMode() const {
     return "first easing out, then easing in";
 }
+
 std::string TransFuncTextureExponentOutInInterpolationFunction::getIdentifier() const {
     return "texture exponential";
 }
+
 TransFunc* TransFuncTextureExponentOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::outInExponentInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::outInExponentInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -3418,15 +3270,12 @@ TransFunc* TransFuncTextureExponentOutInInterpolationFunction::interpolate(Trans
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -3435,23 +3284,23 @@ TransFunc* TransFuncTextureExponentOutInInterpolationFunction::interpolate(Trans
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureExponentOutInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureExponentOutInInterpolationFunction::clone() const {
     return new TransFuncTextureExponentOutInInterpolationFunction();
 }
 
+TransFuncTextureCircInInterpolationFunction::TransFuncTextureCircInInterpolationFunction() {}
 
-
-
-TransFuncTextureCircInInterpolationFunction::TransFuncTextureCircInInterpolationFunction() {
-}
 std::string TransFuncTextureCircInInterpolationFunction::getMode() const {
     return "easing in";
 }
+
 std::string TransFuncTextureCircInInterpolationFunction::getIdentifier() const {
     return "texture circular";
 }
+
 TransFunc* TransFuncTextureCircInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::inCircInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::inCircInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -3472,15 +3321,12 @@ TransFunc* TransFuncTextureCircInInterpolationFunction::interpolate(TransFunc* s
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -3489,25 +3335,24 @@ TransFunc* TransFuncTextureCircInInterpolationFunction::interpolate(TransFunc* s
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureCircInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureCircInInterpolationFunction::clone() const {
     return new TransFuncTextureCircInInterpolationFunction();
 }
 
+TransFuncTextureCircOutInterpolationFunction::TransFuncTextureCircOutInterpolationFunction() {}
 
-
-
-TransFuncTextureCircOutInterpolationFunction::TransFuncTextureCircOutInterpolationFunction() {
-}
 std::string TransFuncTextureCircOutInterpolationFunction::getMode() const {
     return "easing out";
 }
+
 std::string TransFuncTextureCircOutInterpolationFunction::getIdentifier() const {
     return "texture circular";
 }
-TransFunc* TransFuncTextureCircOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::outCircInterpolation(0,1,time);
-    float a1 = 1-a2;
 
+TransFunc* TransFuncTextureCircOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    float a2 = BasicFloatInterpolation::outCircInterpolation(0, 1, time);
+    float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
     tgt::ivec3 dimensions_start = startvalue->getDimensions();
@@ -3527,15 +3372,12 @@ TransFunc* TransFuncTextureCircOutInterpolationFunction::interpolate(TransFunc* 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -3544,22 +3386,23 @@ TransFunc* TransFuncTextureCircOutInterpolationFunction::interpolate(TransFunc* 
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureCircOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureCircOutInterpolationFunction::clone() const {
     return new TransFuncTextureCircOutInterpolationFunction();
 }
 
+TransFuncTextureCircInOutInterpolationFunction::TransFuncTextureCircInOutInterpolationFunction() {}
 
-
-TransFuncTextureCircInOutInterpolationFunction::TransFuncTextureCircInOutInterpolationFunction() {
-}
 std::string TransFuncTextureCircInOutInterpolationFunction::getMode() const {
     return "first easing in, then easing out";
 }
+
 std::string TransFuncTextureCircInOutInterpolationFunction::getIdentifier() const {
     return "texture circular";
 }
+
 TransFunc* TransFuncTextureCircInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::inOutCircInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::inOutCircInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -3580,15 +3423,12 @@ TransFunc* TransFuncTextureCircInOutInterpolationFunction::interpolate(TransFunc
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -3597,23 +3437,23 @@ TransFunc* TransFuncTextureCircInOutInterpolationFunction::interpolate(TransFunc
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureCircInOutInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureCircInOutInterpolationFunction::clone() const {
     return new TransFuncTextureCircInOutInterpolationFunction();
 }
 
+TransFuncTextureCircOutInInterpolationFunction::TransFuncTextureCircOutInInterpolationFunction() {}
 
-
-
-TransFuncTextureCircOutInInterpolationFunction::TransFuncTextureCircOutInInterpolationFunction() {
-}
 std::string TransFuncTextureCircOutInInterpolationFunction::getMode() const {
     return "first easing out, then easing in";
 }
+
 std::string TransFuncTextureCircOutInInterpolationFunction::getIdentifier() const {
     return "texture circular";
 }
+
 TransFunc* TransFuncTextureCircOutInInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-    float a2 = BasicFloatInterpolation::outInCircInterpolation(0,1,time);
+    float a2 = BasicFloatInterpolation::outInCircInterpolation(0, 1, time);
     float a1 = 1-a2;
 
     // new dimensions: maxima of each dimension (x,y,z)
@@ -3634,15 +3474,12 @@ TransFunc* TransFuncTextureCircOutInInterpolationFunction::interpolate(TransFunc
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++)
-    {
-        for (int y=0;y<dim.y;y++)
-        {
-            for (int z=0;z<dim.z;z++)
-            {
-                for (int i = 0;i<4;i++) {
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
                     float f = (a1*texture1[4*(x*dim.y*dim.z+y*dim.z+z)+i]+a2*texture2[4*(x*dim.y*dim.z+y*dim.z+z)+i]);
-                    GLubyte b = (GLubyte) f;
+                    GLubyte b = static_cast<GLubyte>(f);
                     texture[4*(x*dim.y*dim.z+y*dim.z+z)+i] = b;
                 }
             }
@@ -3651,9 +3488,9 @@ TransFunc* TransFuncTextureCircOutInInterpolationFunction::interpolate(TransFunc
     func->setPixelData(texture);
     return func;
 }
-InterpolationFunction<TransFunc*>* TransFuncTextureCircOutInInterpolationFunction::clone() const{
+
+InterpolationFunction<TransFunc*>* TransFuncTextureCircOutInInterpolationFunction::clone() const {
     return new TransFuncTextureCircOutInInterpolationFunction();
 }
 
 } // namespace voreen
-

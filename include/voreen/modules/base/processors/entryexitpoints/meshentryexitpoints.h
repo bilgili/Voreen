@@ -32,6 +32,9 @@
 
 #include "voreen/core/processors/renderprocessor.h"
 #include "voreen/core/datastructures/geometry/meshlistgeometry.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/cameraproperty.h"
 
 #include "tgt/shadermanager.h"
 
@@ -48,21 +51,20 @@ class MeshEntryExitPoints : public RenderProcessor {
 public:
     MeshEntryExitPoints();
     virtual ~MeshEntryExitPoints();
+    virtual Processor* create() const;
 
     virtual std::string getClassName() const    { return "MeshEntryExitPoints"; }
     virtual std::string getCategory() const     { return "EntryExitPoints"; }
     virtual CodeState getCodeState() const      { return CODE_STATE_STABLE; }
 
     virtual std::string getProcessorInfo() const;
-    virtual Processor* create() const;
     virtual bool isReady() const;
 
 protected:
-    virtual void process();
-
-    virtual void initialize() throw (VoreenException);
-
     virtual void beforeProcess();
+    virtual void process();
+    virtual void initialize() throw (VoreenException);
+    virtual void deinitialize() throw (VoreenException);
 
     /**
      *  Jitters entry points in ray direction.
@@ -80,9 +82,7 @@ protected:
     MeshListGeometry geometry_;
 
     tgt::Shader* shaderProgram_;
-    tgt::Shader* shaderProgramInsideVolume_;
     tgt::Shader* shaderProgramJitter_;
-    tgt::Shader* shaderProgramClipping_;
 
     // processor properties
     BoolProperty supportCameraInsideVolume_;

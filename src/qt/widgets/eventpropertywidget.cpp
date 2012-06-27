@@ -150,7 +150,7 @@ void EventPropertyWidget::createEnabledBox() {
 
 void EventPropertyWidget::createSharingBox() {
     tgtAssert(property_, "No property");
-    checkSharing_ = new QCheckBox("sharing");
+    checkSharing_ = new QCheckBox("Sharing");
     checkSharing_->setChecked(property_->isSharing());
     connect(checkSharing_, SIGNAL(toggled(bool)), this, SLOT(sharingChanged(bool)));
     layout_->addWidget(checkSharing_);
@@ -239,8 +239,20 @@ void EventPropertyWidget::disconnect() {
 void EventPropertyWidget::updateFromProperty() {
     if (disconnected_)
         return;
-
-    setEnabled(property_->isEnabled());
+    bool enabled = property_->isEnabled();
+    //set widget's enabled state
+    if (modifierWidget_)
+        modifierWidget_->setEnabled(enabled);
+    if (keyWidget_)
+        keyWidget_->setEnabled(enabled);
+    if (buttonBox_)
+        buttonBox_->setEnabled(enabled);
+    if (checkSharing_)
+        checkSharing_->setEnabled(enabled);
+    //set checkbox state
+    if (checkEnabled_)
+        checkEnabled_->setChecked(enabled);
+    //set visibility
     setVisible(property_->isVisible());
 }
 

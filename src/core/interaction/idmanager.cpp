@@ -101,6 +101,7 @@ tgt::col3 IDManager::getColorAtPos(tgt::ivec2 pos) {
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     tgt::col3 pixels;
     glReadPixels(pos.x, pos.y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixels);
+    rt_->deactivateTarget();
     return pixels;
 }
 
@@ -114,6 +115,13 @@ void IDManager::activateTarget(std::string debugLabel) {
         rt_->increaseNumUpdates();
         rt_->setDebugLabel("ID target" + (debugLabel.empty() ? "" : " (" + debugLabel + ")"));
     }
+    else
+        LERRORC("voreen.idmanager", "No RenderTarget set!");
+}
+
+void IDManager::deactivateTarget() {
+    if (rt_)
+        rt_->deactivateTarget();
     else
         LERRORC("voreen.idmanager", "No RenderTarget set!");
 }

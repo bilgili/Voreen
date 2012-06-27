@@ -28,6 +28,8 @@
  **********************************************************************/
 
 #include "voreen/modules/opencl/grayscale_cl.h"
+
+#include "voreen/modules/opencl/openclmodule.h"
 #include "voreen/core/voreenapplication.h"
 
 namespace voreen {
@@ -39,9 +41,6 @@ GrayscaleCL::GrayscaleCL()
       saturation_("saturation", "Saturation", 0.0f),
       inport_(Port::INPORT, "inport"),
       outport_(Port::OUTPORT, "outport"),
-      opencl_(0),
-      context_(0),
-      queue_(0),
       prog_(0)
 {
     // register properties and ports:
@@ -51,70 +50,58 @@ GrayscaleCL::GrayscaleCL()
     addPort(outport_);
 }
 
-GrayscaleCL::~GrayscaleCL() {
-    delete prog_;
-    delete queue_;
-    delete context_;
-    delete opencl_;
+std::string GrayscaleCL::getProcessorInfo() const {
+    return "Converts a color image to grayscale version using an OpenCL kernel.";
 }
 
-std::string GrayscaleCL::getProcessorInfo() const {
-    return "Converts a color image to grayscale version.";
+Processor* GrayscaleCL::create() const {
+    return new GrayscaleCL();
 }
 
 void GrayscaleCL::initialize() throw (VoreenException) {
-    //TODO: Central OpenCL init in voreen
     RenderProcessor::initialize();
 
-    opencl_ = new OpenCL();
+    OpenCLModule::getInstance()->initCL();
+    if (!OpenCLModule::getInstance()->getCLContext()) 
+        throw VoreenException("No OpenCL context created");
 
-    const std::vector<Platform>&  platforms = opencl_->getPlatforms();
-    if (platforms.empty()) {
-        LERROR("Found no OpenCL platforms!");
-        return;
-    }
-
-    const std::vector<Device*>& devices = platforms[0].getDevices();
-    if (devices.empty()) {
-        LERROR("Found no devices in platform!");
-        return;
-    }
-    //Device* dev = OpenCL::getCurrentDeviceForGlContext();
-
-    context_ = new Context(Context::generateGlSharingProperties(), devices[0]);
-    queue_ = new CommandQueue(context_, devices.back());
-    //context_ = new Context(Context::generateGlSharingProperties(), dev);
-    //queue_ = new CommandQueue(context_, dev);
-
-    prog_ = new Program(context_);
-
-    //prog_->loadSource("../../src/modules/opencl/grayscale.cl");
+    prog_ = new Program(OpenCLModule::getInstance()->getCLContext());
     prog_->loadSource(VoreenApplication::app()->getModulePath() + "/opencl/grayscale.cl");
+    prog_->build(OpenCLModule::getInstance()->getCLDevice());
+}
 
-    //prog_->build(dev);
-    prog_->build(devices.back());
+void GrayscaleCL::deinitialize() throw (VoreenException) {
+    delete prog_;
+    prog_ = 0;
+
+    RenderProcessor::deinitialize();
 }
 
 void GrayscaleCL::process() {
-    if(prog_) {
+    if (prog_) {
         Kernel* k = prog_->getKernel("gr");
         if(k) {
+            cl::Context* context = OpenCLModule::getInstance()->getCLContext();
+            cl::CommandQueue* commandQueue = OpenCLModule::getInstance()->getCLCommandQueue();
+            tgtAssert(context, "No OpenCL context");
+            tgtAssert(commandQueue, "No OpenCL command queue");
+
             glFinish();
 
-            SharedTexture in(context_, CL_MEM_READ_ONLY, inport_.getColorTexture());
-            SharedTexture out(context_, CL_MEM_WRITE_ONLY, outport_.getColorTexture());
+            SharedTexture in(context, CL_MEM_READ_ONLY, inport_.getColorTexture());
+            SharedTexture out(context, CL_MEM_WRITE_ONLY, outport_.getColorTexture());
 
             k->setArg(0, in);
             k->setArg(1, out);
             k->setArg(2, saturation_.get());
 
-            queue_->enqueueAcquireGLObject(&in);
-            queue_->enqueueAcquireGLObject(&out);
-            queue_->enqueue(k, inport_.getSize());
-            queue_->enqueueReleaseGLObject(&in);
-            queue_->enqueueReleaseGLObject(&out);
+            commandQueue->enqueueAcquireGLObject(&in);
+            commandQueue->enqueueAcquireGLObject(&out);
+            commandQueue->enqueue(k, inport_.getSize());
+            commandQueue->enqueueReleaseGLObject(&in);
+            commandQueue->enqueueReleaseGLObject(&out);
 
-            queue_->finish();
+            commandQueue->finish();
 
             outport_.validateResult();
         }

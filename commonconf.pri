@@ -117,6 +117,7 @@ VRN_MODULES -= all most
 ########################
 # Module configuration #
 ########################
+
 # Include modules which are selected in local configuration. 
 # The entry 'foo' in VRN_MODULES must correspond to a subdir 'modules/foo'.
 
@@ -125,13 +126,19 @@ VRN_MODULES -= all most
 for(i, VRN_MODULES) : {
   exists($${VRN_HOME}/src/modules/$${i}/$${i}_depends.pri) {
     include($${VRN_HOME}/src/modules/$${i}/$${i}_depends.pri)
-  }  
+  }
 }
 
 contains(VRN_MODULES, core) {
   warning("Module core was renamed to base, please adapt your config.txt")
   VRN_MODULES -= core
   VRN_MODULES += base
+}
+
+contains(DEFINES, VRN_WITH_DCMTK) {
+  warning("DICOM support is now provided by the 'dicom' module, please adapt your config.txt")
+  DEFINES -= VRN_WITH_DCMTK
+  VRN_MODULES += dicom
 }
 
 # again remove duplicates
@@ -177,10 +184,6 @@ win32 {
     INCLUDEPATH += "$${FFMPEG_DIR}"
   }
   
-  contains(DEFINES, VRN_WITH_MATLAB) {
-    INCLUDEPATH += "$${MATLAB_DIR}/extern/include"
-  }
-
   contains(DEFINES, VRN_WITH_TIFF) {
     INCLUDEPATH += "$${TIFF_DIR}/include"
   }
@@ -195,10 +198,6 @@ win32 {
 	INCLUDEPATH += "$${VRN_HOME}/ext/zlib/include"
   }
 
-  contains(DEFINES, VRN_WITH_DCMTK) {
-    INCLUDEPATH += "$${DCMTK_DIR}/include" \
-                   "$${VRN_HOME}/ext/openssl/include"
-  }
   contains(DEFINES, VRN_WITH_PYTHON) {
     INCLUDEPATH += "$${PYTHON_DIR}/include"
   } 
@@ -210,9 +209,13 @@ win32 {
     # C4290: C++ exception specification ignored except to indicate a function is
     #       not __declspec(nothrow)
     # C4068: unknown pragma
-    QMAKE_CXXFLAGS +=  /wd4305 /wd4800 /wd4290 /wd4068
-    # C4355: 'this' : used in base member initializer list (occurs in processors' constructors) /wd4355 
-  
+    QMAKE_CXXFLAGS += /wd4305 /wd4800 /wd4290 /wd4068
+    
+    # C4355: 'this' : used in base member initializer list 
+    # Occurs in processors' constructors when initializing event properties, 
+    # but is safe there, since the 'this' pointer is only stored and not accessed.
+    QMAKE_CXXFLAGS += /wd4355 
+    
     # Shift warning
     # C4706: assignment within conditional expression
     # to warning level 3 which is used for compiling Voreen
@@ -232,6 +235,10 @@ win32 {
     QMAKE_CXXFLAGS += /MP 
     # Enable static code analysis with PREfast in Visual Studio
     # QMAKE_CXXFLAGS += /analyze
+
+    # Disable warnings for Microsoft linker:
+    # LNK4049 / LNK4217: locally defined 'symbol' imported (occurs for some external libs) 
+    QMAKE_LFLAGS += /ignore:4049 /ignore:4217
   }
   
   CONFIG(debug, debug|release) {
@@ -282,12 +289,6 @@ unix {
 
   contains (DEFINES, VRN_WITH_FONTRENDERING) {
     INCLUDEPATH += $${FREETYPE_DIR}
-  }
-
-  contains(DEFINES, VRN_WITH_MATLAB) {
-    INCLUDEPATH += "$${MATLAB_DIR}/extern/include"
-    LIBS += "-L$${MATLAB_DIR}/bin/glnxa64" -lmx -leng
-    QMAKE_LFLAGS += -Wl,-rpath,"$${MATLAB_DIR}/bin/glnxa64"
   }
 
   contains (DEFINES, VRN_WITH_PYTHON) {

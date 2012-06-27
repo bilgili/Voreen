@@ -33,9 +33,11 @@
 #include "voreen/core/processors/imageprocessor.h"
 #include "voreen/core/ports/textport.h"
 #include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/eventproperty.h"
+#include "voreen/core/properties/fontproperty.h"
+#include "tgt/font.h"
 #include "tgt/texturemanager.h"
 #include "tgt/gpucapabilities.h"
-#include "tgt/font.h"
 #include "tgt/framebufferobject.h"
 
 namespace voreen {
@@ -78,6 +80,9 @@ protected:
 
     int getNumberOfLines(std::string s);
 
+    void mouseMove(tgt::MouseEvent* e);
+    void mouseEnterExit(tgt::MouseEvent* e);
+
     RenderPort inport_;
     RenderPort outport_;
     RenderPort privatePort_;
@@ -92,9 +97,18 @@ protected:
     StringOptionProperty layout2_;
     StringOptionProperty layout3_;
 
-    tgt::Font* font_;
+    EventProperty<TextOverlay> mouseMoveEventProp_;
+    EventProperty<TextOverlay> mouseEnterExitEventProp_;
+
+    tgt::ivec2 viewportSize_;
+    tgt::ivec2 mousePos_;
+
+    FontProperty fontProp_;
 
     static const std::string loggerCat_; ///< category used in logging
+
+private:
+    bool renderFollowMouseText_;
 };
 
 } // namespace

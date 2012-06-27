@@ -51,7 +51,8 @@ public:
  * Class for creating an animation.
  * The KeyValue stores one property value at one corresponding time.
  */
-template <class T> class PropertyKeyValue : public PropertyKeyValueBase {
+template <class T>
+class PropertyKeyValue : public PropertyKeyValueBase {
 public:
     /**
      * The key value has to be initialized with its value.

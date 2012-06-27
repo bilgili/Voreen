@@ -32,7 +32,14 @@
 
 #include "voreen/core/processors/imageprocessor.h"
 #include "voreen/core/properties/eventproperty.h"
+#include "voreen/core/properties/cameraproperty.h"
+#include "voreen/core/properties/stringproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/intproperty.h"
 #include "voreen/core/utils/stringconversion.h"
+
+#include "voreen/core/ports/volumeport.h"
+
 #include "tgt/font.h"
 #include "tgt/glmath.h"
 

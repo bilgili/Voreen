@@ -85,6 +85,11 @@ namespace voreen {
         tgt::vec3 originalVolumeURB;
 
         /**
+        * The transformation matrix of the original volume.
+        */
+        tgt::mat4 originalTransformationMatrix;
+
+        /**
         * The spacing of the original volume.
         */
         tgt::vec3 originalVolumeSpacing;

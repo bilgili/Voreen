@@ -31,60 +31,60 @@
 
 namespace voreen {
 
-GLubyte* InterpolationFunctionBase::convertTextureToRGBA(tgt::ivec3 dim, GLubyte* textur,GLuint inputformat) {
-    GLubyte* data = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++) {
-        for (int y=0;y<dim.y;y++) {
-            for (int z=0;z<dim.z;z++) {
+GLubyte* InterpolationFunctionBase::convertTextureToRGBA(tgt::ivec3 dim, GLubyte* texture, GLuint inputformat) {
+    GLubyte* data = new GLubyte[4 * dim.x * dim.y * dim.z];
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
                 switch (inputformat) {
-                    case GL_RED:
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = textur[x*dim.y*dim.z+y*dim.z+z];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = 0;
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = 0;
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
-                        break;
-                    case GL_GREEN:
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = 0;
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = textur[x*dim.y*dim.z+y*dim.z+z];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = 0;
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
-                        break;
-                    case GL_BLUE:
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = 0;
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = 0;
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = textur[x*dim.y*dim.z+y*dim.z+z];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
-                        break;
-                    case GL_ALPHA:
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = 0;
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = 0;
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = 0;
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = textur[x*dim.y*dim.z+y*dim.z+z];
-                        break;
-                    case GL_RGB:
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = textur[3*(x*dim.y*dim.z+y*dim.z+z)+0];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = textur[3*(x*dim.y*dim.z+y*dim.z+z)+1];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = textur[3*(x*dim.y*dim.z+y*dim.z+z)+2];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
-                        break;
-                    case GL_RGBA:
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = textur[4*(x*dim.y*dim.z+y*dim.z+z)+0];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = textur[4*(x*dim.y*dim.z+y*dim.z+z)+1];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = textur[4*(x*dim.y*dim.z+y*dim.z+z)+2];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = textur[4*(x*dim.y*dim.z+y*dim.z+z)+3];
-                        break;
-                    case GL_ABGR_EXT:
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = textur[4*(x*dim.y*dim.z+y*dim.z+z)+3];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = textur[4*(x*dim.y*dim.z+y*dim.z+z)+2];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = textur[4*(x*dim.y*dim.z+y*dim.z+z)+1];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = textur[4*(x*dim.y*dim.z+y*dim.z+z)+0];
-                        break;
-                    case GL_LUMINANCE:
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = textur[x*dim.y*dim.z+y*dim.z+z];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = textur[x*dim.y*dim.z+y*dim.z+z];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = textur[x*dim.y*dim.z+y*dim.z+z];
-                        data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
-                        break;
+                case GL_RED:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = texture[x*dim.y*dim.z+y*dim.z+z];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
+                    break;
+                case GL_GREEN:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = texture[x*dim.y*dim.z+y*dim.z+z];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
+                    break;
+                case GL_BLUE:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = texture[x*dim.y*dim.z+y*dim.z+z];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
+                    break;
+                case GL_ALPHA:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = texture[x*dim.y*dim.z+y*dim.z+z];
+                    break;
+                case GL_RGB:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = texture[3*(x*dim.y*dim.z+y*dim.z+z)+0];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = texture[3*(x*dim.y*dim.z+y*dim.z+z)+1];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = texture[3*(x*dim.y*dim.z+y*dim.z+z)+2];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
+                    break;
+                case GL_RGBA:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+0];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+1];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+2];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+3];
+                    break;
+                case GL_ABGR_EXT:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+3];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+2];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+1];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+0];
+                    break;
+                case GL_LUMINANCE:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = texture[x*dim.y*dim.z+y*dim.z+z];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = texture[x*dim.y*dim.z+y*dim.z+z];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = texture[x*dim.y*dim.z+y*dim.z+z];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
+                    break;
                 }
             }
         }
@@ -92,27 +92,29 @@ GLubyte* InterpolationFunctionBase::convertTextureToRGBA(tgt::ivec3 dim, GLubyte
     return data;
 }
 
-
 /**
  * Resizes a given 3D Textur in RGBA to another dimension by trilinear interpolation
  */
 GLubyte* InterpolationFunctionBase::changeTextureDimension(tgt::ivec3 in_dim, tgt::ivec3 out_dim, GLubyte* indata) {
     GLubyte* outdata;
-    if (in_dim.x!=out_dim.x) {
-        outdata = new GLubyte[4*out_dim.x*in_dim.y*in_dim.z];
-        for (int x=0;x<out_dim.x;x++) {
-            float x_position = (float) (in_dim.x-1)/(float)(out_dim.x-1)*(float)x;
-            int x1 = (int) std::floor(x_position);
+    if (in_dim.x != out_dim.x) {
+        outdata = new GLubyte[4 * out_dim.x * in_dim.y * in_dim.z];
+        for (int x = 0; x < out_dim.x; ++x) {
+            float x_position = static_cast<float>(in_dim.x-1) / static_cast<float>(out_dim.x-1) * static_cast<float>(x);
+            int x1 = static_cast<int>(std::floor(x_position));
             float a1 = 1-(x_position-x1);
-            int x2 = (int) std::ceil(x_position);
+            int x2 = static_cast<int>(std::ceil(x_position));
             float a2 = 1-a1;
             int x_value = -1;
-            if (x1==x2) x_value = x1;
-            if (std::abs(a1)<0.001) x_value = x2;
-            if (std::abs(a2)<0.001) x_value = x1;
-            if (x_value>=0) {
-                for (int y=0;y<in_dim.y;y++) {
-                    for (int z=0;z<in_dim.z;z++) {
+            if (x1 == x2)
+                x_value = x1;
+            if (std::abs(a1) < 0.001f)
+                x_value = x2;
+            if (std::abs(a2) < 0.001f)
+                x_value = x1;
+            if (x_value >= 0) {
+                for (int y = 0; y < in_dim.y; ++y) {
+                    for (int z = 0; z < in_dim.z; ++z) {
                         outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+0] = indata[4*(x_value*in_dim.y*in_dim.z+y*in_dim.z+z)+0];
                         outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+1] = indata[4*(x_value*in_dim.y*in_dim.z+y*in_dim.z+z)+1];
                         outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+2] = indata[4*(x_value*in_dim.y*in_dim.z+y*in_dim.z+z)+2];
@@ -121,12 +123,12 @@ GLubyte* InterpolationFunctionBase::changeTextureDimension(tgt::ivec3 in_dim, tg
                 }
             }
             else {
-                for (int y=0;y<in_dim.y;y++) {
-                    for (int z=0;z<in_dim.z;z++) {
-                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+0] = (GLubyte) (a1*indata[4*(x1*in_dim.y*in_dim.z+y*in_dim.z+z)+0]+a2*indata[4*(x2*in_dim.y*in_dim.z+y*in_dim.z+z)+0]);
-                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+1] = (GLubyte) (a1*indata[4*(x1*in_dim.y*in_dim.z+y*in_dim.z+z)+1]+a2*indata[4*(x2*in_dim.y*in_dim.z+y*in_dim.z+z)+1]);
-                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+2] = (GLubyte) (a1*indata[4*(x1*in_dim.y*in_dim.z+y*in_dim.z+z)+2]+a2*indata[4*(x2*in_dim.y*in_dim.z+y*in_dim.z+z)+2]);
-                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+3] = (GLubyte) (a1*indata[4*(x1*in_dim.y*in_dim.z+y*in_dim.z+z)+3]+a2*indata[4*(x2*in_dim.y*in_dim.z+y*in_dim.z+z)+3]);
+                for (int y = 0; y < in_dim.y; ++y) {
+                    for (int z = 0; z < in_dim.z; ++z) {
+                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+0] = static_cast<GLubyte>(a1*indata[4*(x1*in_dim.y*in_dim.z+y*in_dim.z+z)+0]+a2*indata[4*(x2*in_dim.y*in_dim.z+y*in_dim.z+z)+0]);
+                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+1] = static_cast<GLubyte>(a1*indata[4*(x1*in_dim.y*in_dim.z+y*in_dim.z+z)+1]+a2*indata[4*(x2*in_dim.y*in_dim.z+y*in_dim.z+z)+1]);
+                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+2] = static_cast<GLubyte>(a1*indata[4*(x1*in_dim.y*in_dim.z+y*in_dim.z+z)+2]+a2*indata[4*(x2*in_dim.y*in_dim.z+y*in_dim.z+z)+2]);
+                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+3] = static_cast<GLubyte>(a1*indata[4*(x1*in_dim.y*in_dim.z+y*in_dim.z+z)+3]+a2*indata[4*(x2*in_dim.y*in_dim.z+y*in_dim.z+z)+3]);
                     }
                 }
             }
@@ -135,21 +137,24 @@ GLubyte* InterpolationFunctionBase::changeTextureDimension(tgt::ivec3 in_dim, tg
         delete indata;
         indata = outdata;
     }
-    if (in_dim.y!=out_dim.y) {
-        outdata = new GLubyte[4*out_dim.x*out_dim.y*in_dim.z];
-        for (int y=0;y<out_dim.y;y++) {
-            float y_position = (float) (in_dim.y-1)/(float)(out_dim.y-1)*(float)y;
-            int y1 = (int) std::floor(y_position);
+    if (in_dim.y != out_dim.y) {
+        outdata = new GLubyte[4 * out_dim.x * out_dim.y * in_dim.z];
+        for (int y = 0; y < out_dim.y; ++y) {
+            float y_position = static_cast<float>(in_dim.y-1) / static_cast<float>(out_dim.y-1) * static_cast<float>(y);
+            int y1 = static_cast<int>(std::floor(y_position));
             float a1 = 1-(y_position-y1);
-            int y2 = (int) std::ceil(y_position);
-            float a2 = 1-a1;
+            int y2 = static_cast<int>(std::ceil(y_position));
+            float a2 = 1 - a1;
             int y_value = -1;
-            if (y1==y2) y_value = y1;
-            if (std::abs(a1)<0.001) y_value = y2;
-            if (std::abs(a2)<0.001) y_value = y1;
-            if (y_value>=0) {
-                for (int x=0;x<out_dim.x;x++) {
-                    for (int z=0;z<in_dim.z;z++) {
+            if (y1 == y2)
+                y_value = y1;
+            if (std::abs(a1) < 0.001f)
+                y_value = y2;
+            if (std::abs(a2) < 0.001f)
+                y_value = y1;
+            if (y_value >= 0) {
+                for (int x = 0; x < out_dim.x; ++x) {
+                    for (int z = 0; z < in_dim.z; ++z) {
                         outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+0] = indata[4*(x*in_dim.y*in_dim.z+y_value*in_dim.z+z)+0];
                         outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+1] = indata[4*(x*in_dim.y*in_dim.z+y_value*in_dim.z+z)+1];
                         outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+2] = indata[4*(x*in_dim.y*in_dim.z+y_value*in_dim.z+z)+2];
@@ -158,12 +163,12 @@ GLubyte* InterpolationFunctionBase::changeTextureDimension(tgt::ivec3 in_dim, tg
                 }
             }
             else {
-                for (int x=0;x<out_dim.x;x++) {
-                    for (int z=0;z<in_dim.z;z++) {
-                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+0] = (GLubyte) (a1*indata[4*(x*in_dim.y*in_dim.z+y1*in_dim.z+z)+0]+a2*indata[4*(x*in_dim.y*in_dim.z+y2*in_dim.z+z)+0]);
-                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+1] = (GLubyte) (a1*indata[4*(x*in_dim.y*in_dim.z+y1*in_dim.z+z)+1]+a2*indata[4*(x*in_dim.y*in_dim.z+y2*in_dim.z+z)+1]);
-                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+2] = (GLubyte) (a1*indata[4*(x*in_dim.y*in_dim.z+y1*in_dim.z+z)+2]+a2*indata[4*(x*in_dim.y*in_dim.z+y2*in_dim.z+z)+2]);
-                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+3] = (GLubyte) (a1*indata[4*(x*in_dim.y*in_dim.z+y1*in_dim.z+z)+3]+a2*indata[4*(x*in_dim.y*in_dim.z+y2*in_dim.z+z)+3]);
+                for (int x = 0; x < out_dim.x; ++x) {
+                    for (int z = 0; z < in_dim.z; ++z) {
+                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+0] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y1*in_dim.z+z)+0]+a2*indata[4*(x*in_dim.y*in_dim.z+y2*in_dim.z+z)+0]);
+                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+1] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y1*in_dim.z+z)+1]+a2*indata[4*(x*in_dim.y*in_dim.z+y2*in_dim.z+z)+1]);
+                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+2] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y1*in_dim.z+z)+2]+a2*indata[4*(x*in_dim.y*in_dim.z+y2*in_dim.z+z)+2]);
+                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+3] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y1*in_dim.z+z)+3]+a2*indata[4*(x*in_dim.y*in_dim.z+y2*in_dim.z+z)+3]);
                     }
                 }
             }
@@ -172,21 +177,24 @@ GLubyte* InterpolationFunctionBase::changeTextureDimension(tgt::ivec3 in_dim, tg
         delete indata;
         indata = outdata;
     }
-    if (in_dim.z!=out_dim.z) {
-        outdata = new GLubyte[4*out_dim.x*out_dim.y*out_dim.z];
-        for (int z=0;z<out_dim.z;z++) {
-            float z_position = (float) (in_dim.z-1)/(float)(out_dim.z-1)*(float)z;
-            int z1 = (int) std::floor(z_position);
+    if (in_dim.z != out_dim.z) {
+        outdata = new GLubyte[4 * out_dim.x * out_dim.y * out_dim.z];
+        for (int z = 0; z < out_dim.z; ++z) {
+            float z_position = static_cast<float>(in_dim.z-1) / static_cast<float>(out_dim.z-1) * static_cast<float>(z);
+            int z1 = static_cast<int>(std::floor(z_position));
             float a1 = 1-(z_position-z1);
-            int z2 = (int) std::ceil(z_position);
+            int z2 = static_cast<int>(std::ceil(z_position));
             float a2 = 1-a1;
             int z_value = -1;
-            if (z1==z2) z_value = z1;
-            if (std::abs(a1)<0.001) z_value = z2;
-            if (std::abs(a2)<0.001) z_value = z1;
-            if (z_value>=0) {
-                for (int x=0;x<out_dim.x;x++) {
-                    for (int y=0;y<out_dim.y;y++) {
+            if (z1 == z2)
+                z_value = z1;
+            if (std::abs(a1) < 0.001f)
+                z_value = z2;
+            if (std::abs(a2) < 0.001f)
+                z_value = z1;
+            if (z_value >= 0) {
+                for (int x = 0; x < out_dim.x; ++x) {
+                    for (int y = 0; y < out_dim.y; ++y) {
                         outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+0] = indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z_value)+0];
                         outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+1] = indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z_value)+1];
                         outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+2] = indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z_value)+2];
@@ -195,12 +203,12 @@ GLubyte* InterpolationFunctionBase::changeTextureDimension(tgt::ivec3 in_dim, tg
                 }
             }
             else {
-                for (int x=0;x<out_dim.x;x++) {
-                    for (int y=0;y<out_dim.y;y++) {
-                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+0] = (GLubyte) (a1*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z1)+0]+a2*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z2)+0]);
-                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+1] = (GLubyte) (a1*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z1)+1]+a2*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z2)+1]);
-                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+2] = (GLubyte) (a1*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z1)+2]+a2*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z2)+2]);
-                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+3] = (GLubyte) (a1*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z1)+3]+a2*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z2)+3]);
+                for (int x = 0; x < out_dim.x; ++x) {
+                    for (int y = 0; y < out_dim.y; ++y) {
+                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+0] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z1)+0]+a2*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z2)+0]);
+                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+1] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z1)+1]+a2*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z2)+1]);
+                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+2] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z1)+2]+a2*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z2)+2]);
+                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+3] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z1)+3]+a2*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z2)+3]);
                     }
                 }
             }
@@ -211,6 +219,5 @@ GLubyte* InterpolationFunctionBase::changeTextureDimension(tgt::ivec3 in_dim, tg
     }
     return indata;
 }
-
 
 } // namespace voreen

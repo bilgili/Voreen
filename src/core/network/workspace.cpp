@@ -29,14 +29,18 @@
 
 #include "voreen/core/network/workspace.h"
 
+#include "voreen/core/network/processornetwork.h"
+#include "voreen/core/datastructures/volume/volumecontainer.h"
+#include "voreen/core/properties/link/scriptmanagerlinking.h"
+#include "voreen/core/animation/animation.h"
+
 #include "voreen/core/io/datvolumereader.h"
 #include "voreen/core/io/datvolumewriter.h"
-#include "voreen/core/datastructures/volume/volumecontainer.h"
 #include "voreen/modules/base/processors/datasource/volumesource.h"
 #include "voreen/core/properties/link/linkevaluatorfactory.h"
 #include "voreen/core/properties/filedialogproperty.h"  // needed for zip-export
-#include "tgt/ziparchive.h"
 #include "voreen/core/animation/animatedprocessor.h"
+#include "tgt/ziparchive.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -59,10 +63,10 @@ Workspace::Workspace(tgt::GLCanvas* sharedContext)
     : version_(WORKSPACE_VERSION)
     , network_(new ProcessorNetwork())
     , volumeContainer_(new VolumeContainer())
+    , animation_(0)
     , filename_("")
     , readOnly_(false)
     , sharedContext_(sharedContext)
-    , animation_(0)
     , scriptManagerLinking_(new ScriptManagerLinking())
 {
     LinkEvaluatorFactory::getInstance()->setScriptManager(scriptManagerLinking_);
@@ -77,14 +81,14 @@ std::vector<std::string> Workspace::getErrors() const {
 }
 
 #ifndef VRN_WITH_ZLIB
-bool Workspace::exportZipped(const std::string& /*exportName*/, bool /*overwrite*/)
+bool Workspace::exportToZipArchive(const std::string& /*exportName*/, bool /*overwrite*/)
     throw (SerializationException)
 {
     LERROR("exportZipped(): Cannot export workspace, because Voreen was compiled without "
            "support for handling zip archives!");
     return false;
 #else
-bool Workspace::exportZipped(const std::string& exportName, bool overwrite)
+bool Workspace::exportToZipArchive(const std::string& exportName, bool overwrite)
     throw (SerializationException)
 {
     if (!volumeContainer_)
@@ -220,26 +224,23 @@ bool Workspace::exportZipped(const std::string& exportName, bool overwrite)
     // Add the files from the FileDialogProperty to the archive and restore the
     // original names/pathes to their files.
     //
-    for (FileDialogMap::iterator it = fdps.begin(); fdps.empty() == false;
-        fdps.erase(it), it = fdps.begin())
-    {
-        bool added = zip.addFile(it->second, "files/");
-        if (added == false) {
-            LERROR("Failed to add file '" << it->second << "' from FileDialogProperty ");
-            LERROR("to zip archive '" << exportName << "'!");
+    std::vector<std::string> filesAdded; // multiple file props might refer to the same file, prevent multi-adding
+    for (FileDialogMap::iterator it = fdps.begin(); fdps.empty() == false; fdps.erase(it), it = fdps.begin()) {
+        if (std::find(filesAdded.begin(), filesAdded.end(), it->second) == filesAdded.end()) {
+            bool added = zip.addFile(it->second, "files/");
+            if (added == false) {
+                LWARNING("Failed to add file '" << it->second << "' from FileDialogProperty to zip archive '"
+                    << exportName << "'");
+            }
+            filesAdded.push_back(it->second);
         }
         it->first->set(it->second); // first = FileDialogProperty*, second = std::string
     }
 
     if (result == true)
         result = zip.save();
-
-    if (result == true) {
-        LINFO("Exported workspace successfully to '" << exportName << "'.");
-        setFilename(exportName);
-    }
     else
-        LERROR("Export of workspace to file '" << exportName << "' failed!");
+        LERROR("Export of workspace to file " << exportName << " failed");
 
     // free temporary memory files from .dat export
     //

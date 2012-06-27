@@ -38,7 +38,7 @@ namespace voreen {
 ExplosionCompositor::ExplosionCompositor()
     : ImageProcessor("pp_compositor")
     , compositingMode_("blendMode", "Blend mode", Processor::INVALID_PROGRAM)
-    , weightingFactor_("weightingFactor", "Weighting factor", 0.5f, 0.0f, 1.0f, true)
+    , weightingFactor_("weightingFactor", "Weighting factor", 0.5f, 0.0f, 1.0f)
     , inport0_(Port::INPORT, "image.inport0")
     , interalPort_(Port::OUTPORT, "internalRenderPort", false)
     , outport_(Port::OUTPORT, "image.outport")
@@ -124,14 +124,14 @@ void ExplosionCompositor::process() {
     if (compositingMode_.get() != "take-second") {
         program_->setUniform("shadeTex0_", shadeUnit0.getUnitNumber());
         program_->setUniform("depthTex0_", depthUnit0.getUnitNumber());
-        inport0_.setTextureParameters(program_, "textureParameters0_");
-        //outport_.setTextureParameters(program_, "textureParameters0_");
+        //inport0_.setTextureParameters(program_, "textureParameters0_");
+        outport_.setTextureParameters(program_, "textureParameters0_");
     }
     if (compositingMode_.get() != "take-first") {
         program_->setUniform("shadeTex1_", shadeUnit1.getUnitNumber());
         program_->setUniform("depthTex1_", depthUnit1.getUnitNumber());
         //interalPort_.setTextureParameters(program_, "textureParameters1_");
-        outport_.setTextureParameters(program_, "textureParameters0_");
+        outport_.setTextureParameters(program_, "textureParameters1_");
     }
     if (compositingMode_.get() == "weighted-average")
         program_->setUniform("weightingFactor_", weightingFactor_.get());
@@ -155,7 +155,7 @@ std::string ExplosionCompositor::generateHeader() {
 
 void ExplosionCompositor::compile() {
     if (program_)
-        program_->setHeaders(generateHeader(), false);
+        program_->setHeaders(generateHeader());
     ImageProcessor::compile();
 }
 

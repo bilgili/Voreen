@@ -40,6 +40,11 @@
 #include "voreen/core/processors/volumerenderer.h"
 #include "voreen/core/datastructures/transfunc/transfunc.h"
 
+#include "voreen/core/properties/transfuncproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+
+#include "voreen/core/ports/volumeport.h"
+
 namespace tgt {
     class TextureUnit;
 }
@@ -66,7 +71,8 @@ protected:
     /**
      * Initializes the shader if applicable and sets all uniforms.
      */
-    virtual bool setupShader(VolumeGL* volume = 0, tgt::TextureUnit* volUnit = 0, tgt::TextureUnit* transferUnit = 0);
+    virtual bool setupShader(VolumeGL* volume = 0, tgt::TextureUnit* volUnit = 0, tgt::TextureUnit* transferUnit = 0,
+        const tgt::Camera* camera = 0, const tgt::vec4& lightPosition = tgt::vec4(0.f));
 
     /**
      * Generates the header for the shader depending on the choice of

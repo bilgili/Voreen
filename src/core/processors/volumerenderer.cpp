@@ -42,19 +42,26 @@ const std::string VolumeRenderer::loggerCat_("voreen.VolumeRenderer");
 
 VolumeRenderer::VolumeRenderer()
     : RenderProcessor()
-    , lightPosition_("lightPosition", "Light source position", tgt::vec4(2.3f, 1.5f, 1.5f, 1.f),
+    , lightPosition_("lightPosition", "Light Source Position", tgt::vec4(2.3f, 1.5f, 1.5f, 1.f),
                      tgt::vec4(-10), tgt::vec4(10))
-    , lightAmbient_("lightAmbient", "Ambient light", tgt::Color(0.4f, 0.4f, 0.4f, 1.f))
-    , lightDiffuse_("lightDiffuse", "Diffuse light", tgt::Color(0.8f, 0.8f, 0.8f, 1.f))
-    , lightSpecular_("lightSpecular", "Specular light", tgt::Color(0.6f, 0.6f, 0.6f, 1.f))
+    , lightAmbient_("lightAmbient", "Ambient Light", tgt::vec4(0.4f, 0.4f, 0.4f, 1.f))
+    , lightDiffuse_("lightDiffuse", "Diffuse Light", tgt::vec4(0.8f, 0.8f, 0.8f, 1.f))
+    , lightSpecular_("lightSpecular", "Specular Light", tgt::vec4(0.6f, 0.6f, 0.6f, 1.f))
     , lightAttenuation_("lightAttenuation", "Attenuation", tgt::vec3(1.f, 0.f, 0.f))
     , applyLightAttenuation_("applyLightAttenuation", "Apply Attenuation", false, Processor::INVALID_PROGRAM)
-    , materialAmbient_("materialAmbient", "Ambient material color", tgt::Color(1.f, 1.f, 1.f, 1.f))
-    , materialDiffuse_("materialDiffuse", "Diffuse material color", tgt::Color(1.f, 1.f, 1.f, 1.f))
-    , materialSpecular_("materialSpecular", "Specular material color", tgt::Color(1.f, 1.f, 1.f, 1.f))
-    , materialEmission_("materialEmission", "Emissive material color", tgt::Color(0.f, 0.f, 0.f, 1.f))
+    , materialAmbient_("materialAmbient", "Ambient material color", tgt::vec4(1.f, 1.f, 1.f, 1.f))
+    , materialDiffuse_("materialDiffuse", "Diffuse material color", tgt::vec4(1.f, 1.f, 1.f, 1.f))
+    , materialSpecular_("materialSpecular", "Specular material color", tgt::vec4(1.f, 1.f, 1.f, 1.f))
+    , materialEmission_("materialEmission", "Emissive material color", tgt::vec4(0.f, 0.f, 0.f, 1.f))
     , materialShininess_("materialShininess", "Shininess", 60.f, 0.1f, 128.f)
 {
+    lightPosition_.setViews(Property::View(Property::LIGHT_POSITION | Property::DEFAULT));
+    lightAmbient_.setViews(Property::COLOR);
+    lightDiffuse_.setViews(Property::COLOR);
+    lightSpecular_.setViews(Property::COLOR);
+    materialAmbient_.setViews(Property::COLOR);
+    materialDiffuse_.setViews(Property::COLOR);
+    materialEmission_.setViews(Property::COLOR);
 }
 
 VolumeRenderer::~VolumeRenderer() {
@@ -71,7 +78,7 @@ std::string VolumeRenderer::generateHeader(VolumeHandle* /*volumehandle*/) {
     return header;
 }
 
-void VolumeRenderer::setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera* camera) {
+void VolumeRenderer::setGlobalShaderParameters(tgt::Shader* shader, const tgt::Camera* camera) {
     RenderProcessor::setGlobalShaderParameters(shader, camera);
 
     shader->setIgnoreUniformLocationError(true);
@@ -82,7 +89,8 @@ void VolumeRenderer::setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera*
     shader->setIgnoreUniformLocationError(false);
 }
 
-void VolumeRenderer::bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct>& volumes) {
+void VolumeRenderer::bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct>& volumes,
+                                 const tgt::Camera* camera, const tgt::vec4& lightPosition) {
     bool texCoordScaling = !GpuCaps.isNpotSupported();
     shader->setIgnoreUniformLocationError(true);
 
@@ -139,15 +147,20 @@ void VolumeRenderer::bindVolumes(tgt::Shader* shader, const std::vector<VolumeSt
         shader->setUniform(paramsIdent + ".volumeCubeSizeRCP_", vec3(1.f) / volume->getCubeSize());
 
         // volume's transformation matrix
-        tgt::mat4 tm = volume->getTransformation();
+        tgt::mat4 tm = volumeStruct.applyDatasetTrafoMatrix_ ? volume->getTransformation() : tgt::mat4::identity;
         shader->setUniform(paramsIdent + ".volumeTransformation_", tm);
 
         tgt::mat4 invTm;
-        if(!tm.invert(invTm))
+        if (!tm.invert(invTm))
             LWARNING("Failed to invert volume transformation matrix!");
-
         shader->setUniform(paramsIdent + ".volumeTransformationINV_", invTm);
 
+        // camera position in volume object coords
+        if (camera)
+            shader->setUniform(paramsIdent + ".cameraPositionOBJ_", invTm*camera->getPosition());
+
+        // light position in volume object coords
+        shader->setUniform(paramsIdent + ".lightPositionOBJ_", (invTm*lightPosition).xyz());
 
         LGL_ERROR;
 
@@ -198,9 +211,13 @@ VolumeRenderer::VolumeStruct::VolumeStruct()
 
 VolumeRenderer::VolumeStruct::VolumeStruct(const VolumeGL* volume, tgt::TextureUnit* texUnit,
                                            const std::string& samplerIdentifier,
-                                           const std::string& volumeParametersIdentifier)
-    : volume_(volume), texUnit_(texUnit),
-      samplerIdentifier_(samplerIdentifier), volumeParametersIdentifier_(volumeParametersIdentifier)
+                                           const std::string& volumeParametersIdentifier,
+                                           bool applyDatasetTrafoMatrix)
+    : volume_(volume),
+      texUnit_(texUnit),
+      samplerIdentifier_(samplerIdentifier),
+      volumeParametersIdentifier_(volumeParametersIdentifier),
+      applyDatasetTrafoMatrix_(applyDatasetTrafoMatrix)
 {}
 
 } // namespace voreen

@@ -194,7 +194,7 @@ std::string DatVolumeWriter::getDatFileString(VolumeHandle* const volumeHandle, 
     return datout.str();
 }
 
-VolumeWriter* DatVolumeWriter::create(IOProgress* /*progress*/) const {
+VolumeWriter* DatVolumeWriter::create(ProgressBar* /*progress*/) const {
     return new DatVolumeWriter(/*progress*/);
 }
 

@@ -48,7 +48,7 @@ namespace voreen {
 
 const std::string PVMVolumeReader::loggerCat_ = "voreen.pvm.PVMVolumeReader";
 
-PVMVolumeReader::PVMVolumeReader(IOProgress* progress)
+PVMVolumeReader::PVMVolumeReader(ProgressBar* progress)
   : VolumeReader(progress)
 {
     extensions_.push_back("pvm");
@@ -90,7 +90,7 @@ VolumeCollection* PVMVolumeReader::read(const std::string &url)
         Because of some c-pointer vodoo done in ddsbase.cpp free must be invoked
         after the use of all other returned pointers. (roland)
     */
-    tmpData = readPVMvolume(const_cast<char*>(fileName.c_str()), getProgress(),
+    tmpData = readPVMvolume(const_cast<char*>(fileName.c_str()), getProgressBar(),
                             &width, &height, &depth, &components,
                             &scalex, &scaley, &scalez, &description, &courtesy,
                             &parameter, &comment);
@@ -147,7 +147,9 @@ VolumeCollection* PVMVolumeReader::read(const std::string &url)
             }
             dataset = new VolumeUInt16((uint16_t*)data,
                                        tgt::ivec3(width, height, depth),
-                                       tgt::vec3(scalex, scaley, scalez), bits);
+                                       tgt::vec3(scalex, scaley, scalez),
+                                       tgt::mat4::identity,
+                                       bits);
 
         }
         else LERROR("Bit depth not supported.");
@@ -166,7 +168,7 @@ VolumeCollection* PVMVolumeReader::read(const std::string &url)
     return volumeCollection;
 }
 
-VolumeReader* PVMVolumeReader::create(IOProgress* progress) const {
+VolumeReader* PVMVolumeReader::create(ProgressBar* progress) const {
     return new PVMVolumeReader(progress);
 }
 

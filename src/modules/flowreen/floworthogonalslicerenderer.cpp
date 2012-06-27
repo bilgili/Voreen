@@ -128,7 +128,7 @@ void FlowOrthogonalSliceRenderer::process() {
     }
 
     TextureUnit volumeUnit, transferUnit;
-    setupShader(volumeGL, &volumeUnit, &transferUnit); // also binds the volume
+    setupShader(volumeGL, &volumeUnit, &transferUnit, camProp_.get(), lightPosition_.get()); // also binds the volume
     if (!ready())
         return;
 

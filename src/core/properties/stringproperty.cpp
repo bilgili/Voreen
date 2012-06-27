@@ -62,4 +62,8 @@ PropertyWidget* StringProperty::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
 }
 
+std::string StringProperty::getTypeString() const {
+    return "String";
+}
+
 }   // namespace

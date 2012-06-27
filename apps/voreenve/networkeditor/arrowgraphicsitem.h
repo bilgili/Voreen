@@ -37,6 +37,8 @@
 
 namespace voreen {
 
+class ArrowHeadSelectionGraphicsItem;
+
 /**
  * This is an abstract base class designed to be used for all arrow-like QGraphicsItems. These
  * arrows must start at a specific other QGraphicsItem and can end either in a QPointF or another
@@ -48,6 +50,8 @@ namespace voreen {
  * are \sa sourceHeadDirection_ and \sa destinationHeadDirection_.
  */
 class ArrowGraphicsItem : public QGraphicsItem, public HasToolTip {
+    friend class ArrowHeadSelectionGraphicsItem;
+
 public:
     /**
      * Constructor for a ArrowGraphicsItem. Will make the item selectable, allows hover
@@ -175,13 +179,13 @@ protected:
     virtual QPointF getDestinationPoint() const;
 
     /**
-     * Will create the arrow head based on the direction and the base point. Only used internally
-     * in the \sa paint method.
+     * Will create the arrow head based on the direction and the base point. Will create a special
+     * item needed for better selectabiliy. Only used internally in the \sa paint method.
      * \param direction The direction in which the arrow head will point
      * \param basePoint The base point from which the arrow head will be drawn. Should always be
      * the last point of the arrow (i.e. the arrowhead-head)
      */
-    QPolygonF createArrowHeadPolygon(ArrowHeadDirection direction, const QPointF& basePoint) const;
+    QPolygonF createArrowHead(ArrowHeadDirection direction, const QPointF& basePoint, ArrowHeadSelectionGraphicsItem* arrowHeadItem) const;
 
     /**
      * The source item from which this arrow will originate. Must be != 0.
@@ -229,6 +233,12 @@ protected:
      * because it will be modified in some \sa paint methods.
      */
     mutable ArrowHeadDirection destinationHeadDirection_;
+
+    /// This object contains the mouse focus "grabber" for the arrow head at the source point (if there is any)
+    mutable ArrowHeadSelectionGraphicsItem* sourceSelectionItem_;
+
+    /// This object contains the mouse focus "grabber" for the arrow head at the source point (if there is any)
+    mutable ArrowHeadSelectionGraphicsItem* destinationSelectionItem_;
 };
 
 } // namespace voreen

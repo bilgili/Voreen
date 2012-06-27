@@ -36,14 +36,14 @@ namespace voreen {
 
 VolumeCurvature::VolumeCurvature()
     : VolumeProcessor()
-    , curvatureType_("curvatureType", "Curvature type")
+    , curvatureType_("curvatureType", "Curvature Type")
     , processedVolumeHandle_(0)
     , inport_(Port::INPORT, "volumehandle.input")
     , outport_(Port::OUTPORT, "volumehandle.output", 0)
 {
-    curvatureType_.addOption("first", "first principle");
-    curvatureType_.addOption("second", "second principle");
-    curvatureType_.addOption("mean", "mean");
+    curvatureType_.addOption("first", "First Principle");
+    curvatureType_.addOption("second", "Second Principle");
+    curvatureType_.addOption("mean", "Mean");
     curvatureType_.addOption("gauss", "Gaussian");
     addProperty(curvatureType_);
 
@@ -51,12 +51,19 @@ VolumeCurvature::VolumeCurvature()
     addPort(outport_);
 }
 
-VolumeCurvature::~VolumeCurvature() {
-    delete processedVolumeHandle_;
+Processor* VolumeCurvature::create() const {
+    return new VolumeCurvature();
 }
 
 std::string VolumeCurvature::getProcessorInfo() const {
-    return std::string("");
+    return "Computes surface curvatures for each voxel from its Hessian matrix.";
+}
+
+void VolumeCurvature::deinitialize() throw (VoreenException) {
+    outport_.setData(0);
+    delete processedVolumeHandle_;
+    processedVolumeHandle_ = 0;
+    VolumeProcessor::deinitialize();
 }
 
 void VolumeCurvature::process() {
@@ -68,10 +75,8 @@ void VolumeCurvature::process() {
 
     Volume* v = calcCurvature<float>(inport_.getData()->getVolume(), curvatureType);
 
-    if (processedVolumeHandle_) {
-        delete processedVolumeHandle_;
-        processedVolumeHandle_ = 0;
-    }
+    delete processedVolumeHandle_;
+    processedVolumeHandle_ = 0;
 
     if (v)
         processedVolumeHandle_ = new VolumeHandle(v, 0.0f);

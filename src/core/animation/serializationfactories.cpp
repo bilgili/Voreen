@@ -201,7 +201,6 @@ const std::string KeyValueFactory::getTypeString(const std::type_info& type) con
 
 
 Serializable* KeyValueFactory::createType(const std::string& typeString) {
-
     using tgt::ivec2;
     using tgt::ivec3;
     using tgt::ivec4;
@@ -305,7 +304,6 @@ const std::string TemplatePropertyTimelineStateFactory::getTypeString(const std:
     else
         return "";
 }
-
 
 Serializable* TemplatePropertyTimelineStateFactory::createType(const std::string& typeString) {
     if (typeString == "TemplatePropertyTimelineState_float")

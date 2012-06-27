@@ -57,7 +57,7 @@ SliceViewer::SliceViewer()
     , boundaryColor_("boundaryColor", "Boundary Color", tgt::Color::white)
     , showCursorInfos_("showCursorInformation", "Show Cursor Information")
     , showSliceNumber_("showSliceNumber", "Show Slice Number", true)
-    , fontSize_("fontSize", "FontSize", 14, 8, 48)
+    , fontSize_("fontSize", "Font Size", 14, 8, 48)
     , voxelOffset_("voxelOffset", "Voxel Offset", tgt::vec2(0.f), tgt::vec2(-10000.f), tgt::vec2(10000.f))
     , zoomFactor_("zoomFactor", "Zoom Factor", 1.f, 0.01f, 1.f)
     , pickingMatrix_("pickingMatrix", "Picking Matrix", tgt::mat4::createIdentity(), tgt::mat4(-1e6f), tgt::mat4(1e6f), Processor::VALID)
@@ -69,6 +69,7 @@ SliceViewer::SliceViewer()
     , mousePosition_(-1, -1)
     , lastPickingPosition_(-1, -1, -1)
 {
+    boundaryColor_.setViews(Property::COLOR);
 
     mouseEventShift_ = new EventProperty<SliceViewer>("mouseEvent.Shift", "Slice Shift",
         this, &SliceViewer::shiftEvent,
@@ -201,7 +202,7 @@ void SliceViewer::process() {
     }
 
     TextureUnit volUnit, transferUnit;
-    setupShader(volumeGL, &volUnit, &transferUnit); // also binds the volume
+    setupShader(volumeGL, &volUnit, &transferUnit,0, lightPosition_.get()); // also binds the volume
     if (!ready())
         return;
 
@@ -587,7 +588,7 @@ void SliceViewer::renderInfoTexts() const {
 
 tgt::vec3 SliceViewer::screenToVoxelPos(tgt::ivec2 screenPos) const {
 
-    if (!inport_.getData() || !inport_.getData()->getVolume() || !outport_.getData())
+    if (!inport_.getData() || !inport_.getData()->getVolume() || !outport_.getRenderTarget())
         return tgt::vec3(-1.f);
 
     tgt::vec3 volumeDim(inport_.getData()->getVolume()->getDimensions());

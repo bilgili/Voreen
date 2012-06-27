@@ -32,6 +32,9 @@
 
 #include "voreen/core/processors/renderprocessor.h"
 
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+
 namespace voreen {
 
 /**
@@ -42,18 +45,17 @@ class ImageSequenceLoopFinalizer : public RenderProcessor {
 public:
     ImageSequenceLoopFinalizer();
     ~ImageSequenceLoopFinalizer();
+    virtual Processor* create() const;
 
-    virtual std::string getCategory() const { return "Utility"; }
+    virtual std::string getCategory() const  { return "Utility"; }
     virtual std::string getClassName() const { return "ImageSequenceLoopFinalizer"; }
-    virtual Processor::CodeState getCodeState() const { return Processor::CODE_STATE_TESTING; }
+    virtual CodeState getCodeState() const   { return Processor::CODE_STATE_STABLE; }
+    virtual bool isUtility() const           { return true; }
     virtual std::string getProcessorInfo() const;
-    virtual bool isUtility() const { return true; }
 
     virtual bool isReady() const;
 
 protected:
-
-    virtual Processor* create() const;
     virtual void process();
     virtual void initialize() throw (VoreenException);
 

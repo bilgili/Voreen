@@ -23,7 +23,10 @@
  **********************************************************************/
 
 #include "tgt/font.h"
+
 #include "tgt/logmanager.h"
+#include <algorithm>
+#include <sstream>
 
 #ifdef TGT_HAS_FTGL
 #include <FTGL/ftgl.h>
@@ -34,38 +37,16 @@ namespace tgt {
 
 #ifdef TGT_HAS_FTGL
 
-Font::Font(const std::string& fontName, const int size, FontType fontType) {
-    switch(fontType) {
-        case BitmapFont:
-            font_ = new FTBitmapFont(fontName.c_str()); break;
-        case BufferFont:
-            font_ = new FTBufferFont(fontName.c_str()); break;
-        case ExtrudeFont:
-            font_ = new FTExtrudeFont(fontName.c_str()); break;
-        case OutlineFont:
-            font_ = new FTOutlineFont(fontName.c_str()); break;
-        case PixmapFont: 
-            font_ = new FTPixmapFont(fontName.c_str()); break;
-        case PolygonFont: 
-            font_ = new FTPolygonFont(fontName.c_str()); break;
-        case TextureFont: 
-            font_ = new FTTextureFont(fontName.c_str()); break;
-        default:
-            LWARNINGC("tgt.Font", "Unknown fontType. Defaulting to TextureFont.");
-            font_ = new FTTextureFont(fontName.c_str());
-    }
-
-    if (!font_->Error())
-        font_->FaceSize(size);
-    else {
-        delete font_;
-        font_ = 0;
-        LERRORC("tgt.Font", "Font file could not be loaded: " << fontName);
-    }
-
-    simpleLayout_ = new FTSimpleLayout();
-    simpleLayout_->SetFont(font_);
-    simpleLayout_->SetLineLength(1000.0f);
+Font::Font(const std::string& fontName, int size, FontType fontType, float lineWidth, TextAlignment textAlignment, VerticalTextAlignment verticalTextAlignment) {
+    fontName_ = fontName;
+    fontSize_ = size;
+    fontType_ = fontType;
+    lineWidth_ = lineWidth;
+    hAlign_ = textAlignment;
+    vAlign_ = verticalTextAlignment;
+    font_ = 0;
+    simpleLayout_ = 0;
+    update();
 }
 
 Font::~Font() {
@@ -73,89 +54,376 @@ Font::~Font() {
     delete simpleLayout_;
 }
 
+Font::FontType Font::getFontType(const std::string& typeName) {
+    if (typeName == "<empty>")
+        return NIL;
+    else if (typeName == "BitmapFont")
+        return BitmapFont;
+    else if (typeName == "BufferFont")
+        return BufferFont;
+    else if (typeName == "ExtrudeFont")
+        return ExtrudeFont;
+    else if (typeName == "OutlineFont")
+        return OutlineFont;
+    else if (typeName == "PixmapFont")
+        return PixmapFont;
+    else if (typeName == "PolygonFont")
+        return PolygonFont;
+    else if (typeName == "TextureFont")
+        return TextureFont;
+    else
+        return NIL;
+}
+
+std::string Font::getFontTypeName(Font::FontType type) {
+    switch (type) {
+    case NIL:
+        return "<empty>";
+        break;
+    case BitmapFont:
+        return "BitmapFont";
+        break;
+    case BufferFont:
+        return "BufferFont";
+        break;
+    case ExtrudeFont:
+        return "ExtrudeFont";
+        break;
+    case OutlineFont:
+        return "OutlineFont";
+        break;
+    case PixmapFont:
+        return "PixmapFont";
+        break;
+    case PolygonFont:
+        return "PolygonFont";
+        break;
+    case TextureFont:
+        return "TextureFont";
+        break;
+    default:
+        return "<unknown>";
+    }
+}
+
+Font::TextAlignment Font::getTextAlignment(const std::string& textAlignment) {
+    if (textAlignment == "<unknown>")
+        return Left;
+    else if (textAlignment == "Left")
+        return Left;
+    else if (textAlignment == "Center")
+        return Center;
+    else if (textAlignment == "Right")
+        return Right;
+    else
+        return Left;
+}
+
+std::string Font::getTextAlignmentName(TextAlignment textAlignment) {
+    switch (textAlignment) {
+    case Left:
+        return "Left";
+        break;
+    case Center:
+        return "Center";
+        break;
+    case Right:
+        return "Right";
+        break;
+    default:
+        return "<unknown>";
+    }
+}
+
+Font::VerticalTextAlignment Font::getVerticalTextAlignment(const std::string& verticalTextAlignment) {
+    if (verticalTextAlignment == "<unknown>")
+        return Top;
+    else if (verticalTextAlignment == "Top")
+        return Top;
+    else if (verticalTextAlignment == "Middle")
+        return Middle;
+    else if (verticalTextAlignment == "Bottom")
+        return Bottom;
+    else
+        return Top;
+}
+
+std::string Font::getVerticalTextAlignmentName(VerticalTextAlignment verticalTextAlignment) {
+    switch (verticalTextAlignment) {
+    case Top:
+        return "Top";
+        break;
+    case Middle:
+        return "Middle";
+        break;
+    case Bottom:
+        return "Bottom";
+        break;
+    default:
+        return "<unknown>";
+    }
+}
+
+void Font::update() {
+    delete font_;
+    font_ = 0;
+
+    delete simpleLayout_;
+    simpleLayout_ = 0;
+
+    switch(fontType_) {
+    case BitmapFont:
+        font_ = new FTBitmapFont(fontName_.c_str()); break;
+    case BufferFont:
+        font_ = new FTBufferFont(fontName_.c_str()); break;
+    case ExtrudeFont:
+        font_ = new FTExtrudeFont(fontName_.c_str()); break;
+    case OutlineFont:
+        font_ = new FTOutlineFont(fontName_.c_str()); break;
+    case PixmapFont: 
+        font_ = new FTPixmapFont(fontName_.c_str()); break;
+    case PolygonFont: 
+        font_ = new FTPolygonFont(fontName_.c_str()); break;
+    case TextureFont: 
+        font_ = new FTTextureFont(fontName_.c_str()); break;
+    default:
+        LWARNINGC("tgt.Font", "Unknown fontType. Defaulting to TextureFont.");
+        font_ = new FTTextureFont(fontName_.c_str());
+    }
+
+    if (!font_->Error()) {
+        font_->FaceSize(fontSize_);
+        simpleLayout_ = new FTSimpleLayout();
+        simpleLayout_->SetFont(font_);
+        simpleLayout_->SetLineLength(lineWidth_);
+
+        FTGL::TextAlignment hAlign = FTGL::ALIGN_LEFT;
+        switch(hAlign_) {
+        case Left:
+            hAlign = FTGL::ALIGN_LEFT;
+            break;
+        case Center:
+            hAlign = FTGL::ALIGN_CENTER;
+            break;
+        case Right:
+            hAlign = FTGL::ALIGN_RIGHT;
+            break;
+        }
+        simpleLayout_->SetAlignment(hAlign);
+    } else {
+        delete font_;
+        font_ = 0;
+        LERRORC("tgt.Font", "Font file could not be loaded: " << fontName_);
+    }
+}
+
 float Font::getLineHeight() {
     return font_->LineHeight();
 }
 
-void Font::setLineWidth(const float lineWidth) {
-    if(simpleLayout_)
-        simpleLayout_->SetLineLength(lineWidth);
+float Font::getLineWidth() {
+    return lineWidth_;
+}
+
+void Font::setLineWidth(float lineWidth) {
+    lineWidth_ = lineWidth;
+    update();
 }
 
 void Font::setTextAlignment(TextAlignment textAlignment) {
-    FTGL::TextAlignment alignment = FTGL::ALIGN_LEFT;
-    switch(textAlignment) {
-        case Left:
-            alignment = FTGL::ALIGN_LEFT;
-            break;
-        case Center:
-            alignment = FTGL::ALIGN_CENTER;
-            break;
-        case Right:
-            alignment = FTGL::ALIGN_RIGHT;
-            break;
-    }
-    simpleLayout_->SetAlignment(alignment);
+    hAlign_ = textAlignment;
+    update();
 }
 
-void Font::setSize(const int size) {
-    if (font_)
-        font_->FaceSize(size);
+void Font::setVerticalTextAlignment(VerticalTextAlignment verticalTextAlignment) {
+    vAlign_ = verticalTextAlignment;
+    update();
 }
 
-void Font::render(const tgt::vec3& pos, const std::string& text) {
-    if (font_) {
-        glRasterPos2f(pos.x, pos.y);
-        font_->Render(text.c_str(), -1, FTPoint(pos.x, pos.y, pos.z));
-    }
+void Font::setSize(int size) {
+    fontSize_ = size;
+    update();
 }
 
-void Font::renderWithLayout(const tgt::vec3& pos, const std::string& text) {
+int Font::getSize() {
+    return fontSize_;
+}
+
+void Font::setFontName(const std::string& fontName) {
+    fontName_ = fontName;
+    update();
+}
+
+std::string Font::getFontName() {
+    return fontName_;
+}
+
+void Font::setFontType(Font::FontType fontType) {
+    fontType_ = fontType;
+    update();
+}
+
+Font::FontType Font::getFontType() {
+    return fontType_;
+}
+
+Font::TextAlignment Font::getTextAlignment() {
+    return hAlign_;
+}
+
+Font::VerticalTextAlignment Font::getVerticalTextAlignment() {
+    return vAlign_;
+}
+
+void Font::render(const vec3& pos, const std::string& text) {
     if (simpleLayout_) {
-        glRasterPos2f(pos.x, pos.y);
-        simpleLayout_->Render(text.c_str(), -1, FTPoint(pos.x, pos.y, pos.z));
+        float delta = 0;
+
+        std::string line;
+        std::stringstream ss(text);
+        std::getline(ss, line);
+        FTPoint point(static_cast<double>(pos.x),
+                      static_cast<double>(pos.y),
+                      static_cast<double>(pos.z));
+        FTBBox box = font_->BBox(line.c_str(), -1, point);
+        delta -= box.Upper().Yf() - box.Lower().Yf(); // height of first line
+        
+        Bounds bounds = getBounds(pos, text);
+        float height = bounds.getURB().y - bounds.getLLF().y;
+        switch(vAlign_) {
+            case Font::Top:
+                delta += height;
+                break;
+            case Font::Middle:
+                delta += height * 0.5f;
+                break;
+            case Font::Bottom:
+                break;
+        }
+        vec3 dpos = vec3(pos.x, pos.y + delta, pos.z);
+        glPushMatrix();
+        glRasterPos3f(dpos.x, dpos.y, dpos.z);
+        glTranslatef(dpos.x, dpos.y, dpos.z);
+        simpleLayout_->Render(text.c_str(), -1, FTPoint(dpos.x, dpos.y, dpos.z));
+        glPopMatrix();
     }
 }
 
-tgt::Bounds Font::getBounds(const tgt::vec3& pos, const std::string& text) {
+Bounds Font::getBounds(const vec3& pos, const std::string& text) {
     if (!font_)
-        return tgt::Bounds();
+        return Bounds();
 
     FTPoint point(static_cast<double>(pos.x),
                   static_cast<double>(pos.y),
                   static_cast<double>(pos.z));
 
-    FTBBox box = font_->BBox(text.c_str(), -1, point);
+    float delta = 0;
+
+    std::string line;
+    std::stringstream ss(text);
+    std::getline(ss, line);
+    FTBBox box_tmp = font_->BBox(line.c_str(), -1, point);
+    delta -= box_tmp.Upper().Yf() - box_tmp.Lower().Yf(); // height of first line
+
+    vec3 dpos = vec3(pos.x, pos.y, pos.z);
+    
+    FTBBox box = simpleLayout_->BBox(text.c_str(), -1, point);
     FTPoint upper = box.Upper();
     FTPoint lower = box.Lower();
-    tgt::vec3 upperTGT = tgt::vec3(upper.Xf(), upper.Yf(), upper.Zf());
-    tgt::vec3 lowerTGT = tgt::vec3(lower.Xf(), lower.Yf(), lower.Zf());
+    float height = upper.Yf() - lower.Yf();
+    switch(vAlign_) {
+        case Font::Top:
+            delta += height;
+            break;
+        case Font::Middle:
+            delta += height * 0.5f;
+            break;
+        case Font::Bottom:
+            break;
+    }
 
-    return tgt::Bounds(lowerTGT, upperTGT);
+    vec3 upperTGT = vec3(upper.Xf(), upper.Yf() + delta, upper.Zf());
+    vec3 lowerTGT = vec3(lower.Xf(), lower.Yf() + delta, lower.Zf());
+
+    return Bounds(lowerTGT, upperTGT);
 }
 
 #else
 
-Font::Font(const std::string& /*fontName*/, const int /*size*/, FontType /*fontType*/) {}
+Font::Font(const std::string& /*fontName*/, int /*size*/, FontType /*fontType*/, float /*lineWidth*/, TextAlignment /*textAlignment*/, VerticalTextAlignment /*verticalTextAlignment*/) {}
 
 Font::~Font() {}
 
+void Font::update() {}
+
 float Font::getLineHeight() {
-    return 0.f;
+    return 1.f;
 }
 
-void Font::setLineWidth(const float /*lineWidth*/) {}
+float Font::getLineWidth() {
+    return 1.f;
+}
 
-void Font::setSize(const int /*size*/) {}
+void Font::setLineWidth(float /*lineWidth*/) {}
+
+void Font::setSize(int /*size*/) {}
+
+int Font::getSize() {
+    return 1;
+}
+
+void Font::setFontName(const std::string& /*fontName*/) {}
+
+std::string Font::getFontName() {
+    return "";
+}
+
+void Font::setFontType(FontType /*fontType*/) {}
+
+Font::FontType Font::getFontType() {
+    return Font::TextureFont;
+}
+
+Font::TextAlignment Font::getTextAlignment() {
+    return Font::Left;
+}
+
+Font::VerticalTextAlignment Font::getVerticalTextAlignment() {
+    return Font::Middle;
+}
+
+Font::FontType Font::getFontType(const std::string& /*typeName*/) {
+    return Font::NIL;
+}
+
+std::string Font::getFontTypeName(Font::FontType /*type*/) {
+    return "<unknown>";
+}
+
+std::string Font::getTextAlignmentName(Font::TextAlignment /*textAlignment*/) {
+    return "<unknown>";
+}
+
+Font::TextAlignment Font::getTextAlignment(const std::string& /*textAlignment*/) {
+    return Font::Left;
+}
+
+Font::VerticalTextAlignment Font::getVerticalTextAlignment(const std::string& /*verticalTextAlignment*/) {
+    return Font::Top;
+}
+
+std::string Font::getVerticalTextAlignmentName(Font::VerticalTextAlignment /*verticalTextAlignment*/) {
+    return "<unknown>";
+}
 
 void Font::setTextAlignment(TextAlignment /*textAlignment*/) {}
 
-void Font::render(const tgt::vec3& /*pos*/, const std::string& /*text*/) {}
+void Font::setVerticalTextAlignment(VerticalTextAlignment /*verticalTextAlignment*/) {}
 
-void Font::renderWithLayout(const tgt::vec3& /*pos*/, const std::string& /*text*/) {}
+void Font::render(const vec3& /*pos*/, const std::string& /*text*/) {}
 
-tgt::Bounds Font::getBounds(const tgt::vec3& /*pos*/, const std::string& /*text*/) {
-    return tgt::Bounds();
+Bounds Font::getBounds(const vec3& /*pos*/, const std::string& /*text*/) {
+    return Bounds();
 }
 
 #endif

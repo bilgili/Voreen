@@ -32,6 +32,7 @@
 
 #include "voreen/core/processors/imageprocessordepth.h"
 #include "voreen/core/ports/allports.h"
+#include "voreen/core/properties/vectorproperty.h"
 
 namespace voreen {
 
@@ -55,7 +56,7 @@ protected:
     RenderPort inportMask_;
     RenderPort outport_;
 
-    ColorProperty maskColor_;
+    FloatVec4Property maskColor_;
 };
 
 } // namespace voreen

@@ -11,4 +11,5 @@ include(all.pri)
 
 # Remove modules with external dependencies 
 !contains(ORG, opencl)    : VRN_MODULES -= opencl         # depends on OpenCL
-!contains(ORG, hpmc): VRN_MODULES -= hpmc # depends on the HPMC lib
+!contains(ORG, hpmc):        VRN_MODULES -= hpmc          # depends on the HPMC lib
+!contains(ORG, dicom):       VRN_MODULES -= dicom         # depends on the DCMTK lib

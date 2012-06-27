@@ -250,8 +250,8 @@ void NodeChainView::clearScene(){
     currentXPosition_ = 0;
 }
 
-bool NodeChainView::addNewNodeChainItem(const std::string nodeChainItemIdentifier, bool isSelected,
-                                        tgt::vec3 position, tgt::vec3 focus, tgt::vec3 up){
+bool NodeChainView::addNewNodeChainItem(const std::string& nodeChainItemIdentifier, bool isSelected,
+                                        const tgt::vec3& position, const tgt::vec3& focus, const tgt::vec3& up){
     NodeChainItem* nodeChainItem = new NodeChainItem(QString(nodeChainItemIdentifier.c_str()), nodeChainItemsColor_, this);
 
     std::stringstream toolTip;

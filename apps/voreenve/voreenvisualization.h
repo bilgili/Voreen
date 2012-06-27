@@ -49,8 +49,6 @@ class InputMappingDialog;
 class VolumeContainer;
 class VolumeContainerWidget;
 
-
-
 class VoreenVisualization : public QObject, public ProcessorNetworkObserver {
     Q_OBJECT
 public:
@@ -59,21 +57,28 @@ public:
 
     void createConnections();
 
-    void exportWorkspaceAsZip(const std::string& filename, bool overwrite = true)
+    void exportWorkspaceToZipArchive(const QString& filename, bool overwrite = true)
         throw (SerializationException);
-    void importZippedWorkspace(const std::string& archiveName, const std::string& path,
-        bool deflateTemporarily = true) throw (SerializationException);
+
+    /**
+     * Extracts the specified workspace archive to the passed destination path.
+     *
+     * @throws SerializationException if the archive could not be extracted,
+     *      or if it does not contain a vws-file.
+     *
+     * @return The full path to the contained workspace file (*.vws).
+     */
+    QString extractWorkspaceArchive(const QString& archiveName, const QString& destPath,
+        bool overwrite = true) throw (SerializationException);
 
     void newWorkspace();
     void openWorkspace(const QString& filename)
         throw (SerializationException);
-    void saveWorkspace(const std::string& filename, bool overwrite = true)
+    void saveWorkspace(const QString& filename, bool overwrite = true)
         throw (SerializationException);
 
-    /// @deprecated is to be replacd by importNetwork
-    void openNetwork(const std::string& filename) throw (SerializationException);
-    /// @deprecated is to be replacd by exportNetwork
-    void saveNetwork(const std::string& filename) throw (SerializationException);
+    void importNetwork(const QString& filename) throw (SerializationException);
+    void exportNetwork(const QString& filename) throw (SerializationException);
 
 
     NetworkEvaluator* getEvaluator() const;
@@ -111,7 +116,10 @@ private:
     void propagateNetwork();
     void propagateVolumeContainer();
 
-    void cleanupTempFiles();
+    /**
+     * Deletes all tmpFiles located in tmpPath.
+     */
+    void cleanupTempFiles(std::vector<std::string> tmpFiles, std::string tmpPath);
 
     NetworkEvaluator* evaluator_;
     Workspace* workspace_;
@@ -124,11 +132,8 @@ private:
     InputMappingDialog* inputMappingDialog_;
 
     bool readOnlyWorkspace_;
-
-    std::vector<std::string> workspaceErrors_;
-    std::vector<std::string> tmpFiles_; /** files which might have been imported temporary only. */
-    std::string tmpPath_;               /** path where the temporary files have been imported to. */
     bool modified_;
+    std::vector<std::string> workspaceErrors_;
 
     static const std::string loggerCat_;
 };

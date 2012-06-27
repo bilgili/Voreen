@@ -31,9 +31,14 @@
 #define VRN_BOXOBJECT_H
 
 #include "voreen/core/utils/exception.h"
+#include "voreen/core/plotting/colormap.h"
+#include "voreen/core/plotting/plotzoomstate.h"
+#include "voreen/core/plotting/plotentitysettings.h"
+#include "voreen/core/plotting/plotpredicate.h"
 #include "tgt/camera.h"
 
 #include <vector>
+#include <stack>
 #include <string>
 #include <sstream>
 
@@ -48,7 +53,7 @@ class ShaderSource;
  * The BoxObject is a variant type. It can take different types of values
  * and convert them on demand if a conversion is implemented.
  */
-class BoxObject {
+class BoxObject : public Serializable {
 public:
 
     /**
@@ -59,9 +64,11 @@ public:
         NIL,
         BOOL,
         CAMERA,
+        COLORMAP,
         DOUBLE,
         FLOAT,
         INTEGER,
+        PLOTENTITYSETTINGSVEC,
         LONG,
         SHADER,
         STRING,
@@ -69,10 +76,15 @@ public:
         IVEC2,
         IVEC3,
         IVEC4,
+        PLOTPREDICATEVECTOR,
+        PLOTZOOM,
         TRANSFUNC,
         VEC2,
         VEC3,
         VEC4,
+        DVEC2,
+        DVEC3,
+        DVEC4,
         MAT2,
         MAT3,
         MAT4,
@@ -95,10 +107,17 @@ public:
     explicit BoxObject(const tgt::vec2& value);
     explicit BoxObject(const tgt::vec3& value);
     explicit BoxObject(const tgt::vec4& value);
+    explicit BoxObject(const tgt::dvec2& value);
+    explicit BoxObject(const tgt::dvec3& value);
+    explicit BoxObject(const tgt::dvec4& value);
     explicit BoxObject(const tgt::mat2& value);
     explicit BoxObject(const tgt::mat3& value);
     explicit BoxObject(const tgt::mat4& value);
     explicit BoxObject(const ShaderSource& value);
+    explicit BoxObject(const ColorMap& value);
+    explicit BoxObject(const std::vector<PlotEntitySettings>& value);
+    explicit BoxObject(const std::vector<std::pair<int, PlotPredicate*> >& value);
+    explicit BoxObject(const std::vector< PlotZoomState >& value);
 
     /**
      * Constructs a BoxObject from a transfer function.
@@ -124,6 +143,12 @@ public:
      */
     explicit BoxObject(const VolumeCollection* value);
 
+    /**
+     * Performs and returns a deep copy of the BoxObject. Will be the same as the copy constructor
+     * in most cases, but may be different for certain types (e.g. TransFunc)
+     */
+    BoxObject deepCopy() const;
+
     ~BoxObject();
 
     /**
@@ -139,12 +164,27 @@ public:
     static std::string getTypeName(BoxObjectType type);
 
     /**
+     * Returns the BoxObjectType for the given type string.
+     * It the typeName doesn't match any BoxObjectType, NIL is
+     * returned
+     */
+    static BoxObjectType getType(const std::string& typeName);
+
+    /**
      * Converts the current value regardless of type of the BoxObject
      * to Bool if needed and/or possible and returns it.
      *
      * @throw VoreenException if the stored value cannot be converted
      */
     bool getBool() const throw (VoreenException);
+
+    /**
+     * Converts the current value regardless of type of the BoxObject
+     * to ColorMap if needed and/or possible and returns it.
+     *
+     * @throw VoreenException if the stored value cannot be converted
+     */
+    ColorMap getColorMap() const throw (VoreenException);
 
     /**
      * Converts the current value regardless of type of the BoxObject
@@ -196,6 +236,14 @@ public:
 
     /**
      * Converts the current value regardless of type of the BoxObject
+     * to PlotEntitySettingsVec if needed and/or possible and returns it.
+     *
+     * @throw VoreenException if the stored value cannot be converted
+     */
+    std::vector<PlotEntitySettings> getPlotEntitySettingsVec() const throw (VoreenException);
+
+    /**
+     * Converts the current value regardless of type of the BoxObject
      * to IVec2 if needed and/or possible and returns it.
      *
      * @throw VoreenException, if the stored value cannot be converted
@@ -244,6 +292,30 @@ public:
 
     /**
      * Converts the current value regardless of type of the BoxObject
+     * to DVec2 if needed and/or possible and returns it.
+     *
+     * @throw VoreenException, if the stored value cannot be converted
+     */
+    tgt::dvec2 getDVec2() const throw (VoreenException);
+
+    /**
+     * Converts the current value regardless of type of the BoxObject
+     * to DVec3 if needed and/or possible and returns it.
+     *
+     * @throw VoreenException, if the stored value cannot be converted
+     */
+    tgt::dvec3 getDVec3() const throw (VoreenException);
+
+    /**
+     * Converts the current value regardless of type of the BoxObject
+     * to DVec4 if needed and/or possible and returns it.
+     *
+     * @throw VoreenException, if the stored value cannot be converted
+     */
+    tgt::dvec4 getDVec4() const throw (VoreenException);
+
+    /**
+     * Converts the current value regardless of type of the BoxObject
      * to mat2 if needed and/or possible and returns it.
      *
      * @throw VoreenException, if the stored value cannot be converted
@@ -265,6 +337,22 @@ public:
      * @throw VoreenException, if the stored value cannot be converted
      */
     tgt::mat4 getMat4() const throw (VoreenException);
+
+    /**
+    * Converts the current value regardless of type of the BoxObject
+    * to std::vector<std::pair<int, PlotPredicate*> > if needed and/or possible and returns it.
+    *
+    * @throw VoreenException, if the stored value cannot be converted
+    */
+    std::vector<std::pair<int, PlotPredicate*> > getPlotPredicateVector() const throw (VoreenException);
+
+    /**
+    * Converts the current value regardless of type of the BoxObject
+    * to std::vector< PlotZoomState > if needed and/or possible and returns it.
+    *
+    * @throw VoreenException, if the stored value cannot be converted
+    */
+    std::vector< PlotZoomState > getPlotZoom() const throw (VoreenException);
 
     /**
      * Converts the current value regardless of type of the BoxObject
@@ -318,59 +406,75 @@ public:
      */
     const VolumeCollection* getVolumeCollection() const throw (VoreenException);
 
-    void setInt(const int& value) { set<int>(value, INTEGER); }
-    void setFloat(const float& value) { set<float>(value, FLOAT); }
-    void setDouble(const double& value) { set<double>(value, DOUBLE); }
-    void setBool(const bool& value) { set<bool>(value, BOOL); }
-    void setString(const std::string& value) { set<std::string>(value, STRING); }
-    void setStringVec(const std::vector<std::string>& value) { set<std::vector<std::string> >(value, STRINGVEC); }
-    void setLong(const long& value) { set<long>(value, LONG); }
-    void setVec2(const tgt::vec2& value) { set<tgt::vec2>(value, VEC2); }
-    void setVec3(const tgt::vec3& value) { set<tgt::vec3>(value, VEC3); }
-    void setVec4(const tgt::vec4& value) { set<tgt::vec4>(value, VEC4); }
-    void setIVec2(const tgt::ivec2& value) { set<tgt::ivec2>(value, IVEC2); }
-    void setIVec3(const tgt::ivec3& value) { set<tgt::ivec3>(value, IVEC3); }
-    void setIVec4(const tgt::ivec4& value) { set<tgt::ivec4>(value, IVEC4); }
-    void setMat2(const tgt::mat2& value) { set<tgt::mat2>(value, MAT2); }
-    void setMat3(const tgt::mat3& value) { set<tgt::mat3>(value, MAT3); }
-    void setMat4(const tgt::mat4& value) { set<tgt::mat4>(value, MAT4); }
-    void setShader(const ShaderSource* value) { set(*value, SHADER); }
-
+    void setBool(const bool& value);
+    void setColorMap(const ColorMap& value);
+    void setDouble(const double& value);
+    void setFloat(const float& value);
+    void setInt(const int& value);
+    void setLong(const long& value);
+    void setString(const std::string& value);
+    void setStringVec(const std::vector<std::string>& value);
+    void setPlotEntitySettingsVec(const std::vector<PlotEntitySettings>& value);
+    void setIVec2(const tgt::ivec2& value);
+    void setIVec3(const tgt::ivec3& value);
+    void setIVec4(const tgt::ivec4& value);
+    void setVec2(const tgt::vec2& value);
+    void setVec3(const tgt::vec3& value);
+    void setVec4(const tgt::vec4& value);
+    void setDVec2(const tgt::dvec2& value);
+    void setDVec3(const tgt::dvec3& value);
+    void setDVec4(const tgt::dvec4& value);
+    void setMat2(const tgt::mat2& value);
+    void setMat3(const tgt::mat3& value);
+    void setMat4(const tgt::mat4& value);
+    void setPlotZoom(const std::vector< PlotZoomState >& value);
+    void setPlotPredicateVector(const std::vector<std::pair<int, PlotPredicate*> >& value);
+    void setShader(const ShaderSource* value);
     /// Assigns a transfer function. The passed object is not copied.
-    void setTransFunc(const TransFunc* value) { set(*value, TRANSFUNC); }
-
+    void setTransFunc(const TransFunc* value);
     /// Assigns a camera. The passed object is not copied.
-    void setCamera(const tgt::Camera* value) { set(*value, CAMERA); }
-
+    void setCamera(const tgt::Camera* value);
     /// Assigns a VolumeHandle. The passed object is not copied.
-    void setVolumeHandle(const VolumeHandle* value) { set(*value, VOLUMEHANDLE); }
+    void setVolumeHandle(const VolumeHandle* value);
 
     /// Assigns a VolumeCollection. The passed object is not copied.
-    void setVolumeCollection(const VolumeCollection* value) { set(*value, VOLUMECOLLECTION); }
+    void setVolumeCollection(const VolumeCollection* value);
 
+    void serialize(XmlSerializer& s) const;
+    void deserialize(XmlDeserializer& d);
 
     BoxObject& operator= (const BoxObject& rhs);
     BoxObject& operator= (const bool& rhs);
+    BoxObject& operator= (const ColorMap& rhs);
     BoxObject& operator= (const double& rhs);
     BoxObject& operator= (const float& rhs);
     BoxObject& operator= (const int& rhs);
     BoxObject& operator= (const long& rhs);
     BoxObject& operator= (const std::string& rhs);
     BoxObject& operator= (const std::vector<std::string>& rhs);
+    BoxObject& operator= (const std::vector<PlotEntitySettings>& rhs);
     BoxObject& operator= (const tgt::ivec2& rhs);
     BoxObject& operator= (const tgt::ivec3& rhs);
     BoxObject& operator= (const tgt::ivec4& rhs);
     BoxObject& operator= (const tgt::vec2& rhs);
     BoxObject& operator= (const tgt::vec3& rhs);
     BoxObject& operator= (const tgt::vec4& rhs);
+    BoxObject& operator= (const tgt::dvec2& rhs);
+    BoxObject& operator= (const tgt::dvec3& rhs);
+    BoxObject& operator= (const tgt::dvec4& rhs);
     BoxObject& operator= (const tgt::mat2& rhs);
     BoxObject& operator= (const tgt::mat3& rhs);
     BoxObject& operator= (const tgt::mat4& rhs);
+    BoxObject& operator= (const std::vector<std::pair<int, PlotPredicate*> >& rhs);
+    BoxObject& operator= (const std::vector< PlotZoomState >& rhs);
     BoxObject& operator= (const ShaderSource& rhs);
     BoxObject& operator= (const TransFunc* rhs);
     BoxObject& operator= (const tgt::Camera* rhs);
     BoxObject& operator= (const VolumeHandle* rhs);
     BoxObject& operator= (const VolumeCollection* rhs);
+
+    bool operator== (const BoxObject& rhs) const;
+    bool operator!= (const BoxObject& rhs) const;
 
 protected:
     /// Frees the currently stored value, if necessary.

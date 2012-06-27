@@ -31,67 +31,65 @@
 
 namespace voreen {
 
-BoolStartInterpolationFunction::BoolStartInterpolationFunction() {
-}
+BoolStartInterpolationFunction::BoolStartInterpolationFunction() {}
+
 std::string BoolStartInterpolationFunction::getMode() const {
     return "focus on startvalue";
 }
+
 std::string BoolStartInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 bool BoolStartInterpolationFunction::interpolate(bool startvalue, bool endvalue, float time) const {
-    if (time<1){
+    if (time < 1.f)
         return startvalue;
-    }
-    else{
+    else
         return endvalue;
-    }
 }
 InterpolationFunction<bool>* BoolStartInterpolationFunction::clone() const {
     return new BoolStartInterpolationFunction();
 }
 
+BoolEndInterpolationFunction::BoolEndInterpolationFunction() {}
 
-BoolEndInterpolationFunction::BoolEndInterpolationFunction() {
-}
 std::string BoolEndInterpolationFunction::getMode() const {
     return "focus on endvalue";
 }
+
 std::string BoolEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 bool BoolEndInterpolationFunction::interpolate(bool startvalue, bool endvalue, float time) const {
-    if (time>0){
+    if (time > 0)
         return endvalue;
-    }
-    else{
+    else
         return startvalue;
-    }
 }
 InterpolationFunction<bool>* BoolEndInterpolationFunction::clone() const {
     return new BoolEndInterpolationFunction();
 }
 
+BoolStartEndInterpolationFunction::BoolStartEndInterpolationFunction() {}
 
-BoolStartEndInterpolationFunction::BoolStartEndInterpolationFunction() {
-}
 std::string BoolStartEndInterpolationFunction::getMode() const {
     return "bisection";
 }
+
 std::string BoolStartEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 bool BoolStartEndInterpolationFunction::interpolate(bool startvalue, bool endvalue, float time) const {
-    if (time<0.5){
+    if (time < 0.5f)
         return startvalue;
-    }
-    else{
+    else
         return endvalue;
-    }
 }
+
 InterpolationFunction<bool>* BoolStartEndInterpolationFunction::clone() const {
     return new BoolStartEndInterpolationFunction();
 }
 
 } // namespace voreen
-

@@ -27,29 +27,13 @@
 #ifndef TGT_VIDEOENCODER_H
 #define TGT_VIDEOENCODER_H
 
+#include "tgt/exception.h"
 #include "tgt/tgt_gl.h"
 
 #include <string>
 #include <vector>
 
 namespace tgt {
-
-/**
- * @see videoencoder.cpp#containerCodecPairNames
- * @see videoencoder.cpp#containerAppendix
- * @see videoencoder.cpp#containerCodecId
- * FIXME WMVWMV crashes at av_set_parameter
- * FIXME OGGTHEORA results in 0 second video
- */
-enum ContainerCodecPair{
-    GUESS, // let ffmpeg guess by filename or default to mpeg4
-    MPEG4AVI,
-    WMVWMV,
-    FLVFLV,
-    HUFFYUVAVI,
-    OGGTHEORA,
-    LAST // dummy
-};
 
 /**
  *
@@ -64,6 +48,23 @@ enum ContainerCodecPair{
  */
 class VideoEncoder {
 public:
+   /**
+    * @see videoencoder.cpp#containerCodecPairNames
+    * @see videoencoder.cpp#containerAppendix
+    * @see videoencoder.cpp#containerCodecId
+    * FIXME: WMVWMV crashes at av_set_parameter
+    * FIXME: OGGTHEORA results in 0 second video
+    */
+    enum ContainerCodecPair {
+        GUESS, // let ffmpeg guess by filename or default to mpeg4
+        MPEG4AVI,
+        WMVWMV,
+        FLVFLV,
+        HUFFYUVAVI,
+        OGGTHEORA,
+        LAST // dummy
+    };
+
     VideoEncoder();
     ~VideoEncoder();
 
@@ -77,7 +78,7 @@ public:
      */
     void startVideoEncoding(std::string filePath, const int fps,
                             const int width, const int height,
-                            GLint pixelFormat, GLenum pixelType);// throw (NotMultipleOfTwoDimensionsException,CodecNotFoundOrNotLoadableException, NoWriteAccessException);
+                            GLint pixelFormat, GLenum pixelType) throw (Exception);
     /**
      * finish encoding
      */
@@ -87,7 +88,7 @@ public:
      * @param pixels passed frame must match <emph>width</emph>, <emph>height</emph> and <emph>pixelFormat</emph>, <emph>-Type</emph><br />
      * latest two assumed as GL_RGBA and GL_FLOAT
      */
-    void nextFrame(GLvoid* pixels);//throw (TypeConversionFailed);
+    void nextFrame(GLvoid* pixels);
 
     void setup(int preset, int bitrate);
 
@@ -102,6 +103,7 @@ public:
     }
 
     static std::vector<std::string> getSupportedFormatsByFileEnding();
+    static std::vector<std::string> getSupportedFormatDescriptions();
     static const char** getContainerCodecPairNames();
 
 protected:

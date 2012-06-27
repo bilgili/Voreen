@@ -64,33 +64,31 @@ void writeVoxel(uchar* volume, int index, int x, int y, int z) {
 }
 
 
-__kernel void gradient(__global const uchar* inputVolume, __global uchar* outputVolume)
+__kernel void gradient(__global const uchar* inputVolume, __global uchar* outputVolume, int copyIntensityChannel)
 {
     int tidX = get_global_id(0), tidY = get_global_id(1), tidZ = get_global_id(2);
     int4 dim = (int4)(get_global_size(0), get_global_size(1), get_global_size(2), 1);
 
     int index = getIndex(tidX, tidY, tidZ, dim);
+    
+    int numChannels = (copyIntensityChannel == 1) ? 4 : 3;
 
     if (border(tidX, tidY, tidZ, dim)) {
-        outputVolume[3*index] = 128;
-        outputVolume[3*index+1] = 128;
-        outputVolume[3*index+2] = 128;
-        //writeVoxel(outputVolume, index,
+        outputVolume[numChannels*index] = 128;
+        outputVolume[numChannels*index+1] = 128;
+        outputVolume[numChannels*index+2] = 128;
     }
     else {
         int dX = inputVolume[getIndex(tidX+1, tidY, tidZ, dim)] - inputVolume[getIndex(tidX-1, tidY, tidZ, dim)];
         int dY = inputVolume[getIndex(tidX, tidY+1, tidZ, dim)] - inputVolume[getIndex(tidX, tidY-1, tidZ, dim)];
         int dZ = inputVolume[getIndex(tidX, tidY, tidZ+1, dim)] - inputVolume[getIndex(tidX, tidY, tidZ-1, dim)];
-        outputVolume[3*index] = (dX / 2) + 128;
-        outputVolume[3*index+1] = (dY / 2) + 128;
-        outputVolume[3*index+2] = (dZ / 2) + 128;
+        outputVolume[numChannels*index] = (dX / 2) + 128;
+        outputVolume[numChannels*index+1] = (dY / 2) + 128;
+        outputVolume[numChannels*index+2] = (dZ / 2) + 128;
     }
 
-    //float4 color = readFloat(inputVolume, smp, (float4)(tidX, tidY, tidZ, 1));
-    /*color = toGrayScale(color, saturation);
-
-    writeFloat(output, (int2)( tidX, tidY ), color); */
-
+    if (copyIntensityChannel == 1)
+        outputVolume[numChannels*index+3] = inputVolume[getIndex(tidX, tidY, tidZ, dim)];
 
 }
 

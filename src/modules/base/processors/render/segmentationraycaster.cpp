@@ -32,6 +32,7 @@
 #include "voreen/core/datastructures/volume/modality.h"
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
 #include "voreen/core/properties/cameraproperty.h"
+#include "voreen/core/properties/propertyvector.h"
 
 #include "tgt/gpucapabilities.h"
 #include "tgt/textureunit.h"
@@ -182,22 +183,22 @@ void SegmentationRaycaster::initialize() throw (VoreenException) {
 
 void SegmentationRaycaster::deinitialize() throw (VoreenException) {
     delete segmentationTransFuncTex_;
-    //delete segmentTransFuncs_;
     segmentationTransFuncTex_ = 0;
-    segmentTransFuncs_ = 0;
-
     portGroup_.deinitialize();
 
     VolumeRaycaster::deinitialize();
+
+    delete segmentTransFuncs_;
+    segmentTransFuncs_ = 0;
 }
 
 void SegmentationRaycaster::loadShader() {
     raycastPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "rc_segmentation.frag",
-                                       generateHeader(), false, false);
+                                       generateHeader(), false);
 }
 
 void SegmentationRaycaster::compile(VolumeHandle* volumeHandle) {
-    raycastPrg_->setHeaders(generateHeader(volumeHandle), false);
+    raycastPrg_->setHeaders(generateHeader(volumeHandle));
     raycastPrg_->rebuild();
 }
 
@@ -228,7 +229,7 @@ void SegmentationRaycaster::process() {
     LGL_ERROR;
 
     portGroup_.activateTargets();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    portGroup_.clearTargets();
 
     VolumeHandle* volumeHandle = volumeInport_.getData();
 
@@ -266,7 +267,8 @@ void SegmentationRaycaster::process() {
         volumeHandle->getVolumeGL(),
         &volTexUnit,
         "volume_",
-        "volumeParameters_")
+        "volumeParameters_",
+        true)
     );
 
        // segmentation volume
@@ -281,7 +283,8 @@ void SegmentationRaycaster::process() {
             segVolume,
             &segUnit,
             "segmentation_",
-            "segmentationParameters_")
+            "segmentationParameters_",
+            true)
         );
 
         segUnit.activate();
@@ -314,7 +317,7 @@ void SegmentationRaycaster::process() {
     // set common uniforms used by all shaders
     setGlobalShaderParameters(raycastPrg_, camera_.get());
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(raycastPrg_, volumeTextures);
+    bindVolumes(raycastPrg_, volumeTextures, camera_.get(), lightPosition_.get());
 
     // pass the remaining uniforms to the shader
     raycastPrg_->setUniform("entryPoints_", entryUnit.getUnitNumber());
@@ -343,6 +346,7 @@ void SegmentationRaycaster::process() {
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
     TextureUnit::setZeroUnit();
+    portGroup_.deactivateTargets();
     LGL_ERROR;
 }
 

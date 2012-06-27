@@ -31,6 +31,11 @@
 #define VRN_IMAGEOVERLAY_H
 
 #include "voreen/core/processors/imageprocessor.h"
+
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
+#include "voreen/core/properties/filedialogproperty.h"
 #include "tgt/texturemanager.h"
 #include "tgt/gpucapabilities.h"
 
@@ -42,45 +47,46 @@ namespace voreen {
 class ImageOverlay : public ImageProcessor {
 public:
     ImageOverlay();
-    ~ImageOverlay();
     virtual Processor* create() const;
 
     virtual std::string getClassName() const  { return "ImageOverlay";     }
     virtual std::string getCategory() const   { return "Image Processing"; }
-    virtual CodeState getCodeState() const    { return CODE_STATE_STABLE;  }
+    virtual CodeState getCodeState() const    { return CODE_STATE_TESTING;  }
     virtual std::string getProcessorInfo() const;
 
+    bool isReady() const;
+
+    virtual void sizeOriginChanged(RenderPort* p);
+    virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
+    virtual bool testSizeOrigin(const RenderPort* p, void* so) const;
+
 protected:
+    virtual void beforeProcess();
     virtual void process();
     virtual void initialize() throw (VoreenException);
     virtual void deinitialize() throw (VoreenException);
 
     virtual std::string generateHeader();
-    /**
-    * Render chosen image over scene
-    */
-    void renderOverlayImage();
 
-    void setOverlayImageModeEvt();
+private:
+    void overlayDimensionsChanged();
 
-    /**
-    * load (and create) needed textures
-    */
-    void loadTexture();
-
-    tgt::Texture* tex_;
-    bool textureLoaded_;
-    FileDialogProperty filename_;
-
-    FloatProperty left_;        // between 0 and 1
-    FloatProperty top_;            // between 0 and 1
-    FloatProperty width_;        // between 0 and 1-left_
-    FloatProperty height_;        // between 0 and 1-top_
-    FloatProperty opacity_;        // between 0 and 1
-
-    RenderPort inport_;
+    RenderPort imageInport_;
+    RenderPort overlayInport_;
     RenderPort outport_;
-    RenderPort privatePort_;
+
+    BoolProperty renderOverlay_;
+    BoolProperty usePixelCoordinates_;
+    IntVec2Property overlayBottomLeft_;             ///< pixel coordinates
+    IntVec2Property overlayDimensions_;             ///< pixel coordinates
+    FloatVec2Property overlayBottomLeftRelative_;   ///< normalized coordinates
+    FloatVec2Property overlayDimensionsRelative_;   ///< normalized coordinates
+    FloatProperty overlayOpacity_;
+    BoolProperty renderBorder_;
+    FloatProperty borderWidth_;
+    FloatVec4Property borderColor_;
+
+    tgt::Shader* copyShader_;
 };
 
 } // namespace

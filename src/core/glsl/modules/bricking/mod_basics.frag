@@ -51,6 +51,8 @@ struct VOLUME_PARAMETERS {
     vec3 texCoordScaleFactor_;      // scale factor for tex coords, if VRN_TEXTURE_3D_SCALED is used
     vec3 texCoordScaleFactorRCP_;
     float bitDepthScale_;
+    vec3 cameraPositionOBJ_;        // camera position in volume object coordinates (see mod_shading.frag)
+    vec3 lightPositionOBJ_;         // light position in volume object coordinates (see mod_shading.frag)
 };
 
 /*

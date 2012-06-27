@@ -36,9 +36,9 @@ namespace voreen {
 
 class AnalyzeVolumeReader : public VolumeReader {
 public:
-    AnalyzeVolumeReader(IOProgress* progress = 0);
+    AnalyzeVolumeReader(ProgressBar* progress = 0);
 
-    virtual VolumeReader* create(IOProgress* progress = 0) const;
+    virtual VolumeReader* create(ProgressBar* progress = 0) const;
 
     static std::string getRelatedImgFileName(const std::string& fileName);
 

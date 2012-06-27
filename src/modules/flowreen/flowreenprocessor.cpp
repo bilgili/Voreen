@@ -102,6 +102,7 @@ FlowreenProcessor::FlowreenProcessor()
     currentVolumeHandle_(0),
     flowDimensions_(1)
 {
+    boundingBoxColorProp_.setViews(Property::COLOR);
     maxStreamlineLengthProp_.setStepping(10.0f);
     thresholdProp_.setStepping(tgt::vec2(1.0f));
     thresholdProp_.onChange(CallMemberAction<FlowreenProcessor>(this, &FlowreenProcessor::onThresholdChange));

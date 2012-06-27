@@ -29,6 +29,7 @@
 
 #include "voreen/modules/base/processors/image/colordepth.h"
 
+#include "tgt/texturemanager.h"
 #include "tgt/textureunit.h"
 
 using tgt::TextureUnit;
@@ -56,12 +57,15 @@ ColorDepth::ColorDepth()
 }
 
 ColorDepth::~ColorDepth() {
-    if(chromaDepthTex_)
+    if (chromaDepthTex_)
         TexMgr.dispose(chromaDepthTex_);
 }
 
 std::string ColorDepth::getProcessorInfo() const {
-    return "Performs a color adaptation based on the depth information. There are four modes available. 'Light-dark' computes a gray value depending on the depth value. The current color can be modulated or replaced with this gray value. Additionally, a chromadepth or pseudo chromadepth color coding can be applied [Ropinski et al., Smartgraphics 2006].";
+    return "Performs a color adaptation based on the depth information. There are four modes available. "
+        "'Light-dark' computes a gray value depending on the depth value. The current color can be modulated or "
+        "replaced with this gray value. Additionally, a chromadepth or pseudo chromadepth color coding can be "
+        "applied [Ropinski et al., Smartgraphics 2006].";
 }
 
 void ColorDepth::initialize() throw (VoreenException) {
@@ -105,6 +109,7 @@ void ColorDepth::process() {
 
     program_->deactivate();
     TextureUnit::setZeroUnit();
+    outport_.deactivateTarget();
     LGL_ERROR;
 }
 

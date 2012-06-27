@@ -31,7 +31,10 @@
 #define VRN_MARCHINGCUBESRENDERER_H
 
 #include "voreen/core/processors/geometryrendererbase.h"
-#include <hpmc.h>
+#include "hpmc/hpmc.h"
+
+#include "voreen/core/ports/allports.h"
+#include "voreen/core/properties/allproperties.h"
 
 namespace voreen {
 
@@ -89,20 +92,20 @@ protected:
     FloatProperty isoValue_;
     IntOptionProperty gridSizeOption_;
 
-    ColorProperty surfaceColor_;
+    FloatVec4Property surfaceColor_;
     FloatProperty surfaceAlpha_;
 
     BoolProperty useLighting_;
     BoolProperty lightPosRelativeToViewer_;
 
     /// The position of the light source used for lighting calculations in world coordinates
-    LightProperty lightPosition_;
+    FloatVec4Property lightPosition_;
     /// The light source's ambient color according to the Phong lighting model
-    ColorProperty lightAmbient_;
+    FloatVec4Property lightAmbient_;
     /// The light source's diffuse color according to the Phong lighting model
-    ColorProperty lightDiffuse_;
+    FloatVec4Property lightDiffuse_;
     /// The light source's specular color according to the Phong lighting model
-    ColorProperty lightSpecular_;
+    FloatVec4Property lightSpecular_;
     /// The material's specular exponent according to the Phong lighting model
     FloatProperty materialShininess_;
 

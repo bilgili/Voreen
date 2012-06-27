@@ -38,24 +38,27 @@ uniform vec2 screenDimRCP_;
 struct TEXTURE_PARAMETERS {
     vec2 dimensions_;        // the texture's resolution, e.g. [256.0, 128.0]
     vec2 dimensionsRCP_;
+    mat4 matrix_;            // texture coordinate transformation
 };
 
 // definitions for textures of type GL_TEXTURE_2D
 #if defined(VRN_TEXTURE_2D)
     #define SAMPLER2D_TYPE sampler2D
 
-    // texture lookup function for 2D textures
-    vec4 textureLookup2Dnormalized(in sampler2D texture, in TEXTURE_PARAMETERS texParams, in vec2 texCoords) {
-        return texture2D(texture, texCoords);
-    }
-
-    // texture lookup function for 2D textures
-    // texture coordinates have to be passed as fragment coordinates!
+    // Texture lookup function for 2D textures,
+    // expecting texture coordinates as pixel coordinates, i.e, [(0,0) , textureSize].
     vec4 textureLookup2D(in sampler2D texture, in TEXTURE_PARAMETERS texParams, in vec2 texCoords) {
         vec2 texCoordsNormalized = texCoords * texParams.dimensionsRCP_;
-        return texture2D(texture, texCoordsNormalized);
+        vec2 texCoordsTransformed = (texParams.matrix_ * vec4(texCoordsNormalized, 0.0, 1.0)).xy;
+        return texture2D(texture, texCoordsTransformed);
     }
 
+    // Texture lookup function for 2D textures,
+    // expecting normalized texture coordinates, i.e., [0,1].
+    vec4 textureLookup2Dnormalized(in sampler2D texture, in TEXTURE_PARAMETERS texParams, in vec2 texCoords) {
+        vec2 texCoordsTransformed = (texParams.matrix_ * vec4(texCoords, 0.0, 1.0)).xy;
+        return texture2D(texture, texCoordsTransformed);
+    }
 
 // definitions for textures of type GL_TEXTURE_RECTANGLE_ARB
 #elif defined(VRN_TEXTURE_RECTANGLE)
@@ -67,19 +70,26 @@ struct TEXTURE_PARAMETERS {
     // texture lookup function for 2D textures
     // texture coordinates have to be passed as fragment coordinates!
     vec4 textureLookup2Dnormalized(in sampler2DRect texture, in TEXTURE_PARAMETERS texParams, in vec2 texCoords) {
-        return texture2DRect(texture, texCoords * texParams.dimensions_);
+        vec2 texCoordsTransformed = (texParams.matrix_ * vec4(texCoords, 0.0, 1.0)).xy;
+        return texture2DRect(texture, texCoordsTransformed * texParams.dimensions_);
     }
 
     // texture lookup function for 2D textures
-    // texture coordinates have to be passed as fragment coordinates!
+    // texture coordinates have to be passed as pixel coordinates.
     vec4 textureLookup2D(in sampler2DRect texture, in TEXTURE_PARAMETERS texParams, in vec2 texCoords) {
-        return texture2DRect(texture, texCoords);
+        vec2 texCoordsTransformed = (texParams.matrix_ * vec4(texCoords, 0.0, 1.0)).xy;
+        return texture2DRect(texture, texCoordsTransformed);
     }
 
 #endif
 
+// Standard texture lookup function for RenderPort images.
+// Texture coordinates are expected in fragment coordinates, i.e, [(0,0) , viewportSize].
+//
+// @note This function may only be used, if the processor's input and output images (RenderPorts)
+//       have the same dimensions.
+//
 vec4 textureLookup2Dscreen(in SAMPLER2D_TYPE texture, in TEXTURE_PARAMETERS texParams, in vec2 texCoords) {
     vec2 texCoordsNormalized = texCoords * screenDimRCP_;
     return textureLookup2Dnormalized(texture, texParams, texCoordsNormalized);
 }
-

@@ -124,6 +124,8 @@ void RenderTarget::initialize(GLint internalColorFormat, GLint internalDepthForm
 
     fbo_->attachTexture(depthTex_, GL_DEPTH_ATTACHMENT_EXT);
     fbo_->isComplete();
+
+    fbo_->deactivate();
 }
 
 void RenderTarget::deinitialize() {
@@ -150,6 +152,10 @@ void RenderTarget::activateTarget(const std::string& debugLabel) {
 void RenderTarget::deactivateTarget() {
     if (fbo_)
         fbo_->deactivate();
+}
+
+bool RenderTarget::isActive() const {
+    return (fbo_ && fbo_->isActive());
 }
 
 void RenderTarget::resize(tgt::ivec2 newsize) {
@@ -211,6 +217,7 @@ tgt::vec4 RenderTarget::getColorAtPos(tgt::ivec2 pos) {
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     tgt::vec4 pixels;
     glReadPixels(pos.x, pos.y, 1, 1, GL_RGBA, GL_FLOAT, &pixels);
+    deactivateTarget();
     return pixels;
 }
 

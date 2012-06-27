@@ -38,7 +38,6 @@ namespace voreen {
  * This class offers an interpolation function for strings. Interpolation: focus on startvalue.
  */
 class StringStartInterpolationFunction : public InterpolationFunction<std::string> {
-
 public:
     StringStartInterpolationFunction();
     InterpolationFunction<std::string>* clone() const;
@@ -52,7 +51,6 @@ public:
  * This class offers an interpolation function for strings. Interpolation: focus on endvalue.
  */
 class StringEndInterpolationFunction : public InterpolationFunction<std::string> {
-
 public:
     StringEndInterpolationFunction();
     InterpolationFunction<std::string>* clone() const;
@@ -66,7 +64,6 @@ public:
  * This class offers an interpolation function for strings. Interpolation: bisection.
  */
 class StringStartEndInterpolationFunction : public InterpolationFunction<std::string> {
-
 public:
     StringStartEndInterpolationFunction();
     InterpolationFunction<std::string>* clone() const;

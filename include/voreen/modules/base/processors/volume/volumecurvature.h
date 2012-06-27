@@ -31,7 +31,7 @@
 #define VRN_VOLUMECURVATURE_H
 
 #include <string>
-#include "voreen/modules/base/processors/volume/volumeprocessor.h"
+#include "voreen/core/processors/volumeprocessor.h"
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/boolproperty.h"
 
@@ -42,16 +42,16 @@ class VolumeHandle;
 class VolumeCurvature : public VolumeProcessor {
 public:
     VolumeCurvature();
-    virtual ~VolumeCurvature();
+    virtual Processor* create() const;
 
-    virtual std::string getCategory() const { return "Volume Processing"; }
+    virtual std::string getCategory() const  { return "Volume Processing"; }
     virtual std::string getClassName() const { return "VolumeCurvature"; }
-    virtual CodeState getCodeState() const { return CODE_STATE_EXPERIMENTAL; }
+    virtual CodeState getCodeState() const   { return CODE_STATE_STABLE; }
     virtual std::string getProcessorInfo() const;
-    virtual Processor* create() const { return new VolumeCurvature(); }
 
 private:
     virtual void process();
+    virtual void deinitialize() throw (VoreenException);
 
     StringOptionProperty curvatureType_;
 

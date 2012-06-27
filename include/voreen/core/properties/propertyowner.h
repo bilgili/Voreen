@@ -35,6 +35,7 @@
 namespace voreen {
 
 class Property;
+class PropertyWidget;
 
 class PropertyOwner : public AbstractSerializable {
 
@@ -59,13 +60,7 @@ public:
      * Returns the property with the given id. If no such property was found,
      * a null-pointer is returned.
      */
-    Property* getPropertyByID(const std::string& id) const;
-
-    /**
-     * Returns the property with the given GuiName. If multiple properties have the same GuiName,
-     * the first one is returned. If no such property was found, a null-pointer is returned.
-     */
-    Property* getPropertyByName(const std::string& name) const;
+    Property* getProperty(const std::string& id) const;
 
     /**
      * Returns all properties matching the specified type T,
@@ -106,13 +101,51 @@ public:
     virtual bool isValid() const;
 
     /**
-     * @see Serializable::serialize
+     * Assigns a GUI name to a property group.
+     *
+     * @note Property groups are defined by assigning a group id to
+     *  the properties to be grouped.
+     *
+     * @see Property::setGroupID
      */
-    virtual void serialize(XmlSerializer& s) const;
+    void setPropertyGroupGuiName(const std::string& groupID, const std::string& name);
 
     /**
-     * @see Serializable::deserialize
+     * Returns the GUI name of the property group with the passed ID.
+     * If the specified group does not exist or has no name assigned,
+     * an empty string is returned.
      */
+    std::string getPropertyGroupGuiName(const std::string& groupID) const;
+
+    /**
+     * \brief Assigns GUI widget to a property group. This widget
+     * is considered to represent the property group and is used
+     * by setPropertyGroupVisible.
+     *
+     * @see setPropertyGroupGuiName
+     */
+    void setPropertyGroupWidget(const std::string& groupID, PropertyWidget* groupWidget);
+
+    /**
+     * Modifies the visibility of the specified property group's widget.
+     * If no group with the passed groupID exists or the group does not have
+     * a widget assigned, the call is ignored.
+     *
+     * @see setPropertyGroupWidget, setPropertyGroupGuiName
+     */
+    void setPropertyGroupVisible(const std::string& groupID, bool visible);
+
+    /**
+     * Returns the visibility of the property group with the passed ID.
+     * If the specified group does not exist or its visibility
+     * has not been specified, false is returned.
+     */
+    bool isPropertyGroupVisible(const std::string& groupID) const;
+
+    /// @see Serializable::serialize
+    virtual void serialize(XmlSerializer& s) const;
+
+    /// @see Serializable::deserialize
     virtual void deserialize(XmlDeserializer& s);
 
 protected:
@@ -150,6 +183,14 @@ private:
     /// Stores the owner's properties.
     std::vector<Property*> properties_;
 
+    /// Maps from property group ids to group widgets
+    std::map<std::string, PropertyWidget*> propertyGroupWidgets_;
+
+    /// Maps from property group ids to group GUI names
+    std::map<std::string, std::string> propertyGroupNames_;
+
+    /// Maps from property group ids to group visibilities
+    std::map<std::string, bool> propertyGroupVisibilities_;
 };
 
 //---------------------------------------------------------------------------

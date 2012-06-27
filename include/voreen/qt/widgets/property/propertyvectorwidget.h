@@ -33,7 +33,7 @@
 #include "voreen/qt/widgets/property/qpropertywidget.h"
 #include "voreen/core/properties/propertyvector.h"
 
-class QVBoxLayout;
+class QGridLayout;
 
 namespace voreen {
 
@@ -43,6 +43,30 @@ class QPropertyWidgetFactory;
 class PropertyVectorWidget : public QPropertyWidget {
 Q_OBJECT
 public:
+
+    enum Properties {
+        BOOL,
+        BUTTON,
+        FLOATMAT2,
+        FLOATMAT3,
+        FLOATMAT4,
+        FLOATVEC2,
+        FLOATVEC3,
+        FLOATVEC4,
+        INTVEC2,
+        INTVEC3,
+        INTVEC4,
+        /*CAMERA,*/
+        COLOR,
+        /*FILEDIALOG,*/
+        FLOAT,
+        INT,
+        LIGHT,
+        OPTION,
+        /*SHADER,*/
+        STRING
+    };
+
     PropertyVectorWidget(PropertyVector* prop, QWidget* parent = 0);
 
     void updateFromProperty();
@@ -58,12 +82,23 @@ protected:
      * adds it to the property layout
      */
     void createAndAddPropertyWidget(Property* prop, QPropertyWidgetFactory* factory);
+    void createAndAddPropertyWidgetByAction(QAction*);
+
+    void initializePropertyMenu();
 
     /// The PropertyVector assigned to this widget
     PropertyVector* property_;
 
     /// Contains the property widgets.
-    QVBoxLayout* propertiesLayout_;
+    QGridLayout* propertiesLayout_;
+
+    virtual void contextMenuEvent (QContextMenuEvent*);
+
+    void propertyAdded();
+
+    std::map<QAction*, int> propertyMap_;
+
+    QMenu* propertyMenu_;
 
 };
 

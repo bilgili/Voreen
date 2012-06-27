@@ -33,37 +33,37 @@ namespace tgt {
 
 class FramebufferObject {
 public:
-  FramebufferObject();
-  virtual ~FramebufferObject();
+    FramebufferObject();
+    virtual ~FramebufferObject();
 
-  GLuint generateId() {
-	  id_ = 0; 
-	  glGenFramebuffersEXT(1, &id_);
-	  return id_;
-  }
+    void activate();
+    static void deactivate();
 
-  void activate();
-  static void deactivate();
+    bool isComplete() const;
 
-  bool isComplete();
+    bool isActive() const;
 
-  /// Bind a texture to the "attachment" point of this FBO
-  void attachTexture(Texture* texture,
-                     GLenum attachment = GL_COLOR_ATTACHMENT0_EXT,
-                     int mipLevel      = 0,
-                     int zSlice        = 0);
+    /// Bind a texture to the "attachment" point of this FBO
+    void attachTexture(Texture* texture,
+                       GLenum attachment = GL_COLOR_ATTACHMENT0_EXT,
+                       int mipLevel      = 0,
+                       int zSlice        = 0);
 
-  void detachTexture(GLenum attachment);
+    void detachTexture(GLenum attachment);
 
-  void detachAll();
+    void detachAll();
 
-  Texture* getTextureAtAttachment(GLenum attachment);
+    Texture* getTextureAtAttachment(GLenum attachment);
+
+    static GLuint getActiveObject();
     
 protected:
-  GLuint id_;
-  std::map<GLenum, Texture*> attachedTextures_;
+    GLuint generateId();
 
-  static const std::string loggerCat_; ///< category used in logging
+    GLuint id_;
+    std::map<GLenum, Texture*> attachedTextures_;
+
+    static const std::string loggerCat_; ///< category used in logging
 };
 
 } // namespace tgt

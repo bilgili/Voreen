@@ -74,7 +74,7 @@ std::string VolumeDistanceTransform::getProcessorInfo() const {
 
 void VolumeDistanceTransform::process() {
     if (!enableProcessingProp_.get()) {
-        outport_.setData(inport_.getData());
+        outport_.setData(inport_.getData(), volumeOwner_);
         volumeOwner_ = false;
     }
     else if (forceUpdate_ || inport_.hasChanged()) {
@@ -100,20 +100,14 @@ void VolumeDistanceTransform::distanceTransform() {
     }
 
     if (inport_.getData()->getVolume()) {
-        VolumeUInt16* v = dynamic_cast<VolumeUInt16*>(inport_.getData()->getVolume());
-        uint16_t val = 65535;
-        uint16_t dist = 0;
-
-        if (!v) {
+        if (!dynamic_cast<VolumeUInt16*>(inport_.getData()->getVolume())) {
             LWARNING("Currently only 16 bit volumes supported.");
             return;
         }
 
-        /*
-        VolumeUInt8* v = dynamic_cast<VolumeUInt8*>(inport_.getData()->getVolume());
-        uint8_t val = 255;
-        uint8_t dist = 0;
-        */
+        VolumeUInt16* v = dynamic_cast<VolumeUInt16*>(inport_.getData()->getVolume()->clone());
+        uint16_t val = 65535;
+        uint16_t dist = 0;
 
         for (int z=1; z<v->getDimensions().z-1 ; z++){
             for (int x=1; x<v->getDimensions().x-1 ; x++)

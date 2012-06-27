@@ -44,7 +44,7 @@ class NrrdVolumeWriter : public VolumeWriter {
 public:
     NrrdVolumeWriter();
 
-    virtual VolumeWriter* create(IOProgress* progress = 0) const;
+    virtual VolumeWriter* create(ProgressBar* progress = 0) const;
 
     /**
      * Writes the data of a volume into a nrrd- and a raw-file.

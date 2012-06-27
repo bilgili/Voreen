@@ -33,7 +33,6 @@
 #include "voreen/core/ports/allports.h"
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/cameraproperty.h"
-#include "voreen/core/properties/colorproperty.h"
 #include "voreen/core/properties/floatproperty.h"
 #include "voreen/core/properties/vectorproperty.h"
 #include "voreen/core/datastructures/volume/volumehandle.h"
@@ -127,7 +126,7 @@ protected:
     FloatProperty maxStreamlineLengthProp_;
     FloatVec2Property thresholdProp_;
     BoolProperty useBoundingBoxProp_;
-    ColorProperty boundingBoxColorProp_;
+    FloatVec4Property boundingBoxColorProp_;
     BoolProperty useCoordinateAxisProp_;
 
     VolumeHandle* currentVolumeHandle_;

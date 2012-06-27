@@ -41,7 +41,7 @@ class ConsoleLogQt;
 class ConsolePlugin : public QWidget {
     Q_OBJECT
 public:
-    ConsolePlugin(QWidget* parent = 0);
+    ConsolePlugin(QWidget* parent = 0, bool autoScroll = true);
     ~ConsolePlugin();
 
     void log(const std::string& msg);
@@ -49,6 +49,7 @@ public:
 protected:
     ConsoleLogQt* log_;
     QTextEdit* consoleText_;
+    bool autoScroll_;
 };
 
 } // namespace voreen

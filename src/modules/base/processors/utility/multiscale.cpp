@@ -123,8 +123,10 @@ void MultiScale::process() {
     program_->setIgnoreUniformLocationError(true);
     program_->setUniform("shadeTexParameters_.dimensions_", tgt::vec2(inport_.getSize()));
     program_->setUniform("shadeTexParameters_.dimensionsRCP_", tgt::vec2(1.0f) / tgt::vec2(inport_.getSize()));
+    program_->setUniform("shadeTexParameters_.matrix_", tgt::mat4::identity);
     program_->setUniform("depthTexParameters_.dimensions_", tgt::vec2(inport_.getSize()));
     program_->setUniform("depthTexParameters_.dimensionsRCP_", tgt::vec2(1.0f) / tgt::vec2(inport_.getSize()));
+    program_->setUniform("depthTexParameters_.matrix_", tgt::mat4::identity);
     program_->setIgnoreUniformLocationError(false);
 
     glMatrixMode(GL_MODELVIEW);

@@ -29,216 +29,290 @@
 
 #include "voreen/core/animation/interpolation/basicfloatinterpolation.h"
 #include <math.h>
+#include "tgt/math.h"
 
 namespace voreen {
 
-float BasicFloatInterpolation::linearInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    return (1-time)*startvalue+time*endvalue;
+float BasicFloatInterpolation::linearInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    return (1-time) * startvalue + time * endvalue;
 }
 
-float BasicFloatInterpolation::inQuadInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    float multiplikator = static_cast<float>(pow(time,2));
-    return startvalue+multiplikator*(endvalue-startvalue);
+float BasicFloatInterpolation::inQuadInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    float multiplicator = pow(time, 2);
+    return startvalue + multiplicator * (endvalue-startvalue);
 }
-float BasicFloatInterpolation::inCubicInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    float multiplikator = static_cast<float>(pow(time,3));
-    return startvalue+multiplikator*(endvalue-startvalue);
+float BasicFloatInterpolation::inCubicInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    float multiplicator = pow(time, 3);
+    return startvalue + multiplicator * (endvalue-startvalue);
 }
-float BasicFloatInterpolation::inQuartInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    float multiplikator = static_cast<float>(pow(time,4));
-    return startvalue+multiplikator*(endvalue-startvalue);
+float BasicFloatInterpolation::inQuartInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    float multiplicator = pow(time, 4);
+    return startvalue + multiplicator * (endvalue-startvalue);
 }
-float BasicFloatInterpolation::inQuintInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    float multiplikator = static_cast<float>(pow(time,5));
-    return startvalue+multiplikator*(endvalue-startvalue);
+float BasicFloatInterpolation::inQuintInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    float multiplicator = pow(time, 5);
+    return startvalue + multiplicator * (endvalue-startvalue);
 }
-float BasicFloatInterpolation::inSineInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    float multiplikator = 1-(static_cast<float>(sin((1-time)/2*3.14159265)));
-    return startvalue+multiplikator*(endvalue-startvalue);
+float BasicFloatInterpolation::inSineInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    float multiplicator = 1.f - (sin((1-time) / (2 * tgt::PIf)));
+    return startvalue + multiplicator * (endvalue-startvalue);
 }
-float BasicFloatInterpolation::inExponentInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    float multiplikator = static_cast<float>(( pow(2,10*(time-1)) -0.0001));
-    return startvalue+multiplikator*(endvalue-startvalue);
+float BasicFloatInterpolation::inExponentInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    float multiplicator = pow(2,10*(time-1)) - 0.0001f;
+    return startvalue + multiplicator * (endvalue-startvalue);
 }
-float BasicFloatInterpolation::inCircInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    float multiplikator = static_cast<float>((1-(sqrt(1-pow(time,2)))));
-    return startvalue+multiplikator*(endvalue-startvalue);
-}
-
-
-float BasicFloatInterpolation::outQuadInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    float multiplikator = 1-(static_cast<float>(pow((1-time),2)));
-    return startvalue+multiplikator*(endvalue-startvalue);
-}
-float BasicFloatInterpolation::outCubicInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    float multiplikator = 1-(static_cast<float>(pow((1-time),3)));
-    return startvalue+multiplikator*(endvalue-startvalue);
-}
-float BasicFloatInterpolation::outQuartInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    float multiplikator = 1-(static_cast<float>(pow((1-time),4)));
-    return startvalue+multiplikator*(endvalue-startvalue);
-}
-float BasicFloatInterpolation::outQuintInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    float multiplikator = 1-(static_cast<float>(pow((1-time),5)));
-    return startvalue+multiplikator*(endvalue-startvalue);
-}
-float BasicFloatInterpolation::outSineInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    float multiplikator = static_cast<float>(sin(time/2*3.14159265));
-    return startvalue+multiplikator*(endvalue-startvalue);
-}
-float BasicFloatInterpolation::outExponentInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    float multiplikator = static_cast<float>((1.001* (1-pow(2,0-10*time))));
-    return startvalue+multiplikator*(endvalue-startvalue);
-}
-float BasicFloatInterpolation::outCircInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    float multiplikator = static_cast<float>((sqrt(1-pow((1-time),2))));
-    return startvalue+multiplikator*(endvalue-startvalue);
+float BasicFloatInterpolation::inCircInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    float multiplicator = 1.f - (sqrt(1.f - pow(time, 2)));
+    return startvalue + multiplicator * (endvalue-startvalue);
 }
 
-
-float BasicFloatInterpolation::inOutQuadInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    if (time<0.5)
-        return inQuadInterpolation(startvalue, (startvalue+endvalue)/2, time*2);
-    else
-        return outQuadInterpolation((startvalue+endvalue)/2, endvalue , time*2-1);
-}
-float BasicFloatInterpolation::inOutCubicInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    if (time<0.5)
-        return inCubicInterpolation(startvalue, (startvalue+endvalue)/2, time*2);
-    else
-        return outCubicInterpolation((startvalue+endvalue)/2, endvalue , time*2-1);
-}
-float BasicFloatInterpolation::inOutQuartInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    if (time<0.5)
-        return inQuartInterpolation(startvalue, (startvalue+endvalue)/2, time*2);
-    else
-        return outQuartInterpolation((startvalue+endvalue)/2, endvalue , time*2-1);
-}
-float BasicFloatInterpolation::inOutQuintInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    if (time<0.5)
-        return inQuintInterpolation(startvalue, (startvalue+endvalue)/2, time*2);
-    else
-        return outQuintInterpolation((startvalue+endvalue)/2, endvalue , time*2-1);
-}
-float BasicFloatInterpolation::inOutSineInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    if (time<0.5)
-        return inSineInterpolation(startvalue, (startvalue+endvalue)/2, time*2);
-    else
-        return outSineInterpolation((startvalue+endvalue)/2, endvalue , time*2-1);
-}
-float BasicFloatInterpolation::inOutExponentInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    if (time<0.5)
-        return inExponentInterpolation(startvalue, (startvalue+endvalue)/2, time*2);
-    else
-        return outExponentInterpolation((startvalue+endvalue)/2, endvalue , time*2-1);
-}
-float BasicFloatInterpolation::inOutCircInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    if (time<0.5)
-        return inCircInterpolation(startvalue, (startvalue+endvalue)/2, time*2);
-    else
-        return outCircInterpolation((startvalue+endvalue)/2, endvalue , time*2-1);
+float BasicFloatInterpolation::outQuadInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    float multiplicator = 1.f - pow((1-time), 2);
+    return startvalue + multiplicator * (endvalue-startvalue);
 }
 
+float BasicFloatInterpolation::outCubicInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    float multiplicator = 1.f - pow((1-time), 3);
+    return startvalue + multiplicator * (endvalue-startvalue);
+}
 
-float BasicFloatInterpolation::outInQuadInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    if (time<0.5)
-        return outQuadInterpolation(startvalue, (startvalue+endvalue)/2, time*2);
-    else
-        return inQuadInterpolation((startvalue+endvalue)/2, endvalue , time*2-1);
+float BasicFloatInterpolation::outQuartInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    float multiplicator = 1.f - pow((1-time), 4);
+    return startvalue + multiplicator * (endvalue-startvalue);
 }
-float BasicFloatInterpolation::outInCubicInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    if (time<0.5)
-        return outCubicInterpolation(startvalue, (startvalue+endvalue)/2, time*2);
-    else
-        return inCubicInterpolation((startvalue+endvalue)/2, endvalue , time*2-1);
+
+float BasicFloatInterpolation::outQuintInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    float multiplicator = 1.f - pow((1-time), 5);
+    return startvalue + multiplicator * (endvalue-startvalue);
 }
-float BasicFloatInterpolation::outInQuartInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    if (time<0.5)
-        return outQuartInterpolation(startvalue, (startvalue+endvalue)/2, time*2);
-    else
-        return inQuartInterpolation((startvalue+endvalue)/2, endvalue , time*2-1);
+
+float BasicFloatInterpolation::outSineInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    float multiplicator = sin(time / (2.f * tgt::PIf));
+    return startvalue + multiplicator * (endvalue-startvalue);
 }
-float BasicFloatInterpolation::outInQuintInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    if (time<0.5)
-        return outQuintInterpolation(startvalue, (startvalue+endvalue)/2, time*2);
-    else
-        return inQuintInterpolation((startvalue+endvalue)/2, endvalue , time*2-1);
+
+float BasicFloatInterpolation::outExponentInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    float multiplicator = 1.001f * (1.f - pow(2, -10*time));
+    return startvalue + multiplicator * (endvalue-startvalue);
 }
-float BasicFloatInterpolation::outInSineInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    if (time<0.5)
-        return outSineInterpolation(startvalue, (startvalue+endvalue)/2, time*2);
-    else
-        return inSineInterpolation((startvalue+endvalue)/2, endvalue , time*2-1);
+
+float BasicFloatInterpolation::outCircInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    float multiplicator = sqrt(1.f - pow((1-time), 2));
+    return startvalue + multiplicator * (endvalue-startvalue);
 }
-float BasicFloatInterpolation::outInExponentInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    if (time<0.5)
-        return outExponentInterpolation(startvalue, (startvalue+endvalue)/2, time*2);
+
+float BasicFloatInterpolation::inOutQuadInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    if (time < 0.5f)
+        return inQuadInterpolation(startvalue, (startvalue + endvalue) / 2.f, time*2);
     else
-        return inExponentInterpolation((startvalue+endvalue)/2, endvalue , time*2-1);
+        return outQuadInterpolation((startvalue + endvalue) / 2.f, endvalue, time * 2.f - 1.f);
 }
-float BasicFloatInterpolation::outInCircInterpolation(float startvalue, float endvalue, float time){
-    if (time<0) return startvalue;
-    if (time>1) return endvalue;
-    if (time<0.5)
-        return outCircInterpolation(startvalue, (startvalue+endvalue)/2, time*2);
+
+float BasicFloatInterpolation::inOutCubicInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    if (time < 0.5f)
+        return inCubicInterpolation(startvalue, (startvalue + endvalue) / 2.f, time * 2.f);
     else
-        return inCircInterpolation((startvalue+endvalue)/2, endvalue , time*2-1);
+        return outCubicInterpolation((startvalue + endvalue) / 2.f, endvalue, time * 2.f - 1.f);
+}
+
+float BasicFloatInterpolation::inOutQuartInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    if (time < 0.5f)
+        return inQuartInterpolation(startvalue, (startvalue + endvalue) / 2.f, time * 2.f);
+    else
+        return outQuartInterpolation((startvalue + endvalue) / 2.f, endvalue , time * 2.f - 1.f);
+}
+
+float BasicFloatInterpolation::inOutQuintInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    if (time < 0.5f)
+        return inQuintInterpolation(startvalue, (startvalue + endvalue) / 2.f, time * 2.f);
+    else
+        return outQuintInterpolation((startvalue + endvalue) / 2.f, endvalue, time * 2.f - 1.f);
+}
+
+float BasicFloatInterpolation::inOutSineInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    if (time < 0.5f)
+        return inSineInterpolation(startvalue, (startvalue + endvalue) / 2.f, time * 2.f);
+    else
+        return outSineInterpolation((startvalue + endvalue) / 2.f, endvalue, time * 2.f - 1.f);
+}
+
+float BasicFloatInterpolation::inOutExponentInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    if (time < 0.5f)
+        return inExponentInterpolation(startvalue, (startvalue + endvalue) / 2.f, time * 2.f);
+    else
+        return outExponentInterpolation((startvalue + endvalue) / 2.f, endvalue, time * 2.f - 1.f);
+}
+
+float BasicFloatInterpolation::inOutCircInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    if (time < 0.5f)
+        return inCircInterpolation(startvalue, (startvalue + endvalue) / 2.f, time * 2.f);
+    else
+        return outCircInterpolation((startvalue + endvalue) / 2.f, endvalue, time * 2.f - 1.f);
+}
+
+float BasicFloatInterpolation::outInQuadInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    if (time < 0.5f)
+        return outQuadInterpolation(startvalue, (startvalue + endvalue) / 2.f, time * 2.f);
+    else
+        return inQuadInterpolation((startvalue + endvalue) / 2.f, endvalue, time * 2.f - 1.f);
+}
+
+float BasicFloatInterpolation::outInCubicInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    if (time < 0.5f)
+        return outCubicInterpolation(startvalue, (startvalue + endvalue) / 2.f, time * 2.f);
+    else
+        return inCubicInterpolation((startvalue + endvalue) / 2.f, endvalue, time * 2.f - 1.f);
+}
+
+float BasicFloatInterpolation::outInQuartInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    if (time < 0.5f)
+        return outQuartInterpolation(startvalue, (startvalue + endvalue) / 2.f, time * 2.f);
+    else
+        return inQuartInterpolation((startvalue + endvalue) / 2.f, endvalue, time * 2.f - 1.f);
+}
+
+float BasicFloatInterpolation::outInQuintInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    if (time < 0.5f)
+        return outQuintInterpolation(startvalue, (startvalue + endvalue) / 2.f, time * 2.f);
+    else
+        return inQuintInterpolation((startvalue + endvalue) / 2.f, endvalue, time * 2.f - 1.f);
+}
+
+float BasicFloatInterpolation::outInSineInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    if (time < 0.5f)
+        return outSineInterpolation(startvalue, (startvalue + endvalue) / 2.f, time * 2.f);
+    else
+        return inSineInterpolation((startvalue + endvalue) / 2.f, endvalue, time * 2 - 1.f);
+}
+
+float BasicFloatInterpolation::outInExponentInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    if (time < 0.5f)
+        return outExponentInterpolation(startvalue, (startvalue + endvalue) / 2.f, time * 2.f);
+    else
+        return inExponentInterpolation((startvalue + endvalue) / 2.f, endvalue, time * 2.f - 1.f);
+}
+
+float BasicFloatInterpolation::outInCircInterpolation(float startvalue, float endvalue, float time) {
+    if (time < 0.f)
+        return startvalue;
+    if (time > 1.f)
+        return endvalue;
+    if (time < 0.5f)
+        return outCircInterpolation(startvalue, (startvalue + endvalue) / 2.f, time * 2.f);
+    else
+        return inCircInterpolation((startvalue + endvalue) / 2.f, endvalue, time * 2.f - 1.f);
 }
 
 } // namespace voreen

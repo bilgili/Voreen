@@ -56,7 +56,6 @@ private:
 
 class KeyValueFactory : public SerializableFactory {
 public:
-
     virtual const std::string getTypeString(const std::type_info& type) const;
 
     virtual Serializable* createType(const std::string& typeString);
@@ -69,7 +68,6 @@ private:
 
 class TemplatePropertyTimelineStateFactory : public SerializableFactory {
 public:
-
     virtual const std::string getTypeString(const std::type_info& type) const;
 
     virtual Serializable* createType(const std::string& typeString);

@@ -30,8 +30,8 @@
 #ifndef VRN_VOREENBLAS_H
 #define VRN_VOREENBLAS_H
 
-#include "voreen/modules/base/processors/volume/volumeprocessor.h"
-#include "voreen/core/utils/clwrapper.h"
+#include "voreen/core/processors/volumeprocessor.h"
+#include "voreen/modules/opencl/clwrapper.h"
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/boolproperty.h"
 

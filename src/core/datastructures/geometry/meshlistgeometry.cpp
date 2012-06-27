@@ -62,6 +62,11 @@ void MeshListGeometry::addMesh(const MeshGeometry& mesh) {
     meshes_.push_back(mesh);
 }
 
+const MeshGeometry& MeshListGeometry::getMesh(size_t index) const {
+    tgtAssert(index < meshes_.size(), "Invalid index");
+    return meshes_.at(index);
+}
+
 MeshGeometry& MeshListGeometry::getMesh(size_t index) {
     tgtAssert(index < meshes_.size(), "Invalid index");
     return meshes_.at(index);

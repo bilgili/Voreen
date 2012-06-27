@@ -93,6 +93,8 @@ public:
      */
     static std::string getVolumeMemorySize(Volume*);
 
+    static long getVolumeMemorySizeByte(Volume*);
+
 };
 
 } // namespace

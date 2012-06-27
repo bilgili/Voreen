@@ -32,6 +32,7 @@
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "voreen/core/datastructures/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumeoperator.h"
 #include "tgt/vector.h"
 
 #ifdef VRN_WITH_DEVIL
@@ -280,17 +281,18 @@ bool CommandConvert::execute(const std::vector<std::string>& parameters) {
     VolumeCollection* volumeCollection = serializer->load(parameters[1]);
     Volume* sourceDataset_ = volumeCollection->first()->getVolume();
 
+    VolumeOperatorConvert voConvert(sourceDataset_);
     if (parameters[0] == "8") {
-        targetDataset_ = new VolumeUInt8(sourceDataset_->getDimensions());
-        targetDataset_->convert(sourceDataset_);
+        targetDataset_ = new VolumeUInt8(sourceDataset_->getDimensions(), sourceDataset_->getSpacing(), sourceDataset_->getTransformation());
+        voConvert.apply<void>(targetDataset_);
     }
     else if (parameters[0] == "12") {
-        targetDataset_ = new VolumeUInt16(sourceDataset_->getDimensions(), sourceDataset_->getSpacing(), 12);
-        targetDataset_->convert(sourceDataset_);
+        targetDataset_ = new VolumeUInt16(sourceDataset_->getDimensions(), sourceDataset_->getSpacing(), sourceDataset_->getTransformation(), 12);
+        voConvert.apply<void>(targetDataset_);
     }
     else if (parameters[0] == "16") {
-        targetDataset_ = new VolumeUInt16(sourceDataset_->getDimensions());
-        targetDataset_->convert(sourceDataset_);
+        targetDataset_ = new VolumeUInt16(sourceDataset_->getDimensions(), sourceDataset_->getSpacing(), sourceDataset_->getTransformation());
+        voConvert.apply<void>(targetDataset_);
     }
     else {
         delete sourceDataset_;

@@ -33,7 +33,7 @@
                             </MetaData>
                             <position x="3.72470593" y="1.88928366" z="1.28508532" />
                             <focus x="0.12543711" y="-0.05973897" z="-0.22227603" />
-                            <upVector x="-0.3006036" y="-0.17060031" z="0.93836719" />
+                            <upVector x="-0.30060363" y="-0.17060032" z="0.93836731" />
                         </Property>
                         <Property name="classification" value="transfer-function" />
                         <Property name="compositing" value="dvr" />
@@ -60,12 +60,9 @@
                         <Property name="lightSpecular">
                             <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
                         </Property>
-                        <Property name="masking" lod="1" value="none" />
                         <Property name="materialShininess" value="60" />
                         <Property name="samplingRate" value="3.5" />
-                        <Property name="setSegment" value="0" />
                         <Property name="shading" value="phong" />
-                        <Property name="switchSegmentation" value="false" />
                         <Property name="transferFunction">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
@@ -166,7 +163,7 @@
                             </MetaData>
                             <position x="3.72470593" y="1.88928366" z="1.28508532" />
                             <focus x="0.12543711" y="-0.05973897" z="-0.22227603" />
-                            <upVector x="-0.30060363" y="-0.17060032" z="0.93836731" />
+                            <upVector x="-0.3006036" y="-0.17060031" z="0.93836719" />
                         </Property>
                     </Properties>
                     <InteractionHandlers>
@@ -198,7 +195,7 @@
                             </MetaData>
                             <position x="3.72470593" y="1.88928366" z="1.28508532" />
                             <focus x="0.12543711" y="-0.05973897" z="-0.22227603" />
-                            <upVector x="-0.30060363" y="-0.17060032" z="0.93836731" />
+                            <upVector x="-0.3006036" y="-0.17060031" z="0.93836719" />
                         </Property>
                         <Property name="filterJitterTexture" value="true" />
                         <Property name="jitterEntryPoints" value="false" />
@@ -278,7 +275,6 @@
                         <Property name="rightClippingPlane" value="0" />
                         <Property name="topClippingPlane" value="40" />
                         <Property name="useClipping" value="true" />
-                        <Property name="useDatasetTrafoMatrix" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -287,7 +283,6 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-763" y="94" />
                     </MetaData>
                     <Properties>
-                        <Property name="applyDatasetTrafoMatrix" value="true" />
                         <Property name="boundingBoxStippleFactor" value="1" />
                         <Property name="boundingBoxStipplePattern" value="65535" />
                         <Property name="boundingBoxWidth" value="1" />

@@ -29,6 +29,7 @@
 
 #include "voreen/qt/widgets/rendertargetviewer.h"
 
+#include "voreen/core/voreenapplication.h"
 #include "voreen/core/network/processornetwork.h"
 #include "voreen/core/network/networkevaluator.h"
 #include "voreen/core/ports/renderport.h"
@@ -49,6 +50,7 @@
 #include <QMessageBox>
 #include <QMainWindow>
 #include <QLayout>
+#include <QDesktopServices>
 
 #include <iostream>
 #include <sstream>
@@ -200,7 +202,7 @@ RenderTargetViewer::RenderTargetViewer(const QGLWidget* sharedContext)
     setWindowTitle(tr("Render Target Viewer:"));
 
 #ifdef VRN_WITH_FONTRENDERING
-    font_ = new tgt::Font(VoreenApplication::app()->getFontPath("VeraMono.ttf"), fontSize, tgt::TextureFont);
+    font_ = new tgt::Font(VoreenApplication::app()->getFontPath("VeraMono.ttf"), fontSize, tgt::Font::TextureFont);
 #else
     font_ = QFont("Monospace", fontSize);
     font_.setBold(true);
@@ -217,7 +219,7 @@ RenderTargetViewer::~RenderTargetViewer() {
 void RenderTargetViewer::processorsSelected(const QList<Processor*>& processors) {
     selectedProcessors_ = processors;
     fullscreen_ = false;
-    update();
+    //update();
 }
 
 void RenderTargetViewer::setSubWidget(int subWidgetFullscreenIndex, int showType) {
@@ -308,7 +310,7 @@ void RenderTargetViewer::mousePressEvent(QMouseEvent* e) {
 
     if (e->button() == Qt::RightButton) {
         if (selected_ >= 0 && selected_ < (int)renderPorts.size()) {
-            RenderTarget* rt = renderPorts[selected_]->getData();
+            RenderTarget* rt = renderPorts[selected_]->getRenderTarget();
             colorRGBAACT_->setEnabled(false);
             alphaOnlyACT_->setEnabled(false);
             depthOnlyACT_->setEnabled(false);
@@ -554,8 +556,8 @@ void RenderTargetViewer::initializeGL() {
     else
         header += "#define VRN_TEXTURE_2D\n";
 
-    colorProgram_ = ShdrMgr.loadSeparate("", "rendertargetviewer/color.frag", header, false, false);
-    inversecolorProgram_ = ShdrMgr.loadSeparate("", "rendertargetviewer/inversecolor.frag", header, false, false);
+    colorProgram_ = ShdrMgr.loadSeparate("", "rendertargetviewer/color.frag", header, false);
+    inversecolorProgram_ = ShdrMgr.loadSeparate("", "rendertargetviewer/inversecolor.frag", header, false);
     if (!colorProgram_ || !inversecolorProgram_) {
         LERROR("Could not compile shaders");
     }
@@ -597,6 +599,13 @@ void RenderTargetViewer::paintGL() {
     if (!isValid())
         return;
 
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_BLEND);
+    glEnable(GL_TEXTURE_2D);
+
     glClearColor(0.7, 0.7, 0.7, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -604,15 +613,17 @@ void RenderTargetViewer::paintGL() {
 
     LGL_ERROR;
 
-    if (!evaluator_)
+    if (!evaluator_) {
+        glPopAttrib();
         return;
+    }
 
     std::vector<RenderPort*> renderPorts = collectRenderPorts();
 
     // update window title
     int memsize = 0;
     for (size_t i = 0; i < renderPorts.size(); ++i) {
-        RenderTarget* rt = renderPorts[i]->getData();
+        RenderTarget* rt = renderPorts[i]->getRenderTarget();
         if (rt->getColorTexture())
             memsize += rt->getColorTexture()->getSizeOnGPU();
         if (rt->getDepthTexture())
@@ -639,6 +650,7 @@ void RenderTargetViewer::paintGL() {
         glPopMatrix();
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
+        glPopAttrib();
         return;
     }
 
@@ -676,14 +688,18 @@ void RenderTargetViewer::paintGL() {
     glPopMatrix();
 
     LGL_ERROR;
+
+    glPopAttrib();
 }
 
 void RenderTargetViewer::paintPort(RenderPort* rp, int index) {
-    if(!rp)
+
+    if (!rp || !rp->getRenderTarget())
         return;
-    RenderTarget* rt = rp->getData();
-    if (!rt)
-        return;
+
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+    RenderTarget* rt = rp->getRenderTarget();
 
     // set default display type if nothing has been set before
     if(showType_[index] == 0)
@@ -782,9 +798,13 @@ void RenderTargetViewer::paintPort(RenderPort* rp, int index) {
     // draw red line bounds around selected render target
     if (!fullscreen_ && index == selected_)
         paintOutline();
+
+    glPopAttrib();
 }
 
 void RenderTargetViewer::renderTargetToTexture(RenderTarget* rt, unsigned int showType, tgt::Texture* texture) {
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
     tgt::ivec3 size(currentWidth_, currentHeight_, 1);
 
     glActiveTexture(GL_TEXTURE0);
@@ -814,8 +834,7 @@ void RenderTargetViewer::renderTargetToTexture(RenderTarget* rt, unsigned int sh
     }
 
     shaderProgram = colorProgram_;
-    if (!shaderProgram)
-        return;
+    tgtAssert(shaderProgram, "No shader");
     shaderProgram->activate();
     shaderProgram->setUniform("tex_", 0);
     LGL_ERROR;
@@ -840,6 +859,7 @@ void RenderTargetViewer::renderTargetToTexture(RenderTarget* rt, unsigned int sh
     shaderProgram->setIgnoreUniformLocationError(true);
     shaderProgram->setUniform("texParameters_.dimensions_", tgt::vec2(rt->getSize()));
     shaderProgram->setUniform("texParameters_.dimensionsRCP_", 1.f / tgt::vec2(rt->getSize()));
+    shaderProgram->setUniform("texParameters_.matrix_", tgt::mat4::identity);
     shaderProgram->setIgnoreUniformLocationError(false);
     LGL_ERROR;
 
@@ -850,15 +870,19 @@ void RenderTargetViewer::renderTargetToTexture(RenderTarget* rt, unsigned int sh
 
     fbo_->deactivate();
     LGL_ERROR;
+
+    glPopAttrib();
 }
 
 void RenderTargetViewer::renderInfosToFontTexture(RenderTarget* rt) {
+    glPushMatrix();
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
     int deltaY = 15; // Zeilenhöhe
     tgt::ivec3 size(currentWidth_, currentHeight_, 1);
 
     stringstream ss;
 
-    glPushMatrix();
     glLoadIdentity();
 
     glActiveTexture(GL_TEXTURE0);
@@ -868,6 +892,7 @@ void RenderTargetViewer::renderInfosToFontTexture(RenderTarget* rt) {
         fontTex_->setDimensions(size);
         fontTex_->uploadTexture();
     }
+    LGL_ERROR;
 
     // activate fbo
     fbo_->activate();
@@ -877,6 +902,7 @@ void RenderTargetViewer::renderInfosToFontTexture(RenderTarget* rt) {
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glColor4f(1.0, 1.0, 1.0, 1.0);
+    LGL_ERROR;
 
     if (showInfosACT_->isChecked()) {
         // render fonts
@@ -903,6 +929,7 @@ void RenderTargetViewer::renderInfosToFontTexture(RenderTarget* rt) {
 
         QString memStr = tr("%1 kb").arg(mem);
         QString numUpdateStr = tr("@%1").arg(rt->getNumUpdates());
+        LGL_ERROR;
 
         if(mouseIsInside_ || freezeInfos_) {
             if(fullscreen_ && showInfosDetailsACT_->isChecked()){
@@ -948,6 +975,7 @@ void RenderTargetViewer::renderInfosToFontTexture(RenderTarget* rt) {
                 }
             }
         }
+        LGL_ERROR;
 
         int offsetX = 3;
         int offsetY = 5;
@@ -963,15 +991,21 @@ void RenderTargetViewer::renderInfosToFontTexture(RenderTarget* rt) {
         renderFont(offsetX, offsetY, memStr);
         offsetY += deltaY;
         renderFont(offsetX, offsetY, numUpdateStr);
+        LGL_ERROR;
     }
 
     // deactivate fbo
     fbo_->deactivate();
 
+    glPopAttrib();
     glPopMatrix();
+
+    LGL_ERROR;
 }
 
 void RenderTargetViewer::paintCombinedTextures() {
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
     glActiveTexture(GL_TEXTURE0);
     LGL_ERROR;
     colorTex_->bind();
@@ -983,10 +1017,10 @@ void RenderTargetViewer::paintCombinedTextures() {
     glActiveTexture(GL_TEXTURE0);
     LGL_ERROR;
     tgt::Shader* shaderProgram = inversecolorProgram_;
-    if (!shaderProgram)
-        return;
+    tgtAssert(shaderProgram, "No shader");
     shaderProgram->activate();
     LGL_ERROR;
+
     shaderProgram->setUniform("backTex_", 0);
     shaderProgram->setUniform("frontTex_", 1);
     shaderProgram->setUniform("threshold_", 0.15f);
@@ -994,15 +1028,20 @@ void RenderTargetViewer::paintCombinedTextures() {
     shaderProgram->setIgnoreUniformLocationError(true);
     shaderProgram->setUniform("texParameters_.dimensions_", tgt::vec2(colorTex_->getDimensions().xy()));
     shaderProgram->setUniform("texParameters_.dimensionsRCP_", 1.f / tgt::vec2(colorTex_->getDimensions().xy()));
+    shaderProgram->setUniform("texParameters_.matrix_", tgt::mat4::identity);
     shaderProgram->setIgnoreUniformLocationError(false);
     LGL_ERROR;
     renderQuad();
     LGL_ERROR;
     shaderProgram->deactivate();
     LGL_ERROR;
+
+    glPopAttrib();
 }
 
 void RenderTargetViewer::paintOutline() {
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
     glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
     glBegin(GL_LINE_LOOP);
     glVertex2f(1, 1);
@@ -1011,6 +1050,8 @@ void RenderTargetViewer::paintOutline() {
     glVertex2f(1, currentHeight_);
     glEnd();
     LGL_ERROR;
+
+    glPopAttrib();
 }
 
 void RenderTargetViewer::renderQuad() {
@@ -1028,6 +1069,7 @@ void RenderTargetViewer::renderFont(float x, float y, QString text) {
 #else
     renderText(x, y, 0.0, text, font_);
 #endif
+    LGL_ERROR;
 }
 
 void RenderTargetViewer::takeSnapshot(bool withOverlay) {
@@ -1056,11 +1098,19 @@ void RenderTargetViewer::takeSnapshot(bool withOverlay) {
     filedialog.setAcceptMode(QFileDialog::AcceptSave);
 
     QList<QUrl> urls;
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getSnapshotPath().c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getDocumentsPath().c_str());
+    urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
+    urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
     filedialog.setSidebarUrls(urls);
 
-    filedialog.setDirectory(VoreenApplication::app()->getSnapshotPath().c_str());
-    filedialog.selectFile(tr("snapshot.png"));
+    struct tm* Tm;
+    time_t currentTime = time(NULL);
+    Tm = localtime(&currentTime);
+    std::stringstream timestamp;
+    timestamp << "snapshot " << (Tm->tm_year+1900) << "-" << (Tm->tm_mon+1) << "-" << Tm->tm_mday << "-" << Tm->tm_hour << "-" << Tm->tm_min << "-" << Tm->tm_sec;
+    timestamp << ".png";
+    filedialog.selectFile(tr(timestamp.str().c_str()));
 
     QStringList fileList;
     if (filedialog.exec())

@@ -46,7 +46,6 @@
 #include "networkeditor/networkeditor.h"
 #include "voreen/qt/widgets/inputmappingdialog.h"
 
-
 #include <QString>
 
 namespace voreen {
@@ -68,10 +67,12 @@ VoreenVisualization::VoreenVisualization(tgt::GLCanvas* sharedContext)
     // create Qt-specific factory for processor widgets (used by Processor::initialize)
     VoreenApplication::app()->setProcessorWidgetFactory(
         new QProcessorWidgetFactory(VoreenApplicationQt::qtApp()->getMainWindow(), evaluator_));
+
+    // assign network evaluator to application
+    VoreenApplication::app()->setNetworkEvaluator(evaluator_);
 }
 
 VoreenVisualization::~VoreenVisualization() {
-    cleanupTempFiles();
     evaluator_->setProcessorNetwork(0, true);
     delete evaluator_;
     workspace_->clear();
@@ -112,116 +113,134 @@ void VoreenVisualization::setInputMappingDialog(InputMappingDialog* inputMapping
     inputMappingDialog_ = inputMappingDialog;
 }
 
-void VoreenVisualization::openNetwork(const std::string& filename)
+void VoreenVisualization::importNetwork(const QString& filename)
     throw (SerializationException)
 {
     NetworkSerializer networkSerializer;
-    ProcessorNetwork* net = networkSerializer.readNetworkFromFile(filename);
+    ProcessorNetwork* net = networkSerializer.readNetworkFromFile(filename.toStdString());
     delete workspace_->getProcessorNetwork();
     workspace_->setProcessorNetwork(net);
     propagateVolumeContainer();
     propagateNetwork();
-
 }
 
-void VoreenVisualization::saveNetwork(const std::string& filename)
+void VoreenVisualization::exportNetwork(const QString& filename)
     throw (SerializationException)
 {
     try {
-        NetworkSerializer().writeNetworkToFile(workspace_->getProcessorNetwork(), filename);
+        NetworkSerializer().writeNetworkToFile(workspace_->getProcessorNetwork(), filename.toStdString());
     } catch (SerializationException&) {
 //        delete processorNetwork_;
         throw;
     }
 }
 
-void VoreenVisualization::exportWorkspaceAsZip(const std::string& filename, bool overwrite)
+void VoreenVisualization::exportWorkspaceToZipArchive(const QString& filename, bool overwrite)
     throw (SerializationException)
 {
-    const bool workspaceWasReadOnly = readOnlyWorkspace_;
-    readOnlyWorkspace_ = false;
-    workspace_->exportZipped(filename, overwrite);
-    readOnlyWorkspace_ = workspaceWasReadOnly;
+    LINFO("Exporting workspace " << filename.toStdString() << " to archive " << filename.toStdString());
+    workspace_->exportToZipArchive(filename.toStdString(), overwrite);
 }
 
 #ifdef VRN_WITH_ZLIB
-void VoreenVisualization::importZippedWorkspace(const std::string& archiveName, const std::string& path,
-                                                bool deflateTemporarily)
+QString VoreenVisualization::extractWorkspaceArchive(const QString& archiveName, const QString& path,
+                                                     bool overwrite)
     throw (SerializationException)
 {
 
-    LINFO("Importing zipped workspace: " << archiveName);
+    LINFO("Extracting workspace archive " << archiveName.toStdString() << " to " << path.toStdString());
 
-    tgt::ZipArchive zip(archiveName);
+    // Open archive and detect contained files
+    tgt::ZipArchive zip(archiveName.toStdString());
     if (!zip.archiveExists()) {
-        LERROR("Archive does not exist: " << archiveName);
-        throw SerializationException("Archive does not exist: " + archiveName);
+        LERROR("Archive does not exist: " << archiveName.toStdString());
+        throw SerializationException("Archive does not exist:\n" + archiveName.toStdString());
     }
 
-    // Extract files from the archive and enforce overwriting existing ones only
-    // if they are extracted for temporary purpose.
-    size_t numFiles = zip.extractFilesToDirectory(path, deflateTemporarily);
+    std::vector<std::string> archiveFiles = zip.getContainedFileNames();
+    if (archiveFiles.empty()) {
+        LERROR("Archive does not contain any files: " << archiveName.toStdString());
+        throw SerializationException("Archive does not contain any files:\n" + archiveName.toStdString());
+    }
+
+    // Extract files from the archive
+    std::string currentDir = tgt::FileSystem::currentDirectory();
+    if (tgt::FileSystem::changeDirectory(path.toStdString()) == false) {
+        LERROR("Failed to locate target directory " << path.toStdString());
+        throw SerializationException("Failed to open target directory:\n" + path.toStdString());
+    }
+
+    // prepare progress dialog
+    ProgressBar* progressDialog = VoreenApplicationQt::app()->createProgressDialog();
+    tgtAssert(progressDialog, "no progress dialog created");
+    progressDialog->setTitle("Extract Archive '" + tgt::FileSystem::fileName(archiveName.toStdString()) + "'");
+    progressDialog->show();
+    qApp->setOverrideCursor(Qt::WaitCursor);
+    qApp->processEvents();
+
+    // extract files
+    size_t numFiles = 0;
+    for (std::vector<std::string>::const_iterator it = archiveFiles.begin(); it != archiveFiles.end(); ++it) {
+        progressDialog->setMessage("Extracting '" + *it + "' ...");
+        progressDialog->setProgress((float)numFiles / (archiveFiles.size() - 1));
+        qApp->processEvents();
+        tgt::File* xFile = zip.extractFile(*it, tgt::ZipArchive::TARGET_DISK, "", true, overwrite);
+        if (xFile) {
+            xFile->close();
+            delete xFile;
+            ++numFiles;
+        }
+    }
+
+    // clean up
+    progressDialog->hide();
+    delete progressDialog;
+    qApp->restoreOverrideCursor();
+    qApp->processEvents();
+    tgt::FileSystem::changeDirectory(currentDir);
+
     if (numFiles != zip.getNumFilesInArchive()) {
-        LERROR("An error occured while extracting files from '" << archiveName << "' to " << path << "!"
-               << "Aborting.");
-        throw SerializationException("An error occured while extracting files from '" + archiveName + "' to " + path + "!");
+        LWARNING("Some files could not be extracted.");
+        //throw SerializationException("Some files could not be extracted from '" + archiveName + "' to " + path);
     }
 
-    if (numFiles == 0) {
-        LWARNING("Archive does not contain any files: " << archiveName);
-        throw SerializationException("Archive does not contain any files: " + archiveName);
-    }
-
-    std::vector<std::string> files = zip.getContainedFileNames();
-    size_t index = 0;
-    for ( ; index < files.size(); ++index) {
-        std::string fileExt = tgt::FileSystem::fileExtension(files[index]);
+    // detect workspace file in extracted archive files
+    size_t index;
+    for (index=0; index < archiveFiles.size(); ++index) {
+        std::string fileExt = tgt::FileSystem::fileExtension(archiveFiles[index]);
         if (fileExt == "vws")
             break;
     }
 
-    if (index < files.size()) {
-        try {
-            openWorkspace(QString::fromStdString(path + "/" + files[index]));
-            if (deflateTemporarily)
-                workspace_->setFilename(archiveName);
-        }
-        catch (SerializationException& e) {
-            LERROR("Failed to import workspace '" << (path + "/" + files[index]) << "'!");
-            LERROR("Reason: " << e.what());
-            throw e;
-        }
-    } else {
-        if (deflateTemporarily) {
-            tmpPath_ = path;
-            tmpFiles_ = files;
-        }
-        LERROR("No workspace file (*.vws) found in archive: " << archiveName);
-        throw SerializationException("No workspace file (*.vws) found in archive " + archiveName);
+    // success: return workspace file path
+    if (index < archiveFiles.size()) {
+        return path + "/" + QString::fromStdString(archiveFiles[index]);
     }
-
-    // delete extracted files
-    if (deflateTemporarily) {
-        tmpPath_ = path;
-        tmpFiles_ = files;
+    // workspace file not found: remove extracted files and throw exception
+    else {
+        LERROR("No workspace file (*.vws) found in archive: " << archiveName.toStdString() << ". Extracted files are removed.");
+        cleanupTempFiles(archiveFiles, path.toStdString());
+        throw SerializationException("No workspace file (*.vws) found in archive:\n" + archiveName.toStdString());
     }
 }
 #else
-void VoreenVisualization::importZippedWorkspace(const std::string& /*archiveName*/, const std::string& /*path*/,
-                                                bool /*deflateTemporarily*/)
+QString VoreenVisualization::extractWorkspaceArchive(const QString& /*archiveName*/, const QString& /*path*/,
+                                                bool /*overwrite*/)
     throw (SerializationException)
 {
+    throw SerializationException("The application has been compiled without Zip support.");
 }
 #endif
 
 void VoreenVisualization::newWorkspace() {
     tgtAssert(evaluator_, "No network evaluator");
 
-    cleanupTempFiles();
-
     readOnlyWorkspace_ = false;
 
+    blockSignals(true);
+
     // clear workspace resources
+    evaluator_->unlock();
     evaluator_->setProcessorNetwork(0, true);
     workspace_->clear();
 
@@ -229,29 +248,32 @@ void VoreenVisualization::newWorkspace() {
     workspace_->setProcessorNetwork(new ProcessorNetwork());
     workspace_->setVolumeContainer(new VolumeContainer());
 
+    blockSignals(false);
+
     // propagate resources
     propagateVolumeContainer();
     propagateNetwork();
 }
 
 void VoreenVisualization::openWorkspace(const QString& filename) throw (SerializationException) {
+
     LINFO("Loading workspace " << filename.toStdString());
     if (!VoreenApplication::app()->getProcessorWidgetFactory())
         LWARNING("No ProcessorWidgetFactory assigned to VoreenApplication: No ProcessorWidgets are generated!");
 
-    cleanupTempFiles();
+    blockSignals(true);
 
     // clear workspace resources
+    evaluator_->unlock();
     evaluator_->setProcessorNetwork(0, true);
     workspace_->clear();
 
+    blockSignals(false);
+
     try {
-        // zipped workspace?
-        if (filename.endsWith(".zip", Qt::CaseInsensitive))
-            importZippedWorkspace(filename.toStdString(), VoreenApplication::app()->getTemporaryPath(), true);
-        else
-            workspace_->load(filename.toStdString());
-    } catch (SerializationException& e) {
+        workspace_->load(filename.toStdString());
+    }
+    catch (SerializationException& e) {
         LERROR("Could not open workspace: " << e.what());
         throw;
     }
@@ -263,34 +285,37 @@ void VoreenVisualization::openWorkspace(const QString& filename) throw (Serializ
     propagateNetwork();
 }
 
-void VoreenVisualization::saveWorkspace(const std::string& filename, bool overwrite) throw (SerializationException) {
-    readOnlyWorkspace_ = false;
+void VoreenVisualization::saveWorkspace(const QString& filename, bool overwrite) throw (SerializationException) {
 
     try {
         // zipped workspace?
-        if (QString::fromStdString(filename).endsWith(".zip", Qt::CaseInsensitive))
-            exportWorkspaceAsZip(filename, overwrite);
-        else
-            workspace_->save(filename, overwrite);
-    } catch (SerializationException& e) {
+        if (filename.endsWith(".zip", Qt::CaseInsensitive))
+            exportWorkspaceToZipArchive(filename, overwrite);
+        else {
+            LINFO("Saving workspace to " << filename.toStdString());
+            readOnlyWorkspace_ = false;
+            workspace_->save(filename.toStdString(), overwrite);
+        }
+    }
+    catch (SerializationException& e) {
         LERROR("Could not save workspace: " << e.what());
         throw;
     }
 }
 
-void VoreenVisualization::cleanupTempFiles() {
-    if ((tmpFiles_.empty() == true) || (tmpPath_.empty() == true))
+void VoreenVisualization::cleanupTempFiles(std::vector<std::string> tmpFiles, std::string tmpPath) {
+    if ((tmpFiles.empty() == true) || (tmpPath.empty() == true))
         return;
 
     // Delete all temporary files.
-    for (size_t i = 0; i < tmpFiles_.size(); ++i) {
-        tgt::FileSystem::deleteFile(tmpPath_ + "/" + tmpFiles_[i]);
+    for (size_t i = 0; i < tmpFiles.size(); ++i) {
+        tgt::FileSystem::deleteFile(tmpPath + "/" + tmpFiles[i]);
 
         // Remove file name to obtain the remaing path
-        size_t pos = tmpFiles_[i].rfind("/");
+        size_t pos = tmpFiles[i].rfind("/");
         if (pos == std::string::npos)
             pos = 0;
-        tmpFiles_[i] = tmpFiles_[i].substr(0, pos);
+        tmpFiles[i] = tmpFiles[i].substr(0, pos);
     }
 
     // Now, the directory part of the temp. file is either empty,
@@ -301,24 +326,21 @@ void VoreenVisualization::cleanupTempFiles() {
     bool foundNonEmptyString = true;
     while (foundNonEmptyString == true) {
         foundNonEmptyString = false;
-        for (size_t i = 0; i < tmpFiles_.size(); ++i) {
-            if (tmpFiles_[i].empty() == true)
+        for (size_t i = 0; i < tmpFiles.size(); ++i) {
+            if (tmpFiles[i].empty() == true)
                 continue;
 
             foundNonEmptyString = true;
-            tgt::FileSystem::deleteDirectory(tmpPath_ + "/" + tmpFiles_[i]);
+            tgt::FileSystem::deleteDirectory(tmpPath + "/" + tmpFiles[i]);
 
             // Reduce remaining path
             //
-            size_t pos = tmpFiles_[i].rfind("/");
+            size_t pos = tmpFiles[i].rfind("/");
             if (pos == std::string::npos)
                 pos = 0;
-            tmpFiles_[i] = tmpFiles_[i].substr(0, pos);
+            tmpFiles[i] = tmpFiles[i].substr(0, pos);
         }   // for (i
     }   // while (
-
-    tmpFiles_.clear();
-    tmpPath_.clear();
 }
 
 void VoreenVisualization::propagateNetwork() {
@@ -329,21 +351,24 @@ void VoreenVisualization::propagateNetwork() {
         workspace_->getProcessorNetwork()->addObserver(this);
     }
 
-    if (networkEditorWidget_) {
-        networkEditorWidget_->setProcessorNetwork(workspace_->getProcessorNetwork());
-        qApp->processEvents();
-    }
-
     if (propertyListWidget_) {
         propertyListWidget_->setProcessorNetwork(workspace_->getProcessorNetwork());
         qApp->processEvents();
     }
 
-    networkEditorWidget_->selectPreviouslySelectedProcessors();
+    if (networkEditorWidget_) {
+        networkEditorWidget_->setProcessorNetwork(workspace_->getProcessorNetwork());
+        qApp->processEvents();
+    }
 
     // assign network to evaluator, also initializes the network
     evaluator_->setProcessorNetwork(workspace_->getProcessorNetwork());
     qApp->processEvents();
+
+    if (networkEditorWidget_) {
+        networkEditorWidget_->selectPreviouslySelectedProcessors();
+        qApp->processEvents();
+    }
 
     // assign network to input mapping dialog
     if (inputMappingDialog_) {

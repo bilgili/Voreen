@@ -108,12 +108,19 @@ public:
      */
     QPointF getRightDockingPoint() const;
 
+    /**
+     * Adds a prefix in front the the Guiname of the \sa Property
+     * \param prefix The prefix without any delimiters
+     */
+    void addPrefix(const QString& prefix);
+
 protected:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
 private:
     /// Creates the label and sets it with an initial value
     void createLabel();
+    void createLabel(const QString& prefix);
 
     /// The property which is represented by this PropertyGraphicsItem
     const Property* property_;

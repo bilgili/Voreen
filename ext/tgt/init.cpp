@@ -137,11 +137,8 @@ void initGL(InitFeature::Features featureset) {
         #endif
     }
     
-    // starting shadermanager with or without caching
-    if (featureset & (InitFeature::SHADER_MANAGER | InitFeature::NO_SHADER_CACHING))
-        Singleton<ShaderManager> ::init(new ShaderManager(false));
-    else if (featureset & InitFeature::SHADER_MANAGER & !InitFeature::NO_SHADER_CACHING)
-        Singleton<ShaderManager> ::init(new ShaderManager(true));
+    // starting shadermanager
+    Singleton<ShaderManager> ::init(new ShaderManager());
 }
 
 void deinitGL() {

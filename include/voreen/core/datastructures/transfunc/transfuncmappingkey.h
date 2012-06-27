@@ -177,37 +177,21 @@ public:
      */
     void setIntensity(float i);
 
-    tgt::Texture* getTextureL() const {
-        return texL_;
-    }
+    tgt::Texture* getTextureL() const;
 
-    tgt::Texture* getTextureR() const {
-        return texR_;
-    }
+    tgt::Texture* getTextureR() const;
 
-    void setTextureL(tgt::Texture* tex) {
-        texL_ = tex;
-    }
+    void setTextureL(tgt::Texture* tex);
 
-    void setTextureR(tgt::Texture* tex) {
-        texR_ = tex;
-    }
+    void setTextureR(tgt::Texture* tex);
 
-    const std::string& getTexNameLeft() const {
-        return texNameLeft_;
-    }
+    const std::string& getTexNameLeft() const;
 
-    const std::string& getTexNameRight() const {
-        return texNameRight_;
-    }
+    const std::string& getTexNameRight() const;
 
-    void setTexNameLeft(std::string& name) {
-        texNameLeft_ = name;
-    }
+    void setTexNameLeft(std::string& name);
 
-    void setTexNameRight(std::string& name) {
-        texNameRight_ = name;
-    }
+    void setTexNameRight(std::string& name);
 
     /**
      * @see Serializable::serialize

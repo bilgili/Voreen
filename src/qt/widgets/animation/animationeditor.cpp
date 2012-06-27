@@ -71,13 +71,11 @@ AnimationEditor::AnimationEditor(NetworkEvaluator* eval, Workspace* workspace, Q
     , timeStretch_(1.0f)
     , interactionMode_(false)
     , workspace_(workspace)
-    {
-
-    if(workspace->getAnimation()) {
+{
+    if (workspace->getAnimation()) {
         animation_ = workspace->getAnimation();
         duration_ = (int)animation_->getDuration()*30.0f;
-        }
-    else {
+    } else {
         animation_ = new Animation(workspace->getProcessorNetwork());
         animation_->setDuration(20);
         duration_ = 600;
@@ -92,30 +90,12 @@ AnimationEditor::AnimationEditor(NetworkEvaluator* eval, Workspace* workspace, Q
     interaction->setText("Interaction Mode");
     QCheckBox* autoPreview = new QCheckBox(this);
     connect(autoPreview, SIGNAL(toggled(bool)), this, SIGNAL(autoPreview(bool)));
-    autoPreview->setText("Auto preview");
-
-    /*QLabel* tsLabel = new QLabel("Time Stretchfactor");
-    QHBoxLayout* timeStretchLayout = new QHBoxLayout();
-    DoubleSliderSpinBoxWidget* timeStretchSlider = new DoubleSliderSpinBoxWidget(this);
-    timeStretchSlider->setMaxValue(5);
-    timeStretchSlider->setSingleStep(0.1f);
-    timeStretchSlider->setValue(1.0f);
-    timeStretchSlider->setMaximumWidth(100);
-    connect(timeStretchSlider, SIGNAL(valueChanged(double)), this, SLOT(timeStretchChanged(double)));
-    timeStretchLayout->addWidget(timeStretchSlider);
-    timeStretchLayout->addWidget(tsLabel);
-    timeStretchLayout->addStretch();*/
+    autoPreview->setText("Auto Preview");
 
     QToolBar* toolbar = new QToolBar(this);
     QToolBar* controlToolbar = new QToolBar(toolbar);
     toolbar->setMovable(true);
     controlToolbar->setMovable(true);
-
-    /*QList<QByteArray> imageFormats = QImageReader::supportedImageFormats();
-    if (!imageFormats.contains("svg")) {
-        LWARNINGC("voreenqt.AnimationEditor",
-        "SVG image format not supported (Qt's SVG plugin missing?): some icons will not be shown.");
-    }*/
 
     QToolButton* newButton = new QToolButton(this);
     QToolButton* settingsButton = new QToolButton(this);
@@ -162,7 +142,7 @@ AnimationEditor::AnimationEditor(NetworkEvaluator* eval, Workspace* workspace, Q
     toolbar->addWidget(videoExportButton);
     newButton->setToolTip(tr("New Animation"));
     settingsButton->setToolTip(tr("Animation Settings"));
-    videoExportButton->setToolTip(tr("Export Video"));
+    videoExportButton->setToolTip(tr("Export Animation"));
 
     toolbar->addSeparator();
 
@@ -192,10 +172,16 @@ AnimationEditor::AnimationEditor(NetworkEvaluator* eval, Workspace* workspace, Q
     recordButton->setToolTip(tr("Take Snapshot"));
 
     toolbar->addWidget(controlToolbar);
-
+   
     mainLayout->addWidget(toolbar);
-    mainLayout->addWidget(interaction);
-    mainLayout->addWidget(autoPreview);
+
+    QHBoxLayout* topLayout = new QHBoxLayout;
+    topLayout->addSpacing(8);
+    topLayout->addWidget(interaction);
+    topLayout->addSpacing(10);
+    topLayout->addWidget(autoPreview);
+    topLayout->addStretch();
+    mainLayout->addLayout(topLayout);
 
     TimelineWidget* timelineWidget = new TimelineWidget(animation_, this, evaluator_);
     mainLayout->addWidget(timelineWidget);
@@ -217,12 +203,13 @@ AnimationEditor::AnimationEditor(NetworkEvaluator* eval, Workspace* workspace, Q
     connect(endButton, SIGNAL(clicked()), this, SLOT(end()));
     connect(recordButton, SIGNAL(clicked()), this, SLOT(record()));
     connect(this, SIGNAL(recordSignal()), timelineWidget, SIGNAL(recordSignal()));
+    connect(this, SIGNAL(recordSignal()), timelineWidget, SLOT(checkForChanges()));
     connect(undoButton, SIGNAL(clicked()), this, SLOT(undo()));
     connect(redoButton, SIGNAL(clicked()), this, SLOT(redo()));
 
     init();
-    show();
 }
+
 float AnimationEditor::getDuration() {
     return duration_;
 }
@@ -274,42 +261,47 @@ void AnimationEditor::newAnimation() {
 }
 
 void AnimationEditor::videoExport() {
-
-    AnimationExportWidget* animationExportWidget = new AnimationExportWidget(this, animation_, evaluator_, duration_, 1, int(duration_), timeStretch_);
+    AnimationExportWidget* animationExportWidget
+        = new AnimationExportWidget(this, animation_, evaluator_, duration_, 1, int(duration_), timeStretch_);
     animationExportWidget->resize(200,150);
     animationExportWidget->networkChanged();
     animationExportWidget->exec();
-    animationExportWidget->~AnimationExportWidget();
-
 }
+
 void AnimationEditor::undo() {
     animation_->undoLastChange();
 }
+
 void AnimationEditor::redo() {
     animation_->redoLastUndo();
 }
+
 void AnimationEditor::start() {
     currentFrame_  = 0;
     emit currentFrameChanged(currentFrame_);
 }
+
 void AnimationEditor::rewind() {
     if(interactionMode_)
         animation_->setInteractionMode(true);
     frameSkip_ = -4;
     timer_->start(30);
 }
+
 void AnimationEditor::pause() {
     if(interactionMode_)
         animation_->setInteractionMode(false);
     animation_->renderAt((float)currentFrame_/30.0f);
     timer_->stop();
 }
+
 void AnimationEditor::play() {
     if(interactionMode_)
         animation_->setInteractionMode(true);
     frameSkip_ = 1;
     timer_->start(30);      // renders every 3/100 second
 }
+
 void AnimationEditor::stop() {
     if(interactionMode_)
         animation_->setInteractionMode(false);
@@ -318,6 +310,7 @@ void AnimationEditor::stop() {
     animation_->renderAt((float)currentFrame_/30.0f);
     emit currentFrameChanged(currentFrame_);
 }
+
 void AnimationEditor::forward() {
     if(interactionMode_)
         animation_->setInteractionMode(true);
@@ -381,11 +374,12 @@ void AnimationEditor::setDuration(int duration) {
 
 void AnimationEditor::settings() {
     QDialog* dialog = new QDialog(this);
+    dialog->setWindowTitle(tr("Animation Settings"));
     QVBoxLayout* lay = new QVBoxLayout(dialog);
     QHBoxLayout* buttonLayout = new QHBoxLayout();
 
     QGroupBox* durationBox = new QGroupBox(dialog);
-    durationBox->setTitle("Duration in secs");
+    durationBox->setTitle("Duration (seconds)");
     QHBoxLayout* durationLayout = new QHBoxLayout(durationBox);
     QSpinBox dsp(dialog);
     dsp.setMinimum(1);
@@ -397,7 +391,7 @@ void AnimationEditor::settings() {
     connect (&ok, SIGNAL(clicked()), dialog, SLOT(accept()));
     connect (&cancel, SIGNAL(clicked()), dialog, SLOT(reject()));
 
-    QLabel* tsLabel = new QLabel("Time Stretchfactor");
+    QLabel* tsLabel = new QLabel("Time Stretch Factor:");
     QHBoxLayout* timeStretchLayout = new QHBoxLayout();
     DoubleSliderSpinBoxWidget* timeStretchSlider = new DoubleSliderSpinBoxWidget(this);
     timeStretchSlider->setMaxValue(5);
@@ -405,8 +399,8 @@ void AnimationEditor::settings() {
     timeStretchSlider->setValue(1.0f);
     timeStretchSlider->setMaximumWidth(100);
     connect(timeStretchSlider, SIGNAL(valueChanged(double)), this, SLOT(timeStretchChanged(double)));
-    timeStretchLayout->addWidget(timeStretchSlider);
     timeStretchLayout->addWidget(tsLabel);
+    timeStretchLayout->addWidget(timeStretchSlider);
     timeStretchLayout->addStretch();
     lay->addLayout(timeStretchLayout);
 
@@ -415,7 +409,7 @@ void AnimationEditor::settings() {
 
     lay->addWidget(durationBox);
     lay->addLayout(buttonLayout);
-    if(dialog->exec() == QDialog::Accepted)
+    if (dialog->exec() == QDialog::Accepted)
         setDuration(static_cast<int>(dsp.value()* 30.0f));
 }
 
@@ -423,6 +417,4 @@ void AnimationEditor::timeStretchChanged(double stretch) {
     timeStretch_ = stretch;
 }
 
-
 } // namespace voreen
-

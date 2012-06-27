@@ -51,6 +51,7 @@ public:
     ProcessorTimelineWidget(std::string, AnimatedProcessor*, int, QWidget* = 0);
 
     const AnimatedProcessor* getAnimatedProcessor() const;
+    int getTimelineCount();
 
 public slots:
     /// for setting the fixed width. Sadly there ssems to be no easy way to do the correct resizing within qscrollareas
@@ -79,6 +80,7 @@ protected:
     void populatePropertyMenu();
     void createPropertyTimelineWidget(PropertyTimeline* tl);
     QSize sizeHint();
+    int timelineCount_;
 
 protected slots:
     /// hides all timelines of a processor

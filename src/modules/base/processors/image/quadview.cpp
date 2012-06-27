@@ -42,19 +42,27 @@ QuadView::QuadView()
 #endif
     , maximizeEventProp_("mouseEvent.maximize", "Maximize Event", this, &QuadView::toggleMaximization,
         tgt::MouseEvent::MOUSE_BUTTON_LEFT, tgt::MouseEvent::DOUBLECLICK, tgt::MouseEvent::MODIFIER_NONE)
+#ifdef _MSC_VER
+#pragma warning(disable:4355)  // passing 'this' is safe here
+#endif
+    , mouseMoveEventProp_("mouseEvent.move", "Move Event", this, &QuadView::mouseMove,
+    tgt::MouseEvent::MOUSE_BUTTON_NONE, tgt::MouseEvent::MOTION | tgt::MouseEvent::CLICK | tgt::MouseEvent::ENTER_EXIT, tgt::MouseEvent::MODIFIER_NONE)
     , outport_(Port::OUTPORT, "outport")
     , inport1_(Port::INPORT, "inport1")
     , inport2_(Port::INPORT, "inport2")
     , inport3_(Port::INPORT, "inport3")
     , inport4_(Port::INPORT, "inport4")
+    , currentPort_(-1)
+    , isDragging_(false)
 {
-
+    gridColor_.setViews(Property::COLOR);
     addProperty(showGrid_);
     addProperty(gridColor_);
     addProperty(maximized_);
     maximized_.setVisible(false);
     addProperty(maximizeOnDoubleClick_);
     addEventProperty(maximizeEventProp_);
+    addEventProperty(mouseMoveEventProp_);
 
     addPort(outport_);
     addPort(inport1_);
@@ -106,7 +114,7 @@ bool QuadView::isReady() const {
 }
 
 void QuadView::process() {
-    if(maximized_.get() == 0) {
+    if (maximized_.get() == 0) {
         glMatrixMode(GL_MODELVIEW);
         outport_.activateTarget();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -171,7 +179,6 @@ void QuadView::process() {
             inport4_.getColorTexture()->disable();
         }
 
-
         glActiveTexture(GL_TEXTURE0);
 
         if(showGrid_.get()) {
@@ -187,6 +194,7 @@ void QuadView::process() {
             glDepthFunc(GL_LESS);
         }
 
+        outport_.deactivateTarget();
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
         LGL_ERROR;
@@ -210,6 +218,7 @@ void QuadView::process() {
 
                     glLoadIdentity();
                     inport1_.getColorTexture()->disable();
+                    outport_.deactivateTarget();
                     break;
             case 2: if(!inport2_.isReady())
                         return;
@@ -227,6 +236,7 @@ void QuadView::process() {
 
                     glLoadIdentity();
                     inport2_.getColorTexture()->disable();
+                    outport_.deactivateTarget();
                     break;
             case 3: if(!inport3_.isReady())
                         return;
@@ -244,6 +254,7 @@ void QuadView::process() {
 
                     glLoadIdentity();
                     inport3_.getColorTexture()->disable();
+                    outport_.deactivateTarget();
                     break;
             case 4: if(!inport4_.isReady())
                         return;
@@ -261,6 +272,7 @@ void QuadView::process() {
 
                     glLoadIdentity();
                     inport4_.getColorTexture()->disable();
+                    outport_.deactivateTarget();
                     break;
         }
     }
@@ -303,6 +315,86 @@ void QuadView::updateSizes() {
     }
 }
 
+void QuadView::mouseMove(tgt::MouseEvent* e) {
+    e->accept();
+    int prevCurrenPort = currentPort_;
+
+    if((e->action() & tgt::MouseEvent::EXIT) == tgt::MouseEvent::EXIT)
+        currentPort_ = -1;
+
+    if((e->action() & tgt::MouseEvent::PRESSED) == tgt::MouseEvent::PRESSED)
+        isDragging_ = true;
+    if((e->action() & tgt::MouseEvent::RELEASED) == tgt::MouseEvent::RELEASED)
+        isDragging_ = false;
+
+    if(!isDragging_) {
+        if(e->y() < (e->viewport().y/2)) {
+            if(e->x() < (e->viewport().x/2)) {
+                currentPort_ = 1;
+            } else {
+                currentPort_ = 2;
+            }
+        } else {
+            if(e->x() < (e->viewport().x/2)) {
+                currentPort_ = 3;
+            } else {
+                currentPort_ = 4;
+            }
+        }
+    }
+
+    if(currentPort_ != prevCurrenPort) {
+        tgt::MouseEvent leaveEvent(1, 1, tgt::MouseEvent::EXIT, e->modifiers(), e->button(), e->viewport() / 2);
+        tgt::MouseEvent enterEvent(1, 1, tgt::MouseEvent::ENTER, e->modifiers(), e->button(), e->viewport() / 2);
+        leaveEvent.ignore();
+        enterEvent.ignore();
+        switch(prevCurrenPort) {
+            case 1:
+                inport1_.distributeEvent(&leaveEvent);
+                break;
+            case 2:
+                inport2_.distributeEvent(&leaveEvent);
+                break;
+            case 3:
+                inport3_.distributeEvent(&leaveEvent);
+                break;
+            case 4:
+                inport4_.distributeEvent(&leaveEvent);
+                break;
+        }
+        switch(currentPort_) {
+            case 1:
+                inport1_.distributeEvent(&enterEvent);
+                break;
+            case 2:
+                inport2_.distributeEvent(&enterEvent);
+                break;
+            case 3:
+                inport3_.distributeEvent(&enterEvent);
+                break;
+            case 4:
+                inport4_.distributeEvent(&enterEvent);
+                break;
+        }
+    }
+    tgt::MouseEvent moveEvent(e->x() % (e->viewport().x/2), e->y() % (e->viewport().y/2), tgt::MouseEvent::MOTION, e->modifiers(), e->button(), e->viewport() / 2);
+    moveEvent.ignore();
+    switch(currentPort_) {
+        case 1:
+            inport1_.distributeEvent(&moveEvent);
+            break;
+        case 2:
+            inport2_.distributeEvent(&moveEvent);
+            break;
+        case 3:
+            inport3_.distributeEvent(&moveEvent);
+            break;
+        case 4:
+            inport4_.distributeEvent(&moveEvent);
+            break;
+    }
+}
+
 void QuadView::sizeOriginChanged(RenderPort* /*p*/) {
 }
 
@@ -327,7 +419,7 @@ void QuadView::onEvent(tgt::Event* e) {
 
     tgt::MouseEvent* me = dynamic_cast<tgt::MouseEvent*>(e);
 
-    if (!me || (maximizeEventProp_.accepts(me) && maximizeOnDoubleClick_.get())) {
+    if (!me || mouseMoveEventProp_.accepts(me) || (maximizeEventProp_.accepts(me) && maximizeOnDoubleClick_.get())) {
         RenderProcessor::onEvent(e);
         return;
     }

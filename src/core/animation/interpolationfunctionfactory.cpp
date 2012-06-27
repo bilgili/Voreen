@@ -52,7 +52,6 @@ namespace voreen {
 
 template <class T>
 InterpolationFunctionFactory<T>::InterpolationFunctionFactory() {
-
     // Default functions
     registerFunction(new InterpolationFunction<int>());
     registerFunction(new InterpolationFunction<bool>());
@@ -602,62 +601,44 @@ InterpolationFunctionFactory<T>::InterpolationFunctionFactory() {
 template <class T>
 InterpolationFunctionFactory<T>::~InterpolationFunctionFactory() {
     typename std::vector<InterpolationFunction<T>*>::const_iterator it;
-    for (it = functions_.begin();it != functions_.end();it++) {
+    for (it = functions_.begin(); it != functions_.end(); ++it) {
         delete (*it);
     }
     functions_.clear();
 }
 
 template <class T>
-const std::vector<std::string> InterpolationFunctionFactory<T>::getListOfFunctionnames() const {
+const std::vector<std::string> InterpolationFunctionFactory<T>::getListOfFunctionNames() const {
     std::vector<std::string> names;
     typename std::vector<InterpolationFunction<T>*>::const_iterator it;
-    it = functions_.begin();
-    while (it != functions_.end())
-    {
+    for (it = functions_.begin(); it != functions_.end(); ++it)
         names.push_back((*it)->getName());
-        it++;
-    }
+
     return names;
 }
 
 template <class T>
 const std::vector<InterpolationFunction<T>*>& InterpolationFunctionFactory<T>::getListOfFunctions() const {
-    //std::vector<InterpolationFunction<T>*> functions;
-    //typename std::vector<InterpolationFunction<T>*>::const_iterator it;
-    //it = functions_.begin();
-    //while (it != functions_.end())
-    //{
-        //functions.push_back((*it)->clone());
-        //it++;
-    //}
-    //return functions;
     return functions_;
 }
 
 template <class T>
-InterpolationFunction<T>* InterpolationFunctionFactory<T>::getFunctionByName(std::string name) const {
-
+InterpolationFunction<T>* InterpolationFunctionFactory<T>::getFunctionByName(const std::string& name) const {
     typename std::vector<InterpolationFunction<T>*>::const_iterator it;
-
-    it = functions_.begin();
-    while (it != functions_.end())
-    {
-        if (0==name.compare((*it)->getName())) {
+    for (it = functions_.begin(); it != functions_.end(); ++it) {
+        if (name.compare((*it)->getName()) == 0)
             return (*it)->clone();
-        }
-        it++;
     }
+
     return new InterpolationFunction<T>();
 }
 
 template <class T>
 void InterpolationFunctionFactory<T>::registerFunction(InterpolationFunctionBase* func) {
     InterpolationFunction<T>* f;
-    f = dynamic_cast<InterpolationFunction<T>*> (func);
-    if (f) {
+    f = dynamic_cast<InterpolationFunction<T>*>(func);
+    if (f)
         functions_.push_back(f);
-    }
     else
         delete func;
 }
@@ -667,7 +648,8 @@ void InterpolationFunctionFactory<T>::registerFunction(InterpolationFunctionBase
 */
 template <class T>
 const std::string InterpolationFunctionFactory<T>::getTypeString(const std::type_info& type) const {
-            for (typename std::vector<InterpolationFunction<T>*>::const_iterator it = functions_.begin(); it != functions_.end(); ++it) {
+    typename std::vector<InterpolationFunction<T>*>::const_iterator it;
+    for (it = functions_.begin(); it != functions_.end(); ++it) {
         if (type == typeid(**it))
             return (*it)->getName();
     }
@@ -680,16 +662,11 @@ const std::string InterpolationFunctionFactory<T>::getTypeString(const std::type
 */
 template <class T>
 Serializable* InterpolationFunctionFactory<T>::createType(const std::string& typeString) {
-
     typename std::vector<InterpolationFunction<T>*>::const_iterator it;
 
-    it = functions_.begin();
-    while (it != functions_.end())
-    {
-        if (typeString == (*it)->getName()) {
+    for (it = functions_.begin(); it != functions_.end(); ++it) {
+        if (typeString == (*it)->getName())
             return (*it)->clone();
-        }
-        it++;
     }
 
     return 0;

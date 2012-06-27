@@ -222,5 +222,9 @@ void EventPropertyBase::deserialize(XmlDeserializer& s) {
     notifyChangeListener();
 }
 
+std::string EventPropertyBase::getTypeString() const {
+    return "EventProperty";
+}
+
 
 } // namespace

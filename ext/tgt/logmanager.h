@@ -130,10 +130,13 @@ public:
     ConsoleLog(bool dateStamping = false, bool timeStamping= false, bool showCat = true, bool showLevel = true);
     ~ConsoleLog() {};
     bool isOpen() { return true; }
+    void enableColors(bool enable = true);
 
 protected:
     void logFiltered(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo="");
     std::string getLevelColor(LogLevel level);
+
+    bool colorOutput_;
 };
 
 ///Implements a colored html log.

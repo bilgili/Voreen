@@ -131,6 +131,10 @@ Labeling::Labeling()
 {
     fontPath_ = VoreenApplication::app()->getFontPath("Vera.ttf");
 
+    labelColorExtern_.setViews(Property::COLOR);
+    haloColorExtern_.setViews(Property::COLOR);
+    labelColorIntern_.setViews(Property::COLOR);
+    haloColorIntern_.setViews(Property::COLOR);
     // setup callbacks which are invoked by changing the properties' values
 
     fontSizeExtern_.onChange(CallMemberAction<Labeling>(this, &Labeling::updateFontSizeEvt));
@@ -297,6 +301,12 @@ void Labeling::deinitialize() throw (VoreenException) {
         kernels_.pop_back();
     }
 
+#ifdef VRN_WITH_FONTRENDERING
+    if (face_)
+        FT_Done_Face(face_);
+    face_ = 0;
+#endif
+
     ImageProcessor::deinitialize();
 }
 
@@ -348,6 +358,7 @@ void Labeling::process() {
         valid_ = true;
     }
 
+    labelingPort_.deactivateTarget();
     TextureUnit::setZeroUnit();
     LGL_ERROR;
 
@@ -381,7 +392,7 @@ void Labeling::labelLayout() {
  */
 #ifdef VRN_WITH_FONTRENDERING
 // TODO: Use new font system
-void Labeling::renderTextToBitmap(std::string text, int fontSize, const ColorProperty& labelColor, const ColorProperty& haloColor,
+void Labeling::renderTextToBitmap(std::string text, int fontSize, const FloatVec4Property& labelColor, const FloatVec4Property& haloColor,
                                     labeling::Bitmap<GLfloat> &bitmap,
                                     bool antialias, int border, int glyphAdvance,
                                     bool drawHalo, int haloOffset )
@@ -512,8 +523,8 @@ void Labeling::renderTextToBitmap(std::string text, int fontSize, const ColorPro
     }
 }
 #else // VRN_WITH_FONTRENDERING
-void Labeling::renderTextToBitmap(std::string /*text*/, int /*fontSize*/, const ColorProperty& labelColor,
-                                    const ColorProperty& /*haloColor*/, labeling::Bitmap<GLfloat> &bitmap,
+void Labeling::renderTextToBitmap(std::string /*text*/, int /*fontSize*/, const FloatVec4Property& labelColor,
+                                    const FloatVec4Property& /*haloColor*/, labeling::Bitmap<GLfloat> &bitmap,
                                     bool /*antialias*/, int /*border*/, int /*glyphAdvance*/,
                                     bool /*drawHalo*/, int /*haloOffset*/ )
 {
@@ -2475,13 +2486,13 @@ bool Labeling::findLabelPathBest(Label &pLabel) {
 
         if (maxIndex > -1) {
             pLabel.controlPoints = labelPath[maxIndex];
-            float pathLength = 0;
-            for (size_t point=0; point<pLabel.controlPoints.size()-1; ++point) {
-                pathLength += sqrtf(powf(pLabel.controlPoints[point+1].x -
-                                         static_cast<float>(pLabel.controlPoints[point].x), 2.f) +
-                                    powf(static_cast<float>(pLabel.controlPoints[point+1].y) -
-                                         pLabel.controlPoints[point].y, 2.f));
-            }
+            //float pathLength = 0;
+            //for (size_t point=0; point<pLabel.controlPoints.size()-1; ++point) {
+            //    pathLength += sqrtf(powf(pLabel.controlPoints[point+1].x -
+            //                             static_cast<float>(pLabel.controlPoints[point].x), 2.f) +
+            //                        powf(static_cast<float>(pLabel.controlPoints[point+1].y) -
+            //                             pLabel.controlPoints[point].y, 2.f));
+            //}
             pLabel.intern = pLabel.labelData->internPreferred;
 
             // invert control points if curve is running from right to left

@@ -30,7 +30,7 @@
 #ifndef VRN_VOLUMEMORPHOLOGY_H
 #define VRN_VOLUMEMORPHOLOGY_H
 
-#include "voreen/modules/base/processors/volume/volumeprocessor.h"
+#include "voreen/core/processors/volumeprocessor.h"
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/optionproperty.h"
 

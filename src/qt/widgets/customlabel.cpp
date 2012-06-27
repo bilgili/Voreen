@@ -30,30 +30,63 @@
 #include "voreen/qt/widgets/customlabel.h"
 #include "voreen/qt/widgets/property/qpropertywidget.h"
 
+#include <QContextMenuEvent>
 #include <QFont>
+#include <QLineEdit>
+#include <QMenu>
 #include <QWidget>
-
-namespace {
-#ifdef __APPLE__
-    const int fontSize = 13;
-#else
-    const int fontSize = 8;
-#endif
-}
 
 namespace voreen {
 
-CustomLabel::CustomLabel(QWidget* parent, Qt::WindowFlags f) : QLabel(parent, f) {
-    initFont();
-    processText();
+CustomLabel::CustomLabel(const char* text, QPropertyWidget* pw, QWidget* parent,
+                         Qt::WindowFlags f, bool disallowWordwrap, bool editable)
+    : QLabel(text, parent, f)
+    , propertyWidget_(pw)
+    , disallowWordwrap_(disallowWordwrap)
+    , editable_(editable)
+{
+    init();
 }
 
-CustomLabel::CustomLabel(const QString& text, QWidget* parent, Qt::WindowFlags f, bool disallowWordwrap)
-    : QLabel(text, parent, f)
-    , disallowWordwrap_(disallowWordwrap)
+CustomLabel::CustomLabel(QPropertyWidget* pw, QWidget* parent, Qt::WindowFlags f, bool editable)
+    : QLabel(parent, f)
+    , propertyWidget_(pw)
+    , disallowWordwrap_(false)
+    , editable_(editable)
 {
+    init();
+}
+
+void CustomLabel::init() {
     initFont();
     processText();
+    edit_ = new QLineEdit(this);
+    edit_->hide();
+    connect(edit_, SIGNAL(editingFinished()), this, SLOT(editingFinished()));
+}
+
+void CustomLabel::editingFinished() {
+    setText(edit_->text());
+
+    if(propertyWidget_ != 0) {
+        propertyWidget_->setPropertyGuiName(edit_->text().toStdString());
+    }
+    edit_->hide();
+}
+
+void CustomLabel::contextMenuEvent(QContextMenuEvent* e) {
+    if (editable_) {
+        QMenu* men = new QMenu(this);
+        men->addAction("Rename");
+        QAction* ac = men->exec(e->globalPos());
+        if(ac != 0) {
+            edit_->setText(text());
+            edit_->setFocus();
+            edit_->setCursorPosition(edit_->text().length());
+            edit_->resize(size());
+            edit_->show();
+        }
+    }
 }
 
 void CustomLabel::initFont() {

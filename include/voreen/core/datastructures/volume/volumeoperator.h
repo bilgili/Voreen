@@ -31,6 +31,7 @@
 #define VRN_VOLUMEOPERATOR_H
 
 #include "voreen/core/datastructures/volume/volumeatomic.h"
+#include "voreen/core/io/progressbar.h"
 #include "voreen/core/utils/exception.h"
 
 #ifdef VRN_MODULE_FLOWREEN
@@ -58,6 +59,12 @@ public:
 template<class Derived>     // curiously recurring template pattern (CRTP) for static polymorphism
 class VolumeOperatorUnary {
 public:
+    /**
+     * Default constructor. Initializes the progressBar member with the null pointer.
+     */
+    VolumeOperatorUnary() :
+      progressBar_(0) {}
+
     virtual ~VolumeOperatorUnary() = 0; // keeps the class abstract
 
     /**
@@ -68,11 +75,16 @@ public:
     ReturnValue apply(Volume* volume) const;
 
     /**
-     * Alternative way for calling apply() when its return type is void.
+     * Assigns a progress bar that should be used by the
+     * operator for indicating progress.
      */
-    inline void operator()(Volume* volume) const {
-        apply<void>(volume);
+    void setProgressBar(ProgressBar* progress) {
+        progressBar_ = progress;
     }
+
+protected:
+    ProgressBar* progressBar_;  ///< to be used by concrete subclasses for indicating progress
+
 };
 
 /**
@@ -82,6 +94,12 @@ public:
 template<class Derived>     // curiously recurring template pattern (CRTP) for static polymorphism
 class VolumeOperatorBinary {
 public:
+    /**
+     * Default constructor. Initializes the progressBar member with the null pointer.
+     */
+    VolumeOperatorBinary() :
+      progressBar_(0) {}
+
     virtual ~VolumeOperatorBinary() = 0;
 
     /**
@@ -92,16 +110,148 @@ public:
     ReturnValue apply(Volume* v1, Volume* v2) const;
 
     /**
-     * Alternative way for calling apply() when its return type is void.
+     * Assigns a progress bar that should be used by the
+     * operator for indicating progress.
      */
-    inline void operator()(Volume* v1, Volume* v2) const {
-        apply<void>(v1, v2);
+    void setProgressBar(ProgressBar* progress) {
+        progressBar_ = progress;
     }
+
+protected:
+    ProgressBar* progressBar_;  ///< to be used by concrete subclasses for indicating progress
+
 };
+
+
+/**
+ * Variation of VRN_FOR_EACH_VOXEL that updates a progress bar
+ * for each z-slice that has been processed. The PROGRESS parameter
+ * may be null.
+ */
+#define VRN_FOR_EACH_VOXEL_WITH_PROGRESS(INDEX, POS, SIZE, PROGRESS) \
+    for (tgt::ivec3 (INDEX) = (POS); (INDEX).z < (SIZE).z; ++(INDEX).z, PROGRESS ? PROGRESS->setProgress(static_cast<float>(INDEX.z) / static_cast<float>(SIZE.z)) : void(0)) \
+        for ((INDEX).y = (POS).y; (INDEX).y < (SIZE).y; ++(INDEX).y)\
+            for ((INDEX).x = (POS).x; (INDEX).x < (SIZE).x; ++(INDEX).x)
 
 //
 // Some common volume operators
 //
+
+/**
+ * Returns a volume containing the subset [pos, pos+size[ of the passed input volume.
+ */
+class VolumeOperatorCreateSubset : public VolumeOperatorUnary<VolumeOperatorCreateSubset> {
+    friend class VolumeOperatorUnary<VolumeOperatorCreateSubset>;
+public:
+    VolumeOperatorCreateSubset(tgt::ivec3 pos, tgt::ivec3 size);
+    void setPos(tgt::ivec3 pos);
+    void setSize(tgt::ivec3 size);
+private:
+    tgt::ivec3 pos_;
+    tgt::ivec3 size_;
+
+    template<typename T>
+    VolumeAtomic<T>* apply_internal(VolumeAtomic<T>* inputVolume) const throw (std::bad_alloc);
+};
+
+/**
+ * Returns a resized copy of the passed input volume by keeping its
+ * remaining properties.
+ *
+ * @note The volume data is not copied by this operation.
+ *
+ * @see VolumeOperatorResample
+ *
+ * @return the resized volume
+ */
+class VolumeOperatorResize : public VolumeOperatorUnary<VolumeOperatorResize> {
+    friend class VolumeOperatorUnary<VolumeOperatorResize>;
+public:
+    /**
+     * @param newDims The target dimensions
+     * @param allocMem If true, a new data buffer is allocated
+     */
+    VolumeOperatorResize(tgt::ivec3 newDims, bool allocMem = true);
+    void setNewDims(tgt::ivec3 newDims);
+    void setAllocMem(bool allocMem);
+private:
+    tgt::ivec3 newDims_;
+    bool allocMem_;
+
+    template<typename T>
+    VolumeAtomic<T>* apply_internal(VolumeAtomic<T>* inputVolume) const throw (std::bad_alloc);
+};
+
+/**
+ * Returns a copy of the input volume that has been resampled to the specified dimensions
+ * by using the given filtering mode.
+ *
+ * @return the resampled volume
+ */
+class VolumeOperatorResample : public VolumeOperatorUnary<VolumeOperatorResample> {
+    friend class VolumeOperatorUnary<VolumeOperatorResample>;
+public:
+    /**
+     * @param newDims the target dimensions
+     * @param filter The filtering mode to use for calculating the resampled values.
+     */
+    VolumeOperatorResample(tgt::ivec3 newDims, Volume::Filter filter);
+    void setNewDims(tgt::ivec3 newDims);
+    void setFilter(Volume::Filter filter);
+private:
+    tgt::ivec3 newDims_;
+    Volume::Filter filter_;
+
+    template<typename T>
+    VolumeAtomic<T>* apply_internal(VolumeAtomic<T>* inputVolume) const throw (std::bad_alloc);
+};
+
+/**
+ * Reduces the Volumes resolution by half, by linearly downsampling 8 voxels
+ * to 1 voxel. This does not necessarily happen when using the resample(..) function.
+ *
+ * @return the resampled volume
+ */
+class VolumeOperatorHalfsample : public VolumeOperatorUnary<VolumeOperatorHalfsample> {
+    friend class VolumeOperatorUnary<VolumeOperatorHalfsample>;
+private:
+    template<typename T>
+    VolumeAtomic<T>* apply_internal(VolumeAtomic<T>* volume) const throw (std::bad_alloc);
+};
+
+/**
+ * Converts the source volume's data to the destination volume's data type
+ * and writes the result to the dest volume.
+ *
+ * The source volume has to be passed to the constructor,
+ * the dest volume has to be passed to apply().
+ *
+ * @note The dest volume has to be instantiated by the caller
+ *       and must match the source volume in dimension and channel count.
+ */
+class VolumeOperatorConvert : public VolumeOperatorUnary<VolumeOperatorConvert> {
+    friend class VolumeOperatorUnary<VolumeOperatorConvert>;
+
+public:
+    /**
+     * @param srcVolume The volume to be converted. Must not be null.
+     */
+    VolumeOperatorConvert(const Volume* srcVolume) :
+        srcVolume_(srcVolume)
+    {}
+
+private:
+    /**
+     * Performs the conversion.
+     *
+     * @param destVolume The conversion target. Must not be null
+     *  and must match the source volume in dimensions and channel count.
+     */
+    template<typename T>
+    void apply_internal(VolumeAtomic<T>* destVolume) const;
+
+    const Volume* srcVolume_;
+};
 
 /**
  * Increase all voxel values in the volume by one.
@@ -201,6 +351,28 @@ class VolumeOperatorInvert : public VolumeOperatorUnary<VolumeOperatorInvert> {
 private:
     template<typename T>
     void apply_internal(VolumeAtomic<T>* volume) const;
+};
+
+/**
+ * Mirrors the volume on the X axis.
+ */
+class VolumeOperatorMirrorX : public VolumeOperatorUnary<VolumeOperatorMirrorX> {
+    friend class VolumeOperatorUnary<VolumeOperatorMirrorX>;
+private:
+    template<typename T>
+    void apply_internal(VolumeAtomic<T>* volume) const;
+
+};
+
+/**
+ * Mirrors the volume on the Y axis.
+ */
+class VolumeOperatorMirrorY : public VolumeOperatorUnary<VolumeOperatorMirrorY> {
+    friend class VolumeOperatorUnary<VolumeOperatorMirrorY>;
+private:
+    template<typename T>
+    void apply_internal(VolumeAtomic<T>* volume) const;
+
 };
 
 /**
@@ -459,10 +631,10 @@ template<class Derived> VolumeOperatorBinary<Derived>::~VolumeOperatorBinary() {
 
 template<class Derived> template<typename ReturnValue>
 ReturnValue VolumeOperatorBinary<Derived>::apply(Volume* v1, Volume* v2) const {
-    if (typeid(v1) != typeid(v2))
+    if (typeid(*v1) != typeid(*v2))
         throw VoreenException("VolumeOperatorBinary expects identical volume types, got: '"
-                              + std::string(typeid(v1).name()) + "' and '"
-                              + std::string(typeid(v2).name()) + "'.");
+                              + std::string(typeid(*v1).name()) + "' and '"
+                              + std::string(typeid(*v2).name()) + "'.");
 
     const Derived* const d = static_cast<const Derived* const>(this);
 
@@ -536,7 +708,264 @@ ReturnValue VolumeOperatorBinary<Derived>::apply(Volume* v1, Volume* v2) const {
 // Implementation of the operators
 ///////////////////////////////////////////////////////////////////////////////
 
+// ============================================================================
 
+template<typename T>
+VolumeAtomic<T>* VolumeOperatorCreateSubset::apply_internal(VolumeAtomic<T>* volume) const throw (std::bad_alloc) {
+        VolumeAtomic<T>* subset;
+    try {
+        subset = new VolumeAtomic<T>(size_, volume->getSpacing(), volume->getTransformation(), volume->getBitsStored());
+    }
+    catch (std::bad_alloc) {
+        LERRORC("voreen.VolumeOperatorCreateSubset", "Failed to create subset: bad allocation");
+        throw; // throw it to the caller
+    }
+
+    subset->meta() = volume->meta();
+
+    // calculate new imageposition
+    if (pos_.z != 0.f)
+        subset->meta().setImagePositionZ(volume->meta().getImagePositionZ() - volume->getSpacing().z * pos_.z);
+
+    LINFOC("voreen.VolumeOperatorCreateSubset", "Creating subset " << size_ << " from position " << pos_);
+
+    // create values for ranges less than zero and greater equal dimensions_
+    subset->clear(); // TODO: This can be optomized by avoiding to clear the values in range
+
+    // now the rest
+    tgt::ivec3 start = tgt::max(pos_, tgt::ivec3::zero);// clamp values
+    tgt::ivec3 end   = tgt::min(pos_ + size_, volume->getDimensions());    // clamp values
+
+    VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), end - start)
+        subset->voxel(i) = volume->voxel(i+start);
+
+    return subset;
+}
+
+template<typename T>
+VolumeAtomic<T>* VolumeOperatorResize::apply_internal(VolumeAtomic<T>* volume) const throw (std::bad_alloc) {
+
+    LINFOC("voreen.VolumeOperatorResize", "Resizing from dimensions " << volume->getDimensions() << " to " << newDims_);
+
+    // build target volume
+    VolumeAtomic<T>* result;
+    try {
+        result = new VolumeAtomic<T>(newDims_, volume->getSpacing(), volume->getTransformation(),
+            volume->getBitsStored(), allocMem_);
+    }
+    catch (std::bad_alloc) {
+        throw; // throw it to the caller
+    }
+    result->meta() = volume->meta();
+
+    return result;
+}
+
+template<typename T>
+VolumeAtomic<T>* VolumeOperatorResample::apply_internal(VolumeAtomic<T>* volume) const throw (std::bad_alloc) {
+    using tgt::vec3;
+    using tgt::ivec3;
+
+    LINFOC("voreen.VolumeOperatorResample", "Resampling from dimensions " << volume->getDimensions() << " to " << newDims_);
+
+    vec3 ratio = vec3(volume->getDimensions()) / vec3(newDims_);
+    vec3 invDims = 1.f / vec3(volume->getDimensions());
+
+    ivec3 pos = ivec3::zero; // iteration variable
+    vec3 nearest; // knows the new position of the target volume
+
+    // build target volume
+    VolumeAtomic<T>* v;
+    try {
+         v = new VolumeAtomic<T>(newDims_, volume->getSpacing()*ratio, volume->getTransformation(), volume->getBitsStored());
+    }
+    catch (std::bad_alloc) {
+        throw; // throw it to the caller
+    }
+
+    v->setTransformation(volume->getTransformation());
+    v->meta() = volume->meta();
+
+    if (progressBar_)
+        progressBar_->setProgress(0.f);
+
+    /*
+        Filter from the source volume to the target volume.
+    */
+    switch (filter_) {
+    case Volume::NEAREST:
+        for (pos.z = 0; pos.z < newDims_.z; ++pos.z) {
+
+            if (progressBar_)
+                progressBar_->setProgress(static_cast<float>(pos.z) / static_cast<float>(newDims_.z));
+
+            nearest.z = static_cast<float>(pos.z) * ratio.z;
+
+            for (pos.y = 0; pos.y < newDims_.y; ++pos.y) {
+                nearest.y = static_cast<float>(pos.y) * ratio.y;
+
+                for (pos.x = 0; pos.x < newDims_.x; ++pos.x) {
+                    nearest.x = static_cast<float>(pos.x) * ratio.x;
+
+                    ivec3 index = tgt::clamp(ivec3(nearest + 0.5f), ivec3(0), volume->getDimensions() - 1);
+                    v->voxel(pos) = volume->voxel(index); // round and do the lookup
+                }
+            }
+        }
+        break;
+
+    case Volume::LINEAR:
+        for (pos.z = 0; pos.z < newDims_.z; ++pos.z) {
+
+            if (progressBar_)
+                progressBar_->setProgress(static_cast<float>(pos.z) / static_cast<float>(newDims_.z));
+
+            nearest.z = static_cast<float>(pos.z) * ratio.z;
+
+            for (pos.y = 0; pos.y < newDims_.y; ++pos.y) {
+                nearest.y = static_cast<float>(pos.y) * ratio.y;
+
+                for (pos.x = 0; pos.x < newDims_.x; ++pos.x) {
+                    nearest.x = static_cast<float>(pos.x) * ratio.x;
+                    vec3 p = nearest - floor(nearest); // get decimal part
+                    ivec3 llb = ivec3(nearest);
+                    ivec3 urf = ivec3(ceil(nearest));
+                    urf = tgt::min(urf, volume->getDimensions() - 1); // clamp so the lookups do not exceed the dimensions
+
+                    /*
+                      interpolate linearly
+                    */
+                    typedef typename VolumeElement<T>::DoubleType Double;
+                    v->voxel(pos) =
+                        T(  Double(volume->voxel(llb.x, llb.y, llb.z)) * static_cast<double>((1.f-p.x)*(1.f-p.y)*(1.f-p.z))  // llB
+                          + Double(volume->voxel(urf.x, llb.y, llb.z)) * static_cast<double>((    p.x)*(1.f-p.y)*(1.f-p.z))  // lrB
+                          + Double(volume->voxel(urf.x, urf.y, llb.z)) * static_cast<double>((    p.x)*(    p.y)*(1.f-p.z))  // urB
+                          + Double(volume->voxel(llb.x, urf.y, llb.z)) * static_cast<double>((1.f-p.x)*(    p.y)*(1.f-p.z))  // ulB
+                          + Double(volume->voxel(llb.x, llb.y, urf.z)) * static_cast<double>((1.f-p.x)*(1.f-p.y)*(    p.z))  // llF
+                          + Double(volume->voxel(urf.x, llb.y, urf.z)) * static_cast<double>((    p.x)*(1.f-p.y)*(    p.z))  // lrF
+                          + Double(volume->voxel(urf.x, urf.y, urf.z)) * static_cast<double>((    p.x)*(    p.y)*(    p.z))  // urF
+                          + Double(volume->voxel(llb.x, urf.y, urf.z)) * static_cast<double>((1.f-p.x)*(    p.y)*(    p.z)));// ulF
+                }
+            }
+        }
+        break;
+    }
+
+    if (progressBar_)
+        progressBar_->setProgress(1.f);
+
+    return v;
+}
+
+// ============================================================================
+
+template<typename T>
+VolumeAtomic<T>* VolumeOperatorHalfsample::apply_internal(VolumeAtomic<T>* volume) const throw (std::bad_alloc) {
+    tgt::ivec3 dims = volume->getDimensions();
+    tgt::ivec3 halfDims = volume->getDimensions() / 2;
+
+    VolumeAtomic<T>* newVolume = new VolumeAtomic<T>(halfDims, volume->getSpacing()*2.f,
+        volume->getTransformation(), volume->getBitsStored());
+
+    typedef typename VolumeElement<T>::DoubleType Double;
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(index, tgt::ivec3(0), halfDims, progressBar_) {
+        tgt::ivec3 pos = index*2; // tgt::ivec3(2*x,2*y,2*z);
+        newVolume->voxel(index) =
+            T(  Double(volume->voxel(pos.x, pos.y, pos.z))          * (1.0/8.0) //LLF
+              + Double(volume->voxel(pos.x, pos.y, pos.z+1))        * (1.0/8.0) //LLB
+              + Double(volume->voxel(pos.x, pos.y+1, pos.z))        * (1.0/8.0) //ULF
+              + Double(volume->voxel(pos.x, pos.y+1, pos.z+1))      * (1.0/8.0) //ULB
+              + Double(volume->voxel(pos.x+1, pos.y, pos.z))        * (1.0/8.0) //LRF
+              + Double(volume->voxel(pos.x+1, pos.y, pos.z+1))      * (1.0/8.0) //LRB
+              + Double(volume->voxel(pos.x+1, pos.y+1, pos.z))      * (1.0/8.0) //URF
+              + Double(volume->voxel(pos.x+1, pos.y+1, pos.z+1))    * (1.0/8.0)); //URB
+    }
+    if (progressBar_)
+        progressBar_->setProgress(1.f);
+
+    return newVolume;
+}
+
+// ============================================================================
+
+template<typename T>
+void VolumeOperatorConvert::apply_internal(VolumeAtomic<T>* destVolume) const {
+
+    if (!srcVolume_)
+        throw VoreenException("VolumeOperatorConvert: source volume is null pointer");
+    if (!destVolume)
+        throw VoreenException("VolumeOperatorConvert: dest volume is null pointer");
+
+    if (destVolume->getDimensions() != srcVolume_->getDimensions())
+        throw VoreenException("VolumeOperatorConvert: volume dimensions must match");
+    if (destVolume->getNumChannels() != srcVolume_->getNumChannels())
+        throw VoreenException("VolumeOperatorConvert: number of channels must match");
+
+    // check the source volume's type
+    const VolumeUInt8* src8 = dynamic_cast<const VolumeUInt8*>(srcVolume_);
+    const VolumeUInt16* src16 = dynamic_cast<const VolumeUInt16*>(srcVolume_);
+    const VolumeFloat* srcFloat = dynamic_cast<const VolumeFloat*>(srcVolume_);
+    const VolumeDouble* srcDouble = dynamic_cast<const VolumeDouble*>(srcVolume_);
+
+    // check the dest volume's type
+    VolumeUInt8* dest8 = dynamic_cast<VolumeUInt8*>(destVolume);
+    VolumeUInt16* dest16 = dynamic_cast<VolumeUInt16*>(destVolume);
+
+    if (src8 && dest8) {
+        LINFOC("voreen.VolumeOperatorConvert" ,"No conversion necessary: source and dest type equal (VolumeUInt8)");
+        VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), src8->getDimensions())
+            dest8->voxel(i) = src8->voxel(i);
+    }
+    else if (src16 && dest16) {
+        LINFOC("voreen.VolumeOperatorConvert" ,"No conversion necessary: source and dest type equal (VolumeUInt16)");
+        VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), src16->getDimensions())
+            dest16->voxel(i) = src16->voxel(i);
+    }
+    else if (src16 && dest8) {
+        LINFOC("voreen.VolumeOperatorConvert", "Using accelerated conversion from VolumeUInt16 -> VolumeUInt8");
+        // because the number of shifting bits varies by the number of bits used it must be calculated
+        int shift = src16->getBitsStored() - dest8->getBitsStored();
+        VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), src16->getDimensions())
+            dest8->voxel(i) = src16->voxel(i) >> shift;
+    }
+    else if (src8 && dest16) {
+        LINFOC("voreen.VolumeOperatorConvert", "Using accelerated conversion from VolumeUInt8 -> VolumeUInt16");
+        // because the number of shifting bits varies by the number of bits used it must be calculated
+        int shift = dest16->getBitsStored() - src8->getBitsStored();
+        VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), src8->getDimensions())
+            dest16->voxel(i) = src8->voxel(i) << shift;
+    }
+    else if (srcFloat) {
+        float min = srcFloat->min();
+        float max = srcFloat->max();
+        float range = (max - min);
+
+        LINFOC("voreen.VolumeOperatorConvert", "Converting float volume with data range [" << min << "; " << max << "] to "
+            << destVolume->getBitsAllocated() << " bit (normalized).");
+
+        VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), srcFloat->getDimensions())
+            destVolume->setVoxelFloat((srcFloat->voxel(i) - min) / range, i);
+    }
+    else if (srcDouble) {
+        double min = srcDouble->min();
+        double max = srcDouble->max();
+        double range = (max - min);
+
+        LINFOC("voreen.VolumeOperatorConvert", "Converting double volume with data range [" << min << "; " << max << "] to "
+            << destVolume->getBitsAllocated() << " bit (normalized).");
+
+        VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), srcDouble->getDimensions())
+            destVolume->setVoxelFloat(static_cast<float>((srcDouble->voxel(i) - min) / range), i);
+    }
+    else {
+        LINFOC("voreen.VolumeOperatorConvert", "Using fallback with setVoxelFloat and getVoxelFloat");
+        VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), srcVolume_->getDimensions())
+            destVolume->setVoxelFloat(srcVolume_->getVoxelFloat(i), i);
+    }
+
+    if (progressBar_)
+        progressBar_->setProgress(1.f);
+}
 
 // ============================================================================
 
@@ -702,14 +1131,53 @@ void VolumeOperatorInvert::apply_internal(VolumeAtomic<T>* volume) const {
 // ============================================================================
 
 template<typename T>
+void VolumeOperatorMirrorX::apply_internal(VolumeAtomic<T>* volume) const {
+    // This could also be implemented without an additional copy...
+    VolumeAtomic<T>* mirror = volume->clone();
+
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::ivec3(0), mirror->getDimensions(), progressBar_)
+        volume->voxel(i) = mirror->voxel(mirror->getDimensions().x - i.x - 1, i.y, i.z);
+
+    delete mirror;
+
+    if (progressBar_)
+        progressBar_->setProgress(1.f);
+
+    volume->invalidate();
+}
+
+// ============================================================================
+
+template<typename T>
+void VolumeOperatorMirrorY::apply_internal(VolumeAtomic<T>* volume) const {
+    // This could also be implemented without an additional copy...
+    VolumeAtomic<T>* mirror = volume->clone();
+
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::ivec3(0), mirror->getDimensions(), progressBar_)
+        volume->voxel(i) = mirror->voxel(i.x, mirror->getDimensions().y - i.y - 1, i.z);
+
+    delete mirror;
+
+    if (progressBar_)
+        progressBar_->setProgress(1.f);
+
+    volume->invalidate();
+}
+
+// ============================================================================
+
+template<typename T>
 void VolumeOperatorMirrorZ::apply_internal(VolumeAtomic<T>* volume) const {
     // This could also be implemented without an additional copy...
     VolumeAtomic<T>* mirror = volume->clone();
 
-    VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), mirror->getDimensions())
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::ivec3(0), mirror->getDimensions(), progressBar_)
         volume->voxel(i) = mirror->voxel(i.x, i.y, mirror->getDimensions().z - i.z - 1);
 
     delete mirror;
+
+    if (progressBar_)
+        progressBar_->setProgress(1.f);
 
     volume->invalidate();
 }
@@ -741,7 +1209,10 @@ float VolumeOperatorCalcError::apply_internal(VolumeAtomic<T>* v1, VolumeAtomic<
         for (int j=0; j<v1->getDimensions().y; j++) {
             for (int k=0; k<v1->getDimensions().x; k++) {
                 tgt::ivec3 currentPos = tgt::ivec3(k,j,i);
-                tgt::ivec3 smallVolumePos = calcPosInSmallerVolume(currentPos, factor);
+                tgt::ivec3 smallVolumePos;
+                smallVolumePos.x = static_cast<int>( floor(currentPos.x / (float)factor.x));
+                smallVolumePos.y = static_cast<int>( floor(currentPos.y / (float)factor.y));
+                smallVolumePos.z = static_cast<int>( floor(currentPos.z / (float)factor.z));
                 T origVoxel = v1->voxel(currentPos);
                 T errVoxel = v2->voxel(smallVolumePos);
 
@@ -853,6 +1324,10 @@ void VolumeOperatorDilation::apply_internal(VolumeAtomic<T>* volume) const {
     }
 
     delete input;
+
+    if (progressBar_)
+        progressBar_->setProgress(1.f);
+
     volume->invalidate();
 }
 
@@ -924,6 +1399,10 @@ void VolumeOperatorErosion::apply_internal(VolumeAtomic<T>* volume) const {
     }
 
     delete input;
+
+    if (progressBar_)
+        progressBar_->setProgress(1.f);
+
     volume->invalidate();
 }
 
@@ -952,7 +1431,7 @@ void VolumeOperatorMedian::apply_internal(VolumeAtomic<T>* volume) const {
 
     int halfKernelDim = kernelSize_ / 2;
     tgt::ivec3 volDim = input->getDimensions();
-    VRN_FOR_EACH_VOXEL(pos, tgt::ivec3(0), volDim) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, tgt::ivec3(0), volDim, progressBar_) {
         int zmin = std::max(pos.z-halfKernelDim, 0);
         int zmax = std::min(pos.z+halfKernelDim, volDim.z-1);
         int ymin = std::max(pos.y-halfKernelDim, 0);
@@ -974,6 +1453,10 @@ void VolumeOperatorMedian::apply_internal(VolumeAtomic<T>* volume) const {
         volume->voxel(pos) = values[len / 2];
     }
     delete input;
+
+    if (progressBar_)
+        progressBar_->setProgress(1.f);
+
     volume->invalidate();
 }
 

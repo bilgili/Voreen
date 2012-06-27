@@ -33,6 +33,7 @@
 // Note: please ensure that no OpenGL dependencies are added to this file
 
 #include "voreen/core/datastructures/volume/volumemetadata.h"
+#include "voreen/core/datastructures/geometry/meshgeometry.h"
 
 namespace voreen {
 
@@ -44,8 +45,8 @@ namespace voreen {
  * however, neither perform any OpenGL operations nor
  * does it hold any OpenGL-related properties.
  *
- * \sa VolumeGL
- *
+ * @see VolumeGL
+ * @see VolumeOperatorUnary, VolumeOperatorBinary
  */
 class Volume {
 public:
@@ -63,7 +64,8 @@ public:
      */
     Volume(const tgt::ivec3& dimensions,
            int bitsStored,
-           const tgt::vec3& spacing = tgt::vec3(1.f));
+           const tgt::vec3& spacing = tgt::vec3(1.f),
+           const tgt::mat4& transformation = tgt::mat4::identity);
 
     virtual ~Volume() {}
 
@@ -137,12 +139,60 @@ public:
     virtual const tgt::mat4& getTransformation() const;
 
     /**
+     * Returns volumes bounding box as MeshGeometry.
+     *
+     * @param applyTransformation if true, the bounding box
+     *  is transformed into world coordinates. Otherwise,
+     *  the bounding box is returned in the volume's object coordinates.
+     *  @see getVoxelToWorldMatrix
+     *
+     * @note The mesh is internally created on each call.
+     */
+    virtual MeshGeometry getBoundingBox(bool applyTransformation = true) const;
+
+    /**
      * Returns the matrix mapping from voxel coordinates (i.e. [0; dim-1])
      * to world coordinates.
      *
+     * @param applyTransformation if true, the volume's transformation matrix
+     *  is incorporated in the result.
+     *
      * @note The matrix is internally created on each call.
      */
-    virtual tgt::mat4 getVoxelToWorldMatrix() const;
+    virtual tgt::mat4 getVoxelToWorldMatrix(bool applyTransformation = true) const;
+
+    /**
+     * Returns the matrix mapping from world coordinates
+     * to voxel coordinates (i.e. [0; dim-1]).
+     *
+     * @param applyTransformation if true, the volume's transformation matrix
+     *  is incorporated in the result.
+     *
+     * @note The matrix is internally created on each call.
+     */
+    virtual tgt::mat4 getWorldToVoxelMatrix(bool applyTransformation = true) const;
+
+    /**
+     * Returns the matrix mapping from texture coordinates (i.e. [0.0; 1.0])
+     * to world coordinates.
+     *
+     * @param applyTransformation if true, the volume's transformation matrix
+     *  is incorporated in the result.
+     *
+     * @note The matrix is internally created on each call.
+     */
+    virtual tgt::mat4 getTextureToWorldMatrix(bool applyTransformation = true) const;
+
+    /**
+     * Returns the matrix mapping from world coordinates
+     * to texture coordinates (i.e. [0.0; 1.0]).
+     *
+     * @param applyTransformation if true, the volume's transformation matrix
+     *  is incorporated in the result.
+     *
+     * @note The matrix is internally created on each call.
+     */
+    virtual tgt::mat4 getWorldToTextureMatrix(bool applyTransformation = true) const;
 
     /**
      * @deprecated meta data will be moved to volume handle
@@ -244,55 +294,12 @@ public:
     /// Gets a void* to the data stored with this Volume
     virtual void* getData() = 0;
 
-    virtual Volume* createSubset(tgt::ivec3 pos, tgt::ivec3 size) const
-        throw (std::bad_alloc) = 0;
-
-    /**
-     * Resizes the volume to the specified dimensions by keeping its
-     * remaining properties.
-     *
-     * @note The volume data is is cleared by this operation.
-     *
-     * @param newDims the volume's new dimensions
-     * @param allocMem if true, a new data buffer is allocated
-     *
-     */
-    virtual void resize(tgt::ivec3 newDims, bool allocMem = true)
-        throw (std::bad_alloc) = 0;
-
-    /**
-     * Returns a volume that has been resampled to the specified dimensions
-     * by using the given filtering mode.
-     *
-     * @return the resampled volume
-     */
-    virtual Volume* resample(tgt::ivec3 newDims, Filter filter) const
-        throw (std::bad_alloc) = 0;
-
-    /**
-     * Reduces the Volumes resolution by half, by linearly downsampling 8 voxels
-     * to 1 voxel. This does not necessarily happen when using the resample(..) function.
-     *
-     * @return the resampled volume
-     */
-    virtual Volume* halfsample() const
-        throw (std::bad_alloc);
-
-    /**
-     * Use this method in order to copy over the data from \p v to this Volume
-     * while converting the data to this volume's voxel type.
-     *
-     * @param v The source volume. Must match this volume in dimension and channel count!
-     */
-    void convert(const Volume* v);
-
     /**
      * Use this as type safe wrapper in order to get a proper typed pointer.
      */
     template<class T>
     inline static typename T::VoxelType* getData(T* v);
 
-    //-------------------------------------------------------------------
 protected:
     // protected default constructor
     Volume() {}

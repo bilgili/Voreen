@@ -34,6 +34,8 @@
 
 namespace voreen {
 
+class Port;
+class PortConnection;
 class Processor;
 
 class AggregationMetaData : public Serializable {
@@ -51,12 +53,20 @@ public:
     void setAggregations(const std::vector<AggregationMetaData*>& aggregations);
     const std::vector<AggregationMetaData*>& getAggregations() const;
 
+    void addPortConnection(Port* outport, Port* inport);
+    const std::vector<PortConnection>& getPortConnections() const;
+
     void setPosition(const int& x, const int& y);
     std::pair<int,int> getPosition() const;
 
+    void setName(const std::string& name);
+    const std::string& getName() const;
+
 private:
+    std::string name_;
     std::vector<Processor*> processors_;
     std::vector<AggregationMetaData*> aggregations_;
+    std::vector<PortConnection> portConnections_;
     int positionX_;
     int positionY_;
 };

@@ -35,8 +35,9 @@
 #include "voreen/core/properties/link/linkevaluatorpython.h"
 #include "voreen/core/properties/link/scriptmanagerlinking.h"
 #include "voreen/core/properties/link/boxobject.h"
-#include "voreen/core/properties/allproperties.h"
+
 #include "voreen/core/properties/property.h"
+#include "voreen/core/properties/shaderproperty.h"
 #include "voreen/core/datastructures/transfunc/transfuncintensity.h"
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
 #include "voreen/core/properties/link/linkevaluatorfactory.h"

@@ -61,7 +61,7 @@ void RenderLoopFinalizer::initialize() throw (VoreenException) {
     RenderProcessor::initialize();
 
     shaderPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "copyimage.frag",
-        generateHeader(), false, false);
+        generateHeader(), false);
 
     if (!shaderPrg_) {
         LERROR("Failed to load shaders!");
@@ -107,7 +107,7 @@ void RenderLoopFinalizer::process() {
     // pass the remaining uniforms to the shader
     shaderPrg_->setUniform("colorTex_", colorUnit.getUnitNumber());
     shaderPrg_->setUniform("depthTex_", depthUnit.getUnitNumber());
-    inport_.setTextureParameters(shaderPrg_, "texParameters_");
+    inport_.setTextureParameters(shaderPrg_, "texParams_");
 
     renderQuad();
 

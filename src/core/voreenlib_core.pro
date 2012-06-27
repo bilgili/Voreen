@@ -38,6 +38,52 @@ for(i, VRN_MODULES) : include($${VRN_HOME}/src/modules/$${i}/$${i}_core.pri)
 
 PRECOMPILED_HEADER = ../../pch.h
 
+#
+# Generate module registration file
+# 
+contains(DEFINES, VRN_NO_MODULE_AUTO_REGISTRATION) { 
+    message("Using static module registration file 'moduleregistration.h'")
+    HEADERS += "$${VRN_HOME}/include/voreen/modules/moduleregistration.h"
+}
+else {
+    message ("Generating module registration file 'gen_moduleregistration.h'")
+    MODULE_REGISTRATION_FILE = "$${VRN_HOME}/include/voreen/modules/gen_moduleregistration.h"
+
+    REGIST_LINES += "$${LITERAL_HASH}include \"voreen/core/voreenapplication.h\""
+    REGIST_LINES += "// module class headers"
+    for(i, VRN_MODULE_CLASS_HEADERS) {
+        REGIST_LINES += "$${LITERAL_HASH}include \"voreen/modules/$${i}\""
+    }
+
+    REGIST_LINES += "// instantiate module classes"
+    REGIST_LINES += "namespace voreen \{"
+    REGIST_LINES += "void addAllModules(VoreenApplication* vapp) \{"
+    for(i, VRN_MODULE_CLASSES) {
+        REGIST_LINES += "(*vapp).addModule(new $${i}());"
+    }
+    REGIST_LINES += "}}" 
+#    REGIST_LINES += "\} // namespace"
+
+    # write lines to module registration file
+    win32 {
+        system(echo "// WARNING: This file is auto-generated!" > $${MODULE_REGISTRATION_FILE})
+        for(i, REGIST_LINES) : system(echo $${i}  >> $${MODULE_REGISTRATION_FILE})
+    }
+    
+    unix {
+        system(echo "\"// WARNING: This file is auto-generated!\"" > $${MODULE_REGISTRATION_FILE})
+        for(i, REGIST_LINES) : system(echo \'$${i}\'  >> $${MODULE_REGISTRATION_FILE})
+    }
+    
+    HEADERS += "$${VRN_HOME}/include/voreen/modules/gen_moduleregistration.h"
+}
+
+
+# add module class source/headers
+for(i, VRN_MODULE_CLASS_HEADERS) : HEADERS += $${VRN_MODULE_INC_DIR}/$${i}
+for(i, VRN_MODULE_CLASS_SOURCES) : SOURCES += $${VRN_MODULE_SRC_DIR}/$${i}
+    
+
 # please insert new files in alphabetically order!
 SOURCES += \
     utils/observer.cpp \
@@ -52,18 +98,21 @@ SOURCES += \
 SOURCES += \
     datastructures/imagesequence.cpp 
 SOURCES += \
+    datastructures/volume/volumeoperatorcreatesubset.cpp \
+    datastructures/volume/volumeoperatorresample.cpp \
+    datastructures/volume/volumeoperatorresize.cpp 
+SOURCES += \
     io/brickedvolumereader.cpp \
     io/brickedvolumewriter.cpp \
     io/cache.cpp \
     io/cacheindex.cpp \
     io/datvolumereader.cpp \
     io/datvolumewriter.cpp \
-    io/ioprogress.cpp \
+    io/progressbar.cpp \
     io/rawvolumereader.cpp \
     io/textfilereader.cpp \
     io/vevovolumereader.cpp \
     io/visiblehumanreader.cpp \
-    io/volumecache.cpp \
     io/volumereader.cpp \
     io/volumeserializer.cpp \
     io/volumeserializerpopulator.cpp \
@@ -80,6 +129,28 @@ SOURCES += \
     io/serialization/meta/positionmetadata.cpp \
     io/serialization/meta/windowstatemetadata.cpp \
     io/serialization/meta/zoommetadata.cpp
+SOURCES += \
+    plotting/aggregationfunction.cpp \
+    plotting/aggregationfunctionfactory.cpp \
+    plotting/colormap.cpp \
+    plotting/expression.cpp \
+    plotting/functionlibrary.cpp \
+    plotting/plotbase.cpp \
+    plotting/plotentitysettings.cpp \
+    plotting/plotdata.cpp \
+    plotting/plotcell.cpp \
+    plotting/plotfunction.cpp \
+    plotting/plotfunctionterminals.cpp \
+    plotting/plotfunctiongrammar.cpp \
+    plotting/plotfunctionlexer.cpp \
+    plotting/plotfunctionparser.cpp \
+    plotting/plotfunctionnode.cpp \
+    plotting/plotlibrary.cpp \
+    plotting/plotrow.cpp \
+    plotting/plotpredicate.cpp \
+    plotting/plotpredicatefactory.cpp \
+    plotting/plotselection.cpp \
+    plotting/smartlabel.cpp 
 SOURCES += \
     datastructures/rendertarget.cpp \
     utils/pyvoreen.cpp \
@@ -115,7 +186,7 @@ SOURCES += \
     animation/serializationfactories.cpp \
     animation/templatepropertytimeline.cpp \
     animation/templatepropertytimelinestate.cpp
-SOURCES += \ 
+SOURCES += \
     utils/GLSLparser/glslprogram.cpp \
     utils/GLSLparser/grammarsymbol.cpp \
     utils/GLSLparser/lexer.cpp \
@@ -148,12 +219,14 @@ SOURCES += \
     utils/GLSLparser/preprocessor/ppvisitor.cpp
 SOURCES += \
     interaction/camerainteractionhandler.cpp \
+    interaction/plotcamerainteractionhandler.cpp \
     interaction/firstpersonnavigation.cpp \
     interaction/flythroughnavigation.cpp \
     interaction/idmanager.cpp \
     interaction/interactionhandler.cpp \
     interaction/interactionhandlerfactory.cpp \
     interaction/pickingmanager.cpp \
+    interaction/plotpickingmanager.cpp \
     interaction/trackballnavigation.cpp \
     interaction/voreentrackball.cpp
 SOURCES += \
@@ -166,6 +239,7 @@ SOURCES += \
     network/workspace.cpp 
 SOURCES += \
     ports/coprocessorport.cpp \
+    ports/plotport.cpp \
     ports/port.cpp \
     ports/renderport.cpp \
     ports/textport.cpp \
@@ -180,6 +254,7 @@ SOURCES += \
     processors/processorwidget.cpp \
     processors/profiling.cpp \
     processors/renderprocessor.cpp \
+    processors/volumeprocessor.cpp \
     processors/volumeraycaster.cpp \
     processors/volumerenderer.cpp
 
@@ -187,6 +262,7 @@ SOURCES += \
     properties/link/boxobject.cpp\
     properties/link/changeaction.cpp \
     properties/link/changedata.cpp \
+    properties/link/dependencylinkevaluator.cpp \
     properties/link/linkevaluatorboolinvert.cpp \
     properties/link/linkevaluatorfactory.cpp \
     properties/link/linkevaluatorid.cpp \
@@ -195,22 +271,28 @@ SOURCES += \
     properties/link/propertylink.cpp \
     properties/link/scriptmanagerlinking.cpp
 SOURCES += \
+    properties/colorproperty.cpp \
+    properties/lightproperty.cpp \
     properties/boolproperty.cpp \
     properties/buttonproperty.cpp \
     properties/cameraproperty.cpp \
-    properties/colorproperty.cpp \
+    properties/colormapproperty.cpp \
     properties/condition.cpp \
     properties/eventproperty.cpp \
     properties/filedialogproperty.cpp \
     properties/floatproperty.cpp \
+    properties/fontproperty.cpp \
     properties/intproperty.cpp \
-    properties/lightproperty.cpp \
+    properties/plotentitiesproperty.cpp \
     properties/matrixproperty.cpp \
     properties/numericproperty.cpp \
     properties/optionproperty.cpp \
+    properties/plotpredicateproperty.cpp \
+    properties/plotselectionproperty.cpp \
     properties/property.cpp \
     properties/propertyowner.cpp \
     properties/propertyvector.cpp \
+    properties/plotdataproperty.cpp \
     properties/shaderproperty.cpp \
     properties/stringproperty.cpp \
     properties/transfuncproperty.cpp \
@@ -247,7 +329,6 @@ SOURCES += \
     datastructures/volume/bricking/brick.cpp \
     datastructures/volume/bricking/brickedvolume.cpp \
     datastructures/volume/bricking/brickedvolumegl.cpp \
-    datastructures/volume/bricking/brickinginformation.cpp \
     datastructures/volume/bricking/brickingregion.cpp \
     datastructures/volume/bricking/brickingregionmanager.cpp \
     datastructures/volume/bricking/bricklodselector.cpp \
@@ -305,8 +386,7 @@ HEADERS += \
     ../../include/voreen/core/voreenapplication.h \
     ../../include/voreen/core/voreenmodule.h \
     ../../include/voreen/core/utils/observer.h \
-    ../../include/voreen/core/utils/stringconversion.h \
-    ../../include/voreen/modules/moduleregistration.h
+    ../../include/voreen/core/utils/stringconversion.h 
 HEADERS += \
     ../../include/voreen/core/utils/cmdparser/command.h \
     ../../include/voreen/core/utils/cmdparser/command_loglevel.h \
@@ -333,17 +413,15 @@ HEADERS += \
     ../../include/voreen/core/io/cacheindex.h \
     ../../include/voreen/core/io/datvolumereader.h \
     ../../include/voreen/core/io/datvolumewriter.h \
-    ../../include/voreen/core/io/ioprogress.h \
+    ../../include/voreen/core/io/progressbar.h \
     ../../include/voreen/core/io/rawvolumereader.h \
     ../../include/voreen/core/io/textfilereader.h \
     ../../include/voreen/core/io/vevovolumereader.h \
     ../../include/voreen/core/io/visiblehumanreader.h \
-    ../../include/voreen/core/io/volumecache.h \
     ../../include/voreen/core/io/volumereader.h \
     ../../include/voreen/core/io/volumeserializer.h \
     ../../include/voreen/core/io/volumeserializerpopulator.h \
-    ../../include/voreen/core/io/volumewriter.h \
-    ../../include/voreen/core/io/voreendcmtk.h
+    ../../include/voreen/core/io/volumewriter.h 
 HEADERS += \
     ../../include/voreen/core/io/serialization/abstractserializable.h \
     ../../include/voreen/core/io/serialization/serializable.h \
@@ -365,6 +443,29 @@ HEADERS += \
     ../../include/voreen/core/io/serialization/meta/windowstatemetadata.h \
     ../../include/voreen/core/io/serialization/meta/zoommetadata.h
 HEADERS += \
+    ../../include/voreen/core/plotting/aggregationfunction.h \
+    ../../include/voreen/core/plotting/aggregationfunctionfactory.h \
+    ../../include/voreen/core/plotting/colormap.h \
+    ../../include/voreen/core/plotting/plotentitysettings.h \
+    ../../include/voreen/core/plotting/expression.h \
+    ../../include/voreen/core/plotting/interval.h \
+    ../../include/voreen/core/plotting/functionlibrary.h \
+    ../../include/voreen/core/plotting/plotbase.h \
+    ../../include/voreen/core/plotting/plotcell.h \
+    ../../include/voreen/core/plotting/plotdata.h \
+    ../../include/voreen/core/plotting/plotfunction.h \
+    ../../include/voreen/core/plotting/plotfunctionterminals.h \
+    ../../include/voreen/core/plotting/plotfunctiongrammar.h \
+    ../../include/voreen/core/plotting/plotfunctionlexer.h \
+    ../../include/voreen/core/plotting/plotfunctionparser.h \
+    ../../include/voreen/core/plotting/plotfunctionnode.h \
+    ../../include/voreen/core/plotting/plotlibrary.h \
+    ../../include/voreen/core/plotting/plotpredicate.h \    
+    ../../include/voreen/core/plotting/plotpredicatefactory.h \    
+    ../../include/voreen/core/plotting/plotrow.h \
+    ../../include/voreen/core/plotting/plotselection.h \
+    ../../include/voreen/core/plotting/plotzoomstate.h \
+    ../../include/voreen/core/plotting/smartlabel.h \
     ../../include/voreen/core/animation/animatedprocessor.h \
     ../../include/voreen/core/animation/animation.h \
     ../../include/voreen/core/animation/animationobserver.h \
@@ -449,13 +550,15 @@ HEADERS += \
     ../../include/voreen/core/utils/GLSLparser/preprocessor/ppvisitor.h
 HEADERS += \
     ../../include/voreen/core/interaction/camerainteractionhandler.h \
+    ../../include/voreen/core/interaction/plotcamerainteractionhandler.h \
     ../../include/voreen/core/interaction/firstpersonnavigation.h \
     ../../include/voreen/core/interaction/flythroughnavigation.h \  
     ../../include/voreen/core/interaction/idmanager.h \
     ../../include/voreen/core/interaction/interactionhandler.h \
-    ../../include/voreen/core/interaction/interactionhandlerfactory.h \       
+    ../../include/voreen/core/interaction/interactionhandlerfactory.h \
     ../../include/voreen/core/interaction/mwheelnumpropinteractionhandler.h \
     ../../include/voreen/core/interaction/pickingmanager.h \
+    ../../include/voreen/core/interaction/plotpickingmanager.h \
     ../../include/voreen/core/interaction/trackballnavigation.h \
     ../../include/voreen/core/interaction/voreentrackball.h
 HEADERS += \
@@ -476,6 +579,7 @@ HEADERS += \
     ../../include/voreen/core/ports/coprocessorport.h \
     ../../include/voreen/core/ports/genericcoprocessorport.h \
     ../../include/voreen/core/ports/genericport.h \
+    ../../include/voreen/core/ports/plotport.h \
     ../../include/voreen/core/ports/port.h \
     ../../include/voreen/core/ports/renderport.h \
     ../../include/voreen/core/ports/textport.h \
@@ -491,12 +595,14 @@ HEADERS += \
     ../../include/voreen/core/processors/processorwidgetfactory.h \
     ../../include/voreen/core/processors/profiling.h \
     ../../include/voreen/core/processors/renderprocessor.h \
+    ../../include/voreen/core/processors/volumeprocessor.h \
     ../../include/voreen/core/processors/volumeraycaster.h \    
     ../../include/voreen/core/processors/volumerenderer.h 
-HEADERS += \             
+HEADERS += \
     ../../include/voreen/core/properties/link/boxobject.h \
     ../../include/voreen/core/properties/link/changeaction.h \
     ../../include/voreen/core/properties/link/changedata.h \
+	../../include/voreen/core/properties/link/dependencylinkevaluator.h \
     ../../include/voreen/core/properties/link/linkevaluatorbase.h \
     ../../include/voreen/core/properties/link/linkevaluatorboolinvert.h \
     ../../include/voreen/core/properties/link/linkevaluatorfactory.h \
@@ -509,26 +615,32 @@ HEADERS += \
     ../../include/voreen/core/properties/action.h \
     ../../include/voreen/core/properties/allactions.h \
     ../../include/voreen/core/properties/allproperties.h \
+    ../../include/voreen/core/properties/colorproperty.h \
+    ../../include/voreen/core/properties/lightproperty.h \
     ../../include/voreen/core/properties/boolproperty.h \
     ../../include/voreen/core/properties/buttonproperty.h \
     ../../include/voreen/core/properties/callmemberaction.h \
     ../../include/voreen/core/properties/cameraproperty.h \
-    ../../include/voreen/core/properties/colorproperty.h \
+    ../../include/voreen/core/properties/colormapproperty.h \
     ../../include/voreen/core/properties/condition.h \
     ../../include/voreen/core/properties/eventproperty.h \
     ../../include/voreen/core/properties/filedialogproperty.h \
     ../../include/voreen/core/properties/floatproperty.h \
+    ../../include/voreen/core/properties/fontproperty.h \
+    ../../include/voreen/core/properties/plotentitiesproperty.h \
     ../../include/voreen/core/properties/intproperty.h \
-    ../../include/voreen/core/properties/lightproperty.h \
     ../../include/voreen/core/properties/matrixproperty.h \
     ../../include/voreen/core/properties/numericproperty.h \
     ../../include/voreen/core/properties/optionproperty.h \
+    ../../include/voreen/core/properties/plotpredicateproperty.h \
+    ../../include/voreen/core/properties/plotselectionproperty.h \
     ../../include/voreen/core/properties/properties_decl.h \
     ../../include/voreen/core/properties/property.h \
     ../../include/voreen/core/properties/propertyowner.h \
     ../../include/voreen/core/properties/propertyvector.h \
     ../../include/voreen/core/properties/propertywidget.h \
     ../../include/voreen/core/properties/propertywidgetfactory.h \
+    ../../include/voreen/core/properties/plotdataproperty.h \
     ../../include/voreen/core/properties/shaderproperty.h \
     ../../include/voreen/core/properties/stringproperty.h \
     ../../include/voreen/core/properties/targetaction.h \
@@ -593,20 +705,19 @@ HEADERS += \
     ../../ext/fboClass/fboclass_framebufferObject.h \
     ../../ext/fboClass/fboclass_renderbuffer.h
 
-# DICOM reader
-contains(DEFINES, VRN_WITH_DCMTK) {
-  SOURCES += \
-      io/dicomfindscu.cpp \
-      io/dicommovescu.cpp \
-      io/dicomvolumereader.cpp \
-      io/dicomvolumewriter.cpp
-  HEADERS += \
-      ../../include/voreen/core/io/dicomfindscu.h \
-      ../../include/voreen/core/io/dicommovescu.h \
-      ../../include/voreen/core/io/dicomseriesinfo.h \
-      ../../include/voreen/core/io/dicomvolumereader.h \
-      ../../include/voreen/core/io/dicomvolumewriter.h
+contains(DEFINES, VRN_MODULE_EXPERIMENTAL) { 
+SOURCES += \
+    properties/volumestreamproperty.cpp 
+HEADERS += \
+    ../../include/voreen/core/properties/volumestreamproperty.h
 }
+
+HEADERS = $$unique(HEADERS)
+SOURCES = $$unique(SOURCES)
+
+####################################################
+# Modules which can be enabled/disabled by defines
+####################################################
 
 # TIFF Reader
 contains(DEFINES, VRN_WITH_TIFF) {
@@ -622,18 +733,6 @@ contains(DEFINES, VRN_WITH_ZLIB) {
       io/zipvolumereader.cpp
   HEADERS += \
       ../../include/voreen/core/io/zipvolumereader.h
-}
-
-# OpenCL support
-contains(DEFINES, VRN_WITH_OPENCL) {
-  SOURCES += \
-      utils/clwrapper.cpp
-  HEADERS += \
-      ../../include/voreen/core/utils/clwrapper.h
-}
-
-unix : contains(DEFINES, VRN_WITH_CLIBPDF) {
-   LIBS += -lcpdf
 }
 
 unix : contains(DEFINES, VRN_WITH_FREETYPE) {

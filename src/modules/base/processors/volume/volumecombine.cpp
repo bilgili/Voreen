@@ -29,8 +29,8 @@
 
 #include "voreen/modules/base/processors/volume/volumecombine.h"
 
-#include "voreen/core/datastructures/volume/histogram.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
+#include "voreen/core/datastructures/volume/volumeoperator.h"
 #include "voreen/core/datastructures/geometry/meshlistgeometry.h"
 
 using tgt::ivec3;
@@ -46,10 +46,10 @@ VolumeCombine::VolumeCombine()
     , inportSecond_(Port::INPORT, "volume.second")
     , outport_(Port::OUTPORT, "outport", true)
     , enableProcessing_("enabled", "Enable", true)
-    , combineFunction_("combineFunction", "Combine function")
-    , factorC_("factorC", "Factor c", 0.5f, -1.f, 1.f)
-    , factorD_("factorD", "Factor d", 0.5f, -1.f, 1.f)
-    , referenceVolume_("referenceVolume", "Reference volume")
+    , combineFunction_("combineFunction", "Combine Function")
+    , factorC_("factorC", "Factor c", 0.5f, -2.f, 2.f)
+    , factorD_("factorD", "Factor d", 0.5f, -2.f, 2.f)
+    , referenceVolume_("referenceVolume", "Reference Volume")
     , volumeOwner_(false)
 {
     addPort(inportFirst_);
@@ -71,13 +71,15 @@ VolumeCombine::VolumeCombine()
     combineFunction_.addOption("prioritySecond",   "Priority Second (B?B:A)",    OP_PRIORITY_SECOND);
     combineFunction_.addOption("takeFirst",        "Take First (A)",             OP_TAKE_FIRST);
     combineFunction_.addOption("takeSecond",       "Take Second (B)",            OP_TAKE_SECOND);
-    combineFunction_.addOption("informationBased", "Information Based",          OP_INFORMATION_BASED);
     combineFunction_.select("max");
 
     referenceVolume_.addOption("first", "First");
     referenceVolume_.addOption("second", "Second");
 
     combineFunction_.onChange(CallMemberAction<VolumeCombine>(this, &VolumeCombine::adjustPropertyVisibilities));
+
+    factorC_.setTracking(false);
+    factorD_.setTracking(false);
 
     addProperty(enableProcessing_);
     addProperty(combineFunction_);
@@ -88,8 +90,7 @@ VolumeCombine::VolumeCombine()
     adjustPropertyVisibilities();
 }
 
-VolumeCombine::~VolumeCombine() {
-}
+VolumeCombine::~VolumeCombine() {}
 
 Processor* VolumeCombine::create() const {
     return new VolumeCombine();
@@ -119,100 +120,39 @@ void VolumeCombine::process() {
         return;
     }
 
-    if (!combineFunction_.isSelected("informationBased")) {
+    // optimized combination for volumes that share a common grid in world-space
+    if (firstVolume->getDimensions() == secondVolume->getDimensions() &&
+        firstVolume->getCubeSize() == secondVolume->getCubeSize()     &&
+        firstVolume->getTransformation() == secondVolume->getTransformation()) {
 
-        // optimized combination for volumes that share a common grid in world-space
-        if (firstVolume->getDimensions() == secondVolume->getDimensions() &&
-            firstVolume->getCubeSize() == secondVolume->getCubeSize()     &&
-            firstVolume->getTransformation() == secondVolume->getTransformation()) {
-
-            try {
-                if (referenceVolume_.isSelected("first"))
-                    combinedVolume = firstVolume->clone();
-                else
-                    combinedVolume = secondVolume->clone();
-            }
-            catch (const std::bad_alloc&) {
-                LERROR("Failed to create combined volume with dimensions " << firstVolume->getDimensions()
-                    << " : bad allocation");
-            }
-
-            if (combinedVolume) {
-                LINFO("Performing optimized combination on common grid with dimensions "
-                    << firstVolume->getDimensions() << "...");
-                combineVolumesOnCommonGrid(combinedVolume, firstVolume, secondVolume, combineFunction_.getValue());
-            }
-        }
-        // standard combination with resampling
-        else {
+        try {
             if (referenceVolume_.isSelected("first"))
-                combinedVolume = createCombinedVolume(firstVolume, secondVolume);
+                combinedVolume = firstVolume->clone();
             else
-                combinedVolume = createCombinedVolume(secondVolume, firstVolume);
+                combinedVolume = secondVolume->clone();
+        }
+        catch (const std::bad_alloc&) {
+            LERROR("Failed to create combined volume with dimensions " << firstVolume->getDimensions()
+                << " : bad allocation");
+        }
 
-            if (combinedVolume) {
-                LINFO("Creating combined volume with dimensions " << combinedVolume->getDimensions() << " ...");
-                combineVolumes(combinedVolume, firstVolume, secondVolume, combineFunction_.getValue());
-            }
+        if (combinedVolume) {
+            LINFO("Performing optimized combination on common grid with dimensions "
+                << firstVolume->getDimensions() << "...");
+            combineVolumesOnCommonGrid(combinedVolume, firstVolume, secondVolume, combineFunction_.getValue());
         }
     }
+    // standard combination with resampling
     else {
+        if (referenceVolume_.isSelected("first"))
+            combinedVolume = createCombinedVolume(firstVolume, secondVolume);
+        else
+            combinedVolume = createCombinedVolume(secondVolume, firstVolume);
 
-        //
-        // TODO: proper integration of information-based combination (legacy)
-        //
-        VolumeUInt8* inputVolume1 = dynamic_cast<VolumeUInt8*>(firstVolume);
-        VolumeUInt8* inputVolume2 = dynamic_cast<VolumeUInt8*>(secondVolume);
-
-        if (!inputVolume1 || !inputVolume2) {
-            LERROR("One of the volumes was no VolumeUInt8");
+        if (combinedVolume) {
+            LINFO("Creating combined volume with dimensions " << combinedVolume->getDimensions() << " ...");
+            combineVolumes(combinedVolume, firstVolume, secondVolume, combineFunction_.getValue());
         }
-        else if (inputVolume1->getBytesPerVoxel() != inputVolume2->getBytesPerVoxel()) {
-            LERROR("ByesPerVoxel different for volumes");
-        }
-        else {
-            VolumeUInt8* resultVolume = 0;
-            try {
-                resultVolume = new VolumeUInt8(inputVolume1->getDimensions());
-            }
-            catch (const std::bad_alloc&) {
-                LERROR("bad allocation");
-            }
-
-            if (resultVolume) {
-                int bits = inputVolume1->getBitsStored() / inputVolume1->getNumChannels();
-                if (bits > 16)
-                    bits = 16; // handle float data as if it was 16 bit to prevent overflow
-                int maximumIntensity = (1 << bits) - 1;
-
-                HistogramIntensity histogram1(inputVolume1, maximumIntensity + 1);
-                HistogramIntensity histogram2(inputVolume2, maximumIntensity + 1);
-
-                //int s = histogram1.getBucketCount();
-
-                VRN_FOR_EACH_VOXEL(i, ivec3(0,0,0), resultVolume->getDimensions()) {
-                    uint8_t vol1Voxel = inputVolume1->voxel(i);
-                    uint8_t vol2Voxel = inputVolume2->voxel(i);
-
-                    int f1 = histogram1.getValue(vol1Voxel);
-                    double f1Normalized = static_cast<double>(f1) / static_cast<double>(inputVolume1->getNumVoxels());
-
-                    int f2 = histogram2.getValue(vol2Voxel);
-                    double f2Normalized = static_cast<double>(f2) / static_cast<double>(inputVolume2->getNumVoxels());
-
-                    double i1 = -log(f1Normalized);
-                    double i2 = -log(f2Normalized);
-
-                    double gamma = i2 / (i1 + i2);
-
-                    double fUsed = (1 - gamma) * vol1Voxel + gamma * vol2Voxel;
-
-                    resultVolume->voxel(i) = static_cast<uint8_t>(fUsed);
-                }
-            }
-            combinedVolume = resultVolume;
-
-        } // information-based
     }
 
     // put out combined volume
@@ -249,24 +189,11 @@ void VolumeCombine::combineVolumes(Volume* combinedVolume, const Volume* firstVo
     // compute transformation from voxel coordinates of combined volume
     // to voxel coords of input volumes
     //
-    tgt::mat4 combinedToFirst, combinedToSecond;
-
-    // voxel to world matrices for the three volumes
-    tgt::mat4 voxelToWorldCombined = combinedVolume->getVoxelToWorldMatrix();
-    tgt::mat4 voxelToWorldFirst = firstVolume->getVoxelToWorldMatrix();
-    tgt::mat4 voxelToWorldSecond = secondVolume->getVoxelToWorldMatrix();
-
-    // combined to first
-    voxelToWorldFirst.invert(combinedToFirst);
-    combinedToFirst *= voxelToWorldCombined;
-
-    // combined to second
-    voxelToWorldSecond.invert(combinedToSecond);
-    combinedToSecond *= voxelToWorldCombined;
+    tgt::mat4 combinedToFirst = computeConversionMatrix(firstVolume, combinedVolume);
+    tgt::mat4 combinedToSecond = computeConversionMatrix(secondVolume, combinedVolume);
 
     LDEBUG("Voxel-to-world (First): " << combinedToFirst);
     LDEBUG("Voxel-to-world (Second) " << combinedToSecond);
-
 
     //
     // voxel-wise combination
@@ -275,7 +202,7 @@ void VolumeCombine::combineVolumes(Volume* combinedVolume, const Volume* firstVo
     tgt::vec3 dimSecond(secondVolume->getDimensions()-1);
     const float c = factorC_.get();
     const float d = factorD_.get();
-    VRN_FOR_EACH_VOXEL(pos, tgt::ivec3(0), combinedVolume->getDimensions()) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, tgt::ivec3(0), combinedVolume->getDimensions(), progressBar_) {
 
         // transform sampling pos to coordinate systems of input volumes
         tgt::vec3 posFirst = combinedToFirst*tgt::vec3(pos);
@@ -346,7 +273,7 @@ void VolumeCombine::combineVolumes(Volume* combinedVolume, const Volume* firstVo
         // assign clamped result to combined volume
         combinedVolume->setVoxelFloat(tgt::clamp(result, 0.f, 1.f), pos);
 
-    } // VRN_FOR_EACH_VOXEL
+    } // VRN_FOR_EACH_VOXEL_WITH_PROGRESS
 }
 
 void VolumeCombine::combineVolumesOnCommonGrid(Volume* combinedVolume, const Volume* firstVolume,
@@ -357,7 +284,7 @@ void VolumeCombine::combineVolumesOnCommonGrid(Volume* combinedVolume, const Vol
 
     const float c = factorC_.get();
     const float d = factorD_.get();
-    VRN_FOR_EACH_VOXEL(pos, tgt::ivec3(0), combinedVolume->getDimensions()) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, tgt::ivec3(0), combinedVolume->getDimensions(), progressBar_) {
         float valFirst = firstVolume->getVoxelFloat(pos);
         float valSecond = secondVolume->getVoxelFloat(pos);
 
@@ -417,7 +344,7 @@ void VolumeCombine::combineVolumesOnCommonGrid(Volume* combinedVolume, const Vol
         // assign clamped result to combined volume
         combinedVolume->setVoxelFloat(tgt::clamp(result, 0.f, 1.f), pos);
 
-    } // VRN_FOR_EACH_VOXEL
+    } // VRN_FOR_EACH_VOXEL_WITH_PROGRESS
 }
 
 Volume* VolumeCombine::createCombinedVolume(const Volume* refVolume, const Volume* secondVolume) const {
@@ -459,8 +386,8 @@ Volume* VolumeCombine::createCombinedVolume(const Volume* refVolume, const Volum
     // create combined volume with proper dimensions and spacing
     Volume* combinedVolume = 0;
     try {
-        combinedVolume = refVolume->clone(0);
-        combinedVolume->resize(combinedDim);
+        VolumeOperatorResize voResize(combinedDim);
+        combinedVolume = voResize.apply<Volume*>(const_cast<Volume*>(refVolume));
     }
     catch (const std::bad_alloc&) {
         LERROR("Failed to create combined volume with dimensions " << combinedDim << " : bad allocation");

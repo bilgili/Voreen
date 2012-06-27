@@ -32,10 +32,14 @@
 
 #include "voreen/modules/base/processors/proxygeometry/proxygeometry.h"
 
+#include "voreen/core/properties/intproperty.h"
+
 namespace voreen {
 
 /**
  * Provides a simple cube proxy with clipping.
+ *
+ * @deprecated Use CubeMeshProxyGeometry and MeshEntryExitPoints instead.
  */
 class CubeProxyGeometry : public ProxyGeometry {
 public:
@@ -44,7 +48,7 @@ public:
 
     virtual std::string getClassName() const    { return "CubeProxyGeometry"; }
     virtual std::string getCategory() const     { return "Volume Proxy Geometry"; }
-    virtual CodeState getCodeState() const      { return CODE_STATE_STABLE; }
+    virtual CodeState getCodeState() const      { return CODE_STATE_OBSOLETE; }
     virtual std::string getProcessorInfo() const;
     virtual Processor* create() const { return new CubeProxyGeometry(); }
 

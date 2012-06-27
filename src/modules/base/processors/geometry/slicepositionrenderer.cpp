@@ -38,22 +38,19 @@ using tgt::vec3;
 
 SlicePositionRenderer::SlicePositionRenderer()
     : GeometryRendererBase()
-    , applyDatasetTransformationMatrix_("useDatasetTrafoMatrix", "Apply data set trafo matrix", true)
     , xColor_("xColor", "X Color", tgt::vec4(1.0f, 0.0f, 0.0f, 1.0f))
     , yColor_("yColor", "Y Color", tgt::vec4(0.0f, 1.0f, 0.0f, 1.0f))
     , zColor_("zColor", "Z Color", tgt::vec4(0.0f, 0.0f, 1.0f, 1.0f))
     , xSliceIndexProp_("xSliceIndex", "X Slice Number", 0, 0, 10000)
     , ySliceIndexProp_("ySliceIndex", "Y Slice Number", 0, 0, 10000)
     , zSliceIndexProp_("zSliceIndex", "Z Slice Number", 0, 0, 10000)
-    , width_("boundingBoxWidth", "Line Width", 1.0f, 1.0f, 10.0f, true)
+    , width_("boundingBoxWidth", "Line Width", 1.0f, 1.0f, 10.0f)
     , stippleFactor_("boundingBoxStippleFactor", "Stipple Factor", 1, 0, 255)
     , stipplePattern_("boundingBoxStipplePattern", "Stipple Pattern", 65535, 1,65535)
     , inport_(Port::INPORT, "volume")
 {
-
     addPort(inport_);
 
-    addProperty(applyDatasetTransformationMatrix_);
     addProperty(xColor_);
     addProperty(xSliceIndexProp_);
     addProperty(yColor_);
@@ -63,6 +60,14 @@ SlicePositionRenderer::SlicePositionRenderer()
     addProperty(width_);
     addProperty(stippleFactor_);
     addProperty(stipplePattern_);
+
+    xColor_.setViews(Property::COLOR);
+    yColor_.setViews(Property::COLOR);
+    zColor_.setViews(Property::COLOR);
+}
+
+Processor* SlicePositionRenderer::create() const {
+    return new SlicePositionRenderer();
 }
 
 std::string SlicePositionRenderer::getProcessorInfo() const {
@@ -81,10 +86,8 @@ void SlicePositionRenderer::render() {
 
     tgt::vec3 dim = inport_.getData()->getVolume()->getCubeSize() / 2.f;
 
-    if (applyDatasetTransformationMatrix_.get()) {
-        glPushMatrix();
-        tgt::multMatrix(inport_.getData()->getVolume()->getTransformation());
-    }
+    glPushMatrix();
+    tgt::multMatrix(inport_.getData()->getVolume()->getTransformation());
 
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glDisable(GL_LIGHTING);
@@ -132,9 +135,7 @@ void SlicePositionRenderer::render() {
         glEnd();
     }
 
-    if (applyDatasetTransformationMatrix_.get())
-        glPopMatrix();
-
+    glPopMatrix();
     glPopAttrib();
 }
 

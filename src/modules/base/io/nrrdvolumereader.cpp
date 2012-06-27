@@ -158,7 +158,7 @@ VolumeCollection* NrrdVolumeReader::read(const std::string &url)
         return 0;
 }
 
-VolumeReader* NrrdVolumeReader::create(IOProgress* progress) const {
+VolumeReader* NrrdVolumeReader::create(ProgressBar* progress) const {
     return new NrrdVolumeReader(progress);
 }
 

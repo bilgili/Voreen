@@ -36,8 +36,11 @@
 
 #include "voreen/core/datastructures/geometry/meshlistgeometry.h"
 
+#include "voreen/core/ports/allports.h"
+#include "voreen/core/properties/allproperties.h"
+
 #include "tgt/shadermanager.h"
-#include "voreen/core/utils/clwrapper.h"
+#include "voreen/modules/opencl/clwrapper.h"
 
 namespace voreen {
 

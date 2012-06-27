@@ -37,7 +37,7 @@ namespace voreen {
 
 EdgeDetect::EdgeDetect()
     : ImageProcessorDepth("pp_edgedetect"),
-      edgeThreshold_("edgeThreshold", "Edge threshold", 0.04f, 0.001f, 1.f, true),
+      edgeThreshold_("edgeThreshold", "Edge threshold", 0.04f, 0.001f, 1.f),
       backgroundColor_("backgroundColor", "Background color", tgt::Color(0.0f, 0.0f, 0.0f, 0.0f)),
       showImage_("showImage", "Show image", true),
       blendMode_("blendMode", "Blend mode", Processor::INVALID_PROGRAM),
@@ -46,7 +46,8 @@ EdgeDetect::EdgeDetect()
       inport_(Port::INPORT, "image.inport"),
       outport_(Port::OUTPORT, "image.outport")
 {
-
+    edgeColor_.setViews(Property::COLOR);
+    backgroundColor_.setViews(Property::COLOR);
     backgroundColor_.set(tgt::vec4(0.0f,0.0f,0.0f,1.0f));
 
     edgeThreshold_.setNumDecimals(3);
@@ -90,6 +91,7 @@ void EdgeDetect::process() {
     // initialize shader
     program_->activate();
     setGlobalShaderParameters(program_);
+    inport_.setTextureParameters(program_, "texParams_");
     program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
     program_->setUniform("depthTex_", depthUnit.getUnitNumber());
     program_->setUniform("minDepth_", minDepth_.get());
@@ -104,6 +106,7 @@ void EdgeDetect::process() {
     renderQuad();
 
     program_->deactivate();
+    outport_.deactivateTarget();
     LGL_ERROR;
 }
 

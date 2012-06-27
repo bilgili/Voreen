@@ -36,6 +36,8 @@
 
 #include "voreen/core/network/networkevaluator.h"
 
+#include "voreen/core/properties/cameraproperty.h"
+
 #include <sstream>
 
 using tgt::vec3;
@@ -177,18 +179,18 @@ void RenderProcessor::manageRenderTargets() {
     const std::vector<Port*> outports = getOutports();
     for (size_t i=0; i<outports.size(); ++i) {
         RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
-        if (rp) {
+        if (rp && !rp->getRenderTargetSharing()) {
             if (rp->isConnected()) {
-                if (!rp->hasData()) {
-                    rp->setData(new RenderTarget());
+                if (!rp->hasRenderTarget()) {
+                    rp->setRenderTarget(new RenderTarget());
                     rp->initialize();
                 }
             }
             else {
-                if (rp->hasData()) {
-                    rp->getData()->deinitialize();
-                    delete rp->getData();
-                    rp->setData(0);
+                if (rp->hasRenderTarget()) {
+                    rp->getRenderTarget()->deinitialize();
+                    delete rp->getRenderTarget();
+                    rp->setRenderTarget(0);
                 }
             }
         }
@@ -202,7 +204,7 @@ void RenderProcessor::adjustRenderOutportDimensions() {
     const std::vector<Port*> inports = getInports();
     for (size_t i=0; i<inports.size(); ++i) {
         RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
-        if (rp && rp->hasData() && (rp->getSize().x >= dim.x && rp->getSize().y >= dim.y))
+        if (rp && rp->hasRenderTarget() && (rp->getSize().x >= dim.x && rp->getSize().y >= dim.y))
             dim = rp->getSize();
     }
     if (dim == tgt::ivec2(-1))
@@ -294,8 +296,7 @@ void RenderProcessor::addPrivateRenderPort(RenderPort& port) {
 }
 
 void RenderProcessor::renderQuad() {
-    glDepthFunc(GL_LEQUAL); //FIXME: is this necessary? renderQuad() changing the GL state is
-                            // somewhat unexpected. joerg
+    glDepthFunc(GL_ALWAYS);
     glBegin(GL_QUADS);
         glTexCoord2f(0.f, 0.f);
         glVertex2f(-1.f, -1.f);
@@ -316,14 +317,14 @@ void RenderProcessor::renderQuad() {
 // - screenDim_
 // - screenDimRCP_
 // - cameraPosition_ (camera position in world coordinates)
-void RenderProcessor::setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera* camera, tgt::ivec2 screenDim) {
+void RenderProcessor::setGlobalShaderParameters(tgt::Shader* shader, const tgt::Camera* camera, tgt::ivec2 screenDim) {
     shader->setIgnoreUniformLocationError(true);
 
     if (screenDim == tgt::ivec2(-1)) {
         RenderPort* rp = 0;
         for (size_t i=0; i<getOutports().size(); ++i) {
             rp = dynamic_cast<RenderPort*>(getOutports()[i]);
-            if (rp && rp->hasData())
+            if (rp && rp->hasRenderTarget())
                 break;
         }
         if (rp) {

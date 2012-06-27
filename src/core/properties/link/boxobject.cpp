@@ -30,6 +30,7 @@
 #include "voreen/core/properties/link/boxobject.h"
 #include "voreen/core/properties/shaderproperty.h"
 #include "voreen/core/datastructures/transfunc/transfunc.h"
+#include "voreen/core/datastructures/transfunc/transfuncintensity.h"
 #include "voreen/core/properties/volumehandleproperty.h"
 #include "voreen/core/datastructures/volume/volumecollection.h"
 #include "voreen/core/datastructures/volume/volumehandle.h"
@@ -42,6 +43,7 @@ namespace voreen {
 
 using std::string;
 using std::vector;
+using std::pair;
 using std::stringstream;
 using tgt::vec2;
 using tgt::vec3;
@@ -49,6 +51,9 @@ using tgt::vec4;
 using tgt::ivec2;
 using tgt::ivec3;
 using tgt::ivec4;
+using tgt::dvec2;
+using tgt::dvec3;
+using tgt::dvec4;
 using tgt::mat2;
 using tgt::mat3;
 using tgt::mat4;
@@ -109,16 +114,22 @@ const string BoxObject::toString(const T& value) const {
 
 
 BoxObject::BoxObject()
-    : value_(0)
+    : Serializable()
+    , value_(0)
     , currentType_(NIL)
 {}
 
-BoxObject::BoxObject(const BoxObject& obj) : value_(0) {
+BoxObject::BoxObject(const BoxObject& obj)
+    : Serializable()
+    , value_(0) {
     switch (obj.getType()) {
     case NIL:
         break;
     case BOOL:
         set<bool>(obj.getBool(), BOOL);
+        break;
+    case COLORMAP:
+        set<ColorMap>(obj.getColorMap(), COLORMAP);
         break;
     case DOUBLE:
         set<double>(obj.getDouble(), DOUBLE);
@@ -128,6 +139,9 @@ BoxObject::BoxObject(const BoxObject& obj) : value_(0) {
         break;
     case INTEGER:
         set<int>(obj.getInt(), INTEGER);
+        break;
+    case PLOTENTITYSETTINGSVEC:
+        set<vector<PlotEntitySettings> >(obj.getPlotEntitySettingsVec(), PLOTENTITYSETTINGSVEC);
         break;
     case LONG:
         set<long>(obj.getLong(), LONG);
@@ -156,6 +170,15 @@ BoxObject::BoxObject(const BoxObject& obj) : value_(0) {
     case VEC4:
         set<vec4>(obj.getVec4(), VEC4);
         break;
+    case DVEC2:
+        set<dvec2>(obj.getDVec2(), DVEC2);
+        break;
+    case DVEC3:
+        set<dvec3>(obj.getDVec3(), DVEC3);
+        break;
+    case DVEC4:
+        set<dvec4>(obj.getDVec4(), DVEC4);
+        break;
     case MAT2:
         set<mat2>(obj.getMat2(), MAT2);
         break;
@@ -164,6 +187,12 @@ BoxObject::BoxObject(const BoxObject& obj) : value_(0) {
         break;
     case MAT4:
         set<mat4>(obj.getMat4(), MAT4);
+        break;
+    case PLOTPREDICATEVECTOR:
+        set<std::vector<std::pair<int, PlotPredicate*> > >(obj.getPlotPredicateVector(), PLOTPREDICATEVECTOR);
+        break;
+    case PLOTZOOM:
+        set< std::vector< PlotZoomState > >(obj.getPlotZoom(), PLOTZOOM);
         break;
     case SHADER:
         set<ShaderSource>(obj.getShader(), SHADER);
@@ -209,6 +238,10 @@ BoxObject::BoxObject(const vector<string>& value) : value_(0), currentType_(STRI
     set<vector<string> >(value, STRINGVEC);
 }
 
+BoxObject::BoxObject(const vector<PlotEntitySettings>& value) : value_(0), currentType_(PLOTENTITYSETTINGSVEC) {
+    set<vector<PlotEntitySettings> >(value, PLOTENTITYSETTINGSVEC);
+}
+
 BoxObject::BoxObject(long value) : value_(0), currentType_(LONG) {
     set<long>(value, LONG);
 }
@@ -223,6 +256,18 @@ BoxObject::BoxObject(const vec3& value) : value_(0), currentType_(VEC3) {
 
 BoxObject::BoxObject(const vec4& value) : value_(0), currentType_(VEC4) {
     set<vec4>(value, VEC4);
+}
+
+BoxObject::BoxObject(const dvec2& value) : value_(0), currentType_(DVEC2) {
+    set<dvec2>(value, DVEC2);
+}
+
+BoxObject::BoxObject(const dvec3& value) : value_(0), currentType_(DVEC3) {
+    set<dvec3>(value, DVEC3);
+}
+
+BoxObject::BoxObject(const dvec4& value) : value_(0), currentType_(DVEC4) {
+    set<dvec4>(value, DVEC4);
 }
 
 BoxObject::BoxObject(const ivec2& value) : value_(0), currentType_(IVEC2) {
@@ -253,6 +298,10 @@ BoxObject::BoxObject(const ShaderSource& value) : value_(0), currentType_(SHADER
     set<ShaderSource>(value, SHADER);
 }
 
+BoxObject::BoxObject(const ColorMap& value) : value_(0), currentType_(COLORMAP) {
+    set<ColorMap>(value, COLORMAP);
+}
+
 BoxObject::BoxObject(const TransFunc* value) : value_(0), currentType_(TRANSFUNC) {
     set(*value, TRANSFUNC);
 }
@@ -269,7 +318,59 @@ BoxObject::BoxObject(const VolumeCollection* value) : value_(0), currentType_(VO
     set(*value, VOLUMECOLLECTION);
 }
 
+BoxObject::BoxObject(const std::vector< std::pair< int, voreen::PlotPredicate* > >& value) : value_(0), currentType_(PLOTPREDICATEVECTOR) {
+    set(value, PLOTPREDICATEVECTOR);
+}
 
+BoxObject::BoxObject(const std::vector< PlotZoomState >& value) : value_(0), currentType_(PLOTZOOM) {
+    set(value, PLOTZOOM);
+}
+
+BoxObject BoxObject::deepCopy() const {
+    switch (currentType_) {
+    case BOOL:
+    case COLORMAP:
+    case DOUBLE:
+    case FLOAT:
+    case INTEGER:
+    case LONG:
+    case STRING:
+    case STRINGVEC:
+    case IVEC2:
+    case IVEC3:
+    case IVEC4:
+    case VEC2:
+    case VEC3:
+    case VEC4:
+    case DVEC2:
+    case DVEC3:
+    case DVEC4:
+    case MAT2:
+    case MAT3:
+    case MAT4:
+    case VOLUMEHANDLE:
+        return BoxObject(*this);
+        break;
+    case TRANSFUNC:
+        {
+            const TransFunc* trans = getTransFunc();
+            const TransFuncIntensity* transIntensity = dynamic_cast<const TransFuncIntensity*>(trans);
+            tgtAssert(transIntensity, "only TransFuncIntensity are supported for now");
+            TransFuncIntensity* result = new TransFuncIntensity(*transIntensity);
+            return BoxObject(result);
+        }
+    case CAMERA:
+        {
+            const Camera* camera = getCamera();
+            Camera* result = camera->clone();
+            return BoxObject(result);
+        }
+    default:
+        tgtAssert(false, "shouldn't get here");
+        return BoxObject();
+    }
+
+}
 
 BoxObject::~BoxObject() {
     deleteValue();
@@ -283,6 +384,9 @@ void BoxObject::deleteValue() {
         case BOOL:
             delete static_cast<bool*>(value_);
             break;
+        case COLORMAP:
+            delete static_cast<ColorMap*>(value_);
+            break;
         case DOUBLE:
             delete static_cast<double*>(value_);
             break;
@@ -291,6 +395,9 @@ void BoxObject::deleteValue() {
             break;
         case INTEGER:
             delete static_cast<int*>(value_);
+            break;
+        case PLOTENTITYSETTINGSVEC:
+            delete static_cast<vector<PlotEntitySettings>*>(value_);
             break;
         case LONG:
             delete static_cast<long*>(value_);
@@ -319,6 +426,15 @@ void BoxObject::deleteValue() {
         case VEC4:
             delete static_cast<vec4*>(value_);
             break;
+        case DVEC2:
+            delete static_cast<dvec2*>(value_);
+            break;
+        case DVEC3:
+            delete static_cast<dvec3*>(value_);
+            break;
+        case DVEC4:
+            delete static_cast<dvec4*>(value_);
+            break;
         case MAT2:
             delete static_cast<mat2*>(value_);
             break;
@@ -328,6 +444,10 @@ void BoxObject::deleteValue() {
         case MAT4:
             delete static_cast<mat4*>(value_);
             break;
+        case PLOTPREDICATEVECTOR:
+            delete static_cast<std::vector<std::pair<int, PlotPredicate* > >* >(value_);
+        case PLOTZOOM:
+            delete static_cast<std::vector< PlotZoomState >* >(value_);
         case TRANSFUNC:
             //delete static_cast<TransFuncIntensity*>(value_);
             break;
@@ -356,76 +476,159 @@ BoxObject::BoxObjectType BoxObject::getType() const {
 
 std::string BoxObject::getTypeName(BoxObjectType type) {
     switch (type) {
-        case NIL:
-            return "<empty>";
-            break;
-        case BOOL:
-            return "bool";
-            break;
-        case DOUBLE:
-            return "double";
-            break;
-        case FLOAT:
-            return "float";
-            break;
-        case INTEGER:
-            return "integer";
-            break;
-        case LONG:
-            return "long";
-            break;
-        case STRING:
-            return "string";
-            break;
-        case STRINGVEC:
-            return "string vector";
-            break;
-        case IVEC2:
-            return "ivec2";
-            break;
-        case IVEC3:
-            return "ivec3";
-            break;
-        case IVEC4:
-            return "ivec4";
-            break;
-        case VEC2:
-            return "vec2";
-            break;
-        case VEC3:
-            return "vec3";
-            break;
-        case VEC4:
-            return "vec4";
-            break;
-        case MAT2:
-            return "mat2";
-            break;
-        case MAT3:
-            return "mat3";
-            break;
-        case MAT4:
-            return "mat4";
-            break;
-        case SHADER:
-            return "shader";
-            break;
-        case TRANSFUNC:
-            return "transfer function";
-            break;
-        case CAMERA:
-            return "camera";
-            break;
-        case VOLUMEHANDLE:
-            return "volume handle";
-            break;
-        case VOLUMECOLLECTION:
-            return "volume collection";
-            break;
-
-        default:
-            return "<unknown>";
+    case NIL:
+        return "<empty>";
+        break;
+    case BOOL:
+        return "bool";
+        break;
+    case COLORMAP:
+        return "colormap";
+        break;
+    case DOUBLE:
+        return "double";
+        break;
+    case FLOAT:
+        return "float";
+        break;
+    case INTEGER:
+        return "integer";
+        break;
+    case PLOTENTITYSETTINGSVEC:
+        return "plotentitysettings vector";
+        break;
+    case LONG:
+        return "long";
+        break;
+    case STRING:
+        return "string";
+        break;
+    case STRINGVEC:
+        return "string vector";
+        break;
+    case IVEC2:
+        return "ivec2";
+        break;
+    case IVEC3:
+        return "ivec3";
+        break;
+    case IVEC4:
+        return "ivec4";
+        break;
+    case VEC2:
+        return "vec2";
+        break;
+    case VEC3:
+        return "vec3";
+        break;
+    case VEC4:
+        return "vec4";
+        break;
+    case DVEC2:
+        return "dvec2";
+        break;
+    case DVEC3:
+        return "dvec3";
+        break;
+    case DVEC4:
+        return "dvec4";
+        break;
+    case MAT2:
+        return "mat2";
+        break;
+    case MAT3:
+        return "mat3";
+        break;
+    case MAT4:
+        return "mat4";
+        break;
+    case PLOTPREDICATEVECTOR:
+        return "plot predicate vector";
+        break;
+    case PLOTZOOM:
+        return "plot zoom";
+        break;
+    case SHADER:
+        return "shader";
+        break;
+    case TRANSFUNC:
+        return "transfer function";
+        break;
+    case CAMERA:
+        return "camera";
+        break;
+    case VOLUMEHANDLE:
+        return "volume handle";
+        break;
+    case VOLUMECOLLECTION:
+        return "volume collection";
+        break;
+    default:
+        return "<unknown>";
     }
+}
+
+BoxObject::BoxObjectType BoxObject::getType(const std::string& typeName) {
+    if (typeName == "<empty>")
+        return NIL;
+    else if (typeName == "bool")
+        return BOOL;
+    else if (typeName == "colormap")
+        return COLORMAP;
+    else if (typeName == "double")
+        return DOUBLE;
+    else if (typeName == "float")
+        return FLOAT;
+    else if (typeName == "integer")
+        return INTEGER;
+    else if (typeName == "plotentitysettings vector")
+        return PLOTENTITYSETTINGSVEC;
+    else if (typeName == "long")
+        return LONG;
+    else if (typeName == "string")
+        return STRING;
+    else if (typeName == "string vector")
+        return STRINGVEC;
+    else if (typeName == "ivec2")
+        return IVEC2;
+    else if (typeName == "ivec3")
+        return IVEC3;
+    else if (typeName == "ivec4")
+        return IVEC4;
+    else if (typeName == "vec2")
+        return VEC2;
+    else if (typeName == "vec3")
+        return VEC3;
+    else if (typeName == "vec4")
+        return VEC4;
+    else if (typeName == "dvec2")
+        return DVEC2;
+    else if (typeName == "dvec3")
+        return DVEC3;
+    else if (typeName == "dvec4")
+        return DVEC4;
+    else if (typeName == "mat2")
+        return MAT2;
+    else if (typeName == "mat3")
+        return MAT3;
+    else if (typeName == "mat4")
+        return MAT4;
+    else if (typeName == "plot predicate vector")
+        return PLOTPREDICATEVECTOR;
+    else if (typeName == "plot zoom")
+        return PLOTZOOM;
+    else if (typeName == "shader")
+        return SHADER;
+    else if (typeName == "transfer function")
+        return TRANSFUNC;
+    else if (typeName == "camera")
+        return CAMERA;
+    else if (typeName == "volume handle")
+        return VOLUMEHANDLE;
+    else if (typeName == "volume collection")
+        return VOLUMECOLLECTION;
+    else
+        return NIL;
 }
 
 bool BoxObject::getBool() const throw (VoreenException) {
@@ -465,6 +668,18 @@ bool BoxObject::getBool() const throw (VoreenException) {
         throw VoreenException("BoxObject: Conversion from " + getTypeName(currentType_) + " to bool not implemented");
     }
     return true; //never reached...fixes warning
+}
+
+ColorMap BoxObject::getColorMap() const throw (VoreenException) {
+    switch (currentType_) {
+    case COLORMAP:
+        return VP(ColorMap);
+        break;
+    case NIL:
+        throw VoreenException("Conversion tried on empty boxobject");
+    default:
+        throw VoreenException("BoxObject: Conversion from " + getTypeName(currentType_) + " to colormap not implemented");
+    }
 }
 
 double BoxObject::getDouble() const throw (VoreenException) {
@@ -566,6 +781,18 @@ int BoxObject::getInt() const throw (VoreenException) {
     return 0; //never reached...fixes warning
 }
 
+vector<PlotEntitySettings> BoxObject::getPlotEntitySettingsVec() const throw (VoreenException) {
+    switch (currentType_) {
+    case PLOTENTITYSETTINGSVEC:
+        return VP(vector<PlotEntitySettings>);
+        break;
+    case NIL:
+        throw VoreenException("Conversion tried on empty boxobject");
+    default:
+        throw VoreenException("BoxObject: Conversion not implemented");
+    }
+}
+
 long BoxObject::getLong() const throw (VoreenException) {
     switch (currentType_) {
     case BOOL:
@@ -658,6 +885,15 @@ ivec2 BoxObject::getIVec2() const throw (VoreenException) {
     case VEC4:
         return ivec2(static_cast<int>(VP(vec4).x), static_cast<int>(VP(vec4).y));
         break;
+    case DVEC2:
+        return ivec2(static_cast<int>(VP(dvec2).x), static_cast<int>(VP(dvec2).y));
+        break;
+    case DVEC3:
+        return ivec2(static_cast<int>(VP(dvec3).x), static_cast<int>(VP(dvec3).y));
+        break;
+    case DVEC4:
+        return ivec2(static_cast<int>(VP(dvec4).x), static_cast<int>(VP(dvec4).y));
+        break;
     case NIL:
         throw VoreenException("Conversion tried on empty boxobject");
     default:
@@ -684,6 +920,15 @@ ivec3 BoxObject::getIVec3() const throw (VoreenException) {
         break;
     case VEC4:
         return ivec3(static_cast<int>(VP(vec4).x), static_cast<int>(VP(vec4).y), static_cast<int>(VP(vec4).z));
+        break;
+    case DVEC2:
+        return ivec3(static_cast<int>(VP(dvec2).x), static_cast<int>(VP(dvec2).y), 0);
+        break;
+    case DVEC3:
+        return ivec3(static_cast<int>(VP(dvec3).x), static_cast<int>(VP(dvec3).y), static_cast<int>(VP(dvec3).z));
+        break;
+    case DVEC4:
+        return ivec3(static_cast<int>(VP(dvec4).x), static_cast<int>(VP(dvec4).y), static_cast<int>(VP(dvec4).z));
         break;
     case NIL:
         throw VoreenException("Conversion tried on empty boxobject");
@@ -712,6 +957,15 @@ ivec4 BoxObject::getIVec4() const throw (VoreenException) {
     case VEC4:
         return ivec4(static_cast<int>(VP(vec4).x), static_cast<int>(VP(vec4).y), static_cast<int>(VP(vec4).z), static_cast<int>(VP(vec4).w));
         break;
+    case DVEC2:
+        return ivec4(static_cast<int>(VP(dvec2).x), static_cast<int>(VP(dvec2).y), 0, 0);
+        break;
+    case DVEC3:
+        return ivec4(static_cast<int>(VP(dvec3).x), static_cast<int>(VP(dvec3).y), static_cast<int>(VP(dvec3).z), 0);
+        break;
+    case DVEC4:
+        return ivec4(static_cast<int>(VP(dvec4).x), static_cast<int>(VP(dvec4).y), static_cast<int>(VP(dvec4).z), static_cast<int>(VP(dvec4).w));
+        break;
     case NIL:
         throw VoreenException("Conversion tried on empty boxobject");
     default:
@@ -738,6 +992,15 @@ vec2 BoxObject::getVec2() const throw (VoreenException) {
         break;
     case VEC4:
         return VP(vec4).xy();
+        break;
+    case DVEC2:
+        return vec2(static_cast<float>(VP(dvec2).x), static_cast<float>(VP(dvec2).y));
+        break;
+    case DVEC3:
+        return vec2(static_cast<float>(VP(dvec3).x), static_cast<float>(VP(dvec3).y));
+        break;
+    case DVEC4:
+        return vec2(static_cast<float>(VP(dvec4).x), static_cast<float>(VP(dvec4).y));
         break;
     case NIL:
         throw VoreenException("Conversion tried on empty boxobject");
@@ -766,6 +1029,15 @@ vec3 BoxObject::getVec3() const throw (VoreenException) {
     case VEC4:
         return VP(vec4).xyz();
         break;
+    case DVEC2:
+        return vec3(static_cast<float>(VP(dvec2).x), static_cast<float>(VP(dvec2).y), 0);
+        break;
+    case DVEC3:
+        return vec3(static_cast<float>(VP(dvec3).x), static_cast<float>(VP(dvec3).y), static_cast<float>(VP(dvec3).z));
+        break;
+    case DVEC4:
+        return vec3(static_cast<float>(VP(dvec4).x), static_cast<float>(VP(dvec4).y), static_cast<float>(VP(dvec4).z));
+        break;
     case NIL:
         throw VoreenException("Conversion tried on empty boxobject");
     default:
@@ -793,10 +1065,127 @@ vec4 BoxObject::getVec4() const throw (VoreenException) {
     case VEC4:
         return VP(vec4);
         break;
+    case DVEC2:
+        return vec4(static_cast<float>(VP(dvec2).x), static_cast<float>(VP(dvec2).y), 0, 0);
+        break;
+    case DVEC3:
+        return vec4(static_cast<float>(VP(dvec3).x), static_cast<float>(VP(dvec3).y), static_cast<float>(VP(dvec3).z), 0);
+        break;
+    case DVEC4:
+        return vec4(static_cast<float>(VP(dvec4).x), static_cast<float>(VP(vec4).y), static_cast<float>(VP(dvec4).z), static_cast<float>(VP(dvec4).w));
+        break;
     case NIL:
         throw VoreenException("Conversion tried on empty boxobject");
     default:
         throw VoreenException("BoxObject: Conversion from " + getTypeName(currentType_) + " to vec4 not implemented");
+    }
+}
+
+dvec2 BoxObject::getDVec2() const throw (VoreenException) {
+    switch (currentType_) {
+    case IVEC2:
+        return dvec2(static_cast<double>(VP(ivec2).x), static_cast<double>(VP(ivec2).y));
+        break;
+    case IVEC3:
+        return dvec2(static_cast<double>(VP(ivec3).x), static_cast<double>(VP(ivec3).y));
+        break;
+    case IVEC4:
+        return dvec2(static_cast<double>(VP(ivec4).x), static_cast<double>(VP(ivec4).y));
+        break;
+    case VEC2:
+        return dvec2(static_cast<double>(VP(vec2).x), static_cast<double>(VP(vec2).y));
+        break;
+    case VEC3:
+        return dvec2(static_cast<double>(VP(vec3).x), static_cast<double>(VP(vec3).y));
+        break;
+    case VEC4:
+        return dvec2(static_cast<double>(VP(vec4).x), static_cast<double>(VP(vec4).y));
+        break;
+    case DVEC2:
+        return VP(dvec2);
+        break;
+    case DVEC3:
+        return VP(dvec3).xy();
+        break;
+    case DVEC4:
+        return VP(dvec4).xy();
+        break;
+    case NIL:
+        throw VoreenException("Conversion tried on empty boxobject");
+    default:
+        throw VoreenException("BoxObject: Conversion from " + getTypeName(currentType_) + " to dvec2 not implemented");
+    }
+}
+
+dvec3 BoxObject::getDVec3() const throw (VoreenException) {
+    switch (currentType_) {
+    case IVEC2:
+        return dvec3(static_cast<double>(VP(ivec2).x), static_cast<double>(VP(ivec2).y), 0);
+        break;
+    case IVEC3:
+        return dvec3(static_cast<double>(VP(ivec3).x), static_cast<double>(VP(ivec3).y), static_cast<double>(VP(ivec3).z));
+        break;
+    case IVEC4:
+        return dvec3(static_cast<double>(VP(ivec4).x), static_cast<double>(VP(ivec4).y), static_cast<double>(VP(ivec4).z));
+        break;
+    case VEC2:
+        return dvec3(static_cast<double>(VP(vec2).x), static_cast<double>(VP(vec2).y), 0);
+        break;
+    case VEC3:
+        return dvec3(static_cast<double>(VP(vec3).x), static_cast<double>(VP(vec3).y), static_cast<double>(VP(vec3).z));
+        break;
+    case VEC4:
+        return dvec3(static_cast<double>(VP(vec4).x), static_cast<double>(VP(vec4).y), static_cast<double>(VP(vec4).z));
+        break;
+    case DVEC2:
+        return dvec3(VP(dvec2).x, VP(dvec2).y, 0);
+        break;
+    case DVEC3:
+        return VP(dvec3);
+        break;
+    case DVEC4:
+        return VP(dvec4).xyz();
+        break;
+    case NIL:
+        throw VoreenException("Conversion tried on empty boxobject");
+    default:
+        throw VoreenException("BoxObject: Conversion from " + getTypeName(currentType_) + " to dvec3 not implemented");
+    }
+}
+
+dvec4 BoxObject::getDVec4() const throw (VoreenException) {
+    switch (currentType_) {
+    case IVEC2:
+        return dvec4(static_cast<double>(VP(ivec2).x), static_cast<double>(VP(ivec2).y), 0, 0);
+        break;
+    case IVEC3:
+        return dvec4(static_cast<double>(VP(ivec3).x), static_cast<double>(VP(ivec3).y), static_cast<double>(VP(ivec3).z), 0);
+        break;
+    case IVEC4:
+        return dvec4(static_cast<double>(VP(ivec4).x), static_cast<double>(VP(ivec4).y), static_cast<double>(VP(ivec4).z), static_cast<double>(VP(ivec4).w));
+        break;
+    case VEC2:
+        return dvec4(static_cast<double>(VP(vec2).x), static_cast<double>(VP(vec2).y), 0, 0);
+        break;
+    case VEC3:
+        return dvec4(static_cast<double>(VP(vec3).x), static_cast<double>(VP(vec3).y), static_cast<double>(VP(vec3).z), 0);
+        break;
+    case VEC4:
+        return dvec4(static_cast<double>(VP(vec4).x), static_cast<double>(VP(vec4).y), static_cast<double>(VP(vec4).z), static_cast<double>(VP(vec4).w));
+        break;
+    case DVEC2:
+        return dvec4(VP(dvec2).x, VP(dvec2).y, 0, 0);
+        break;
+    case DVEC3:
+        return dvec4(VP(dvec3).x, VP(dvec3).y, VP(dvec3).z, 0);
+        break;
+    case DVEC4:
+        return VP(dvec4);
+        break;
+    case NIL:
+        throw VoreenException("Conversion tried on empty boxobject");
+    default:
+        throw VoreenException("BoxObject: Conversion from " + getTypeName(currentType_) + " to dvec4 not implemented");
     }
 }
 
@@ -833,6 +1222,32 @@ mat4 BoxObject::getMat4() const throw (VoreenException) {
         throw VoreenException("Conversion tried on empty boxobject");
     default:
         throw VoreenException("BoxObject: Conversion from " + getTypeName(currentType_) + " to mat4 not implemented");
+    }
+}
+
+std::vector<std::pair<int, PlotPredicate*> > BoxObject::getPlotPredicateVector() const throw (VoreenException) {
+    switch (currentType_) {
+        case PLOTPREDICATEVECTOR:
+            // don't use VP macro here because of comma in template arguments
+            return (*(std::vector<std::pair<int, PlotPredicate*> >*)value_);
+            break;
+        case NIL:
+            throw VoreenException("Conversion tried on empty boxobject");
+        default:
+            throw VoreenException("BoxObject: Conversion from " + getTypeName(currentType_) + " to PlotPredicateVector not implemented");
+    }
+}
+
+std::vector< PlotZoomState > BoxObject::getPlotZoom() const throw (VoreenException) {
+    switch (currentType_) {
+        case PLOTZOOM:
+            // don't use VP macro here because of comma in template arguments
+            return VP(std::vector< PlotZoomState >);
+            break;
+        case NIL:
+            throw VoreenException("Conversion tried on empty boxobject");
+        default:
+            throw VoreenException("BoxObject: Conversion from " + getTypeName(currentType_) + " to PlotZoom not implemented");
     }
 }
 
@@ -896,6 +1311,420 @@ ShaderSource BoxObject::getShader() const throw (VoreenException) {
     }
 }
 
+void BoxObject::setBool(const bool& value) {
+    set<bool>(value, BOOL);
+}
+
+void BoxObject::setColorMap(const ColorMap& value) {
+    set<ColorMap>(value, COLORMAP);
+}
+
+void BoxObject::setDouble(const double& value) {
+    set<double>(value, DOUBLE);
+}
+
+void BoxObject::setFloat(const float& value) {
+    set<float>(value, FLOAT);
+}
+
+void BoxObject::setInt(const int& value) {
+    set<int>(value, INTEGER);
+}
+
+void BoxObject::setLong(const long& value) {
+    set<long>(value, LONG);
+}
+
+void BoxObject::setString(const std::string& value) {
+    set<std::string>(value, STRING);
+}
+
+void BoxObject::setStringVec(const std::vector<std::string>& value) {
+    set<std::vector<std::string> >(value, STRINGVEC);
+}
+
+void BoxObject::setPlotEntitySettingsVec(const std::vector<PlotEntitySettings>& value) {
+    set<std::vector<PlotEntitySettings> >(value, PLOTENTITYSETTINGSVEC);
+}
+
+void BoxObject::setIVec2(const tgt::ivec2& value) {
+    set<tgt::ivec2>(value, IVEC2);
+}
+
+void BoxObject::setIVec3(const tgt::ivec3& value) {
+    set<tgt::ivec3>(value, IVEC3);
+}
+
+void BoxObject::setIVec4(const tgt::ivec4& value) {
+    set<tgt::ivec4>(value, IVEC4);
+}
+
+void BoxObject::setVec2(const tgt::vec2& value) {
+    set<tgt::vec2>(value, VEC2);
+}
+
+void BoxObject::setVec3(const tgt::vec3& value) {
+    set<tgt::vec3>(value, VEC3);
+}
+
+void BoxObject::setVec4(const tgt::vec4& value) {
+    set<tgt::vec4>(value, VEC4);
+}
+
+void BoxObject::setDVec2(const tgt::dvec2& value) {
+    set<tgt::dvec2>(value, DVEC2);
+}
+
+void BoxObject::setDVec3(const tgt::dvec3& value) {
+    set<tgt::dvec3>(value, DVEC3);
+}
+
+void BoxObject::setDVec4(const tgt::dvec4& value) {
+    set<tgt::dvec4>(value, DVEC4);
+}
+
+void BoxObject::setMat2(const tgt::mat2& value) {
+    set<tgt::mat2>(value, MAT2);
+}
+
+void BoxObject::setMat3(const tgt::mat3& value) {
+    set<tgt::mat3>(value, MAT3);
+}
+
+void BoxObject::setMat4(const tgt::mat4& value) {
+    set<tgt::mat4>(value, MAT4);
+}
+
+void BoxObject::setPlotPredicateVector(const std::vector<std::pair<int, PlotPredicate*> >& value) {
+    set<std::vector<std::pair<int, PlotPredicate*> > >(value, PLOTPREDICATEVECTOR);
+}
+
+void BoxObject::setPlotZoom(const std::vector< PlotZoomState >& value) {
+    set<std::vector< PlotZoomState > >(value, PLOTZOOM);
+}
+
+void BoxObject::setShader(const ShaderSource* value) {
+    set(*value, SHADER);
+}
+
+void BoxObject::setTransFunc(const TransFunc* value) {
+    set(*value, TRANSFUNC);
+}
+
+void BoxObject::setCamera(const tgt::Camera* value) {
+    set(*value, CAMERA);
+}
+
+void BoxObject::setVolumeHandle(const VolumeHandle* value) {
+    set(*value, VOLUMEHANDLE);
+}
+
+void BoxObject::setVolumeCollection(const VolumeCollection* value) {
+    set(*value, VOLUMECOLLECTION);
+}
+
+void BoxObject::serialize(XmlSerializer& s) const {
+    s.serialize("BoxObjectType", getTypeName(currentType_));
+
+    switch (currentType_) {
+    case BOOL:
+        s.serialize("value", getBool());
+        break;
+    case COLORMAP:
+        s.serialize("value", getColorMap());
+        break;
+    case DOUBLE:
+        s.serialize("value", getDouble());
+        break;
+    case FLOAT:
+        s.serialize("value", getFloat());
+        break;
+    case INTEGER:
+        s.serialize("value", getInt());
+        break;
+    case LONG:
+        s.serialize("value", getLong());
+        break;
+    case STRING:
+        s.serialize("value", getString());
+        break;
+    case STRINGVEC:
+        s.serialize("value", getStringVec());
+        break;
+    case PLOTENTITYSETTINGSVEC:
+        s.serialize("value", getPlotEntitySettingsVec());
+        break;
+    case IVEC2:
+        s.serialize("value", getIVec2());
+        break;
+    case IVEC3:
+        s.serialize("value", getIVec3());
+        break;
+    case IVEC4:
+        s.serialize("value", getIVec4());
+        break;
+    case VEC2:
+        s.serialize("value", getVec2());
+        break;
+    case VEC3:
+        s.serialize("value", getVec3());
+        break;
+    case VEC4:
+        s.serialize("value", getVec4());
+        break;
+    case DVEC2:
+        s.serialize("value", getDVec2());
+        break;
+    case DVEC3:
+        s.serialize("value", getDVec3());
+        break;
+    case DVEC4:
+        s.serialize("value", getDVec4());
+        break;
+    case MAT2:
+        s.serialize("value", getMat2());
+        break;
+    case MAT3:
+        s.serialize("value", getMat3());
+        break;
+    case MAT4:
+        s.serialize("value", getMat4());
+        break;
+    case PLOTPREDICATEVECTOR:
+        //s.serialize("value", getPlotPredicateVector());
+        break;
+    case PLOTZOOM:
+        s.serialize("value", getPlotZoom());
+        break;
+    case SHADER:
+        s.serialize("value", getShader());
+        break;
+    case TRANSFUNC:
+        s.serialize("value", getTransFunc());
+        break;
+    case CAMERA:
+        // TODO make Camera serializable
+        //s.serialize("value", getCamera());
+        break;
+    case VOLUMEHANDLE:
+        s.serialize("value", getVolumeHandle());
+        break;
+    case VOLUMECOLLECTION:
+        s.serialize("value", getVolumeCollection());
+        break;
+    default:
+        tgtAssert(false, "shouldn't get here");
+    }
+}
+
+void BoxObject::deserialize(XmlDeserializer& d) {
+    std::string typeString;
+    d.deserialize("BoxObjectType", typeString);
+    currentType_ = getType(typeString);
+
+    switch (currentType_) {
+    case BOOL:
+        {
+            bool value;
+            d.deserialize("value", value);
+            setBool(value);
+            break;
+        }
+    case COLORMAP:
+        {
+            ColorMap value;
+            d.deserialize("value", value);
+            setColorMap(value);
+            break;
+        }
+    case DOUBLE:
+        {
+            double value;
+            d.deserialize("value", value);
+            setDouble(value);
+            break;
+        }
+    case FLOAT:
+        {
+            float value;
+            d.deserialize("value", value);
+            setFloat(value);
+            break;
+        }
+    case INTEGER:
+        {
+            int value;
+            d.deserialize("value", value);
+            setInt(value);
+            break;
+        }
+    case LONG:
+        {
+            long value;
+            d.deserialize("value", value);
+            setLong(value);
+            break;
+        }
+    case STRING:
+        {
+            std::string value;
+            d.deserialize("value", value);
+            setString(value);
+            break;
+        }
+    case STRINGVEC:
+        {
+            std::vector<std::string> value;
+            d.deserialize("value", value);
+            setStringVec(value);
+            break;
+        }
+    case PLOTENTITYSETTINGSVEC:
+        {
+            std::vector<PlotEntitySettings> value;
+            d.deserialize("value", value);
+            setPlotEntitySettingsVec(value);
+            break;
+        }
+    case IVEC2:
+        {
+            ivec2 value;
+            d.deserialize("value", value);
+            setIVec2(value);
+            break;
+        }
+    case IVEC3:
+        {
+            ivec3 value;
+            d.deserialize("value", value);
+            setIVec3(value);
+            break;
+        }
+    case IVEC4:
+        {
+            ivec4 value;
+            d.deserialize("value", value);
+            setIVec4(value);
+            break;
+        }
+    case VEC2:
+        {
+            vec2 value;
+            d.deserialize("value", value);
+            setVec2(value);
+            break;
+        }
+    case VEC3:
+        {
+            vec3 value;
+            d.deserialize("value", value);
+            setVec3(value);
+            break;
+        }
+    case VEC4:
+        {
+            vec4 value;
+            d.deserialize("value", value);
+            setVec4(value);
+            break;
+        }
+    case DVEC2:
+        {
+            dvec2 value;
+            d.deserialize("value", value);
+            setDVec2(value);
+            break;
+        }
+    case DVEC3:
+        {
+            dvec3 value;
+            d.deserialize("value", value);
+            setDVec3(value);
+            break;
+        }
+    case DVEC4:
+        {
+            dvec4 value;
+            d.deserialize("value", value);
+            setDVec4(value);
+            break;
+        }
+    case MAT2:
+        {
+            mat2 value;
+            d.deserialize("value", value);
+            setMat2(value);
+            break;
+        }
+    case MAT3:
+        {
+            mat3 value;
+            d.deserialize("value", value);
+            setMat3(value);
+            break;
+        }
+    case MAT4:
+        {
+            mat4 value;
+            d.deserialize("value", value);
+            setMat4(value);
+            break;
+        }
+    case PLOTPREDICATEVECTOR:
+        {
+            tgtAssert(false, "tried to deserialize PlotPredicateVector, but it isn't serializable");
+            std::vector<std::pair<int, PlotPredicate*> > value;
+            //d.deserialize("value", value);
+            setPlotPredicateVector(value);
+            break;
+        }
+    case PLOTZOOM:
+        {
+            std::vector< PlotZoomState > value;
+            d.deserialize("value", value);
+            setPlotZoom(value);
+            break;
+        }
+    case SHADER:
+        {
+            ShaderSource* value = new ShaderSource;
+            d.deserialize("value", *value);
+            setShader(value);
+            break;
+        }
+    case TRANSFUNC:
+        {
+            TransFunc* value = new TransFunc;
+            d.deserialize("value", *value);
+            setTransFunc(value);
+            break;
+        }
+    case CAMERA:
+        {
+            Camera* value = new Camera;
+            //d.deserialize("value", value);
+            setCamera(value);
+            break;
+        }
+    case VOLUMEHANDLE:
+        {
+            VolumeHandle* value = new VolumeHandle;
+            d.deserialize("value", value);
+            setVolumeHandle(value);
+            break;
+        }
+    case VOLUMECOLLECTION:
+        {
+            VolumeCollection* value = new VolumeCollection;
+            d.deserialize("value", *value);
+            setVolumeCollection(value);
+            break;
+        }
+    default:
+        tgtAssert(false, "shouldn't get here");
+    }
+}
+
 BoxObject& BoxObject::operator= (const BoxObject& rhs) {
     if (this != &rhs) {
         switch (rhs.getType()) {
@@ -912,6 +1741,9 @@ BoxObject& BoxObject::operator= (const BoxObject& rhs) {
             break;
         case INTEGER:
             set<int>(rhs.getInt(), INTEGER);
+            break;
+        case PLOTENTITYSETTINGSVEC:
+            set<vector<PlotEntitySettings> >(rhs.getPlotEntitySettingsVec(), PLOTENTITYSETTINGSVEC);
             break;
         case LONG:
             set<long>(rhs.getLong(), LONG);
@@ -940,6 +1772,15 @@ BoxObject& BoxObject::operator= (const BoxObject& rhs) {
         case VEC4:
             set<vec4>(rhs.getVec4(), VEC4);
             break;
+        case DVEC2:
+            set<dvec2>(rhs.getDVec2(), DVEC2);
+            break;
+        case DVEC3:
+            set<dvec3>(rhs.getDVec3(), DVEC3);
+            break;
+        case DVEC4:
+            set<dvec4>(rhs.getDVec4(), DVEC4);
+            break;
         case MAT2:
             set<mat2>(rhs.getMat2(), MAT2);
             break;
@@ -948,6 +1789,12 @@ BoxObject& BoxObject::operator= (const BoxObject& rhs) {
             break;
         case MAT4:
             set<mat4>(rhs.getMat4(), MAT4);
+            break;
+        case PLOTPREDICATEVECTOR:
+            set<std::vector<std::pair<int, PlotPredicate*> > >(rhs.getPlotPredicateVector(), PLOTPREDICATEVECTOR);
+            break;
+        case PLOTZOOM:
+            set<std::vector< PlotZoomState > >(rhs.getPlotZoom(), PLOTZOOM);
             break;
         case TRANSFUNC:
             set(*rhs.getTransFunc(), TRANSFUNC);
@@ -976,6 +1823,11 @@ BoxObject& BoxObject::operator= (const bool& rhs) {
     return *this;
 }
 
+BoxObject& BoxObject::operator= (const ColorMap& rhs) {
+    set<ColorMap>(rhs, COLORMAP);
+    return *this;
+}
+
 BoxObject& BoxObject::operator= (const double& rhs) {
     set<double>(rhs, DOUBLE);
     return *this;
@@ -988,6 +1840,11 @@ BoxObject& BoxObject::operator= (const float& rhs) {
 
 BoxObject& BoxObject::operator= (const int& rhs) {
     set<int>(rhs, INTEGER);
+    return *this;
+}
+
+BoxObject& BoxObject::operator= (const vector<PlotEntitySettings>& rhs) {
+    set<vector<PlotEntitySettings> >(rhs, PLOTENTITYSETTINGSVEC);
     return *this;
 }
 
@@ -1051,6 +1908,16 @@ BoxObject& BoxObject::operator= (const mat4& rhs) {
     return *this;
 }
 
+BoxObject& BoxObject::operator= (const std::vector<std::pair<int, PlotPredicate*> >& rhs) {
+    set<std::vector<std::pair<int, PlotPredicate*> > >(rhs, PLOTPREDICATEVECTOR);
+    return *this;
+}
+
+BoxObject& BoxObject::operator= (const std::vector< PlotZoomState >& rhs) {
+    set<std::vector< PlotZoomState > >(rhs, PLOTZOOM);
+    return *this;
+}
+
 BoxObject& BoxObject::operator= (const TransFunc* rhs) {
     set(*rhs, TRANSFUNC);
     return *this;
@@ -1075,5 +1942,89 @@ BoxObject& BoxObject::operator= (const ShaderSource& rhs) {
     set<ShaderSource>(rhs, SHADER);
     return *this;
 }
+
+bool BoxObject::operator== (const BoxObject& rhs) const {
+    if (getType() != rhs.getType())
+        return false;
+    else {
+        switch (currentType_) {
+        case NIL:
+            return false;
+        case BOOL:
+            return (getBool() == rhs.getBool());
+        case COLORMAP:
+            return (getColorMap() == rhs.getColorMap());
+        case DOUBLE:
+            return (getDouble() == rhs.getDouble());
+        case FLOAT:
+            return (getFloat() == rhs.getFloat());
+        case INTEGER:
+            return (getInt() == rhs.getInt());
+        case LONG:
+            return (getLong() == rhs.getLong());
+        case STRING:
+            return (getString() == rhs.getString());
+        case STRINGVEC:
+            return (getStringVec() == rhs.getStringVec());
+        case IVEC2:
+            return (getIVec2() == rhs.getIVec2());
+        case IVEC3:
+            return (getIVec3() == rhs.getIVec3());
+        case IVEC4:
+            return (getIVec4() == rhs.getIVec4());
+        case VEC2:
+            return (getVec2() == rhs.getVec2());
+        case VEC3:
+            return (getVec3() == rhs.getVec3());
+        case VEC4:
+            return (getVec4() == rhs.getVec4());
+        case DVEC2:
+            return (getDVec2() == rhs.getDVec2());
+        case DVEC3:
+            return (getDVec3() == rhs.getDVec3());
+        case DVEC4:
+            return (getDVec4() == rhs.getDVec4());
+        case MAT2:
+            return (getMat2() == rhs.getMat2());
+        case MAT3:
+            return (getMat3() == rhs.getMat3());
+        case MAT4:
+            return (getMat4() == rhs.getMat4());
+        case PLOTENTITYSETTINGSVEC:
+            break; // omit warning
+        case PLOTPREDICATEVECTOR:
+            break; // omit warning
+        case PLOTZOOM:
+            return (getPlotZoom() == rhs.getPlotZoom());
+        case TRANSFUNC:
+            {
+                const TransFuncIntensity* lhsCast = dynamic_cast<const TransFuncIntensity*>(getTransFunc());
+                const TransFuncIntensity* rhsCast = dynamic_cast<const TransFuncIntensity*>(rhs.getTransFunc());
+
+                if (lhsCast && rhsCast)
+                    return lhsCast == rhsCast;
+                else
+                    return false;
+            }
+            //return (getTransFunc() == rhs.getTransFunc());
+        case CAMERA:
+            return (getCamera() == rhs.getCamera());
+        case VOLUMEHANDLE:
+            return (getVolumeHandle() == rhs.getVolumeHandle());
+        case VOLUMECOLLECTION:
+            return (getVolumeCollection() == rhs.getVolumeCollection());
+        case SHADER:
+            return (getShader() == rhs.getShader());
+        default:
+            return false;
+        }
+    }
+    return false;
+}
+
+bool BoxObject::operator!= (const BoxObject& rhs) const {
+    return !(*this == rhs);
+}
+
 
 } // namespace

@@ -40,7 +40,7 @@
 #include "voreen/core/io/textfilereader.h"
 #include "voreen/core/io/rawvolumereader.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
-#include "voreen/core/io/ioprogress.h"
+#include "voreen/core/io/progressbar.h"
 
 using tgt::vec3;
 using tgt::ivec3;
@@ -51,12 +51,12 @@ namespace voreen {
 
 const std::string BrickedVolumeReader::loggerCat_ = "voreen.io.BrickedVolumeReader";
 
-BrickedVolumeReader::BrickedVolumeReader(voreen::IOProgress* progress)
+BrickedVolumeReader::BrickedVolumeReader(ProgressBar* progress)
     : VolumeReader(progress),
       persistent_(false)
 {
     if (progress != 0)
-        ioProgress_ = progress;
+        progressBar_ = progress;
 
     extensions_.push_back("bvi");
     protocols_.push_back("bvi");
@@ -141,8 +141,7 @@ bool BrickedVolumeReader::openFile(std::string filename) {
     }
 
     if (!error) {
-
-        //update the BrickingInformation
+        // update the BrickingInformation
         brickingInformation_.originalVolumeName = objectFilename;
         brickingInformation_.originalVolumeDimensions = dimensions;
         brickingInformation_.originalVolumeNumVoxels = (uint64_t)dimensions.x * (uint64_t)dimensions.y *
@@ -154,6 +153,8 @@ bool BrickedVolumeReader::openFile(std::string filename) {
         brickingInformation_.brickSize = brickSize;
         brickingInformation_.originalVolumeLLF = llf;
         brickingInformation_.originalVolumeURB = urb;
+        brickingInformation_.originalTransformationMatrix = tgt::mat4::identity;
+
         brickingInformation_.numBricks.x = static_cast<int>( ceil((float)dimensions.x /
                                             (float)brickingInformation_.brickSize));
         brickingInformation_.numBricks.y = static_cast<int>( ceil((float)dimensions.y /
@@ -189,8 +190,14 @@ bool BrickedVolumeReader::openFile(std::string filename) {
         positionArray_ = reinterpret_cast<uint64_t*>(temp);
 
 
-        allVoxelsEqualArray_ = new char[brickingInformation_.totalNumberOfBricksNeeded];
-        bpiStream_->read(allVoxelsEqualArray_,brickingInformation_.totalNumberOfBricksNeeded);
+        try {
+            allVoxelsEqualArray_ = new char[brickingInformation_.totalNumberOfBricksNeeded];
+            bpiStream_->read(allVoxelsEqualArray_,brickingInformation_.totalNumberOfBricksNeeded);
+        }
+        catch (...) {
+            delete[] allVoxelsEqualArray_;
+            throw;
+        }
 
         numberOfChars = (brickingInformation_.totalNumberOfBricksNeeded -
             brickingInformation_.numberOfBricksWithEmptyVolumes) *
@@ -299,29 +306,29 @@ VolumeCollection* BrickedVolumeReader::readSlices(const std::string & filename, 
     if (model == "I") {
         if (format == "UCHAR") {
             largeVolumeManager = new BrickingManager<uint8_t>(brickedHandle, this, brickingInformation_,
-                ioProgress_);
+                progressBar_);
         } else if (format == "USHORT") {
             largeVolumeManager = new BrickingManager<uint16_t>(brickedHandle, this, brickingInformation_,
-                ioProgress_);
+                progressBar_);
         } else if (format == "FLOAT") {
             largeVolumeManager = new BrickingManager<float>(brickedHandle,this, brickingInformation_,
-                ioProgress_);
+                progressBar_);
         }
     } else if (model == "RGBA") {
         if (format == "UCHAR") {
             largeVolumeManager = new BrickingManager<tgt::col4>(brickedHandle, this, brickingInformation_,
-                ioProgress_);
+                progressBar_);
         } else if (format == "USHORT") {
             largeVolumeManager = new BrickingManager<tgt::Vector4<uint16_t> >(
-                brickedHandle, this, brickingInformation_, ioProgress_);
+                brickedHandle, this, brickingInformation_, progressBar_);
         }
     } else if (model == "RGB") {
         if (format == "UCHAR") {
             largeVolumeManager = new BrickingManager<tgt::col3>(brickedHandle, this, brickingInformation_,
-                ioProgress_);
+                progressBar_);
         } else if (format == "USHORT") {
             largeVolumeManager = new BrickingManager<tgt::Vector3<uint16_t> >(
-                brickedHandle, this, brickingInformation_, ioProgress_);
+                brickedHandle, this, brickingInformation_, progressBar_);
         }
     }
 
@@ -366,10 +373,10 @@ VolumeHandle* BrickedVolumeReader::read(const VolumeOrigin& origin)
     return handle;
 }
 
-VolumeReader* BrickedVolumeReader::create(IOProgress* progress) const {
+VolumeReader* BrickedVolumeReader::create(ProgressBar* progress) const {
     return new BrickedVolumeReader(progress);
 }
 
-IOProgress* BrickedVolumeReader::ioProgress_ = 0;
+ProgressBar* BrickedVolumeReader::progressBar_ = 0;
 
 } // namespace voreen

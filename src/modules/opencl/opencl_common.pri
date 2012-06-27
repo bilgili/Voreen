@@ -1,19 +1,14 @@
 DEFINES += VRN_MODULE_OPENCL
-DEFINES += VRN_WITH_OPENCL
+
+# module class  
+VRN_MODULE_CLASSES += OpenCLModule
+VRN_MODULE_CLASS_HEADERS += opencl/openclmodule.h
+VRN_MODULE_CLASS_SOURCES += opencl/openclmodule.cpp
 
 win32 {
     isEmpty(NVIDIA_GPU_COMPUTING_SDK) {
-        warning("NVIDIA_GPU_COMPUTING_SDK not set!)
+        error("OpenCL module: NVIDIA_GPU_COMPUTING_SDK not set. See src/modules/opencl/README.txt")
     }
     INCLUDEPATH += "$${NVIDIA_GPU_COMPUTING_SDK}/OpenCL/common/inc"
     INCLUDEPATH += "$${NVIDIA_GPU_COMPUTING_SDK}/include
-    LIBS += -L$${NVIDIA_GPU_COMPUTING_SDK}/OpenCL/common/lib/Win32
-    LIBS += -L$${NVIDIA_GPU_COMPUTING_SDK}
-    LIBS += -lOpenCL
-}
-
-unix {
-  contains (DEFINES, VRN_WITH_OPENCL) {
-    QMAKE_LFLAGS += -lOpenCL
-  }
 }

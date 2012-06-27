@@ -412,6 +412,25 @@ void XmlSerializer::serialize(const std::string& key, const tgt::Matrix4d& data)
     serializeTgtVector(key+".row3", data[3]);
 }
 
+void XmlSerializer::serialize(const std::string& key, const PlotCellValue& data)
+    throw (SerializationException)
+{
+    // first create new node for this cell
+    TiXmlNode* newNode = new TiXmlElement(key);
+    node_->LinkEndChild(newNode);
+    TemporaryNodeChanger nodeChanger(*this, newNode);
+
+    // then add subnodes withs cell flags and values
+    serializeSimpleTypes("isValue", data.isValue());
+    serializeSimpleTypes("isTag", data.isTag());
+    serializeSimpleTypes("isHighlighted", data.isHighlighted());
+
+    if (data.isTag())
+        serializeSimpleTypes("tag", data.getTag());
+    if (data.isValue())
+        serializeSimpleTypes("value", data.getValue());
+}
+
 void XmlSerializer::serialize(const std::string& key, const Serializable& data)
     throw (SerializationException)
 {

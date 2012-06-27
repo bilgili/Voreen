@@ -58,6 +58,8 @@ public:
     }
 
     void addPoint(T point) {points_->push_back(point);}
+    void removeLast() {points_->pop_back();}
+    void clear() {points_->clear();}
     const std::vector<T>& getData() const { return *points_; }
     void setData(std::vector<T> points) { *points_ = points; }
     size_t getNumPoints() const { return points_->size(); }

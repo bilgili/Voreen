@@ -9,6 +9,13 @@
             </VolumeHandles>
         </VolumeContainer>
         <ProcessorNetwork version="6">
+            <MetaData>
+                <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
+                    <values>
+                        <item type="SimpleRaycaster" ref="ref2" />
+                    </values>
+                </MetaItem>
+            </MetaData>
             <Processors>
                 <Processor type="Background" name="Background" id="ref0">
                     <MetaData>
@@ -55,7 +62,7 @@
                             </MetaData>
                             <position x="-0.65858716" y="-1.53531396" z="1.51366723" />
                             <focus x="-0.05053886" y="0.00771163" z="-0.01233993" />
-                            <upVector x="0.7655319" y="0.27403468" z="0.58212209" />
+                            <upVector x="0.76553178" y="0.27403465" z="0.58212203" />
                         </Property>
                         <Property name="interactionCoarseness" value="2" />
                         <Property name="interactionQuality" value="1" />
@@ -104,7 +111,6 @@
                         <Property name="rightClippingPlane" value="0" />
                         <Property name="topClippingPlane" value="40" />
                         <Property name="useClipping" value="false" />
-                        <Property name="useDatasetTrafoMatrix" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -119,7 +125,7 @@
                             </MetaData>
                             <position x="-0.65858716" y="-1.53531396" z="1.51366723" />
                             <focus x="-0.05053886" y="0.00771163" z="-0.01233993" />
-                            <upVector x="0.76553178" y="0.27403465" z="0.58212203" />
+                            <upVector x="0.7655319" y="0.27403468" z="0.58212209" />
                         </Property>
                         <Property name="filterJitterTexture" value="true" />
                         <Property name="jitterEntryPoints" value="false" />

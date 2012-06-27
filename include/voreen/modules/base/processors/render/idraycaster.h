@@ -33,6 +33,10 @@
 #include "voreen/core/datastructures/transfunc/transfunc.h"
 #include "voreen/core/processors/volumeraycaster.h"
 #include "voreen/core/datastructures/transfunc/transfuncintensity.h"
+#include "voreen/core/properties/cameraproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+
+#include "voreen/core/ports/volumeport.h"
 
 #include "tgt/shadermanager.h"
 

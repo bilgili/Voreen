@@ -155,6 +155,17 @@ bool NumericPropertyValidation<int>::met() const throw() {
         return true;
 }
 
+template<>
+bool NumericPropertyValidation<double>::met() const throw() {
+    // if min and max make sense do a real validation
+    if (observed_->minValue_ <= observed_->maxValue_) {
+        return ((observed_->value_ >= observed_->minValue_)
+            && (observed_->value_ <= observed_->maxValue_));
+    }
+    else
+        return true;
+}
+
 template<class T>
 std::string voreen::NumericPropertyValidation<T>::description() const{
     std::stringstream stream;
@@ -171,12 +182,16 @@ std::string voreen::NumericPropertyValidation<T>::description() const{
 //
 template class NumericPropertyValidation<float>;
 template class NumericPropertyValidation<int>;
+template class NumericPropertyValidation<double>;
 template class NumericPropertyValidation<tgt::vec2>;
 template class NumericPropertyValidation<tgt::vec3>;
 template class NumericPropertyValidation<tgt::vec4>;
 template class NumericPropertyValidation<tgt::ivec2>;
 template class NumericPropertyValidation<tgt::ivec3>;
 template class NumericPropertyValidation<tgt::ivec4>;
+template class NumericPropertyValidation<tgt::dvec2>;
+template class NumericPropertyValidation<tgt::dvec3>;
+template class NumericPropertyValidation<tgt::dvec4>;
 template class NumericPropertyValidation<tgt::mat2>;
 template class NumericPropertyValidation<tgt::mat3>;
 template class NumericPropertyValidation<tgt::mat4>;

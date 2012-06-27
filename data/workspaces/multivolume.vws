@@ -148,7 +148,6 @@
                         <Property name="lightSpecular">
                             <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
                         </Property>
-                        <Property name="masking" value="none" />
                         <Property name="materialShininess" value="60" />
                         <Property name="samplingRate" value="4" />
                         <Property name="shading1" value="phong" />
@@ -157,7 +156,7 @@
                         <Property name="shading4" value="phong" />
                         <Property name="transferFunction1">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="true" x="20" y="95" width="550" height="321" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="true" x="20" y="95" width="554" height="326" />
                             </MetaData>
                             <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
                                 <Keys>
@@ -175,7 +174,7 @@
                         </Property>
                         <Property name="transferFunction2">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="true" x="21" y="428" width="550" height="321" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="true" x="21" y="428" width="554" height="326" />
                             </MetaData>
                             <TransferFunction type="TransFuncIntensity" lower="0.27450982" upper="1">
                                 <Keys>

@@ -133,6 +133,7 @@ Serializable* ProcessorFactory::createType(const std::string& typeString) {
 }
 
 void ProcessorFactory::registerClass(Processor* const newClass, bool isCore) {
+    tgtAssert(newClass, "null pointer passed");
 
     if (!isProcessorKnown(newClass->getClassName())) {
         classList_.insert(std::make_pair(newClass->getClassName(), newClass));
@@ -153,8 +154,7 @@ void ProcessorFactory::registerClass(Processor* const newClass, bool isCore) {
         }
     }
     else {
-        LWARNING("Processor class '" << newClass->getClassName() << "' has already been registered.");
-        delete newClass;
+        LWARNING("Processor class '" << newClass->getClassName() << "' has already been registered. Skipping.");
     }
 }
 

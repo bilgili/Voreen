@@ -31,6 +31,7 @@
 
 #include "voreen/core/ports/allports.h"
 #include "voreen/core/datastructures/rendertarget.h"
+#include "aggregationgraphicsitem.h"
 #include "portarrowgraphicsitem.h"
 #include "processorgraphicsitem.h"
 #include "rootgraphicsitem.h"
@@ -54,6 +55,7 @@ namespace {
     const QColor colorRenderPort = Qt::blue;
     const QColor colorTextPort = Qt::cyan;
     const QColor colorVolumeCollectionPort = Qt::magenta;
+    const QColor colorPlotPort = Qt::cyan;
     const QColor colorGeometryPort = Qt::yellow;
     const QColor colorUnknownPort = Qt::gray;
 
@@ -137,6 +139,9 @@ QColor PortGraphicsItem::getColor() const {
     else if (dynamic_cast<TextPort*>(port_)) {
         result = colorTextPort;
     }
+    else if (dynamic_cast<PlotPort*>(port_)) {
+        result = colorPlotPort;
+    }
     else {
         result = colorUnknownPort;
     }
@@ -179,6 +184,10 @@ void PortGraphicsItem::addConnection(PortGraphicsItem* port) {
 
 bool PortGraphicsItem::removeConnection(PortGraphicsItem* port) {
     return connectedPorts_.removeOne(port);
+}
+
+void PortGraphicsItem::setCurrentArrow(PortArrowGraphicsItem* arrow) {
+    currentArrow_ = arrow;
 }
 
 void PortGraphicsItem::update(const QRectF& rect) {
@@ -226,9 +235,9 @@ void PortGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
     if (parent_->currentLayer() == NetworkEditorLayerDataflow) {
         if (isOutport()) {
             currentArrow_ = new PortArrowGraphicsItem(this);
-            scene()->addItem(currentArrow_);
             QPointF scenePos = event->scenePos();
             currentArrow_->setDestinationPoint(scenePos);
+            scene()->addItem(currentArrow_);
             emit startedArrow();
         }
     }
@@ -241,6 +250,8 @@ void PortGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
         tgtAssert(currentArrow_ != 0, "currentArrow was not set");
         QPointF scenePos = event->scenePos();
         currentArrow_->setDestinationPoint(scenePos);
+
+        if (currentArrow_->getOldPortGraphicsItem() == 0) {
 
         QGraphicsItem* item = scene()->itemAt(scenePos);
         if (item && (item != this)) {
@@ -262,11 +273,12 @@ void PortGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
                 break;
                 }
             case TextGraphicsItem::Type:
+            case OpenPropertyListButton::Type:
                 item = item->parentItem();
-            case RootGraphicsItem::Type:
+            case AggregationGraphicsItem::Type:
             case ProcessorGraphicsItem::Type:
                 {
-                RootGraphicsItem* p = static_cast<RootGraphicsItem*>(item);;
+                RootGraphicsItem* p = static_cast<RootGraphicsItem*>(item);
                 if (getParent()->connect(this, p, true))
                     currentArrow_->setNormalColor(Qt::green);
                 else
@@ -280,6 +292,8 @@ void PortGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
         else
             currentArrow_->setNormalColor(Qt::black);
         }
+    }
+
     QGraphicsItem::mouseMoveEvent(event);
 }
 
@@ -292,18 +306,22 @@ void PortGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
             case PortGraphicsItem::Type:
                 {
                     PortGraphicsItem* portItem = static_cast<PortGraphicsItem*>(item);
-                    if ((item->parentItem() != parentItem()) && !(portItem->isOutport()))
-                        getParent()->connect(this, portItem);
+                    if (currentArrow_ && (currentArrow_->getOldPortGraphicsItem() != portItem)) {
+                        if ((item->parentItem() != parentItem()) && !(portItem->isOutport()))
+                            getParent()->connect(this, portItem);
+                    }
                     break;
                 }
             case TextGraphicsItem::Type:
                 item = item->parentItem();
                 // intended fall-through
-            case RootGraphicsItem::Type:
+            case AggregationGraphicsItem::Type:
             case ProcessorGraphicsItem::Type:
                 {
-                    RootGraphicsItem* rootItem = static_cast<RootGraphicsItem*>(item);
-                    getParent()->connect(this, rootItem);
+                    if (currentArrow_ && (currentArrow_->getOldPortGraphicsItem() == 0)) {
+                        RootGraphicsItem* rootItem = static_cast<RootGraphicsItem*>(item);
+                        getParent()->connect(this, rootItem);
+                    }
                     break;
                 }
             default:
@@ -312,8 +330,32 @@ void PortGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
         }
     }
 
+    if (currentArrow_) {
+        PortGraphicsItem* oldPortItem = currentArrow_->getOldPortGraphicsItem();
+        if (oldPortItem) {
+            QList<QGraphicsItem*> items = scene()->items(event->scenePos());
+
+            bool droppedOnOldPortItem = false;
+            foreach (QGraphicsItem* item, items) {
+                droppedOnOldPortItem = (item == oldPortItem);
+
+                if (droppedOnOldPortItem)
+                    break;
+            }
+
+            currentArrow_->setDestinationItem(oldPortItem);
+            if (!droppedOnOldPortItem)
+                getParent()->disconnect(this, oldPortItem);
+            currentArrow_ = 0;
+            emit endedArrow();
+            QGraphicsItem::mouseReleaseEvent(event);
+            return;
+        }
+    }
+
     delete currentArrow_;
     currentArrow_ = 0;
+
     emit endedArrow();
 
     QGraphicsItem::mouseReleaseEvent(event);
@@ -355,7 +397,7 @@ QGraphicsItem* PortGraphicsItem::tooltip() const {
             TCTooltip* tooltip = new TCTooltip(-(maxSize.x+8), 0, maxSize.x, maxSize.y);
             RenderPort* rp = dynamic_cast<RenderPort*>(getPort());
             if (rp)
-                tooltip->initialize(rp->getData());
+                tooltip->initialize(rp->getRenderTarget());
 
             // name item
             QGraphicsSimpleTextItem* tooltipText = new QGraphicsSimpleTextItem(QString::fromStdString(getPort()->getName()));

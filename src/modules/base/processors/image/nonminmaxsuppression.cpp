@@ -66,7 +66,7 @@ void NonMinMaxSuppression::process() {
         compile();
 
     outport_.activateTarget();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    outport_.clearTarget();
 
     inportImage_.bindTextures(GL_TEXTURE0, GL_TEXTURE1);
     if (!isotropic_.get()) {
@@ -91,6 +91,7 @@ void NonMinMaxSuppression::process() {
     renderQuad();
 
     program_->deactivate();
+    outport_.deactivateTarget();
     glActiveTexture(GL_TEXTURE0);
     LGL_ERROR;
 }
@@ -118,7 +119,7 @@ std::string NonMinMaxSuppression::generateHeader() {
 
 void NonMinMaxSuppression::compile() {
     if (program_)
-        program_->setHeaders(generateHeader(), false);
+        program_->setHeaders(generateHeader());
     ImageProcessor::compile();
 }
 

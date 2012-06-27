@@ -106,11 +106,10 @@ void PropertyListWidget::processorAdded(const Processor* processor) {
         return;
     }
 
-    QPropertyWidgetFactory factory;
-
     // generate header widget for the new processor and insert it into the widget map
-    ProcessorPropertiesWidget* headerWidget = new ProcessorPropertiesWidget(this, processor, &factory, false, widgetMode_ == LIST);
+    ProcessorPropertiesWidget* headerWidget = new ProcessorPropertiesWidget(this, processor, false, widgetMode_ == LIST);
     connect(headerWidget, SIGNAL(modified()), this, SLOT(processorModified()));
+    connect(this, SIGNAL(showHeader(bool)), headerWidget, SLOT(showHeader(bool)));
     processorWidgetMap_.insert(std::make_pair(processor, headerWidget));
     containerLayout_->addWidget(headerWidget);
 
@@ -163,7 +162,6 @@ void PropertyListWidget::processorsSelected(const QList<Processor*>& selectedPro
         hideLodControl_->setEnabled(true);
 
     std::map<const Processor*, ProcessorPropertiesWidget*>::iterator it;
-    setVisible(false);
     for (it = processorWidgetMap_.begin(); it != processorWidgetMap_.end(); ++it) {
         bool isSelected = std::find(selectedProcessors.begin(), selectedProcessors.end(), it->first) != selectedProcessors.end();
         if (widgetMode_ == LIST) {
@@ -177,8 +175,6 @@ void PropertyListWidget::processorsSelected(const QList<Processor*>& selectedPro
             LERRORC("voreen.qt.PropertyListWidget", "Undefined widget mode");
         }
     }
-    update();
-    setVisible(true);
     previouslySelectedProcessors_ = selectedProcessors;
 }
 
@@ -243,12 +239,12 @@ void PropertyListWidget::createWidgets() {
 
     // generate processor property widgets: each processor property contains a processor's properties
     // along with a expansion header
-    QPropertyWidgetFactory* factory = new QPropertyWidgetFactory;
     setUpdatesEnabled(false);
     for (int i=0; i<processorNetwork_->numProcessors(); ++i) {
         Processor* proc = processorNetwork_->getProcessors().at(i);
-        ProcessorPropertiesWidget* headerWidget = new ProcessorPropertiesWidget(this, proc, factory, false, true);
+        ProcessorPropertiesWidget* headerWidget = new ProcessorPropertiesWidget(this, proc, false, true);
         connect(headerWidget, SIGNAL(modified()), this, SLOT(processorModified()));
+        connect(this, SIGNAL(showHeader(bool)), headerWidget, SLOT(showHeader(bool)));
         //connect(graphicsProcessorNet_->processorItems[i], SIGNAL(processorNameChanged()), headerWidget, SLOT(updateHeaderTitle()));
         containerLayout_->addWidget(headerWidget);
         processorWidgetMap_.insert(std::make_pair(proc, headerWidget));
@@ -256,7 +252,6 @@ void PropertyListWidget::createWidgets() {
         // Assign volume container to headerWidget for further propagation to VolumeHandlePropertyWidget and VolumeCollectionPropertyWidget
         headerWidget->setVolumeContainer(volumeContainer_);
     }
-    delete factory;
 
     setLevelOfDetail(levelOfDetail_);
     setUpdatesEnabled(true);
@@ -284,6 +279,7 @@ void PropertyListWidget::hideLodControls(bool hide) {
             }
         }
     }
+    emit showHeader(!hide);
 }
 
 void PropertyListWidget::hideAll() {

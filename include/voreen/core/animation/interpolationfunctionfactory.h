@@ -44,7 +44,6 @@ template <class T> class InterpolationFunction;
  */
 template <class T> class InterpolationFunctionFactory : public SerializableFactory {
 public:
-
     /**
      * Constructor.
      */
@@ -58,7 +57,7 @@ public:
     /**
      * Returns a vector of names of all possible interpolation functions for this type of property.
      */
-    const std::vector<std::string> getListOfFunctionnames() const;
+    const std::vector<std::string> getListOfFunctionNames() const;
 
     /**
      * Returns a vector of possible interpolation functions for this type of property.
@@ -69,7 +68,7 @@ public:
      * Returns a new instance of an interpolation function of the given name.
      * If there is no such function, the the default function is returned.
      */
-    InterpolationFunction<T>* getFunctionByName(std::string name) const;
+    InterpolationFunction<T>* getFunctionByName(const std::string& name) const;
 
     /**
      * @see SerializableFactory::getTypeString
@@ -84,7 +83,6 @@ public:
     static InterpolationFunctionFactory<T>* getInstance();
 
 private:
-
     /**
      * Registers a new interpolation function to this factory.
      * If the property type is consistent, the given function will be added to the internal list, otherwise it will be deleted.

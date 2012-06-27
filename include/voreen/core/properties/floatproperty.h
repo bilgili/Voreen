@@ -36,21 +36,12 @@ namespace voreen {
 
 class FloatProperty : public NumericProperty<float> {
 public:
-    FloatProperty(const std::string& id, const std::string& guiText, float value = 0.f,
-              float minValue = 0.f, float maxValue = 1.f, bool instantValueChange = false,
-              Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT);
+    FloatProperty(const std::string& id, const std::string& guiText,
+                float value = 0.f, float minValue = 0.f, float maxValue = 1.f,
+                Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT);
 
-    virtual ~FloatProperty() {}
+    virtual std::string getTypeString() const;
 
-    /**
-     * For convenience only: this method converts the given double to float
-     * and calls the method inherited from NumericProperty<float>.
-     */
-/*
-    void set(const double value, const bool updateWidgets = true) {
-        NumericProperty<float>::set(static_cast<const float>(value), updateWidgets);
-    }
-*/
     PropertyWidget* createWidget(PropertyWidgetFactory* f);
 };
 

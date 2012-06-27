@@ -30,7 +30,7 @@
 #ifndef VRN_VOLUMESUBSET_H
 #define VRN_VOLUMESUBSET_H
 
-#include "voreen/modules/base/processors/volume/volumeprocessor.h"
+#include "voreen/core/processors/volumeprocessor.h"
 
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/vectorproperty.h"

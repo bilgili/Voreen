@@ -48,6 +48,8 @@ public:
     static void setZeroUnit();
     static void cleanup();
 
+    static unsigned short numLocalActive();
+
     /**
      * Returns true if no texture units are currently assigned.
      */
@@ -65,6 +67,7 @@ protected:
     static bool initialized_;
     static unsigned short totalActive_;
     static unsigned short maxTexUnits_;
+    static unsigned short numKeptUnits_;
     static std::vector<bool> busyUnits_;
 };
 

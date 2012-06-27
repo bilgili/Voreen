@@ -44,16 +44,20 @@ Erosion::Erosion()
     addPort(outport_);
 }
 
+Processor* Erosion::create() const {
+    return new Erosion();
+}
+
 std::string Erosion::getProcessorInfo() const {
     return "Image erosion operator with 3x3 kernel.";
 }
 
 void Erosion::process() {
     outport_.activateTarget();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    outport_.clearTarget();
 
     TextureUnit shadeUnit, depthUnit;
-    inport_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
+    inport_.bindTextures(shadeUnit, depthUnit);
 
     // initialize shader
     program_->activate();
@@ -65,6 +69,8 @@ void Erosion::process() {
     renderQuad();
 
     program_->deactivate();
+    outport_.deactivateTarget();
+    TextureUnit::setZeroUnit();
     LGL_ERROR;
 }
 

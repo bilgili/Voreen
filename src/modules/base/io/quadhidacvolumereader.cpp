@@ -236,7 +236,14 @@ VolumeCollection* QuadHidacVolumeReader::read(const std::string &url)
     uint16_t* scalars = new uint16_t[hmul(dims)];
     uint16_t* p = scalars;
     for (tgt::ivec3 i = tgt::ivec3::zero; i.z < dims.z; ++i.z) {
-        file.read(reinterpret_cast<char*>(slice), dims.x*dims.y*4);
+        try {
+            file.read(reinterpret_cast<char*>(slice), dims.x*dims.y*4);
+        }
+        catch (...) {
+            delete[] slice;
+            delete[] scalars;
+            throw;
+        }
 
         for (i.y = 0; i.y < dims.y; ++i.y) {
             for (i.x = 0; i.x < dims.x; ++i.x) {
@@ -257,7 +264,7 @@ VolumeCollection* QuadHidacVolumeReader::read(const std::string &url)
 
     // check whether we have a 12 or a 16 bit dataset
     int bits = max <= 4095.0f ? 12 : 16;
-    VolumeUInt16* dataset = new VolumeUInt16(scalars, dims, tgt::vec3(dxyr), bits);
+    VolumeUInt16* dataset = new VolumeUInt16(scalars, dims, tgt::vec3(dxyr), tgt::mat4::identity, bits);
     dataset->setTransformation(transformationMatrix);
 
     LINFO("min/max value: " << min << "/" << max);
@@ -276,7 +283,7 @@ VolumeCollection* QuadHidacVolumeReader::read(const std::string &url)
     return volumeCollection;
 }
 
-VolumeReader* QuadHidacVolumeReader::create(IOProgress* progress) const {
+VolumeReader* QuadHidacVolumeReader::create(ProgressBar* progress) const {
     return new QuadHidacVolumeReader(progress);
 }
 

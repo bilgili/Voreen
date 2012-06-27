@@ -58,6 +58,8 @@ class PortGraphicsItem : public QGraphicsObject, public HasToolTip {
 class PortGraphicsItem : public QObject, public QGraphicsItem, public HasToolTip {
 #endif
 Q_OBJECT
+    friend class PortArrowGraphicsItem;
+
 public:
     /**
      * Constructor for a PortGraphicsItem instance. Will set this item to accept hover events
@@ -162,6 +164,13 @@ public:
      * \return The tooltip which is ready to be added to a QGraphicsScene
      */
     QGraphicsItem* tooltip() const;
+
+    /**
+     * Sets the currently active \sa PortArrowGraphicsItem. Used by the PortArrowGraphicsItem itself
+     * to set itself as the current arrow if the destination is changed
+     * \param arrow The new PortArrowGraphicsItem
+     */
+    void setCurrentArrow(PortArrowGraphicsItem* arrow);
 
 signals:
     /**

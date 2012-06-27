@@ -81,7 +81,7 @@ template<typename T>
 MWheelNumPropInteractionHandler<T>::MWheelNumPropInteractionHandler(const std::string& id, const std::string& name,
         NumericProperty<T>* numProp,  tgt::Event::Modifier modifier, bool sharing, bool enabled)
     : InteractionHandler(id, name,
-        tgt::MouseEvent::MouseButtons(tgt::MouseEvent::MOUSE_WHEEL_UP | tgt::MouseEvent::MOUSE_WHEEL_DOWN | tgt::MouseEvent::MOUSE_BUTTON_MIDDLE),
+        tgt::MouseEvent::MouseButtons(tgt::MouseEvent::MOUSE_WHEEL | tgt::MouseEvent::MOUSE_BUTTON_MIDDLE),
         static_cast<tgt::MouseEvent::MouseAction>(tgt::MouseEvent::WHEEL | tgt::MouseEvent::MOTION | tgt::MouseEvent::PRESSED | tgt::MouseEvent::RELEASED), modifier,
         sharing, enabled)
 {
@@ -110,7 +110,7 @@ void MWheelNumPropInteractionHandler<T>::onEvent(tgt::Event* eve) {
                         numProp_->increase();
                 }
             }
-            else if(mouseEve->button() == tgt::MouseEvent::MOUSE_WHEEL_DOWN) {
+            else if (mouseEve->button() == tgt::MouseEvent::MOUSE_WHEEL_DOWN) {
                 if (numProp_->get() != numProp_->getMinValue()) {
                     if ((numProp_->get() - numProp_->getStepping()) < numProp_->getMinValue())
                         numProp_->set(numProp_->getMinValue());

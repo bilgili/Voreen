@@ -35,6 +35,9 @@
 
 namespace voreen {
 
+/**
+ * @deprecated Use FloatVec4Property with view Property::COLOR instead!
+ */
 class ColorProperty : public TemplateProperty<tgt::vec4> {
 public:
     ColorProperty(const std::string& id, const std::string& guiText, tgt::Color value = tgt::Color(0.0),

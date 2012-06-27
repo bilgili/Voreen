@@ -30,12 +30,14 @@
 #ifndef VRN_VOLUMERESAMPLE_H
 #define VRN_VOLUMERESAMPLE_H
 
-#include "voreen/modules/base/processors/volume/volumeprocessor.h"
+#include "voreen/core/processors/volumeprocessor.h"
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/optionproperty.h"
 
 namespace voreen {
+
+class Volume;
 
 /**
  * Resizes the input volume to the specified dimensions
@@ -47,10 +49,12 @@ public:
     virtual ~VolumeResample();
     virtual Processor* create() const;
 
-    virtual std::string getClassName() const { return "VolumeResample"; }
-    virtual std::string getCategory() const  { return "Volume Processing"; }
-    virtual CodeState getCodeState() const   { return CODE_STATE_STABLE; }
+    virtual std::string getClassName() const      { return "VolumeResample"; }
+    virtual std::string getCategory() const       { return "Volume Processing"; }
+    virtual CodeState getCodeState() const        { return CODE_STATE_STABLE; }
+    virtual bool usesExpensiveComputation() const { return true; }
     virtual std::string getProcessorInfo() const;
+
 
 protected:
     virtual void process();

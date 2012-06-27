@@ -1058,10 +1058,6 @@ std::vector<std::string> FileSystem::readDirectory(const std::string& directory,
                                                    const bool recursiveSearch) {
     std::vector<std::string> result;
 
-    if (sort) {
-        LWARNING("FileSystem::readDirectory(): sorting currently not supported on Unix");
-    }
-
     if (recursiveSearch) {
         LWARNING("FileSystem::readDirectory(): recursive search not supported on Unix");
     }
@@ -1081,6 +1077,9 @@ std::vector<std::string> FileSystem::readDirectory(const std::string& directory,
         }
     }
     closedir(dir);
+
+    if (sort)
+        std::sort(result.begin(), result.end());
 
     return result;
 }

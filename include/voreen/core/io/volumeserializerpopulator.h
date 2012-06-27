@@ -36,7 +36,7 @@
 namespace voreen {
 
 // forward declarations
-class IOProgress;
+class ProgressBar;
 class VolumeReader;
 class VolumeWriter;
 class VolumeSerializer;
@@ -70,7 +70,7 @@ private:
     std::vector<VolumeReader*> readers_;
     std::vector<VolumeWriter*> writers_;
     VolumeSerializer* const vs_;
-    IOProgress* progressDialog_;
+    ProgressBar* progressDialog_;
 };
 
 } // namespace voreen

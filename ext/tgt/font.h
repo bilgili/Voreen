@@ -26,6 +26,7 @@
 #define TGT_FONT_H
 
 #include "tgt/bounds.h"
+#include <vector>
 
 #ifdef TGT_HAS_FTGL
 #include <FTGL/ftgl.h>
@@ -33,22 +34,6 @@ class FTFont;
 #endif
 
 namespace tgt {
-
-enum FontType {
-    BitmapFont,
-    BufferFont,
-    ExtrudeFont,
-    OutlineFont,
-    PixmapFont,
-    PolygonFont,
-    TextureFont    
-};
-
-enum TextAlignment {
-    Left,
-    Center,
-    Right
-};
 
 /**
  * This class acts as a wrapper for the ftgl fonts. A FTTextureFont will be created and it is
@@ -58,69 +43,185 @@ enum TextAlignment {
  */
 class Font {
 public:
+    enum FontType {
+        NIL,
+        BitmapFont,
+        BufferFont,
+        ExtrudeFont,
+        OutlineFont,
+        PixmapFont,
+        PolygonFont,
+        TextureFont    
+    };
+
+    enum TextAlignment {
+        Left,
+        Center,
+        Right
+    };
+
+    enum VerticalTextAlignment {
+        Top,
+        Middle,
+        Bottom
+    };
+
     /**
-     * Crates a Font object from the given font file. A font size of 72 will be used by default
+     * Creates a Font object from the given font file. A font size of 72 will be used by default
      * but that can be changed later on.
      * \param fontName The path to the font file, which should be used for this font object.
      * \param size The font size.
      */
-    Font(const std::string& fontName, const int size = 72, FontType fontType = TextureFont);
+    Font(const std::string& fontName
+        , int size = 72
+        , FontType fontType = TextureFont
+        , float lineWidth = 4096.0f // this makes sure there are no unexpected line breaks 
+                                    // where exactly one line is expected
+        , TextAlignment textAlignment = Left
+        , VerticalTextAlignment verticalTextAlignment = Top); // Top is compatible to previous one-line render
 
     /**
      * Destructor - deletes the font object.
      */
-    ~Font();
+    virtual ~Font();
 
     /**
      * Get the height of one line.
      */
-    float getLineHeight();
+    virtual float getLineHeight();
+
+    /**
+     * Get the width of one line.
+     */
+    virtual float getLineWidth();
 
     /**
      * Sets the line width to use.
      */
-    void setLineWidth(const float lineWidth);
+    virtual void setLineWidth(float lineWidth);
 
     /**
      * Sets the font size which should be used from now on.
      * \param size The new font size
      */
-    void setSize(const int size);
+    virtual void setSize(int size);
+
+    /**
+     * Gets the font size.
+     */
+    virtual int getSize();
+
+    /**
+     * Set font name.
+     */
+    virtual void setFontName(const std::string& fontName);
+
+    /**
+     * Get font name.
+     */
+    virtual std::string getFontName();
+
+    /**
+     * Set font type.
+     */
+    virtual void setFontType(FontType fontType);
+
+    /**
+     * Get font type.
+     */
+    virtual FontType getFontType();
+
+    /**
+     * Returns the FontType for the given type string.
+     * It the typeName doesn't match any FontType, NIL is
+     * returned.
+     */
+    static FontType getFontType(const std::string& typeName);
+
+    /**
+     * Returns the passed type as string, which
+     * might be used in a user interface.
+     */
+    static std::string getFontTypeName(FontType type);
+
+    /**
+     * Get horizontal text alignment.
+     */
+    virtual TextAlignment getTextAlignment();
+
+    /**
+     * Get horizontal text alignment.
+     */
+    static TextAlignment getTextAlignment(const std::string& textAlignment);
+
+    /**
+     * Returns the passed enum as string, which 
+     * might be used for serialisation.
+     */
+    static std::string getTextAlignmentName(TextAlignment textAlignment);
+
+    /**
+     * Get vertical text alignment.
+     */
+    virtual VerticalTextAlignment getVerticalTextAlignment();
+
+    /**
+     * Get vertical text alignment.
+     */
+    static VerticalTextAlignment getVerticalTextAlignment(const std::string& verticalTextAlignment);
+
+    /**
+     * Returns the passed enum as string, which 
+     * might be used for serialisation.
+     */
+    static std::string getVerticalTextAlignmentName(VerticalTextAlignment verticalTextAlignment);
 
     /**
      * Sets the font text alignment of the font.
      * Don't forget to specify line width!
      */
-    void setTextAlignment(TextAlignment textAlignment);
+    virtual void setTextAlignment(TextAlignment textAlignment);
+
+    /**
+     * Sets the font text alignment of the font.
+     * Don't forget to specify line width!
+     */
+    virtual void setVerticalTextAlignment(VerticalTextAlignment verticalTextAlignment);
 
     /**
      * Renders the text 'text' to the position 'pos'. 
      * \sa pos The pen position of the first character
      * \sa text The text to be rendered
      */
-    void render(const tgt::vec3& pos, const std::string& text);
-
-    /**
-     * Renders the text 'text' to the position 'pos' using layoutmanager. 
-     * \sa pos The pen position of the first character
-     * \sa text The text to be rendered
-     */
-    void renderWithLayout(const tgt::vec3& pos, const std::string& text);
+    virtual void render(const tgt::vec3& pos, const std::string& text);
 
     /**
      * Computes the bounding box for the the text 'text' beginning at position 'pos'.
      * \sa pos The pen position of the first character
      * \sa text The text for which the bounding box should be computed
      */
-    tgt::Bounds getBounds(const tgt::vec3& pos, const std::string& text);
+    virtual tgt::Bounds getBounds(const tgt::vec3& pos, const std::string& text);
 
 protected:
 #ifdef TGT_HAS_FTGL
     FTFont* font_;
     FTSimpleLayout* simpleLayout_;
 #endif
+
+private:
+    /**
+     * Updates the font.
+     */
+    void update();
+    
+    int fontSize_;
+    std::string fontName_;
+    FontType fontType_;
+    float lineWidth_;
+    TextAlignment hAlign_;
+    VerticalTextAlignment vAlign_;
 };
 
-} //namespace tgt
+} // namespace tgt
 
 #endif

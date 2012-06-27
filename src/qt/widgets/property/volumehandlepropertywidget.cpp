@@ -101,7 +101,7 @@ VolumeHandlePropertyWidget::VolumeHandlePropertyWidget(VolumeHandleProperty* vol
     CustomLabel* spacingLabel = new CustomLabel(this);
     CustomLabel* memSizeLabel = new CustomLabel(this);
 
-    dimensionLabel->setText(" Dimension");
+    dimensionLabel->setText(" Dimensions");
     spacingLabel->setText(" Spacing");
     memSizeLabel->setText(" MemSize");
 

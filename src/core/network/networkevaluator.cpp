@@ -35,6 +35,7 @@
 #include "voreen/core/processors/canvasrenderer.h"
 
 #include "tgt/textureunit.h"
+#include "tgt/framebufferobject.h"
 
 #include <vector>
 
@@ -117,14 +118,25 @@ bool NetworkEvaluator::initializeNetwork()  {
                     sharedContext_->getGLFocus();
                 LGL_ERROR;
             }
-            catch (VoreenException e) {
+            catch (const VoreenException& e) {
                 LERROR("Failed to initialize '" << processor->getName()
                         << "' (" << processor->getClassName() << "): " << e.what());
+
+                // deinitialize processor, in order to make sure that all resources are freed
+                LINFO("Deinitializing '" << processor->getName()
+                    << "' (" << processor->getClassName() << ") ...");
+                if (sharedContext_)
+                    sharedContext_->getGLFocus();
+                processor->initialized_ = true;
+                processor->deinitialize();
+
                 // don't break, try to initialize the other processors even if one failed
                 failed = true;
             }
         }
     }
+
+    assignRenderTargets();
 
     unlock();
     return !failed;
@@ -206,6 +218,9 @@ void NetworkEvaluator::onNetworkChange() {
 
 void NetworkEvaluator::process() {
 
+    if (!network_)
+        return;
+
     if (isLocked()) {
         LWARNING("process() called on locked evaluator. Skipping.");
         return;
@@ -229,12 +244,15 @@ void NetworkEvaluator::process() {
     // processors in the rendering order (loops)
     std::set<Processor*> processed;
 
-    // reset loop ports' iteration counters
+    // reset loop ports' iteration counters and progressbars
     for (size_t i = 0; i < renderingOrder_.size(); ++i) {
         Processor* processor = renderingOrder_[i];
         tgtAssert(loopPortMap_.find(processor) != loopPortMap_.end(), "Processor missing in loop port map");
-        for (size_t j=0; j<loopPortMap_[processor].size(); ++j)
+        for (size_t j = 0; j < loopPortMap_[processor].size(); ++j)
             loopPortMap_[processor][j]->setLoopIteration(-1);
+
+        if (!processor->isValid())
+            processor->setProgress(0.f);
     }
 
     // notify process wrappers
@@ -256,6 +274,7 @@ void NetworkEvaluator::process() {
         bool needsProcessing = true;
         if (currentProcessor->isValid())
             needsProcessing = false;
+        //if (currentProcessor->isEndProcessor())
         if (dynamic_cast<CanvasRenderer*>(currentProcessor))
             needsProcessing = true;
 
@@ -445,7 +464,76 @@ void NetworkEvaluator::defineRenderingOrder() {
     }
 }
 
+void NetworkEvaluator::assignRenderTargets() {
+
+    // ports to process (connected outports)
+    std::vector<RenderPort*> PORTS;
+
+    // direct successors of each port in the network graph (non-transitive)
+    std::map< RenderPort*, std::vector<RenderPort*> > SUCC_GRAPH;
+
+    // successors of each port in the rendering order (transitive)
+    std::map< RenderPort*, std::vector<RenderPort*> > SUCC_ORDER;
+
+    // predecessors of each port in the rendering order (transitive)
+    std::map< RenderPort*, std::vector<RenderPort*> > PRED_ORDER;
+
+    // collect ports to process
+    std::vector<Processor*> processors = network_->getProcessors();
+    for (size_t p = 0; p < processors.size(); ++p) {
+        if (RenderProcessor* rp = dynamic_cast<RenderProcessor*>(processors[p])) {
+
+            //if (!rp->isInitialized())
+            //    continue;
+
+            // outports
+            std::vector<Port*> outports = rp->getOutports();
+            for (size_t o = 0; o < outports.size(); ++o) {
+                if (RenderPort* rport = dynamic_cast<RenderPort*>(outports[o])) {
+                    if (rport->isConnected())
+                        PORTS.push_back(rport);
+                }
+            }
+
+            // private ports
+            const std::vector<RenderPort*>& privatePorts = rp->getPrivateRenderPorts();
+            for (size_t o = 0; o < privatePorts.size(); ++o) {
+                if (privatePorts[o]) {
+                    PORTS.push_back(privatePorts[o]);
+                }
+            }
+        }
+    }
+
+    // collect graph successors
+    for (size_t portID = 0; portID < PORTS.size(); ++portID) {
+        RenderPort* port = PORTS.at(portID);
+        std::vector<RenderPort*> successors;
+
+        // iterate over all connected processors and add their render outports to the successors list
+        const std::vector<Port*>& connectedPorts = port->getConnected();
+        for (size_t connPortID = 0; connPortID < connectedPorts.size(); ++connPortID) {
+            tgtAssert(dynamic_cast<RenderPort*>(connectedPorts.at(connPortID)), "RenderPort connected to Non-RenderPort");
+            tgtAssert(connectedPorts.at(connPortID)->getProcessor(), "RenderPort without owner");
+            std::vector<Port*> succOutports = connectedPorts.at(connPortID)->getProcessor()->getOutports();
+            for (size_t i = 0; i < succOutports.size(); ++i) {
+                // add outport to successor list, if it is a RenderPort and element of PORTS
+                if (RenderPort* succPort = dynamic_cast<RenderPort*>(succOutports.at(i))) {
+                    if (std::find(PORTS.begin(), PORTS.end(), succPort) != PORTS.end())
+                        successors.push_back(succPort);
+                }
+            }
+        }
+
+        // add successor list to map
+        SUCC_GRAPH.insert(std::pair<RenderPort*, std::vector<RenderPort*> >(port, successors));
+    }
+
+}
+
 bool NetworkEvaluator::checkForInvalidPorts() {
+    tgtAssert(network_, "no network");
+
     for (size_t i=0; i<network_->getProcessors().size(); ++i) {
         if (network_->getProcessors()[i]->getInvalidationLevel() >= Processor::INVALID_PORTS) {
             return true;
@@ -487,7 +575,7 @@ std::vector<RenderPort*> NetworkEvaluator::collectRenderPorts() const {
 
             RenderPort* rport = dynamic_cast<RenderPort*>(outport);
             if (rport) {
-                if (rport->hasData())
+                if (rport->hasRenderTarget())
                     renderPorts.push_back(rport);
             }
         }
@@ -497,7 +585,7 @@ std::vector<RenderPort*> NetworkEvaluator::collectRenderPorts() const {
             RenderPort* pport = privatePorts[o];
 
             if (pport) {
-                if (pport->hasData())
+                if (pport->hasRenderTarget())
                     renderPorts.push_back(pport);
             }
         }
@@ -621,6 +709,11 @@ void NetworkEvaluator::CheckOpenGLStateProcessWrapper::checkState(Processor* p) 
         warn(p, "GL_BLEND was enabled");
     }
 
+    if (!checkGL(GL_BLEND_SRC, GL_ONE) || !checkGL(GL_BLEND_DST, GL_ZERO)) {
+        glBlendFunc(GL_ONE, GL_ZERO);
+        warn(p, "Modified BlendFunc");
+    }
+
     if (!checkGL(GL_DEPTH_TEST, true)) {
         glEnable(GL_DEPTH_TEST);
         warn(p, "GL_DEPTH_TEST was not enabled");
@@ -676,6 +769,11 @@ void NetworkEvaluator::CheckOpenGLStateProcessWrapper::checkState(Processor* p) 
         warn(p, "A shader was active");
     }
 
+    if (tgt::FramebufferObject::getActiveObject() != 0) {
+        tgt::FramebufferObject::deactivate();
+        warn(p, "A framebuffer object was active (RenderPort::deactivateTarget() missing?)");
+    }
+
     if (!checkGL(GL_DEPTH_FUNC, GL_LESS)) {
         glDepthFunc(GL_LESS);
         warn(p, "glDepthFunc was not set to GL_LESS");
@@ -687,8 +785,11 @@ void NetworkEvaluator::CheckOpenGLStateProcessWrapper::checkState(Processor* p) 
     }
 
     if (!tgt::TextureUnit::unused()) {
+        // Warn only if units that were initialized non-statically are still active (which probably means
+        // they were generated with the new operator and not deleted)
+        if (tgt::TextureUnit::numLocalActive() > 0)
+            warn(p, "tgt::TextureUnit still had active texture units");
         tgt::TextureUnit::cleanup();
-        warn(p, "tgt::TextureUnit still had active texture units");
     }
 
     /*

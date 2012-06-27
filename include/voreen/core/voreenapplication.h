@@ -34,23 +34,29 @@
 
 #include <string>
 #include "tgt/logmanager.h"
+#include "tgt/event/eventlistener.h"
+#include "tgt/event/eventhandler.h"
 
 namespace tgt {
-    class Timer;
     class EventHandler;
 }
 
 namespace voreen {
 
+class Processor;
 class ProcessorWidgetFactory;
-class IOProgress;
+class ProgressBar;
 class VoreenModule;
+class NetworkEvaluator;
 
 /**
  * Represents basic properties of a Voreen application. There should only be one instance of
- * this class, which can be access via the static metho app().
+ * this class, which can be access via the static method app().
  */
-class VoreenApplication {
+class VoreenApplication : private tgt::EventListener {
+
+    friend class Processor;
+
 public:
     /// Features used in this application
     enum ApplicationType {
@@ -94,6 +100,20 @@ public:
      * Overwrite this method to add commands to the CommandlineParser.
      */
     virtual void prepareCommandParser();
+
+    /**
+     * Assigns the network evaluator.
+     *
+     * Is internally used for scheduled network processing.
+     * @see scheduleNetworkProcessing
+     */
+    void setNetworkEvaluator(NetworkEvaluator* evaluator);
+
+    /**
+     * Returns the network evaluator.
+     */
+    NetworkEvaluator* getNetworkEvaluator() const;
+
 
     //
     // Initialization
@@ -147,7 +167,7 @@ public:
      *  in order to actual create a progress dialog. The standard implementation returns
      *  the null pointer.
      */
-    virtual IOProgress* createProgressDialog() const;
+    virtual ProgressBar* createProgressDialog() const;
 
     //
     // Factories
@@ -244,8 +264,8 @@ public:
     std::string getTexturePath(const std::string& filename = "") const;
 
     /**
-     * Constructs an absolute path consisting of the module directory (typically
-     * voreen/src/modules) and the given filename.
+     * Constructs an absolute path consisting of the module source directory
+     * (typically voreen/src/modules) and the given filename.
      */
     std::string getModulePath(const std::string& filename = "") const;
 
@@ -277,6 +297,19 @@ public:
 #endif
 
 protected:
+    /**
+     * This function triggers a non-blocking network processing,
+     * i.e., the assigned NetworkEvaluator's process() function is called
+     * after the current call stack has been completed (event queue concept).
+     *
+     * This function is called by each end processor when it receives an invalidation.
+     *
+     * @note Since internally a tgt::Timer is used for scheduling, this
+     *  function does only work in a derived class that overrides createTimer().
+     *  Otherwise, it is a no-op.
+     */
+    virtual void scheduleNetworkProcessing();
+
     static VoreenApplication* app_;
 
     ApplicationType appType_;
@@ -305,7 +338,17 @@ protected:
     static const std::string loggerCat_;
 
 private:
+    /**
+     * Helper function for scheduled network processing.
+     * @see scheduleNetworkProcessing
+     */
+    virtual void timerEvent(tgt::TimeEvent* e);
+
     std::vector<VoreenModule*> modules_;
+
+    NetworkEvaluator* networkEvaluator_;
+    tgt::Timer* schedulingTimer_;       ///< Timer for scheduled network processing.
+    tgt::EventHandler eventHandler_;    ///< Local event handler for the scheduling events.
     std::string shaderPath_;
 };
 

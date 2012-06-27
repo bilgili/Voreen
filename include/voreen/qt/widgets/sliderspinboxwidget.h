@@ -39,6 +39,8 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "voreen/core/properties/property.h"
+
 namespace voreen {
 
 class SliderSpinBoxWidget : public QWidget {
@@ -54,6 +56,41 @@ public:
     virtual bool isSliderDown()const;
     virtual QSize sizeHint () const;
     virtual void setFocusPolicy(Qt::FocusPolicy policy);
+    virtual void setView(Property::View);
+
+    /**
+     * If slider tracking is disabled, valueChanged signals
+     * are not fired during user interaction, i.e.,
+     * while the user is dragging the slider.
+     * Instead, valueChanged is emitted after
+     * the slider has been released.
+     * Slider tracking is enabled by default.
+     *
+     * @note The spin box is always kept in sync with
+     *  the slider, regardless of the slider tracking mode.
+     *
+     * @see QAbstractSlider
+     */
+    virtual void setSliderTracking(bool tracking);
+
+    /// Returns whether slider tracking is enabled (default: true).
+    bool hasSliderTracking() const;
+
+    /**
+     * If spin box tracking is disabled, valueChanged signals
+     * are not fired during user interaction, i.e.,
+     * while the user is typing into the spinbox.
+     * Instead, valueChanged is emitted on return
+     * or when the spin box looses focus.
+     * Spinbox tracking is disabled by default.
+     *
+     * @see QAbstractSpinbox
+     */
+    virtual void setSpinboxTracking(bool tracking);
+
+    /// Returns whether spin box tracking is enabled (default: false).
+    bool hasSpinboxTracking() const;
+
 signals:
     void valueChanged(int);
     void sliderPressedChanged(bool);
@@ -63,11 +100,11 @@ public slots:
     virtual void setMaxValue( int value );
     virtual void setMinValue( int value );
     virtual void setSingleStep(int value);
-    virtual void sliderPressed();
-    virtual void sliderReleased();
 
 protected slots:
     virtual void spinEditingFinished();
+    virtual void sliderPressed();
+    virtual void sliderReleased();
 
 protected:
     QVBoxLayout *vboxLayout;
@@ -75,6 +112,9 @@ protected:
     QSlider *sliderSLD;
     QSpinBox *spinBoxSPB;
     QSpacerItem *spacerItem;
+
+    bool sliderTracking_;
+    bool spinboxTracking_;
     int value_;
 };
 
@@ -97,6 +137,41 @@ public:
     virtual bool isSliderDown() const;
     virtual QSize sizeHint () const;
     virtual void setFocusPolicy(Qt::FocusPolicy policy);
+    virtual void setView(Property::View);
+
+    /**
+     * If slider tracking is disabled, valueChanged signals
+     * are not fired during user interaction, i.e.,
+     * while the user is dragging the slider.
+     * Instead, valueChanged is emitted after
+     * the slider has been released.
+     * Slider tracking is enabled by default.
+     *
+     * @note The spin box is always kept in sync with
+     *  the slider, regardless of the slider tracking mode.
+     *
+     * @see QAbstractSlider
+     */
+    virtual void setSliderTracking(bool tracking);
+
+    /// Returns whether slider tracking is enabled (default: true).
+    bool hasSliderTracking() const;
+
+    /**
+     * If spin box tracking is disabled, valueChanged signals
+     * are not fired during user interaction, i.e.,
+     * while the user is typing into the spinbox.
+     * Instead, valueChanged is emitted on return
+     * or when the spin box looses focus.
+     * Spinbox tracking is disabled by default.
+     *
+     * @see QAbstractSpinbox
+     */
+    virtual void setSpinboxTracking(bool tracking);
+
+    /// Returns whether spin box tracking is enabled (default: false).
+    bool hasSpinboxTracking() const;
+
 signals:
     void valueChanged(double);
     void sliderPressedChanged(bool);
@@ -121,6 +196,9 @@ protected:
     QSlider *sliderSLD;
     QDoubleSpinBox *spinBoxSPB;
     QSpacerItem *spacerItem;
+
+    bool sliderTracking_;
+    bool spinboxTracking_;
     double value_;
 };
 

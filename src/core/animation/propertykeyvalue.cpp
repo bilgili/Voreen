@@ -39,48 +39,45 @@ using tgt::Camera;
 
 namespace voreen {
 
-PropertyKeyValueBase::PropertyKeyValueBase() {
-}
+PropertyKeyValueBase::PropertyKeyValueBase() {}
 
 template <class T>
-PropertyKeyValue<T>::PropertyKeyValue() :
-      time_(0)
+PropertyKeyValue<T>::PropertyKeyValue()
+    : time_(0)
     , before_(0)
     , after_(0)
     , smooth_(true) {
 }
 
 template <class T>
-PropertyKeyValue<T>::PropertyKeyValue(T value, float time) :
-      value_(value)
+PropertyKeyValue<T>::PropertyKeyValue(T value, float time)
+    : value_(value)
     , before_(0)
     , after_(0)
     , smooth_(true) {
-    time_ = floor(time*10000)/10000;
+    time_ = floor(time * 10000.f) / 10000.f;
 }
 
 template <class T>
-PropertyKeyValue<T>::~PropertyKeyValue() {
+PropertyKeyValue<T>::~PropertyKeyValue() {}
 
+template <class T>
+void PropertyKeyValue<T>::setTime(float time) {
+    time_ = floor(time * 10000.f) / 10000.f;
 }
 
 template <class T>
-void PropertyKeyValue<T>::setTime(float time){
-    time_ = floor(time*10000)/10000;
-}
-
-template <class T>
-float PropertyKeyValue<T>::getTime() const{
+float PropertyKeyValue<T>::getTime() const {
     return time_;
 }
 
 template <class T>
-void PropertyKeyValue<T>::setValue(T value){
+void PropertyKeyValue<T>::setValue(T value) {
     value_ = value;
 }
 
 template <class T>
-const T PropertyKeyValue<T>::getValue() const{
+const T PropertyKeyValue<T>::getValue() const {
     return value_;
 }
 
@@ -109,12 +106,10 @@ PropertyKeyValue<TransFunc*>* PropertyKeyValue<TransFunc*>::clone() const {
     PropertyKeyValue<TransFunc*>* keyvalue = new PropertyKeyValue<TransFunc*>();
     keyvalue->after_ = after_;
     keyvalue->before_ = before_;
-    if (value_) {
+    if (value_)
         keyvalue->value_ = value_->clone();
-    }
-    else {
+    else
         LERRORC("voreen.PropertyKeyValue<TransFunc>", "No value");
-    }
     keyvalue->time_ = time_;
     keyvalue->smooth_ = smooth_;
     return keyvalue;
@@ -136,12 +131,10 @@ PropertyKeyValue<Camera*>* PropertyKeyValue<Camera*>::clone() const {
     PropertyKeyValue<Camera*>* keyvalue = new PropertyKeyValue<Camera*>();
     keyvalue->after_ = after_;
     keyvalue->before_ = before_;
-    if (value_) {
+    if (value_)
         keyvalue->value_ = value_->clone();
-    }
-    else {
+    else
         LERRORC("voreen.PropertyKeyValue<Camera>", "No value");
-    }
     keyvalue->time_ = time_;
     keyvalue->smooth_ = smooth_;
     return keyvalue;
@@ -192,7 +185,7 @@ PropertyKeyValue<T>* PropertyKeyValue<T>::clone() const {
 
 template <class T>
 void PropertyKeyValue<T>::setSmooth(bool smooth) {
-    this->smooth_ = smooth;
+    smooth_ = smooth;
 }
 
 template <class T>
@@ -202,13 +195,15 @@ bool PropertyKeyValue<T>::getSmooth() const {
 
 template <class T>
 bool PropertyKeyValue<T>::isSmoothed() const {
-    if (!getSmooth()) {
+    if (!getSmooth())
         return false;
-    }
+
     MultiPointInterpolationFunction<T>* f1 = dynamic_cast<MultiPointInterpolationFunction<T>*>(before_);
     MultiPointInterpolationFunction<T>* f2 = dynamic_cast<MultiPointInterpolationFunction<T>*>(after_);
-    if ((f1)&&(f2)&&(typeid(f1)==typeid(f2))) return true;
-    else return false;
+    if (f1 && f2 && (typeid(f1) == typeid(f2)))
+        return true;
+    else
+        return false;
 }
 
 template <class T>

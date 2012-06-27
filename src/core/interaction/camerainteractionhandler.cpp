@@ -406,4 +406,11 @@ void CameraInteractionHandler::adjustWidgetStates() {
     moveDownEvent_->setVisible(firstPersonSelected);
 }
 
+void CameraInteractionHandler::setVisible(bool state) {
+    InteractionHandler::setVisible(state);
+    navigationMetaphor_.setVisible(state);
+    if (state)
+        adjustWidgetStates();
+}
+
 } // namespace

@@ -1,6 +1,6 @@
 import os
 
-dirsToIgnore = ['.svn', 'debug', 'release', 'Debug', 'Release']
+dirsToIgnore = ['.svn', 'debug', 'release', 'Debug', 'Release', 'ext']
 
 # tests, if the file 'file' occurs in any line of the project file 'proFile'
 # If so, the line is returned

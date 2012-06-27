@@ -32,6 +32,7 @@
 
 #include "voreen/modules/base/processors/proxygeometry/proxygeometry.h"
 #include "voreen/core/interaction/camerainteractionhandler.h"
+#include "voreen/core/properties/cameraproperty.h"
 
 #include "tgt/shadermanager.h"
 
@@ -39,6 +40,8 @@ namespace voreen {
 
 /**
  * Calculates the entry and exit points for GPU raycasting.
+ *
+ * @deprecated Use CubeMeshProxyGeometry and MeshEntryExitPoints instead.
  */
 class EntryExitPoints : public VolumeRenderer {
 public:
@@ -48,7 +51,7 @@ public:
     virtual std::string getCategory() const { return "EntryExitPoints"; }
     virtual std::string getClassName() const { return "EntryExitPoints"; }
     virtual Processor* create() const { return new EntryExitPoints(); }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_OBSOLETE; }
     virtual std::string getProcessorInfo() const;
 
     virtual void initialize() throw (VoreenException);

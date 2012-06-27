@@ -630,26 +630,26 @@ VolumeAtomic<U>* calcGradientMagnitudes(VolumeAtomic<T> *input) {
 
 template<class U>
 VolumeAtomic<U>* calcGradientMagnitudes(Volume* input) {
-        if(typeid(*input) == typeid(Volume3xUInt8))
-            return calcGradientMagnitudes<U>(static_cast<Volume3xUInt8*>(input));
-        else if(typeid(*input) == typeid(Volume3xUInt16))
-            return calcGradientMagnitudes<U>(static_cast<Volume3xUInt16*>(input));
-        else if(typeid(*input) == typeid(Volume4xUInt8))
-            return calcGradientMagnitudes<U>(static_cast<Volume4xUInt8*>(input));
-        else if(typeid(*input) == typeid(Volume4xUInt16))
-            return calcGradientMagnitudes<U>(static_cast<Volume4xUInt16*>(input));
-        else if(typeid(*input) == typeid(Volume3xFloat))
-            return calcGradientMagnitudes<U>(static_cast<Volume3xFloat*>(input));
-        else if(typeid(*input) == typeid(Volume3xDouble))
-            return calcGradientMagnitudes<U>(static_cast<Volume3xDouble*>(input));
-        else if(typeid(*input) == typeid(Volume4xFloat))
-            return calcGradientMagnitudes<U>(static_cast<Volume4xFloat*>(input));
-        else if(typeid(*input) == typeid(Volume4xDouble))
-            return calcGradientMagnitudes<U>(static_cast<Volume4xDouble*>(input));
-        else {
-            LERRORC("calcGradientMagnitudes", "Unhandled type!");
-            return 0;
-        }
+    if (typeid(*input) == typeid(Volume3xUInt8))
+        return calcGradientMagnitudes<U>(static_cast<Volume3xUInt8*>(input));
+    else if (typeid(*input) == typeid(Volume3xUInt16))
+        return calcGradientMagnitudes<U>(static_cast<Volume3xUInt16*>(input));
+    else if (typeid(*input) == typeid(Volume4xUInt8))
+        return calcGradientMagnitudes<U>(static_cast<Volume4xUInt8*>(input));
+    else if (typeid(*input) == typeid(Volume4xUInt16))
+        return calcGradientMagnitudes<U>(static_cast<Volume4xUInt16*>(input));
+    else if (typeid(*input) == typeid(Volume3xFloat))
+        return calcGradientMagnitudes<U>(static_cast<Volume3xFloat*>(input));
+    else if (typeid(*input) == typeid(Volume3xDouble))
+        return calcGradientMagnitudes<U>(static_cast<Volume3xDouble*>(input));
+    else if (typeid(*input) == typeid(Volume4xFloat))
+        return calcGradientMagnitudes<U>(static_cast<Volume4xFloat*>(input));
+    else if (typeid(*input) == typeid(Volume4xDouble))
+        return calcGradientMagnitudes<U>(static_cast<Volume4xDouble*>(input));
+    else {
+        LERRORC("calcGradientMagnitudes", "Unhandled type!");
+        return 0;
+    }
 }
 
 /**

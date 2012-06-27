@@ -123,7 +123,16 @@ public:
     void addMesh(const MeshGeometry& mesh);
 
     /**
-     * Returns the mesh geometry at the given @c index.
+     * Returns a const reference to the mesh geometry at the given @c index.
+     *
+     * @param index the mesh geometry index
+     *
+     * @returns the mesh geometry at the given @c index
+     */
+    const MeshGeometry& getMesh(size_t index) const;
+
+    /**
+     * Returns a the mesh geometry at the given @c index.
      *
      * @attention If the mesh list geometry is changed by using the @c operator[]
      *            or the @c getMesh function then @c setHasChanged(true)

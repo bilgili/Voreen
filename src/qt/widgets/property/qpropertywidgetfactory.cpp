@@ -32,6 +32,7 @@
 #include "voreen/qt/widgets/property/boolpropertywidget.h"
 #include "voreen/qt/widgets/property/buttonpropertywidget.h"
 #include "voreen/qt/widgets/property/camerapropertywidget.h"
+#include "voreen/qt/widgets/property/colormappropertywidget.h"
 #include "voreen/qt/widgets/property/colorpropertywidget.h"
 #include "voreen/qt/widgets/property/filedialogpropertywidget.h"
 #include "voreen/qt/widgets/property/floatmat2propertywidget.h"
@@ -41,15 +42,21 @@
 #include "voreen/qt/widgets/property/floatvec2propertywidget.h"
 #include "voreen/qt/widgets/property/floatvec3propertywidget.h"
 #include "voreen/qt/widgets/property/floatvec4propertywidget.h"
+#include "voreen/qt/widgets/property/fontpropertywidget.h"
 #include "voreen/qt/widgets/property/intpropertywidget.h"
 #include "voreen/qt/widgets/property/intvec2propertywidget.h"
 #include "voreen/qt/widgets/property/intvec3propertywidget.h"
 #include "voreen/qt/widgets/property/intvec4propertywidget.h"
 #include "voreen/qt/widgets/property/lightpropertywidget.h"
+#include "voreen/qt/widgets/property/plotentitiespropertywidget.h"
 #include "voreen/qt/widgets/property/optionpropertywidget.h"
+#include "voreen/qt/widgets/property/plotdatapropertywidget.h"
+#include "voreen/qt/widgets/property/plotpredicatepropertywidget.h"
+#include "voreen/qt/widgets/property/plotzoompropertywidget.h"
 #include "voreen/qt/widgets/property/propertyvectorwidget.h"
 #include "voreen/qt/widgets/property/shaderpropertywidget.h"
 #include "voreen/qt/widgets/property/stringpropertywidget.h"
+#include "voreen/qt/widgets/property/grouppropertywidget.h"
 #include "voreen/qt/widgets/property/transfuncpropertywidget.h"
 #include "voreen/qt/widgets/property/volumecollectionpropertywidget.h"
 #include "voreen/qt/widgets/property/volumehandlepropertywidget.h"
@@ -69,20 +76,21 @@ QPropertyWidget* QPropertyWidgetFactory::createWidget(CameraProperty* p) {
     return new CameraPropertyWidget(p, 0);
 }
 
-QPropertyWidget* QPropertyWidgetFactory::createWidget(ColorProperty* p) {
-    return new ColorPropertyWidget(p, 0);
+QPropertyWidget* QPropertyWidgetFactory::createWidget(ColorMapProperty* p) {
+    return new ColorMapPropertyWidget(p, 0);
 }
 
 QPropertyWidget* QPropertyWidgetFactory::createWidget(FileDialogProperty* p) {
     return new FileDialogPropertyWidget(p, 0);
 }
 
-QPropertyWidget* QPropertyWidgetFactory::createWidget(LightProperty* p) {
-    return new LightPropertyWidget(p, 0);
+QPropertyWidget* QPropertyWidgetFactory::createWidget(PlotEntitiesProperty* p) {
+    return new PlotEntitiesPropertyWidget(p, 0);
 }
 
 QPropertyWidget* QPropertyWidgetFactory::createWidget(FloatProperty* p) {
-    return new FloatPropertyWidget(p, 0);
+    FloatPropertyWidget* w = new FloatPropertyWidget(p, 0);
+    return w;
 }
 
 QPropertyWidget* QPropertyWidgetFactory::createWidget(FloatVec2Property* p) {
@@ -94,7 +102,25 @@ QPropertyWidget* QPropertyWidgetFactory::createWidget(FloatVec3Property* p) {
 }
 
 QPropertyWidget* QPropertyWidgetFactory::createWidget(FloatVec4Property* p) {
-    return new FloatVec4PropertyWidget(p, 0);
+    if(p->getViews() == Property::DEFAULT)
+        return new FloatVec4PropertyWidget(p, 0);
+    else if(p->getViews() == Property::LIGHT_POSITION)
+        return new LightPropertyWidget(p, 0);
+    else if(p->getViews() == (Property::LIGHT_POSITION | Property::DEFAULT)) {
+        GroupPropertyWidget* tab = new GroupPropertyWidget(p, true, "");
+        tab->addWidget(new LightPropertyWidget(p, 0), "Light");
+        tab->addWidget(new FloatVec4PropertyWidget(p, 0), "Vector");
+        return tab;
+    }
+    else if(p->getViews() == Property::COLOR) {
+        return new ColorPropertyWidget(p, 0);
+    }
+    else
+        return new FloatVec4PropertyWidget(p, 0);
+}
+
+QPropertyWidget* QPropertyWidgetFactory::createWidget(FontProperty* p) {
+    return new FontPropertyWidget(p, 0);
 }
 
 QPropertyWidget* QPropertyWidgetFactory::createWidget(IntProperty* p) {
@@ -129,6 +155,18 @@ QPropertyWidget* QPropertyWidgetFactory::createWidget(OptionPropertyBase* p) {
     return new OptionPropertyWidget(p, 0);
 }
 
+QPropertyWidget* QPropertyWidgetFactory::createWidget(PlotPredicateProperty* p) {
+    return new PlotPredicatePropertyWidget(p, 0);
+}
+
+QPropertyWidget* QPropertyWidgetFactory::createWidget(PlotDataProperty* p) {
+    return new PlotDataPropertyWidget (p, 0);
+}
+
+QPropertyWidget* QPropertyWidgetFactory::createWidget(PlotSelectionProperty* p) {
+    return new PlotZoomPropertyWidget (p, 0);
+}
+
 QPropertyWidget* QPropertyWidgetFactory::createWidget(PropertyVector* p) {
     return new PropertyVectorWidget(p, 0);
 }
@@ -153,5 +191,14 @@ QPropertyWidget* QPropertyWidgetFactory::createWidget(VolumeCollectionProperty* 
     return new VolumeCollectionPropertyWidget(p, 0);
 }
 
+
+// deprecated
+QPropertyWidget* QPropertyWidgetFactory::createWidget(ColorProperty* p) {
+    return new ColorPropertyWidget(p, 0);
+}
+
+QPropertyWidget* QPropertyWidgetFactory::createWidget(LightProperty* p) {
+    return new FloatVec4PropertyWidget(p, 0);
+}
 
 } // namespace voreen

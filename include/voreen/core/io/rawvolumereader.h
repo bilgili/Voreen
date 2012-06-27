@@ -40,7 +40,7 @@
 
 namespace voreen {
 
-class IOProgress;
+class ProgressBar;
 
 /**
  * Reads a raw volume dataset. This requires information hints about dimension, format, etc.,
@@ -78,9 +78,9 @@ public:
         std::string sliceOrder_;
     };
 
-    RawVolumeReader(IOProgress* progress = 0);
+    RawVolumeReader(ProgressBar* progress = 0);
 
-    virtual VolumeReader* create(IOProgress* progress = 0) const;
+    virtual VolumeReader* create(ProgressBar* progress = 0) const;
 
     /**
      * Set hints about the volume dataset. Must be set before read() is called. More options

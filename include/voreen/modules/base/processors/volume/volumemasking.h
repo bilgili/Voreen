@@ -31,7 +31,7 @@
 #define VRN_VOLUMEMASKING_H
 
 #include <string>
-#include "voreen/modules/base/processors/volume/volumeprocessor.h"
+#include "voreen/core/processors/volumeprocessor.h"
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/transfuncproperty.h"
 #include "voreen/core/properties/optionproperty.h"

@@ -34,14 +34,75 @@
 
 namespace voreen {
 
+namespace cl {
+    class OpenCL;
+    class Context;
+    class CommandQueue;
+    class Program;
+    class Device;
+}
+
 class OpenCLModule : public VoreenModule {
 
 public:
     OpenCLModule();
 
     virtual std::string getDescription() const {
-        return "Processors utilizing OpenCL";
+        return "Processors utilizing OpenCL.";
     }
+
+    /**
+     * Frees the allocated OpenCL resources.
+     */
+    virtual void deinitialize() throw (VoreenException);
+
+    /**
+     * Initializes the OpenCL resources, to be called by OpenCL-based
+     * processor before accessing OpenCL resources.
+     *
+     * Call is ignored, if OpenCL has already been initialized.
+     */
+    void initCL() throw (VoreenException);
+
+    /**
+     * Returns the OpenCL wrapper.
+     *
+     * @note initCL() must be called first!
+     */
+    cl::OpenCL* getOpenCL() const;
+
+    /**
+     * Returns the OpenCL context.
+     *
+     * @note initCL() must be called first!
+     */
+    cl::Context* getCLContext() const;
+
+    /**
+     * Returns the OpenCL command queue.
+     *
+     * @note initCL() must be called first!
+     */
+    cl::CommandQueue* getCLCommandQueue() const;
+
+    /**
+     * Returns the OpenCL device.
+     *
+     * @note initCL() must be called first!
+     */
+    cl::Device* getCLDevice() const;
+
+    /// Singleton pattern
+    static OpenCLModule* getInstance();
+
+private:
+    // OpenCL resources
+    cl::OpenCL* opencl_;
+    cl::Context* context_;
+    cl::CommandQueue* queue_;
+    cl::Device* device_;
+
+    static OpenCLModule* instance_;
 };
 
 } // namespace

@@ -30,6 +30,7 @@
 #ifndef VRN_QPROPERTYWIDGET_H
 #define VRN_QPROPERTYWIDGET_H
 
+#include "voreen/core/properties/property.h"
 #include "voreen/core/properties/propertywidget.h"
 
 #include <QWidget>
@@ -55,6 +56,7 @@ public:
     void hideLODControls();
     void showLODControls();
     std::string getPropertyGuiName();
+    void setPropertyGuiName(std::string);
     virtual const QLabel* getNameLabel() const;
 
     // this is a static variable for the font size used in all propertywidgets

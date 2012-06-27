@@ -30,8 +30,11 @@
 #ifndef VRN_CONNECTED_COMPONENTS_3D_H
 #define VRN_CONNECTED_COMPONENTS_3D_H
 
-#include "voreen/modules/base/processors/volume/volumeprocessor.h"
-#include "voreen/core/properties/allproperties.h"
+#include "voreen/core/processors/volumeprocessor.h"
+
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/intproperty.h"
 
 namespace voreen {
 

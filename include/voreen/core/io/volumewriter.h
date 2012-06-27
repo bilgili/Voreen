@@ -38,7 +38,7 @@
 namespace voreen {
 
 // forward declarations
-class IOProgress;
+class ProgressBar;
 class VolumeHandle;
 
 /**
@@ -47,13 +47,13 @@ class VolumeHandle;
  */
 class VolumeWriter {
 public:
-    VolumeWriter(IOProgress* progress = 0);
+    VolumeWriter(ProgressBar* progress = 0);
     virtual ~VolumeWriter() {}
 
     /**
      * Virtual constructor.
      */
-    virtual VolumeWriter* create(IOProgress* progress = 0) const = 0;
+    virtual VolumeWriter* create(ProgressBar* progress = 0) const = 0;
 
     /**
      * Saves a Volume to the given file.
@@ -86,8 +86,7 @@ public:
     static std::string getExtension(const std::string& filename);
 
 protected:
-
-    IOProgress* progress_;
+    ProgressBar* progress_;
 
     /// List of filename extensions supported by the reader.
     std::vector<std::string> extensions_;

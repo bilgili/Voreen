@@ -32,17 +32,21 @@
 
 #include "voreen/core/processors/imageprocessor.h"
 
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/intproperty.h"
+
 namespace voreen {
 
 class Gabor : public ImageProcessor {
 public:
     Gabor();
+    virtual Processor* create() const;
 
     virtual std::string getCategory() const { return "Image Processing"; }
     virtual std::string getClassName() const { return "Gabor"; }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
+    virtual CodeState getCodeState() const { return CODE_STATE_STABLE; }
     virtual std::string getProcessorInfo() const;
-    virtual Processor* create() const { return new Gabor(); }
+
     virtual void portResized(RenderPort* /*p*/, tgt::ivec2 /*newsize*/) {}
 
 protected:

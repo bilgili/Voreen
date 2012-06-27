@@ -106,11 +106,21 @@ public:
     std::vector<T*> getProcessorsByType() const;
 
     /**
-     * Returns the processor with the passed name or null,
-     * of the network does not contain a processor with that name.
+     * Returns the processor with the given name, or null if the network does not contain a
+     * processor with that name.
      *
-     * @note The name is unique among all Processor instances
-     *       in the network.
+     * @note The name is unique among all Processor instances in the network.
+     *
+     * @see setProcessorName
+     */
+    Processor* getProcessor(const std::string& name) const;
+
+    /**
+     * Returns the processor with the given name, or null if the network does not contain a
+     * processor with that name.
+     *
+     * @deprecated Use getProcessor() instead.
+     * @note The name is unique among all Processor instances in the network.
      *
      * @see setProcessorName
      */
@@ -133,7 +143,7 @@ public:
      *        network, or if the passed name is empty or already assigned
      *        to a processor in the network.
      *
-     * @see getProcessorByName
+     * @see getProcessor
      * @see generateUniqueProcessorName
      */
     void setProcessorName(Processor* processor, const std::string& name) const
@@ -271,6 +281,15 @@ public:
         LinkEvaluatorBase* linkEvaluator = 0, bool replace = true, bool transitive = true);
 
     /**
+     * Tests whether the ProcessorNetwork contains a link with between the two passed Properties with
+     * the explicit LinEvaluatorBase
+     * \param src The source property of the link
+     * \param dest The destination property of the link
+     * \param evaluator The evaluator of the link
+     */
+    bool containsLink(const Property* src, const Property* dest, LinkEvaluatorBase* evaluator) const;
+
+    /**
      * Returns all processor properties in the network
      * with the specified id.
      */
@@ -363,118 +382,6 @@ public:
     void setErrors(const std::vector<std::string>& errorList);
 
 private:
-    /**
-     * The @c PortConnection is responsible for serialization and deserialization
-     * of connections between different processor ports.
-     *
-     * @see Serializable
-     */
-    class PortConnection : public Serializable {
-    public:
-        /**
-         * Creates a @c PortConnection from given outport to given inport.
-         *
-         * @param outport the outport
-         * @param inport the inport
-         */
-        PortConnection(Port* outport, Port* inport);
-
-        /**
-         * @see Serializable::serialize
-         */
-        virtual void serialize(XmlSerializer& s) const;
-
-        /**
-         * @see Serializable::deserialize
-         */
-        virtual void deserialize(XmlDeserializer& s);
-
-        /**
-         * Sets the outport of the connection.
-         *
-         * @param value the outport
-         */
-        void setOutport(Port* value);
-
-        /**
-         * Returns the outport of the connection.
-         *
-         * @return the outport
-         */
-        Port* getOutport() const;
-
-        /**
-         * Sets the inport of the connection.
-         *
-         * @param value the inport
-         */
-        void setInport(Port* value);
-
-        /**
-         * Returns the inport of the connection.
-         *
-         * @return the inport
-         */
-        Port* getInport() const;
-
-    private:
-        /**
-         * The @c PortEntry class processes the port data
-         * to get a well readable XML file.
-         *
-         * @see PortConnection
-         * @see Serializable
-         */
-        class PortEntry : public Serializable {
-        public:
-            /**
-             * Creates a @c PortEntry for given @c Port.
-             *
-             * @param port the port
-             */
-            PortEntry(Port* port);
-
-            /**
-            * @see Serializable::serialize
-            */
-            virtual void serialize(XmlSerializer& s) const;
-
-            /**
-            * @see Serializable::deserialize
-            */
-            virtual void deserialize(XmlDeserializer& s);
-
-            /**
-             * Returns the port which data will be processed.
-             *
-             * @return the port
-             */
-            Port* getPort() const;
-
-        private:
-            /**
-             * Port which data will be processed.
-             */
-            Port* port_;
-        };
-
-        friend class XmlDeserializer;
-        /**
-         * Default constructor for serialization purposes.
-         */
-        PortConnection();
-
-        /**
-         * Outport entry of connection.
-         */
-        PortEntry outport_;
-
-        /**
-         * Inport entry of connection.
-         */
-        PortEntry inport_;
-    };
-
     /// Calls networkChanged() on the registered observers.
     void notifyNetworkChanged() const;
 
@@ -515,6 +422,120 @@ private:
     mutable MetaDataContainer metaDataContainer_;
 
     static const std::string loggerCat_; ///< category used in logging
+};
+
+//-------------------------------------------------------------------------------------------------
+
+/**
+ * The @c PortConnection is responsible for serialization and deserialization
+ * of connections between different processor ports.
+ *
+ * @see Serializable
+ */
+class PortConnection : public Serializable {
+public:
+    /**
+     * Creates a @c PortConnection from given outport to given inport.
+     *
+     * @param outport the outport
+     * @param inport the inport
+     */
+    PortConnection(Port* outport, Port* inport);
+
+    /**
+     * @see Serializable::serialize
+     */
+    virtual void serialize(XmlSerializer& s) const;
+
+    /**
+     * @see Serializable::deserialize
+     */
+    virtual void deserialize(XmlDeserializer& s);
+
+    /**
+     * Sets the outport of the connection.
+     *
+     * @param value the outport
+     */
+    void setOutport(Port* value);
+
+    /**
+     * Returns the outport of the connection.
+     *
+     * @return the outport
+     */
+    Port* getOutport() const;
+
+    /**
+     * Sets the inport of the connection.
+     *
+     * @param value the inport
+     */
+    void setInport(Port* value);
+
+    /**
+     * Returns the inport of the connection.
+     *
+     * @return the inport
+     */
+    Port* getInport() const;
+
+private:
+    /**
+     * The @c PortEntry class processes the port data
+     * to get a well readable XML file.
+     *
+     * @see PortConnection
+     * @see Serializable
+     */
+    class PortEntry : public Serializable {
+    public:
+        /**
+         * Creates a @c PortEntry for given @c Port.
+         *
+         * @param port the port
+         */
+        PortEntry(Port* port);
+
+        /**
+        * @see Serializable::serialize
+        */
+        virtual void serialize(XmlSerializer& s) const;
+
+        /**
+        * @see Serializable::deserialize
+        */
+        virtual void deserialize(XmlDeserializer& s);
+
+        /**
+         * Returns the port which data will be processed.
+         *
+         * @return the port
+         */
+        Port* getPort() const;
+
+    private:
+        /**
+         * Port which data will be processed.
+         */
+        Port* port_;
+    };
+
+    friend class XmlDeserializer;
+    /**
+     * Default constructor for serialization purposes.
+     */
+    PortConnection();
+
+    /**
+     * Outport entry of connection.
+     */
+    PortEntry outport_;
+
+    /**
+     * Inport entry of connection.
+     */
+    PortEntry inport_;
 };
 
 //---------------------------------------------------------------------------
@@ -567,8 +588,8 @@ int ProcessorNetwork::linkProperties(const std::vector<Processor*>& processors,
         else {
             // property ids specified => query each processor for property by id and check type
             for (size_t j=0; j<propertyIDs.size(); ++j) {
-                if (dynamic_cast<T*>(curProcessor->getPropertyByID(propertyIDs[j])))
-                    linkProps.push_back(curProcessor->getPropertyByID(propertyIDs[j]));
+                if (dynamic_cast<T*>(curProcessor->getProperty(propertyIDs[j])))
+                    linkProps.push_back(curProcessor->getProperty(propertyIDs[j]));
             }
         }
     }

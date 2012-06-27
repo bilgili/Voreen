@@ -40,6 +40,8 @@ public:
         Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT);
     virtual ~BoolProperty() {}
 
+    virtual std::string getTypeString() const;
+
     /**
      * @see Property::serialize
      */

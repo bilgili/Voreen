@@ -48,12 +48,17 @@ HalfAngleSlicer::HalfAngleSlicer()
 {
 
     addProperty(halfLight_);
+    halfLight_.setViews(Property::View(Property::LIGHT_POSITION | Property::DEFAULT));
 
     addInteractionHandler(cameraHandler_);
 
     addPort(volumeInport_);
     addPort(outport_);
     addPrivateRenderPort(lightport_);
+}
+
+Processor* HalfAngleSlicer::create() const {
+    return new HalfAngleSlicer(); 
 }
 
 std::string HalfAngleSlicer::getProcessorInfo() const {
@@ -81,11 +86,11 @@ void HalfAngleSlicer::deinitialize() throw (VoreenException) {
 
 void HalfAngleSlicer::loadShader() {
     slicingPrg_ = ShdrMgr.loadSeparate("sl_singlevolume.vert", "sl_halfslicing.frag",
-        generateHeader(), false, false);
+        generateHeader(), false);
 }
 
 void HalfAngleSlicer::compile() {
-    slicingPrg_->setHeaders(generateHeader(), false);
+    slicingPrg_->setHeaders(generateHeader());
     slicingPrg_->rebuild();
 }
 
@@ -132,7 +137,8 @@ void HalfAngleSlicer::process() {
         volumeInport_.getData()->getVolumeGL(),
         &volUnit,
         "volume_",
-        "volumeParameters_")
+        "volumeParameters_",
+        true)
     );
 
     // compute the distance between two adjacent slices in texture coordinates
@@ -197,7 +203,7 @@ void HalfAngleSlicer::process() {
     // set common uniforms used by all shaders
     setGlobalShaderParameters(slicingPrg_, camera_.get());
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(slicingPrg_, volumeTextures);
+    bindVolumes(slicingPrg_, volumeTextures, camera_.get(), lightPosition_.get());
 
     glDisable(GL_DEPTH_TEST);
 
@@ -256,6 +262,7 @@ void HalfAngleSlicer::process() {
         glEnd();
     }
 
+    glBlendFunc(GL_ONE, GL_ZERO);
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
 
@@ -267,6 +274,7 @@ void HalfAngleSlicer::process() {
     slicingPrg_->deactivate();
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
+    outport_.deactivateTarget();
     TextureUnit::setZeroUnit();
     LGL_ERROR;
 }

@@ -40,17 +40,20 @@ public:
     virtual ~RenderTarget();
 
     void initialize(GLint internalColorFormat = GL_RGBA16, GLint internalDepthFormat = GL_DEPTH_COMPONENT24);
-    //void initialize(GLint internalColorFormat = GL_RGBA16F_ARB, GLint internalDepthFormat = GL_DEPTH_COMPONENT24);
     void deinitialize();
 
     void activateTarget(const std::string& debugLabel = "");
     void deactivateTarget();
+    bool isActive() const;
 
     void bindColorTexture(GLint texUnit);
     void bindDepthTexture(GLint texUnit);
 
     void bindColorTexture();
     void bindDepthTexture();
+
+    const tgt::Texture* getColorTexture() const { return colorTex_; }
+    const tgt::Texture* getDepthTexture() const { return depthTex_; }
 
     tgt::Texture* getColorTexture() { return colorTex_; }
     tgt::Texture* getDepthTexture() { return depthTex_; }

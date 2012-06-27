@@ -45,29 +45,32 @@ namespace voreen {
 class Animation;
 class ShaderSource;
 
-enum ChangeTimeOfKeyValueReturn{
-KV_NOT_FOUND = 0,
-KV_EQUAL_TO_OLD = 1,
-KV_TIME_CHANGED = 2,
-KV_EXISTS_AT_NEW_TIME = 3,
-KV_MOVED_TO_DIFFERENT_INTERVAL = 4,
-KV_TIME_AFTER_DURATION = 5
+//FIXME: move into class!
+enum ChangeTimeOfKeyValueReturn {
+    KV_NOT_FOUND = 0,
+    KV_EQUAL_TO_OLD = 1,
+    KV_TIME_CHANGED = 2,
+    KV_EXISTS_AT_NEW_TIME = 3,
+    KV_MOVED_TO_DIFFERENT_INTERVAL = 4,
+    KV_TIME_AFTER_DURATION = 5
 };
 
-enum DeleteKeyValueReturn{
-KV_NOT_THERE = 0,
-KV_IS_THE_ONLY_ONE = 1,
-KV_DELETED = 2
+//FIXME: move into class!
+enum DeleteKeyValueReturn {
+    KV_NOT_THERE = 0,
+    KV_IS_THE_ONLY_ONE = 1,
+    KV_DELETED = 2
 };
 
-template <class T> class TemplatePropertyTimeline;
+template <class T>
+class TemplatePropertyTimeline;
 
 /**
  * This class organizes all animationsettings of one property of the type T.
  */
-template <class T> class TemplatePropertyTimelineState : public Serializable {
+template <class T>
+class TemplatePropertyTimelineState : public Serializable {
 public:
-
     /**
      * Destructor.
      */
@@ -85,7 +88,6 @@ public:
 
 protected:
     friend class TemplatePropertyTimeline<T>;
-        //friend class CameraPropertyTimeline;
     friend class XmlDeserializer;
     friend class TemplatePropertyTimelineStateFactory;
 
@@ -192,8 +194,8 @@ protected:
  */
 class TransFuncPropertyTimelineState : public TemplatePropertyTimelineState<TransFunc*> {
 public:
-    ~TransFuncPropertyTimelineState();
     TransFuncPropertyTimelineState(PropertyKeyValue<TransFunc*>* kv);
+    ~TransFuncPropertyTimelineState();
 protected:
     friend class TemplatePropertyTimeline<TransFunc*>;
     friend class XmlDeserializer;
@@ -214,28 +216,26 @@ protected:
  * For a description of the functions see further above in superclass.
  */
 class CameraPropertyTimelineState : public TemplatePropertyTimelineState<tgt::Camera*> {
-
-  public:
-
+public:
     /**
-      * the constructors
-      */
+    * the constructors
+    */
     CameraPropertyTimelineState(PropertyKeyValue<tgt::Camera*>* kv);
     CameraPropertyTimelineState(std::map<float,PropertyKeyValue<tgt::Camera*>*> values);
 
     /**
-      * the destructor
-      */
+    * the destructor
+    */
     ~CameraPropertyTimelineState();
 
-  protected:
-      friend class TemplatePropertyTimeline<tgt::Camera*>;
-      friend class XmlDeserializer;
-      friend class TemplatePropertyTimelineStateFactory;
+protected:
+    friend class TemplatePropertyTimeline<tgt::Camera*>;
+    friend class XmlDeserializer;
+    friend class TemplatePropertyTimelineStateFactory;
 
-      CameraPropertyTimelineState();
+    CameraPropertyTimelineState();
 
-      const PropertyKeyValue<tgt::Camera*>* newKeyValue(float time);
+    const PropertyKeyValue<tgt::Camera*>* newKeyValue(float time);
     bool changeValueOfKeyValue(tgt::Camera* value, const PropertyKeyValue<tgt::Camera*>* keyvalue);
     DeleteKeyValueReturn deleteKeyValue(const PropertyKeyValue<tgt::Camera*>* keyvalue);
     const tgt::Camera* getPropertyAt(float time);
@@ -243,7 +243,6 @@ class CameraPropertyTimelineState : public TemplatePropertyTimelineState<tgt::Ca
 
     virtual void serialize(XmlSerializer& s) const;
     virtual void deserialize(XmlDeserializer& s);
-
 };
 
 } // namespace voreen

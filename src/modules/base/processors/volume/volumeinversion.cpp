@@ -98,7 +98,7 @@ void VolumeInversion::invertVolume() {
     if (handle->getVolume()) {
         Volume* v = handle->getVolume()->clone();
         VolumeOperatorInvert invertOp;
-        invertOp(v);
+        invertOp.apply<void>(v);
         outport_.setData(new VolumeHandle(v));
         volumeOwner_ = true;
     }

@@ -31,12 +31,8 @@
 #define VRN_PORT_H
 
 #include "voreen/core/processors/processor.h"
-#include "voreen/core/datastructures/volume/volumehandle.h"
-#include "tgt/tgt_gl.h"
 
-#include <map>
 #include <string>
-#include <typeinfo>
 #include <vector>
 
 namespace voreen {
@@ -70,7 +66,15 @@ public:
     Port(const std::string& name, PortDirection direction, bool allowMultipleConnections = false,
          Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT);
 
+    /**
+     * Destructor, disconnects all connected ports.
+     */
     virtual ~Port();
+
+    /**
+     * Returns all ports that are connected to this port.
+     */
+    const std::vector<Port*>& getConnected() const;
 
     /**
      * @brief Test if this (out)port can connect to a given inport.
@@ -199,11 +203,6 @@ public:
      */
     int getNumLoopIterations() const;
 
-    /**
-     * Returns all the ports that are connected to this port.
-     */
-    const std::vector<Port*>& getConnected() const;
-
     virtual void distributeEvent(tgt::Event* e);
 
     void toggleInteractionMode(bool interactionMode, void* source);
@@ -248,7 +247,7 @@ protected:
     virtual void setProcessor(Processor* p);
 
     std::string name_;
-    std::vector< Port* > connectedPorts_; ///< The ports connected to this one
+    std::vector<Port*> connectedPorts_; ///< The ports connected to this one
     Processor* processor_;                ///< The processor this port belongs to
     const PortDirection direction_;       ///< Is this port an outport or not
     bool allowMultipleConnections_;       ///< Is this port allowed to have multiple connections?

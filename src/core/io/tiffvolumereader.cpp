@@ -30,7 +30,7 @@
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "voreen/core/io/tiffvolumereader.h"
 #include "voreen/core/io/textfilereader.h"
-#include "voreen/core/io/ioprogress.h"
+#include "voreen/core/io/progressbar.h"
 
 #include <fstream>
 #include <iostream>
@@ -49,7 +49,7 @@ namespace voreen {
 
 const std::string TiffVolumeReader::loggerCat_ = "voreen.io.VolumeReader.tiff";
 
-TiffVolumeReader::TiffVolumeReader(IOProgress* progress) : VolumeReader(progress)
+TiffVolumeReader::TiffVolumeReader(ProgressBar* progress) : VolumeReader(progress)
 {
     extensions_.push_back("tiff");
     extensions_.push_back("tif");
@@ -181,9 +181,6 @@ VolumeCollection* TiffVolumeReader::read(const std::string &url)
         uint32 width, height;
         uint16 depth_, bps_;
 
-        if (getProgress())
-            getProgress()->setTotalSteps(dimensions.z*band);
-
         for (int i=0; i < dimensions.z*band; i++) {
             TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
             TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
@@ -248,8 +245,8 @@ VolumeCollection* TiffVolumeReader::read(const std::string &url)
             }
             TIFFReadDirectory(tif);
 
-            if (getProgress())
-                getProgress()->setProgress(i);
+            if (getProgressBar())
+                getProgressBar()->setProgress(static_cast<float>(i) / static_cast<float>(dimensions.z*band));
         }
 
         TIFFClose(tif);
@@ -273,10 +270,12 @@ VolumeCollection* TiffVolumeReader::read(const std::string &url)
         VolumeHandle* volumeHandle = new VolumeHandle(targetDataset[i], static_cast<float>(i));
         volumeCollection->add(volumeHandle);
     }
+    if (!volumeCollection->empty())
+        volumeCollection->first()->setOrigin(VolumeOrigin(fileName));
     return volumeCollection;
 }
 
-VolumeReader* TiffVolumeReader::create(IOProgress* progress) const {
+VolumeReader* TiffVolumeReader::create(ProgressBar* progress) const {
     return new TiffVolumeReader(progress);
 }
 

@@ -45,31 +45,33 @@ namespace voreen {
 
 LightWidget::LightWidget(QWidget* parent)
     : QWidget(parent)
-    , radius_(60)
-    , hemisphere_(true)
+    , radius_(50)
+    , hemisphere_(false)
+    , distance_(4.f)
 {
-    distance_ = 1.0f;
     DoubleSliderSpinBoxWidget* distanceSlider = new DoubleSliderSpinBoxWidget(this);
     distanceSlider->setMaxValue(10.0f);
     distanceSlider->setMinValue(1.0f);
+    distanceSlider->setValue(distance_);
     connect(distanceSlider, SIGNAL(valueChanged(double)), this, SLOT(updateDistance(double)));
-    distanceSlider->move(QPoint(0,100));
+    distanceSlider->move(QPoint(0,85));
+    distanceSlider->setMaximumWidth(110);
     distanceSlider->setSingleStep(0.1f);
     distanceSlider->show();
 
     mousePosition_ = QPointF(50,50);
     QPushButton* hemisphereButton = new QPushButton(this);
     hemisphereButton->setCheckable(true);
+    hemisphereButton->setChecked(hemisphere_);
     hemisphereButton->setText("Z");
     hemisphereButton->setGeometry(QRect(0, 0, 20, 20));
     connect(hemisphereButton, SIGNAL(toggled(bool)), this, SLOT(setHemisphere(bool)));
-    hemisphereButton->move(QPoint(105, 105));
+    hemisphereButton->move(QPoint(90, 95));
     hemisphereButton->show();
-    distanceSlider->setMaximumWidth(120);
 
-    lightPosition_ = QPointF(60,60);
+    lightPosition_ = QPointF(50,50);
 
-    setMinimumSize(90, 165);
+    setMinimumSize(75, 140);
 }
 
 void LightWidget::paintEvent(QPaintEvent* /*event*/) {
@@ -80,7 +82,7 @@ void LightWidget::paintEvent(QPaintEvent* /*event*/) {
     QColor highlight(static_cast<int>(distance_*3)+100,
                      static_cast<int>(distance_*3)+100,
                      static_cast<int>(distance_*3)+100);
-    if (hemisphere_) {
+    if (!hemisphere_) {
         radialGradient.setColorAt(0.0, QColor(255,255,255));
         radialGradient.setColorAt((distance_/30)+ 0.5, highlight);
         radialGradient.setColorAt(1.0, QColor(0,0,0));
@@ -93,11 +95,11 @@ void LightWidget::paintEvent(QPaintEvent* /*event*/) {
 
     painter.setBrush(QBrush(radialGradient));
     painter.setPen(highlight);
-    painter.drawEllipse(QRectF(0, 0, radius_ * 2, radius_ * 2));
+    painter.drawEllipse(QRectF(2, 2, radius_ * 2, radius_ * 2));
 }
 
 void LightWidget::setHemisphere(bool hemibool) {
-    hemisphere_ = !hemibool;
+    hemisphere_ = hemibool;
     int hem = 1;
     if(hemisphere_)
         hem = -1;

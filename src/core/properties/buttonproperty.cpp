@@ -65,4 +65,8 @@ void ButtonProperty::clicked() {
         (*it)->onChange(data);
 }
 
+std::string ButtonProperty::getTypeString() const {
+    return "Button";
+}
+
 }   // namespace

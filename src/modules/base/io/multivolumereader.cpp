@@ -41,7 +41,7 @@ namespace voreen {
 
 const string MultiVolumeReader::loggerCat_ = "voreen.io.VolumeReader.mv";
 
-MultiVolumeReader::MultiVolumeReader(VolumeSerializerPopulator* populator, IOProgress* progress)
+MultiVolumeReader::MultiVolumeReader(VolumeSerializerPopulator* populator, ProgressBar* progress)
     : VolumeReader(progress),
       populator_(populator)
 {
@@ -95,7 +95,7 @@ VolumeCollection* MultiVolumeReader::read(const std::string& url)
     return volumeCollection;
 }
 
-VolumeReader* MultiVolumeReader::create(IOProgress* progress) const {
+VolumeReader* MultiVolumeReader::create(ProgressBar* progress) const {
     return new MultiVolumeReader(0, progress);
 }
 

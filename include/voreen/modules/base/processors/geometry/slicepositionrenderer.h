@@ -32,27 +32,35 @@
 
 #include "voreen/core/processors/geometryrendererbase.h"
 
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
+
+#include "voreen/core/ports/volumeport.h"
+
 namespace voreen {
 
 class SlicePositionRenderer : public GeometryRendererBase {
 public:
     SlicePositionRenderer();
+    virtual Processor* create() const;
 
-    virtual std::string getCategory() const { return "Geometry"; }
+    virtual std::string getCategory() const  { return "Geometry"; }
     virtual std::string getClassName() const { return "SlicePositionRenderer"; }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
+    virtual CodeState getCodeState() const   { return CODE_STATE_STABLE; }
     virtual std::string getProcessorInfo() const;
-    virtual Processor* create() const {return new SlicePositionRenderer();}
 
-    virtual void process();
     virtual void render();
     virtual void invalidate(int inv = INVALID_RESULT);
 
+protected:
+    virtual void process();
+
 private:
-    BoolProperty applyDatasetTransformationMatrix_;
-    ColorProperty xColor_;
-    ColorProperty yColor_;
-    ColorProperty zColor_;
+    FloatVec4Property xColor_;
+    FloatVec4Property yColor_;
+    FloatVec4Property zColor_;
     IntProperty xSliceIndexProp_;
     IntProperty ySliceIndexProp_;
     IntProperty zSliceIndexProp_;

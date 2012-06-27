@@ -45,12 +45,13 @@ public:
     QPropertyWidget* createWidget(BoolProperty* p);
     QPropertyWidget* createWidget(ButtonProperty* p);
     QPropertyWidget* createWidget(CameraProperty* p);
-    QPropertyWidget* createWidget(ColorProperty* p);
+    QPropertyWidget* createWidget(ColorMapProperty* p);
     QPropertyWidget* createWidget(FileDialogProperty* p);
     QPropertyWidget* createWidget(FloatProperty* p);
     QPropertyWidget* createWidget(FloatVec2Property* p);
     QPropertyWidget* createWidget(FloatVec3Property* p);
     QPropertyWidget* createWidget(FloatVec4Property* p);
+    QPropertyWidget* createWidget(FontProperty* p);
     QPropertyWidget* createWidget(IntProperty* p);
     QPropertyWidget* createWidget(IntVec2Property* p);
     QPropertyWidget* createWidget(IntVec3Property* p);
@@ -58,14 +59,21 @@ public:
     QPropertyWidget* createWidget(FloatMat2Property* p);
     QPropertyWidget* createWidget(FloatMat3Property* p);
     QPropertyWidget* createWidget(FloatMat4Property* p);
-    QPropertyWidget* createWidget(LightProperty* p);
+    QPropertyWidget* createWidget(PlotEntitiesProperty* p);
     QPropertyWidget* createWidget(OptionPropertyBase* p);
+    QPropertyWidget* createWidget(PlotPredicateProperty* p);
+    QPropertyWidget* createWidget(PlotDataProperty* p);
+    QPropertyWidget* createWidget(PlotSelectionProperty* p);
     QPropertyWidget* createWidget(PropertyVector* p);
     QPropertyWidget* createWidget(ShaderProperty* p);
     QPropertyWidget* createWidget(StringProperty* p);
     QPropertyWidget* createWidget(TransFuncProperty* p);
     QPropertyWidget* createWidget(VolumeCollectionProperty* p);
     QPropertyWidget* createWidget(VolumeHandleProperty* p);
+
+    // deprecated
+    QPropertyWidget* createWidget(ColorProperty* p);
+    QPropertyWidget* createWidget(LightProperty* p);
 };
 
 } // namespace

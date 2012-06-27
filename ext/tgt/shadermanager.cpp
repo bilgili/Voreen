@@ -451,28 +451,6 @@ void ShaderObject::setHeader(const string& h) {
     header_ = h;
 }
 
-void ShaderObject::generateHeader(const string& defines) {
-    const string separator = " ";
-    int oldPos = 0;
-    int pos = 0;
-    string out = "// START OF PROGRAM GENERATED DEFINES";
-    string add;
-
-    while ((pos = defines.find_first_of(separator, oldPos)) != -1 ) {
-        add = defines.substr(oldPos, pos - oldPos);
-        if (!add.empty())
-            out += "\n#define " + add;
-        oldPos = pos + 1;
-    }
-
-    add = defines.substr(oldPos);
-    if (!add.empty())
-        out += "\n#define " + add;
-
-    out += "\n// END OF PROGRAM GENERATED DEFINES\n";
-    setHeader(out);
-}
-
 bool ShaderObject::rebuildFromFile() {
     if (!loadSourceFromFile(filename_)) {
         LWARNING("Failed to load shader " << filename_);
@@ -640,21 +618,18 @@ bool Shader::rebuildFromFile() {
     return result;
 }
 
-void Shader::setHeaders(const string& customHeader, bool processHeader) {
+void Shader::setHeaders(const string& customHeader) {
     for (ShaderObjects::iterator iter = objects_.begin(); iter != objects_.end(); ++iter) {
-        if (processHeader)
-            (*iter)->generateHeader(customHeader);
-        else
-            (*iter)->setHeader(customHeader);
+        (*iter)->setHeader(customHeader);
     }
 }
 
-bool Shader::load(const string& filename, const string& customHeader, bool processHeader) {
-    return loadSeparate(filename + ".vert", filename + ".frag", customHeader, processHeader);
+bool Shader::load(const string& filename, const string& customHeader) {
+    return loadSeparate(filename + ".vert", "", filename + ".frag", customHeader);
 }
 
-bool Shader::loadSeparate(const string& vert_filename, const string& frag_filename,
-                          const string& customHeader, bool processHeader, const string& geom_filename)
+bool Shader::loadSeparate(const string& vert_filename, const string& geom_filename,
+                          const string& frag_filename, const string& customHeader)
 {
     ShaderObject* frag = 0;
     ShaderObject* vert = 0;
@@ -664,10 +639,7 @@ bool Shader::loadSeparate(const string& vert_filename, const string& frag_filena
         vert = new ShaderObject(vert_filename, ShaderObject::VERTEX_SHADER);
 
         if (!customHeader.empty()) {
-            if (processHeader)
-                vert->generateHeader(customHeader);
-            else
-                vert->setHeader(customHeader);
+            vert->setHeader(customHeader);
         }
 
         if (!vert->loadSourceFromFile(vert_filename)) {
@@ -690,10 +662,7 @@ bool Shader::loadSeparate(const string& vert_filename, const string& frag_filena
 		geom = new ShaderObject(geom_filename, ShaderObject::GEOMETRY_SHADER);
 
         if (!customHeader.empty()) {
-            if (processHeader)
-                geom->generateHeader(customHeader);
-            else
-                geom->setHeader(customHeader);
+            geom->setHeader(customHeader);
         }
 
         if (!geom->loadSourceFromFile(geom_filename)) {
@@ -717,10 +686,7 @@ bool Shader::loadSeparate(const string& vert_filename, const string& frag_filena
         frag = new ShaderObject(frag_filename, ShaderObject::FRAGMENT_SHADER);
 
         if (!customHeader.empty()) {
-            if (processHeader)
-                frag->generateHeader(customHeader);
-            else
-                frag->setHeader(customHeader);
+            frag->setHeader(customHeader);
         }
 
         if (!frag->loadSourceFromFile(frag_filename)) {
@@ -1336,27 +1302,25 @@ void Shader::setNormalizedAttribute(GLint index, const Vector4<GLuint>& v) {
 
 const string ShaderManager::loggerCat_("tgt.Shader.Manager");
 
-ShaderManager::ShaderManager(bool cache)
-  : ResourceManager<Shader>(cache)
+ShaderManager::ShaderManager()
+  : ResourceManager<Shader>(false)
 {}
 
 Shader* ShaderManager::load(const string& filename, const string& customHeader,
-                            bool processHeader, bool activate)
+                            bool activate)
 {
-    return loadSeparate(filename + ".vert", filename + ".frag", customHeader, processHeader, activate);
+    return loadSeparate(filename + ".vert", filename + ".frag", customHeader, activate);
 }
 
 Shader* ShaderManager::loadSeparate(const string& vert_filename, const string& frag_filename,
-                                    const string& customHeader, bool processHeader,
-                                    bool activate)
+                                    const string& customHeader, bool activate)
 {
-    return loadSeparate(vert_filename, "", frag_filename, customHeader, processHeader, activate);
+    return loadSeparate(vert_filename, "", frag_filename, customHeader, activate);
 }
 
 Shader* ShaderManager::loadSeparate(const string& vert_filename, const string& geom_filename,
                                     const string& frag_filename,
-                                    const string& customHeader, bool processHeader,
-                                    bool activate)
+                                    const string& customHeader, bool activate)
 {
 	LDEBUG("Loading files " << vert_filename << " and " << frag_filename);
     if (!GpuCaps.areShadersSupported()) {
@@ -1389,8 +1353,8 @@ Shader* ShaderManager::loadSeparate(const string& vert_filename, const string& g
         frag_completeFilename = completePath(frag_filename);
 
     // loading and linking found shaders
-    if (shdr->loadSeparate(vert_completeFilename, frag_completeFilename,
-                           customHeader, processHeader, geom_completeFilename))
+    if (shdr->loadSeparate(vert_completeFilename, geom_completeFilename, 
+                           frag_completeFilename, customHeader))
     {
         // register even when caching is disabled, needed for rebuildFromFile()
         reg(shdr, identifier);

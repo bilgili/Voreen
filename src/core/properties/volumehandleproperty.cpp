@@ -136,4 +136,8 @@ void VolumeHandleProperty::deserialize(XmlDeserializer& s) {
     }
 }
 
+std::string VolumeHandleProperty::getTypeString() const {
+    return "VolumeHandle";
+}
+
 } // namespace voreen

@@ -229,6 +229,12 @@ void ProcessorListWidget::loadSettings()
         sort(ProcessorListTreeWidget::SORT_BY_MODULE_CATEGORY);
     }
 
+    if(settings.contains("infoBoxSize")) {
+        QList<int> widgetSpacing;
+        widgetSpacing << settings.value("processorListSize").toInt() << settings.value("infoBoxSize").toInt();
+        splitter_->setSizes(widgetSpacing);
+    }
+
     settings.endGroup();
 }
 
@@ -254,15 +260,20 @@ void ProcessorListWidget::saveSettings() {
 
     settings.setValue("hideCodeStatus", hideAction_->isChecked());
     settings.setValue("searchDescription", searchDescription_->isChecked());
+    settings.setValue("processorListSize", tree_->height());
+    settings.setValue("infoBoxSize", info_->height());
     settings.endGroup();
 }
 
 void ProcessorListWidget::setInfo() {
     ProcessorListItem* currentItem = dynamic_cast<ProcessorListItem *>(tree_->currentItem());
-    if (currentItem)
+    if (currentItem && currentItem->getInfo() != "")
         info_->setHtml(QString::fromStdString(currentItem->getInfo()));
+    else if(currentItem)
+        info_->setHtml(QString::fromStdString("<b>" + currentItem->getId() + "</b>"));
     else
         info_->setHtml("");
+
 }
 
 void ProcessorListWidget::setInfo(Processor* processor) {
@@ -414,8 +425,11 @@ ProcessorListTreeWidget::ProcessorListTreeWidget(ProcessorListWidget* processorL
     headeritems << "Processor" << "State";
     setHeaderLabels(headeritems);
 
-    header()->setResizeMode(0, QHeaderView::ResizeToContents);
-    header()->setStretchLastSection(true);
+    header()->setResizeMode(0, QHeaderView::Stretch);
+    header()->setResizeMode(1, QHeaderView::ResizeToContents);
+    header()->setStretchLastSection(false);
+
+
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     setColumnCount(2);
@@ -549,21 +563,32 @@ void ProcessorListTreeWidget::sortByCategory() {
         ProcessorListItem* tempListItem = new ProcessorListItem(processorVector_[i].second);
         categories[categoryIdentifier]->addChild(tempListItem);
         tempListItem->setProcessorInfo(processorVector_[i].second);
-        if(showCodeState_) {
-            if(ProcessorFactory::getInstance()->getProcessorCodeState(processorVector_[i].second) == Processor::CODE_STATE_EXPERIMENTAL ||
-                ProcessorFactory::getInstance()->getProcessorCodeState(processorVector_[i].second) == Processor::CODE_STATE_OBSOLETE ||
-                ProcessorFactory::getInstance()->getProcessorCodeState(processorVector_[i].second) == Processor::CODE_STATE_BROKEN) {
-
-                tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
-                tempListItem->setToolTip(1, "Code state: experimental, obsolete or broken");
-            }
-            else if(ProcessorFactory::getInstance()->getProcessorCodeState(processorVector_[i].second) == Processor::CODE_STATE_TESTING) {
-                tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-testing.png"));
-                tempListItem->setToolTip(1, "Code state: testing");
-            }
-            else if(ProcessorFactory::getInstance()->getProcessorCodeState(processorVector_[i].second) == Processor::CODE_STATE_STABLE) {
-                tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-stable.png"));
-                tempListItem->setToolTip(1, "Code state: stable");
+        if (showCodeState_) {
+            switch (ProcessorFactory::getInstance()->getProcessorCodeState(processorVector_[i].second)) {
+                case Processor::CODE_STATE_BROKEN:
+                    tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
+                    tempListItem->setToolTip(1, "Code state: broken");
+                    break;
+                case Processor::CODE_STATE_OBSOLETE:
+                    tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
+                    tempListItem->setToolTip(1, "Code state: obsolete");
+                    break;
+                case Processor::CODE_STATE_EXPERIMENTAL:
+                    tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
+                    tempListItem->setToolTip(1, "Code state: experimental");
+                    break;
+                case Processor::CODE_STATE_TESTING:
+                    tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-testing.png"));
+                    tempListItem->setToolTip(1, "Code state: testing");
+                    break;
+                case Processor::CODE_STATE_STABLE:
+                    tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-stable.png"));
+                    tempListItem->setToolTip(1, "Code state: stable");
+                    break;
+                default:
+                    tempListItem->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
+                    tempListItem->setToolTip(1, "Code state: unknown");
+                    break;
             }
         }
     }
@@ -627,7 +652,7 @@ void ProcessorListTreeWidget::sortByModuleThenCategory() {
     ProcessorFactory::KnownClassesVector processors = getVisibleProcessors();
     clear();
 
-    int position;
+    //int position;
     QStringList moduleNames;
     QString moduleName("");
 
@@ -668,7 +693,7 @@ void ProcessorListTreeWidget::sortByModuleThenCategory() {
                     QString categoryIdentifier = processorVector_[i].first.c_str();
                     ProcessorListItem* tempListItem = new ProcessorListItem(processorVector_[i].second);
 
-                    position = categories.indexOf(categoryIdentifier);
+                    //position = categories.indexOf(categoryIdentifier);
                     categoryItem->addChild(tempListItem);
                     tempListItem->setProcessorInfo(processorVector_[i].second);
                     if(showCodeState_) {
@@ -697,7 +722,7 @@ void ProcessorListTreeWidget::sortByCategoryThenModule() {
     ProcessorFactory::KnownClassesVector processors = getVisibleProcessors();
     clear();
 
-    int position;
+    //int position;
     QStringList categories;
     QString categoryIdentifier("");
 
@@ -738,7 +763,7 @@ void ProcessorListTreeWidget::sortByCategoryThenModule() {
                     QString categoryIdentifier = processorVector_[i].first.c_str();
                     ProcessorListItem* tempListItem = new ProcessorListItem(processorVector_[i].second);
 
-                    position = categories.indexOf(categoryIdentifier);
+                    //position = categories.indexOf(categoryIdentifier);
                     moduleItem->addChild(tempListItem);
                     tempListItem->setProcessorInfo(processorVector_[i].second);
                     if(showCodeState_) {
@@ -763,20 +788,31 @@ void ProcessorListTreeWidget::sortByCategoryThenModule() {
 }
 
 void ProcessorListTreeWidget::setCodeStateIcon(std::string codeState, QTreeWidgetItem* item) {
-    if(ProcessorFactory::getInstance()->getProcessorCodeState(codeState) == Processor::CODE_STATE_EXPERIMENTAL ||
-        ProcessorFactory::getInstance()->getProcessorCodeState(codeState) == Processor::CODE_STATE_OBSOLETE ||
-        ProcessorFactory::getInstance()->getProcessorCodeState(codeState) == Processor::CODE_STATE_BROKEN) {
-
-        item->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
-        item->setToolTip(1, "Code state: experimental, obsolete or broken");
-    }
-    else if(ProcessorFactory::getInstance()->getProcessorCodeState(codeState) == Processor::CODE_STATE_TESTING) {
-        item->setIcon(1, QIcon(":/voreenve/icons/processor-testing.png"));
-        item->setToolTip(1, "Code state: testing");
-    }
-    else if(ProcessorFactory::getInstance()->getProcessorCodeState(codeState) == Processor::CODE_STATE_STABLE) {
-        item->setIcon(1, QIcon(":/voreenve/icons/processor-stable.png"));
-        item->setToolTip(1, "Code state: stable");
+    switch (ProcessorFactory::getInstance()->getProcessorCodeState(codeState)) {
+        case Processor::CODE_STATE_BROKEN:
+            item->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
+            item->setToolTip(1, "Code state: broken");
+            break;
+        case Processor::CODE_STATE_OBSOLETE:
+            item->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
+            item->setToolTip(1, "Code state: obsolete");
+            break;
+        case Processor::CODE_STATE_EXPERIMENTAL:
+            item->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
+            item->setToolTip(1, "Code state: experimental");
+            break;
+        case Processor::CODE_STATE_TESTING:
+            item->setIcon(1, QIcon(":/voreenve/icons/processor-testing.png"));
+            item->setToolTip(1, "Code state: testing");
+            break;
+        case Processor::CODE_STATE_STABLE:
+            item->setIcon(1, QIcon(":/voreenve/icons/processor-stable.png"));
+            item->setToolTip(1, "Code state: stable");
+            break;
+        default:
+            item->setIcon(1, QIcon(":/voreenve/icons/processor-broken.png"));
+            item->setToolTip(1, "Code state: unknown");
+            break;
     }
 }
 

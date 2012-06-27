@@ -29,7 +29,6 @@
 
 #include "propertygraphicsitem.h"
 
-#include "voreen/core/properties/allproperties.h"
 #include "propertylistgraphicsitem.h"
 #include "rootgraphicsitem.h"
 
@@ -56,7 +55,7 @@ void PropertyGraphicsItem::createLabel() {
     QString labelText = "";
     labelText.append(QString::fromStdString(property_->getGuiName()));
     labelText.append("<br><\br>");
-    QString type = QString::fromStdString(Property::getPropertyTypeText(property_));
+    QString type = QString::fromStdString(property_->getTypeString());
 
     QString typeLine("<span style=\"font-size:7pt;color:#BDBDBD\"> %1 </span>");
     labelText.append(typeLine.arg(type));
@@ -65,6 +64,27 @@ void PropertyGraphicsItem::createLabel() {
     propertyLabel_->setHtml(labelText);
 
     resetSize();
+}
+
+void PropertyGraphicsItem::createLabel(const QString& prefix) {
+    QString labelText = prefix;
+    labelText.append(" - ");
+    labelText.append(QString::fromStdString( property_->getGuiName()));
+    labelText.append("<br><\br>");
+    QString type = QString::fromStdString(property_->getTypeString());
+
+    QString typeLine("<span style=\"font-size:7pt;color:#BDBDBD\"> %1 </span>");
+    labelText.append(typeLine.arg(type));
+
+    propertyLabel_ = new QGraphicsTextItem(this);
+    propertyLabel_->setHtml(labelText);
+
+    resetSize();
+}
+
+void PropertyGraphicsItem::addPrefix(const QString& prefix) {
+    delete propertyLabel_;
+    createLabel(prefix);
 }
 
 int PropertyGraphicsItem::type() const {

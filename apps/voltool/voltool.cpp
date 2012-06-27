@@ -42,10 +42,6 @@
 #include "tgt/init.h"
 #include "tgt/exception.h"
 
-#ifdef VRN_WITH_MATLAB
-#include "voreen/core/io/matvolumereader.h"
-#endif
-
 #include <string>
 
 #ifdef _OPENMP
@@ -92,7 +88,6 @@ int main(int argc, char** argv) {
     cmdparser.addCommand(new CommandMirrorZ());
     cmdparser.addCommand(new CommandSubSet());
     cmdparser.addCommand(new CommandBrick());
-
 
 
     //cmdparser.addCommand(new CommandStretchHisto());

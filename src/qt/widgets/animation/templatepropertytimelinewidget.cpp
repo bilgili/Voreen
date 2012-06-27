@@ -360,7 +360,7 @@ void TemplatePropertyTimelineWidget<T>::updateTemplateKeyframePosition(float x, 
     PropertyKeyValue<T>* keyValue = const_cast<PropertyKeyValue<T>*>(keyframes_[kfgi]);
     if (x > 0) {
         int test = templatePropertyTimeline_->changeTimeOfKeyValue(x, keyValue);
-        if (test == 4 || test == 3) {
+        if (test == KV_MOVED_TO_DIFFERENT_INTERVAL || test == KV_EXISTS_AT_NEW_TIME) {
             timelineChange_ = false;
             generateKeyframeItems();
         }
@@ -506,7 +506,7 @@ void TemplatePropertyTimelineWidget<bool>::visualize() {
 
 template<>
 void TemplatePropertyTimelineWidget<tgt::vec4>::visualize() {
-    if (dynamic_cast<ColorProperty*>(property_)) {
+    if (dynamic_cast<FloatVec4Property*>(property_) && property_->getViews() == Property::COLOR) {
         QLinearGradient gradient(0, 0, duration_, 0);
         gradient.setSpread(QGradient::PadSpread);
         std::map<float, PropertyKeyValue<tgt::vec4>*> initialKeyValues = dynamic_cast<TemplatePropertyTimeline<tgt::vec4>*>(templatePropertyTimeline_)->getKeyValues();
@@ -559,8 +559,9 @@ TemplateProperty<float>* TemplatePropertyTimelineWidget<float>::copyProperty(con
     if (dynamic_cast<FloatProperty*>(prop)) {
         FloatProperty* retProperty = dynamic_cast<FloatProperty*>(prop);
         FloatProperty* ret =new FloatProperty(retProperty->getID(), retProperty->getGuiName(), retProperty->get(), retProperty->getMinValue(),
-        retProperty->getMaxValue(), retProperty->getStepping(), retProperty->getInvalidationLevel());
+        retProperty->getMaxValue(), retProperty->getInvalidationLevel());
         ret->setOwner(this);
+        ret->setStepping(retProperty->getStepping());
         return ret;
     }
     else
@@ -573,7 +574,8 @@ TemplateProperty<int>* TemplatePropertyTimelineWidget<int>::copyProperty(const P
     if (dynamic_cast<IntProperty*>(prop)) {
         IntProperty* retProperty = dynamic_cast<IntProperty*>(prop);
         IntProperty* ret = new IntProperty(retProperty->getID(), retProperty->getGuiName(), retProperty->get(), retProperty->getMinValue(),
-        retProperty->getMaxValue(), retProperty->getStepping(), retProperty->getInvalidationLevel());
+        retProperty->getMaxValue(), retProperty->getInvalidationLevel());
+        ret->setStepping(retProperty->getStepping());
         ret->setOwner(this);
         return ret;
     }
@@ -612,13 +614,7 @@ TemplateProperty<tgt::vec3>* TemplatePropertyTimelineWidget<tgt::vec3>::copyProp
 template<>
 TemplateProperty<tgt::vec4>* TemplatePropertyTimelineWidget<tgt::vec4>::copyProperty(const Property* tempProperty) {
     Property* prop = const_cast<Property*>(tempProperty);
-    if (dynamic_cast<ColorProperty*>(prop)) {
-        ColorProperty* retProperty = dynamic_cast<ColorProperty*>(prop);
-        ColorProperty* ret = new ColorProperty(retProperty->getID(), retProperty->getGuiName(), retProperty->get(), retProperty->getInvalidationLevel());
-        ret->setOwner(this);
-        return ret;
-    }
-    else if (dynamic_cast<FloatVec4Property*>(prop)) {
+    if (dynamic_cast<FloatVec4Property*>(prop)) {
         FloatVec4Property* retProperty = dynamic_cast<FloatVec4Property*>(prop);
         FloatVec4Property* ret =new FloatVec4Property(retProperty->getID(), retProperty->getGuiName(), retProperty->get(), retProperty->getMinValue(),
         retProperty->getMaxValue(), retProperty->getInvalidationLevel());
@@ -769,12 +765,6 @@ QPropertyWidget* TemplatePropertyTimelineWidget<T>::getWidget() {
         }
         else if (dynamic_cast<TemplateProperty<Camera*>*>(property_)) {
             return new StringPropertyWidget(new StringProperty("","",""), this);
-        }
-        else if (dynamic_cast<ColorProperty*>(property_)) {
-            QPropertyWidget* retWidget = qpwf->createWidget(dynamic_cast<ColorProperty*>(property_));
-            retWidget->hideLODControls();
-            delete qpwf;
-            return retWidget;
         }
         else if (dynamic_cast<FloatProperty*>(property_)) {
             QPropertyWidget* retWidget = qpwf->createWidget(dynamic_cast<FloatProperty*>(property_));

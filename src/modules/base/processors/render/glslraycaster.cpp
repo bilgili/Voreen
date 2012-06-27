@@ -138,7 +138,8 @@ void GLSLRaycaster::process() {
         volumePort_.getData()->getVolumeGL(),
         &volUnit,
         "volume_",
-        "volumeParameters_")
+        "volumeParameters_",
+        true)
     );
 
     updateBrickingParameters(volumePort_.getData());
@@ -155,7 +156,8 @@ void GLSLRaycaster::process() {
             volumeSeg,
             &segUnit,
             "segmentation_",
-            "segmentationParameters_")
+            "segmentationParameters_",
+            true)
         );
 
         segUnit.activate();
@@ -180,13 +182,15 @@ void GLSLRaycaster::process() {
     // set common uniforms used by all shaders
     setGlobalShaderParameters(sh, camera_.get());
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(sh, volumeTextures);
+    bindVolumes(sh, volumeTextures, camera_.get(), lightPosition_.get());
 
     // pass the remaining uniforms to the shader
     sh->setUniform("entryPoints_", entryUnit.getUnitNumber());
     sh->setUniform("entryPointsDepth_", entryDepthUnit.getUnitNumber());
+    entryPort_.setTextureParameters(sh, "entryParameters_");
     sh->setUniform("exitPoints_", exitUnit.getUnitNumber());
-    sh->setUniform("exitPointsDepth_", entryDepthUnit.getUnitNumber());
+    sh->setUniform("exitPointsDepth_", exitDepthUnit.getUnitNumber());
+    exitPort_.setTextureParameters(sh, "exitParameters_");
     sh->setUniform("transferFunc_", transferUnit.getUnitNumber());
     if (useSegmentation_.get() && volumeSeg)
         sh->setUniform("segment_" , static_cast<float>(segment_.get()));

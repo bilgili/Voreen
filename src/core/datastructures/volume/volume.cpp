@@ -40,80 +40,13 @@ namespace voreen {
 
 const std::string Volume::loggerCat_("voreen.Volume");
 
-Volume::Volume(const ivec3& dimensions, int bitsStored, const vec3& spacing)
+Volume::Volume(const ivec3& dimensions, int bitsStored, const vec3& spacing, const tgt::mat4& transformation)
     : dimensions_(dimensions)
     , bitsStored_(bitsStored)
     , spacing_(spacing)
-    , transformationMatrix_(tgt::mat4::identity)
+    , transformationMatrix_(transformation)
 {
     calculateProperties();
-}
-
-void Volume::convert(const Volume* v) {
-
-    //TODO: this should better placed somewhere else and not introduce dependencies to VolumeAtomic here
-    //TODO: do a real error check with exceptions here
-    tgtAssert(dimensions_ == v->getDimensions(), "dimensions must match here");
-    tgtAssert(getNumChannels() == v->getNumChannels(), "number of channels must match here");
-
-    /*
-        check what we have
-    */
-    VolumeUInt8*  t_ui8  = dynamic_cast<VolumeUInt8*>(this);
-    VolumeUInt16* t_ui16 = dynamic_cast<VolumeUInt16*>(this);
-
-    const VolumeUInt8*  v_ui8  = dynamic_cast<const VolumeUInt8*>(v);
-    const VolumeUInt16* v_ui16 = dynamic_cast<const VolumeUInt16*>(v);
-
-    const VolumeFloat*  v_float  = dynamic_cast<const VolumeFloat*>(v);
-    const VolumeDouble* v_double = dynamic_cast<const VolumeDouble*>(v);
-
-    if (t_ui8 && v_ui16) {
-        LINFO("using accelerated conversion from VolumeUInt16 -> VolumeUInt8");
-
-        // because the number of shifting bits varies by the number of bits used it must be calculated
-        int shift = v_ui16->getBitsStored() - t_ui8->getBitsStored();
-
-        for (size_t i = 0; i < t_ui8->getNumVoxels(); ++i)
-            t_ui8->voxel(i) = v_ui16->voxel(i) >> shift;
-    }
-    else if (t_ui16 && v_ui8) {
-        LINFO("using accelerated conversion from VolumeUInt8 -> VolumeUInt16");
-
-        // because the number of shifting bits varies by the number of bits used it must be calculated
-        int shift = t_ui16->getBitsStored() - v_ui8->getBitsStored();
-
-        for (size_t i = 0; i < t_ui16->getNumVoxels(); ++i)
-            t_ui16->voxel(i) = uint16_t( v_ui8->voxel(i) ) << shift;
-    }
-    else if (v_float) {
-        float min = v_float->min();
-        float max = v_float->max();
-        float range = (max - min);
-
-        LINFO("Converting float volume with data range [" << min << "; " << max << "] to "
-              << getBitsAllocated() << " bit.");
-
-        VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), dimensions_)
-            setVoxelFloat((v_float->voxel(i) - min) / range, i);
-    }
-    else if (v_double) {
-        double min = v_double->min();
-        double max = v_double->max();
-        double range = (max - min);
-
-        LINFO("Converting double volume with data range [" << min << "; " << max << "] to "
-              << getBitsAllocated() << " bit.");
-
-        VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), dimensions_)
-            setVoxelFloat(static_cast<float>((v_double->voxel(i) - min) / range), i);
-    }
-    else {
-        LINFO("using fallback with setVoxelFloat and getVoxelFloat");
-
-        VRN_FOR_EACH_VOXEL(i, tgt::ivec3(0), dimensions_)
-            setVoxelFloat(v->getVoxelFloat(i), i);
-    }
 }
 
 /*
@@ -164,17 +97,46 @@ const tgt::mat4& Volume::getTransformation() const {
     return transformationMatrix_;
 }
 
-tgt::mat4 Volume::getVoxelToWorldMatrix() const {
-    tgt::mat4 result;
-    // 1. scale voxel coords to [0;1]^3
-    result = tgt::mat4::createScale(1.f / tgt::vec3(getDimensions()-1));
-    // 2. translate cube's center to the origin
-    result = tgt::mat4::createTranslation(tgt::vec3(-0.5f)) * result;
-    // 3. scale by the volume's cube size
-    result = tgt::mat4::createScale(getCubeSize()) * result;
-    // 4. finally apply additional transformation matrix
-    result = getTransformation() * result;
+MeshGeometry Volume::getBoundingBox(bool applyTransformation) const {
+    MeshGeometry boundingBox = MeshGeometry::createCube(getLLF(), getURB(), tgt::vec3(0.f), tgt::vec3(1.f));
+    if (applyTransformation)
+        boundingBox.transform(getTransformation());
+    return boundingBox;
+}
 
+tgt::mat4 Volume::getVoxelToWorldMatrix(bool applyTransformation) const {
+    tgt::mat4 result;
+    // 1. transform voxel to texture coordinates
+    result = tgt::mat4::createScale(1.f / tgt::vec3(getDimensions()-1));
+
+    // 2. apply texture to world transformation
+    tgt::mat4 textureToWorld = getTextureToWorldMatrix(applyTransformation);
+    return textureToWorld * result;
+}
+
+tgt::mat4 Volume::getWorldToVoxelMatrix(bool applyTransformation) const {
+    tgt::mat4 result = tgt::mat4::identity;
+    getVoxelToWorldMatrix(applyTransformation).invert(result);
+    return result;
+}
+
+tgt::mat4 Volume::getTextureToWorldMatrix(bool applyTransformation) const {
+    tgt::mat4 result;
+    // 1. translate cube's center to the origin
+    result = tgt::mat4::createTranslation(tgt::vec3(-0.5f));
+    // 2. scale by the volume's cube size
+    result = tgt::mat4::createScale(getCubeSize()) * result;
+    if(applyTransformation) {
+        // 3. finally apply additional transformation matrix
+        result = getTransformation() * result;
+    }
+
+    return result;
+}
+
+tgt::mat4 Volume::getWorldToTextureMatrix(bool applyTransformation) const {
+    tgt::mat4 result = tgt::mat4::identity;
+    getTextureToWorldMatrix(applyTransformation).invert(result);
     return result;
 }
 
@@ -224,10 +186,6 @@ float Volume::getVoxelFloatLinear(const vec3& pos, size_t channel /*= 0*/) const
           + getVoxelFloat(llb.x, urf.y, urf.z, channel) * (1.f-p.x)*(    p.y)*(    p.z);// ulF
 }
 
-Volume* Volume::halfsample() const throw (std::bad_alloc) {
-    return 0;
-}
-
 void Volume::calculateProperties() {
     //numVoxels_ = hmul(dimensions_); << does not work for very large volumes!
     numVoxels_ = (size_t)dimensions_.x * (size_t)dimensions_.y * (size_t)dimensions_.z;
@@ -240,6 +198,5 @@ void Volume::calculateProperties() {
     // calculate cube vertices
     tgt::plane::createCubeVertices(llf_, urb_, cubeVertices_);
 }
-
 
 } // namespace voreen

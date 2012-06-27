@@ -53,7 +53,9 @@ public:
         RELEASED    = 1 << 2, CLICK = PRESSED | RELEASED,
         DOUBLECLICK = 1 << 3,
         WHEEL       = 1 << 4,
-        ACTION_ALL  = CLICK | MOTION | DOUBLECLICK | WHEEL
+        ENTER       = 1 << 5,
+        EXIT        = 1 << 6, ENTER_EXIT = ENTER | EXIT,
+        ACTION_ALL  = CLICK | MOTION | DOUBLECLICK | WHEEL | ENTER_EXIT
     };
 
 public:

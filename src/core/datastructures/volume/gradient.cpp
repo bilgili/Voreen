@@ -37,7 +37,7 @@ namespace voreen {
 
 Volume4xUInt8* calcGradients26(Volume* vol) {
     // generate 32 bit data set to store results
-    Volume4xUInt8* result = new Volume4xUInt8(vol->getDimensions(), vol->getSpacing(), 32);
+    Volume4xUInt8* result = new Volume4xUInt8(vol->getDimensions(), vol->getSpacing(), vol->getTransformation(), 32);
     if (vol->getBitsStored() == 8) {
         VolumeUInt8* input = static_cast<VolumeUInt8*>(vol);
 
@@ -130,7 +130,7 @@ Volume4xUInt8* filterGradientsMid(Volume* vol) {
    if (vol->getBitsStored() == 32) {
        Volume4xUInt8* input = static_cast<Volume4xUInt8*>(vol);
 
-       Volume4xUInt8* resultFiltered = new Volume4xUInt8(vol->getDimensions(), vol->getSpacing(), 32);
+       Volume4xUInt8* resultFiltered = new Volume4xUInt8(vol->getDimensions(), vol->getSpacing(), vol->getTransformation(), 32);
        vec3 delta = vec3(1.0);
 
        ivec3 pos;
@@ -177,7 +177,7 @@ Volume4xUInt8* filterGradientsWeighted(Volume* vol, bool intensityCheck) {
     if (vol->getBitsStored() == 32) {
         Volume4xUInt8* input = static_cast<Volume4xUInt8*>(vol);
 
-        Volume4xUInt8* resultFiltered = new Volume4xUInt8(vol->getDimensions(), vol->getSpacing(), 32);
+        Volume4xUInt8* resultFiltered = new Volume4xUInt8(vol->getDimensions(), vol->getSpacing(), vol->getTransformation(), 32);
         vec3 delta = vec3(1.0);
 
         ivec3 pos;
@@ -288,7 +288,7 @@ Volume4xUInt8* filterGradients(Volume* vol) {
     if (vol->getBitsStored() == 32) {
         Volume4xUInt8* input = static_cast<Volume4xUInt8*>(vol);
 
-        Volume4xUInt8* resultFiltered = new Volume4xUInt8(vol->getDimensions(), vol->getSpacing(), 32);
+        Volume4xUInt8* resultFiltered = new Volume4xUInt8(vol->getDimensions(), vol->getSpacing(), vol->getTransformation(), 32);
         vec3 offset = vec3(1.0);
         // gradients are stored in the interval [0..256], with (128,128,128) being the zero gradient
         vec3 zeroGrad = vec3(128,128,128);

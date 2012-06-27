@@ -22,6 +22,7 @@ HEADERS += \
     voreenvisualization.h \
     networkeditor/aggregationgraphicsitem.h \
     networkeditor/arrowgraphicsitem.h \
+	networkeditor/arrowheadselectiongraphicsitem.h \
     networkeditor/hastooltip.h \
     networkeditor/linkarrowgraphicsitem.h \
     networkeditor/linkarrowgraphicsitemstub.h \
@@ -35,11 +36,13 @@ HEADERS += \
     networkeditor/portarrowgraphicsitem.h \
     networkeditor/portgraphicsitem.h \
     networkeditor/processorgraphicsitem.h \
+	networkeditor/progressbargraphicsitem.h \
     networkeditor/propertygraphicsitem.h \
     networkeditor/propertylinkdialog.h \
     networkeditor/propertylistgraphicsitem.h \
     networkeditor/rootgraphicsitem.h \
-    networkeditor/textgraphicsitem.h
+    networkeditor/textgraphicsitem.h \
+	networkeditor/widgetindicatorbutton.h
 
 SOURCES += \
     main.cpp \
@@ -47,6 +50,7 @@ SOURCES += \
     voreenvisualization.cpp \
     networkeditor/aggregationgraphicsitem.cpp \
     networkeditor/arrowgraphicsitem.cpp \
+	networkeditor/arrowheadselectiongraphicsitem.cpp \
     networkeditor/linkarrowgraphicsitem.cpp \
     networkeditor/linkarrowgraphicsitemstub.cpp \
     networkeditor/linkdialogarrowgraphicsitem.cpp \
@@ -58,11 +62,13 @@ SOURCES += \
     networkeditor/portarrowgraphicsitem.cpp \
     networkeditor/portgraphicsitem.cpp \
     networkeditor/processorgraphicsitem.cpp \
+	networkeditor/progressbargraphicsitem.cpp \
     networkeditor/propertygraphicsitem.cpp \
     networkeditor/propertylinkdialog.cpp \
     networkeditor/propertylistgraphicsitem.cpp \
     networkeditor/rootgraphicsitem.cpp \
-    networkeditor/textgraphicsitem.cpp
+    networkeditor/textgraphicsitem.cpp \
+	networkeditor/widgetindicatorbutton.cpp
 
 win32 {
     # icon description file for windows-exe

@@ -33,6 +33,7 @@
 #include "voreen/core/processors/renderprocessor.h"
 #include "voreen/core/processors/geometryrendererbase.h"
 #include "voreen/core/interaction/idmanager.h"
+#include "voreen/core/properties/cameraproperty.h"
 
 namespace voreen {
 

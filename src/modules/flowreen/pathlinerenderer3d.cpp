@@ -82,6 +82,7 @@ PathlineRenderer3D::PathlineRenderer3D()
     inportContext_(Port::INPORT, "volumecollection.context"),
     inportFlows_(Port::INPORT, "volumecollection.flow")
 {
+    lineColorProp_.setViews(Property::COLOR);
     lineStyleProp_ = new OptionProperty<LineStyle>("lineStyleProp", "pathline style:");
     lineStyleProp_->addOption("points", "points", STYLE_POINTS);
     lineStyleProp_->addOption("line segments", "line segments", STYLE_SEGMENTS);
@@ -176,7 +177,12 @@ PathlineRenderer3D::~PathlineRenderer3D() {
 
 std::string PathlineRenderer3D::getProcessorInfo() const {
     return "Processor for rendering pathlines from time-dependent flow data using \
-geometrical primitives like points, lines, tubes and arrows..";
+            geometrical primitives like points, lines, tubes and arrows. the PathlineRenderer3D \
+            can be used to visualize vector field data. It expects one flow volume and one scalar \
+            context volume. The flow volume is depicted by geometric primitives (e.g., arrows or \
+            lines). The processor provides different seeding strategies. Such that the geometric \
+            primitives can be arranged based on the grid or depend on the context volume. \
+            Thus, a slice-based seeding becomes possible.";
 }
 
 void PathlineRenderer3D::process() {
@@ -868,7 +874,7 @@ void PathlineRenderer3D::renderAsTubes(const tgt::vec4& lineColor) {
 
 bool PathlineRenderer3D::setupShader() {
     if (shader_ == 0)
-        shader_ = ShdrMgr.load("phong", "", false, false);
+        shader_ = ShdrMgr.load("phong", "", false);
 
     // activate the shader if everything went fine and set the needed uniforms
     if (shader_ != 0) {

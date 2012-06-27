@@ -40,7 +40,7 @@ namespace voreen {
 
 const std::string FlowReader::loggerCat_("voreen.io.FlowReader");
 
-FlowReader::FlowReader(IOProgress* const progress)
+FlowReader::FlowReader(ProgressBar* const progress)
     : VolumeReader(progress)
 {
     extensions_.push_back("flow");
@@ -191,9 +191,7 @@ VolumeFlow3D* FlowReader::readConvert(const tgt::ivec3& dimensions, const BYTE o
     tgt::vec3* buffer = new tgt::vec3[numBufferElements];
     memset(buffer, 0, bufferByteSize);
 
-    IOProgress* progress = getProgress();
-    if (progress)
-        progress->setTotalSteps(max);
+    ProgressBar* progress = getProgressBar();
 
     tgt::ivec3 pos(0, 0, 0);
     float maxValue = std::numeric_limits<float>::min();
@@ -202,8 +200,8 @@ VolumeFlow3D* FlowReader::readConvert(const tgt::ivec3& dimensions, const BYTE o
 
     for (size_t i = 0; i < size_t(max); ++i) {
         ifs.read(reinterpret_cast<char*>(buffer), bufferByteSize);
-        if (progress != 0)
-            progress->setProgress(i);
+        if (progress)
+            progress->setProgress(static_cast<float>(i) / static_cast<float>(max));
 
         for (size_t j = 0; j < numBufferElements; ++j) {
             // get the number of the voxel in current data orientation
@@ -270,7 +268,7 @@ void FlowReader::reverseSlices(VolumeFlow3D* const volume, const BYTE sliceOrder
     }
 }
 
-VolumeReader* FlowReader::create(IOProgress* progress) const {
+VolumeReader* FlowReader::create(ProgressBar* progress) const {
     return new FlowReader(progress);
 }
 

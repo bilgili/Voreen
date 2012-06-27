@@ -34,6 +34,10 @@
 
 
 namespace voreen {
+
+/**
+ * @deprecated Use FloatVec4Property with view Property::LIGHT_POSITION instead!
+ */
 class LightProperty : public FloatVec4Property {
 public:
     LightProperty(const std::string& id, const std::string& guiText, const tgt::vec4& value,

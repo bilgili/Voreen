@@ -38,8 +38,9 @@
 #include "tgt/exception.h"
 #include "tgt/filesystem.h"
 
-#include "voreen/core/io/ioprogress.h"
+#include "voreen/core/io/progressbar.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
+#include "voreen/core/datastructures/volume/volumeoperator.h"
 
 using tgt::ivec3;
 using tgt::vec3;
@@ -64,7 +65,7 @@ RawVolumeReader::ReadHints::ReadHints(tgt::ivec3 dimensions, tgt::vec3 spacing, 
       sliceOrder_("+z")
 {}
 
-RawVolumeReader::RawVolumeReader(IOProgress* progress)
+RawVolumeReader::RawVolumeReader(ProgressBar* progress)
     : VolumeReader(progress)
 {
     protocols_.push_back("raw");
@@ -191,7 +192,7 @@ VolumeCollection* RawVolumeReader::readSlices(const std::string &url, size_t fir
     if (h.objectModel_ == "I") {
         if (h.format_ == "UCHAR") {
             LINFO(info << "(8 bit dataset)");
-            VolumeUInt8* v = new VolumeUInt8(h.dimensions_, h.spacing_);
+            VolumeUInt8* v = new VolumeUInt8(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else if (h.format_ == "CHAR") {
@@ -201,37 +202,37 @@ VolumeCollection* RawVolumeReader::readSlices(const std::string &url, size_t fir
         }
         else if ((h.format_ == "USHORT" && h.bitsStored_ == 12) || h.format_ == "USHORT_12") {
             LINFO(info << "(12 bit dataset)");
-            VolumeUInt16* v = new VolumeUInt16(h.dimensions_, h.spacing_, 12);
+            VolumeUInt16* v = new VolumeUInt16(h.dimensions_, h.spacing_, h.transformation_, 12);
             volume = v;
         }
         else if (h.format_ == "USHORT") {
             LINFO(info << "(16 bit dataset)");
-            VolumeUInt16* v = new VolumeUInt16(h.dimensions_, h.spacing_);
+            VolumeUInt16* v = new VolumeUInt16(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else if (h.format_ == "SHORT") {
             LWARNING(info << "(16 bit signed dataset, converting to 16 bit unsigned)");
-            VolumeInt16* v = new VolumeInt16(h.dimensions_, h.spacing_);
+            VolumeInt16* v = new VolumeInt16(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else if (h.format_ == "UINT") {
             LWARNING(info << "(32 bit dataset, converting to 16 bit)");
-            VolumeUInt32* v = new VolumeUInt32(h.dimensions_, h.spacing_);
+            VolumeUInt32* v = new VolumeUInt32(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else if (h.format_ == "INT") {
             LWARNING(info << "(32 bit signed dataset, converting to 16 bit unsigned)");
-            VolumeInt32* v = new VolumeInt32(h.dimensions_, h.spacing_);
+            VolumeInt32* v = new VolumeInt32(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else if (h.format_ == "FLOAT") {
             LINFO(info << "(32 bit float dataset)");
-            VolumeFloat* v = new VolumeFloat(h.dimensions_, h.spacing_);
+            VolumeFloat* v = new VolumeFloat(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else if (h.format_ == "FLOAT8" || h.format_ == "FLOAT16") {
-            LWARNING(info << "(32 bit float dataset, converting to 8 or 16 bit)");
-            VolumeFloat* v = new VolumeFloat(h.dimensions_, h.spacing_);
+            LWARNING(info << "(32 bit float dataset, converting to 8 or 16 bit unsigned int)");
+            VolumeFloat* v = new VolumeFloat(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else {
@@ -242,12 +243,12 @@ VolumeCollection* RawVolumeReader::readSlices(const std::string &url, size_t fir
     else if (h.objectModel_ == "RGBA") {
         if (h.format_ == "UCHAR") {
             LINFO(info << "(4x8 bit dataset)");
-            Volume4xUInt8* v = new Volume4xUInt8(h.dimensions_, h.spacing_);
+            Volume4xUInt8* v = new Volume4xUInt8(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else if (h.format_ == "USHORT") {
             LINFO(info << "(4x16 bit dataset)");
-            Volume4xUInt16* v = new Volume4xUInt16(h.dimensions_, h.spacing_);
+            Volume4xUInt16* v = new Volume4xUInt16(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else {
@@ -258,17 +259,17 @@ VolumeCollection* RawVolumeReader::readSlices(const std::string &url, size_t fir
     else if (h.objectModel_ == "RGB") {
         if (h.format_ == "UCHAR") {
             LINFO(info << "(3x8 bit dataset)");
-            Volume3xUInt8* v = new Volume3xUInt8(h.dimensions_, h.spacing_);
+            Volume3xUInt8* v = new Volume3xUInt8(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else if (h.format_ == "USHORT") {
             LINFO(info << "(3x16 bit dataset)");
-            Volume3xUInt16* v = new Volume3xUInt16(h.dimensions_, h.spacing_);
+            Volume3xUInt16* v = new Volume3xUInt16(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else if (h.format_ == "FLOAT") {
             LINFO(info << "(3x32 bit dataset)");
-            Volume3xFloat* v = new Volume3xFloat(h.dimensions_, h.spacing_);
+            Volume3xFloat* v = new Volume3xFloat(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         } else {
             fclose(fin);
@@ -277,7 +278,7 @@ VolumeCollection* RawVolumeReader::readSlices(const std::string &url, size_t fir
     }
     else if (h.objectModel_ == "LA") { // luminance alpha
         LINFO(info << "(luminance16 alpha16 dataset)");
-        Volume4xUInt8* v = new Volume4xUInt8(h.dimensions_, h.spacing_);
+        Volume4xUInt8* v = new Volume4xUInt8(h.dimensions_, h.spacing_, h.transformation_);
         volume = v;
     }
     else {
@@ -301,10 +302,10 @@ VolumeCollection* RawVolumeReader::readSlices(const std::string &url, size_t fir
 
     volume->clear();
 
-    if (getProgress()) {
-        getProgress()->setTitle("Loading Volume");
+    if (getProgressBar()) {
+        getProgressBar()->setTitle("Loading Volume");
         // getProgress()->setMessage("Loading volume: " + tgt::FileSystem::fileName(fileName));
-        getProgress()->setMessage("Loading volume: " + fileName);
+        getProgressBar()->setMessage("Loading volume: " + fileName);
     }
     VolumeReader::read(volume, fin);
 
@@ -363,7 +364,8 @@ VolumeCollection* RawVolumeReader::readSlices(const std::string &url, size_t fir
         conv = new VolumeUInt16(h.dimensions_, h.spacing_);
 
     if (conv) {
-        conv->convert(volume);
+        VolumeOperatorConvert voConvert(volume);
+        voConvert.apply<void>(conv);
         std::swap(conv, volume);
         delete conv;
     }
@@ -460,12 +462,12 @@ VolumeCollection* RawVolumeReader::readBrick(const std::string &url, tgt::ivec3 
 
     if (h.objectModel_ == "I") {
         if (h.format_ == "UCHAR") {
-            VolumeUInt8* v = new VolumeUInt8(h.dimensions_, h.spacing_);
+            VolumeUInt8* v = new VolumeUInt8(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
 
         }
         else if ((h.format_ == "USHORT" && h.bitsStored_ == 12) || h.format_ == "USHORT_12") {
-            VolumeUInt16* v = new VolumeUInt16(h.dimensions_, h.spacing_, 12);
+            VolumeUInt16* v = new VolumeUInt16(h.dimensions_, h.spacing_, h.transformation_, 12);
             volume = v;
         }
         else if (h.format_ == "USHORT") {
@@ -473,7 +475,7 @@ VolumeCollection* RawVolumeReader::readBrick(const std::string &url, tgt::ivec3 
             volume = v;
         }
         else if (h.format_ == "FLOAT8" || h.format_ == "FLOAT16" || h.format_ == "FLOAT") {
-            VolumeFloat* v = new VolumeFloat(h.dimensions_, h.spacing_);
+            VolumeFloat* v = new VolumeFloat(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else {
@@ -484,12 +486,12 @@ VolumeCollection* RawVolumeReader::readBrick(const std::string &url, tgt::ivec3 
     else if (h.objectModel_ == "RGBA") {
         if (h.format_ == "UCHAR") {
             //LINFO("Reading 4x8 bit dataset");
-            Volume4xUInt8* v = new Volume4xUInt8(h.dimensions_, h.spacing_);
+            Volume4xUInt8* v = new Volume4xUInt8(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else if (h.format_ == "USHORT") {
             //LINFO("Reading 4x16 bit dataset");
-            Volume4xUInt16* v = new Volume4xUInt16(h.dimensions_, h.spacing_);
+            Volume4xUInt16* v = new Volume4xUInt16(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else {
@@ -500,15 +502,15 @@ VolumeCollection* RawVolumeReader::readBrick(const std::string &url, tgt::ivec3 
     else if (h.objectModel_ == "RGB") {
         if (h.format_ == "UCHAR") {
             //LINFO("Reading 3x8 bit dataset");
-            Volume3xUInt8* v = new Volume3xUInt8(h.dimensions_, h.spacing_);
+            Volume3xUInt8* v = new Volume3xUInt8(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         }
         else if (h.format_ == "USHORT") {
             //LINFO("Reading 3x16 bit dataset");
-            Volume3xUInt16* v = new Volume3xUInt16(h.dimensions_, h.spacing_);
+            Volume3xUInt16* v = new Volume3xUInt16(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         } else if (h.format_ == "FLOAT") {
-            Volume3xFloat* v = new Volume3xFloat(h.dimensions_, h.spacing_);
+            Volume3xFloat* v = new Volume3xFloat(h.dimensions_, h.spacing_, h.transformation_);
             volume = v;
         } else {
             fclose(fin);
@@ -517,7 +519,7 @@ VolumeCollection* RawVolumeReader::readBrick(const std::string &url, tgt::ivec3 
     }
     else if (h.objectModel_ == "LA") { // luminance alpha
         //LINFO("Reading luminance16 alpha16 dataset");
-        Volume4xUInt8* v = new Volume4xUInt8(h.dimensions_, h.spacing_);
+        Volume4xUInt8* v = new Volume4xUInt8(h.dimensions_, h.spacing_, h.transformation_);
         volume = v;
     }
     else {
@@ -566,12 +568,13 @@ VolumeCollection* RawVolumeReader::readBrick(const std::string &url, tgt::ivec3 
     Volume* conv = 0;
 
     if (h.format_ == "FLOAT8")
-        conv = new VolumeUInt8(h.dimensions_, h.spacing_);
+        conv = new VolumeUInt8(h.dimensions_, h.spacing_, h.transformation_);
     else if (h.format_ == "FLOAT16")
-        conv = new VolumeUInt16(h.dimensions_, h.spacing_);
+        conv = new VolumeUInt16(h.dimensions_, h.spacing_, h.transformation_);
 
     if (conv) {
-        conv->convert(volume);
+        VolumeOperatorConvert voConvert(volume);
+        voConvert.apply<void>(conv);
         std::swap(conv, volume);
         delete conv;
     }
@@ -639,8 +642,8 @@ VolumeHandle* RawVolumeReader::readSliceStack(const std::vector<std::string>& sl
 
     Volume* result = 0;
     try {
-        result = volumes.front()->clone();
-        result->resize(ivec3(hints_.dimensions_.x, hints_.dimensions_.y, volumes.size()));
+        VolumeOperatorResize voResize(ivec3(hints_.dimensions_.x, hints_.dimensions_.y, volumes.size()));
+        result = voResize.apply<Volume*>(volumes.front());
         result->clear();
         result->setTransformation(tgt::mat4::identity);
     }
@@ -696,7 +699,7 @@ VolumeHandle* RawVolumeReader::readSliceStack(const std::vector<std::string>& sl
     }
 }
 
-VolumeReader* RawVolumeReader::create(IOProgress* progress) const {
+VolumeReader* RawVolumeReader::create(ProgressBar* progress) const {
     return new RawVolumeReader(progress);
 }
 

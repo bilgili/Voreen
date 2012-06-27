@@ -32,18 +32,18 @@
 #include "voreen/modules/base/processors/utility/scale.h"
 #include "voreen/core/ports/coprocessorport.h"
 #include "voreen/core/ports/renderport.h"
+#include "aggregationgraphicsitem.h"
 #include "linkarrowgraphicsitemstub.h"
 #include "portarrowgraphicsitem.h"
 #include "portgraphicsitem.h"
-
-#include "processorgraphicsitem.h" // neccessary for SingleScale processor
+#include "processorgraphicsitem.h"
 
 #include <QGraphicsSceneMouseEvent>
 #include <QStyleOptionGraphicsItem>
 
 namespace {
-    const qreal openPropertyListButtonOffsetX = 5.0;
-    const qreal openPropertyListButtonOffsetY = 5.0;
+    const qreal buttonsOffsetX = 6.0;
+    const qreal buttonsOffsetY = 6.0;
 
     const qreal drawingRectMinimumWidth = 80.0;
     const qreal drawingRectMinimumHeight = 60.0;
@@ -67,6 +67,8 @@ RootGraphicsItem::RootGraphicsItem(voreen::NetworkEditor* networkEditor)
     , textItem_("", this)
     , propertyListItem_(this)
     , openPropertyListButton_(this)
+    , widgetIndicatorButton_(this)
+    , progressBar_(0)
     , currentLinkArrow_(0)
     , opacity_(1.0)
 {
@@ -75,8 +77,10 @@ RootGraphicsItem::RootGraphicsItem(voreen::NetworkEditor* networkEditor)
     QObject::connect(&textItem_, SIGNAL(renameFinished()), this, SLOT(renameFinished()));
     QObject::connect(&textItem_, SIGNAL(textChanged()), this, SLOT(nameChanged()));
     QObject::connect(&openPropertyListButton_, SIGNAL(pressed()), this, SLOT(togglePropertyList()));
+    QObject::connect(&widgetIndicatorButton_, SIGNAL(pressed()), this, SLOT(toggleProcessorWidget()));
 
     propertyListItem_.hide();
+    widgetIndicatorButton_.hide();
 
     setFlag(ItemIsMovable);
     setFlag(ItemIsSelectable);
@@ -181,7 +185,8 @@ void RootGraphicsItem::layoutChildItems() {
     propertyListItem_.setPos(x, y);
     propertyListItem_.update();
 
-    openPropertyListButton_.setPos(openPropertyListButtonOffsetX, openPropertyListButtonOffsetY);
+    openPropertyListButton_.setPos(buttonsOffsetX, buttonsOffsetY);
+    widgetIndicatorButton_.setPos(boundingRect().width() - widgetIndicatorButton_.boundingRect().width() - buttonsOffsetX, buttonsOffsetY);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -202,6 +207,10 @@ void RootGraphicsItem::setOpacity(const qreal opacity) {
 
 qreal RootGraphicsItem::getTextItemSpacing() const {
     return 20.0;
+}
+
+ProgressBarGraphicsItem* RootGraphicsItem::getProgressBar() const {
+    return progressBar_;
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -350,10 +359,10 @@ bool RootGraphicsItem::connect(PortGraphicsItem* outport, PortGraphicsItem* inpo
         return true;
     }
 
+#ifdef VRN_MODULE_BASE
     RenderPort* pout = dynamic_cast<RenderPort*>(outport->getPort());
     RenderPort* pin = dynamic_cast<RenderPort*>(inport->getPort());
 
-#ifdef VRN_MODULE_BASE
     if (pout && pin && pout->doesSizeOriginConnectFailWithPort(pin)) {
         Processor* scale = new SingleScale;
         networkEditor_->getProcessorNetwork()->addProcessorInConnection(outport->getPort(), inport->getPort(), scale);
@@ -403,6 +412,10 @@ void RootGraphicsItem::nameChanged() {
 void RootGraphicsItem::renameFinished(bool) {}
 void RootGraphicsItem::saveMeta() {}
 void RootGraphicsItem::loadMeta() {}
+void RootGraphicsItem::toggleProcessorWidget() {}
+QList<QAction*> RootGraphicsItem::getProcessorWidgetContextMenuActions() {
+    return QList<QAction*>();
+}
 
 // ------------------------------------------------------------------------------------------------
 // Ports
@@ -529,19 +542,27 @@ void RootGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
 void RootGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
     if (currentLayer() == NetworkEditorLayerLinking) {
         if (currentLinkArrow_) {
-            QList<QGraphicsItem*> itemList = scene()->items(event->scenePos());
+            QGraphicsItem* item = scene()->itemAt(event->scenePos());
 
-            // There could be multiple items under the pointer, so we must search for the RootGraphicsItem
-            RootGraphicsItem* dest = 0;
-            foreach (QGraphicsItem* i, itemList) {
-                dest = dynamic_cast<RootGraphicsItem*>(i);
+            if (item) {
+                if ((item->type() == OpenPropertyListButton::Type) && (item->parentItem() != this))
+                    item = item->parentItem();
 
-                if (dest)
+                switch (item->type()) {
+                case PortGraphicsItem::Type:
+                case TextGraphicsItem::Type:
+                case WidgetIndicatorButton::Type:
+                    item = item->parentItem();
+                case AggregationGraphicsItem::Type:
+                case ProcessorGraphicsItem::Type:
+                    {
+                    RootGraphicsItem* dest = dynamic_cast<RootGraphicsItem*>(item);
+                    tgtAssert(dest, "link destination was no RootGraphicsItem");
+                    emit createLink(this, dest);
+                    }
                     break;
+                }
             }
-
-            if (dest)
-                emit createLink(this, dest);
 
             delete currentLinkArrow_;
             currentLinkArrow_ = 0;
@@ -552,9 +573,10 @@ void RootGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
     networkEditor_->adjustLinkArrowGraphicsItems();
 
     // hack to prevent disappearing arrows
-    QRectF tmpRect = scene()->sceneRect();
-    scene()->setSceneRect(scene()->sceneRect().adjusted(-1,-1,2,2));
-    scene()->setSceneRect(tmpRect);
+    scene()->setSceneRect(QRectF());
+    //QRectF tmpRect = scene()->sceneRect();
+    //scene()->setSceneRect(scene()->sceneRect().adjusted(-1,-1,2,2));
+    //scene()->setSceneRect(tmpRect);
 
     QGraphicsItem::mouseReleaseEvent(event);
 }

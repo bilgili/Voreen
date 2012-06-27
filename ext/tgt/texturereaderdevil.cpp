@@ -91,22 +91,12 @@ Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::F
     }
 #endif
 
-    /*
-        FIXME: I think the keepPixels option does not work properly
-        -> I don't see why...afaik keepPixels has been used in some project (stefan)
-    */
-    ILuint ImageName;
-    ilGenImages(1, &ImageName);
-    ilBindImage(ImageName);
-    Texture* t = new Texture();
-    t->setName(filename);
-
     File* file = FileSys.open(filename);
 
     // check if file is open
     if (!file || !file->isOpen()) {
         delete file;
-        return false;
+        return 0;
     }
 
     size_t len = file->size();
@@ -122,13 +112,23 @@ Texture* TextureReaderDevil::loadTexture(const std::string& filename, Texture::F
 
     if (imdata == 0) {
         delete file;
-        return false;   // allocation failed
+        return 0;   // allocation failed
     }
 
     file->read(imdata, len);
 
     file->close();
     delete file;
+
+    /*
+        FIXME: I think the keepPixels option does not work properly
+        -> I don't see why...afaik keepPixels has been used in some project (stefan)
+    */
+    ILuint ImageName;
+    ilGenImages(1, &ImageName);
+    ilBindImage(ImageName);
+    Texture* t = new Texture();
+    t->setName(filename);
 
     if (!ilLoadL(IL_TYPE_UNKNOWN, imdata, len))        {
         LERROR("Failed to open via ilLoadL " << filename);

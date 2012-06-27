@@ -77,6 +77,7 @@ public:
     bool isHit(tgt::ivec2 pos, void* obj);
 
     void activateTarget(std::string debugLabel = "");
+    void deactivateTarget();
     void clearTarget();
     void setRenderTarget(RenderTarget* rt);
     RenderTarget* getRenderTarget();

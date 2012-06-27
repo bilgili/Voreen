@@ -203,7 +203,6 @@
                         <Property name="rightClippingPlane" value="0" />
                         <Property name="topClippingPlane" value="40" />
                         <Property name="useClipping" value="false" />
-                        <Property name="useDatasetTrafoMatrix" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>

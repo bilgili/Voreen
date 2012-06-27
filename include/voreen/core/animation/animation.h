@@ -47,9 +47,7 @@ class UndoableAnimation;
  * Mainclass to create an animation.
  */
 class Animation : public Serializable, public ProcessorNetworkObserver, public Observable<AnimationObserver> {
-
 public:
-
     /**
      * Constructor: creates a new animation for a given processornetwork.
      */
@@ -60,12 +58,12 @@ public:
      */
     ~Animation();
 
-    bool empty() const;
+    bool isEmpty() const;
 
     /**
      * This function returns the vector of all animatedprocessors.
      */
-    const std::vector<AnimatedProcessor*> getAnimatedProcessors() const;
+    const std::vector<AnimatedProcessor*>& getAnimatedProcessors() const;
 
     /**
     * This function renders with the settings at the given point of time by calling the 'renderAt'-function of all propertytimelines.
@@ -170,7 +168,6 @@ protected:
     static const std::string loggerCat_; ///< category used in logging
 
 private:
-
     friend class XmlDeserializer;
 
     /**
@@ -202,7 +199,7 @@ private:
     /**
      * Number of possible undo-steps.
      */
-    unsigned int undoSteps_;
+    int undoSteps_;
 
     /**
      * Contains the last rendered time.

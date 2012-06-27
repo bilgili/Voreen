@@ -32,6 +32,13 @@
 
 #include "voreen/core/processors/volumeraycaster.h"
 
+#include "voreen/core/properties/transfuncproperty.h"
+#include "voreen/core/properties/cameraproperty.h"
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+
+#include "voreen/core/ports/volumeport.h"
+
 namespace voreen {
 
 class CurvatureRaycaster : public VolumeRaycaster {

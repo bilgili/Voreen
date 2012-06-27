@@ -2,6 +2,8 @@ The Voreen Team (alphabetically):
 
 Alexander Bock
 Benjamin Bolte
+Helge Böschen
+Raphael Bruns
 Stefan Diepenbrock
 Christian Döring
 Jan Esser
@@ -9,6 +11,7 @@ André Exeler
 Dirk Feldmann
 Alejandro Figueroa Meana
 Timo Griese
+Philipp Hanraths
 Dieter Janzen
 Jens Kasten
 Daniel Kirsch
@@ -18,6 +21,7 @@ Florian Lindemann
 Markus Madeja
 Jörg Mensmann
 Jennis Meyer-Spradow
+Zoha Moztarzadeh
 Borislav Petkov
 Jörg-Stefan Praßni
 Stephan Rademacher
@@ -27,6 +31,7 @@ Timo Ropinski
 Christoph Rosemann
 Jan Roters
 Sönke Schmid
+Christian Schulte zu Berge
 Michael Specht
 Fabian Spiegel
 David Terbeek

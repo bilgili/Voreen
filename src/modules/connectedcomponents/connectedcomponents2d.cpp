@@ -108,7 +108,7 @@ void ConnectedComponents2D::process() {
 
     // activate and clear output render target
     outport_.activateTarget();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    outport_.clearTarget();
 
     tgt::col4* colorBuffer = inport_.readColorBuffer();
     LGL_ERROR;
@@ -194,8 +194,9 @@ void ConnectedComponents2D::process() {
     // cleanup
     program_->deactivate();
     delete labelTex;
-
+    outport_.deactivateTarget();
     glActiveTexture(GL_TEXTURE0);
+
     LGL_ERROR;
 }
 

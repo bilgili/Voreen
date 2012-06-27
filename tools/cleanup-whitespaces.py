@@ -1,7 +1,7 @@
 import os
 import string
 
-dirsToIgnore = ['.svn', 'debug', 'release', 'Debug', 'Release']
+dirsToIgnore = ['.svn', 'debug', 'release', 'Debug', 'Release', 'ext']
 
 def removeTabsFromFile(file):
     f = open(file)

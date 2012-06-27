@@ -119,7 +119,8 @@ void VolumeFiltering::applyOperator() {
 
         if (filteringOperator_.isSelected("median")) {
             VolumeOperatorMedian volOpMedian(kernelSize_.getValue());
-            volOpMedian(transformed);
+            volOpMedian.setProgressBar(progressBar_);
+            volOpMedian.apply<void>(transformed);
         }
         //else if (filteringOperator_.isSelected("erosion")) {
             //VolumeOperatorErosion volOpErosion(kernelSize_.getValue());

@@ -111,15 +111,13 @@ void VolumeMasking::maskVolume() {
         maskTexture->downloadTexture();
         const int maskTexDim = maskTexture->getDimensions().x;
 
-        ioProgress_->setTotalSteps(v->getNumVoxels());
-
         // apply masking
         if (passedVoxelAction_.isSelected("maxIntensity")) {
             for (size_t i=0; i<v->getNumVoxels(); i++) {
                 float intensity = v->getVoxelFloat(i);
                 int alpha = maskTexture->texel< tgt::Vector4<uint8_t> >(static_cast<size_t>(intensity*(maskTexDim-1))).a;
                 v->setVoxelFloat(alpha == 0 ? 0.f : 1.f, i);
-                //ioProgress_->setProgress(i);
+                //progressBar_->setProgress(static_cast<float>(i) / static_cast<float>(v->getNumVoxels()));
             }
         }
         else if (passedVoxelAction_.isSelected("passThrough")) {

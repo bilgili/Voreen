@@ -32,6 +32,14 @@
 
 #include "voreen/core/processors/imageprocessor.h"
 #include "voreen/core/properties/eventproperty.h"
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/matrixproperty.h"
+#include "voreen/core/properties/buttonproperty.h"
+#include "voreen/core/properties/filedialogproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
 #include "voreen/core/datastructures/geometry/geometry.h"
 #include "voreen/core/io/serialization/serialization.h"
 #include "voreen/core/interaction/idmanager.h"
@@ -159,20 +167,21 @@ protected:
     GeometryPort outportROIGeometry_;
 
     OptionProperty<RegionOfInterestGeometry::GeometryMode> geometryMode_;
-    ColorProperty roiColor_;
-    ColorProperty maskColor_;
-    ColorProperty maskBackgroundColor_;
+    FloatVec4Property roiColor_;
+    FloatVec4Property maskColor_;
+    FloatVec4Property maskBackgroundColor_;
     FloatProperty size_;
     BoolProperty antialiasing_;
     IntProperty currentLayer_;
     BoolProperty renderCurrentLayerOnly_;
-    ColorProperty boundingBoxColor_;
+    FloatVec4Property boundingBoxColor_;
     FloatProperty minRoiPointDistance_;
     FloatMat4Property roiTransformMatrix_;
     FileDialogProperty loadROIs_;
     FileDialogProperty saveROIs_;
     ButtonProperty clearROIs_;
     ButtonProperty removeLastROI_;
+    IntProperty numberOfROIs_;
 
     EventProperty<RegionOfInterest2D> mouseEventAddROI_;
     EventProperty<RegionOfInterest2D> mouseEventRemoveLastROI_;

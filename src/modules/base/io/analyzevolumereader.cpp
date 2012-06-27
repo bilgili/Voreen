@@ -341,7 +341,7 @@ struct nifti_1_header { /* NIFTI-1 usage         */  /* ANALYZE 7.5 field(s) */
  }
 };                   /**** 348 bytes total ****/
 
-AnalyzeVolumeReader::AnalyzeVolumeReader(IOProgress* progress)
+AnalyzeVolumeReader::AnalyzeVolumeReader(ProgressBar* progress)
     : VolumeReader(progress)
 {
     extensions_.push_back("hdr");
@@ -560,7 +560,7 @@ VolumeCollection* AnalyzeVolumeReader::readNifti(const std::string &fileName, bo
     if (standalone)
         h.headerskip_ = static_cast<uint16_t>(header.vox_offset);
 
-    RawVolumeReader rawReader(getProgress());
+    RawVolumeReader rawReader(getProgressBar());
     rawReader.setReadHints(h);
 
     VolumeCollection* volumeCollection = 0;
@@ -687,7 +687,7 @@ VolumeCollection* AnalyzeVolumeReader::readAnalyze(const std::string &fileName)
             //args >> h.unit_;
             //LDEBUG(type << " " << h.unit_);
 
-    RawVolumeReader rawReader(getProgress());
+    RawVolumeReader rawReader(getProgressBar());
     rawReader.setReadHints(h);
 
     VolumeCollection* volumeCollection = rawReader.read(getRelatedImgFileName(fileName));
@@ -698,7 +698,7 @@ VolumeCollection* AnalyzeVolumeReader::readAnalyze(const std::string &fileName)
     return volumeCollection;
 }
 
-VolumeReader* AnalyzeVolumeReader::create(IOProgress* progress) const {
+VolumeReader* AnalyzeVolumeReader::create(ProgressBar* progress) const {
     return new AnalyzeVolumeReader(progress);
 }
 

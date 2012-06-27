@@ -30,6 +30,18 @@
 #include "linkdialogarrowgraphicsitem.h"
 #include "linkdialogpropertygraphicsitem.h"
 
+#include <QGraphicsSceneMouseEvent>
+
+namespace {
+    const qreal eventRadius = 15.f;
+
+    qreal distance(const QPointF& p1, const QPointF& p2) {
+        qreal a = p1.x() - p2.x();
+        qreal b = p1.y() - p2.y();
+        return sqrt(a*a + b*b);
+    }
+}
+
 namespace voreen {
 
 LinkDialogArrowGraphicsItem::LinkDialogArrowGraphicsItem(LinkDialogPropertyGraphicsItem* source, LinkDialogPropertyGraphicsItem* destination, bool bidirectional)
@@ -158,6 +170,32 @@ QPainterPath LinkDialogArrowGraphicsItem::shape() const {
         break;
     }
     return path;
+}
+
+void LinkDialogArrowGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
+    clickedPoint_ = event->scenePos();
+    movedAwayInEvent_ = false;
+}
+
+void LinkDialogArrowGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
+    if (!movedAwayInEvent_) {
+        if (distance(event->scenePos(), clickedPoint_) > eventRadius)
+            movedAwayInEvent_ = true;
+    }
+
+    if (movedAwayInEvent_) {
+        getSourceItem()->setCurrentArrow(this);
+        getSourceItem()->mouseMoveEvent(event);
+    }
+    else
+        QGraphicsItem::mouseMoveEvent(event);
+}
+
+void LinkDialogArrowGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
+    if (movedAwayInEvent_)
+        getSourceItem()->mouseReleaseEvent(event);
+    else
+        QGraphicsItem::mouseReleaseEvent(event);
 }
 
 } // namespace

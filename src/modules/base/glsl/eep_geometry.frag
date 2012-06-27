@@ -46,6 +46,7 @@ uniform float far_;
 uniform mat4 viewMatrixInverse_;
 uniform mat4 projectionMatrixInverse_;
 uniform bool useFloatTarget_;
+uniform vec3 volumeSize_;
 
 void main() {
     vec2 p = gl_FragCoord.xy * screenDimRCP_;
@@ -92,7 +93,9 @@ void main() {
 
             // We can now obtain the world coordinate.
             vec4 result = vec4(wEntry.xyz + length(wGeom.xyz - wEntry.xyz) * normalize(wExit.xyz - wEntry.xyz), 1.0);
-            //gl_FragData[0] = vec4(0.5*wGeom.xyz + 0.5, 1.0);
+
+            // Finally, we have to account for non-cube datasets
+            result.xyz *= 2.0 / volumeSize_;
 
             if(!useFloatTarget_)
                 gl_FragData[0] = vec4(0.5*result.xyz + 0.5, 1.0);

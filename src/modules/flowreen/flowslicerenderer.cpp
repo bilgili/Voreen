@@ -106,7 +106,7 @@ FlowSliceRenderer::FlowSliceRenderer()
     colorTableProp.onChange(
         CallMemberAction<FlowSliceRenderer>(this, &FlowSliceRenderer::onColorCodingChange));
 
-    ColorProperty& colorProp = colorCoding_.getColorProp();
+    FloatVec4Property& colorProp = colorCoding_.getColorProp();
     colorProp.onChange(CallMemberAction<FlowSliceRenderer>(this, &FlowSliceRenderer::onColorCodingChange));
 
     thresholdProp_.onChange(invalidateAction);
@@ -526,7 +526,7 @@ bool FlowSliceRenderer::loadShader(const std::string& vertexShaderName,
 {
     if (shader_ == 0) {
         shader_ = ShdrMgr.loadSeparate(vertexShaderName.c_str(), fragmentShaderName.c_str(),
-            "", false, false);
+            "", false);
         if (shader_ == 0) {
             LERROR("Failed to load shaders '" <<  vertexShaderName << "' & '"
                 << fragmentShaderName << "'!");
@@ -542,7 +542,7 @@ bool FlowSliceRenderer::rebuildShader() {
         return false;
 
     shader_->deactivate();
-    shader_->setHeaders(generateShaderHeader(), false);
+    shader_->setHeaders(generateShaderHeader());
     return shader_->rebuild();
 }
 
@@ -1070,7 +1070,7 @@ void FlowSliceRenderer::toggleProperties() {
     OptionProperty<ColorCodingAbility::ColorCodingMode>& colorCodingModeProp =
         colorCoding_.getColorCodingModeProp();
     IntOptionProperty& colorTableProp = colorCoding_.getColorTableProp();
-    ColorProperty& colorProp = colorCoding_.getColorProp();
+    FloatVec4Property& colorProp = colorCoding_.getColorProp();
     Property* arrProps[numProps] = {
         &colorCodingModeProp,       // 0
         &colorTableProp,            // 1

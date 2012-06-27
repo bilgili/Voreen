@@ -133,13 +133,13 @@ void RaytracingEntryExitPoints::beforeProcess() {
     RenderProcessor::beforeProcess();
 
     if(useFloatRenderTargets_.get()) {
-        if(entryPort_.getData()->getColorTexture()->getDataType() != GL_FLOAT) {
+        if(entryPort_.getRenderTarget()->getColorTexture()->getDataType() != GL_FLOAT) {
             entryPort_.changeFormat(GL_RGBA16F_ARB);
             exitPort_.changeFormat(GL_RGBA16F_ARB);
         }
     }
     else {
-        if(entryPort_.getData()->getColorTexture()->getDataType() == GL_FLOAT) {
+        if(entryPort_.getRenderTarget()->getColorTexture()->getDataType() == GL_FLOAT) {
             entryPort_.changeFormat(GL_RGBA16);
             exitPort_.changeFormat(GL_RGBA16);
         }

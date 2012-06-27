@@ -35,7 +35,9 @@ namespace voreen {
     LightProperty::LightProperty(const std::string& id, const std::string& guiText, const tgt::vec4& value,
               const tgt::vec4& minimum, const tgt::vec4& maximum, Processor::InvalidationLevel invalidationLevel)
               : FloatVec4Property(id, guiText, value, minimum, maximum, invalidationLevel)
-    {}
+    {
+        LWARNINGC("voreen.LightProperty", "LightProperty is DEPRECATED: Please use FloatVec4Property with view Property::LIGHT_POSITION instead");
+    }
 
 PropertyWidget* LightProperty::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);

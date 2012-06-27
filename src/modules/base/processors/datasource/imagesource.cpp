@@ -118,6 +118,7 @@ void ImageSource::process() {
     shader_->setIgnoreUniformLocationError(true);
     shader_->setUniform("texParams_.dimensions_", tgt::vec2(texture_->getDimensions().xy()));
     shader_->setUniform("texParams_.dimensionsRCP_", tgt::vec2(1.f) / tgt::vec2(texture_->getDimensions().xy()));
+    shader_->setUniform("texParams_.matrix_", tgt::mat4::identity);
     shader_->setIgnoreUniformLocationError(false);
 
     // execute the shader
@@ -134,7 +135,7 @@ void ImageSource::initialize() throw (VoreenException) {
     RenderProcessor::initialize();
 
     shader_ = ShdrMgr.loadSeparate("passthrough.vert", "copyimage.frag",
-        generateHeader() + "#define NO_DEPTH_TEX\n", false, false);
+        generateHeader() + "#define NO_DEPTH_TEX\n", false);
 
     if (!shader_) {
         LERROR("Failed to load shaders");

@@ -22,19 +22,19 @@ The author's contact address is:
 #define DDSBASE_H
 
 namespace voreen {
-    class IOProgress;
+    class ProgressBar;
 }
 
 // TODO: this should be integrated into some class and unneccessary stuff removed
 
 void writeDDSfile(char *filename,unsigned char *data,unsigned int bytes,unsigned int skip=0,unsigned int strip=0,int nofree=0);
-unsigned char *readDDSfile(char *filename, voreen::IOProgress* progress, unsigned int *bytes);
+unsigned char *readDDSfile(char *filename, voreen::ProgressBar* progress, unsigned int *bytes);
 
 void writeRAWfile(char *filename,unsigned char *data,unsigned int bytes,int nofree=0);
 unsigned char *readRAWfile(char *filename, unsigned int *bytes);
 
 void writePNMimage(char *filename,unsigned char *image,unsigned int width,unsigned int height,unsigned int components,int dds=0);
-unsigned char *readPNMimage(char *filename, voreen::IOProgress* progress, unsigned int *width,unsigned int *height,unsigned int *components);
+unsigned char *readPNMimage(char *filename, voreen::ProgressBar* progress, unsigned int *width,unsigned int *height,unsigned int *components);
 
 void writePVMvolume(char *filename,unsigned char *volume,
                     unsigned int width,unsigned int height,unsigned int depth,unsigned int components=1,
@@ -44,7 +44,7 @@ void writePVMvolume(char *filename,unsigned char *volume,
                     unsigned char *parameter=0,
                     unsigned char *comment=0);
 
-unsigned char *readPVMvolume(char *filename, voreen::IOProgress* progress,
+unsigned char *readPVMvolume(char *filename, voreen::ProgressBar* progress,
                              unsigned int *width,unsigned int *height,unsigned int *depth,unsigned int *components=0,
                              float *scalex=0,float *scaley=0,float *scalez=0,
                              unsigned char **description=0,

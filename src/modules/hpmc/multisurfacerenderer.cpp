@@ -111,8 +111,8 @@ void MultiSurfaceRenderer::initialize() throw (VoreenException) {
 }
 
 void MultiSurfaceRenderer::loadShader() {
-    mcExtractPrg_ = ShdrMgr.loadSeparate("mc_extract.vert", "", generateHeader(), false, false);
-    mcRenderPrg_ = ShdrMgr.loadSeparate("mc_render.vert", "", "", false, false);
+    mcExtractPrg_ = ShdrMgr.loadSeparate("mc_extract.vert", "", generateHeader(), false);
+    mcRenderPrg_ = ShdrMgr.loadSeparate("mc_render.vert", "", "", false);
 }
 
 void MultiSurfaceRenderer::compile(VolumeHandle* volumeHandle) {
@@ -122,7 +122,7 @@ void MultiSurfaceRenderer::compile(VolumeHandle* volumeHandle) {
     glActiveVaryingNV(mcExtractPrg_->getID(), "normal");
     glActiveVaryingNV(mcExtractPrg_->getID(), "position");
 
-    mcExtractPrg_->setHeaders(generateHeader(volumeHandle), false);
+    mcExtractPrg_->setHeaders(generateHeader(volumeHandle));
     mcExtractPrg_->rebuild();
 
     // determine the location of the varyings, and let OpenGL know

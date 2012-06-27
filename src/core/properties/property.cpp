@@ -31,7 +31,6 @@
 #include "voreen/core/properties/propertywidgetfactory.h"
 #include "voreen/core/properties/propertywidget.h"
 #include "voreen/core/properties/link/changeaction.h"
-#include "voreen/core/properties/allproperties.h"
 
 namespace voreen {
 
@@ -43,8 +42,11 @@ Property::Property(const std::string& id, const std::string& guiText, Processor:
     , widgetsEnabled_(true)
     , visible_(true)
     , lod_(USER)
+    , views_(1)
+    , groupId_("")
     , interactionModeVisited_(false)
     , linkCheckVisited_(false)
+    , initialGuiName_(guiText)
 {
     tgtAssert(!id.empty(), "Property's id must not be empty");
 }
@@ -77,11 +79,30 @@ void Property::deinitialize() throw (VoreenException) {
 
 void Property::setVisible(bool state) {
     visible_ = state;
-    setWidgetsVisible(state);
-}
+
+    // adjust visibility of assigned gui widgets
+    std::set<PropertyWidget*>::iterator it = widgets_.begin();
+    for ( ; it != widgets_.end(); ++it)
+        (*it)->setVisible(state);}
 
 bool Property::isVisible() const {
     return visible_;
+}
+
+void Property::setViews(View views) {
+    views_ = views;
+}
+
+Property::View Property::getViews() const {
+    return View(views_);
+}
+
+void Property::setGroupID(const std::string& gid) {
+    groupId_ = gid;
+}
+
+std::string Property::getGroupID() const {
+    return groupId_;
 }
 
 void Property::setOwner(PropertyOwner* processor) {
@@ -114,12 +135,6 @@ void Property::updateWidgets() {
         (*it)->updateFromProperty();
 }
 
-void Property::setWidgetsVisible(bool state) {
-    std::set<PropertyWidget*>::iterator it = widgets_.begin();
-    for ( ; it != widgets_.end(); ++it)
-        (*it)->setVisible(state);
-}
-
 std::string Property::getID() const {
     return id_;
 }
@@ -135,6 +150,10 @@ std::string Property::getGuiName() const {
     return guiName_;
 }
 
+void Property::setGuiName(const std::string& guiName) {
+    guiName_ = guiName;
+}
+
 std::string Property::getFullyQualifiedGuiName() const {
     if (getOwner())
         return getOwner()->getName() + "." + getGuiName();
@@ -147,6 +166,9 @@ PropertyWidget* Property::createWidget(PropertyWidgetFactory*) {
 }
 
 void Property::serialize(XmlSerializer& s) const {
+    if (guiName_ != initialGuiName_)
+        s.serialize("guiName", guiName_);
+
     if (lod_ != USER)
         s.serialize("lod", lod_);
 
@@ -159,6 +181,7 @@ void Property::serialize(XmlSerializer& s) const {
 }
 
 void Property::deserialize(XmlDeserializer& s) {
+    // deserialize level-of-detail, if available
     try {
         int lod;
         s.deserialize("lod", lod);
@@ -167,6 +190,16 @@ void Property::deserialize(XmlDeserializer& s) {
     catch (XmlSerializationNoSuchDataException&) {
         s.removeLastError();
         lod_ = USER;
+    }
+
+    // deserialize gui name, if available
+    try {
+        std::string temp;
+        s.deserialize("guiName", temp);
+        guiName_ = temp;
+    }
+    catch (XmlSerializationNoSuchDataException&) {
+        s.removeLastError();
     }
 
     metaDataContainer_.deserialize(s);
@@ -205,7 +238,7 @@ const std::set<PropertyWidget*> Property::getPropertyWidgets() const {
     return widgets_;
 }
 
-Property::LODSetting Property::getLevelOfDetail() {
+Property::LODSetting Property::getLevelOfDetail() const {
     return lod_;
 }
 
@@ -288,77 +321,8 @@ bool Property::isLinkedWith(const Property* dest, bool transitive) const {
     return false;
 }
 
-//TODO: this should be move to virtual methods of the individual property classes
-std::string Property::getPropertyTypeText(const Property* prop) {
-    if (typeid(BoolProperty) == typeid(*prop)) {
-        return "bool";
-    }
-    else if (typeid(ColorProperty) == typeid(*prop)) {
-        return "Color";
-    }
-    else if (typeid(FileDialogProperty) == typeid(*prop)) {
-        return "FileDialog";
-    }
-    else if (typeid(FloatProperty) == typeid(*prop)) {
-        return "float";
-    }
-    else if (typeid(IntProperty) == typeid(*prop)) {
-        return "int";
-    }
-    else if (typeid(StringProperty) == typeid(*prop)) {
-        return "string";
-    }
-    else if (typeid(FloatVec2Property) == typeid(*prop)) {
-        return "FloatVector2";
-    }
-    else if (typeid(FloatVec3Property) == typeid(*prop)) {
-        return "FloatVector3";
-    }
-    else if (typeid(FloatVec4Property) == typeid(*prop) || typeid(LightProperty) == typeid(*prop)) {
-        return "FloatVector4";
-    }
-    else if (typeid(IntVec2Property) == typeid(*prop)) {
-        return "IntVector2";
-    }
-    else if (typeid(IntVec3Property) == typeid(*prop)) {
-        return "IntVector3";
-    }
-    else if (typeid(IntVec4Property) == typeid(*prop)) {
-        return "IntVector4";
-    }
-    else if (typeid(FloatMat2Property) == typeid(*prop)) {
-        return "FloatMatrix2x2";
-    }
-    else if (typeid(FloatMat3Property) == typeid(*prop)) {
-        return "FloatMatrix3x3";
-    }
-    else if (typeid(FloatMat4Property) == typeid(*prop)) {
-        return "FloatMatrix4x4";
-    }
-    else if (typeid(CameraProperty) == typeid(*prop)) {
-        return "Camera";
-    }
-    else if (typeid(TransFuncProperty) == typeid(*prop)) {
-        return "TransFunc";
-    }
-    else if (dynamic_cast<const OptionPropertyBase*>(prop)) {
-        return "Option";
-    }
-    else if (typeid(ShaderProperty) == typeid(*prop)) {
-        return "Shader";
-    }
-    else if (typeid(ButtonProperty) == typeid(*prop)) {
-        return "Button";
-    }
-    else if (typeid(VolumeHandleProperty) == typeid(*prop)) {
-        return "VolumeHandle";
-    }
-    else if (typeid(VolumeCollectionProperty) == typeid(*prop)) {
-        return "VolumeCollection";
-    }
-    else {
-        return "Unknown property type";
-    }
+std::string Property::getTypeString() const {
+    return "<unknown>";
 }
 
 } // namespace voreen

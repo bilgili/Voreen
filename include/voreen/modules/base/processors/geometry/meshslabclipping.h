@@ -32,9 +32,12 @@
 
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/ports/allports.h"
-#include "voreen/core/properties/allproperties.h"
+#include "voreen/core/interaction/mwheelnumpropinteractionhandler.h"
 
 #include "voreen/core/datastructures/geometry/meshlistgeometry.h"
+
+#include "voreen/core/properties/vectorproperty.h"
+#include "voreen/core/properties/floatproperty.h"
 
 namespace voreen {
 
@@ -56,13 +59,19 @@ public:
 protected:
     virtual void process();
 
+private:
+    void thicknessChanged();
+
     GeometryPort inport_;        ///< Inport for a list of mesh geometries to clip
     GeometryPort outport_;       ///< Outport for a list of mesh geometries that were clipped
 
-    MeshListGeometry geometry_;  ///< List of mesh geometries to clip
     FloatVec3Property normal_;   ///< Normal of the slab to show
     FloatProperty position_;     ///< Position of the slab to show (distance to the world origin)
     FloatProperty thickness_;    ///< Thickness of the slab to show
+
+    MeshListGeometry geometry_;  ///< Clipped input geometry
+
+    MWheelNumPropInteractionHandler<float> wheelInteractionHandler_;
 };
 
 } //namespace

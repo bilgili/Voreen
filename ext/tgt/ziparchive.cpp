@@ -118,13 +118,13 @@ File* ZipArchive::extractFile(const std::string& fileName, const ZipArchive::Arc
     ZipLocalFileHeader& lfh = af.zipLocalFileHeader_;
     size_t bufferSize = (lfh.compressionMethod == 0) ? lfh.uncompressedSize : lfh.compressedSize;
     if (bufferSize == 0) {
-        LERROR("extractFile(): file size is 0!");
+        LERROR("File size of '" << af.fileName_ << "' is 0.");
         return 0;
     }
 
     if (lfh.generalPurposeFlag != 0x0000) {
-        LERROR("extractFile(): the file '" << af.fileName_ << "' seems to make ");
-        LERROR("use of advanced features this reader cannot deal with!");
+        LERROR("The file " << af.fileName_ << " seems to make " <<
+            "use of advanced features this reader cannot deal with");
         return 0;
     }
 
@@ -140,20 +140,26 @@ File* ZipArchive::extractFile(const std::string& fileName, const ZipArchive::Arc
             zipFileName = targetDirectory + zipFileName;
     }
 
-    LINFO("extracting file '" << af.fileName_ << "' to '" << zipFileName << "'...");
-    if ((replaceExistingFile == false) && (FileSystem::fileExists(zipFileName) == true)) {
-        LINFO("extractFile(): file '" << zipFileName << "' already exists!");
-        return 0;
+    LINFO("Extracting file " << af.fileName_ << " to " << zipFileName);
+    if (FileSystem::fileExists(zipFileName)) {
+        if (replaceExistingFile) {
+            LWARNING("Overwriting existing file " << zipFileName);
+        }
+        else {
+            LERROR("File " << zipFileName << " already exists");
+            return 0;
+        }
     }
 
+
     if ((keepDirectoryStructure == true) && (prepareDirectories(af.fileName_) == false)) {
-        LERROR("extractFile(): failed to prepare directroy structure!");
+        LERROR("Failed to prepare directroy structure");
         return 0;
     }
 
     switch (lfh.compressionMethod) {
         case 0:
-            LINFO("compression method: archive (no compression)");
+            LDEBUG("compression method: archive (no compression)");
             switch (target) {
                 case TARGET_DISK:
                     return extractUncompressedToDisk(zipFileName, lfh.uncompressedSize, fileOffset);
@@ -162,7 +168,7 @@ File* ZipArchive::extractFile(const std::string& fileName, const ZipArchive::Arc
             }
             break;
         case 8:
-            LINFO("compression method: deflate");
+            LDEBUG("compression method: deflate");
             switch (target) {
                 case TARGET_DISK:
                     return inflateToDisk(zipFileName, lfh.compressedSize, 
@@ -173,7 +179,7 @@ File* ZipArchive::extractFile(const std::string& fileName, const ZipArchive::Arc
             }
             break;
         default:
-            LERROR("extractFile(): unsupported compression method (code = " << lfh.compressionMethod << ")!");
+            LERROR("unsupported compression method (code = " << lfh.compressionMethod << ")!");
             LERROR("This archiver currently supports only method 'deflate' and 'uncompressed'.");
             break;
     }
@@ -1090,7 +1096,7 @@ size_t ZipArchive::writeNewFiles(std::ofstream& ofs,
             LERROR("file '" << newFiles[i].extFileName_ << "' does not exist!");
             continue;
         } else
-            LINFO("writing file '" << newFiles[i].fileName_ << "'...");
+            LINFO("Writing file " << newFiles[i].fileName_);
 
         // Seek forward from the current position to skip the LocalFileHeader struct and the file
         // name. The space has to be kept free until we know all details which are available

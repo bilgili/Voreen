@@ -29,6 +29,7 @@
 
 #include "voreen/core/properties/propertyowner.h"
 #include "voreen/core/properties/property.h"
+#include "voreen/core/properties/propertywidget.h"
 
 namespace voreen {
 
@@ -43,7 +44,7 @@ PropertyOwner::~PropertyOwner() {
 
 void PropertyOwner::addProperty(Property* prop) {
     tgtAssert(prop, "Null pointer passed");
-    if (getPropertyByID(prop->getID())) {
+    if (getProperty(prop->getID())) {
         LERROR(getName() << ": Duplicate property id '" << prop->getID() << "'");
     }
     properties_.push_back(prop);
@@ -54,11 +55,11 @@ void PropertyOwner::addProperty(Property& prop) {
     addProperty(&prop);
 }
 
-const Properties& PropertyOwner::getProperties() const {
+const std::vector<Property*>& PropertyOwner::getProperties() const {
     return properties_;
 }
 
-Property* PropertyOwner::getPropertyByID(const std::string& id) const {
+Property* PropertyOwner::getProperty(const std::string& id) const {
     for (size_t i = 0; i < properties_.size(); ++i) {
         if (properties_[i]->getID() == id)
             return properties_[i];
@@ -66,12 +67,32 @@ Property* PropertyOwner::getPropertyByID(const std::string& id) const {
     return 0;
 }
 
-Property* PropertyOwner::getPropertyByName(const std::string& name) const {
-    for (size_t i = 0; i < properties_.size(); ++i) {
-        if (properties_[i]->getGuiName() == name)
-            return properties_[i];
-    }
-    return 0;
+void PropertyOwner::setPropertyGroupWidget(const std::string& id, PropertyWidget* widget) {
+    propertyGroupWidgets_[id] = widget;
+}
+
+void PropertyOwner::setPropertyGroupGuiName(const std::string& groupID, const std::string& name) {
+    propertyGroupNames_[groupID] = name;
+}
+
+std::string PropertyOwner::getPropertyGroupGuiName(const std::string& id) const {
+    if (propertyGroupNames_.find(id) != propertyGroupNames_.end())
+        return propertyGroupNames_.find(id)->second;
+    else
+        return "";
+}
+
+void PropertyOwner::setPropertyGroupVisible(const std::string& id, bool visible) {
+    propertyGroupVisibilities_[id] = visible;
+    if (propertyGroupWidgets_.find(id) != propertyGroupWidgets_.end())
+        propertyGroupWidgets_[id]->setVisible(visible);
+}
+
+bool PropertyOwner::isPropertyGroupVisible(const std::string& id) const {
+    if (propertyGroupVisibilities_.find(id) != propertyGroupVisibilities_.end()) 
+        return propertyGroupVisibilities_.find(id)->second;
+    else
+        return true;
 }
 
 int PropertyOwner::getInvalidationLevel() const {

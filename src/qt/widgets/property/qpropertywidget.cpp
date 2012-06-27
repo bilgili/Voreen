@@ -28,6 +28,7 @@
  **********************************************************************/
 
 #include "voreen/qt/widgets/property/qpropertywidget.h"
+#include "voreen/qt/widgets/customlabel.h"
 
 #include "voreen/core/properties/property.h"
 #include <QAction>
@@ -40,12 +41,12 @@
 #include <QToolButton>
 
 namespace voreen {
+
 #ifdef __APPLE__
     const int QPropertyWidget::fontSize_ = 13;
 #else
     const int QPropertyWidget::fontSize_ = 8;
 #endif
-//int QPropertyWidget::fontSize_ = 4;
 
 QPropertyWidget::QPropertyWidget(Property* prop, QWidget* parent, bool showNameLabel)
     : QWidget(parent)
@@ -83,6 +84,10 @@ std::string QPropertyWidget::getPropertyGuiName() {
         return "";
 
     return prop_->getGuiName().c_str();
+}
+
+void QPropertyWidget::setPropertyGuiName(std::string name) {
+    prop_->setGuiName(name);
 }
 
 void QPropertyWidget::addVisibilityControls() {
@@ -164,7 +169,7 @@ void QPropertyWidget::setEnabled(bool enabled) {
         return;
 
     QWidget::setEnabled(enabled);
-    if(nameLabel_ != 0)
+    if (nameLabel_ != 0)
         nameLabel_->setEnabled(enabled);
 }
 
@@ -173,7 +178,7 @@ void QPropertyWidget::setVisible(bool state) {
         return;
 
     QWidget::setVisible(state);
-    if(nameLabel_ != 0)
+    if (nameLabel_ != 0)
         nameLabel_->setVisible(state);
 }
 
@@ -188,9 +193,10 @@ void QPropertyWidget::mouseMoveEvent(QMouseEvent* event) {
     emit mouseClicked();
     QWidget::mouseMoveEvent(event);
 }
+
 const QLabel* QPropertyWidget::getNameLabel() const{
     if (!nameLabel_) {
-        nameLabel_ = new QLabel(prop_->getGuiName().c_str());
+        nameLabel_ = new CustomLabel(prop_->getGuiName().c_str(), const_cast<QPropertyWidget*>(this), const_cast<QPropertyWidget*>(this), 0, false, true);
         nameLabel_->setMinimumWidth(80);
         nameLabel_->setWordWrap(true);
 
@@ -205,8 +211,8 @@ const QLabel* QPropertyWidget::getNameLabel() const{
 }
 
 void QPropertyWidget::showNameLabel(bool visible) {
-    if(nameLabel_) {
-        if(showNameLabel_)
+    if (nameLabel_) {
+        if (showNameLabel_)
             nameLabel_->setVisible(visible);
         else
             nameLabel_->setVisible(false);

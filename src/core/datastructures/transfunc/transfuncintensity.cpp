@@ -650,6 +650,8 @@ bool TransFuncIntensity::loadOsirixCLUT(const std::string& filename) {
 
     TiXmlDocument doc(filename.c_str());
 
+    //TODO: this loader is much to specific to a certain order of XML tags and will crash if
+    // anything is missing (#276).
     if (doc.LoadFile()) {
         // read and check version of plist file
         TiXmlNode* currNode = doc.FirstChild("plist");
@@ -673,9 +675,18 @@ bool TransFuncIntensity::loadOsirixCLUT(const std::string& filename) {
         unsigned char* data = new unsigned char[256*4];
 
         for (int i = 0; i < 256; ++i) {
+            data[4*i + 0] = 0;
+            data[4*i + 1] = 0;
+            data[4*i + 2] = 0;
+            data[4*i + 3] = 0;
+
             blueNode = blueNode->NextSibling("integer");
             greenNode = greenNode->NextSibling("integer");
             redNode = redNode->NextSibling("integer");
+
+            if (blueNode == 0 || greenNode == 0 || redNode == 0)
+                continue;
+            
             blueElement = blueNode->ToElement();
             greenElement = greenNode->ToElement();
             redElement = redNode->ToElement();
@@ -760,13 +771,25 @@ int TransFuncIntensity::openImageJBinary(std::ifstream& fileStream, bool raw) {
     }
 
     // The colors in a binary table are saved in succession so
-    // first load the red's, then green's and at last blue's
-    char* redColors = new char[256];
-    fileStream.read(redColors, numColors);
-    char* greenColors = new char[256];
-    fileStream.read(greenColors, numColors);
-    char* blueColors = new char[256];
-    fileStream.read(blueColors, numColors);
+    // first load the reds, then greens and at last blues
+    char* redColors;
+    char* greenColors;
+    char* blueColors;
+    try {
+        redColors = new char[256];
+        greenColors = new char[256];
+        blueColors = new char[256];
+
+        fileStream.read(redColors, numColors);
+        fileStream.read(greenColors, numColors);
+        fileStream.read(blueColors, numColors);
+    }
+    catch (...) {
+        delete[] redColors;
+        delete[] greenColors;
+        delete[] blueColors;
+        throw;
+    }
 
     unsigned char* data = new unsigned char[256*4];
 

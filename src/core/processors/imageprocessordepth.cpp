@@ -46,7 +46,8 @@ void ImageProcessorDepth::analyzeDepthBuffer(RenderPort* port) {
     float curDepth = *(pixels);
     float minDepth = curDepth;
     float maxDepth = curDepth;
-    for (int i = 0; i < port->getSize().x*port->getSize().y; i++) {
+    int numPixels = tgt::hmul(port->getSize());
+    for (int i = 0; i < numPixels; i++) {
         curDepth = *(pixels++);
         minDepth = std::min(minDepth, curDepth);
         maxDepth = std::max(maxDepth, curDepth);

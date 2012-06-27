@@ -33,6 +33,11 @@
 #include "voreen/core/processors/imageprocessor.h"
 #include "voreen/core/interaction/camerainteractionhandler.h"
 
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/filedialogproperty.h"
+#include "voreen/core/properties/cameraproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+
 #include "tgt/texture.h"
 
 namespace voreen {
@@ -55,6 +60,7 @@ public:
     virtual bool isReady() const;
 
 protected:
+    virtual void beforeProcess();
     virtual void process();
     virtual void initialize() throw (VoreenException);
     virtual void deinitialize() throw (VoreenException);
@@ -69,6 +75,9 @@ private:
 
     /// Loads (and create) needed textures.
     void loadTextures();
+
+    /// Sets reloadTextures_ flag to true.
+    void reloadTextures();
 
     RenderPort inport_;             ///< Input rendering the orientation overlay is drawn onto.
     RenderPort outport_;            ///< Output: input + orientation overlay
@@ -104,6 +113,7 @@ private:
 
     std::string textureNames_[6];
 
+    bool reloadTextures_;
     bool loadingTextures_;          ///< Set to true during texture loading for preventing
                                     ///  multiple/cyclic execution of loadTextures().
 

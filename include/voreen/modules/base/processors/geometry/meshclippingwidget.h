@@ -32,7 +32,10 @@
 
 #include "voreen/core/processors/geometryrendererbase.h"
 #include "voreen/core/properties/eventproperty.h"
-#include "voreen/core/properties/lightproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+
+#include "voreen/core/ports/volumeport.h"
 
 #include <vector>
 
@@ -211,11 +214,11 @@ private:
     FloatVec3Property planeNormal_;     ///< Clipping plane normal
     FloatProperty planePosition_;       ///< Clipping plane position (distance to the world origin)
 
-    LightProperty lightPosition_;       ///< Light property.
-    ColorProperty planeColor_;          ///< Clipping plane, which is visible on clipping plane manipulation, color.
-    ColorProperty anchorColor_;         ///< Anchors color.
-    ColorProperty grabbedAnchorColor_;  ///< Grabbed anchor color.
-    ColorProperty lineColor_;           ///< Clipping plane boundary lines color.
+    FloatVec4Property lightPosition_;       ///< Light property.
+    FloatVec4Property planeColor_;          ///< Clipping plane, which is visible on clipping plane manipulation, color.
+    FloatVec4Property anchorColor_;         ///< Anchors color.
+    FloatVec4Property grabbedAnchorColor_;  ///< Grabbed anchor color.
+    FloatVec4Property lineColor_;           ///< Clipping plane boundary lines color.
     FloatProperty width_;               ///< Clipping plane boundary lines width.
 
     EventProperty<MeshClippingWidget>* moveEventProp_;  ///< Mouse event property.

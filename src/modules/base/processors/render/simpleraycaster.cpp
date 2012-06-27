@@ -30,7 +30,6 @@
 #include "voreen/modules/base/processors/render/simpleraycaster.h"
 
 #include "voreen/core/properties/cameraproperty.h"
-
 #include "tgt/textureunit.h"
 
 using tgt::vec3;
@@ -44,7 +43,7 @@ SimpleRaycaster::SimpleRaycaster()
     , entryPort_(Port::INPORT, "image.entrypoints")
     , exitPort_(Port::INPORT, "image.exitpoints")
     , outport_(Port::OUTPORT, "image.output", true)
-    , transferFunc_("transferFunction", "Transfer function", Processor::INVALID_RESULT,
+    , transferFunc_("transferFunction", "Transfer Function", Processor::INVALID_RESULT,
         TransFuncProperty::Editors(TransFuncProperty::INTENSITY | TransFuncProperty::INTENSITY_RAMP))
     , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
 {
@@ -59,141 +58,80 @@ SimpleRaycaster::SimpleRaycaster()
     camera_.setVisible(false);
 }
 
-SimpleRaycaster::~SimpleRaycaster() {
-}
-
-std::string SimpleRaycaster::getProcessorInfo() const {
-    return "Performs a simple single pass raycasting with only some capabilites.";
-}
-
 Processor* SimpleRaycaster::create() const {
     return new SimpleRaycaster();
 }
 
-void SimpleRaycaster::initialize() throw (VoreenException) {
+std::string SimpleRaycaster::getProcessorInfo() const {
+    return "Performs a simple single pass raycasting without lighting.";
+}
 
+void SimpleRaycaster::initialize() throw (VoreenException) {
     VolumeRaycaster::initialize();
 
-    loadShader();
-    if (!raycastPrg_) {
-        LERROR("Failed to load shaders!");
-        initialized_ = false;
-        throw VoreenException(getClassName() + ": Failed to load shaders!");
-    }
-
-    initialized_ = true;
-}
-
-void SimpleRaycaster::loadShader() {
+    // load shader
     raycastPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "rc_simple.frag",
-                                       generateHeader(), false, false);
+        generateHeader(), false);
+    if (!raycastPrg_)
+        throw VoreenException("Failed to load shaders");
+
+    // note: shader is disposed by VolumeRaycaster::deinitialize
 }
 
-void SimpleRaycaster::compile(VolumeHandle* volumeHandle) {
-    if (!raycastPrg_)
-        return;
-
-    raycastPrg_->setHeaders(generateHeader(volumeHandle), false);
-    raycastPrg_->rebuild();
+void SimpleRaycaster::beforeProcess() {
+    // assign volume to transfer function
+    transferFunc_.setVolumeHandle(volumePort_.getData());
+    LGL_ERROR;
 }
 
 void SimpleRaycaster::process() {
-
-    if (!volumePort_.isReady())
-        return;
-
-    if (!outport_.isReady())
-        return;
-
+    // activate and clear output render target
     outport_.activateTarget();
+    outport_.clearTarget();
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    transferFunc_.setVolumeHandle(volumePort_.getData());
-
-    // compile program
-    if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
-        compile(volumePort_.getData());
-    LGL_ERROR;
-
-    TextureUnit entryUnit, entryDepthUnit, exitUnit, exitDepthUnit;
-    // bind entry params
-    entryPort_.bindTextures(entryUnit.getEnum(), entryDepthUnit.getEnum());
-
-    // bind exit params
-    exitPort_.bindTextures(exitUnit.getEnum(), exitDepthUnit.getEnum());
-
-    // vector containing the volumes to bind; is passed to bindVolumes()
-    std::vector<VolumeStruct> volumeTextures;
-
-    // add main volume
-    TextureUnit volUnit;
-    volumeTextures.push_back(VolumeStruct(
-        volumePort_.getData()->getVolumeGL(),
-        &volUnit,
-        "volume_",
-        "volumeParameters_")
-    );
-
-    updateBrickingParameters(volumePort_.getData());
-    addBrickedVolumeModalities(volumePort_.getData(), volumeTextures);
-
-    // segmentation volume
-    // TODO: fetch from inport
-    //VolumeGL* volumeSeg = volumePort_.getData()->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION);
-    VolumeGL* volumeSeg = 0;
-    TextureUnit segUnit;
-
-    if (useSegmentation_.get() && (volumeSeg != 0) ) {
-        volumeTextures.push_back(VolumeStruct(
-            volumeSeg,
-            &segUnit,
-            "segmentation_",
-            "segmentationParameters_")
-        );
-
-        segUnit.activate();
-
-        // set texture filters for this texture
-        //FIXME: this does NOTHING! is this the right place to set filtering for segmentation?
-        glPushAttrib(GL_TEXTURE_BIT);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glPopAttrib();
-    }
-
-    // bind transfer function
-    TextureUnit transferUnit;
-    transferUnit.activate();
-    if (transferFunc_.get())
-        transferFunc_.get()->bind();
-
-    // initialize shader
+    // activate shader and set common uniforms
     raycastPrg_->activate();
-
-    // set common uniforms used by all shaders
     setGlobalShaderParameters(raycastPrg_, camera_.get());
-    // bind the volumes and pass the necessary information to the shader
-    bindVolumes(raycastPrg_, volumeTextures);
 
-    // pass the remaining uniforms to the shader
+    // bind entry and exit params and pass texture units to the shader
+    TextureUnit entryUnit, entryDepthUnit, exitUnit, exitDepthUnit;
+    entryPort_.bindTextures(entryUnit, entryDepthUnit);
     raycastPrg_->setUniform("entryPoints_", entryUnit.getUnitNumber());
     raycastPrg_->setUniform("entryPointsDepth_", entryDepthUnit.getUnitNumber());
     entryPort_.setTextureParameters(raycastPrg_, "entryParameters_");
+
+    exitPort_.bindTextures(exitUnit, exitDepthUnit);
     raycastPrg_->setUniform("exitPoints_", exitUnit.getUnitNumber());
     raycastPrg_->setUniform("exitPointsDepth_", exitDepthUnit.getUnitNumber());
     exitPort_.setTextureParameters(raycastPrg_, "exitParameters_");
-    raycastPrg_->setUniform("transferFunc_", transferUnit.getUnitNumber());
-    if (useSegmentation_.get() && volumeSeg)
-        raycastPrg_->setUniform("segment_" , static_cast<float>(segment_.get()));
 
-    setBrickedVolumeUniforms(volumePort_.getData());
+    // bind volume texture and pass it to the shader
+    std::vector<VolumeStruct> volumeTextures;
+    TextureUnit volUnit;
+     volumeTextures.push_back(VolumeStruct(
+        volumePort_.getData()->getVolumeGL(),
+        &volUnit,
+        "volume_",
+        "volumeParameters_",
+        true)
+    );
+    bindVolumes(raycastPrg_, volumeTextures, camera_.get(), lightPosition_.get());
 
+    // bind transfer function and pass it to the shader
+    TextureUnit transferUnit;
+    if (transferFunc_.get()) {
+        transferUnit.activate();
+        transferFunc_.get()->bind();
+        raycastPrg_->setUniform("transferFunc_", transferUnit.getUnitNumber());
+    }
+
+    // render screen aligned quad
     renderQuad();
 
+    // clean up
     raycastPrg_->deactivate();
-    TextureUnit::setZeroUnit();
-
     outport_.deactivateTarget();
+    TextureUnit::setZeroUnit();
     LGL_ERROR;
 }
 
@@ -201,11 +139,6 @@ std::string SimpleRaycaster::generateHeader(VolumeHandle* volumeHandle) {
     std::string header = VolumeRaycaster::generateHeader(volumeHandle);
 
     header += transferFunc_.get()->getShaderDefines();
-
-    // TODO: fetch from inport
-    /*if (useSegmentation_.get() && volumeHandle->getRelatedVolumeGL(Modality::MODALITY_SEGMENTATION))
-        header += "#define USE_SEGMENTATION\n"; */
-
     return header;
 }
 

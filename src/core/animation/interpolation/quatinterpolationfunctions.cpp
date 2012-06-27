@@ -31,92 +31,101 @@
 
 namespace voreen {
 
-QuatStartInterpolationFunction::QuatStartInterpolationFunction() {
-}
+QuatStartInterpolationFunction::QuatStartInterpolationFunction() {}
+
 std::string QuatStartInterpolationFunction::getMode() const {
     return "focus on startvalue";
 }
+
 std::string QuatStartInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 tgt::quat QuatStartInterpolationFunction::interpolate(tgt::quat startvalue, tgt::quat endvalue, float time) const {
-    if (time<1){
+    if (time < 1.f)
         return startvalue;
-    }
-    else {
+    else
         return endvalue;
-    }
 }
+
 InterpolationFunction<tgt::quat>* QuatStartInterpolationFunction::clone() const {
     return new QuatStartInterpolationFunction();
 }
 
-QuatEndInterpolationFunction::QuatEndInterpolationFunction() {
-}
+QuatEndInterpolationFunction::QuatEndInterpolationFunction() {}
+
 std::string QuatEndInterpolationFunction::getMode() const {
     return "focus on endvalue";
 }
+
 std::string QuatEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 tgt::quat QuatEndInterpolationFunction::interpolate(tgt::quat startvalue, tgt::quat endvalue, float time) const {
-    if (time>0){
-            return endvalue;
-    }
-    else {
-            return startvalue;
-    }
+    if (time > 0.f)
+        return endvalue;
+    else
+        return startvalue;
 }
+
 InterpolationFunction<tgt::quat>* QuatEndInterpolationFunction::clone() const {
         return new QuatEndInterpolationFunction();
 }
 
-QuatStartEndInterpolationFunction::QuatStartEndInterpolationFunction() {
-}
+QuatStartEndInterpolationFunction::QuatStartEndInterpolationFunction() {}
+
 std::string QuatStartEndInterpolationFunction::getMode() const {
     return "bisection";
 }
+
 std::string QuatStartEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 tgt::quat QuatStartEndInterpolationFunction::interpolate(tgt::quat startvalue, tgt::quat endvalue, float time) const {
-    if (time<0.5){
-            return startvalue;
-    }
-    else{
-            return endvalue;
-    }
+    if (time < 0.5f)
+        return startvalue;
+    else
+        return endvalue;
 }
+
 InterpolationFunction<tgt::quat>* QuatStartEndInterpolationFunction::clone() const {
     return new QuatStartEndInterpolationFunction();
 }
 
-QuatLinearInterpolationFunction::QuatLinearInterpolationFunction() {
-}
+QuatLinearInterpolationFunction::QuatLinearInterpolationFunction() {}
+
 std::string QuatLinearInterpolationFunction::getMode() const {
     return "linear interpolation (Lerp)";
 }
+
 std::string QuatLinearInterpolationFunction::getIdentifier() const {
     return "linear";
 }
+
 tgt::quat QuatLinearInterpolationFunction::interpolate(tgt::quat startvalue, tgt::quat endvalue, float time) const {
     return lerpQuat(startvalue, endvalue, time);
 }
-InterpolationFunction<tgt::quat>* QuatLinearInterpolationFunction::clone() const{
+
+InterpolationFunction<tgt::quat>* QuatLinearInterpolationFunction::clone() const {
     return new QuatLinearInterpolationFunction();
 }
 
-QuatSphericalLinearInterpolationFunction::QuatSphericalLinearInterpolationFunction() {
-}
+QuatSphericalLinearInterpolationFunction::QuatSphericalLinearInterpolationFunction() {}
+
 std::string QuatSphericalLinearInterpolationFunction::getMode() const {
     return "spherical linear interpolation (Slerp)";
 }
+
 std::string QuatSphericalLinearInterpolationFunction::getIdentifier() const {
     return "linear";
 }
+
 tgt::quat QuatSphericalLinearInterpolationFunction::interpolate(tgt::quat startvalue, tgt::quat endvalue, float time) const {
     return slerpQuat(startvalue, endvalue, time, false);
 }
+
 InterpolationFunction<tgt::quat>* QuatSphericalLinearInterpolationFunction::clone() const {
     return new QuatSphericalLinearInterpolationFunction();
 }

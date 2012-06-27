@@ -76,10 +76,9 @@ public:
         Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT,
         Editors editors = ALL, bool lazyEditorInstantiation = true);
 
-    /**
-     * Destructor
-     */
     virtual ~TransFuncProperty();
+
+    virtual std::string getTypeString() const;
 
     /**
      * Enables the given editor in the widget for the property. Must be called before creation

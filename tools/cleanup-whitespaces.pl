@@ -8,7 +8,7 @@ use File::Copy;
 
 my @dirs = qw(src include apps/voreenve apps/simple apps/tests apps/voltool);
 my $interesting = 'cpp|h|frag|vert|cu|cl';
-my $skip_dirs = '\.svn|\.moc|\.obj|\.ui';
+my $skip_dirs = '\.svn|\.moc|\.obj|\.ui|ext';
 
 chdir('..');
 find(\&wanted, @dirs);

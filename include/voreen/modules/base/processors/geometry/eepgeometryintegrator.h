@@ -33,33 +33,31 @@
 #include "voreen/core/processors/imageprocessordepth.h"
 #include "voreen/core/ports/allports.h"
 
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/cameraproperty.h"
+
 namespace voreen {
 
 class EEPGeometryIntegrator : public ImageProcessor {
 
 public:
-    /**
-     * The Constructor.
-     *
-     */
     EEPGeometryIntegrator();
-    virtual ~EEPGeometryIntegrator();
-    virtual std::string getCategory() const { return "Image Processing"; }
-    virtual std::string getClassName() const { return "EEPGeometryIntegrator"; }
-    virtual std::string getModuleName() const { return "core"; }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_TESTING; }
-    virtual std::string getProcessorInfo() const;
     virtual Processor* create() const;
-    void process();
 
-    virtual void initialize() throw (VoreenException);
-    virtual void loadShader();
-    virtual void compileShader();
+    virtual std::string getClassName() const { return "EEPGeometryIntegrator"; }
+    virtual std::string getCategory() const  { return "Image Processing";      }
+    virtual CodeState getCodeState() const   { return CODE_STATE_TESTING; }
+    virtual std::string getProcessorInfo() const;
+    virtual bool isReady() const;
 
 protected:
+    virtual void beforeProcess();
+    virtual void process();
+
     RenderPort inport0_;
     RenderPort inport1_;
     RenderPort geometryPort_;
+    VolumePort volumeInport_;
 
     RenderPort entryPort_;
     RenderPort exitPort_;

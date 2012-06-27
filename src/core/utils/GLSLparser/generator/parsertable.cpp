@@ -138,7 +138,7 @@ std::string ParserTableRow::generateCode(const std::string& symbolVar, const boo
         oss << "        return new ParserActionError();\n";
     else
         oss << "        return -1;\n";
-    oss << "}   // switch (" << symbolVar << "\n";
+    oss << "}   // switch (" << symbolVar << ")\n";
 
     return oss.str();
 }
@@ -221,7 +221,7 @@ void ParserTable::generateActionCode(std::ostream& oss, const std::string& state
     oss << "        default:\n";
     oss << "            return new ParserActionError();\n\n";
     //oss << "            break;\n";
-    oss << "    } // switch (" << stateVar << "\n\n";
+    oss << "    } // switch (" << stateVar << ")\n\n";
     oss << "    return 0;\n";
     oss << "}\n";
 }
@@ -252,7 +252,7 @@ void ParserTable::generateGotoCode(std::ostream& oss, const std::string& stateVa
 
     //oss << "        default:\n";
     //oss << "            break;\n";
-    oss << "    } // switch (" << stateVar << "\n\n";
+    oss << "    } // switch (" << stateVar << ")\n\n";
     //oss << "    return 0;\n";
     oss << "    return -1;\n";
     oss << "}\n";
@@ -282,7 +282,7 @@ void ParserTable::generateProductionsCode(std::ostream& oss, const std::string& 
         oss << "            }\n";
     }
 
-    oss << "    } // switch (productionID\n\n";
+    oss << "    } // switch (productionID)\n\n";
     oss << "    return 0;\n";
     oss << "}\n";
 }
@@ -301,7 +301,7 @@ void ParserTable::generateSymbolsCode(std::ostream& oss, const std::string& symb
 
     //oss << "        default:\n";
     //oss << "            break;\n";
-    oss << "    }  // switch (symbolID\n";
+    oss << "    }  // switch (symbolID)\n";
     oss << "    return \"\";\n";
     oss << "}\n";
 }

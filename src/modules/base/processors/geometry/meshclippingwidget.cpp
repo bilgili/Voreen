@@ -44,12 +44,18 @@ MeshClippingWidget::MeshClippingWidget()
     , anchorColor_("anchorColor", "Anchor Color", tgt::vec4(0.0f, 0.0f, 1.0f, 1.0f))
     , grabbedAnchorColor_("grabbedAnchorColor", "Grabbed Anchor Color", tgt::vec4(1.0f, 0.0f, 0.0f, 1.0f))
     , lineColor_("lineColor", "Line Color", tgt::vec4(0.0f, 0.5f, 1.0f, 1.0f))
-    , width_("lineWidth", "Line Width", 2.0f, 1.0f, 10.0f, true)
+    , width_("lineWidth", "Line Width", 2.0f, 1.0f, 10.0f)
     , actualPlane_(-tgt::vec4(planeNormal_.get(), planePosition_.get()))
     , isAnchorGrabbed_(false)
     , crossNewAnchorFirst_(true)
     , isLineGrabbed_(false)
 {
+    planeColor_.setViews(Property::COLOR);
+    planeColor_.setViews(Property::COLOR);
+    anchorColor_.setViews(Property::COLOR);
+    grabbedAnchorColor_.setViews(Property::COLOR);
+    lineColor_.setViews(Property::COLOR);
+
     moveEventProp_ = new EventProperty<MeshClippingWidget>(
         "mouseEvent.clipplaneManipulation", "Clipplane manipulation", this,
         &MeshClippingWidget::planeManipulation,

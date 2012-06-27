@@ -29,6 +29,7 @@
 
 #include "voreen/core/io/volumereader.h"
 #include "voreen/core/datastructures/volume/volume.h"
+#include "voreen/core/io/progressbar.h"
 
 #include <fstream>
 
@@ -36,7 +37,7 @@ namespace voreen {
 
 const std::string VolumeReader::loggerCat_("voreen.io.VolumeReader");
 
-VolumeReader::VolumeReader(IOProgress* progress /*= 0*/)
+VolumeReader::VolumeReader(ProgressBar* progress /*= 0*/)
   : progress_(progress)
 {}
 
@@ -53,16 +54,13 @@ void VolumeReader::read(Volume* volume, FILE* fin) {
             throw VoreenException("Invalid dimensions: " + stream.str());
         }
 
-        //TODO: check what influences this has on performance. Choose larger block size? joerg
-        progress_->setTotalSteps(max);
-
         // no remainder possible because getNumBytes is a multiple of max
         size_t sizeStep = volume->getNumBytes() / static_cast<size_t>(max);
 
         for (size_t i = 0; i < size_t(max); ++i) {
             if (fread(reinterpret_cast<char*>(volume->getData()) + sizeStep * i, 1, sizeStep, fin) == 0)
                 LWARNING("fread() failed");
-            progress_->setProgress(i);
+            progress_->setProgress(static_cast<float>(i) / static_cast<float>(max));
         }
     }
     else {

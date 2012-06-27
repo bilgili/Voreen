@@ -78,7 +78,7 @@ void IDRaycaster::initialize() throw (VoreenException) {
  *
  */
 void IDRaycaster::loadShader() {
-    raycastPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "rc_id.frag", generateHeader(), false, false);
+    raycastPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "rc_id.frag", generateHeader(), false);
     invalidate(Processor::INVALID_PROGRAM);
 }
 
@@ -87,7 +87,7 @@ void IDRaycaster::loadShader() {
  */
 void IDRaycaster::compile() {
     // evaluate state and configure shader appropriately
-    raycastPrg_->setHeaders(generateHeader(), false);
+    raycastPrg_->setHeaders(generateHeader());
     raycastPrg_->rebuild();
 }
 
@@ -111,6 +111,7 @@ void IDRaycaster::process() {
 
     // don't render when in interaction mode
     if (interactionMode()) {
+        idMapPort_.deactivateTarget();
         TextureUnit::setZeroUnit();
         return;
     }
@@ -133,7 +134,8 @@ void IDRaycaster::process() {
         volumePort_.getData()->getVolumeGL(),
         &volUnit,
         "segmentation_",
-        "segmentationParameters_")
+        "segmentationParameters_",
+        true)
     );
 
     TextureUnit segUnit;
@@ -145,7 +147,7 @@ void IDRaycaster::process() {
     // initialize shader
     raycastPrg_->activate();
     setGlobalShaderParameters(raycastPrg_, camera_.get());
-    bindVolumes(raycastPrg_, volumes);
+    bindVolumes(raycastPrg_, volumes, camera_.get(), lightPosition_.get());
     raycastPrg_->setUniform("entryPoints_", entryUnit.getUnitNumber());
     raycastPrg_->setUniform("entryPointsDepth_", entryDepthUnit.getUnitNumber());
     entryPort_.setTextureParameters(raycastPrg_, "entryParameters_");
@@ -160,7 +162,6 @@ void IDRaycaster::process() {
 
     raycastPrg_->deactivate();
     idMapPort_.deactivateTarget();
-
     TextureUnit::setZeroUnit();
     LGL_ERROR;
 }

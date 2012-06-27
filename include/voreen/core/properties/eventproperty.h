@@ -72,6 +72,8 @@ public:
         tgt::Event::Modifier modifier,
         bool shareEvents, bool enabled);
 
+    virtual std::string getTypeString() const;
+
     /**
      * Returns true, if the event property accepts the event \p e.
      *
@@ -486,6 +488,7 @@ void EventProperty<T>::notifyChangeListener() {
 
 template<class T>
 void EventProperty<T>::notifyChangeListenerImpl() {
+    updateWidgets();
     tgtAssert(target_, "No target");
     if (fptOnChange_)
         (target_->*fptOnChange_)();

@@ -52,7 +52,7 @@ TransFuncProperty::TransFuncProperty(const std::string& ident, const std::string
 
 TransFuncProperty::~TransFuncProperty() {
     if (value_) {
-        LERROR(getFullyQualifiedGuiName() << " has not been deinitialized before destruction.");
+        LWARNING(getFullyQualifiedGuiName() << " has not been deinitialized before destruction.");
     }
 }
 
@@ -206,6 +206,10 @@ void TransFuncProperty::deinitialize() throw (VoreenException) {
     }
 
     TemplateProperty<TransFunc*>::deinitialize();
+}
+
+std::string TransFuncProperty::getTypeString() const {
+    return "TransferFunction";
 }
 
 } // namespace voreen

@@ -30,25 +30,26 @@
 #include "voreen/modules/base/processors/volume/volumeresample.h"
 #include "voreen/core/datastructures/volume/volume.h"
 #include "voreen/core/datastructures/volume/volumehandle.h"
+#include "voreen/core/datastructures/volume/volumeoperator.h"
 
 namespace voreen {
 
 const std::string VolumeResample::loggerCat_("voreen.VolumeResample");
 
 VolumeResample::VolumeResample()
-    : VolumeProcessor(),
-    inport_(Port::INPORT, "volumehandle.input"),
-    outport_(Port::OUTPORT, "volumehandle.output", 0),
-    enableProcessingProp_("enableProcessing", "Enable "),
-    allowUpsampling_("allowUpsampling", "Allow upsampling", false),
-    keepVoxelRatio_("keepVoxelSizeRatio", "Keep voxel ratio", true),
-    resampleDimensionX_("resampleDimensionX", "Dimension X", 1, 1, 4096),
-    resampleDimensionY_("resampleDimensionY", "Dimension Y", 1, 1, 4096),
-    resampleDimensionZ_("resampleDimensionZ", "Dimension Z", 1, 1, 4096),
-    filteringMode_("filteringMode", "Filtering"),
-    forceUpdate_(true),
-    volumeOwner_(false),
-    blockSignals_(false)
+    : VolumeProcessor()
+    , inport_(Port::INPORT, "volumehandle.input")
+    , outport_(Port::OUTPORT, "volumehandle.output", 0)
+    , enableProcessingProp_("enableProcessing", "Enable ")
+    , allowUpsampling_("allowUpsampling", "Allow Ppsampling", false)
+    , keepVoxelRatio_("keepVoxelSizeRatio", "Keep Voxel Ratio", true)
+    , resampleDimensionX_("resampleDimensionX", "Dimension X", 1, 1, 4096)
+    , resampleDimensionY_("resampleDimensionY", "Dimension Y", 1, 1, 4096)
+    , resampleDimensionZ_("resampleDimensionZ", "Dimension Z", 1, 1, 4096)
+    , filteringMode_("filteringMode", "Filtering")
+    , forceUpdate_(true)
+    , volumeOwner_(false)
+    , blockSignals_(false)
 {
     addPort(inport_);
     addPort(outport_);
@@ -81,6 +82,10 @@ VolumeResample::VolumeResample()
         CallMemberAction<VolumeResample>(this, &VolumeResample::allowUpsamplingChanged));
     keepVoxelRatio_.onChange(
         CallMemberAction<VolumeResample>(this, &VolumeResample::keepVoxelRatioChanged));
+
+    resampleDimensionX_.setTracking(false);
+    resampleDimensionY_.setTracking(false);
+    resampleDimensionZ_.setTracking(false);
 
     addProperty(enableProcessingProp_);
     addProperty(allowUpsampling_);
@@ -146,11 +151,13 @@ void VolumeResample::resampleVolume() {
 
         tgt::ivec3 dimensions(resampleDimensionX_.get(), resampleDimensionY_.get(), resampleDimensionZ_.get());
         try {
-            Volume* v = inport_.getData()->getVolume()->resample(dimensions, filter);
+            VolumeOperatorResample voResample(dimensions, filter);
+            voResample.setProgressBar(progressBar_);
+            Volume* v = voResample.apply<Volume*>(inport_.getData()->getVolume());
             outport_.setData(new VolumeHandle(v));
             volumeOwner_ = true;
         }
-        catch (std::bad_alloc) {
+        catch (const std::bad_alloc&) {
             LERROR("resampleVolume(): bad allocation");
             outport_.setData(0);
             volumeOwner_ = false;

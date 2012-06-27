@@ -63,12 +63,9 @@
                         <Property name="lightSpecular">
                             <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
                         </Property>
-                        <Property name="masking" lod="1" value="none" />
                         <Property name="materialShininess" value="60" />
                         <Property name="samplingRate" value="3.5" />
-                        <Property name="setSegment" value="0" />
                         <Property name="shading" value="phong" />
-                        <Property name="switchSegmentation" value="false" />
                         <Property name="transferFunction">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
@@ -183,7 +180,6 @@
                         <Property name="rightClippingPlane" value="0" />
                         <Property name="topClippingPlane" value="40" />
                         <Property name="useClipping" value="false" />
-                        <Property name="useDatasetTrafoMatrix" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>

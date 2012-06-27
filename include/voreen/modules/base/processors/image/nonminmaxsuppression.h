@@ -32,6 +32,10 @@
 
 #include "voreen/core/processors/imageprocessordepth.h"
 
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
+
 namespace voreen {
 
 /**

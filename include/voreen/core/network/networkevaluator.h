@@ -34,7 +34,6 @@
 #include <queue>
 
 #include "tgt/glcanvas.h"
-#include "voreen/core/io/volumecache.h"
 #include "voreen/core/datastructures/rendertarget.h"
 #include "voreen/core/network/networkgraph.h"
 #include "voreen/core/network/processornetworkobserver.h"
@@ -244,6 +243,12 @@ private:
      * also NULL, this member will be re-created from netGraph_.
      */
     void defineRenderingOrder();
+
+    /**
+     * Creates and assigns the RenderTargets to the RenderPorts,
+     * if render target sharing is enabled.
+     */
+    void assignRenderTargets();
 
     /**
      * Check the states of all processors in the network and returns true,

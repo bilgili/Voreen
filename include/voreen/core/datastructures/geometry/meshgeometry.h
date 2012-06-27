@@ -136,6 +136,15 @@ public:
     void addFace(const FaceGeometry& face);
 
     /**
+     * Returns a const reference to the face geometry at the given @c index.
+     *
+     * @param index the face geometry index
+     *
+     * @returns the face geometry at the given @c index
+     */
+    const FaceGeometry& getFace(size_t index) const;
+
+    /**
      * Returns the face geometry at the given @c index.
      *
      * @attention If the mesh geometry is changed by using the @c operator[]

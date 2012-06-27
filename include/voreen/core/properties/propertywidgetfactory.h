@@ -44,12 +44,13 @@ public:
     virtual PropertyWidget* createWidget(BoolProperty* p) = 0;
     virtual PropertyWidget* createWidget(ButtonProperty* p) = 0;
     virtual PropertyWidget* createWidget(CameraProperty* p) = 0;
-    virtual PropertyWidget* createWidget(ColorProperty* p) = 0;
+    virtual PropertyWidget* createWidget(ColorMapProperty* p) = 0;
     virtual PropertyWidget* createWidget(FileDialogProperty* p) = 0;
     virtual PropertyWidget* createWidget(FloatProperty* p) = 0;
     virtual PropertyWidget* createWidget(FloatVec2Property* p) = 0;
     virtual PropertyWidget* createWidget(FloatVec3Property* p) = 0;
     virtual PropertyWidget* createWidget(FloatVec4Property* p) = 0;
+    virtual PropertyWidget* createWidget(FontProperty* p) = 0;
     virtual PropertyWidget* createWidget(IntProperty* p) = 0;
     virtual PropertyWidget* createWidget(IntVec2Property* p) = 0;
     virtual PropertyWidget* createWidget(IntVec3Property* p) = 0;
@@ -57,14 +58,22 @@ public:
     virtual PropertyWidget* createWidget(FloatMat2Property* p) = 0;
     virtual PropertyWidget* createWidget(FloatMat3Property* p) = 0;
     virtual PropertyWidget* createWidget(FloatMat4Property* p) = 0;
-    virtual PropertyWidget* createWidget(LightProperty* p) = 0;
+    virtual PropertyWidget* createWidget(PlotEntitiesProperty* p) = 0;
     virtual PropertyWidget* createWidget(OptionPropertyBase* p) = 0;
+    virtual PropertyWidget* createWidget(PlotPredicateProperty* p) = 0;
+    virtual PropertyWidget* createWidget(PlotDataProperty* p) = 0;
+    virtual PropertyWidget* createWidget(PlotSelectionProperty* p) = 0;
     virtual PropertyWidget* createWidget(PropertyVector* p) = 0;
     virtual PropertyWidget* createWidget(ShaderProperty* p) = 0;
     virtual PropertyWidget* createWidget(StringProperty* p) = 0;
     virtual PropertyWidget* createWidget(TransFuncProperty* p) = 0;
     virtual PropertyWidget* createWidget(VolumeCollectionProperty* p) = 0;
     virtual PropertyWidget* createWidget(VolumeHandleProperty* p) = 0;
+    
+    // deprecated
+    virtual PropertyWidget* createWidget(ColorProperty* p) = 0;
+    virtual PropertyWidget* createWidget(LightProperty* p) = 0;
+
 };
 
 } // namespace

@@ -32,33 +32,37 @@
 
 #include "voreen/core/processors/geometryrendererbase.h"
 
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
+
+#include "voreen/core/ports/volumeport.h"
+
 namespace voreen {
 
 ///Draws bounding box around the data set
 class BoundingBoxRenderer : public GeometryRendererBase {
 public:
     BoundingBoxRenderer();
+    virtual Processor* create() const;
 
-    void setLineWidth(float width);
-    ///Set the stipplePattern to be used. @see OpenGL docs
-    void setStipplePattern(int stippleFactor, int stipplePattern);
-    virtual std::string getCategory() const { return "Geometry"; }
     virtual std::string getClassName() const { return "BoundingBox"; }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
+    virtual std::string getCategory() const  { return "Geometry"; }
+    virtual CodeState getCodeState() const   { return CODE_STATE_STABLE; }
     virtual std::string getProcessorInfo() const;
-    virtual Processor* create() const {return new BoundingBoxRenderer();}
 
     virtual void render();
+
 private:
-    ColorProperty bboxColor_;
+    VolumePort inport_;
+
+    FloatVec4Property bboxColor_;
     FloatProperty width_;
     IntProperty stippleFactor_;
     IntProperty stipplePattern_;
     BoolProperty showGrid_;
     IntVec3Property tilesProp_;
-    BoolProperty applyDatasetTransformationMatrix_;
-
-    VolumePort inport_;
 };
 
 }

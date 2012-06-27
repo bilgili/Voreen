@@ -47,7 +47,7 @@ namespace voreen {
 const std::string TransFuncIntensityGradient::loggerCat_("voreen.TransFuncIntensityGradient");
 
 TransFuncIntensityGradient::TransFuncIntensityGradient(int width, int height)
-: TransFunc(width, height, 1, GL_RGBA, GL_FLOAT, Texture::LINEAR)
+    : TransFunc(width, height, 1, GL_RGBA, GL_FLOAT, Texture::LINEAR)
 {
     loadFileFormats_.push_back("tfig");
 
@@ -323,7 +323,7 @@ TransFuncPrimitive* TransFuncIntensityGradient::getPrimitive(int i) const {
         return primitives_[i];
 }
 
-TransFuncPrimitive* TransFuncIntensityGradient::getPrimitiveForClickedControlPoint(tgt::vec2 pos) const {
+TransFuncPrimitive* TransFuncIntensityGradient::getPrimitiveForClickedControlPoint(const tgt::vec2& pos) const {
     if (primitives_.empty())
         return 0;
 

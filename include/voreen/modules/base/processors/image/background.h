@@ -31,6 +31,11 @@
 #define VRN_BACKGROUND_H
 
 #include "voreen/core/processors/imageprocessor.h"
+#include "voreen/core/properties/filedialogproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
 
 namespace voreen {
 
@@ -87,8 +92,8 @@ protected:
      */
     void invalidateTexture();
 
-    ColorProperty firstcolor_;
-    ColorProperty secondcolor_;
+    FloatVec4Property firstcolor_;
+    FloatVec4Property secondcolor_;
     IntProperty angle_;
     tgt::Texture* tex_;
     bool textureLoaded_;

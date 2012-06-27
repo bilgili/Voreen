@@ -41,6 +41,8 @@ public:
 
     virtual ~ButtonProperty();
 
+    virtual std::string getTypeString() const;
+
     PropertyWidget* createWidget(PropertyWidgetFactory* f);
 
     void onChange(const Action& action = NoAction());

@@ -37,15 +37,18 @@ namespace voreen {
 
 Grayscale::Grayscale()
     : ImageProcessor("pp_grayscale"), // loads fragment shader pp_grayscale.frag
-      saturation_("saturation", "Saturation", 0.0f),
       inport_(Port::INPORT, "inport"),
-      outport_(Port::OUTPORT, "outport")
+      outport_(Port::OUTPORT, "outport"),
+      saturation_("saturation", "Saturation", 0.f)
 {
-    // register properties and ports
-    addProperty(saturation_);
-
+    // register ports and properties
     addPort(inport_);
     addPort(outport_);
+    addProperty(saturation_);
+}
+
+Processor* Grayscale::create() const {
+    return new Grayscale();
 }
 
 std::string Grayscale::getProcessorInfo() const {
@@ -55,27 +58,29 @@ std::string Grayscale::getProcessorInfo() const {
 void Grayscale::process() {
     // activate and clear output render target
     outport_.activateTarget();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    outport_.clearTarget();
 
-    // bind result from previous processor
-    TextureUnit shadeUnit, depthUnit;
-    inport_.bindTextures(shadeUnit.getEnum(), depthUnit.getEnum());
+    // bind input rendering to texture units
+    TextureUnit colorUnit, depthUnit;
+    inport_.bindTextures(colorUnit.getEnum(), depthUnit.getEnum());
 
-    // activate shader and set uniforms:
+    // activate shader and set uniforms
     program_->activate();
     setGlobalShaderParameters(program_);
-    program_->setUniform("shadeTex_", shadeUnit.getUnitNumber());
+    inport_.setTextureParameters(program_, "textureParameters_");
+    program_->setUniform("colorTex_", colorUnit.getUnitNumber());
     program_->setUniform("depthTex_", depthUnit.getUnitNumber());
     program_->setUniform("saturation_", saturation_.get());
 
-    // render screen aligned quad:
-    glDepthFunc(GL_ALWAYS);
+    // render screen aligned quad
     renderQuad();
-    glDepthFunc(GL_LESS);
 
     // cleanup
     program_->deactivate();
-    glActiveTexture(GL_TEXTURE0);
+    outport_.deactivateTarget();
+    TextureUnit::setZeroUnit();
+
+    // check for OpenGL errors
     LGL_ERROR;
 }
 

@@ -207,6 +207,11 @@ signals:
      * Emitted when a processor (i.e. its properties) was modified.
      */
     void modified();
+
+    /**
+    * emitted to toggle the visibility of all processorpropertywidgets headerwidgets
+    */
+    void showHeader(bool);
 };
 
 } // namespace voreen

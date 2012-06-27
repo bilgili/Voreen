@@ -60,6 +60,9 @@ protected:
     FloatProperty* property_;
     DoubleSliderSpinBoxWidget* widget_;
     void mousePressEvent(QMouseEvent*);
+    QMenu* precisionMenu_;
+    QAction* highAction_;
+    QAction* instantValueChangeAction_;
 };
 
 } // namespace voreen

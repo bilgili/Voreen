@@ -33,6 +33,8 @@
 #include "voreen/core/processors/imageprocessordepth.h"
 #include "voreen/core/ports/allports.h"
 
+#include "voreen/core/properties/shaderproperty.h"
+
 namespace voreen {
 
 class BinaryImageProcessor : public ImageProcessorDepth {

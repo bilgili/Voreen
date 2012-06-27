@@ -31,7 +31,11 @@
 #define VRN_VOLUMERENDERER_H
 
 #include "voreen/core/processors/renderprocessor.h"
-#include "voreen/core/properties/lightproperty.h"
+
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/ports/volumeport.h"
 
 #include "tgt/textureunit.h"
 
@@ -53,9 +57,11 @@ protected:
     struct VolumeStruct {
         VolumeStruct();
         VolumeStruct(const VolumeGL* volume, const std::string& textureUnitIdent,
-                     const std::string& samplerIdentifier, const std::string& volumeParametersIdentifier);
+                     const std::string& samplerIdentifier, const std::string& volumeParametersIdentifier,
+                     bool applyDatasetTrafoMatrix = true);
         VolumeStruct(const VolumeGL* volume, tgt::TextureUnit* texUnit,
-                     const std::string& samplerIdentifier, const std::string& volumeParametersIdentifier);
+                     const std::string& samplerIdentifier, const std::string& volumeParametersIdentifier,
+                     bool applyDatasetTrafoMatrix = true);
 
         const VolumeGL* volume_;                        ///< the volume whose texture is to bound
         tgt::TextureUnit* texUnit_;
@@ -63,11 +69,12 @@ protected:
                                                         ///  volume is accessed in the shader
         std::string volumeParametersIdentifier_;        ///< the identifier of the volume parameter struct
                                                         ///  for this volume in the shader
+        bool applyDatasetTrafoMatrix_;                  ///< apply the volume's trafo matrix in the shader?
     };
 
     virtual std::string generateHeader(VolumeHandle* volumehandle = 0);
 
-    virtual void setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera* camera = 0);
+    virtual void setGlobalShaderParameters(tgt::Shader* shader, const tgt::Camera* camera = 0);
 
     /**
      * This function binds the volume textures used by the volume renderer and passes the
@@ -78,8 +85,11 @@ protected:
      *       volume textures directly unless you know exactly what you are doing!
      * @param shader the shader that performs the volume rendering
      * @param volumes vector of the volumes to bind
+     * @param camera the scene's camera position. Is transformed to volume object coordinates for lighting calculations.
+     * @param lightPosition the scene's light position. Is transformed to volume object coordinates for lighting calculations.
      */
-    virtual void bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct> &volumes);
+    virtual void bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct> &volumes,
+        const tgt::Camera* camera = 0, const tgt::vec4& lightPosition = tgt::vec4(0.f));
 
     /**
      * \brief Updates the current OpenGL context according to the
@@ -98,25 +108,29 @@ protected:
     virtual void setLightingParameters();
 
     /// The position of the light source used for lighting calculations in world coordinates
-    LightProperty lightPosition_;
+    FloatVec4Property lightPosition_;
     /// The light source's ambient color according to the Phong lighting model
-    ColorProperty lightAmbient_;
+
+    FloatVec4Property lightAmbient_;
     /// The light source's diffuse color according to the Phong lighting model
-    ColorProperty lightDiffuse_;
+    FloatVec4Property lightDiffuse_;
     /// The light source's specular color according to the Phong lighting model
-    ColorProperty lightSpecular_;
+    FloatVec4Property lightSpecular_;
+
     /// The light source's attenuation factors (x = constant, y = linear, z = quadratic)
     FloatVec3Property lightAttenuation_;
     /// Apply light attenuation?
     BoolProperty applyLightAttenuation_;
     /// The ambient material color according to the Phong lighting model
-    ColorProperty materialAmbient_;
+
+    FloatVec4Property materialAmbient_;
     /// The diffuse material color according to the Phong lighting model
-    ColorProperty materialDiffuse_;
+    FloatVec4Property materialDiffuse_;
     /// The specular material color according to the Phong lighting model
-    ColorProperty materialSpecular_;
+    FloatVec4Property materialSpecular_;
     /// The emission material color according to the Phong lighting model
-    ColorProperty materialEmission_;
+    FloatVec4Property materialEmission_;
+
     /// The material's specular exponent according to the Phong lighting model
     FloatProperty materialShininess_;
     static const std::string loggerCat_;

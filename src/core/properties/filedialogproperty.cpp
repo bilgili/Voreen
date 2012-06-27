@@ -75,7 +75,7 @@ void FileDialogProperty::deserialize(XmlDeserializer& s) {
     s.deserialize("value", value);
 
     // convert path relative to the document's path to an absolute one
-    if (!value.empty() && !s.getDocumentPath().empty())
+    if (!value.empty() && !s.getDocumentPath().empty() && !isalpha(value[0]))
         value = tgt::FileSystem::absolutePath(tgt::FileSystem::dirName(s.getDocumentPath()) + "/" + value);
 
     try {
@@ -88,6 +88,10 @@ void FileDialogProperty::deserialize(XmlDeserializer& s) {
 
 PropertyWidget* FileDialogProperty::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
+}
+
+std::string FileDialogProperty::getTypeString() const {
+    return "FileDialog";
 }
 
 }   // namespace

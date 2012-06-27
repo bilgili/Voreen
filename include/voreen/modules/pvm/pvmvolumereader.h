@@ -34,17 +34,16 @@
 
 namespace voreen {
 
-class IOProgress;
+class ProgressBar;
 
 /**
  * Reads a volume dataset from a file in Stefan Roettger's PVM file format.
  */
 class PVMVolumeReader : public VolumeReader {
 public:
+    PVMVolumeReader(ProgressBar* progress);
 
-    PVMVolumeReader(IOProgress* progress);
-
-    virtual VolumeReader* create(IOProgress* progress = 0) const;
+    virtual VolumeReader* create(ProgressBar* progress = 0) const;
 
     virtual VolumeCollection* read(const std::string& url)
         throw (tgt::FileException, tgt::IOException, std::bad_alloc);

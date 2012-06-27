@@ -34,6 +34,9 @@
 #include "voreen/core/datastructures/transfunc/transfuncintensitygradient.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "voreen/core/datastructures/volume/gradient.h"
+#include "voreen/core/properties/transfuncproperty.h"
+
+#include "voreen/core/ports/volumeport.h"
 
 namespace voreen {
 

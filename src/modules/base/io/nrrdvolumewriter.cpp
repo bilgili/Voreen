@@ -106,7 +106,7 @@ void NrrdVolumeWriter::write(const std::string& filename, VolumeHandle* volumeHa
     rawout.close();
 }
 
-VolumeWriter* NrrdVolumeWriter::create(IOProgress* /*progress*/) const {
+VolumeWriter* NrrdVolumeWriter::create(ProgressBar* /*progress*/) const {
     return new NrrdVolumeWriter(/*progress*/);
 }
 

@@ -33,7 +33,7 @@
 #include "voreen/core/ports/allports.h"
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/datastructures/imagesequence.h"
-#include "voreen/core/io/ioprogress.h"
+#include "voreen/core/io/progressbar.h"
 
 #include "tgt/filesystem.h"
 #include "tgt/gpucapabilities.h"
@@ -49,9 +49,10 @@ ImageSequenceSource::ImageSequenceSource()
           "", "", FileDialogProperty::DIRECTORY),
       textureFiltering_("textureFiltering", "Enable Texture Filtering", true),
       uploadTextureData_("uploadTextures", "Upload Textures", true),
+      showProgressBar_("showProgressBar", "Show Progress Bar", true),
       reloadSequence_("reloadSequence", "Reload"),
       clearSequence_("clearSequence", "Clear Sequence"),
-      numImages_("numImages", "Num Images", 0, 0, 1000, false, VALID),
+      numImages_("numImages", "Num Images", 0, 0, 1000, VALID),
       imageSequence_(0),
       currentDir_(""),
       sequenceOwner_(false),
@@ -68,6 +69,7 @@ ImageSequenceSource::ImageSequenceSource()
     addProperty(imageDirectory_);
     addProperty(textureFiltering_);
     addProperty(uploadTextureData_);
+    addProperty(showProgressBar_);
     addProperty(reloadSequence_);
     addProperty(clearSequence_);
     addProperty(numImages_);
@@ -82,7 +84,8 @@ Processor* ImageSequenceSource::create() const {
 
 std::string ImageSequenceSource::getProcessorInfo() const {
     return "Loads all images from the specified directory and puts them out as image sequence "
-           "containing one OpenGL texture per image.";
+           "containing one OpenGL texture per image. "
+           "<p>See ImageSelector.</p>";
 }
 
 void ImageSequenceSource::process() {
@@ -164,22 +167,24 @@ void ImageSequenceSource::loadImageSequence(const std::string& d)
     std::vector<std::string> filenames = tgt::FileSystem::readDirectory(dir, true, false);
 
     // create progress bar
-    IOProgress* progressDialog = 0;
-    if (!filenames.empty()) {
+    ProgressBar* progressDialog = 0;
+    if (showProgressBar_.get() && !filenames.empty()) {
         progressDialog = VoreenApplication::app()->createProgressDialog();
-        progressDialog->setTitle("Loading Images");
-        progressDialog->setTotalSteps(filenames.size());
-        progressDialog->show();
-        progressDialog->setProgress(0);
-        progressDialog->forceUpdate();
+        if (progressDialog) {
+            progressDialog->setTitle("Loading Images");
+            progressDialog->show();
+            progressDialog->setProgress(0.f);
+            progressDialog->forceUpdate();
+        }
     }
 
     tgt::Texture::Filter filterMode = textureFiltering_.get() ? tgt::Texture::LINEAR : tgt::Texture::NEAREST;
     for (size_t i=0; i<filenames.size(); ++i) {
         if (progressDialog) {
             progressDialog->setMessage("Loading " + filenames[i] + " ...");
-            progressDialog->setProgress(i);
+            progressDialog->setProgress(static_cast<float>(i) / static_cast<float>(filenames.size()));
         }
+        LINFO("Loading image " << filenames[i] << " ...");
         tgt::Texture* texture = TexMgr.load(dir + "/" + filenames[i], filterMode,
             false, false, true, false, !GpuCaps.isNpotSupported());
         if (texture)
@@ -207,7 +212,7 @@ void ImageSequenceSource::loadImageSequence(const std::string& d)
     // output sequence
     outport_.setData(imageSequence_);
 
-    LINFO("Loaded " << imageSequence_->size() << " images.");
+    LINFO("Successfully loaded " << imageSequence_->size() << " images.");
     numImages_.set(imageSequence_->size());
     LGL_ERROR;
 }

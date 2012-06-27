@@ -3,12 +3,12 @@
     <Workspace version="2" readonly="true">
         <VolumeContainer>
             <VolumeHandles>
-                <VolumeHandle modality="unknown" timestep="0.000000" id="ref12">
+                <VolumeHandle modality="unknown" timestep="0" id="ref12">
                     <Origin filename="../volumes/nucleon.dat" />
                 </VolumeHandle>
             </VolumeHandles>
         </VolumeContainer>
-        <ProcessorNetwork version="5">
+        <ProcessorNetwork version="6">
             <Processors>
                 <Processor type="EntryExitPoints" name="EntryExitPoints" id="ref0">
                     <MetaData>
@@ -19,21 +19,29 @@
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="842" y="448" />
                             </MetaData>
-                            <position x="-1.540198" y="-1.436030" z="3.608686" />
-                            <focus x="0.048181" y="0.259745" z="0.098780" />
-                            <upVector x="0.220323" y="-0.913619" z="-0.341700" />
+                            <position x="-1.54019797" y="-1.43603003" z="3.60868597" />
+                            <focus x="0.048181" y="0.259745" z="0.09878" />
+                            <upVector x="0.22032292" y="-0.91361868" z="-0.34169987" />
                         </Property>
                         <Property name="filterJitterTexture" value="true" />
                         <Property name="jitterEntryPoints" lod="1" value="true" />
-                        <Property name="jitterStepLength" value="0.005000" />
+                        <Property name="jitterStepLength" value="0.005" />
                         <Property name="supportCameraInsideVolume" lod="1" value="true" />
                     </Properties>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
-                                <Property name="cameraHandler.rotate" lod="1" enabled="true" shareEvents="false" modifier="0" mouseAction="31" mouseButtons="1" />
-                                <Property name="cameraHandler.shift" lod="1" enabled="true" shareEvents="false" modifier="3" mouseAction="31" mouseButtons="1" />
-                                <Property name="cameraHandler.zoom" lod="1" enabled="true" shareEvents="false" modifier="0" mouseAction="31" mouseButtons="100" />
+                                <Property name="cameraHandler.interactionMetaphor" value="trackball" />
+                                <Property name="cameraHandler.moveBackward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveDown" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveForward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="119" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="31" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.shift" lod="1" enabled="true" mouseAction="31" mouseButtons="1" keyCode="0" modifier="3" shareEvents="false" />
+                                <Property name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="31" mouseButtons="100" keyCode="0" modifier="0" shareEvents="false" />
                             </Properties>
                         </Handler>
                     </InteractionHandlers>
@@ -69,9 +77,9 @@
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="842" y="448" />
                             </MetaData>
-                            <position x="-1.540198" y="-1.436030" z="3.608686" />
-                            <focus x="0.048181" y="0.259745" z="0.098780" />
-                            <upVector x="0.220323" y="-0.913619" z="-0.341700" />
+                            <position x="-1.54019797" y="-1.43603003" z="3.60868597" />
+                            <focus x="0.048181" y="0.259745" z="0.09878" />
+                            <upVector x="0.22032292" y="-0.91361868" z="-0.34169987" />
                         </Property>
                         <Property name="classification" value="transfer-function" />
                         <Property name="compositing" value="dvr" />
@@ -79,36 +87,33 @@
                         <Property name="compositing2" lod="1" value="dvr" />
                         <Property name="gradient" value="central-differences" />
                         <Property name="interactionCoarseness" value="4" />
-                        <Property name="interactionQuality" value="1.000000" />
+                        <Property name="interactionQuality" value="1" />
                         <Property name="interpolation.coarseness" value="false" />
                         <Property name="interpolationMode" value="intrablock" />
-                        <Property name="isoValue" value="0.500000" />
+                        <Property name="isoValue" value="0.5" />
                         <Property name="lightAmbient">
-                            <value x="0.400000" y="0.400000" z="0.400000" w="1.000000" />
+                            <value x="0.40000001" y="0.40000001" z="0.40000001" w="1" />
                         </Property>
                         <Property name="lightAttenuation">
-                            <value x="1.000000" y="0.000000" z="0.000000" />
+                            <value x="1" y="0" z="0" />
                         </Property>
                         <Property name="lightDiffuse">
-                            <value x="0.800000" y="0.800000" z="0.800000" w="1.000000" />
+                            <value x="0.80000001" y="0.80000001" z="0.80000001" w="1" />
                         </Property>
                         <Property name="lightPosition">
-                            <value x="-10.000000" y="-10.000000" z="10.000000" w="1.000000" />
+                            <value x="-10" y="-10" z="10" w="1" />
                         </Property>
                         <Property name="lightSpecular">
-                            <value x="0.600000" y="0.600000" z="0.600000" w="1.000000" />
+                            <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
                         </Property>
-                        <Property name="masking" lod="1" value="none" />
-                        <Property name="materialShininess" value="60.000000" />
-                        <Property name="samplingRate" value="12.000000" />
-                        <Property name="setSegment" value="0" />
+                        <Property name="materialShininess" value="60" />
+                        <Property name="samplingRate" value="12" />
                         <Property name="shading" value="phong" />
-                        <Property name="switchSegmentation" value="false" />
                         <Property name="transferFunction">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0.000000" upper="1.000000">
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.134868" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -120,14 +125,14 @@
                                     <key type="TransFuncMappingKey" intensity="0.407895" split="false">
                                         <colorL r="255" g="0" b="0" a="0" />
                                     </key>
-                                    <key type="TransFuncMappingKey" intensity="0.457237" split="true">
+                                    <key type="TransFuncMappingKey" intensity="0.45723701" split="true">
                                         <colorL r="255" g="0" b="0" a="36" />
                                         <colorR r="92" g="92" b="92" a="0" />
                                     </key>
-                                    <key type="TransFuncMappingKey" intensity="0.756579" split="false">
+                                    <key type="TransFuncMappingKey" intensity="0.75657898" split="false">
                                         <colorL r="4" g="255" b="0" a="0" />
                                     </key>
-                                    <key type="TransFuncMappingKey" intensity="0.875000" split="false">
+                                    <key type="TransFuncMappingKey" intensity="0.875" split="false">
                                         <colorL r="88" g="255" b="86" a="255" />
                                     </key>
                                 </Keys>
@@ -144,12 +149,12 @@
                         <Property name="angle" value="51" />
                         <Property name="backgroundModeAsString" value="gradient" />
                         <Property name="color1">
-                            <value x="0.776471" y="0.776471" z="0.776471" w="1.000000" />
+                            <value x="0.77647102" y="0.77647102" z="0.77647102" w="1" />
                         </Property>
                         <Property name="color2">
-                            <value x="0.333333" y="0.333333" z="0.333333" w="1.000000" />
+                            <value x="0.33333299" y="0.33333299" z="0.33333299" w="1" />
                         </Property>
-                        <Property name="repeat" value="1.000000" />
+                        <Property name="repeat" value="1" />
                         <Property name="texture" value="" />
                     </Properties>
                     <InteractionHandlers />
@@ -159,7 +164,11 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-404" y="302" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="313" y="96" width="404" height="435" />
                     </MetaData>
-                    <Properties />
+                    <Properties>
+                        <Property name="canvasSize">
+                            <value x="404" y="435" />
+                        </Property>
+                    </Properties>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="EEP Canvas" id="ref11">
@@ -167,7 +176,11 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="42" y="303" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="663" y="247" width="303" height="300" />
                     </MetaData>
-                    <Properties />
+                    <Properties>
+                        <Property name="canvasSize">
+                            <value x="303" y="300" />
+                        </Property>
+                    </Properties>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="FHN Canvas" id="ref10">
@@ -175,7 +188,11 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-191" y="302" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="477" y="420" width="256" height="256" />
                     </MetaData>
-                    <Properties />
+                    <Properties>
+                        <Property name="canvasSize">
+                            <value x="256" y="256" />
+                        </Property>
+                    </Properties>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="GeometryProcessor" name="Geometry Processor" id="ref3">
@@ -187,17 +204,25 @@
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="842" y="448" />
                             </MetaData>
-                            <position x="-1.540198" y="-1.436030" z="3.608686" />
-                            <focus x="0.048181" y="0.259745" z="0.098780" />
-                            <upVector x="0.220323" y="-0.913619" z="-0.341700" />
+                            <position x="-1.54019797" y="-1.43603003" z="3.60868597" />
+                            <focus x="0.048181" y="0.259745" z="0.09878" />
+                            <upVector x="0.22032292" y="-0.91361868" z="-0.34169987" />
                         </Property>
                     </Properties>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
-                                <Property name="cameraHandler.rotate" lod="1" enabled="false" shareEvents="false" modifier="0" mouseAction="31" mouseButtons="1" />
-                                <Property name="cameraHandler.shift" lod="1" enabled="false" shareEvents="false" modifier="3" mouseAction="31" mouseButtons="1" />
-                                <Property name="cameraHandler.zoom" lod="1" enabled="false" shareEvents="false" modifier="0" mouseAction="31" mouseButtons="100" />
+                                <Property name="cameraHandler.interactionMetaphor" value="trackball" />
+                                <Property name="cameraHandler.moveBackward" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveDown" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveForward" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="119" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveLeft" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveRight" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.moveUp" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.rotate" lod="1" enabled="false" mouseAction="31" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.shift" lod="1" enabled="false" mouseAction="31" mouseButtons="1" keyCode="0" modifier="3" shareEvents="false" />
+                                <Property name="cameraHandler.wheelZoom" lod="1" enabled="false" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.zoom" lod="1" enabled="false" mouseAction="31" mouseButtons="100" keyCode="0" modifier="0" shareEvents="false" />
                             </Properties>
                         </Handler>
                     </InteractionHandlers>
@@ -207,12 +232,11 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-618" y="117" />
                     </MetaData>
                     <Properties>
-                        <Property name="applyDatasetTrafoMatrix" value="true" />
                         <Property name="boundingBoxStippleFactor" value="1" />
                         <Property name="boundingBoxStipplePattern" value="65535" />
-                        <Property name="boundingBoxWidth" value="1.000000" />
+                        <Property name="boundingBoxWidth" value="1" />
                         <Property name="boundingboxColor">
-                            <value x="0.800000" y="0.800000" z="0.800000" w="1.000000" />
+                            <value x="0.80000001" y="0.80000001" z="0.80000001" w="1" />
                         </Property>
                         <Property name="boundingboxGridShow" value="false" />
                         <Property name="boundingboxGridSize">
@@ -410,5 +434,6 @@
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>
+        <Animation />
     </Workspace>
 </VoreenData>

@@ -92,7 +92,8 @@ bool CommandCutToPieces::execute(const std::vector<std::string>& parameters) {
                 if (start.z + dimensions.z > sourceDataset_->getDimensions().z)
                     dim.z = (sourceDataset_->getDimensions().z - start.z);
 
-                Volume* targetDataset_ = sourceDataset_->createSubset(start, dim);
+                VolumeOperatorCreateSubset voCreateSubset(start, dim);
+                Volume* targetDataset_ = voCreateSubset.apply<Volume*>(sourceDataset_);
                 sprintf( string, "%s-%i-%i-%i", parameters.back().c_str(), x, y, z);
 
                 serializer->save(string, targetDataset_);
@@ -152,7 +153,8 @@ bool CommandScale::execute(const std::vector<std::string>& parameters) {
     VolumeCollection* volumeCollection = serializer->load(parameters[4]);
     Volume* sourceDataset_ = volumeCollection->first()->getVolume();
 
-    Volume* targetDataset_ = sourceDataset_->resample(dimensions, filter);
+    VolumeOperatorResample voResample(dimensions, filter);
+    Volume* targetDataset_ = voResample.apply<Volume*>(sourceDataset_);
     serializer->save(parameters.back(), targetDataset_);
     delete sourceDataset_;
     delete targetDataset_;
@@ -177,7 +179,7 @@ bool CommandMirrorZ::execute(const std::vector<std::string>& parameters) {
 
     Volume* targetDataset_ = sourceDataset_->clone();
     VolumeOperatorMirrorZ mirrorZ;
-    mirrorZ(targetDataset_);
+    mirrorZ.apply<void>(targetDataset_);
 
     serializer->save(parameters.back(), targetDataset_);
     delete targetDataset_;
@@ -213,7 +215,8 @@ bool CommandSubSet::execute(const std::vector<std::string>& parameters) {
     VolumeCollection* volumeCollection = serializer->load(parameters[6]);
     Volume* sourceDataset_ = volumeCollection->first()->getVolume();;
 
-    Volume* targetDataset_ = sourceDataset_->createSubset(start, dimensions);
+    VolumeOperatorCreateSubset voCreateSubset(start, dimensions);
+    Volume* targetDataset_ = voCreateSubset.apply<Volume*>(sourceDataset_);
 
     targetDataset_->setSpacing(sourceDataset_->getSpacing());
     serializer->save(parameters.back(), targetDataset_);
@@ -293,7 +296,8 @@ bool CommandBrick::execute(const std::vector<std::string>& parameters) {
                     ypos=j*bricksize;
                     zpos=0;
 
-                    Volume* subset = volume->createSubset(tgt::ivec3(xpos,ypos,zpos),tgt::ivec3(bricksize) );
+                    VolumeOperatorCreateSubset voCreateSubset(tgt::ivec3(xpos,ypos,zpos), tgt::ivec3(bricksize));
+                    Volume* subset = voCreateSubset.apply<Volume*>(volume);
                     brickedVolumeWriter->writeVolume(new VolumeHandle(subset));
                     delete subset;
                 }

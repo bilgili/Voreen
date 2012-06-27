@@ -59,6 +59,8 @@ public:
 
     virtual ~CameraProperty();
 
+    virtual std::string getTypeString() const;
+
     /**
      * Assigns the passed camera object to the property.
      */

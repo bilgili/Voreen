@@ -31,7 +31,11 @@
 #define VRN_GLSLRAYCASTER_H
 
 #include "voreen/core/processors/volumeraycaster.h"
+#include "voreen/core/properties/transfuncproperty.h"
+#include "voreen/core/properties/cameraproperty.h"
 #include "voreen/core/properties/shaderproperty.h"
+
+#include "voreen/core/ports/volumeport.h"
 
 #include "tgt/shadermanager.h"
 

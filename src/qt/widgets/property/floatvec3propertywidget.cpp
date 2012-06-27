@@ -54,23 +54,4 @@ void FloatVec3PropertyWidget::setProperty(double value) {
     emit modified();
 }
 
-void FloatVec3PropertyWidget::mousePressEvent(QMouseEvent* event) {
-    if(event->button() == Qt::RightButton) {
-        QMenu* precisionMenu = new QMenu(this);
-        QAction* normalAction = precisionMenu->addAction("Normal Precision");
-        QAction* highAction = precisionMenu->addAction("High Precision");
-        QAction* prec = precisionMenu->exec(QCursor::pos());
-        if(prec == normalAction) {
-            vectorProp_->setStepping(tgt::vec3(0.05f));
-            vectorProp_->setNumDecimals(2);
-        }
-        else if(prec == highAction){
-            vectorProp_->setStepping(tgt::vec3(0.0001f));
-            vectorProp_->setNumDecimals(4);
-        }
-        updateFromProperty();
-    }
-    QWidget::mousePressEvent(event);
-}
-
 } // namespace voreen

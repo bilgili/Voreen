@@ -39,6 +39,8 @@
 #include "tgt/assert.h"
 #include "tgt/math.h"
 
+#include "arrowheadselectiongraphicsitem.h"
+
 namespace {
     // the size of the possible head of the arrow
     const qreal arrowHeadSize = 10.0;
@@ -57,6 +59,8 @@ ArrowGraphicsItem::ArrowGraphicsItem(QGraphicsItem* sourceItem, QGraphicsItem* d
     , arrowHeadSize_(arrowHeadSize)
     , sourceHeadDirection_(ArrowHeadDirectionNone)
     , destinationHeadDirection_(ArrowHeadDirectionNone)
+    , sourceSelectionItem_(0)
+    , destinationSelectionItem_(0)
 {
     tgtAssert(sourceItem, "null pointer passed");
     setFlag(ItemIsSelectable);
@@ -177,15 +181,21 @@ void ArrowGraphicsItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     painter->drawPath(path);
 
     if (sourceHeadDirection_ != ArrowHeadDirectionNone) {
+        if (sourceSelectionItem_ == 0)
+            sourceSelectionItem_ = new ArrowHeadSelectionGraphicsItem(this);
+
         QPointF origin = getSourcePoint();
-        QPolygonF arrow = createArrowHeadPolygon(sourceHeadDirection_, origin);
+        QPolygonF arrow = createArrowHead(sourceHeadDirection_, origin, sourceSelectionItem_);
         painter->setBrush(tmpColor);
         painter->drawPolygon(arrow);
     }
 
     if (destinationHeadDirection_ != ArrowHeadDirectionNone) {
+        if (destinationSelectionItem_ == 0)
+            destinationSelectionItem_ = new ArrowHeadSelectionGraphicsItem(this);
+
         QPointF origin = getDestinationPoint();
-        QPolygonF arrow = createArrowHeadPolygon(destinationHeadDirection_, origin);
+        QPolygonF arrow = createArrowHead(destinationHeadDirection_, origin, destinationSelectionItem_);
         painter->setBrush(tmpColor);
         painter->drawPolygon(arrow);
     }
@@ -198,7 +208,7 @@ void ArrowGraphicsItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     }
 }
 
-QPolygonF ArrowGraphicsItem::createArrowHeadPolygon(ArrowHeadDirection direction, const QPointF& basePoint) const {
+QPolygonF ArrowGraphicsItem::createArrowHead(ArrowHeadDirection direction, const QPointF& basePoint, ArrowHeadSelectionGraphicsItem* arrowHeadItem) const {
     double angle = -tgt::PI / 2.0;
 
     QPointF arrowP1;
@@ -209,18 +219,26 @@ QPolygonF ArrowGraphicsItem::createArrowHeadPolygon(ArrowHeadDirection direction
     case ArrowHeadDirectionNS:
         arrowP1 = basePoint + QPointF(sin(angle - tgt::PI / 3.0) * arrowHeadSize_          , cos(angle - tgt::PI / 3.f) * arrowHeadSize_);
         arrowP2 = basePoint + QPointF(sin(angle - tgt::PI + tgt::PI / 3.0) * arrowHeadSize_, cos(angle - tgt::PI + tgt::PI / 3.0) * arrowHeadSize_);
+        arrowHeadItem->setSize(10.0, 7.5);
+        arrowHeadItem->setPos(arrowP1);
         break;
     case ArrowHeadDirectionSN:
         arrowP1 = basePoint - QPointF(sin(angle - tgt::PI / 3.0) * arrowHeadSize_          , cos(angle - tgt::PI / 3.0) * arrowHeadSize_);
         arrowP2 = basePoint - QPointF(sin(angle - tgt::PI + tgt::PI / 3.0) * arrowHeadSize_, cos(angle - tgt::PI + tgt::PI / 3.0) * arrowHeadSize_);
+        arrowHeadItem->setSize(10.0, 7.5);
+        arrowHeadItem->setPos(QPointF(arrowP2.x(), basePoint.y()));
         break;
     case ArrowHeadDirectionWE:
         arrowP1 = basePoint + QPointF(cos(angle - tgt::PI / 3.0) * arrowHeadSize_          , sin(angle - tgt::PI / 3.0) * arrowHeadSize_);
         arrowP2 = basePoint + QPointF(cos(angle - tgt::PI + tgt::PI / 3.0) * arrowHeadSize_, sin(angle - tgt::PI + tgt::PI / 3.0) * arrowHeadSize_);
+        arrowHeadItem->setSize(7.5, 10.0);
+        arrowHeadItem->setPos(arrowP1);
         break;
     case ArrowHeadDirectionEW:
         arrowP1 = basePoint - QPointF(cos(angle - tgt::PI / 3.0) * arrowHeadSize_          , sin(angle - tgt::PI / 3.0) * arrowHeadSize_);
         arrowP2 = basePoint - QPointF(cos(angle - tgt::PI + tgt::PI / 3.0) * arrowHeadSize_, sin(angle - tgt::PI + tgt::PI / 3.0) * arrowHeadSize_);
+        arrowHeadItem->setSize(7.5, 10.0);
+        arrowHeadItem->setPos(QPointF(basePoint.x(), arrowP2.y()));
         break;
     default:
         tgtAssert(false, "shouldn't get here");

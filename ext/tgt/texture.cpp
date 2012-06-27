@@ -129,7 +129,7 @@ int Texture::calcBpp(GLint format, GLenum dataType) {
             break;
 
         default:
-            tgtAssert(false, "unsupported dataType");
+            LWARNINGC("tgt.Texture", "unknown dataType");
     }
 
     int numComponents = 0;
@@ -162,62 +162,81 @@ int Texture::calcBpp(GLint format, GLenum dataType) {
         case 4:
         case GL_RGBA:
         case GL_BGRA:
-		case GL_RGBA16F_ARB:
+		case GL_RGBA16:
+        case GL_RGBA16F_ARB:
             numComponents = 4;
         break;
 
         default:
-            tgtAssert( false, "unsupported format" );
+            LWARNINGC("tgt.Texture", "unknown format");
     }
 
     return typeSize * numComponents;
 }
 
-int Texture::getSizeOnGPU() const {
-	int bpp = 0;
-    switch (internalformat_) {
-        case 1:
-        case GL_COLOR_INDEX:
-        case GL_RED:
-        case GL_GREEN:
-        case GL_BLUE:
-        case GL_ALPHA:
-        case GL_INTENSITY:
-        case GL_LUMINANCE:
-		case GL_DEPTH_COMPONENT:
-            bpp = 1;
-        break;
+int Texture::calcBpp(GLint internalformat) {
+    
+    int bpp = 0;
+    switch (internalformat) { 
+        case 1: 
+        case GL_COLOR_INDEX: 
+        case GL_RED: 
+        case GL_GREEN: 
+        case GL_BLUE: 
+        case GL_ALPHA: 
+        case GL_INTENSITY: 
+        case GL_LUMINANCE: 
+        case GL_DEPTH_COMPONENT: 
+            bpp = 1; 
+            break; 
+        
+        case 2: 
+        case GL_LUMINANCE_ALPHA: 
+        case GL_DEPTH_COMPONENT16: 
+            bpp = 2; 
+            break; 
+        
+        case GL_RGB: 
+        case GL_BGR: 
+        case GL_DEPTH_COMPONENT24: 
+            bpp = 3; 
+            break; 
+        
+        case GL_RGBA: 
+        case GL_BGRA: 
+        case GL_DEPTH_COMPONENT32: 
+            bpp = 4; 
+            break; 
+        
+        case GL_RGB16: 
+        case GL_RGB16F_ARB: 
+            bpp = 6; 
+            break; 
+        
+        case GL_RGBA16: 
+        case GL_RGBA16F_ARB: 
+            bpp = 8; 
+            break; 
 
-        case 2:
-        case GL_LUMINANCE_ALPHA:
-		case GL_DEPTH_COMPONENT16:
-            bpp = 2;
-        break;
+        case GL_RGB32F_ARB:
+            bpp = 12;
+            break;
 
-        case GL_RGB:
-        case GL_BGR:
-		case GL_DEPTH_COMPONENT24:
-            bpp= 3;
-        break;
+        case GL_RGBA32F_ARB:
+            bpp = 16;
+            break;
 
-        case GL_RGBA:
-        case GL_BGRA:
-		case GL_DEPTH_COMPONENT32:
-			bpp = 4;
-			break;
-
-		case GL_RGB16F_ARB:
-             bpp = 6;
-        break;
-
-		case GL_RGBA16F_ARB:
-             bpp = 8;
-        break;
-
-        default:
-		break;
+        default: 
+            LWARNINGC("tgt.Texture", "unknown internal format");
+            break; 
     }
-	return hmul(dimensions_)*bpp;
+    
+    return bpp;
+}
+
+int Texture::getSizeOnGPU() const {
+    int bpp = calcBpp(internalformat_);
+    return bpp * hmul(dimensions_); 
 }
 
 GLenum Texture::calcType(bool textureRectangle) {

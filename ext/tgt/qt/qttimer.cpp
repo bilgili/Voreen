@@ -38,6 +38,7 @@ QtTimer::~QtTimer() {
 
 void QtTimer::start(const int msec, const int limit) {
     if (stopped_) {
+        count_ = 0;
         limit_ = limit;
         tickTime_ = msec;
         stopped_ = false;

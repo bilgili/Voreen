@@ -42,107 +42,161 @@ const std::string RenderPort::loggerCat_("voreen.RenderPort");
 RenderPort::RenderPort(PortDirection direction, const std::string& name,
                        bool allowMultipleConnections, Processor::InvalidationLevel invalidationLevel,
                        GLint internalColorFormat, GLint internalDepthFormat)
-    : GenericPort<RenderTarget>(direction, name, allowMultipleConnections, invalidationLevel)
+    : Port(name, direction, allowMultipleConnections, invalidationLevel)
+    , renderTarget_(0)
     , validResult_(false)
     , size_(128,128)
     , sizeOrigin_(0)
     , internalColorFormat_(internalColorFormat)
     , internalDepthFormat_(internalDepthFormat)
+    , renderTargetSharing_(false)
 {
-    portData_ = 0;
 }
 
 RenderPort::~RenderPort() {
-    if (portData_) {
-        LERRORC("voreen.RenderPort", "~RenderPort(): '" << getName() << "' has not been deinitialized before destruction");
-    }
+    if (renderTarget_)
+        LERROR("~RenderPort(): '" << getName()
+                << "' has not been deinitialized before destruction");
 }
 
 void RenderPort::setProcessor(Processor* p) {
     Port::setProcessor(p);
 
     RenderProcessor* rp = dynamic_cast<RenderProcessor*>(p);
-    tgtAssert(rp, "RenderPort attached to processor of wrong type");
+    tgtAssert(rp, "RenderPort attached to processor of wrong type (RenderProcessor expected)");
     if (!rp)
-        LERRORC("voreen.RenderPort", "RenderPort attached to processor of wrong type"
-                << p->getName() << "|" << getName());
+        LERROR("RenderPort attached to processor of wrong type (RenderProcessor expected): "
+                << p->getName() << "." << getName());
 }
 
 void RenderPort::initialize() throw (VoreenException) {
 
-    GenericPort<RenderTarget>::initialize();
+    Port::initialize();
 
     if (!isOutport())
         return;
 
-    setData(new RenderTarget());
+    // render targets are handled by network evaluator in sharing mode
+    if (renderTargetSharing_)
+        return;
 
-#ifdef VRN_USE_FLOAT32_RENDER_TARGETS
-    getData()->initialize(GL_RGBA32F_ARB);
-#else
-    // getData()->initialize(GL_RGBA); //< 8 bit
-    //getData()->initialize(GL_RGBA16);  //< 16 bit
-    //getData()->initialize(GL_RGBA16F_ARB); //< 16 bit float
-    getData()->initialize(internalColorFormat_, internalDepthFormat_);
-#endif
+    renderTarget_ = new RenderTarget();
+    renderTarget_->initialize(internalColorFormat_, internalDepthFormat_);
+
     tgtAssert(processor_, "Not attached to processor!");
-    getData()->setDebugLabel(processor_->getName()+ "::" + getName());
-    getData()->resize(size_);
+    renderTarget_->setDebugLabel(processor_->getName()+ "::" + getName());
+    renderTarget_->resize(size_);
     validResult_ = false;
     LGL_ERROR;
 }
 
 void RenderPort::deinitialize() throw (VoreenException) {
-    if (isOutport() && portData_) {
-        portData_->deinitialize();
-        delete portData_;
-        portData_ = 0;
+    if (isOutport() && renderTarget_) {
+        renderTarget_->deinitialize();
+        delete renderTarget_;
+        renderTarget_ = 0;
     }
     LGL_ERROR;
 
-    GenericPort<RenderTarget>::deinitialize();
+    Port::deinitialize();
+}
+
+void RenderPort::activateTarget(const std::string& debugLabel) {
+    if (isOutport()) {
+        if (renderTarget_) {
+            renderTarget_->activateTarget(processor_->getName()+ ":" + getName()
+                + (debugLabel.empty() ? "" : ": " + debugLabel));
+            validateResult();
+        }
+        else
+            LERROR("Trying to activate RenderPort without RenderTarget (" << 
+            processor_->getName() << ":" << getName() << ")");
+    }
+    else {
+        LERROR("activateTarget() called on inport (" << 
+            processor_->getName() << ":" << getName() << ")");
+    }
+}
+
+void RenderPort::deactivateTarget() {
+    if (isOutport()) {
+        if (renderTarget_)
+            renderTarget_->deactivateTarget();
+        else
+            LERROR("Trying to activate RenderPort without RenderTarget");
+    }
+    else {
+        LERROR("deactivateTarget() called on inport");
+    }
+}
+
+bool RenderPort::isActive() const {
+    return (renderTarget_ && renderTarget_->isActive());
+}
+
+void RenderPort::clearTarget() {
+    if (!isOutport())
+        LERROR("clearTarget() called on inport");
+    else if (!isActive())
+        LERROR("clearTarget() called on inactive outport");
+    else
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void RenderPort::changeFormat(GLint internalColorFormat, GLint internalDepthFormat) {
-    tgt::ivec2 s = getSize();
-
-    if (getData()) {
-        getData()->deinitialize();
-        delete getData();
+    if (!isOutport()) {
+        LERROR("changeFormat() called on inport");
+        return;
     }
-    setData(new RenderTarget());
-    getData()->initialize(internalColorFormat, internalDepthFormat);
-    getData()->resize(s);
+
+    tgt::ivec2 s = getSize();
+    if (renderTarget_) {
+        renderTarget_->deinitialize();
+        delete renderTarget_;
+    }
+    renderTarget_ = new RenderTarget();
+    renderTarget_->initialize(internalColorFormat, internalDepthFormat);
+    renderTarget_->resize(s);
+    invalidate();
+
+    internalColorFormat_ = internalColorFormat;
+    internalDepthFormat_ = internalDepthFormat;
 }
 
 bool RenderPort::hasValidResult() const {
     if (isOutport())
-        return validResult_;
-    else {
+        return renderTarget_ && validResult_;
+    else { // inport
         if (!isConnected())
             return false;
 
-        if (!getData())
+        // first connected port is authoritative
+        if (RenderPort* p = dynamic_cast<RenderPort*>(connectedPorts_[0]))
+            return p->hasValidResult();
+        else {
+            LERROR("RenderPort is connected to Non-RenderPort");
             return false;
-
-        //if (!fbo_)
-            //return false;
-
-        //TODO: multiple connected ports?
-        return static_cast<RenderPort*>(connectedPorts_[0])->hasValidResult();
+        }
     }
 }
 
 void RenderPort::validateResult() {
     if (isOutport()) {
-        validResult_ = true;
-        getData()->increaseNumUpdates();
+        if (renderTarget_) {
+            validResult_ = true;
+            renderTarget_->increaseNumUpdates();
+        }
+        else
+            LERROR("validateResult(): no RenderTarget");
+    }
+    else {
+        LERROR("validateResult() called on inport");
     }
 }
 
 tgt::ivec2 RenderPort::getSize() const {
-    if (hasData())
-        return getData()->getSize();
+    if (hasRenderTarget())
+        return getRenderTarget()->getSize();
     else
         return tgt::ivec2(0);
 }
@@ -150,6 +204,8 @@ tgt::ivec2 RenderPort::getSize() const {
 void RenderPort::invalidateResult() {
     if (isOutport())
         validResult_ = false;
+    else
+        LERROR("invalidateResult() called on inport");
 }
 
 bool RenderPort::doesSizeOriginConnectFailWithPort(Port* inport) const {
@@ -171,30 +227,19 @@ bool RenderPort::doesSizeOriginConnectFailWithPort(Port* inport) const {
 }
 
 bool RenderPort::isReady() const {
-    return (isConnected() && (isOutport() || hasValidResult()));
+    bool validInport = isInport() && hasValidResult();
+    bool validOutport = isOutport() && hasRenderTarget();
+    return (isConnected() && (validInport || validOutport));
 }
 
-void RenderPort::activateTarget(const std::string& debugLabel) {
-    if (getData()) {
-        getData()->activateTarget(processor_->getName()+ "::" + getName()
-                                  + (debugLabel.empty() ? "" : ": " + debugLabel));
-        validateResult();
-    }
-    else
-        LERROR("Trying to activate RenderPort with NULL RenderTarget");
-}
-
-void RenderPort::deactivateTarget() {
-    if (getData())
-        getData()->deactivateTarget();
-}
-
-void RenderPort::setTextureParameters(tgt::Shader* shader, std::string uniform) {
-    if (hasData()) {
+void RenderPort::setTextureParameters(tgt::Shader* shader, const std::string& uniform) {
+    tgtAssert(shader, "Null pointer passed");
+    if (hasRenderTarget()) {
         bool oldIgnoreError = shader->getIgnoreUniformLocationError();
         shader->setIgnoreUniformLocationError(true);
         shader->setUniform(uniform + ".dimensions_", tgt::vec2(getSize()));
         shader->setUniform(uniform + ".dimensionsRCP_", tgt::vec2(1.0f) / tgt::vec2(getSize()));
+        shader->setUniform(uniform + ".matrix_", tgt::mat4::identity);
         shader->setIgnoreUniformLocationError(oldIgnoreError);
     }
 }
@@ -205,7 +250,6 @@ bool RenderPort::connect(Port* inport) {
         sizeOriginChanged(rp->getSizeOrigin());
         if (rp->getSizeOrigin()) {
             static_cast<RenderProcessor*>(getProcessor())->portResized(this, rp->size_);
-            //LINFO("size: " << rp->size_ << rp->getName());
         }
         return true;
     }
@@ -247,7 +291,6 @@ void RenderPort::disconnect(Port* other) {
     if (isOutport()) {
         if (getSizeOrigin() != rp->getSizeOrigin())
             static_cast<RenderProcessor*>(getProcessor())->sizeOriginChanged(this);
-
         other->invalidate();
     }
 }
@@ -278,8 +321,8 @@ void RenderPort::resize(const tgt::ivec2& newsize) {
             LWARNING("resize(): invalid size " << newsize);
             return;
         }
-        if (getData()) {
-            getData()->resize(newsize);
+        if (renderTarget_) {
+            renderTarget_->resize(newsize);
         }
         validResult_ = false;
         size_ = newsize;
@@ -295,41 +338,68 @@ void RenderPort::resize(const tgt::ivec2& newsize) {
     }
 }
 
-void RenderPort::bindColorTexture() const {
-    if (getData())
-        getData()->bindColorTexture();
+void RenderPort::bindColorTexture() {
+    if (getRenderTarget())
+        getRenderTarget()->bindColorTexture();
 }
 
-void RenderPort::bindColorTexture(GLint texUnit) const {
-    if (getData())
-        getData()->bindColorTexture(texUnit);
+void RenderPort::bindColorTexture(GLint texUnit) {
+    if (getRenderTarget())
+        getRenderTarget()->bindColorTexture(texUnit);
 }
 
-void RenderPort::bindDepthTexture() const {
-    if (getData())
-        getData()->bindDepthTexture();
+void RenderPort::bindColorTexture(tgt::TextureUnit& texUnit) {
+    bindColorTexture(texUnit.getEnum());
 }
 
-void RenderPort::bindDepthTexture(GLint texUnit) const {
-    if (getData())
-        getData()->bindDepthTexture(texUnit);
+void RenderPort::bindDepthTexture() {
+    if (getRenderTarget())
+        getRenderTarget()->bindDepthTexture();
 }
 
-void RenderPort::bindTextures(GLint colorUnit, GLint depthUnit) const {
+void RenderPort::bindDepthTexture(GLint texUnit) {
+    if (getRenderTarget())
+        getRenderTarget()->bindDepthTexture(texUnit);
+}
+
+void RenderPort::bindDepthTexture(tgt::TextureUnit& texUnit) {
+    bindDepthTexture(texUnit.getEnum());
+}
+
+void RenderPort::bindTextures(GLint colorUnit, GLint depthUnit) {
     bindColorTexture(colorUnit);
     bindDepthTexture(depthUnit);
 }
 
-tgt::Texture* RenderPort::getColorTexture() const {
-    if (hasData())
-        return getData()->getColorTexture();
+void RenderPort::bindTextures(tgt::TextureUnit& colorUnit, tgt::TextureUnit& depthUnit) {
+    bindColorTexture(colorUnit);
+    bindDepthTexture(depthUnit);
+}
+
+const tgt::Texture* RenderPort::getColorTexture() const {
+    if (hasRenderTarget())
+        return getRenderTarget()->getColorTexture();
     else
         return 0;
 }
 
-tgt::Texture* RenderPort::getDepthTexture() const {
-    if (hasData())
-        return getData()->getDepthTexture();
+tgt::Texture* RenderPort::getColorTexture() {
+    if (hasRenderTarget())
+        return getRenderTarget()->getColorTexture();
+    else
+        return 0;
+}
+
+const tgt::Texture* RenderPort::getDepthTexture() const {
+    if (hasRenderTarget())
+        return getRenderTarget()->getDepthTexture();
+    else
+        return 0;
+}
+
+tgt::Texture* RenderPort::getDepthTexture() {
+    if (hasRenderTarget())
+        return getRenderTarget()->getDepthTexture();
     else
         return 0;
 }
@@ -372,7 +442,7 @@ void RenderPort::saveToImage(const std::string& /*filename*/) throw (VoreenExcep
 
 #endif // VRN_WITH_DEVIL
 
-tgt::col4* RenderPort::readColorBuffer() const throw (VoreenException) {
+tgt::col4* RenderPort::readColorBuffer() throw (VoreenException) {
 
     if (!getColorTexture()) {
         throw VoreenException("RenderPort::readColorBuffer() called on an empty render port");
@@ -437,8 +507,53 @@ tgt::col4* RenderPort::readColorBuffer() const throw (VoreenException) {
     return pixels_b;
 }
 
+void RenderPort::setRenderTarget(RenderTarget* renderTarget) {
+    if (isOutport()) {
+        renderTarget_ = renderTarget;
+        invalidate();
+    }
+    else {
+        LERROR("setRenderTarget() called on inport");
+    }
+}
 
-//-----------------------------------------------------------------------------
+const RenderTarget* RenderPort::getRenderTarget() const {
+    if (isOutport())
+        return renderTarget_;
+    else {
+        const std::vector<Port*> connectedPorts = getConnected();
+        // first connected port is authoritative
+        for (size_t i = 0; i < connectedPorts.size(); ++i) {
+            if (!connectedPorts[i]->isOutport())
+                continue;
+            else if (RenderPort* p = dynamic_cast<RenderPort*>(connectedPorts[i]))
+                return p->getRenderTarget();
+        }
+    }
+    return 0;
+}
+
+RenderTarget* RenderPort::getRenderTarget() {
+    // call the const version of getRenderTarget and remove the const from the result
+    return const_cast<RenderTarget*>(
+        static_cast<const RenderPort*>(this)->getRenderTarget());
+}
+
+bool RenderPort::hasRenderTarget() const {
+    return (getRenderTarget() != 0);
+}
+
+void RenderPort::setRenderTargetSharing(bool sharing) {
+    renderTargetSharing_ = sharing;
+}
+
+bool RenderPort::getRenderTargetSharing() const {
+    return renderTargetSharing_;
+}
+
+
+//-------------------------------------------------------------------------------
+// PortGroup
 
 PortGroup::PortGroup(bool ignoreConnectivity) : fbo_(0),
     ignoreConnectivity_(ignoreConnectivity)
@@ -487,7 +602,7 @@ void PortGroup::activateTargets(const std::string& debugLabel) {
         if (ignoreConnectivity_ || ports_[i]->isConnected()) {
             buffers[count] = GL_COLOR_ATTACHMENT0_EXT+i;
             ports_[i]->validateResult();
-            ports_[i]->getData()->setDebugLabel(ports_[i]->getProcessor()->getName() + "::"
+            ports_[i]->getRenderTarget()->setDebugLabel(ports_[i]->getProcessor()->getName() + "::"
                                                 + ports_[i]->getName() + (debugLabel.empty() ? "" : ": " + debugLabel));
             count++;
         }
@@ -496,6 +611,14 @@ void PortGroup::activateTargets(const std::string& debugLabel) {
     glDrawBuffers(count, buffers);
     glViewport(0, 0, ports_[0]->getSize().x, ports_[0]->getSize().y);
     delete[] buffers;
+}
+
+void PortGroup::deactivateTargets() {
+    fbo_->deactivate();
+}
+
+void PortGroup::clearTargets() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void PortGroup::reattachTargets() {
@@ -516,8 +639,9 @@ void PortGroup::reattachTargets() {
         if (!ignoreConnectivity_ && !p->isConnected())
             continue;
 
-        fbo_->attachTexture(p->getColorTexture(), GL_COLOR_ATTACHMENT0_EXT+i);
-        if (!hasDepth_) {
+        if (p->getColorTexture())
+            fbo_->attachTexture(p->getColorTexture(), GL_COLOR_ATTACHMENT0_EXT+i);
+        if (!hasDepth_ && p->getDepthTexture()) {
             hasDepth_ = true;
             fbo_->attachTexture(p->getDepthTexture(), GL_DEPTH_ATTACHMENT_EXT);
         }
@@ -552,5 +676,7 @@ std::string PortGroup::generateHeader() {
 
     return headerSource;
 }
+
+
 
 } // namespace

@@ -30,7 +30,7 @@
 #ifndef VRN_VOLUMECOMBINE_H
 #define VRN_VOLUMECOMBINE_H
 
-#include "voreen/modules/base/processors/volume/volumeprocessor.h"
+#include "voreen/core/processors/volumeprocessor.h"
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/floatproperty.h"
 #include "voreen/core/properties/optionproperty.h"
@@ -43,9 +43,10 @@ public:
     ~VolumeCombine();
     virtual Processor* create() const;
 
-    virtual std::string getClassName() const    { return "VolumeCombine"; }
-    virtual std::string getCategory() const     { return "Volume Processing"; }
-    virtual CodeState getCodeState() const      { return CODE_STATE_STABLE; }
+    virtual std::string getClassName() const      { return "VolumeCombine";     }
+    virtual std::string getCategory() const       { return "Volume Processing"; }
+    virtual CodeState getCodeState() const        { return CODE_STATE_STABLE;   }
+    virtual bool usesExpensiveComputation() const { return true; }
     virtual std::string getProcessorInfo() const;
 
 protected:
@@ -69,8 +70,7 @@ private:
         OP_PRIORITY_FIRST,
         OP_PRIORITY_SECOND,
         OP_TAKE_FIRST,
-        OP_TAKE_SECOND,
-        OP_INFORMATION_BASED
+        OP_TAKE_SECOND
     };
 
     /**

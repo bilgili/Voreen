@@ -144,11 +144,11 @@ void CurvatureRaycaster::deinitialize() throw (VoreenException) {
 
 void CurvatureRaycaster::loadShader() {
     raycastPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "rc_curvature.frag",
-                                       generateHeader(), false, false);
+                                       generateHeader(), false);
 }
 
 void CurvatureRaycaster::compile(VolumeHandle* volumeHandle) {
-    raycastPrg_->setHeaders(generateHeader(volumeHandle), false);
+    raycastPrg_->setHeaders(generateHeader(volumeHandle));
     raycastPrg_->rebuild();
 }
 
@@ -201,13 +201,15 @@ void CurvatureRaycaster::process() {
         volumeInport_.getData()->getVolumeGL(),
         &volUnit,
         "volume_",
-        "volumeParameters_")
+        "volumeParameters_",
+        true)
         );
     volumeTextures.push_back(VolumeStruct(
         gradientInport_.getData()->getVolumeGL(),
         &volUnit2,
         "gradientVolume_",
-        "gradientVolumeParameters_")
+        "gradientVolumeParameters_",
+        true)
         );
 
     updateBrickingParameters(volumeInport_.getData());
@@ -227,7 +229,8 @@ void CurvatureRaycaster::process() {
         volumeTextures.push_back(VolumeStruct(volumeSeg->getVolumeGL(),
                                               &segUnit,
                                               "segmentation_",
-                                              "segmentationParameters_"));
+                                              "segmentationParameters_",
+                                              true));
 
         // set texture filtering for this texture unit
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -240,7 +243,7 @@ void CurvatureRaycaster::process() {
     // set common uniforms used by all shaders
     setGlobalShaderParameters(raycastPrg_, camera_.get());
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(raycastPrg_, volumeTextures);
+    bindVolumes(raycastPrg_, volumeTextures, camera_.get(), lightPosition_.get());
 
     // pass the remaining uniforms to the shader
     raycastPrg_->setUniform("entryPoints_", entryUnit.getUnitNumber());

@@ -208,4 +208,14 @@ void NetworkConverter5to6::convert(TiXmlElement* elem) {
     changeProcessorType(elem, "GeomLightWidget", "LightWidgetRenderer");
 }
 
+
+void NetworkConverter6to7::convert(TiXmlElement* elem) {
+    changeProcessorType(elem, "VolumeConvert", "VolumeBitScale");
+    changeProcessorType(elem, "VolumeMirrorZ", "VolumeMirror");
+    changeProcessorType(elem, "TexturedGeometryRenderer", "GeometryRenderer");
+    changeProcessorType(elem, "ClippingPlaneWidget", "PlaneWidgetProcessor");
+    changeProcessorType(elem, "CylinderRenderer", "QuadricRenderer");
+    changeProcessorType(elem, "SphereRenderer", "QuadricRenderer");
+}
+
 } // namespace

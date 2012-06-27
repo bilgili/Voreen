@@ -33,14 +33,18 @@
 #include "voreen/qt/widgets/sliderspinboxwidget.h"
 
 #include <QHBoxLayout>
+#include <QMouseEvent>
+#include <QMenu>
 
 namespace voreen {
 
 IntPropertyWidget::IntPropertyWidget(IntProperty* prop, QWidget* parent, bool addVisibilityControl)
     : QPropertyWidget(prop, parent),
-    property_(prop),
-    widget_(new SliderSpinBoxWidget(this))
+      property_(prop),
+      widget_(new SliderSpinBoxWidget(this))
 {
+    tgtAssert(property_, "no property");
+    widget_->setSliderTracking(property_->hasTracking());
     addWidget(widget_);
 
     updateFromProperty();
@@ -49,8 +53,14 @@ IntPropertyWidget::IntPropertyWidget(IntProperty* prop, QWidget* parent, bool ad
     connect(widget_, SIGNAL(sliderPressedChanged(bool)), this, SLOT(toggleInteractionMode(bool)));
     connect(widget_, SIGNAL(valueChanged(int)), this, SIGNAL(widgetChanged()));
 
-    if (addVisibilityControl == true)
+    if (addVisibilityControl)
         QPropertyWidget::addVisibilityControls();
+
+    instantValueChangeMenu_ = new QMenu(this);
+    instantValueChangeAction_ = instantValueChangeMenu_->addAction("Tracking Mode");
+    instantValueChangeAction_->setCheckable(true);
+    if (property_->hasTracking())
+        instantValueChangeAction_->toggle();
 }
 
 IntPropertyWidget::~IntPropertyWidget() {
@@ -65,6 +75,7 @@ void IntPropertyWidget::updateFromProperty() {
         widget_->setMaxValue(property_->getMaxValue());
         widget_->setSingleStep(property_->getStepping());
         widget_->setValue(property_->get());
+        widget_->setSliderTracking(property_->hasTracking());
         widget_->blockSignals(false);
     }
 }
@@ -87,6 +98,17 @@ void IntPropertyWidget::setProperty(int value) {
     }
 
     emit valueChanged(value);
+}
+
+void IntPropertyWidget::mousePressEvent(QMouseEvent* event) {
+    if(event->button() == Qt::RightButton) {
+        QAction* prec = instantValueChangeMenu_->exec(mapToGlobal(event->pos()));
+        if(prec == instantValueChangeAction_) {
+            property_->setTracking(!property_->hasTracking());
+        }
+        updateFromProperty();
+    }
+    QWidget::mousePressEvent(event);
 }
 
 } // namespace

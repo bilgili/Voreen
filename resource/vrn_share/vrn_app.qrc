@@ -7,6 +7,7 @@
     <file>icons/arrow-right.png</file>
     <file>icons/cancel.png</file>
     <file>icons/clear.png</file>
+	<file>icons/clear_dependency.png</file>
     <file>icons/configure.png</file>
     <file>icons/development-mode.png</file>
     <file>icons/document-new_32x32.png</file>
@@ -49,6 +50,7 @@
     <file>icons/rebuild.png</file>
     <file>icons/refresh.png</file>
 	<file>icons/rename.png</file>
+	<file>icons/revert.png</file>
     <file>icons/save.png</file>
     <file>icons/saveas.png</file>
     <file>icons/segmentation.png</file>

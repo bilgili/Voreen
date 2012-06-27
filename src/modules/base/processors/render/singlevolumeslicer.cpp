@@ -50,9 +50,6 @@ SingleVolumeSlicer::SingleVolumeSlicer()
     addPort(outport_);
 }
 
-SingleVolumeSlicer::~SingleVolumeSlicer() {
-}
-
 Processor* SingleVolumeSlicer::create() const {
     return new SingleVolumeSlicer();
 }
@@ -86,11 +83,11 @@ void SingleVolumeSlicer::deinitialize() throw (VoreenException) {
 
 void SingleVolumeSlicer::loadShader() {
     slicingPrg_ = ShdrMgr.loadSeparate("sl_singlevolume.vert", "sl_singlevolume.frag",
-        generateHeader(), false, false);
+        generateHeader(), false);
 }
 
 void SingleVolumeSlicer::compile() {
-    slicingPrg_->setHeaders(generateHeader(), false);
+    slicingPrg_->setHeaders(generateHeader());
     slicingPrg_->rebuild();
 }
 
@@ -142,7 +139,8 @@ void SingleVolumeSlicer::process() {
         volumeInport_.getData()->getVolumeGL(),
         &volUnit,
         "volume_",
-        "volumeParameters_")
+        "volumeParameters_",
+        true)
     );
 
     // compute the distance between two adjacent slices in texture coordinates
@@ -173,7 +171,7 @@ void SingleVolumeSlicer::process() {
     // set common uniforms used by all shaders
     setGlobalShaderParameters(slicingPrg_, camera_.get());
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(slicingPrg_, volumeTextures);
+    bindVolumes(slicingPrg_, volumeTextures, camera_.get(), lightPosition_.get());
 
     glDisable(GL_DEPTH_TEST);
 
@@ -201,6 +199,7 @@ void SingleVolumeSlicer::process() {
         glEnd();
     }
 
+    glBlendFunc(GL_ONE, GL_ZERO);
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
 
@@ -210,6 +209,7 @@ void SingleVolumeSlicer::process() {
     glMatrixMode(GL_MODELVIEW);
 
     slicingPrg_->deactivate();
+    outport_.deactivateTarget();
     TextureUnit::setZeroUnit();
 
     LGL_ERROR;

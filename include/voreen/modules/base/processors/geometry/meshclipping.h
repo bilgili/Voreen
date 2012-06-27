@@ -32,9 +32,11 @@
 
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/ports/allports.h"
-#include "voreen/core/properties/allproperties.h"
 
 #include "voreen/core/datastructures/geometry/meshlistgeometry.h"
+
+#include "voreen/core/properties/vectorproperty.h"
+#include "voreen/core/properties/floatproperty.h"
 
 namespace voreen {
 
@@ -63,9 +65,10 @@ protected:
     GeometryPort inport_;        ///< Inport for a list of mesh geometries to clip.
     GeometryPort outport_;       ///< Outport for a list of mesh geometries that were clipped.
 
-    MeshListGeometry geometry_;  ///< List of mesh geometries to clip, retrieved through the inport.
     FloatVec3Property normal_;   ///< Clipping plane normal
     FloatProperty position_;     ///< Clipping plane position (distance to the world origin)
+
+    MeshListGeometry geometry_;  ///< Clipped input geometry.
 
     /// category used in logging
     static const std::string loggerCat_;

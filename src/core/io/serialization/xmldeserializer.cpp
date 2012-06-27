@@ -28,6 +28,7 @@
  **********************************************************************/
 
 #include "voreen/core/io/serialization/xmldeserializer.h"
+#include "voreen/core/plotting/plotbase.h"
 
 namespace voreen {
 
@@ -274,6 +275,36 @@ void XmlDeserializer::deserialize(const std::string& key, tgt::Matrix4d& data)
     deserializeTgtVector(key+".row2", row2);
     deserializeTgtVector(key+".row3", row3);
     data = tgt::Matrix4d(row0, row1, row2, row3);
+}
+
+void XmlDeserializer::deserialize(const std::string& key, PlotCellValue& data)
+    throw (SerializationException)
+{
+    TemporaryNodeChanger nodeChanger(*this, getNextXmlElement(key));
+
+    // first aquire flags
+    bool isHighlighted, isTag, isValue;
+    plot_t value;
+    std::string tag;
+    deserializeSimpleTypes("isValue", isValue);
+    deserializeSimpleTypes("isTag", isTag);
+    deserializeSimpleTypes("isHighlighted", isHighlighted);
+
+    // now call the according constructors
+    if (isValue) {
+        deserializeSimpleTypes("value", value);
+        data = PlotCellValue(value);
+    }
+    else if (isTag) {
+        deserializeSimpleTypes("tag", tag);
+        data = PlotCellValue(tag);
+    }
+    else { // neither value nor tag
+        data = PlotCellValue();
+    }
+
+    // finally set highlighted flag
+    data.setHighlighted(isHighlighted);
 }
 
 void XmlDeserializer::deserialize(const std::string& key, Serializable& data)

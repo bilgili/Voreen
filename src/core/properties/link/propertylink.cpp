@@ -28,6 +28,8 @@
  **********************************************************************/
 
 #include "voreen/core/properties/link/propertylink.h"
+
+#include "voreen/core/properties/link/dependencylinkevaluator.h"
 #include "voreen/core/properties/link/linkevaluatorbase.h"
 #include "voreen/core/properties/link/linkevaluatorfactory.h"
 #include "voreen/core/properties/link/linkevaluatorid.h"
@@ -45,9 +47,9 @@ const std::string PropertyLink::loggerCat_("voreen.PropertyLink");
 std::vector<Property*> PropertyLink::visitedProperties_;
 
 PropertyLink::PropertyLink(Property* src, Property* dest, LinkEvaluatorBase* linkEvaluator)
-        : src_(src)
-        , dest_(dest)
-        , evaluator_(linkEvaluator)
+    : src_(src)
+    , dest_(dest)
+    , evaluator_(linkEvaluator)
 {
     tgtAssert(src_, "No source property");
     tgtAssert(dest_, "No destination property");
@@ -73,17 +75,12 @@ PropertyLink::~PropertyLink() {
  * Call to test if the link will work to find out about failures in an early state.
  */
 bool PropertyLink::testPropertyLink() {
-
     tgtAssert(src_, "No source property");
     tgtAssert(dest_, "No destination property");
 
     try {
         ChangeData changeData = ChangeData();
         if (BoolProperty* srcCast = dynamic_cast<BoolProperty*>(src_)) {
-            changeData.setOldValue(BoxObject(srcCast->get()));
-            changeData.setNewValue(BoxObject(srcCast->get()));
-        }
-        else if (ColorProperty* srcCast = dynamic_cast<ColorProperty*>(src_)) {
             changeData.setOldValue(BoxObject(srcCast->get()));
             changeData.setNewValue(BoxObject(srcCast->get()));
         }
@@ -171,6 +168,16 @@ bool PropertyLink::testPropertyLink() {
         }
         else if (dynamic_cast<ButtonProperty*>(src_)) {
         }
+
+        else if (PlotPredicateProperty* srcCast = dynamic_cast<PlotPredicateProperty*>(src_)) {
+            changeData.setOldValue(BoxObject(srcCast->get()));
+            changeData.setNewValue(BoxObject(srcCast->get()));
+        }
+        else if (PlotSelectionProperty* srcCast = dynamic_cast<PlotSelectionProperty*>(src_)) {
+            changeData.setOldValue(BoxObject(srcCast->get()));
+            changeData.setNewValue(BoxObject(srcCast->get()));
+        }
+
         else {
             throw VoreenException("PropertyLink: Unsupported property type (" + src_->getFullyQualifiedID() + ")");
         }
@@ -212,10 +219,6 @@ void PropertyLink::onChange(ChangeData& data)
         if (BoolProperty* destCast = dynamic_cast<BoolProperty*>(dest_)) {
             BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
             destCast->set(newValue.getBool());
-        }
-        else if (ColorProperty* destCast = dynamic_cast<ColorProperty*>(dest_)) {
-            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
-            destCast->set(newValue.getVec4());
         }
         else if (FileDialogProperty* destCast = dynamic_cast<FileDialogProperty*>(dest_)) {
             BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
@@ -277,14 +280,17 @@ void PropertyLink::onChange(ChangeData& data)
             TransFunc* tf = destCast->get();
             TransFuncIntensity* tfi = dynamic_cast<TransFuncIntensity*>(tf);
             if (tfi) {
-                BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(tfi), src_, dest_);
+                const BoxObject& oldSrcValue = data.getOldValue();
+                const BoxObject& newSrcValue = data.getNewValue();
+                BoxObject targetOld = BoxObject(tfi);
+                BoxObject newValue = evaluator_->eval(oldSrcValue, newSrcValue, targetOld, src_, dest_);
                 const TransFuncIntensity* newTF = dynamic_cast<const TransFuncIntensity*>(newValue.getTransFunc());
                 if (newTF) {
                     tfi->updateFrom(*newTF);
                     destCast->notifyChange();
                 }
                 else {
-                    VoreenException("PropertyLink execution failed: TransFuncIntensity expected as return type");
+                    throw VoreenException("PropertyLink execution failed: TransFuncIntensity expected as return type");
                 }
             }
             else {
@@ -309,6 +315,14 @@ void PropertyLink::onChange(ChangeData& data)
         }
         else if (dynamic_cast<VolumeCollectionProperty*>(dest_)) {
             throw VoreenException("PropertyLink execution failed: Linking of VolumeCollections not supported");
+        }
+        else if (PlotPredicateProperty* destCast = dynamic_cast<PlotPredicateProperty*>(dest_)) {
+            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
+            destCast->set(newValue.getPlotPredicateVector());
+        }
+        else if (PlotSelectionProperty* destCast = dynamic_cast<PlotSelectionProperty*>(dest_)) {
+            BoxObject newValue = evaluator_->eval(data.getOldValue(), data.getNewValue(), BoxObject(destCast->get()), src_, dest_);
+            destCast->set(newValue.getPlotZoom());
         }
         else {
             visitedProperties_.clear();

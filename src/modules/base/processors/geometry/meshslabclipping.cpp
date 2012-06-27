@@ -38,17 +38,22 @@ MeshSlabClipping::MeshSlabClipping()
     , normal_("slabNormal", "Slab Normal", tgt::vec3(0, 1, 0), tgt::vec3(-1), tgt::vec3(1))
     , position_("slabPosition", "Slab Position", 0.0f, -10.0f, 10.0f)
     , thickness_("slabThickness", "Slab Thickness", 0.5f, 0.0f, 3.0f)
+    , wheelInteractionHandler_("wheelInteractionHandler", "Slab Position", &position_,
+        tgt::Event::MODIFIER_NONE, false, false)
 {
     addPort(inport_);
     addPort(outport_);
 
+    thickness_.onChange(CallMemberAction<MeshSlabClipping>(this, &MeshSlabClipping::thicknessChanged));
     addProperty(normal_);
     addProperty(position_);
     addProperty(thickness_);
+
+    addInteractionHandler(wheelInteractionHandler_);
 }
 
-MeshSlabClipping::~MeshSlabClipping()
-{ }
+MeshSlabClipping::~MeshSlabClipping() {
+}
 
 Processor* MeshSlabClipping::create() const {
     return new MeshSlabClipping();
@@ -71,10 +76,14 @@ void MeshSlabClipping::process() {
 
     geometry_ = *inportGeometry;
 
-    geometry_.clip(tgt::vec4(tgt::normalize( normal_.get()), position_.get()));
-    geometry_.clip(tgt::vec4(tgt::normalize(-normal_.get()), -position_.get()+thickness_.get()));
+    geometry_.clip(tgt::vec4(tgt::normalize( normal_.get()), position_.get() + thickness_.get()/2.f));
+    geometry_.clip(tgt::vec4(tgt::normalize(-normal_.get()), -position_.get() + thickness_.get()/2.f));
 
     outport_.setData(&geometry_);
+}
+
+void MeshSlabClipping::thicknessChanged() {
+    position_.setStepping(std::min(thickness_.get(), 0.1f));
 }
 
 }  //namespace

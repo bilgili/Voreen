@@ -31,8 +31,8 @@
 #define VRN_CAMERAINTERACTIONHANDLER_H
 
 #include "voreen/core/interaction/interactionhandler.h"
-#include "voreen/core/properties/allproperties.h"
 #include "voreen/core/properties/eventproperty.h"
+#include "voreen/core/properties/optionproperty.h"
 
 #include <bitset>
 
@@ -92,6 +92,11 @@ public:
      * Returns the currently used navigation mode.
      */
     NavigationMetaphor getNavigationMode() const;
+
+    /**
+     * @see InteractionHandler::setVisible
+     */
+    void setVisible(bool state);
 
 private:
 

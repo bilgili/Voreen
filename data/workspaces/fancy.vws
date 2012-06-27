@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
-    <Workspace version="2">
+    <Workspace version="2" readonly="true">
         <VolumeContainer>
             <VolumeHandles>
                 <VolumeHandle modality="unknown" timestep="0" id="ref10">
@@ -87,7 +87,6 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-426" y="-38" />
                     </MetaData>
                     <Properties>
-                        <Property name="applyDatasetTrafoMatrix" value="true" />
                         <Property name="boundingBoxStippleFactor" value="1" />
                         <Property name="boundingBoxStipplePattern" value="65535" />
                         <Property name="boundingBoxWidth" value="1" />
@@ -114,14 +113,19 @@
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
-                <Processor type="ClippingPlaneWidget" name="ClippingPlaneWidget" id="ref6">
+                <Processor type="PlaneWidgetProcessor" name="PlaneWidgetProcessor" id="ref6">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-465" y="41" />
                     </MetaData>
                     <Properties>
-                        <Property name="applyDatasetTrafoMatrix" value="true" />
                         <Property name="backClipPlane" value="40" id="ref19" />
                         <Property name="bottomClipPlane" value="0" id="ref25" />
+                        <Property name="enableBackZ" value="true" />
+                        <Property name="enableBottomY" value="true" />
+                        <Property name="enableFrontZ" value="true" />
+                        <Property name="enableLeftX" value="true" />
+                        <Property name="enableRightX" value="true" />
+                        <Property name="enableTopY" value="true" />
                         <Property name="frontClipPlane" value="0" id="ref21" />
                         <Property name="innerColor">
                             <value x="0" y="0" z="0" w="1" />
@@ -131,11 +135,18 @@
                             <value x="2.29999995" y="1.5" z="1.5" w="1" />
                         </Property>
                         <Property name="lineWidth" value="1" />
+                        <Property name="manipulatorScaling" value="1" />
                         <Property name="mouseEvent.clipplaneMovement" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="mouseEvent.synchronizedMovement" enabled="false" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="rightClipPlane" value="19" id="ref27" />
                         <Property name="showInnerBB" value="false" />
                         <Property name="topClipPlane" value="40" id="ref23" />
+                        <Property name="useSphereManipulatorBackY" value="false" />
+                        <Property name="useSphereManipulatorBottomZ" value="false" />
+                        <Property name="useSphereManipulatorFrontY" value="false" />
+                        <Property name="useSphereManipulatorLeftX" value="false" />
+                        <Property name="useSphereManipulatorRightX" value="false" />
+                        <Property name="useSphereManipulatorTopZ" value="false" />
                         <Property name="xColor">
                             <value x="1" y="0" z="0" w="1" />
                         </Property>
@@ -191,12 +202,9 @@
                         <Property name="lightSpecular">
                             <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
                         </Property>
-                        <Property name="masking" value="none" />
                         <Property name="materialShininess" value="60" />
                         <Property name="samplingRate" value="5" />
-                        <Property name="setSegment" value="0" />
                         <Property name="shading" value="phong" />
-                        <Property name="switchSegmentation" value="false" />
                         <Property name="transferFunction">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
@@ -254,7 +262,6 @@
                         <Property name="rightClippingPlane" value="19" id="ref26" />
                         <Property name="topClippingPlane" value="40" id="ref18" />
                         <Property name="useClipping" value="true" />
-                        <Property name="useDatasetTrafoMatrix" value="true" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -342,7 +349,7 @@
                         <Processor type="VolumeSource" ref="ref4" />
                     </Outport>
                     <Inport name="volume">
-                        <Processor type="ClippingPlaneWidget" ref="ref6" />
+                        <Processor type="PlaneWidgetProcessor" ref="ref6" />
                     </Inport>
                 </Connection>
                 <Connection>
@@ -397,7 +404,7 @@
                 </CoProcessorConnection>
                 <CoProcessorConnection>
                     <Outport name="coprocessor.geometryrenderer">
-                        <Processor type="ClippingPlaneWidget" ref="ref6" />
+                        <Processor type="PlaneWidgetProcessor" ref="ref6" />
                     </Outport>
                     <Inport name="coprocessor.geometryrenderers">
                         <Processor type="GeometryProcessor" ref="ref0" />

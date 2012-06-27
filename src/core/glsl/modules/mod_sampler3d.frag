@@ -48,9 +48,10 @@ struct VOLUME_PARAMETERS {
     int bitDepth_;                  // the volume's bit depth
     float bitDepthScale_;           // scaling factor that must be applied for normalizing the fetched texture value.
                                     // currently just used for 12 bit volumes, which actually use only 12 out of 16 bits.
-
     mat4 volumeTransformation_;     // dataset transformation matrix (see Volume)
     mat4 volumeTransformationINV_;  // inverse dataset transformation matrix
+    vec3 cameraPositionOBJ_;        // camera position in volume object coordinates (see mod_shading.frag)
+    vec3 lightPositionOBJ_;         // light position in volume object coordinates (see mod_shading.frag)
 };
 
 /*

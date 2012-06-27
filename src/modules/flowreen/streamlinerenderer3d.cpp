@@ -216,6 +216,8 @@ void StreamlineRenderer3D::process() {
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
+
+    imgOutport_.deactivateTarget();
 }
 
 void StreamlineRenderer3D::initialize() throw (VoreenException) {
@@ -354,7 +356,7 @@ void StreamlineRenderer3D::onColorCodingChange() {
         return;
 
     shader_->deactivate();
-    shader_->setHeaders(colorCoding_.getShaderDefines(), false);
+    shader_->setHeaders(colorCoding_.getShaderDefines());
     shader_->rebuild();
 }
 
@@ -498,7 +500,7 @@ void StreamlineRenderer3D::setPropertyVisibilities() {
 bool StreamlineRenderer3D::setupShader(const Flow3D& flow, const tgt::vec2& thresholds) {
     if (shader_ == 0) {
         shader_ = ShdrMgr.loadSeparate("phong.vert", "streamlinerenderer3d.frag",
-            colorCoding_.getShaderDefines(), false, false);
+            colorCoding_.getShaderDefines(), false);
     }
 
     // activate the shader if everything went fine and set the needed uniforms

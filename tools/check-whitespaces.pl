@@ -7,7 +7,7 @@ use File::Find;
 
 my @dirs = qw(src include apps/voreenve apps/simple apps/voltool);
 my $interesting = 'cpp|h|frag|vert|cu|cl';
-my $skip_dirs = '\.svn|\.moc|\.obj|\.ui';
+my $skip_dirs = '\.svn|\.moc|\.obj|\.ui|ext';
 my $total_tabs = 0;
 my @messages = ();
 

@@ -133,14 +133,17 @@ VolumeCollection* VevoVolumeReader::read(const string &fname)
     tgt::ivec3 dimensions(0);
     tgt::vec3 spacing;
     string fileName;
-    size_t pos;
+    size_t posRDI;
+    size_t posRDM;
 
-    if ((pos = fname.rfind("rdi")) != string::npos) {
+    posRDI = fname.rfind("rdi");
+    posRDM = fname.rfind("rdm");
+    if (posRDI != string::npos) {
         LERROR("Opening single 2D frames stack, no volume dataset can be"
                "reconstructed from one file.");
         exit(EXIT_FAILURE);
     }
-    else if ((pos = fname.rfind("rdm")) != string::npos) {
+    else if (posRDM != string::npos) {
         std::vector<string> filenames;
 
         readVevoFramesCollection(fname, filenames);

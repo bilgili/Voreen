@@ -35,6 +35,12 @@
 
 namespace voreen {
 
+/**
+ * Template for properties that store numeric values.
+ *
+ * Besides the allowed value range, some GUI hints can be defined,
+ * such as the stepping and number of decimals.
+ */
 template<typename T>
 class NumericProperty : public TemplateProperty<T> {
 
@@ -46,37 +52,66 @@ public:
     NumericProperty(const std::string& id, const std::string& guiText, const T& value,
                     const T& minValue, const T& maxValue, const T& stepping,
                     Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT);
-    virtual ~NumericProperty() {}
-
-    const T& getMinValue() const { return minValue_; }
-    void setMinValue(const T& minValue) { minValue_ = minValue; this->updateWidgets();}
-
-    const T& getMaxValue() const { return maxValue_; }
-    void setMaxValue(const T& maxValue) { maxValue_ = maxValue; this->updateWidgets();}
-
-    T getStepping() const { return stepping_; }
-    void setStepping(const T stepping) { stepping_ = stepping; }
-
-    void decrease() { set(value_ - stepping_); }
-    void increase() { set(value_ + stepping_); }
-
-    bool getInstantValueChange() const { return instantValueChange_; }
-    void setInstantValueChange(const bool instantChange) { instantValueChange_ = instantChange; }
-
-    size_t getNumDecimals() const { return numDecimals_; }
-    void setNumDecimals(const size_t numDecimals) {
-        tgtAssert(numDecimals <= 64, "Invalid number of decimals");
-        numDecimals_ = numDecimals;
-    }
 
     /**
-     * @see Property::serialize
+     * Sets the minimum value the variable can take.
+     * This is checked by a NumericPropertyValidation on each
+     * set() call. Therefore, it is guaranteed that the property
+     * never attains a value outside its valid range.
      */
+    void setMinValue(const T& minValue);
+    const T& getMinValue() const;
+
+    /**
+     * Sets the maximum value the variable can take.
+     * This is checked by a NumericPropertyValidation on each
+     * set() call. Therefore, it is guaranteed that the property
+     * never attains a value outside its valid range.
+     */
+    void setMaxValue(const T& maxValue);
+    const T& getMaxValue() const;
+
+    /**
+     * Sets the property's minimum increase/decrease,
+     * which should be used in GUI widgets representing
+     * the property, e.g., a spin box.
+     *
+     * @see increase, decrease
+     */
+    void setStepping(const T stepping);
+    T getStepping() const;
+
+    /**
+     * Sets the number of decimals that should be
+     * displayed by a GUI representation of the property.
+     */
+    void setNumDecimals(size_t numDecimals);
+    size_t getNumDecimals() const;
+
+    /**
+     * If tracking is disabled, the property is not to be updated
+     * during user interactions, e.g., while the user drags a slider.
+     * Tracking is enabled by default.
+     */
+    void setTracking(bool tracking);
+    bool hasTracking() const;
+
+    /**
+     * Increases the property's value by its stepping.
+     * @see setStepping
+     */
+    void increase();
+
+    /**
+     * Decreases the property's value by its stepping.
+     * @see setStepping
+     */
+    void decrease();
+
+    /// @see Property::serialize
     virtual void serialize(XmlSerializer& s) const;
 
-    /**
-     * @see Property::deserialize
-     */
+    /// @see Property::deserialize
     virtual void deserialize(XmlDeserializer& s);
 
 protected:
@@ -85,27 +120,9 @@ protected:
     T minValue_;
     T maxValue_;
     T stepping_;
-    bool instantValueChange_; /** see QSlider.setTracking - emits valueChanged while slider dragged */
+    bool tracking_;
     size_t numDecimals_;
 };
-
-
-// ----------------------------------------------------------------------------
-
-template<typename T>
-NumericProperty<T>::NumericProperty(const std::string& id, const std::string& guiText, const T& value,
-                                    const T& minValue, const T& maxValue, const T& stepping,
-                                    Processor::InvalidationLevel invalidationLevel)
-    : TemplateProperty<T>(id, guiText, value, invalidationLevel),
-    minValue_(minValue),
-    maxValue_(maxValue),
-    stepping_(stepping),
-    instantValueChange_(true),
-    numDecimals_(2)
-{
-    addValidation(NumericPropertyValidation<T>(this));
-    validate(value);
-}
 
 } // namespace voreen
 

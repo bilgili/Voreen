@@ -83,7 +83,10 @@ public:
      *      Otherwise, no memory is allocated for the pixels and no rendered data
      *      are contained.
      */
-    tgt::Texture* getImageColorTexture() const;
+    const tgt::Texture* getImageColorTexture() const;
+
+    /// @overload
+    tgt::Texture* getImageColorTexture();
 
     /**
      * Returns the current depth texture part of the rendered image. The
@@ -94,7 +97,10 @@ public:
      *      Otherwise, no memory is allocated for the pixels and no rendered data
      *      are contained.
      */
-    tgt::Texture* getImageDepthTexture() const;
+    const tgt::Texture* getImageDepthTexture() const;
+
+    /// @overload
+    tgt::Texture* getImageDepthTexture();
 
     /**
      * Writes the input rendering to an image file with the same
@@ -201,6 +207,8 @@ protected:
 private:
     /// Calls resizeCanvasWidget() with the value currently assigned to the size property.
     void sizePropChanged();
+
+    static const std::string loggerCat_; ///< category used in logging
 
 };
 

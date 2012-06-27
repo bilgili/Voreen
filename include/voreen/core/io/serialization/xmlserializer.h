@@ -31,11 +31,13 @@
 #define VRN_XMLSERIALIZER_H
 
 #include <string>
+#include <utility>
 #include <vector>
 #include <deque>
 #include <list>
 #include <map>
 #include <set>
+#include <stack>
 #include <iostream>
 
 #include "tinyxml/tinyxml.h"
@@ -48,6 +50,7 @@
 #include "voreen/core/io/serialization/xmlserializationconstants.h"
 #include "voreen/core/io/serialization/serializable.h"
 #include "voreen/core/io/serialization/serializablefactory.h"
+#include "voreen/core/plotting/plotcell.h"
 
 namespace voreen {
 
@@ -448,6 +451,15 @@ public:
         throw (SerializationException);
 
     /**
+     * Serializes the given @c key/data pair.
+     *
+     * @param key the XML node key
+     * @param data the data
+     */
+    void serialize(const std::string& key, const PlotCellValue& data)
+        throw (SerializationException);
+
+    /**
      * Serializes the given @c Serializable interface realization.
      *
      * @note All user defined classes must realize the @c Serializable
@@ -472,6 +484,22 @@ public:
      */
     template<class T>
     void serialize(const std::string& key, const T* const& data)
+        throw (SerializationException);
+
+    /**
+     * Serializes the given std::pair.
+     *
+     * @tparam S data type of first pair item
+     * @tparam T data type of second pair item
+     *
+     * @param key the XML node key
+     * @param data the pair to serialize
+     *
+     * @throws XmlSerializationAttributeNamingException
+     *     if serialization of pair items raises this exception
+     */
+    template<class S, class T>
+    void serialize(const std::string& key, const std::pair<S, T>& data)
         throw (SerializationException);
 
     /**
@@ -565,6 +593,28 @@ public:
      */
     template<class T, class C>
     void serialize(const std::string& key, const std::set<T, C>& data, const std::string& itemKey = XmlSerializationConstants::ITEMNODE)
+        throw (SerializationException);
+
+    /**
+     * Serializes the given data stack.
+     *
+     * @par
+     * Iterates over the given data collection and serialize each collection item.
+     *
+     * @tparam T data type of stack items
+     *
+     * @param key the XML node key
+     * @param data the data set
+     * @param itemKey XML node key for each XML child node
+     *
+     * @throws XmlSerializationAttributeNamingException
+     *     if serialization of collection items raises this exception
+     * @throws XmlSerializationInvalidOperationException
+     *     if pointer content serialization is enabled,
+     *     because of possible hash problems on deserialization
+     */
+    template<class T>
+    void serialize(const std::string& key, const std::stack<T>& data)
         throw (SerializationException);
 
     /**
@@ -949,6 +999,38 @@ void XmlSerializer::serialize(const std::string& key, const T* const& data)
     addUnresolvedReference(newNode, data);
 }
 
+template<class S, class T>
+void XmlSerializer::serialize(const std::string& key, const std::pair<S, T>& data)
+    throw (SerializationException)
+{
+    TiXmlElement* newNode = new TiXmlElement(key);
+    node_->LinkEndChild(newNode);
+
+    TemporaryNodeChanger nodeChanger(*this, newNode);
+
+    // first item
+    if (useAttributes_ && isPrimitiveType(typeid(S))) {
+        // serialize primitive type as XML attribute
+        serializeAttributeInNode("First", XmlSerializationConstants::VALUEATTRIBUTE, data.first);
+    }
+    else {
+        // serialize as XML node
+        serialize("First", data.first);
+    }
+
+    // second item
+    if (useAttributes_ && isPrimitiveType(typeid(T))) {
+        // serialize primitive type as XML attribute
+        serializeAttributeInNode("Second", XmlSerializationConstants::VALUEATTRIBUTE, data.second);
+    }
+    else {
+        // serialize as XML node
+        serialize("Second", data.second);
+    }
+
+    addDataNode(&data, newNode);
+}
+
 template<class T>
 void XmlSerializer::serialize(const std::string& key, const std::vector<T>& data, const std::string& itemKey)
     throw (SerializationException)
@@ -968,6 +1050,28 @@ void XmlSerializer::serialize(const std::string& key, const std::list<T>& data, 
     throw (SerializationException)
 {
     serializeCollection(key, data, itemKey);
+}
+
+template<class T>
+void XmlSerializer::serialize(const std::string& key, const std::stack<T>& data)
+    throw (SerializationException)
+{
+    TiXmlElement* newNode = new TiXmlElement(key);
+    node_->LinkEndChild(newNode);
+
+    TemporaryNodeChanger nodeChanger(*this, newNode);
+
+    // make a temporary copy of the stack
+    std::stack<T> copy = data;
+
+    // pop each element and serialize it until the stack is empty
+    while (!copy.empty()) {
+        const T& top = copy.top();
+        serialize("Item", top);
+        copy.pop();
+    }
+
+    addDataNode(&data, newNode);
 }
 
 template<class T, class C>

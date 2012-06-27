@@ -59,7 +59,7 @@ void main() {
         result = vec4(vec3(1.0-depthNorm), 1.0)*textureLookup2Dscreen(shadeTex_, texParams_, fragCoord.xy);
     } else if (colorMode_ == 2) {
         // chromadepth
-        result = texture1D(chromadepthTex_, vec2(depthNorm, 0.5).x)*textureLookup2Dscreen(shadeTex_, texParams_, fragCoord.xy);
+        result = texture1D(chromadepthTex_, depthNorm)*textureLookup2Dscreen(shadeTex_, texParams_, fragCoord.xy);
     } else if (colorMode_ == 3) {
         // pseudochromadepth
         result = vec4(1.0-depthNorm, 0.0, depthNorm, 1.0)*textureLookup2Dscreen(shadeTex_, texParams_, fragCoord.xy);

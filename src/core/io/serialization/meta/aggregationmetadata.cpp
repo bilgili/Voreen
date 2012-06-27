@@ -29,24 +29,33 @@
 
 #include "voreen/core/io/serialization/meta/aggregationmetadata.h"
 
+#include "voreen/core/network/processornetwork.h"
+#include "voreen/core/ports/port.h"
 #include "voreen/core/processors/processor.h"
 
 namespace voreen {
 
-AggregationMetaData::AggregationMetaData() {}
+AggregationMetaData::AggregationMetaData()
+    : Serializable()
+    , name_("")
+{}
 
 AggregationMetaData::~AggregationMetaData() {}
 
 void AggregationMetaData::serialize(XmlSerializer& s) const {
+    s.serialize("Name", name_);
     s.serialize("Processors", processors_);
     s.serialize("SubAggregations", aggregations_);
+    s.serialize("PortConnections", portConnections_);
     s.serialize("x-Position", positionX_);
     s.serialize("y-Position", positionY_);
 }
 
 void AggregationMetaData::deserialize(XmlDeserializer& s) {
+    s.deserialize("Name", name_);
     s.deserialize("Processors", processors_);
     s.deserialize("SubAggregations", aggregations_);
+    s.deserialize("PortConnections", portConnections_);
     s.deserialize("x-Position", positionX_);
     s.deserialize("y-Position", positionY_);
 }
@@ -83,6 +92,15 @@ const std::vector<AggregationMetaData*>& AggregationMetaData::getAggregations() 
     return aggregations_;
 }
 
+void AggregationMetaData::addPortConnection(Port* outport, Port* inport) {
+    PortConnection connection(outport, inport);
+    portConnections_.push_back(connection);
+}
+
+const std::vector<PortConnection>& AggregationMetaData::getPortConnections() const {
+    return portConnections_;
+}
+
 void AggregationMetaData::setPosition(const int& x, const int& y) {
     positionX_ = x;
     positionY_ = y;
@@ -90,6 +108,14 @@ void AggregationMetaData::setPosition(const int& x, const int& y) {
 
 std::pair<int,int> AggregationMetaData::getPosition() const {
     return std::make_pair(positionX_, positionY_);
+}
+
+void AggregationMetaData::setName(const std::string& name) {
+    name_ = name;
+}
+
+const std::string& AggregationMetaData::getName() const {
+    return name_;
 }
 
 //-------------------------------------------------------------------------------------------------

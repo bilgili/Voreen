@@ -53,10 +53,10 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     , shadeMode2_("shading2", "Shading 2", Processor::INVALID_PROGRAM)
     , shadeMode3_("shading3", "Shading 3", Processor::INVALID_PROGRAM)
     , shadeMode4_("shading4", "Shading 4", Processor::INVALID_PROGRAM)
-    , transferFunc1_("transferFunction1", "Transfer function 1")
-    , transferFunc2_("transferFunction2", "Transfer function 2")
-    , transferFunc3_("transferFunction3", "Transfer function 3")
-    , transferFunc4_("transferFunction4", "Transfer function 4")
+    , transferFunc1_("transferFunction1", "Transfer Function 1")
+    , transferFunc2_("transferFunction2", "Transfer Function 2")
+    , transferFunc3_("transferFunction3", "Transfer Function 3")
+    , transferFunc4_("transferFunction4", "Transfer Function 4")
     , camera_("camera", "Camera", new tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
     , compositingMode1_("compositing1", "Compositing (OP2)", Processor::INVALID_PROGRAM)
     , compositingMode2_("compositing2", "Compositing (OP3)", Processor::INVALID_PROGRAM)
@@ -72,16 +72,13 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     addPort(outport1_);
     addPort(outport2_);
 
-    // VolumeRaycaster Props
-    addProperty(isoValue_);
-
     addProperty(transferFunc1_);
     addProperty(transferFunc2_);
     addProperty(transferFunc3_);
     addProperty(transferFunc4_);
     addProperty(camera_);
 
-    addProperty(maskingMode_);
+//    addProperty(maskingMode_);
     addProperty(gradientMode_);
     shadeMode1_.addOption("none", "none");
     shadeMode1_.addOption("phong-diffuse", "Phong (Diffuse)");
@@ -135,6 +132,8 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     //compositingMode2_.addOption("fhn", "FHN");
     addProperty(compositingMode2_);
 
+    addProperty(isoValue_);
+
     addProperty(lightPosition_);
     addProperty(lightAmbient_);
     addProperty(lightDiffuse_);
@@ -142,6 +141,16 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     addProperty(materialShininess_);
     addProperty(applyLightAttenuation_);
     addProperty(lightAttenuation_);
+
+    // assign lighting properties to property group
+    lightPosition_.setGroupID("lighting");
+    lightAmbient_.setGroupID("lighting");
+    lightDiffuse_.setGroupID("lighting");
+    lightSpecular_.setGroupID("lighting");
+    materialShininess_.setGroupID("lighting");
+    applyLightAttenuation_.setGroupID("lighting");
+    lightAttenuation_.setGroupID("lighting");
+    setPropertyGroupGuiName("lighting", "Lighting Parameters");
 }
 
 MultiVolumeRaycaster::~MultiVolumeRaycaster() {
@@ -183,11 +192,11 @@ void MultiVolumeRaycaster::deinitialize() throw (VoreenException) {
 
 void MultiVolumeRaycaster::loadShader() {
     raycastPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "rc_multivolume.frag",
-                                       generateHeader(), false, false);
+                                       generateHeader(), false);
 }
 
 void MultiVolumeRaycaster::compile(VolumeHandle* volumeHandle) {
-    raycastPrg_->setHeaders(generateHeader(volumeHandle), false);
+    raycastPrg_->setHeaders(generateHeader(volumeHandle));
     raycastPrg_->rebuild();
 }
 
@@ -228,7 +237,7 @@ void MultiVolumeRaycaster::process() {
         transferFunc4_.get()->bind();
 
     portGroup_.activateTargets();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    portGroup_.clearTargets();
     LGL_ERROR;
 
     transferFunc1_.setVolumeHandle(volumeInport1_.getData());
@@ -255,7 +264,8 @@ void MultiVolumeRaycaster::process() {
                     volumeInport1_.getData()->getVolumeGL(),
                     &volUnit1,
                     "volume1_",
-                    "volumeParameters1_")
+                    "volumeParameters1_",
+                    true)
                 );
         volumeInport1_.getData()->getVolumeGL()->getTexture(0)->setWrapping(tgt::Texture::CLAMP_TO_BORDER);
     }
@@ -264,7 +274,8 @@ void MultiVolumeRaycaster::process() {
                     volumeInport2_.getData()->getVolumeGL(),
                     &volUnit2,
                     "volume2_",
-                    "volumeParameters2_")
+                    "volumeParameters2_",
+                    true)
                 );
         volumeInport2_.getData()->getVolumeGL()->getTexture(0)->setWrapping(tgt::Texture::CLAMP_TO_BORDER);
     }
@@ -273,7 +284,8 @@ void MultiVolumeRaycaster::process() {
                     volumeInport3_.getData()->getVolumeGL(),
                     &volUnit3,
                     "volume3_",
-                    "volumeParameters3_")
+                    "volumeParameters3_",
+                    true)
                 );
         volumeInport3_.getData()->getVolumeGL()->getTexture(0)->setWrapping(tgt::Texture::CLAMP_TO_BORDER);
     }
@@ -282,7 +294,8 @@ void MultiVolumeRaycaster::process() {
                     volumeInport4_.getData()->getVolumeGL(),
                     &volUnit4,
                     "volume4_",
-                    "volumeParameters4_")
+                    "volumeParameters4_",
+                    true)
                 );
         volumeInport4_.getData()->getVolumeGL()->getTexture(0)->setWrapping(tgt::Texture::CLAMP_TO_BORDER);
     }
@@ -293,7 +306,7 @@ void MultiVolumeRaycaster::process() {
     // set common uniforms used by all shaders
     setGlobalShaderParameters(raycastPrg_, camera_.get());
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(raycastPrg_, volumeTextures);
+    bindVolumes(raycastPrg_, volumeTextures, camera_.get(), lightPosition_.get());
 
     // pass the remaining uniforms to the shader
     raycastPrg_->setUniform("entryPoints_", entryUnit.getUnitNumber());
@@ -350,6 +363,7 @@ void MultiVolumeRaycaster::process() {
 
     glPopAttrib();
     raycastPrg_->deactivate();
+    portGroup_.deactivateTargets();
 
     glActiveTexture(GL_TEXTURE0);
     LGL_ERROR;

@@ -32,33 +32,28 @@
 
 #include "voreen/modules/base/processors/render/volumeslicer.h"
 #include "voreen/core/interaction/camerainteractionhandler.h"
+#include "voreen/core/properties/vectorproperty.h"
+
+#include "voreen/core/ports/volumeport.h"
 
 namespace voreen {
 
 class HalfAngleSlicer : public VolumeSlicer {
 public:
-    /**
-     * Constructor.
-     */
     HalfAngleSlicer();
+    virtual Processor* create() const;
 
-    virtual std::string getCategory() const { return "Slice Rendering"; }
+    virtual std::string getCategory() const  { return "Slice Rendering"; }
     virtual std::string getClassName() const { return "HalfAngleSlicer"; }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_TESTING; }
+    virtual CodeState getCodeState() const   { return CODE_STATE_TESTING; }
     virtual std::string getProcessorInfo() const;
-    virtual Processor* create() const { return new HalfAngleSlicer(); }
-
-    virtual void initialize() throw (VoreenException);
-    virtual void deinitialize() throw (VoreenException);
-
-    /**
-     * Performs the slicing.
-     */
-    virtual void process();
 
     virtual bool isReady() const;
 
 protected:
+    virtual void process();
+    virtual void initialize() throw (VoreenException);
+    virtual void deinitialize() throw (VoreenException);
 
     /**
      * Load the needed shaders.
@@ -80,7 +75,7 @@ private:
     CameraInteractionHandler cameraHandler_;
 
     CameraProperty lightCamera_;
-    LightProperty halfLight_;
+    FloatVec4Property halfLight_;
 };
 
 

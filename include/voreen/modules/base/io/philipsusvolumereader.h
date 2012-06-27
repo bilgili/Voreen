@@ -41,9 +41,9 @@ namespace voreen {
  */
 class PhilipsUSVolumeReader : public VolumeReader {
 public:
-    PhilipsUSVolumeReader(IOProgress* progress = 0);
+    PhilipsUSVolumeReader(ProgressBar* progress = 0);
 
-    virtual VolumeReader* create(IOProgress* progress = 0) const;
+    virtual VolumeReader* create(ProgressBar* progress = 0) const;
 
     virtual VolumeCollection* read(const std::string& url)
         throw (tgt::FileException, std::bad_alloc);

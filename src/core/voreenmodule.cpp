@@ -29,11 +29,13 @@
 
 #include "voreen/core/voreenmodule.h"
 
-#include "tgt/shadermanager.h"
+#include "voreen/core/voreenapplication.h"
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/io/volumereader.h"
 #include "voreen/core/io/volumewriter.h"
 #include "voreen/core/io/serialization/serializablefactory.h"
+
+#include "tgt/shadermanager.h"
 
 namespace voreen {
 
@@ -101,7 +103,13 @@ void voreen::VoreenModule::deinitialize()
 { }
 
 void VoreenModule::setName(const std::string& name) {
-    name_ = name;
+    if (name == "Core" || name == "core") {
+        LWARNING("Module name 'Core' is reserved. Renaming to 'CustomCore'.");
+        name_ = "CustomCore";
+    }
+    else {
+        name_ = name;
+    }
 }
 
 void VoreenModule::addProcessor(Processor* processor) {
@@ -130,6 +138,14 @@ void VoreenModule::addSerializerFactory(SerializableFactory* factory) {
 
 void VoreenModule::addShaderPath(const std::string& path) {
     shaderPaths_.push_back(path);
+}
+
+std::string VoreenModule::getModulesPath(const std::string& suffix) const {
+    if (!VoreenApplication::app()) {
+        LERROR("getModulesPath(): VoreenApplication not instantiated");
+        return "";
+    }
+    return VoreenApplication::app()->getModulePath(suffix);
 }
 
 } // namespace

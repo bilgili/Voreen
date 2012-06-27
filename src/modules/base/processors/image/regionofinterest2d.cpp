@@ -339,9 +339,7 @@ RegionOfInterest2D::RegionOfInterest2D()
         "Voreen ROI files (*.vrf)", FileDialogProperty::SAVE_FILE, Processor::VALID),
       clearROIs_("clearROIs", "Clear ROIs"),
       removeLastROI_("deleteLastRoi", "Remove Last ROI"),
-      #ifdef _MSC_VER
-        #pragma warning(disable:4355)  // passing 'this' is safe here
-      #endif
+      numberOfROIs_("numberOfRois", "Number of ROIs", 0, 0, 10000, Processor::VALID),
       mouseEventAddROI_("mouseEvent.addROI", "Add ROI", this, &RegionOfInterest2D::addROIEvent,
         tgt::MouseEvent::MOUSE_BUTTON_LEFT,
         static_cast<tgt::MouseEvent::MouseAction>(tgt::MouseEvent::MOTION | tgt::MouseEvent::PRESSED | tgt::MouseEvent::RELEASED),
@@ -389,6 +387,7 @@ RegionOfInterest2D::RegionOfInterest2D()
     mouseEventScaleROI_.setEnabled(false);
 
     minRoiPointDistance_.setStepping(1.f);
+    numberOfROIs_.setWidgetsEnabled(false);
 
     addProperty(geometryMode_);
     addProperty(roiColor_);
@@ -405,6 +404,12 @@ RegionOfInterest2D::RegionOfInterest2D()
     addProperty(saveROIs_);
     addProperty(clearROIs_);
     addProperty(removeLastROI_);
+    addProperty(numberOfROIs_);
+
+    roiColor_.setViews(Property::COLOR);
+    maskColor_.setViews(Property::COLOR);
+    maskBackgroundColor_.setViews(Property::COLOR);
+    boundingBoxColor_.setViews(Property::COLOR);
 
     addEventProperty(mouseEventAddROI_);
     addEventProperty(mouseEventRemoveLastROI_);
@@ -445,15 +450,17 @@ void RegionOfInterest2D::initialize() throw (VoreenException) {
     ImageProcessor::initialize();
 
     blendShader_ = ShdrMgr.loadSeparate("passthrough.vert", "blendwithimage.frag",
-        generateHeader(), false, false);
+        generateHeader(), false);
     if (!blendShader_) {
         LERROR("Failed to load shader");
         initialized_ = false;
         throw VoreenException(getClassName() + ": Failed to load shader!");
     }
 
-    idManager_.setRenderTarget(pickingPort_.getData());
+    idManager_.setRenderTarget(pickingPort_.getRenderTarget());
     idManager_.initializeTarget();
+
+    numberOfROIs_.set(regionsOfInterest_.size());
 }
 
 void RegionOfInterest2D::deinitialize() throw (VoreenException) {
@@ -525,7 +532,7 @@ void RegionOfInterest2D::process() {
         setGlobalShaderParameters(program_);
         program_->setUniform("colorTex_", shadeUnit.getUnitNumber());
         program_->setUniform("depthTex_", depthUnit.getUnitNumber());
-        inport_.setTextureParameters(program_, "textureParameters_");
+        inport_.setTextureParameters(program_, "texParams_");
         renderQuad();
         program_->deactivate();
 
@@ -648,6 +655,11 @@ void RegionOfInterest2D::renderROIs(RoiMode roiMode) const {
             }
 
             regionsOfInterest_[k]->render();
+            LGL_ERROR;
+        }
+
+        if (roiMode == PICKING_MODE) {
+            idManager_.deactivateTarget();
             LGL_ERROR;
         }
 
@@ -795,6 +807,7 @@ void RegionOfInterest2D::addROIEvent(tgt::MouseEvent* e) {
         toggleInteractionMode(false, this);
         lastMousePos_ = tgt::ivec2(-1);
     }
+    numberOfROIs_.set(regionsOfInterest_.size());
 
     e->accept();
     invalidate();
@@ -809,6 +822,7 @@ void RegionOfInterest2D::removeLastROI(tgt::MouseEvent* e) {
             selectedROI_ = -1;
         invalidate();
     }
+    numberOfROIs_.set(regionsOfInterest_.size());
 
     if (e)
         e->accept();
@@ -823,6 +837,7 @@ void RegionOfInterest2D::clearROIs(tgt::MouseEvent* e) {
         selectedROI_ = -1;
         invalidate();
     }
+    numberOfROIs_.set(regionsOfInterest_.size());
 
     if (e)
         e->accept();
@@ -1034,6 +1049,7 @@ void RegionOfInterest2D::loadROIs(const std::string& filename) {
     if (!success) {
         LWARNING("Loading regions of interest failed.");
     }
+    numberOfROIs_.set(regionsOfInterest_.size());
 
     invalidate();
 }

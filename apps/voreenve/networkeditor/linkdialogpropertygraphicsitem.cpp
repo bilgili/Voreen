@@ -30,6 +30,7 @@
 #include "linkdialogpropertygraphicsitem.h"
 
 #include "linkdialogarrowgraphicsitem.h"
+#include "propertylinkdialog.h"
 
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
@@ -38,6 +39,7 @@ namespace voreen {
 
 LinkDialogPropertyGraphicsItem::LinkDialogPropertyGraphicsItem(const Property* prop, ColumnPosition position)
     : PropertyGraphicsItem(prop, 0)
+    , delegate_(0)
     , currentArrow_(0)
     , position_(position)
 {
@@ -52,6 +54,14 @@ ColumnPosition LinkDialogPropertyGraphicsItem::getPosition() const {
     return position_;
 }
 
+void LinkDialogPropertyGraphicsItem::setDelegate(PropertyLinkDialog* dialog) {
+    delegate_ = dialog;
+}
+
+void LinkDialogPropertyGraphicsItem::setCurrentArrow(LinkDialogArrowGraphicsItem* arrow) {
+    currentArrow_ = arrow;
+}
+
 void LinkDialogPropertyGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
     tgtAssert(currentArrow_ == 0, "an arrow already existed");
 
@@ -59,15 +69,18 @@ void LinkDialogPropertyGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent* e
 
     currentArrow_ = new LinkDialogArrowGraphicsItem(this);
     currentArrow_->setDestinationPoint(mapToScene(event->pos()));
-    currentArrow_->setBidirectional(true);
+    if (delegate_)
+        currentArrow_->setBidirectional(delegate_->getNewArrowIsBirectional());
+    else
+        currentArrow_->setBidirectional(true);
     scene()->addItem(currentArrow_);
     oldBounds_ = scene()->sceneRect();
 }
 
 void LinkDialogPropertyGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
-    currentArrow_->setDestinationPoint(mapToScene(event->pos()));
+    currentArrow_->setDestinationPoint(event->scenePos());
 
-    QList<QGraphicsItem*> items = scene()->items(mapToScene(event->pos()));
+    QList<QGraphicsItem*> items = scene()->items(event->scenePos());
     QGraphicsItem* item = 0;
 
     foreach (QGraphicsItem* i, items) {
@@ -84,11 +97,11 @@ void LinkDialogPropertyGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* ev
         ColumnPosition thisPos = getPosition();
         ColumnPosition otherPos = gi->getPosition();
         if ((thisPos != otherPos) || ((thisPos == ColumnPositionCenter) && (otherPos == ColumnPositionCenter))) {
-            if ((p1 != p2) && PropertyLink::arePropertiesLinkable(p1, p2))
+            if ((p1 != p2) && delegate_->allowConnectionBetweenProperties(p1, p2))
                 currentArrow_->setNormalColor(Qt::green);
             else {
-                // those properties might be linkable if python is enabled
 #ifdef VRN_WITH_PYTHON
+                // those properties might be linkable if a specific evaluator
                 currentArrow_->setNormalColor(Qt::yellow);
 #else
                 currentArrow_->setNormalColor(Qt::red);
@@ -104,7 +117,7 @@ void LinkDialogPropertyGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* ev
 }
 
 void LinkDialogPropertyGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
-    QList<QGraphicsItem*> items = scene()->items(mapToScene(event->pos()));
+    QList<QGraphicsItem*> items = scene()->items(event->scenePos());
     QGraphicsItem* item = 0;
 
     foreach (QGraphicsItem* i, items) {
@@ -119,10 +132,9 @@ void LinkDialogPropertyGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent*
         ColumnPosition thisPos = getPosition();
         ColumnPosition otherPos = gi->getPosition();
         if ((thisPos != otherPos) || ((thisPos == ColumnPositionCenter) && (otherPos == ColumnPositionCenter))) {
-        //if (gi->isInLeftColumn() != isInLeftColumn()) {
             const Property* p1 = getProperty();
             const Property* p2 = gi->getProperty();
-            if ((p1 != p2) && PropertyLink::arePropertiesLinkable(p1,p2)) {
+            if ((p1 != p2) && delegate_->allowConnectionBetweenProperties(p1, p2)) {
                 currentArrow_->setDestinationItem(gi);
                 currentArrow_->setNormalColor(Qt::black);
                 emit createdArrow(currentArrow_);
@@ -134,8 +146,8 @@ void LinkDialogPropertyGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent*
                 emit createdArrow(currentArrow_);
 #else
                 delete currentArrow_;
+                currentArrow_ = 0;
 #endif
-
             }
         }
         else
@@ -144,7 +156,7 @@ void LinkDialogPropertyGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent*
         currentArrow_ = 0;
     }
     else {
-        delete currentArrow_;
+        emit deleteArrow(currentArrow_);
         currentArrow_ = 0;
     }
 }

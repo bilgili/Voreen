@@ -31,6 +31,7 @@
 #define VRN_GRAYSCALE_H
 
 #include "voreen/core/processors/imageprocessor.h"
+#include "voreen/core/properties/floatproperty.h"
 
 namespace voreen {
 
@@ -40,20 +41,20 @@ namespace voreen {
 class Grayscale : public ImageProcessor {
 public:
     Grayscale();
+    virtual Processor* create() const;
 
-    virtual std::string getCategory() const { return "Image Processing"; }
-    virtual std::string getClassName() const { return "Grayscale"; }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
+    virtual std::string getClassName() const { return "Grayscale";        }
+    virtual std::string getCategory() const  { return "Image Processing"; }
+    virtual CodeState getCodeState() const   { return CODE_STATE_STABLE;  }
     virtual std::string getProcessorInfo() const;
-    virtual Processor* create() const { return new Grayscale(); }
 
 protected:
-    void process();
-
-    FloatProperty saturation_;
+    virtual void process();
 
     RenderPort inport_;
     RenderPort outport_;
+
+    FloatProperty saturation_;
 };
 
 } // namespace

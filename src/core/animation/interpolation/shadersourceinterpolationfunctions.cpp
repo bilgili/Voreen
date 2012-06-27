@@ -31,68 +31,67 @@
 
 namespace voreen {
 
-ShaderSourceStartInterpolationFunction::ShaderSourceStartInterpolationFunction() {
-}
+ShaderSourceStartInterpolationFunction::ShaderSourceStartInterpolationFunction() {}
+
 std::string ShaderSourceStartInterpolationFunction::getMode() const {
     return "focus on startvalue";
 }
+
 std::string ShaderSourceStartInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 ShaderSource ShaderSourceStartInterpolationFunction::interpolate(ShaderSource startvalue, ShaderSource endvalue, float time) const {
-    if (time<1){
+    if (time < 1.f)
         return startvalue;
-    }
-    else{
+    else
         return endvalue;
-    }
 }
-InterpolationFunction<ShaderSource>* ShaderSourceStartInterpolationFunction::clone() const{
+
+InterpolationFunction<ShaderSource>* ShaderSourceStartInterpolationFunction::clone() const {
     return new ShaderSourceStartInterpolationFunction();
 }
 
+ShaderSourceEndInterpolationFunction::ShaderSourceEndInterpolationFunction() {}
 
-ShaderSourceEndInterpolationFunction::ShaderSourceEndInterpolationFunction() {
-}
 std::string ShaderSourceEndInterpolationFunction::getMode() const {
     return "focus on endvalue";
 }
+
 std::string ShaderSourceEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 ShaderSource ShaderSourceEndInterpolationFunction::interpolate(ShaderSource startvalue, ShaderSource endvalue, float time) const {
-    if (time>0){
+    if (time > 0.f)
         return endvalue;
-    }
-    else{
+    else
         return startvalue;
-    }
 }
-InterpolationFunction<ShaderSource>* ShaderSourceEndInterpolationFunction::clone() const{
+
+InterpolationFunction<ShaderSource>* ShaderSourceEndInterpolationFunction::clone() const {
     return new ShaderSourceEndInterpolationFunction();
 }
 
+ShaderSourceStartEndInterpolationFunction::ShaderSourceStartEndInterpolationFunction() {}
 
-ShaderSourceStartEndInterpolationFunction::ShaderSourceStartEndInterpolationFunction() {
-}
 std::string ShaderSourceStartEndInterpolationFunction::getMode() const {
     return "bisection";
 }
+
 std::string ShaderSourceStartEndInterpolationFunction::getIdentifier() const {
     return "boolean";
 }
+
 ShaderSource ShaderSourceStartEndInterpolationFunction::interpolate(ShaderSource startvalue, ShaderSource endvalue, float time) const {
-    if (time<0.5){
+    if (time < 0.5f)
         return startvalue;
-    }
-    else{
+    else
         return endvalue;
-    }
 }
-InterpolationFunction<ShaderSource>* ShaderSourceStartEndInterpolationFunction::clone() const{
+
+InterpolationFunction<ShaderSource>* ShaderSourceStartEndInterpolationFunction::clone() const {
     return new ShaderSourceStartEndInterpolationFunction();
 }
 
 } // namespace voreen
-
-

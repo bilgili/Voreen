@@ -95,9 +95,16 @@ protected:
     /// the point to which this arrow points.
     QPointF getDestinationPoint() const;
 
+    void mousePressEvent(QGraphicsSceneMouseEvent* event);
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
+
 private:
     /// is the represented link bidirectional or not
     bool bidirectional_;
+
+    QPointF clickedPoint_;
+    bool movedAwayInEvent_;
 };
 
 } // namespace

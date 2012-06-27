@@ -37,7 +37,10 @@ namespace voreen {
 ColorProperty::ColorProperty(const std::string& id, const std::string& guiText,
                      tgt::Color value, Processor::InvalidationLevel invalidationLevel)
     : TemplateProperty<tgt::vec4>(id, guiText, value, invalidationLevel)
-{}
+{
+    LWARNINGC("voreen.ColorProperty", "ColorProperty is DEPRECATED: Please use FloatVec4Property with view Property::COLOR instead");
+
+}
 
 void ColorProperty::serialize(XmlSerializer& s) const {
     Property::serialize(s);

@@ -28,13 +28,13 @@
  **********************************************************************/
 
 #include "voreen/core/io/volumewriter.h"
-#include "voreen/core/io/ioprogress.h"
+#include "voreen/core/io/progressbar.h"
 
 namespace voreen {
 
 const std::string VolumeWriter::loggerCat_("voreen.io.VolumeWriter");
 
-VolumeWriter::VolumeWriter(IOProgress* progress)
+VolumeWriter::VolumeWriter(ProgressBar* progress)
     : progress_(progress)
 {}
 

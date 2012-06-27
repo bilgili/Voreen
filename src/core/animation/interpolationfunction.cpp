@@ -49,8 +49,11 @@ using tgt::Camera;
 namespace voreen {
 
 template <class T>
-InterpolationFunction<T>::InterpolationFunction(){
+InterpolationFunction<T>::InterpolationFunction() {
 }
+
+template <class T>
+InterpolationFunction<T>::~InterpolationFunction() {}
 
 template <class T>
 std::string InterpolationFunction<T>::getName() const {
@@ -89,7 +92,7 @@ std::string InterpolationFunction<tgt::vec4>::getMode() const {
 
 template <>
 std::string InterpolationFunction<tgt::quat>::getMode() const {
-        return "spherical linear interpolation";
+    return "spherical linear interpolation";
 }
 
 template <>
@@ -259,7 +262,7 @@ int InterpolationFunction<int>::interpolate(int startvalue, int endvalue, float 
 
 template <>
 float InterpolationFunction<float>::interpolate(float startvalue, float endvalue, float time) const {
-    return BasicFloatInterpolation::linearInterpolation(startvalue,endvalue,time);
+    return BasicFloatInterpolation::linearInterpolation(startvalue, endvalue, time);
 }
 
 template <>
@@ -344,12 +347,10 @@ tgt::ivec4 InterpolationFunction<tgt::ivec4>::interpolate(tgt::ivec4 startvalue,
 
 template <>
 bool InterpolationFunction<bool>::interpolate(bool startvalue, bool endvalue, float time) const {
-    if (time<1){
+    if (time < 1)
         return startvalue;
-    }
-    else{
+    else
         return endvalue;
-    }
 }
 
 template <>
@@ -366,12 +367,10 @@ Camera* InterpolationFunction<Camera*>::interpolate(Camera* startvalue, Camera* 
 
 template <>
 std::string InterpolationFunction<std::string>::interpolate(std::string startvalue, std::string endvalue, float time) const {
-    if (time<1){
+    if (time < 1)
         return startvalue;
-    }
-    else{
+    else
         return endvalue;
-    }
 }
 
 template <>
@@ -386,7 +385,6 @@ ShaderSource InterpolationFunction<ShaderSource>::interpolate(ShaderSource start
 
 template <>
 TransFunc* InterpolationFunction<TransFunc*>::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
-
     if (!startvalue || !endvalue) {
         LERROR("Null pointer passed");
         return 0;
@@ -394,7 +392,7 @@ TransFunc* InterpolationFunction<TransFunc*>::interpolate(TransFunc* startvalue,
 
     TransFuncIntensity* func1 = dynamic_cast<TransFuncIntensity*>(startvalue);
     TransFuncIntensity* func2 = dynamic_cast<TransFuncIntensity*>(endvalue);
-    if ((func1)&&(func2)) {
+    if (func1 && func2) {
         std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
         std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
         if (keys1.size() == keys2.size()) {
@@ -409,24 +407,24 @@ TransFunc* InterpolationFunction<TransFunc*>::interpolate(TransFunc* startvalue,
             func->clearKeys();
             std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
             std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
-            while ((it1!=keys1.end())&&(it2!=keys2.end())) {
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
                 tgt::col4 col = tgt::col4();
                 TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
                 key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
 
-                col.r = (uint8_t) ((1-time)*(*it1)->getColorL().r + time*(*it2)->getColorL().r);
-                col.g = (uint8_t) ((1-time)*(*it1)->getColorL().g + time*(*it2)->getColorL().g);
-                col.b = (uint8_t) ((1-time)*(*it1)->getColorL().b + time*(*it2)->getColorL().b);
-                col.a = (uint8_t) ((1-time)*(*it1)->getColorL().a + time*(*it2)->getColorL().a);
+                col.r = static_cast<uint8_t>((1-time)*(*it1)->getColorL().r + time*(*it2)->getColorL().r);
+                col.g = static_cast<uint8_t>((1-time)*(*it1)->getColorL().g + time*(*it2)->getColorL().g);
+                col.b = static_cast<uint8_t>((1-time)*(*it1)->getColorL().b + time*(*it2)->getColorL().b);
+                col.a = static_cast<uint8_t>((1-time)*(*it1)->getColorL().a + time*(*it2)->getColorL().a);
                 key->setColorL(col);
 
-                col.r = (uint8_t) ((1-time)*(*it1)->getColorR().r + time*(*it2)->getColorR().r);
-                col.g = (uint8_t) ((1-time)*(*it1)->getColorR().g + time*(*it2)->getColorR().g);
-                col.b = (uint8_t) ((1-time)*(*it1)->getColorR().b + time*(*it2)->getColorR().b);
-                col.a = (uint8_t) ((1-time)*(*it1)->getColorR().a + time*(*it2)->getColorR().a);
+                col.r = static_cast<uint8_t>((1-time)*(*it1)->getColorR().r + time*(*it2)->getColorR().r);
+                col.g = static_cast<uint8_t>((1-time)*(*it1)->getColorR().g + time*(*it2)->getColorR().g);
+                col.b = static_cast<uint8_t>((1-time)*(*it1)->getColorR().b + time*(*it2)->getColorR().b);
+                col.a = static_cast<uint8_t>((1-time)*(*it1)->getColorR().a + time*(*it2)->getColorR().a);
                 key->setColorR(col);
 
-                key->setIntensity((1-time)*(*it1)->getIntensity()+time*(*it2)->getIntensity());
+                key->setIntensity((1-time)*(*it1)->getIntensity() + time*(*it2)->getIntensity());
 
                 func->addKey(key);
 
@@ -437,8 +435,8 @@ TransFunc* InterpolationFunction<TransFunc*>::interpolate(TransFunc* startvalue,
             return func;
         }
     }
-    float a2 = BasicFloatInterpolation::linearInterpolation(0,1,time);
-    float a1 = 1-a2;
+    float a2 = BasicFloatInterpolation::linearInterpolation(0, 1, time);
+    float a1 = 1 - a2;
 
     tgtAssert(startvalue && endvalue, "null pointer");
     tgt::ivec3 dimensions_start = startvalue->getDimensions();
@@ -455,17 +453,16 @@ TransFunc* InterpolationFunction<TransFunc*>::interpolate(TransFunc* startvalue,
     texture1 = changeTextureDimension(startvalue->getDimensions(), dim, texture1);
     texture2 = changeTextureDimension(startvalue->getDimensions(), dim, texture2);
 
-    TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
+    TransFunc* func = new TransFunc(dim.x, dim.y, dim.z);
 
-    GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
-    for (int x=0;x<dim.x;x++) {
-        for (int y=0;y<dim.y;y++) {
-            for (int z=0;z<dim.z;z++) {
-                for (int i = 0;i<4;i++) {
-                    int index = 4*(x*dim.y*dim.z+y*dim.z+z)+i;
-                    float f = (a1*texture1[index]+a2*texture2[index]);
-                    GLubyte b = static_cast<GLubyte>(f);
-                    texture[index] = b;
+    GLubyte* texture = new GLubyte[4 * dim.x * dim.y * dim.z];
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
+                    int index = 4*(x * dim.y * dim.z + y * dim.z + z) + i;
+                    float f = (a1 * texture1[index] + a2 * texture2[index]);
+                    texture[index] = static_cast<GLubyte>(f);
                 }
             }
         }
@@ -476,22 +473,18 @@ TransFunc* InterpolationFunction<TransFunc*>::interpolate(TransFunc* startvalue,
 
 template <>
 VolumeCollection* InterpolationFunction<VolumeCollection*>::interpolate(VolumeCollection* startvalue, VolumeCollection* endvalue, float time) const {
-    if (time<1){
+    if (time < 1)
         return startvalue;
-    }
-    else{
+    else
         return endvalue;
-    }
 }
 
 template <>
 VolumeHandle* InterpolationFunction<VolumeHandle*>::interpolate(VolumeHandle* startvalue, VolumeHandle* endvalue, float time) const {
-    if (time<1){
+    if (time < 1)
         return startvalue;
-    }
-    else{
+    else
         return endvalue;
-    }
 }
 
 template <class T>
@@ -503,9 +496,8 @@ template <class T>
 void InterpolationFunction<T>::deserialize(XmlDeserializer& s) {
     std::vector<Property*> props;
     s.deserialize("properties", props);
-    for (unsigned int i = 0; i < props.size(); i++) {
-        this->addProperty(props.at(i));
-    }
+    for (size_t i = 0; i < props.size(); ++i)
+        addProperty(props.at(i));
 }
 
 template class InterpolationFunction<float>;

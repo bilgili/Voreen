@@ -31,6 +31,8 @@
 #define VRN_MULTIPLANARSLICERENDERER_H
 
 #include "voreen/modules/base/processors/render/slicerendererbase.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/cameraproperty.h"
 #include "voreen/core/interaction/camerainteractionhandler.h"
 #include "tgt/glmath.h"
@@ -42,16 +44,15 @@ class MultiplanarSliceRenderer : public SliceRendererBase {
 public:
     MultiplanarSliceRenderer();
     virtual ~MultiplanarSliceRenderer();
-
     virtual Processor* create() const;
-    virtual std::string getCategory() const { return "Slice Rendering"; }
+
     virtual std::string getClassName() const { return "MultiplanarSliceRenderer"; }
-    virtual CodeState getCodeState() const { return CODE_STATE_TESTING; }
+    virtual std::string getCategory() const  { return "Slice Rendering"; }
+    virtual CodeState getCodeState() const   { return CODE_STATE_STABLE; }
     virtual std::string getProcessorInfo() const;
 
-    virtual void process();
-
 protected:
+    virtual void process();
     enum SliceAlignment { SLICE_XY, SLICE_XZ, SLICE_YZ };
 
 protected:
@@ -66,7 +67,6 @@ protected:
     IntProperty sliceNumberXZ_;
     IntProperty sliceNumberYZ_;
     CameraProperty camProp_;
-    BoolProperty applyDatasetTransformationMatrix_;
     CameraInteractionHandler* cameraHandler_;
 };
 

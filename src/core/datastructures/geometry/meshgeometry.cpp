@@ -132,6 +132,11 @@ void MeshGeometry::addFace(const FaceGeometry& face) {
     faces_.push_back(face);
 }
 
+const FaceGeometry& MeshGeometry::getFace(size_t index) const {
+    tgtAssert(index < faces_.size(), "Invalid face index");
+    return faces_.at(index);
+}
+
 FaceGeometry& MeshGeometry::getFace(size_t index) {
     tgtAssert(index < faces_.size(), "Invalid face index");
     return faces_.at(index);

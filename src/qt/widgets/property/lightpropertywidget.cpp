@@ -27,7 +27,6 @@
  *                                                                    *
  **********************************************************************/
 
-#include "voreen/core/properties/lightproperty.h"
 #include "voreen/core/processors/volumeraycaster.h"
 
 #include "voreen/qt/widgets/property/floatvec4propertywidget.h"
@@ -36,6 +35,7 @@
 
 #include "voreen/qt/widgets/property/floatmat4propertywidget.h"
 #include "voreen/core/properties/matrixproperty.h"
+#include "voreen/core/properties/cameraproperty.h"
 
 #include <QMouseEvent>
 #include <QPainter>
@@ -49,31 +49,13 @@
 namespace voreen {
 
 LightPropertyWidget::LightPropertyWidget(FloatVec4Property* prop, QWidget* parent)
-    : FloatVec4PropertyWidget(prop, parent)
+    : QPropertyWidget(prop, parent)
     , property_(prop)
     , hemisphere_(1)
 {
-    // TODO: let the light property widget inherit from QPropertyWidget instead of FloatVec4PropertyWidget!
-    /*for(uint i = 0; i < 4; ++i ) {
-        DoubleSliderSpinBoxWidget* widget0 = dynamic_cast<DoubleSliderSpinBoxWidget*>(widgets_[i]);
-        if(widget0 )
-            widget0->hide();
-    }*/
-
-    QTabWidget* tabWidget = new QTabWidget(this);
-    light_ = new LightWidget(tabWidget);
-    tabWidget->addTab(light_, "widget");
-    //floatVec4_ = new FloatVec4PropertyWidget(prop, parent);
-    QWidget* vec4Tab = new QWidget(this);
-    QVBoxLayout* vec4Layout = new QVBoxLayout(vec4Tab);
-    for(uint i = 0; i < 4; ++i ) {
-        DoubleSliderSpinBoxWidget* widget0 = dynamic_cast<DoubleSliderSpinBoxWidget*>(widgets_[i]);
-        if(widget0)
-            vec4Layout->addWidget(widget0);
-            //widget0->hide();
-    }
-    tabWidget->addTab(vec4Tab, "vector");
-    myLayout_->addWidget(tabWidget);
+    light_ = new LightWidget(this);
+    vector_ = tgt::Vector4f::zero;
+    layout_->addWidget(light_);
     connect(light_, SIGNAL(lightWidgetChanged(tgt::vec4)), this, SLOT(changeWidgetLight(tgt::vec4)));
     PropertyOwner* propOwner = prop->getOwner();
     if(dynamic_cast<VolumeRaycaster*>(propOwner)) {
@@ -120,10 +102,10 @@ void LightPropertyWidget::changeWidgetLight(tgt::vec4 lightPos) {
     float x = projectionMatrix.t00 * lightPos.x - projectionMatrix.t01 * lightPos.y + projectionMatrix.t02 * lightPos.z;
     float y = projectionMatrix.t10 * lightPos.x - projectionMatrix.t11 * lightPos.y + projectionMatrix.t12 * lightPos.z;
     float z = projectionMatrix.t20 * lightPos.x - projectionMatrix.t21 * lightPos.y + projectionMatrix.t22 * lightPos.z;
-    widgets_[0]->setValue(x);
-    widgets_[1]->setValue(y);
-    widgets_[2]->setValue(z);
-    widgets_[3]->setValue(lightPos.w);
+    vector_[0] = x;
+    vector_[1] = y;
+    vector_[2] = z;
+    property_->set(vector_);
 }
 
 void LightPropertyWidget::cameraUpdate() {
@@ -142,7 +124,7 @@ void LightPropertyWidget::cameraUpdate() {
 }
 
 void LightPropertyWidget::updateFromProperty() {
-    FloatVec4PropertyWidget::updateFromProperty();
+    //FloatVec4PropertyWidget::updateFromProperty();
 }
 
 } // namespace voreen

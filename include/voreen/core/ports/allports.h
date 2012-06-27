@@ -36,6 +36,7 @@
 #include "voreen/core/ports/port.h"
 #include "voreen/core/ports/renderport.h"
 #include "voreen/core/ports/volumeport.h"
+#include "voreen/core/ports/plotport.h"
 #include "voreen/core/ports/textport.h"
 
 #endif // VRN_ALLPORTS_H

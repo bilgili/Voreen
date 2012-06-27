@@ -30,6 +30,7 @@
 #include "voreen/modules/base/processors/volume/volumehalfsample.h"
 #include "voreen/core/datastructures/volume/volume.h"
 #include "voreen/core/datastructures/volume/volumehandle.h"
+#include "voreen/core/datastructures/volume/volumeoperator.h"
 
 namespace voreen {
 
@@ -56,7 +57,8 @@ std::string VolumeHalfsample::getProcessorInfo() const {
 
 void VolumeHalfsample::process() {
     Volume* inputVolume = inport_.getData()->getVolume();
-    Volume* outputVolume = inputVolume->halfsample();
+    VolumeOperatorHalfsample voHalfsample;
+    Volume* outputVolume = voHalfsample.apply<Volume*>(inputVolume);
 
     // assign computed volume to outport
     if (outputVolume)

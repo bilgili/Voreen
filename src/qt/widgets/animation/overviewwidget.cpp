@@ -207,9 +207,13 @@ OverviewWidget::OverviewWidget(QWidget* parent, NetworkEvaluator* networkEval)
     setStandardRenderport();
 }
 
+int OverviewWidget::getCurrentFrame() {
+    return currentFrame_;
+}
 
 void OverviewWidget::autoPreview(bool autoPreview) {
     autoPreview_ = autoPreview;
+    renderPreviews();
 }
 
 void OverviewWidget::reset() {

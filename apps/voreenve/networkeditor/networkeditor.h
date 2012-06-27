@@ -50,6 +50,7 @@ class LinkArrowGraphicsItem;
 class LinkEvaluatorBase;
 class NetworkEvaluator;
 class PortArrowGraphicsItem;
+class PortGraphicsItem;
 class ProcessorGraphicsItem;
 class PropertyGraphicsItem;
 class RootGraphicsItem;
@@ -148,6 +149,12 @@ private slots:
     // Saves the current camera auto-linking state in the network's meta data.
     void linkCamerasAutoChanged();
 
+    // toggles between the locked and unlocked state of the \sa NetworkEvaluator
+    void toggleNetworkEvaluator();
+
+    // clears the history of the selected PropertyLink
+    void clearDependencyHistory();
+
 signals:
     /**
      * Sent when a processor or a set of processors were selected or deselected.
@@ -158,10 +165,12 @@ signals:
 protected:
     void generateGraphicsItems();
     void generatePropertyLinkItems();
-    void createContextMenus();
+    void createContextMenuActions();
     void createTimer();
     void createLayerButtons();
+    void createOtherButtons();
     void layoutLayerButtons();
+    void layoutOtherButtons();
 
     void setLayer(NetworkEditorLayer layer);
 
@@ -216,7 +225,9 @@ protected:
 
     void showLinkDialog(PropertyGraphicsItem* propertyItem1, PropertyGraphicsItem* propertyItem2);
 
-    void clearClipboard();
+    //void clearClipboard();
+
+    PortGraphicsItem* getPortGraphicsItem(const Port* port) const;
 
 private:
     typedef std::pair<const PropertyLink*, const PropertyLink*> ArrowLinkInformation;
@@ -232,26 +243,28 @@ private:
     QMenu contextMenuLink_;
     QPointF rightClickPosition_;
 
-    QAction* copyAction;
-    QAction* pasteAction;
-    QAction* replaceAction;
-    QAction* deleteAction;
-    QAction* deleteLinkAction;
-    QAction* renameAction;
-    QAction* editAction;
-    QAction* aggregateAction;
+    QAction* copyAction_;
+    QAction* pasteAction_;
+    QAction* replaceAction_;
+    QAction* deleteAction_;
+    QAction* deleteLinkAction_;
+    QAction* renameAction_;
+    QAction* editLinkAction_;
+    QAction* aggregateAction_;
     QAction* deaggregateAction_;
+    QAction* clearDependencyHistoryAction_;
 
     QMap<LinkArrowGraphicsItem*, ArrowLinkInformation> linkMap_;
 
-    LinkArrowGraphicsItem* selectedLink_;
+    PortArrowGraphicsItem* selectedPortArrow_;
+    LinkArrowGraphicsItem* selectedLinkArrow_;
 
     // Maps from the processors of the current network to their graphic items.
     QMap<Processor*,ProcessorGraphicsItem*> processorItemMap_;
     QList<AggregationGraphicsItem*> aggregationItems_;
     //QMap<Processor*,AggregationGraphicsItem*> aggregationItemMap_;
 
-    QList<RootGraphicsItem*> clipboardProcessors_;
+    //QList<RootGraphicsItem*> clipboardProcessors_;
     //QList<ArrowGraphicsItem*> clipboardArrows_;
     //QList<LinkArrowGraphicsItem*> clipboardLinkArrows_;
 
@@ -261,11 +274,13 @@ private:
     bool translateScene_;
     bool needsScale_;
 
+    bool networkEvaluatorIsLockedByButton_;
+
     // For Tooltips
-    bool showTooltips_;
+    bool activateTooltips_;
     QGraphicsItem* activeTooltip_;
-    QPoint lastMousePosition_; // (I hope) there is no need to initialize it
-    HasToolTip* lastItemWithTooltip_; // Simmilar hopes here...
+    QPoint lastMousePosition_;
+    HasToolTip* lastItemWithTooltip_;
     TooltipTimer* ttimer_;
 
     QWidget* layerButtonContainer_;
@@ -275,6 +290,9 @@ private:
     QToolButton* linkCamerasButton_;
     QToolButton* linkCamerasAutoButton_;
     QToolButton* removePropertyLinksButton_;
+
+    QWidget* otherButtonContainer_;
+    QToolButton* stopNetworkEvaluatorButton_;
 
     NetworkEditorLayer currentLayer_;
 
@@ -288,6 +306,9 @@ class NetworkSnapshotPlugin : public SnapshotPlugin {
     Q_OBJECT
 public:
     NetworkSnapshotPlugin(QWidget* parent, NetworkEditor* networkEditorWidget);
+
+public slots:
+    void sizeComboChanged(int);
 
 protected:
     void saveSnapshot(const QString& filename);

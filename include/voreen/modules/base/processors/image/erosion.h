@@ -40,15 +40,15 @@ namespace voreen {
 class Erosion : public ImageProcessorDepth {
 public:
     Erosion();
-    virtual Processor* create() const { return new Erosion(); }
+    virtual Processor* create() const;
 
-    virtual std::string getCategory() const { return "Image Processing"; }
+    virtual std::string getCategory() const  { return "Image Processing"; }
     virtual std::string getClassName() const { return "Erosion"; }
-    virtual CodeState getCodeState() const { return CODE_STATE_STABLE; }
+    virtual CodeState getCodeState() const   { return CODE_STATE_STABLE; }
     virtual std::string getProcessorInfo() const;
 
 protected:
-    void process();
+    virtual void process();
 
     RenderPort inport_;
     RenderPort outport_;

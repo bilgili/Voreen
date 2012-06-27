@@ -33,9 +33,11 @@
 #include "portarrowgraphicsitem.h"
 #include "portgraphicsitem.h"
 #include "voreen/core/ports/port.h"
+#include "voreen/core/processors/processorwidget.h"
+#include "voreen/core/io/serialization/meta/aggregationmetadata.h"
 
 namespace {
-    qreal edgeCutoffRatio = 0.25; // determines the points where the round cutoff starts and ends
+    const qreal edgeSpacing = 20.f;
 }
 
 namespace voreen {
@@ -43,6 +45,7 @@ namespace voreen {
 AggregationGraphicsItem::AggregationGraphicsItem(QList<RootGraphicsItem*> items, NetworkEditor* networkEditor)
     : RootGraphicsItem(networkEditor)
     , childItems_(items)
+    , metaData_(0)
 {
     tgtAssert(items.size() > 0, "empty items list");
 
@@ -65,9 +68,27 @@ AggregationGraphicsItem::AggregationGraphicsItem(QList<RootGraphicsItem*> items,
 
     setFlag(ItemIsMovable);
     createChildItems();
-}
 
-AggregationGraphicsItem::~AggregationGraphicsItem() {}
+    QList<ProcessorWidget*> widgets;
+    foreach (Processor* proc, getProcessors()) {
+        proc->addObserver(this);
+        if (proc->getProcessorWidget())
+            widgets.push_back(proc->getProcessorWidget());
+    }
+
+    if (widgets.size() > 0) {
+        widgetIndicatorButton_.setProcessorWidgets(widgets);
+        widgetIndicatorButton_.show();
+    }
+
+    foreach (RootGraphicsItem* root, items) {
+        QPointF relPos;
+        relPos.rx() = root->pos().x() - pos.x();
+        relPos.ry() = root->pos().y() - pos.y();
+
+        relativePositionMap_.insert(root, relPos);
+    }
+}
 
 RootGraphicsItem* AggregationGraphicsItem::clone() const {
     return new AggregationGraphicsItem(childItems_, networkEditor_);
@@ -128,11 +149,11 @@ void AggregationGraphicsItem::paint(QPainter* painter, const QStyleOptionGraphic
     qreal right = boundingRect().right();
     qreal top = boundingRect().top();
     qreal bottom = boundingRect().bottom();
-    qreal width = boundingRect().width();
-    qreal height = boundingRect().height();
+    //qreal width = boundingRect().width();
+    //qreal height = boundingRect().height();
 
     // spacing factor for rounded edges
-    qreal edgeSpacing = edgeCutoffRatio * qMax(width, height);
+    //qreal edgeSpacing = edgeCutoffRatio * qMax(width, height);
 
     QPointF point1(left, top + edgeSpacing);
     QPointF point2(left, bottom - edgeSpacing);
@@ -158,6 +179,17 @@ void AggregationGraphicsItem::paint(QPainter* painter, const QStyleOptionGraphic
     RootGraphicsItem::paint(painter, option, widget);
 }
 
+void AggregationGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
+    QPointF newPos = pos();
+        foreach (RootGraphicsItem* child, childItems_) {
+            const QPointF& relativePos = relativePositionMap_[child];
+            child->setPos(newPos + relativePos);
+            child->saveMeta();
+        }
+
+    RootGraphicsItem::mouseMoveEvent(event);
+}
+
 QList<Port*> AggregationGraphicsItem::getInports() const {
     return inports_;
 }
@@ -173,27 +205,6 @@ QList<CoProcessorPort*> AggregationGraphicsItem::getCoProcessorInports() const {
 QList<CoProcessorPort*> AggregationGraphicsItem::getCoProcessorOutports() const {
     return coOutports_;
 }
-
-//void AggregationGraphicsItem::addAggregationPrefix(const QString& prefix) {
-//    RootGraphicsItem::addAggregationPrefix(prefix);
-//
-//    foreach (RootGraphicsItem* childItem, childItems_)
-//        childItem->addAggregationPrefix(prefix);
-//}
-
-//void AggregationGraphicsItem::removeAggregationPrefix() {
-//    RootGraphicsItem::removeAggregationPrefix();
-//
-//    foreach (RootGraphicsItem* childItem, childItems_)
-//        childItem->removeAggregationPrefix();
-//}
-
-//void AggregationGraphicsItem::removeAllAggregationPrefixes() {
-//    RootGraphicsItem::removeAllAggregationPrefixes();
-//
-//    foreach (RootGraphicsItem* childItem, childItems_)
-//        childItem->removeAllAggregationPrefixes();
-//}
 
 void AggregationGraphicsItem::addInternalPortArrow(PortArrowGraphicsItem* arrow) {
     // we want no duplicates in the list
@@ -245,6 +256,94 @@ void AggregationGraphicsItem::renameFinished(bool changeChildItems) {
             childItem->changeAggregationPrefix(textItem_.toPlainText());
         }
     }
+
+    if (metaData_)
+        metaData_->setName(getName().toStdString());
+}
+
+void AggregationGraphicsItem::setAggregationMetaData(AggregationMetaData* metaData) {
+    metaData_ = metaData;
+}
+
+AggregationMetaData* AggregationGraphicsItem::getAggregationMetaData() const {
+    return metaData_;
+}
+
+void AggregationGraphicsItem::toggleProcessorWidget() {
+    QList<ProcessorWidget*> widgets;
+    foreach (Processor* processor, getProcessors()) {
+        if (processor->getProcessorWidget())
+            widgets.push_back(processor->getProcessorWidget());
+    }
+
+    int visibleWidgetNum = 0;
+    foreach (ProcessorWidget* widget, widgets) {
+        if (widget->isVisible())
+            visibleWidgetNum++;
+    }
+
+    if (widgets.size() == visibleWidgetNum) {
+        foreach (ProcessorWidget* widget, widgets)
+            widget->setVisible(false);
+    }
+    else {
+        foreach (ProcessorWidget* widget, widgets)
+            widget->setVisible(true);
+    }
+
+    widgetIndicatorButton_.update();
+}
+
+void AggregationGraphicsItem::toggleSingleProcessorWidget() {
+    QObject* obj = QObject::sender();
+    QAction* action = dynamic_cast<QAction*>(obj);
+    tgtAssert(action, "This slot must be triggered from a QAction");
+    tgtAssert(processorWidgetMap_.contains(action), "The triggering action is not contained in the map");
+    ProcessorWidget* widget = processorWidgetMap_[action];
+    widget->setVisible(!widget->isVisible());
+    widgetIndicatorButton_.update();
+}
+
+void AggregationGraphicsItem::processorWidgetCreated(const Processor*) {
+    QList<ProcessorWidget*> widgets;
+    foreach (Processor* proc, getProcessors()) {
+        if (proc->getProcessorWidget())
+            widgets.push_back(proc->getProcessorWidget());
+    }
+
+    if (widgets.size() > 0) {
+        widgetIndicatorButton_.setProcessorWidgets(widgets);
+        widgetIndicatorButton_.show();
+    }
+}
+
+void AggregationGraphicsItem::processorWidgetDeleted(const Processor*) {
+    QList<ProcessorWidget*> widgets;
+    foreach (Processor* proc, getProcessors()) {
+        if (proc->getProcessorWidget())
+            widgets.push_back(proc->getProcessorWidget());
+    }
+
+    if (widgets.size() > 0) {
+        widgetIndicatorButton_.setProcessorWidgets(widgets);
+        widgetIndicatorButton_.show();
+    }
+}
+
+QList<QAction*> AggregationGraphicsItem::getProcessorWidgetContextMenuActions() {
+    QList<QAction*> result;
+    foreach (Processor* proc, getProcessors()) {
+        if (proc->getProcessorWidget()) {
+            QAction* action = new QAction(QString::fromStdString(proc->getName()), this);
+            action->setCheckable(true);
+            QObject::connect(action, SIGNAL(triggered()), this, SLOT(toggleSingleProcessorWidget()));
+            processorWidgetMap_.insert(action, proc->getProcessorWidget());
+            if (proc->getProcessorWidget()->isVisible())
+                action->setChecked(true);
+            result.append(action);
+        }
+    }
+    return result;
 }
 
 } // namespace

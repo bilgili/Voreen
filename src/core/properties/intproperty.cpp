@@ -32,16 +32,19 @@
 
 namespace voreen {
 
-IntProperty::IntProperty(const std::string& id, const std::string& guiText, int value, int minValue,
-                 int maxValue, bool instantValueChange, Processor::InvalidationLevel invalidationLevel)
+IntProperty::IntProperty(const std::string& id, const std::string& guiText,
+                    int value, int minValue, int maxValue,
+                    Processor::InvalidationLevel invalidationLevel)
     : NumericProperty<int>(id, guiText, value, minValue, maxValue, 1,
                             invalidationLevel)
-{
-    setInstantValueChange(instantValueChange);
-}
+{}
 
 PropertyWidget* IntProperty::createWidget(PropertyWidgetFactory* f) {
     return f->createWidget(this);
+}
+
+std::string IntProperty::getTypeString() const {
+    return "Integer";
 }
 
 }   // namespace

@@ -42,14 +42,11 @@ public:
         TEXTURE_MANAGER = 1 << 6,
         TESSELATOR      = 1 << 7,
         LOG_TO_CONSOLE  = 1 << 30,
-
-        NO_SHADER_CACHING  = 1 << 31,
-
         ALL             = ( 
                             LOG_MANAGER | FILE_SYSTEM | GPU_PROPERTIES | 
                             SCRIPT_MANAGER | SHADER_MANAGER |
                             MODEL_MANAGER | TEXTURE_MANAGER | TESSELATOR |
-                            LOG_TO_CONSOLE | NO_SHADER_CACHING                            
+                            LOG_TO_CONSOLE
                             )        
     };
 };

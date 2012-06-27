@@ -42,14 +42,14 @@ namespace voreen {
  */
 class NrrdVolumeReader : public VolumeReader {
 public:
-    NrrdVolumeReader(IOProgress* progress = 0) :
+    NrrdVolumeReader(ProgressBar* progress = 0) :
         VolumeReader(progress)
     {
         extensions_.push_back("nrrd");
         extensions_.push_back("nhdr");
     }
 
-    virtual VolumeReader* create(IOProgress* progress = 0) const;
+    virtual VolumeReader* create(ProgressBar* progress = 0) const;
 
     virtual VolumeCollection* read(const std::string& url)
         throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);

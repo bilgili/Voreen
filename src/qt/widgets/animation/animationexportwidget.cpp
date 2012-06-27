@@ -35,11 +35,13 @@
 #include <QApplication>
 #include <QLabel>
 #include <QMessageBox>
+#include <QProgressDialog>
 #include <QTimeEdit>
 
 namespace voreen {
 
-AnimationExportWidget::AnimationExportWidget(QWidget* parent, Animation* animation, NetworkEvaluator* network, float duration, int startframe, int endframe, float stretchFactor)
+AnimationExportWidget::AnimationExportWidget(QWidget* parent, Animation* animation, NetworkEvaluator* network,
+                                             float duration, int startframe, int endframe, float stretchFactor)
     : QDialog(parent)
     , animation_(animation)
     , network_(network)
@@ -53,9 +55,8 @@ AnimationExportWidget::AnimationExportWidget(QWidget* parent, Animation* animati
     , recordPathName_("")
     , fpsFactor_(stretchFactor)
     , renderState_(Inactive)
-    , renderTimer_(new QBasicTimer())
 {
-    setWindowTitle(tr("Animation Export"));
+    setWindowTitle(tr("Export Animation"));
     setObjectName(tr("Export Optionen"));
     createWidgets();
     createConnections();
@@ -64,7 +65,6 @@ AnimationExportWidget::AnimationExportWidget(QWidget* parent, Animation* animati
 AnimationExportWidget::~AnimationExportWidget(){
     comboCanvases_->disconnect();
     renderBox_->disconnect();
-    delete renderTimer_;
 }
 void AnimationExportWidget::networkChanged() {
     if (network_ == 0)
@@ -73,7 +73,6 @@ void AnimationExportWidget::networkChanged() {
     canvas_ = 0;
     painter_ = 0;
     allCanvases_.clear();
-
 
     const std::vector<Processor*>& processors = network_->getProcessorNetwork()->getProcessors();;
     for (size_t i = 0; i < processors.size(); ++i) {
@@ -85,17 +84,15 @@ void AnimationExportWidget::networkChanged() {
         }
     }
 
-
-    if (allCanvases_.empty() == false) {
+    if (!allCanvases_.empty()) {
         canvas_ = allCanvases_.begin()->first;
+        canvasSize_ = canvas_->getSize();
         if (canvas_ != 0)
             painter_ = dynamic_cast<VoreenPainter*>(canvas_->getPainter());
     }
 
     refreshComboBoxes();
-
 }
-
 
 void AnimationExportWidget::controlledCanvasChanged(int index) {
     if ((comboCanvases_ == 0) || (index < 0) || (index >= comboCanvases_->count()))
@@ -116,24 +113,32 @@ void AnimationExportWidget::createWidgets(){
     setWidgetState();
 }
 
+void AnimationExportWidget::closeEvent(QCloseEvent* e) {
+    currentFrame_ = static_cast<int>(duration_ / fpsFactor_ + 1);
+    endRendering();
+    QDialog::closeEvent(e);
+}
+
 void AnimationExportWidget::createConnections() {
     connect(comboCanvases_, SIGNAL(currentIndexChanged(int)), this, SLOT(controlledCanvasChanged(int)));
     connect(saveAsFrameSequenceButton_, SIGNAL(clicked()), this, SLOT(recordAnimationFrameSeq()));
     connect(saveAsVideoButton_, SIGNAL(clicked()), this, SLOT(recordAnimationVideo()));
     connect(videoSetupButton_, SIGNAL(clicked()), this, SLOT(videoSetup()));
 }
+
 void AnimationExportWidget::setWidgetState() {
     comboCanvases_->setEnabled(true);
 
 }
+
 void AnimationExportWidget::refreshComboBoxes() {
     if (comboCanvases_ != 0) {
         comboCanvases_->clear();
         for (CanvasMap::const_iterator it = allCanvases_.begin(); it != allCanvases_.end(); ++it)
             comboCanvases_->addItem(tr(it->second.c_str()), reinterpret_cast<qulonglong>(it->first));
     }
-
 }
+
 QGroupBox* AnimationExportWidget::createAnimationRenderBox(QWidget* parent) {
     QGroupBox* recordBox = new QGroupBox(tr("Recording"), parent);
     QVBoxLayout* layout = new QVBoxLayout();
@@ -141,20 +146,20 @@ QGroupBox* AnimationExportWidget::createAnimationRenderBox(QWidget* parent) {
 
 
     comboCanvases_ = new QComboBox(recordBox);
-    rowLayout->addWidget(new QLabel(tr("Canvas"), recordBox));
+    rowLayout->addWidget(new QLabel(tr("Canvas:"), recordBox));
     rowLayout->addWidget(comboCanvases_);
     layout->addLayout(rowLayout);
 
     // render meta settings
     rowLayout = new QHBoxLayout();
-    rowLayout->addWidget(new QLabel(tr("FPS")));
+    rowLayout->addWidget(new QLabel(tr("FPS:")));
     spinRecordingFPS_ = new QSpinBox(recordBox);
     spinRecordingFPS_->setRange(1, 120);
-    spinRecordingFPS_->setValue(30);
+    spinRecordingFPS_->setValue(25);
     rowLayout->addWidget(spinRecordingFPS_);
     rowLayout->addStretch();
 
-    rowLayout->addWidget(new QLabel(("     Video dimensions")), 1, 0);
+    rowLayout->addWidget(new QLabel(("     Video Dimensions:")), 1, 0);
     spinWidth_ = new QSpinBox(recordBox);
     spinHeight_ = new QSpinBox(recordBox);
 
@@ -178,6 +183,8 @@ QGroupBox* AnimationExportWidget::createAnimationRenderBox(QWidget* parent) {
     QHBoxLayout* row2Layout = new QHBoxLayout();
     spinStartTime_ = new QTimeEdit(QTime(0, 0 , 0, 0));
     spinEndTime_ = new QTimeEdit(duration);
+    spinStartTime_->setDisplayFormat("mm:ss");
+    spinEndTime_->setDisplayFormat("mm:ss");
     row2Layout->addWidget(new QLabel("Start Time: "));
     row2Layout->addWidget(spinStartTime_);
 
@@ -190,9 +197,9 @@ QGroupBox* AnimationExportWidget::createAnimationRenderBox(QWidget* parent) {
 
     // render 2 vid or frameSeq
     rowLayout = new QHBoxLayout();
-    saveAsFrameSequenceButton_ = new QPushButton(tr("Save as frame-sequence"));
-    saveAsVideoButton_ = new QPushButton(tr("Save as video-file"));
-    videoSetupButton_ = new QPushButton(tr("Setup video"));
+    saveAsFrameSequenceButton_ = new QPushButton(tr("Save as frame sequence"));
+    saveAsVideoButton_ = new QPushButton(tr("Save as video file"));
+    videoSetupButton_ = new QPushButton(tr("Setup video..."));
     #ifndef VRN_WITH_FFMPEG
     saveAsVideoButton_->setVisible(false);
     videoSetupButton_->setVisible(false);
@@ -205,6 +212,7 @@ QGroupBox* AnimationExportWidget::createAnimationRenderBox(QWidget* parent) {
     recordBox->setLayout(layout);
     return recordBox;
 }
+
 void AnimationExportWidget::recordAnimationFrameSeq() {
     recordAnimation(false);
 }
@@ -212,14 +220,14 @@ void AnimationExportWidget::recordAnimationFrameSeq() {
 void AnimationExportWidget::recordAnimationVideo() {
     recordAnimation(true);
 }
-//collecting directories
+
 void AnimationExportWidget::recordAnimation(bool recordVideo) {
     renderingVideo_ = recordVideo;
     QStringList fileList;
     if (renderingVideo_ == false) {
         renderState_= Snapshot;
-        QString s = QFileDialog::getExistingDirectory(this,tr( "Choose a directory to save the image sequence"),
-            VoreenApplication::app()->getDocumentsPath().c_str());
+        QString s = QFileDialog::getExistingDirectory(this, tr("Select Output Directory"),
+                                                      VoreenApplication::app()->getDocumentsPath().c_str());
 
         if (!s.isEmpty())
             fileList.push_back(s);
@@ -228,15 +236,16 @@ void AnimationExportWidget::recordAnimation(bool recordVideo) {
     else {
         renderState_= Recording;
         std::vector<std::string> formats = tgt::VideoEncoder::getSupportedFormatsByFileEnding();
+        std::vector<std::string> descs = tgt::VideoEncoder::getSupportedFormatDescriptions();
         QStringList lstFormats;
         for (size_t i = 0; i < formats.size(); ++i) {
-            formats[i] = ("*." + formats[i]);
+            formats[i] = (descs[i] + " (*." + formats[i] + ")");
             lstFormats.append(formats[i].c_str());
         }
 
         QFileDialog dialog(this);
-        dialog.setDefaultSuffix(ffmpegEncoder_.getContainerAppendix());
-        dialog.setWindowTitle(tr("Save as video file"));
+        dialog.setDefaultSuffix("avi");
+        dialog.setWindowTitle(tr("Export As Video File"));
         dialog.setDirectory(VoreenApplication::app()->getDocumentsPath().c_str());
         #if QT_VERSION >= 0x040400
         dialog.setNameFilters(lstFormats);
@@ -252,47 +261,56 @@ void AnimationExportWidget::recordAnimation(bool recordVideo) {
         startRendering();
     }
 }
-//initialization
-void AnimationExportWidget::startRendering() {
 
+void AnimationExportWidget::startRendering() {
     // gather some useful params
     fps_ = spinRecordingFPS_->value();
     startframe_= fps_ * (spinStartTime_->time().hour() * 3600 + spinStartTime_->time().minute()*60+ spinStartTime_->time().second());
     endframe_ = fps_ * (spinEndTime_->time().hour() * 3600 + spinEndTime_->time().minute()*60+ spinEndTime_->time().second());
     currentFrame_ = startframe_;
     duration_= endframe_;
-    //fpsfactor_ = fps_/30.0f;
-    //fpsfactor_ = 0.5;
 
     // set accurate recording dimension
     canvasSize_ = canvas_->getSize();
-    //canvas_->resize(spinWidth_->value(), spinHeight_->value());
-    painter_->getCanvasRenderer()->resizeCanvas(tgt::ivec2(spinWidth_->value(), spinHeight_->value()));
+    canvas_->resize(spinWidth_->value(), spinHeight_->value());
     qApp->processEvents();
 
 #ifdef VRN_WITH_FFMPEG
     if (renderState_== Recording) {
         tgt::Texture* texture_ = painter_->getCanvasRenderer()->getImageColorTexture();
-        ffmpegEncoder_.startVideoEncoding(recordPathName_.c_str(),
-        fps_, spinWidth_->value(), spinHeight_->value(),texture_->getFormat(), texture_->getDataType());
-
+        try {
+            ffmpegEncoder_.startVideoEncoding(recordPathName_.c_str(), fps_, spinWidth_->value(), spinHeight_->value(),
+                                              texture_->getFormat(), texture_->getDataType());
+        }
+        catch (tgt::Exception& e) {
+            QMessageBox::critical(this, tr("Video Export Failed"),
+                                  tr("Failed to initialize video export:\n%1").arg(e.what()));
+            return;
+        }
     }
 #endif // VRN_WITH_FFMPEG
 
     setWidgetState();
+    canvas_->resize(spinWidth_->value(), spinHeight_->value());
+    QProgressDialog progress(tr("Exporting Animation..."), tr("Abort"), 0, (int)(duration_ /fpsFactor_), this);
+    progress.setWindowTitle(tr("Exporting"));
+    if (fps_ > 0) {
+        for(int i = 0; i < duration_ /fpsFactor_; ++i) {
+            renderingStep();
+            progress.setValue(i);
+            qApp->processEvents();
 
-    if (fps_ > 0)
-        renderTimer_->start(1000 / fps_, this);
+            if (currentFrame_ > duration_ / fpsFactor_ || progress.wasCanceled()){
+                break;
+            }
+        }
+        endRendering();
+    }
 }
-void AnimationExportWidget::timerEvent(QTimerEvent*) {
-    renderingStep();
-}
-//renderingprocess
+
 void AnimationExportWidget::renderingStep(){
-
     if (animation_ == 0)
         return;
-
     tgtAssert(canvas_, "No canvas");
 
     if (currentFrame_ > duration_ / fpsFactor_){
@@ -300,19 +318,21 @@ void AnimationExportWidget::renderingStep(){
     }
     else {
         animation_->renderAt((float)currentFrame_*fpsFactor_/ fps_);
-
         #ifdef VRN_WITH_FFMPEG
         if ((renderState_== Recording) &&(painter_->getCanvasRenderer())) {
-            if (canvas_->getSize() != tgt::ivec2(spinWidth_->value(), spinHeight_->value()))
+            if (canvas_->getSize() != tgt::ivec2(spinWidth_->value(), spinHeight_->value())) {
                 canvas_->resize(spinWidth_->value(), spinHeight_->value());
-            canvas_->repaint();
+                canvas_->repaint();
+            }
+
             tgt::Texture* texture = painter_->getCanvasRenderer()->getImageColorTexture();
             if (texture && texture->getDimensions().xy() == tgt::ivec2(spinWidth_->value(), spinHeight_->value())) {
                 texture->downloadTexture();
                 ffmpegEncoder_.nextFrame(texture->getPixelData());
             }
             else {
-                LERRORC("voreenqt.AnimationExportWidget", "Frame texture could not be downloaded or dimensions do not match");
+                LERRORC("voreenqt.AnimationExportWidget",
+                        "Frame texture could not be downloaded or dimensions do not match");
             }
         } else {
         #endif
@@ -328,8 +348,8 @@ void AnimationExportWidget::renderingStep(){
         ++currentFrame_;
     }
 }
+
 void AnimationExportWidget::endRendering(){
-    renderTimer_->stop();
     renderState_= Inactive;
     #ifdef VRN_WITH_FFMPEG
     if(renderingVideo_){
@@ -337,8 +357,9 @@ void AnimationExportWidget::endRendering(){
         renderingVideo_ = false;
     }
     #endif
-    canvas_->resize(canvasSize_.x,canvasSize_.y);
+    canvas_->resize(canvasSize_.x, canvasSize_.y);
 }
+
 void AnimationExportWidget::videoSetup() {
     #ifdef VRN_WITH_FFMPEG
     int curPreset = ffmpegEncoder_.getPreset();
@@ -350,20 +371,23 @@ void AnimationExportWidget::videoSetup() {
     delete dialog;
     #endif
 }
+
 #ifdef VRN_WITH_FFMPEG
+
 QDialog* AnimationExportWidget::createVideoSetupDialog(QWidget* parent, int curPreset, int curBitrate) {
     QDialog* dialog = new QDialog(parent);
+    dialog->setWindowTitle(tr("Setup Video"));
     QVBoxLayout* layout = new QVBoxLayout();
     dialog->setLayout(layout);
 
     // Preset
     QHBoxLayout* rowLayout = new QHBoxLayout();
     preset_ = new QComboBox(dialog);
-    rowLayout->addWidget(new QLabel(tr("Preset")));
+    rowLayout->addWidget(new QLabel(tr("Preset:")));
 
     rowLayout->addWidget(preset_);
     const char** ccPairNames = tgt::VideoEncoder::getContainerCodecPairNames();
-    for (int i = tgt::GUESS; i < tgt::LAST; ++i)
+    for (int i = tgt::VideoEncoder::GUESS; i < tgt::VideoEncoder::LAST; ++i)
         preset_->addItem(ccPairNames[i]);
     preset_->setCurrentIndex(curPreset);
     layout->addLayout(rowLayout);
@@ -371,7 +395,7 @@ QDialog* AnimationExportWidget::createVideoSetupDialog(QWidget* parent, int curP
     // Bitrate
     rowLayout = new QHBoxLayout();
     bitrate_ = new QSpinBox(dialog);
-    rowLayout->addWidget(new QLabel(tr("Bitrate (kbit/s)")));
+    rowLayout->addWidget(new QLabel(tr("Bitrate (kbit/s):")));
     rowLayout->addWidget(bitrate_);
     bitrate_->setMinimum(400);
     bitrate_->setMaximum(4000);
@@ -392,6 +416,7 @@ QDialog* AnimationExportWidget::createVideoSetupDialog(QWidget* parent, int curP
 
     return dialog;
 }
-#endif
 
-}   // namespace voreen
+#endif // VRN_WITH_FFMPEG
+
+} // namespace voreen

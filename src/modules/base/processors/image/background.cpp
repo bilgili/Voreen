@@ -103,20 +103,21 @@ Background::Background()
     : ImageProcessor("pp_background")
     , firstcolor_("color1", "First Color", tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f))
     , secondcolor_("color2", "Second Color", tgt::vec4(0.2f, 0.2f, 0.2f, 1.0f))
-    , angle_("angle", "Angle", 0, 0, 359, false)
+    , angle_("angle", "Angle", 0, 0, 359)
     , tex_(0)
     , textureLoaded_(false)
     , filename_("texture", "Texture", "Select texture",
                 VoreenApplication::app()->getTexturePath(), "Image Files (*.jpg *.png *.bmp)",
                 FileDialogProperty::OPEN_FILE, Processor::INVALID_RESULT)
-    , tile_("repeat", "Repeat Background", 1.0f, 0.f, 100.f, false)
+    , tile_("repeat", "Repeat Background", 1.0f, 0.f, 100.f)
     , modeProp_("backgroundModeAsString", "Type")
     , inport_(Port::INPORT, "image.input")
     , outport_(Port::OUTPORT, "image.output")
     , privatePort_(Port::OUTPORT, "image.tmp", false)
     , textureInvalid_(true)
 {
-
+    firstcolor_.setViews(Property::COLOR);
+    secondcolor_.setViews(Property::COLOR);
     modeProp_.addOption("none",       "No Background");
     modeProp_.addOption("monochrome", "Monochrome");
     modeProp_.addOption("gradient",   "Gradient");

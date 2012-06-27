@@ -129,6 +129,18 @@ void QtCanvas::toggleFullScreen() {
     that are associated with this canvas. The same is true for the other event-handling
     methods.
 */
+void QtCanvas::enterEvent(QEvent* /*e*/) {
+    tgt::MouseEvent* enterEv = new tgt::MouseEvent(0, 0, tgt::MouseEvent::ENTER,
+        tgt::MouseEvent::MODIFIER_NONE, tgt::MouseEvent::MOUSE_BUTTON_NONE, tgt::ivec2(width(), height()));
+    eventHandler_->broadcast(enterEv);
+}
+
+void QtCanvas::leaveEvent(QEvent* /*e*/) {
+    tgt::MouseEvent* leaveEv = new tgt::MouseEvent(0, 0, tgt::MouseEvent::EXIT,
+        tgt::MouseEvent::MODIFIER_NONE, tgt::MouseEvent::MOUSE_BUTTON_NONE, tgt::ivec2(width(), height()));
+    eventHandler_->broadcast(leaveEv);
+}
+
 void QtCanvas::mousePressEvent(QMouseEvent* e) {
     tgt::MouseEvent* prEv = new tgt::MouseEvent(e->x(), e->y(), tgt::MouseEvent::PRESSED,
         getModifier(e), getButton(e), tgt::ivec2(width(), height()));

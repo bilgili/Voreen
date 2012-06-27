@@ -37,40 +37,48 @@ namespace voreen {
 
 ImageOverlay::ImageOverlay()
     : ImageProcessor("pp_compositor")
-    , tex_(0)
-    , textureLoaded_(false)
-    , filename_("filenameAsString", "Texture", "Select texture",
-                "", "*.jpg;*.png;*.bmp", FileDialogProperty::OPEN_FILE, Processor::INVALID_PROGRAM)
-    , left_("left", "Position left", 0.25f)
-    , top_("top", "Position top", 0.25f)
-    , width_("width", "Relative width", 0.5f)
-    , height_("height", "Relative height", 0.5f)
-    , opacity_("opacity", "Opacity", 1.0f)
-    , inport_(Port::INPORT, "image.input")
-    , outport_(Port::OUTPORT, "image.output")
-    , privatePort_(Port::OUTPORT, "image.tmp", false)
+    , imageInport_(Port::INPORT, "image.in")
+    , overlayInport_(Port::INPORT, "image.overlay")
+    , outport_(Port::OUTPORT, "image.out")
+    , renderOverlay_("renderOverlay", "Render Overlay", true)
+    , usePixelCoordinates_("usePixelCoordinates", "Use Pixel Coordinates", true)
+    , overlayBottomLeft_("overlayBottomLeft", "Overlay Bottom Left", tgt::ivec2(10), tgt::ivec2(-4096), tgt::ivec2(4096))
+    , overlayDimensions_("overlayDimensions", "Overlay Dimensions", tgt::ivec2(100), tgt::ivec2(0), tgt::ivec2(4096))
+    , overlayBottomLeftRelative_("overlayBottomLeftRelative", "Overlay Bottom Left (Relative)", tgt::vec2(0.05f), tgt::vec2(-1.f), tgt::vec2(1.f))
+    , overlayDimensionsRelative_("overlayDimensionsRelative", "Overlay Dimensions (Relative)", tgt::vec2(0.25f), tgt::vec2(0.f), tgt::vec2(1.f))
+    , overlayOpacity_("overlayOpacity", "Overlay Opacity", 1.f)
+    , renderBorder_("renderBorder", "Render Border", false)
+    , borderWidth_("borderWidth", "Border Width", 1.f, 0.1f, 10.f)
+    , borderColor_("borderColor", "Border Color", tgt::Color::black)
+    , copyShader_(0)
 {
-
-    addProperty(top_);
-    addProperty(left_);
-    addProperty(width_);
-    addProperty(height_);
-    addProperty(opacity_);
-
-    filename_.onChange(CallMemberAction<ImageOverlay>(this, &ImageOverlay::loadTexture));
-    addProperty(filename_);
-
-    addPort(inport_);
+    borderColor_.setViews(Property::COLOR);
+    addPort(imageInport_);
+    addPort(overlayInport_);
     addPort(outport_);
-    addPrivateRenderPort(&privatePort_);
-}
 
-ImageOverlay::~ImageOverlay() {
+    overlayDimensions_.onChange(CallMemberAction<ImageOverlay>(this, &ImageOverlay::overlayDimensionsChanged));
+    overlayDimensionsRelative_.onChange(CallMemberAction<ImageOverlay>(this, &ImageOverlay::overlayDimensionsChanged));
+    usePixelCoordinates_.onChange(CallMemberAction<ImageOverlay>(this, &ImageOverlay::overlayDimensionsChanged));
+
+    addProperty(renderOverlay_);
+    addProperty(usePixelCoordinates_);
+    addProperty(overlayBottomLeft_);
+    addProperty(overlayDimensions_);
+    addProperty(overlayBottomLeftRelative_);
+    addProperty(overlayDimensionsRelative_);
+    addProperty(overlayOpacity_);
+    addProperty(renderBorder_);
+    addProperty(borderWidth_);
+    addProperty(borderColor_);
+
+    overlayInport_.sizeOriginChanged(&overlayInport_);
 }
 
 std::string ImageOverlay::getProcessorInfo() const {
-    return "Creates an image-overlay on top of the rendered image. "
-           "The relative position and the relative size of the image can be altered.";
+    return "Renders an overlay on top of the input image. "
+           "The overlay position and size is either specified in pixel coordinates "
+           "or in normalized coordinates.";
 }
 
 Processor* ImageOverlay::create() const {
@@ -78,177 +86,217 @@ Processor* ImageOverlay::create() const {
 }
 
 void ImageOverlay::initialize() throw (VoreenException) {
-    loadTexture();
-
     ImageProcessor::initialize();
+
+    copyShader_ = ShdrMgr.loadSeparate("passthrough.vert", "copyimage.frag",
+        ImageProcessor::generateHeader(), false);
+    if (copyShader_) {
+        copyShader_->deactivate();
+    }
+    else {
+        initialized_ = false;
+        throw VoreenException("Failed to load shader: passthrough.vert/copyimage.frag");
+    }
+
+    overlayDimensionsChanged();
 }
 
 void ImageOverlay::deinitialize() throw (VoreenException) {
-    if (tex_) {
-        if (textureLoaded_)
-            TexMgr.dispose(tex_);
-        else
-            delete tex_;
-        tex_ = 0;
-        LGL_ERROR;
-    }
+    ShdrMgr.dispose(copyShader_);
+    copyShader_ = 0;
 
     ImageProcessor::deinitialize();
 }
 
+bool ImageOverlay::isReady() const {
+    return (imageInport_.isReady() && outport_.isReady());
+}
+
 std::string ImageOverlay::generateHeader() {
     std::string header = ImageProcessor::generateHeader();
-    header += "#define MODE_ALPHA_BLENDING\n";
+//    header += "#define MODE_ALPHA_BLENDING\n";
+    header += "#define MODE_WEIGHTED_AVERAGE\n";
     return header;
 }
 
-void ImageOverlay::process() {
-    if (!outport_.isReady())
-        return;
-
-    if (!inport_.isReady())
-        outport_.activateTarget();
-    else
-        privatePort_.activateTarget();
-
-
+void ImageOverlay::beforeProcess() {
     if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
         compile();
+}
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+void ImageOverlay::process() {
+    tgtAssert(outport_.isReady(), "Outport not ready");
+    tgtAssert(imageInport_.isReady(), "Inport not ready");
+    tgtAssert(program_ && copyShader_, "Shader missing");
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
-    glClearDepth(1.0);
-
-    glDisable(GL_DEPTH_TEST);
-
+    outport_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    renderOverlayImage();
+    // bind input image to tex unit
+    TextureUnit imageUnit, imageUnitDepth;
+    imageInport_.bindTextures(imageUnit.getEnum(), imageUnitDepth.getEnum());
 
-    if (!inport_.isReady())
-        outport_.deactivateTarget();
-    else
-        privatePort_.deactivateTarget();
+    // 1. copy input image to outport
+    copyShader_->activate();
+    setGlobalShaderParameters(copyShader_);
+    imageInport_.setTextureParameters(copyShader_, "texParams_");
+    copyShader_->setUniform("colorTex_", imageUnit.getUnitNumber());
+    copyShader_->setUniform("depthTex_", imageUnitDepth.getUnitNumber());
+    renderQuad();
+    copyShader_->deactivate();
+    LGL_ERROR;
 
-    glEnable(GL_DEPTH_TEST);
+    // 2. render overlay over copied input image (using compositor shader)
+    // check, if overlay dims are greater zero
+    bool dimensionsValid = ( (usePixelCoordinates_.get()  && tgt::hand(tgt::greaterThan(overlayDimensions_.get(), tgt::ivec2(0)))) ||
+                             (!usePixelCoordinates_.get() && tgt::hand(tgt::greaterThan(overlayDimensionsRelative_.get(), tgt::vec2(0.f)))) );
+    if (renderOverlay_.get() && overlayInport_.isReady() && dimensionsValid) {
+        // bind overlay to tex unit
+        TextureUnit overlayUnit;
+        tgt::Texture* overlayTex = overlayInport_.getColorTexture();
+        tgtAssert(overlayTex, "No overlay texture");
+        overlayUnit.activate();
+        overlayTex->bind();
 
-    // leave if there's nothing to render above
-    if (inport_.isReady()) {
-        outport_.activateTarget();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        TextureUnit shadeUnit0, shadeUnitDepth0, shadeUnit1, shadeUnitDepth1;
-        privatePort_.bindTextures(shadeUnit0.getEnum(), shadeUnitDepth0.getEnum());
-        inport_.bindTextures(shadeUnit1.getEnum(), shadeUnitDepth1.getEnum());
-
-        // initialize shader
         program_->activate();
         setGlobalShaderParameters(program_);
-        program_->setUniform("shadeTex0_", shadeUnit0.getUnitNumber());
-        program_->setUniform("depthTex0_", shadeUnitDepth0.getUnitNumber());
-        program_->setUniform("shadeTex1_", shadeUnit1.getUnitNumber());
-        program_->setUniform("depthTex1_", shadeUnitDepth1.getUnitNumber());
-        privatePort_.setTextureParameters(program_, "textureParameters0_");
-        inport_.setTextureParameters(program_, "textureParameters1_");
 
+        // image texture parameters
+        imageInport_.setTextureParameters(program_, "textureParameters0_");
+        program_->setUniform("shadeTex0_", imageUnit.getUnitNumber());
+        program_->setUniform("depthTex0_", imageUnitDepth.getUnitNumber());
+        program_->setUniform("shadeTex1_", overlayUnit.getUnitNumber());
+        program_->setUniform("weightingFactor_", 1.f-overlayOpacity_.get());
+
+        // determine overlay dimensions and bottom-left in float pixel coords
+        tgt::vec2 outportDim = tgt::vec2(outport_.getSize());
+        tgt::vec2 overlayDim, overlayBL;
+        if (usePixelCoordinates_.get()) {
+            overlayDim = tgt::vec2(overlayDimensions_.get());
+            overlayBL = tgt::vec2(overlayBottomLeft_.get());
+        }
+        else {
+            overlayDim = overlayDimensionsRelative_.get() * outportDim;
+            overlayBL = overlayBottomLeftRelative_.get() * outportDim;
+        }
+
+        // overlay texture matrix mapping from normalized frag coords (outport) to overlay tex coords
+        tgt::mat4 overlayTexCoordMatrix = tgt::mat4::identity;
+        overlayTexCoordMatrix *= tgt::mat4::createScale(tgt::vec3(outportDim / overlayDim, 0.f));
+        overlayTexCoordMatrix *= tgt::mat4::createTranslation(-tgt::vec3(overlayBL / outportDim, 1.f));
+
+        // overlay texture parameters
+        bool oldIgnoreError = program_->getIgnoreUniformLocationError();
+        program_->setIgnoreUniformLocationError(true);
+        program_->setUniform("textureParameters1_.dimensions_",    overlayDim);
+        program_->setUniform("textureParameters1_.dimensionsRCP_", tgt::vec2(1.f) / overlayDim);
+        program_->setUniform("textureParameters1_.matrix_", overlayTexCoordMatrix);
+        program_->setIgnoreUniformLocationError(oldIgnoreError);
+        LGL_ERROR;
+
+        // render overlay at specified position and size
+        tgt::vec2 bl = 2.f*overlayBL / outportDim - 1.f;
+        tgt::vec2 dim = 2.f*overlayDim / outportDim;
         glDepthFunc(GL_ALWAYS);
-        renderQuad();
+        glBegin(GL_QUADS);
+            glVertex2f(bl.x, bl.y);
+            glVertex2f(bl.x + dim.x, bl.y);
+            glVertex2f(bl.x + dim.x, bl.y + dim.y);
+            glVertex2f(bl.x, bl.y + dim.y);
+        glEnd();
         glDepthFunc(GL_LESS);
-        outport_.deactivateTarget();
-
         program_->deactivate();
+        LGL_ERROR;
+
+        // render border around overlay
+        if (renderBorder_.get()) {
+            glPushAttrib(GL_ALL_ATTRIB_BITS);
+            glColor4fv(borderColor_.get().elem);
+            glLineWidth(borderWidth_.get());
+            glDepthFunc(GL_ALWAYS);
+            glBegin(GL_LINE_STRIP);
+                glVertex2f(bl.x, bl.y);
+                glVertex2f(bl.x + dim.x, bl.y);
+                glVertex2f(bl.x + dim.x, bl.y + dim.y);
+                glVertex2f(bl.x, bl.y + dim.y);
+            glEnd();
+            glPopAttrib();
+            LGL_ERROR;
+        }
     }
+
+    outport_.deactivateTarget();
+    TextureUnit::setZeroUnit();
     LGL_ERROR;
 }
 
-void ImageOverlay::renderOverlayImage() {
-    glDisable(GL_LIGHTING);
-    glDisable(GL_TEXTURE_2D);
-
-    if (tex_) {
-        glActiveTexture(GL_TEXTURE0);
-        tex_->bind();
-        tex_->enable();
-        LGL_ERROR;
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
-
-        glColor4f(1.0f, 1.0f, 1.0f, opacity_.get());
-
-        glBegin(GL_QUADS);
-
-        glTexCoord2f(0.0f, 0.0f);
-        glVertex2f(-1.0f+2*left_.get(), 1.0f-2*top_.get()-2*height_.get());
-        glTexCoord2f(1.0f, 0.0f);
-        glVertex2f(-1.0f+2*left_.get()+2*width_.get(), 1.0f-2*top_.get()-2*height_.get());
-        glTexCoord2f(1.0f, 1.0f);
-        glVertex2f(-1.0f+2*left_.get()+2*width_.get(), 1.0f-2*top_.get());
-        glTexCoord2f(0.0f, 1.0f);
-        glVertex2f(-1.0f+2*left_.get(), 1.0f-2*top_.get());
-
-        glEnd();
-
-        glDisable(GL_BLEND);
-
-        tex_->disable();
-    }
-}
-
-void ImageOverlay::setOverlayImageModeEvt() {
-
-    loadTexture();
-    invalidate();
-}
-
-void ImageOverlay::loadTexture() {
-    // is a texture already loaded? -> then delete
-    if (tex_) {
-        if (textureLoaded_) {
-            TexMgr.dispose(tex_);
-            //textureloaded_ = false;
-        }
-        else
-            delete tex_;
-
-        LGL_ERROR;
-        tex_ = 0;
-    }
-
-    // create Texture
-    if (!filename_.get().empty()) {
-        tex_ = TexMgr.load(filename_.get(), tgt::Texture::LINEAR, false, false, true, true,
-                           !GpuCaps.isNpotSupported());
-    }
-//    if (tex_) {
-        //textureloaded_ = true;
-    if (!textureLoaded_) {
-        textureLoaded_ = true;
-
-        if (!tex_)
+void ImageOverlay::sizeOriginChanged(RenderPort* p) {
+    if (!p->getSizeOrigin()) {
+        if (outport_.getSizeOrigin())
             return;
-
-        // after loading a texture, the standard width and height will be set to fit the texture.
-        float widthTotal = static_cast<float>(tex_->getWidth());
-        float heightTotal = static_cast<float>(tex_->getHeight());
-        float texRatio = widthTotal / heightTotal;
-        if (texRatio > 1) {
-            left_.set(0.25f);
-            width_.set(0.5f);
-            height_.set(0.5f/texRatio);
-            top_.set(0.5f-0.25f/texRatio);
-        }
-        else {
-            top_.set(0.25f);
-            height_.set(0.5f);
-            width_.set(0.5f*texRatio);
-            left_.set(0.5f-0.25f*texRatio);
-        }
     }
+
+    imageInport_.sizeOriginChanged(p->getSizeOrigin());
 }
 
+void ImageOverlay::portResized(RenderPort* /*p*/, tgt::ivec2 newsize) {
+    // cycle prevention
+    if (portResizeVisited_)
+        return;
+
+    portResizeVisited_ = true;
+
+    // propagate to predecessing RenderProcessors
+    imageInport_.resize(newsize);
+
+    //distribute to outports
+    outport_.resize(newsize);
+
+    overlayDimensionsChanged();
+
+    invalidate();
+
+    portResizeVisited_ = false;
+}
+
+bool ImageOverlay::testSizeOrigin(const RenderPort* p, void* so) const {
+    tgtAssert(p->isOutport(), "testSizeOrigin used with inport");
+
+    if (so) {
+        if (outport_.getSizeOrigin() && (outport_.getSizeOrigin() != so)) {
+            return false;
+        }
+    }
+
+    if (imageInport_.getSizeOrigin() && (imageInport_.getSizeOrigin() != so) ) {
+        return false;
+    }
+
+    const std::vector<Port*>& connectedOutports = imageInport_.getConnected();
+    for (size_t j=0; j<connectedOutports.size(); ++j) {
+        RenderPort* op = static_cast<RenderPort*>(connectedOutports[j]);
+
+        if (!static_cast<RenderProcessor*>(op->getProcessor())->testSizeOrigin(op, so)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void ImageOverlay::overlayDimensionsChanged() {
+
+    if (!isInitialized() || !outport_.isReady())
+        return;
+
+    if (usePixelCoordinates_.get()) {
+        if (tgt::hand(tgt::greaterThan(overlayDimensions_.get(), tgt::ivec2(0))))
+            overlayInport_.resize(overlayDimensions_.get());
+    }
+    else {
+        if (tgt::hand(tgt::greaterThan(overlayDimensionsRelative_.get(), tgt::vec2(0.f))))
+            overlayInport_.resize(overlayDimensionsRelative_.get() * tgt::vec2(outport_.getSize()));
+    }
+}
 
 } // namespace voreen

@@ -31,6 +31,7 @@ namespace tgt {
 bool TextureUnit::initialized_ = false;
 unsigned short TextureUnit::totalActive_ = 0;
 unsigned short TextureUnit::maxTexUnits_ = 0;
+unsigned short TextureUnit::numKeptUnits_ = 0;
 std::vector<bool> TextureUnit::busyUnits_ = std::vector<bool>();
 
 TextureUnit::TextureUnit(bool keep)
@@ -78,11 +79,16 @@ void TextureUnit::cleanup() {
             busyUnits_.at(i) = false;
     }
     totalActive_ = 0;
+    numKeptUnits_ = 0;
     setZeroUnit();
 }
 
 bool TextureUnit::unused() {
     return (totalActive_ == 0);
+}
+
+unsigned short TextureUnit::numLocalActive() {
+    return (totalActive_ - numKeptUnits_);
 }
 
 void TextureUnit::assignUnit() {
@@ -95,6 +101,8 @@ void TextureUnit::assignUnit() {
             number_ = (GLint)i;
             busyUnits_.at(i) = true;
             totalActive_++;
+	    if(keep_)
+		numKeptUnits_++;
             break;
         }
     }
@@ -106,6 +114,7 @@ void TextureUnit::init() {
     maxTexUnits_ = GpuCaps.getNumTextureUnits();
     busyUnits_ = std::vector<bool>(maxTexUnits_, false);
     initialized_ = true;
+    numKeptUnits_ = 0;
 }
 
 } // namespace

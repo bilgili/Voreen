@@ -73,6 +73,8 @@ public:
 public slots:
     /// setWorkspace
     void rebuildAnimation(Animation*);
+    /// performed when the record signal is triggered to check for changes. If none are made pops up an infodialog
+    void checkForChanges();
 
 
 protected:
@@ -99,6 +101,8 @@ protected:
     QVBoxLayout* scrollAreaLayout_;
     OverviewWidget* overviewTimeline_;
     QGroupBox* timeBox_;
+    // indicates wether there was a change once
+    bool changed_;
 
 protected slots:
     /// renders the current Animation at the given time

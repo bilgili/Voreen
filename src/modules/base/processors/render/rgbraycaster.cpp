@@ -84,14 +84,14 @@ void RGBRaycaster::initialize() throw (VoreenException) {
 
 void RGBRaycaster::loadShader() {
     raycastPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "rc_rgb.frag",
-                                       generateHeader(), false, false);
+                                       generateHeader(), false);
 }
 
 void RGBRaycaster::compile(VolumeHandle* volumeHandle) {
     if (!raycastPrg_)
         return;
 
-    raycastPrg_->setHeaders(generateHeader(volumeHandle), false);
+    raycastPrg_->setHeaders(generateHeader(volumeHandle));
     raycastPrg_->rebuild();
 }
 
@@ -128,7 +128,8 @@ void RGBRaycaster::process() {
         volumePort_.getData()->getVolumeGL(),
         &volUnit,
         "volume_",
-        "volumeParameters_")
+        "volumeParameters_",
+        true)
     );
 
     updateBrickingParameters(volumePort_.getData());
@@ -146,7 +147,7 @@ void RGBRaycaster::process() {
     // set common uniforms used by all shaders
     setGlobalShaderParameters(raycastPrg_, camera_.get());
     // bind the volumes and pass the necessary information to the shader
-    bindVolumes(raycastPrg_, volumeTextures);
+    bindVolumes(raycastPrg_, volumeTextures, camera_.get(), lightPosition_.get());
 
     // pass the remaining uniforms to the shader
     raycastPrg_->setUniform("entryPoints_", entryUnit.getUnitNumber());

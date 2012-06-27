@@ -40,7 +40,7 @@ public:
     BaseModule();
 
     virtual std::string getDescription() const {
-        return "Provides elementary processing and volume input/output functionality.";
+        return "Provides elementary rendering, data processing, and volume input/output functionality.";
     }
 
 protected:

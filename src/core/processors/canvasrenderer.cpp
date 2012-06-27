@@ -38,6 +38,8 @@
 
 namespace voreen {
 
+const std::string CanvasRenderer::loggerCat_("voreen.CanvasRenderer");
+
 CanvasRenderer::CanvasRenderer()
     : RenderProcessor()
     , canvasSize_("canvasSize", "Canvas Size", tgt::ivec2(256), tgt::ivec2(32), tgt::ivec2(2 << 12), Processor::VALID)
@@ -73,10 +75,6 @@ void CanvasRenderer::process() {
         return;
 
     canvas_->getGLFocus();
-
-    // deactivate frame buffer object => render to frame buffer
-    tgt::FramebufferObject::deactivate();
-
     glViewport(0, 0, canvas_->getSize().x, canvas_->getSize().y);
 
     if (inport_.isReady()) {
@@ -161,12 +159,11 @@ bool CanvasRenderer::isReady() const {
 void CanvasRenderer::initialize() throw (VoreenException) {
     RenderProcessor::initialize();
 
-    shader_ = ShdrMgr.loadSeparate("passthrough.vert", "copyimage.frag", generateHeader(), false, false);
+    shader_ = ShdrMgr.loadSeparate("passthrough.vert", "copyimage.frag", generateHeader(), false);
 
     if (!shader_) {
-        LERROR("Failed to load shaders!");
         initialized_ = false;
-        throw VoreenException(getClassName() + ": Failed to load shader!");
+        throw VoreenException("failed to load shaders");
     }
 
     errorTex_ = TexMgr.load(VoreenApplication::app()->getTexturePath("error.tga"));
@@ -201,7 +198,10 @@ void CanvasRenderer::canvasResized(tgt::ivec2 newsize) {
 }
 
 void CanvasRenderer::invalidate(int inv) {
-    RenderProcessor::invalidate(inv);
+    // Since VoreenPainter::paint() already calls process() on the
+    // NetworkEvaluator, we bypass Processor::invalidate()
+    // in order to prevent a needless double processing of the network.
+    PropertyOwner::invalidate(inv);
     if (canvas_)
         canvas_->update();
 }
@@ -248,7 +248,7 @@ bool CanvasRenderer::renderToImage(const std::string &filename) {
         return false;
     }
 
-    if (!inport_.hasData()) {
+    if (!inport_.hasRenderTarget()) {
         LWARNING("CanvasRenderer::renderToImage(): inport has no data");
         renderToImageError_ = "No rendering";
         return false;
@@ -273,7 +273,7 @@ bool CanvasRenderer::renderToImage(const std::string &filename, tgt::ivec2 dimen
         return false;
     }
 
-    if (!inport_.hasData()) {
+    if (!inport_.hasRenderTarget()) {
         LWARNING("CanvasRenderer::renderToImage(): inport has no data");
         renderToImageError_ = "No rendering";
         return false;
@@ -294,21 +294,35 @@ bool CanvasRenderer::renderToImage(const std::string &filename, tgt::ivec2 dimen
 }
 
 void CanvasRenderer::renderInportToImage(const std::string& filename) throw (VoreenException) {
-    if (!inport_.hasData())
+    if (!inport_.hasRenderTarget())
         throw VoreenException("No rendering");
 
     inport_.saveToImage(filename);
 }
 
-tgt::Texture* CanvasRenderer::getImageColorTexture() const {
-    if (inport_.hasData())
+const tgt::Texture* CanvasRenderer::getImageColorTexture() const {
+    if (inport_.hasRenderTarget())
         return inport_.getColorTexture();
     else
         return 0;
 }
 
-tgt::Texture* CanvasRenderer::getImageDepthTexture() const {
-    if (inport_.hasData())
+tgt::Texture* CanvasRenderer::getImageColorTexture() {
+    if (inport_.hasRenderTarget())
+        return inport_.getColorTexture();
+    else
+        return 0;
+}
+
+const tgt::Texture* CanvasRenderer::getImageDepthTexture() const {
+    if (inport_.hasRenderTarget())
+        return inport_.getDepthTexture();
+    else
+        return 0;
+}
+
+tgt::Texture* CanvasRenderer::getImageDepthTexture() {
+    if (inport_.hasRenderTarget())
         return inport_.getDepthTexture();
     else
         return 0;

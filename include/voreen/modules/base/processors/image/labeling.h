@@ -37,6 +37,12 @@
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/processors/imageprocessor.h"
 #include "voreen/core/interaction/idmanager.h"
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/filedialogproperty.h"
+#include "voreen/core/properties/cameraproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
 #include "tgt/stopwatch.h"
 #include "tinyxml/tinyxml.h"
 #include "tgt/event/eventlistener.h"
@@ -145,12 +151,12 @@ private:
     //
     StringOptionProperty showLabels_;           // determines whether/which labels are shown
     FileDialogProperty labelFile_;              // Path to xml file containing the segment labels.
-    ColorProperty labelColorExtern_;            // color of external labels
-    ColorProperty haloColorExtern_;             // halo-color of external labels
+    FloatVec4Property labelColorExtern_;            // color of external labels
+    FloatVec4Property haloColorExtern_;             // halo-color of external labels
     IntProperty fontSizeExtern_;                // font size of internal labels
     BoolProperty lockInternalFontSettings_;     // if true, internal/external font settings are synchronized
-    ColorProperty labelColorIntern_;            // color of internal labels
-    ColorProperty haloColorIntern_;             // halo-color of internal labels
+    FloatVec4Property labelColorIntern_;            // color of internal labels
+    FloatVec4Property haloColorIntern_;             // halo-color of internal labels
     IntProperty fontSizeIntern_;                // font size of internal labels
     BoolProperty shape3D_;                      // 3d shape fitting of internal labels
     BoolProperty drawHalo_;                     // if true, a halo is drawn around labels
@@ -331,7 +337,7 @@ private:
     // Labeling-Methods
     void labelLayout();
     void genTextures();
-    void renderTextToBitmap(std::string text, int fontSize, const ColorProperty& labelColor, const ColorProperty& haloColor,
+    void renderTextToBitmap(std::string text, int fontSize, const FloatVec4Property& labelColor, const FloatVec4Property& haloColor,
                             labeling::Bitmap<GLfloat> &bitmap,
                             bool antialias, int border, int glyphAdvance,
                             bool drawHalo, int haloOffset );

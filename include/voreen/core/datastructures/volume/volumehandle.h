@@ -39,10 +39,6 @@
 #include "voreen/core/datastructures/volume/volumegl.h"
 #endif
 
-#ifdef VRN_MODULE_CUDA
-#include "voreen/modules/cuda/volumecuda.h"
-#endif
-
 #include "voreen/core/io/serialization/serialization.h"
 
 #include <set>
@@ -297,15 +293,6 @@ public:
     VolumeGL* getVolumeGL();
 #endif
 
-#ifdef VRN_MODULE_CUDA
-    /**
-     * Returns a CUDA hardware volume for this volume, generating a new one via
-     * generateHardwareVolumes() if it does not already exist. You can use hasHardwareVolumes()
-     * to check if such a hardware volume already exists.
-     */
-    VolumeCUDA* getVolumeCUDA();
-#endif
-
 protected:
 
     /**
@@ -334,10 +321,6 @@ protected:
 
 #ifndef VRN_NO_OPENGL
     VolumeGL* volumeGL_;
-#endif
-
-#ifdef VRN_MODULE_CUDA
-    VolumeCUDA* volumeCUDA_;
 #endif
 
     static const std::string loggerCat_;

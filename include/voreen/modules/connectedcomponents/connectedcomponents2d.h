@@ -31,7 +31,10 @@
 #define VRN_CONNECTED_COMPONENTS_2D_H
 
 #include "voreen/core/processors/imageprocessor.h"
-#include "voreen/core/properties/allproperties.h"
+
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/boolproperty.h"
 
 namespace voreen {
 

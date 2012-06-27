@@ -38,38 +38,31 @@ using tgt::vec3;
 
 BoundingBoxRenderer::BoundingBoxRenderer()
     : GeometryRendererBase()
+    , inport_(Port::INPORT, "volume")
     , bboxColor_("boundingboxColor", "Color", tgt::vec4(0.8f, 0.8f, 0.8f, 1.0f))
-    , width_("boundingBoxWidth", "Line width", 1.0f, 1.0f, 10.0f, true)
+    , width_("boundingBoxWidth", "Line width", 1.0f, 1.0f, 10.0f)
     , stippleFactor_("boundingBoxStippleFactor", "Stipple factor", 1, 0, 255)
     , stipplePattern_("boundingBoxStipplePattern", "Stipple pattern", 65535, 1,65535)
     , showGrid_("boundingboxGridShow", "Show Grid", false)
     , tilesProp_("boundingboxGridSize", "GridElements", tgt::ivec3(10), tgt::ivec3(2), tgt::ivec3(255))
-    , applyDatasetTransformationMatrix_("applyDatasetTrafoMatrix", "Apply data set trafo matrix", true, Processor::INVALID_PARAMETERS)
-    , inport_(Port::INPORT, "volume")
 {
+    addProperty(showGrid_);
+    addProperty(tilesProp_);
+    addPort(inport_);
 
-    addProperty(applyDatasetTransformationMatrix_);
     addProperty(width_);
     addProperty(stippleFactor_);
     addProperty(stipplePattern_);
     addProperty(bboxColor_);
+    bboxColor_.setViews(Property::COLOR);
+}
 
-    addProperty(showGrid_);
-    addProperty(tilesProp_);
-    addPort(inport_);
+Processor* BoundingBoxRenderer::create() const {
+    return new BoundingBoxRenderer();
 }
 
 std::string BoundingBoxRenderer::getProcessorInfo() const {
     return "Draws the bounding box around the data set and allows to show a grid behind the volume.";
-}
-
-void BoundingBoxRenderer::setLineWidth(float width) {
-    width_.set(width);
-}
-
-void BoundingBoxRenderer::setStipplePattern(int stippleFactor, int stipplePattern) {
-    stippleFactor_.set(stippleFactor);
-    stipplePattern_.set(stipplePattern);
 }
 
 void BoundingBoxRenderer::render() {
@@ -78,10 +71,8 @@ void BoundingBoxRenderer::render() {
 
     tgt::vec3 dim = inport_.getData()->getVolume()->getCubeSize() / 2.f;
 
-    if (applyDatasetTransformationMatrix_.get()) {
-        glPushMatrix();
-        tgt::multMatrix(inport_.getData()->getVolume()->getTransformation());
-    }
+    glPushMatrix();
+    tgt::multMatrix(inport_.getData()->getVolume()->getTransformation());
 
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glDisable(GL_LIGHTING);
@@ -176,11 +167,11 @@ void BoundingBoxRenderer::render() {
         glEnd();
     }
     glPopAttrib();
-
-    if (applyDatasetTransformationMatrix_.get())
-        glPopMatrix();
+    glPopMatrix();
 
     LGL_ERROR;
 }
+
+
 }
 

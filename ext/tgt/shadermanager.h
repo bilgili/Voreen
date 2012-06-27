@@ -110,14 +110,6 @@ public:
      */
     void setHeader(const std::string& h);
 
-    /**
-     * Generates (and sets) header from defines, seperated by blanks.
-     * Example: "a b" =>
-     * #define a
-     * #define b
-     */
-    void generateHeader(const std::string& defines);
-
     ShaderType getType() { return shaderType_; }
 
 	void setSource(std::string source) {
@@ -172,9 +164,14 @@ protected:
 //------------------------------------------------------------------------------
 
 /**
- * Shader, consists of compiled ShaderObjects, linked together
+ * Represents an OpenGL shader program, consisting of linked ShaderObjects.
+ *
+ * @note Convenient loading of shaders from file is provided by ShaderManager.
  */
 class Shader {
+
+    friend class ShaderManager;
+
 public:
     Shader();
 
@@ -200,7 +197,7 @@ public:
     bool rebuild();
     bool rebuildFromFile();
 
-    void setHeaders(const std::string& customHeader, bool processHeader = true);
+    void setHeaders(const std::string& customHeader);
 
     GLint getID() {return id_;};
     /**
@@ -358,21 +355,25 @@ public:
     static void setNormalizedAttribute(GLint index, const Vector4<GLushort>& v);
     static void setNormalizedAttribute(GLint index, const Vector4<GLuint>& v);
 
+protected:    
     /**
-     * Load filename.vert and filename.frag (vertex and fragment shader) and link shader
-     * An optional header is added @see ShaderObject::generateHeader().
+     * Load filename.vert and filename.frag (vertex and fragment shader) and link shader.
      *
      * @param customHeader Header to be put in front of the shader source. 
-     * @param processHeader Header is a list of symbols ("a b") which will be processed to
-     *      generate #define statements ("#define a ...")
      */
-    bool load(const std::string& filename, const std::string& customHeader = "",
-              bool processHeader = true);
-    //FIXME: argument order different than in ShaderManager::loadSeparate(). joerg
-    bool loadSeparate(const std::string& vert_filename, const std::string& frag_filename,
-		const std::string& customHeader = "", bool processHeader = true, const std::string& geom_filename = "");
+    bool load(const std::string& filename, const std::string& customHeader = "");
 
-protected:    
+    /**
+     * Load vertex shader \p vertFilename, geometry shader \p geomFilename, 
+     * fragment shader \p fragFilename.
+     *
+     * @param customHeader header to be put in front of the shader source 
+     *
+     * @return The loaded shader, or 0 on failure
+     */
+    bool loadSeparate(const std::string& vertFilename, const std::string& geomFilename,
+		const std::string& fragFilename, const std::string& customHeader = "");
+
     typedef std::list<ShaderObject*> ShaderObjects;
     ShaderObjects objects_;
 
@@ -385,49 +386,56 @@ protected:
 
 //------------------------------------------------------------------------------
 
+/**
+ * Loads shaders from the file system, managing a shader search path.
+ *
+ * @see ResourceManager
+ */
 class ShaderManager : public ResourceManager<Shader> {
 public:
-    //TODO: document "cache". joerg
-    ShaderManager(bool cache = true);
+
+    ShaderManager();
 
     /**
      * Load filename.vert and filename.frag (vertex and fragment shader), link shader and
-     * activate it by default
+     * activate it by default.
      *
-     * Optional header is added @see ShaderObject::generateHeader
-     *
-     * @param customHeader Header to be put in front of the shader source. 
-     * @param processHeader Header is a list of symbols ("a b") which will be processed to
-     *      generate #define statements ("#define a ...")
+     * @param customHeader Header to be put in front of the shader source 
      * @param activate activate the shader after loading
-     * @return 0 on failure
+     *
+     * @return The loaded shader, or 0 on failure
      */
-    virtual Shader* load(const std::string& filename, const std::string& customHeader = "",
-                         bool processHeader = true, bool activate = true);
+    Shader* load(const std::string& filename, const std::string& customHeader = "",
+                 bool activate = true);
 
     /**
-     * Load vert_filename and frag_filename (vertex and fragment shader), link shader and
-     * activate it by default
+     * Load vertex shader \p vertFilename and fragment shader \p fragFilename, 
+     * link shader and activate it by default.
      *
-     * You have to pass the complete filenames, inclusive file extensions (".vert", ".frag")
-     * Optional header is added @see ShaderObject::generateHeader
+     * You have to pass the complete filenames, inclusive file extensions (".vert", ".frag").
      *
-     * @param customHeader Header to be put in front of the shader source. 
-     * @param processHeader Header is a list of symbols ("a b") which will be processed to
-     *      generate #define statements ("#define a ...")
+     * @param customHeader header to be put in front of the shader source 
      * @param activate activate the shader after loading
-     * @return 0 on failure
+     *
+     * @return The loaded shader, or 0 on failure
      */
-    virtual Shader* loadSeparate(const std::string& vert_filename, const std::string& frag_filename,
-                                 const std::string& customHeader = "", bool processHeader = true,
-                                 bool activate = true);
+    Shader* loadSeparate(const std::string& vertFilename, const std::string& fragFilename,
+                         const std::string& customHeader = "", bool activate = true);
 
-    //FIXME: can't distinguish loadSeparate("vert", "geom" "frag")
-    //       and loadSeparate("vert","geom" "header")! joerg
-    virtual Shader* loadSeparate(const std::string& vert_filename, const std::string& geom_filename,
-                                 const std::string& frag_filename,
-                                 const std::string& customHeader = "", bool processHeader = true,
-                                 bool activate = true);
+    /**
+     * Load vertex shader \p vertFilename, geometry shader \p geomFilename, 
+     * fragment shader \p fragFilename, link shader and activate it by default.
+     *
+     * You have to pass the complete filenames, inclusive file extensions (".vert", ".geom", frag").
+     *
+     * @param customHeader header to be put in front of the shader source 
+     * @param activate activate the shader after loading
+     *
+     * @return The loaded shader, or 0 on failure
+     */
+    Shader* loadSeparate(const std::string& vertFilename, const std::string& geomFilename,
+                         const std::string& fragFilename,
+                         const std::string& customHeader, bool activate = true);
 
     bool rebuildAllShadersFromFile();
 

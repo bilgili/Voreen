@@ -60,7 +60,7 @@ PointListRenderer::PointListRenderer()
     , sphereSlicesStacks_("sphereSlicesStacks", "Sphere Slices/Stacks", 20, 10, 100)
     , geometryInport_(Port::INPORT, "geometry.input")
 {
-
+    color_.setViews(Property::COLOR);
     // Coordinate systems
     coordinateSystem_.addOption("world", "World coordinates");
     coordinateSystem_.addOption("viewport", "Viewport coordinates");
@@ -99,6 +99,8 @@ PointListRenderer::PointListRenderer()
 }
 
 PointListRenderer::~PointListRenderer() {
+    if (glIsList(displayList_))
+        glDeleteLists(displayList_, 1);
 }
 
 std::string PointListRenderer::getProcessorInfo() const {

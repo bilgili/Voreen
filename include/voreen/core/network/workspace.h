@@ -31,12 +31,7 @@
 #define VRN_WORKSPACE_H
 
 #include "voreen/core/network/networkserializer.h"
-#include "voreen/core/network/processornetwork.h"
-
 #include "voreen/core/io/serialization/serialization.h"
-#include "voreen/core/animation/animation.h"
-
-#include "voreen/core/properties/link/scriptmanagerlinking.h"
 
 namespace tgt {
     class GLCanvas;
@@ -44,7 +39,10 @@ namespace tgt {
 
 namespace voreen {
 
+class ProcessorNetwork;
 class VolumeContainer;
+class Animation;
+class ScriptManagerLinking;
 
 class Workspace : public Serializable {
 public:
@@ -64,10 +62,13 @@ public:
      */
     ~Workspace();
 
-    std::vector<std::string> getErrors() const;
-
-    bool exportZipped(const std::string& exportName, bool overwrite = true)
-        throw (SerializationException);
+    /**
+     * Deletes the current network and the resource containers,
+     * and clears the serialization error collector.
+     *
+     * The workspace's filename is not cleared.
+     */
+    void clear();
 
     /**
      * Updates the workspace from the specified file.
@@ -87,14 +88,24 @@ public:
     void save(const std::string& filename, bool overwrite = true) throw (SerializationException);
 
     /**
-     * Deletes the current network and the resource containers,
-     * and clears the serialization error collector.
-     *
-     * The workspace's filename is not cleared.
+     * Returns the errors that have occurred during serialization.
      */
-    void clear();
+    std::vector<std::string> getErrors() const;
 
-    // flag for app to not overwrite this file, not used by serialize()
+    /**
+     * Exports the workspace and all associated resources, such as volumes,
+     * to a Zip archive. File paths are adjusted, such that the contained vws-file
+     * can be directly opened after manually extracting the exported archive.
+     *
+     * @param archive Full path to archive to be created
+     * @param overwrite determines, whether an existing archive should be overwritten
+     *
+     * @return True, if the export has been successful
+     */
+    bool exportToZipArchive(const std::string& archive, bool overwrite = true)
+        throw (SerializationException);
+
+    /// Flag prompting the application to not overwrite the workspace file, not used by serialize()
     bool readOnly() const;
 
     ProcessorNetwork* getProcessorNetwork() const;
@@ -106,33 +117,29 @@ public:
     void setFilename(const std::string& filename);
     std::string getFilename() const;
 
-    /**
-     * @see Serializable::serialize
-     */
-    virtual void serialize(XmlSerializer& s) const;
-
-    /**
-     * @see Serializable::deserialize
-     */
-    virtual void deserialize(XmlDeserializer& s);
-
     Animation* getAnimation() const;
     void setAnimation(Animation* anim);
+
+    /// @see Serializable::serialize
+    virtual void serialize(XmlSerializer& s) const;
+
+    /// @see Serializable::deserialize
+    virtual void deserialize(XmlDeserializer& s);
 
 private:
     int version_;
     ProcessorNetwork* network_;
     VolumeContainer* volumeContainer_;
+    Animation* animation_;
     std::string filename_;
     bool readOnly_;
 
     tgt::GLCanvas* sharedContext_;
 
     std::vector<std::string> errorList_;
-    Animation* animation_;
+
     ScriptManagerLinking* scriptManagerLinking_;
 
-private:
     static const std::string loggerCat_;
 };
 
