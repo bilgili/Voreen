@@ -27,6 +27,7 @@
 #define VRN_PROCESSORPROPERTIESWIDGET_H
 
 #include "voreen/core/properties/property.h"
+#include "voreen/qt/voreenqtapi.h"
 #include <QWidget>
 #include <QVBoxLayout>
 
@@ -43,8 +44,8 @@ class GroupPropertyWidget;
  * Widget containing each processor's property widgets. The title bar contains the name of the
  * processor and an +/- icon allowing to expand the properties.
  */
-class ProcessorPropertiesWidget : public QWidget, public ProcessorObserver {
-Q_OBJECT
+class VRN_QT_API ProcessorPropertiesWidget : public QWidget, public ProcessorObserver {
+    Q_OBJECT
 public:
 
     enum widgetInstantiationState {

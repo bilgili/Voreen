@@ -191,6 +191,8 @@ public:
      */
     void setValid();
 
+    virtual void clear();
+
     /**
      * Returns whether the port has been initialized.
      */
@@ -358,6 +360,8 @@ protected:
 
     Processor::InvalidationLevel invalidationLevel_;
 
+    /// category used in logging
+    static const std::string loggerCat_;
 private:
 
     /**
@@ -379,9 +383,6 @@ private:
 
     /// Description for display in GUI etc.
     std::string description_;
-
-    /// category used in logging
-    static const std::string loggerCat_;
 };
 
 }   // namespace voreen

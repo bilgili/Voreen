@@ -27,7 +27,7 @@
 #define VRN_COLORMAPPROPERTY_H
 
 #include "voreen/core/properties/templateproperty.h"
-#include "../utils/colormap.h"
+#include "../datastructures/colormap.h"
 
 namespace voreen {
 

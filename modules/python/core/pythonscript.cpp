@@ -29,6 +29,9 @@
     for more information about binding C/C++ stuff to python
 */
 
+// include this at very first
+#include <Python.h>
+
 #include "pythonscript.h"
 
 #include "tgt/filesystem.h"

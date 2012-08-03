@@ -70,6 +70,10 @@
 #include <dcmtk/dcmtls/tlslayer.h>
 #endif
 
+#ifdef WIN32
+#include <WinSock2.h>
+#endif
+
 // Prevent warnings because of redefined symbols
 #undef PACKAGE_NAME
 #undef PACKAGE_BUGREPORT

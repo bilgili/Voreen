@@ -37,11 +37,6 @@ uniform TF_SAMPLER_TYPE transferFuncTex_;
 vec4 renderSlice() {
     vec3 texCoord = gl_TexCoord[0].xyz;
 
-    // texture coordinate adaption for non-uniform volumes
-    texCoord -= vec3(0.5);
-    texCoord *= volumeStruct_.volumeCubeSizeRCP_*2.0;
-    texCoord += vec3(0.5);
-
     if (inUnitCube(texCoord)) {
         float intensity = getVoxel(volume_, volumeStruct_, texCoord).a;
         vec4 color = applyTF(transferFunc_, transferFuncTex_, intensity);

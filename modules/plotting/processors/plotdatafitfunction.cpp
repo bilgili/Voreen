@@ -28,11 +28,11 @@
 #include "voreen/core/processors/processorwidgetfactory.h"
 #include "voreen/core/processors/processorwidget.h"
 
-#include "../utils/plotfunction.h"
-#include "../utils/plotbase.h"
-#include "../utils/plotdata.h"
-#include "../utils/plotrow.h"
-#include "../utils/interval.h"
+#include "../datastructures/plotfunction.h"
+#include "../datastructures/plotbase.h"
+#include "../datastructures/plotdata.h"
+#include "../datastructures/plotrow.h"
+#include "../datastructures/interval.h"
 
 namespace voreen {
 

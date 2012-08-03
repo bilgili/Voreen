@@ -26,12 +26,14 @@
 #ifndef VRN_PYTHONSCRIPT_H
 #define VRN_PYTHONSCRIPT_H
 
-// include this at very first
-#include <Python.h>
-
 #include <string>
 
 #include "voreen/core/voreencoreapi.h"
+
+#ifndef PyObject_HEAD
+struct _object;
+typedef _object PyObject;
+#endif
 
 namespace voreen {
 

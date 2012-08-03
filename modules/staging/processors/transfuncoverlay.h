@@ -87,6 +87,7 @@ private:
     FloatVec2Property overlayDimensionsRelative_;   ///< normalized coordinates
     FloatProperty overlayOpacity_;
     FloatVec4Property fontColor_;
+    FloatProperty scalingProp_;                     ///< multiplys the domain by this prop
     StringProperty tfUnit_;
     BoolProperty renderBorder_;
     FloatProperty borderWidth_;

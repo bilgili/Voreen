@@ -26,7 +26,7 @@
 #include "plotselectionpropertywidget.h"
 
 #include "../plotselectiondialog.h"
-#include "../../utils/plotpredicate.h"
+#include "../../datastructures/plotpredicate.h"
 #include "../../properties/plotselectionproperty.h"
 
 #include "voreen/qt/widgets/voreentoolwindow.h"

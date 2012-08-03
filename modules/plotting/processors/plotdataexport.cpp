@@ -25,10 +25,10 @@
 
 #include "plotdataexport.h"
 
-#include "../utils/plotdata.h"
-#include "../utils/plotcell.h"
-#include "../utils/plotrow.h"
-#include "../utils/plotfunction.h"
+#include "../datastructures/plotdata.h"
+#include "../datastructures/plotcell.h"
+#include "../datastructures/plotrow.h"
+#include "../datastructures/plotfunction.h"
 
 #include "voreen/core/voreenapplication.h"
 

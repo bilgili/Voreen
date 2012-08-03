@@ -129,8 +129,9 @@ void FileDialogProperty::deserialize(XmlDeserializer& s) {
     s.deserialize("value", value);
 
     // convert path relative to the document's path to an absolute one
-    if (!s.getDocumentPath().empty())
+    if (!s.getDocumentPath().empty() && !tgt::FileSystem::isAbsolutePath(value))
         value = tgt::FileSystem::absolutePath(tgt::FileSystem::dirName(s.getDocumentPath()) + "/" + value);
+
 
     try {
         set(value);

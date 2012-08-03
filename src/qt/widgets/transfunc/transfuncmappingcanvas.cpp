@@ -120,6 +120,16 @@ TransFuncMappingCanvas::TransFuncMappingCanvas(QWidget* parent, TransFunc1DKeys*
     keyContextMenu_.addAction(deleteAction_);
     connect(deleteAction_, SIGNAL(triggered()), this, SLOT(deleteKey()));
 
+    //---
+
+    yAxisLogarithmicAction_ = new QAction(tr("Use logarithmic scale on y-axis"), this);
+    yAxisLogarithmicAction_->setCheckable(true);
+    yAxisLogarithmicAction_->setChecked(true);
+    noKeyContextMenu_.addAction(yAxisLogarithmicAction_);
+    connect(yAxisLogarithmicAction_, SIGNAL(triggered(bool)), histogramPainter_, SLOT(setYAxisLogarithmic(bool)));
+    connect(yAxisLogarithmicAction_, SIGNAL(triggered()), this, SLOT(update()));
+    noKeyContextMenu_.addSeparator();
+
     loadAction_ = new QAction(tr("Load transfer function..."), this);
     noKeyContextMenu_.addAction(loadAction_);
     connect(loadAction_, SIGNAL(triggered()), this, SIGNAL(loadTransferFunction()));
@@ -321,7 +331,7 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent* event) {
         if (key->isSplit())
             old = wtos(vec2(key->getIntensity(), key->getColorR().a / 255.f));
     }
-    if (tf_->getKey(tf_->getNumKeys()-1)->getIntensity() < 1.f) {
+    if (tf_->getNumKeys() > 0 && (tf_->getKey(tf_->getNumKeys()-1)->getIntensity() < 1.f)) {
         paint.drawLine(QPointF(old.x + 1.f, old.y),
                        QPointF(wtos(vec2(1.f, 0.f)).x, old.y));
     }
@@ -695,7 +705,9 @@ void TransFuncMappingCanvas::insertNewKey(vec2& hit) {
     // (weighted by distance)
     // the alpha value is determined by hit.y
     tgt::col4 keyColor;
-    if (!leftKey)
+    if (!leftKey && !rightKey)
+        keyColor = tgt::vec4(0.f);
+    else if (!leftKey)
         keyColor = rightKey->getColorL();
     else if (!rightKey)
         keyColor = leftKey->getColorR();
@@ -856,7 +868,7 @@ QSizePolicy TransFuncMappingCanvas::sizePolicy () const {
 
 void TransFuncMappingCanvas::domainChanged() {
     if(tf_)
-        histogramPainter_->setxRange(tf_->getDomain());
+        histogramPainter_->setXRange(tf_->getDomain());
 
     update();
 }

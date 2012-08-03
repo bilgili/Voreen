@@ -94,7 +94,7 @@ void VolumePort::saveData(const std::string& path) const throw (VoreenException)
         throw VoreenException("Port has no volume");
     tgtAssert(!path.empty(), "empty path");
 
-    // append .dat if no extension specified
+    // append .vvd if no extension specified
     std::string filename = path;
     if (tgt::FileSystem::fileExtension(filename).empty())
         filename += ".vvd";
@@ -115,7 +115,7 @@ void VolumePort::saveData(const std::string& path) const throw (VoreenException)
 void VolumePort::loadData(const std::string& path) throw (VoreenException) {
     tgtAssert(!path.empty(), "empty path");
 
-    // append .dat if no extension specified
+    // append .vvd if no extension specified
     std::string filename = path;
     if (tgt::FileSystem::fileExtension(filename).empty())
         filename += ".vvd";

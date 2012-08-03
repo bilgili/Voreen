@@ -27,7 +27,7 @@
 
 #include "voreen/core/interaction/camerainteractionhandler.h"
 #include "../interaction/plotcamerainteractionhandler.h"
-#include "../utils/plotrow.h"
+#include "../datastructures/plotrow.h"
 
 namespace voreen {
 

@@ -27,8 +27,8 @@
 
 #include "plotpredicatedialog.h"
 #include "../properties/plotselectionproperty.h"
-#include "../utils/plotselection.h"
-#include "../utils/plotdata.h"
+#include "../datastructures/plotselection.h"
+#include "../datastructures/plotdata.h"
 
 #include "tgt/logmanager.h"
 

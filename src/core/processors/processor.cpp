@@ -196,6 +196,20 @@ void Processor::beforeProcess() {
 void Processor::afterProcess() {
 }
 
+void Processor::clearOutports() {
+    const std::vector<Port*>& outports = getOutports();
+    for(size_t i=0; i<outports.size(); i++)
+        outports[i]->clear();
+}
+
+void Processor::lockMutex() {
+    mutex_.lock();
+}
+
+void Processor::unlockMutex() {
+    mutex_.unlock();
+}
+
 bool Processor::isInitialized() const {
     return initialized_;
 }
@@ -286,6 +300,10 @@ void Processor::setModuleName(const std::string& moduleName) {
 
 std::string Processor::getModuleName() const {
     return moduleName_;
+}
+
+std::string Processor::getModulePath() const {
+    return VoreenApplication::app()->getModulePath(getModuleName());
 }
 
 bool Processor::isUtility() const {

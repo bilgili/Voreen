@@ -308,8 +308,6 @@ private:
     QString currentWorkspaceWorkDir_;
 
     QString originalWindowTitle_;
-    tgt::ivec2 canvasPos_;
-    tgt::ivec2 canvasSize_;
 
     bool ignoreWindowTitleModified_; ///< will not add * to the window title when this is set
 

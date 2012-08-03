@@ -555,7 +555,7 @@ void VolumeBase::setOrigin(const VolumeURL& origin) {
 }
 
 float VolumeBase::getTimestep() const {
-    return getMetaDataValue<FloatMetaData>("timestep", 0.0f);
+    return getMetaDataValue<FloatMetaData>("Timestep", 0.0f);
 }
 
 size_t VolumeBase::getNumChannels() const {

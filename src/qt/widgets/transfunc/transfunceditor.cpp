@@ -55,9 +55,11 @@ const QString TransFuncEditor::getOpenFileName(QString filter) {
     fileDialog.setFilter(filter);
 
     QList<QUrl> urls;
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("transferfuncs").c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getUserDataPath().c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("modules").c_str());
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("transferfuncs").c_str());
+    if (QDir(VoreenApplication::app()->getBasePath("custommodules").c_str()).exists())
+        urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("custommodules").c_str());
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
     fileDialog.setSidebarUrls(urls);
@@ -77,9 +79,11 @@ const QString TransFuncEditor::getSaveFileName(QStringList filters) {
     fileDialog.setAcceptMode(QFileDialog::AcceptSave);
 
     QList<QUrl> urls;
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("transferfuncs").c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getUserDataPath().c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("modules").c_str());
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("transferfuncs").c_str());
+    if (QDir(VoreenApplication::app()->getBasePath("custommodules").c_str()).exists())
+        urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("custommodules").c_str());
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
     fileDialog.setSidebarUrls(urls);

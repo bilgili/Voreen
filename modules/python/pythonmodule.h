@@ -26,8 +26,6 @@
 #ifndef VRN_PYTHONMODULE_H
 #define VRN_PYTHONMODULE_H
 
-// include this at very first
-#include <Python.h>
 #include "core/pythonscript.h"
 #include "core/pyvoreen.h"
 

@@ -41,12 +41,14 @@ AlignedSliceProxyGeometry::AlignedSliceProxyGeometry()
     , sliceAlignment_("sliceAlignmentProp", "Slice Alignment")
     , sliceIndex_("sliceIndex", "Slice Number", 0, 0, 10000, Processor::VALID)
     , floatSliceIndex_("floatSliceIndex", "Slice Number (Float)", 0.0f, 0.0f, 10000.0f, Processor::VALID)
+    , restrictToMainVolume_("restrictToMainVolume", "Restrict Rendering to Main Volume", false)
     , camera_("camera", "Camera")
     , alignCameraButton_("alignCameraButton", "Align Camera")
     , plane_("plane", "Plane", vec3(1.0f, 0.0f, 0.0f), vec3(-5.0f), vec3(5.0f))
     , planeDist_("planeDist", "Plane Distance", 0.0f, -1000.0f, 1000.0f)
     , mwheelCycleHandler_("mouseWheelHandler", "Slice Cycling", &sliceIndex_)
     , inport_(Port::INPORT, "volume")
+    , secondaryVolumePort_(Port::INPORT, "secondaryVolumes", true)
     , geomPort_(Port::OUTPORT, "geometry")
     , textPort_(Port::OUTPORT, "text")
 {
@@ -60,6 +62,7 @@ AlignedSliceProxyGeometry::AlignedSliceProxyGeometry()
 
     addProperty(sliceIndex_);
     addProperty(floatSliceIndex_);
+    addProperty(restrictToMainVolume_);
 
     addProperty(camera_);
 
@@ -74,6 +77,7 @@ AlignedSliceProxyGeometry::AlignedSliceProxyGeometry()
     planeDist_.setInvalidationLevel(VALID);
 
     addPort(inport_);
+    addPort(secondaryVolumePort_);
     addPort(geomPort_);
     addPort(textPort_);
 }
@@ -97,8 +101,9 @@ void AlignedSliceProxyGeometry::process() {
 
     if (inport_.hasChanged()) {
         updateSliceProperties();  // validate the currently set values and adjust them if necessary
-        update();
     }
+
+    update();
 
     //Generate text output:
     std::stringstream strstr;
@@ -111,7 +116,7 @@ void AlignedSliceProxyGeometry::update() {
     if(!volh)
         return;
 
-    FaceGeometry slice = getSliceGeometry(volh, sliceAlignment_.getValue(), floatSliceIndex_.get(), true);
+    FaceGeometry slice = getSliceGeometry(volh, sliceAlignment_.getValue(), floatSliceIndex_.get(), true, restrictToMainVolume_.get() ? std::vector<const VolumeBase*>() : secondaryVolumePort_.getAllData());
 
     MeshGeometry mesh;
     mesh.addFace(slice);

@@ -71,6 +71,8 @@ public:
 
     void merge(const ROIRaster* m);
     void erase(const ROIRaster* m);
+    /// Shrinks ROI as far as possible
+    void optimize();
 
     /// Computes the center of mass (in physical coordinates)
     tgt::vec3 getCenterOfMass() const;

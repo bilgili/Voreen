@@ -261,7 +261,7 @@ Volume* QuadHidacVolumeReader::loadVolume(const std::string& filename, int i, co
     if (!file)
         throw tgt::FileNotFoundException("Reading vol " + itos(i) + " from " + filename);
 
-    file.seekg(header.dataOffset + hmul(header.dims)*4*i, std::ios::beg);
+    file.seekg(header.dataOffset + hmul(header.dims)*static_cast<size_t>(4*i), std::ios::beg);
 
     // read frame data (float)
     Volume* vh = 0;
@@ -295,6 +295,9 @@ Volume* QuadHidacVolumeReader::loadVolume(const std::string& filename, int i, co
             t += header.dt[j];
         }
         vh->setTimestep(t);
+
+        vh->setMetaDataValue<IntMetaData>("ActualFrameDuration", static_cast<int>(header.dt[i]));
+        vh->setMetaDataValue<IntMetaData>("FrameTime", static_cast<int>(t));
     }
 
     VolumeURL frameOrigin("i4d", filename);
@@ -302,6 +305,7 @@ Volume* QuadHidacVolumeReader::loadVolume(const std::string& filename, int i, co
     vh->setOrigin(frameOrigin);
     //vh->setRealWorldMapping(RealWorldMapping(1.0f, 0.0f, "BqCC")); // Not actually BqCC:
     vh->setRealWorldMapping(RealWorldMapping(1.0f, 0.0f, "CpsCC"));
+    vh->setMetaDataValue<IntMetaData>("Frame", i);
 
     // clean up
     file.close();

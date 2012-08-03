@@ -40,6 +40,8 @@ bool bindVolumeTexture(const VolumeBase* vh, const tgt::TextureUnit* texUnit, GL
 
 void setUniform(tgt::Shader* shader, const std::string& imageUniform, const std::string& structUniform, const Slice* sl, const tgt::TextureUnit* texUnit);
 
+std::string generateStandardShaderHeader(const tgt::GpuCapabilities::GlVersion* version = 0);
+
 }  // namespace voreen
 
 #endif

@@ -29,7 +29,7 @@
 #include "voreen/core/properties/link/linkevaluatorbase.h"
 #include "voreen/core/properties/link/linkevaluatoridgeneric.h"
 
-#include "../../utils/plotentitysettings.h"
+#include "../../datastructures/plotentitysettings.h"
 
 namespace voreen {
 

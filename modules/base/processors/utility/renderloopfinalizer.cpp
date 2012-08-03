@@ -96,7 +96,12 @@ void RenderLoopFinalizer::process() {
     renderQuad();
 
     shaderPrg_->deactivate();
-    outport_.deactivateTarget();
+
+    if (loopOutport_.getLoopIteration() == loopOutport_.getNumLoopIterations()-1) {
+        outport_.deactivateTarget();
+    } else {
+        loopOutport_.deactivateTarget();
+    }
     TextureUnit::setZeroUnit();
 
     LGL_ERROR;

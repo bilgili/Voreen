@@ -41,6 +41,7 @@ class ClickableColorLabel : public QLabel {
 public:
     ClickableColorLabel(const QString& text, QWidget* parent=0, Qt::WindowFlags f=0);
     void setColor(const QColor& color);
+    QColor getColor() const;
 
 signals:
     void clicked();

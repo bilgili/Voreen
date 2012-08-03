@@ -138,8 +138,19 @@ void PointListRenderer::render() {
 
     // render display list
     if (glIsList(displayList_)) {
+        if(renderingPrimitiveProp_.get() == "points"){
+            glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, (GLfloat*)(pointDistAttenuation_.get().elem));
+        }
         glCallList(displayList_);
+        if(renderingPrimitiveProp_.get() == "points"){
+            glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, (GLfloat*)(tgt::vec3(1.f,0.f,0.f).elem));
+        }
     }
+
+    glBegin(GL_POINTS);
+    glVertex3f(0.f,0.f,0.f);
+    glEnd();
+
 }
 
 void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList) {
@@ -194,7 +205,6 @@ void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList) 
         glPointSize(pointSize_.get());
         if (pointSmooth_.get())
             glEnable(GL_POINT_SMOOTH);
-        glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, (GLfloat*)(pointDistAttenuation_.get().elem));
         glBegin(GL_POINTS);
         for (size_t i=0; i<pointList.size(); ++i) {
             tgt::vertex(pointList[i]);

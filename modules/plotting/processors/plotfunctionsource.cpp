@@ -25,8 +25,8 @@
 
 #include "plotfunctionsource.h"
 
-#include "../utils/plotfunction.h"
-#include "../utils/plotexpression.h"
+#include "../datastructures/plotfunction.h"
+#include "../datastructures/plotexpression.h"
 
 
 namespace voreen {

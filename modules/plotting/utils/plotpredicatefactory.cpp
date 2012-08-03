@@ -25,7 +25,7 @@
 
 #include "plotpredicatefactory.h"
 
-#include "plotpredicate.h"
+#include "../datastructures/plotpredicate.h"
 
 namespace voreen {
 

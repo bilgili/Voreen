@@ -28,7 +28,7 @@
 
 #include "voreen/core/properties/link/linkevaluatorbase.h"
 #include "voreen/core/properties/link/linkevaluatoridgeneric.h"
-#include "../../utils/colormap.h"
+#include "../../datastructures/colormap.h"
 
 namespace voreen {
 

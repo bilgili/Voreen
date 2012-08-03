@@ -86,7 +86,7 @@ ENDIF()
 
 # platform-dependent configuration
 IF(WIN32)
-    LIST(APPEND VRN_DEFINITIONS "-DNOMINMAX" "-D_CRT_SECURE_NO_DEPRECATE")
+    LIST(APPEND VRN_DEFINITIONS -DNOMINMAX -D_CRT_SECURE_NO_DEPRECATE)
 
     # Disable warnings for Microsoft compiler:
     # C4305: 'identifier' : truncation from 'type1' to 'type2'
@@ -108,13 +108,16 @@ IF(WIN32)
     # prevent error: number of sections exceeded object file format limit
     LIST(APPEND VRN_DEFINITIONS /bigobj)
     
+    # prevents rarely-used header files from being automatically included by windows.h (esp. winsock) 
+    LIST(APPEND VRN_DEFINITIONS -DWIN32_LEAN_AND_MEAN)
+    
     # allows 32 Bit builds to use more than 2GB RAM (VC++ only)
     SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /LARGEADDRESSAWARE")
     SET(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
 
     IF(VRN_SHARED_LIBS)
         # Linking against Windows DLLs requires explicit instantiation of templates
-        LIST(APPEND VRN_DEFINITIONS "-DDLL_TEMPLATE_INST")
+        LIST(APPEND VRN_DEFINITIONS -DDLL_TEMPLATE_INST)
 
         IF(NOT VRN_GENERATE_MANIFEST)
             # Do not embed manifest into binaries in debug mode (slows down incremental linking)

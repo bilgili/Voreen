@@ -25,7 +25,7 @@
 
 #include "plotpredicatedialog.h"
 
-#include "../utils/plotpredicate.h"
+#include "../datastructures/plotpredicate.h"
 #include "../utils/plotpredicatefactory.h"
 
 #include <QDialogButtonBox>

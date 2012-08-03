@@ -28,7 +28,7 @@
 #include "../plotdatawidget.h"
 
 #include "voreen/qt/widgets/voreentoolwindow.h"
-#include "../../utils/plotdata.h"
+#include "../../datastructures/plotdata.h"
 
 #include <QPushButton>
 

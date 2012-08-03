@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
-    <Workspace version="2" GlobalDescription="" readonly="true">
+    <Workspace version="2" GlobalDescription="">
         <ProcessorNetwork version="12">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
@@ -55,10 +55,10 @@
                         <Property name="showCursorInformation" value="onMove" />
                         <Property name="showSliceNumber" value="true" />
                         <Property name="sliceAlignmentProp" value="xy-plane" />
-                        <Property name="sliceIndex" value="50" />
-                        <Property name="sliceX" value="22" />
-                        <Property name="sliceY" value="35" />
-                        <Property name="sliceZ" value="50" />
+                        <Property name="sliceIndex" value="53" />
+                        <Property name="sliceX" value="90" />
+                        <Property name="sliceY" value="8" />
+                        <Property name="sliceZ" value="53" />
                         <Property name="textureBorderIntensity" value="0" />
                         <Property name="textureClampMode_" value="clamp-to-edge" />
                         <Property name="textureFilterMode" value="linear" />
@@ -92,7 +92,7 @@
                         </Handler>
                         <Handler name="zoomHandler">
                             <Properties>
-                                <Property name="zoomHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="2" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property name="zoomHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="2" keyCode="0" modifier="2" shareEvents="false" />
                             </Properties>
                         </Handler>
                     </InteractionHandlers>
@@ -100,7 +100,14 @@
                 <Processor type="Canvas" name="Canvas" id="ref2">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-111" y="-142" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="327" y="88" width="450" height="365" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="290" y="269" width="450" height="365" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="290" y="269" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="450" y="365" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize">
@@ -109,6 +116,7 @@
                         <Property name="saveScreenshot" />
                         <Property name="screenshotFilename" noPathSet="true" value="" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>

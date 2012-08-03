@@ -27,7 +27,7 @@
 
 #include "extendedtable.h"
 #include "../properties/plotdataproperty.h"
-#include "../utils/plotdata.h"
+#include "../datastructures/plotdata.h"
 
 namespace voreen {
 

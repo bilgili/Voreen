@@ -35,11 +35,6 @@
 
 /* Add C includes here */
 
-#ifdef VRN_MODULE_PYTHON
-/* include this at very first or will break with some versions of Python */
-#include <Python.h>
-#endif
-
 #ifdef WIN32
 #include <windows.h>
 #endif

@@ -48,11 +48,6 @@ LightPropertyWidget::LightPropertyWidget(FloatVec4Property* prop, QWidget* paren
     else
         followCam_->setChecked(false);
 
-    if (BoolMetaData* hemis = dynamic_cast<BoolMetaData*>(property_->getMetaDataContainer().getMetaData("UseBackHemisphere")))
-        followCam_->setChecked(hemis->getValue());
-    else
-        followCam_->setChecked(false);
-
     layout_->setDirection(QBoxLayout::TopToBottom);
     layout_->addWidget(light_);
     layout_->addWidget(followCam_);
@@ -124,11 +119,7 @@ void LightPropertyWidget::updateFromProperty() {
 void LightPropertyWidget::updateMetaData() const {
     BoolMetaData* follow = new BoolMetaData();
     follow->setValue(followCam_->isChecked());
-    BoolMetaData* hemis = new BoolMetaData();
-    hemis->setValue(light_->getHemisphereStatus());
-
     property_->getMetaDataContainer().addMetaData("FollowCamera", follow);
-    property_->getMetaDataContainer().addMetaData("UseBackHemisphere", hemis);
 }
 
 } // namespace voreen

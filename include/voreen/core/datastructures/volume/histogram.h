@@ -69,9 +69,9 @@ template<typename T, int ND>
             }
         }
 
-        /// Returns the normalized count in the bucket (getBucket(b) / getNumSamples())
+        /// Returns the normalized count in the bucket (getBucket(b) / getMaxBucket())
         float getBucketNormalized(int b) const {
-            return (float) getBucket(b) / (float) getNumSamples();
+            return (float) getBucket(b) / (float) getMaxBucket();
         }
 
         void increaseBucket(size_t b) {

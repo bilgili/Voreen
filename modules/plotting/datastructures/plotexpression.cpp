@@ -27,10 +27,10 @@
 //#define VRN_PLOTEXPRESSION_DEBUG
 
 #include "plotexpression.h"
-#include "parser/plotfunctionlexer.h"
-#include "parser/plotfunctionparser.h"
-#include "parser/plotfunctionnode.h"
-#include "parser/plotfunctionvisitor.h"
+#include "../utils/parser/plotfunctionlexer.h"
+#include "../utils/parser/plotfunctionparser.h"
+#include "../utils/parser/plotfunctionnode.h"
+#include "../utils/parser/plotfunctionvisitor.h"
 
 #include <limits>
 #include "tgt/logmanager.h"

@@ -236,14 +236,6 @@ bool NetworkGraph::operator!=(const NetworkGraph& other) const {
     return !(*this == other);
 }
 
-void NetworkGraph::testPrune() {
-    std::set<GraphNode*> nodes;
-    for (NodeSet::iterator iter=nodes_.begin(); iter != nodes_.end(); ++iter) {
-        nodes.insert(*iter);
-    }
-    pruneGraph(nodes);
-}
-
 bool NetworkGraph::containsProcessor(Processor* const processor) const {
     return (!findNodes(processor).empty());
 }
@@ -885,7 +877,6 @@ NetworkGraph::GraphNode* NetworkGraph::findNode(const int id) const {
 
 std::set<NetworkGraph::GraphNode*> NetworkGraph::getSuccessorNodes(const std::set<NetworkGraph::GraphNode*>& nodes) const {
 
-    std::set<NetworkGraph::GraphNode*> result;
     CollectSuccessorsVisitor csv;
 
     setAllNodesMarked(false);

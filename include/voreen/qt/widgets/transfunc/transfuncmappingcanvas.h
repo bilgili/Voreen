@@ -29,6 +29,7 @@
 #include "tgt/vector.h"
 
 #include "voreen/core/datastructures/volume/volume.h"
+#include "voreen/qt/voreenqtapi.h"
 
 #include <QWidget>
 #include <QMenu>
@@ -51,8 +52,8 @@ class Volume;
 /**
  * Background thread for calculating a histogram.
  */
-class HistogramThread : public QThread {
-Q_OBJECT
+class VRN_QT_API HistogramThread : public QThread {
+    Q_OBJECT
 public:
     HistogramThread(const VolumeBase* volume, int count, QObject* parent = 0);
     void run();
@@ -78,8 +79,8 @@ private:
  * down left mouse button. Furthermore keys can be splitted, merged and deleted. The color of a key
  * can also be changed.
  */
-class TransFuncMappingCanvas : public QWidget, public VolumeHandleObserver {
-Q_OBJECT
+class VRN_QT_API TransFuncMappingCanvas : public QWidget, public VolumeHandleObserver {
+    Q_OBJECT
 public:
     /**
      * Constructor
@@ -469,6 +470,7 @@ protected:
     QAction* loadAction_;       ///< action for load transfer function context menu entry
     QAction* saveAction_;       ///< action for save transfer function context menu entry
     QAction* resetAction_;      ///< action for reset transfer function context menu entry
+    QAction* yAxisLogarithmicAction_;  ///< action for determining the scale on the histogram y-axis
 
     HistogramThread* histogramThread_; ///< thread for calcultating the histogram in the background
     bool histogramNeedsUpdate_;        ///< volume was changed, histogram must be re-calculated

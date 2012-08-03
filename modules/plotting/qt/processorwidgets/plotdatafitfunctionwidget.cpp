@@ -30,7 +30,7 @@
 #include "../extendedtable.h"
 
 #include "../../utils/functionlibrary.h"
-#include "../../utils/plotfunction.h"
+#include "../../datastructures/plotfunction.h"
 
 #include "voreen/qt/voreenapplicationqt.h"
 

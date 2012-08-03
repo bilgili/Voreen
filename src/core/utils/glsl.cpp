@@ -101,9 +101,13 @@ bool bindVolumeTexture(const VolumeBase* vh, const tgt::TextureUnit* texUnit, GL
     GLint resident;
     glGetTexParameteriv(GL_TEXTURE_3D, GL_TEXTURE_RESIDENT, &resident);
 
-    if (resident != GL_TRUE)
-        LWARNINGC("voreen.glsl", "texture not resident: " /*<< volume->meta().getFileName()*/);
-
+    if (resident != GL_TRUE){
+        if(GpuCaps.getVendor() == tgt::GpuCapabilities::GPU_VENDOR_ATI){
+            LDEBUGC("voreen.glsl", "texture not resident " /*<< volume->meta().getFileName()*/);
+        } else {
+            LWARNINGC("voreen.glsl", "texture not resident " /*<< volume->meta().getFileName()*/);
+        }
+    }
     LGL_ERROR;
 
     // texture filtering
@@ -166,5 +170,93 @@ void setUniform(tgt::Shader* shader, const std::string& imageUniform, const std:
 
     shader->setIgnoreUniformLocationError(ignoreErr);
 }
+
+std::string generateStandardShaderHeader(const tgt::GpuCapabilities::GlVersion* version) {
+    if (!tgt::GpuCapabilities::isInited()) {
+        return "";
+    }
+
+    using tgt::GpuCapabilities;
+
+    tgt::GpuCapabilities::GlVersion useVersion;
+
+    //use supplied version if available, else use highest available.
+    //if no version is supplied, use up tp 1.30 as default.
+    if (version && GpuCaps.getShaderVersion() >= *version)
+        useVersion = *version;
+    else if(GpuCaps.getShaderVersion() > GpuCapabilities::GlVersion::SHADER_VERSION_410)
+        useVersion = GpuCapabilities::GlVersion::SHADER_VERSION_410;
+    else
+        useVersion = GpuCaps.getShaderVersion();
+
+    std::stringstream versionHeader;
+    versionHeader << useVersion.major() << useVersion.minor();
+
+    std::string header = "#version " + versionHeader.str();
+
+    if(header.length() < 12)
+        header += "0";
+
+    //Run in compability mode to use deprecated functionality
+    if (useVersion >= GpuCapabilities::GlVersion::SHADER_VERSION_150)
+        header += " compatibility";
+    else if(useVersion >= GpuCapabilities::GlVersion::SHADER_VERSION_140)
+        header += "\n#extension GL_ARB_compatibility : enable";
+
+    header += "\n";
+
+    if (useVersion >= GpuCapabilities::GlVersion::SHADER_VERSION_410)
+        header += "#define GLSL_VERSION_410\n";
+    if (useVersion >= GpuCapabilities::GlVersion::SHADER_VERSION_400)
+        header += "#define GLSL_VERSION_400\n";
+    if (useVersion >= GpuCapabilities::GlVersion::SHADER_VERSION_330)
+        header += "#define GLSL_VERSION_330\n";
+    if (useVersion >= GpuCapabilities::GlVersion::SHADER_VERSION_150)
+        header += "#define GLSL_VERSION_150\n";
+    if (useVersion >= GpuCapabilities::GlVersion::SHADER_VERSION_140)
+        header += "#define GLSL_VERSION_140\n";
+    if (useVersion >= GpuCapabilities::GlVersion::SHADER_VERSION_130) {
+        header += "#define GLSL_VERSION_130\n";
+        header += "precision highp float;\n";
+    }
+    if (useVersion >= GpuCapabilities::GlVersion::SHADER_VERSION_120)
+        header += "#define GLSL_VERSION_120\n";
+    if (useVersion >= GpuCapabilities::GlVersion::SHADER_VERSION_110)
+        header += "#define GLSL_VERSION_110\n";
+
+    if (GLEW_NV_fragment_program2) {
+        GLint i = -1;
+        glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB, GL_MAX_PROGRAM_LOOP_COUNT_NV, &i);
+        if (i > 0) {
+            std::ostringstream o;
+            o << i;
+            header += "#define VRN_MAX_PROGRAM_LOOP_COUNT " + o.str() + "\n";
+        }
+    }
+
+    //
+    // add some defines needed for workarounds in the shader code
+    //
+    if (GLEW_ARB_draw_buffers)
+        header += "#define VRN_GLEW_ARB_draw_buffers\n";
+
+    #ifdef __APPLE__
+        header += "#define VRN_OS_APPLE\n";
+        if (GpuCaps.getVendor() == GpuCaps.GPU_VENDOR_ATI)
+            header += "#define VRN_VENDOR_ATI\n";
+    #endif
+
+    if (GpuCaps.getShaderVersion() >= GpuCapabilities::GlVersion::SHADER_VERSION_130) {
+        // define output for single render target
+        header += "//$ @name = \"outport0\"\n";
+        header += "out vec4 FragData0;\n";
+    }
+    else {
+        header += "#define FragData0 gl_FragData[0]\n";
+    }
+
+    return header;
+}
+
 
 } // namespace

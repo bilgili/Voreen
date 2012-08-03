@@ -776,7 +776,7 @@ void TransFunc1DKeysEditor::volumeChanged() {
         RealWorldMapping rwm = volumeHandle_->getRealWorldMapping();
         min = rwm.normalizedToRealWorld(min);
         max = rwm.normalizedToRealWorld(max);
-        std::string unit = rwm.getUnit();
+        //std::string unit = rwm.getUnit();
 
         lowerData_->setText(QString::number(min));
         upperData_->setText(QString::number(max));

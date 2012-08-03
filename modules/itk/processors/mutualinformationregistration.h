@@ -35,77 +35,116 @@
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/buttonproperty.h"
 #include "voreen/core/properties/matrixproperty.h"
+#include "voreen/core/properties/optionproperty.h"
 
 #include <string>
+#include <boost/thread.hpp>
 
 #include "itkImage.h"
-//#include "itkAffineTransform.h"
 #include "itkVersorRigid3DTransform.h"
+#include "itkVersorRigid3DTransformOptimizer.h"
 
 namespace voreen {
 
 class Volume;
+class MutualInformationRegistration;
+
+//  The following section of code implements an observer
+//  that will monitor the evolution of the registration process.
+class MutualInformationRegistrationObserver : public itk::Command
+{
+    public:
+        typedef  MutualInformationRegistrationObserver   Self;
+        typedef  itk::Command             Superclass;
+        typedef  itk::SmartPointer<Self>  Pointer;
+        itkNewMacro( Self );
+    protected:
+        MutualInformationRegistration* processor_;
+        MutualInformationRegistrationObserver() : processor_(0) {};
+    public:
+        typedef   itk::VersorRigid3DTransformOptimizer OptimizerType;
+
+        void setProcessor(MutualInformationRegistration* processor) { processor_ = processor; }
+
+        void Execute(itk::Object *caller, const itk::EventObject & event);
+        //{
+            //Execute( (const itk::Object *)caller, event);
+        //}
+
+        void Execute(const itk::Object * object, const itk::EventObject & event) {
+        }
+};
 
 class MutualInformationRegistration : public VolumeProcessor {
-    static const unsigned int Dimension = 3;
-
-    typedef float InternalPixelType;
-    typedef itk::Image<InternalPixelType, Dimension> InternalImageType;
-
-    //typedef itk::AffineTransform<double, Dimension> TransformType;
-    //typedef TransformType::ParametersType ParametersType;
     typedef itk::VersorRigid3DTransform<double> TransformType;
     typedef TransformType::ParametersType ParametersType;
 public:
+    friend class MutualInformationRegistrationObserver;
+
     MutualInformationRegistration();
     virtual Processor* create() const;
 
     virtual std::string getCategory() const   { return "Volume Processing"; }
     virtual std::string getClassName() const  { return "MutualInformationRegistration";  }
-    virtual CodeState getCodeState() const    { return CODE_STATE_BROKEN; }
-    virtual std::string getProcessorInfo() const;
+    virtual CodeState getCodeState() const    { return CODE_STATE_EXPERIMENTAL; }
 
-    virtual void serialize(XmlSerializer& s) const;
-    virtual void deserialize(XmlDeserializer& s);
-
-    virtual bool isReady() const;
 protected:
     virtual void setDescriptions() {
-        setDescription("");
+        setDescription("Computes a coregistration matrix for two volumes using the multi-resolution framework implemented in ITK.");
     }
 
     virtual void deinitialize() throw (tgt::Exception);
 
     virtual void process();
 
+    void stopRegistration();
     void updateRegistration();
-    void resetRegistration();
-    void initializeRegistration();
+    template<class fixedType>
+    void typeSwitch(const VolumeBase* fixedVolume, const VolumeBase* movingVolume);
+    template<class fixedType, class movingType>
+    void performRegistration(const VolumeBase* fixedVolume, const VolumeBase* movingVolume);
 
-    void convertVolumes();
-    void calculateVoreenTrafo(const tgt::mat4& itkMatrix);
-    tgt::mat4 constructTrafoMatrix();
+    void initializeRegistration();
+    template<class fixedType>
+    void typeSwitchInit(const VolumeBase* fixedVolume, const VolumeBase* movingVolume);
+    template<class fixedType, class movingType>
+    void performInitialization(const VolumeBase* fixedVolume, const VolumeBase* movingVolume);
+
+    void onMetricChange();
+
+    tgt::mat4 calculateVoreenTrafo(const tgt::mat4& itkMatrix);
+    tgt::mat4 calculateITKTrafo();
+    tgt::mat4 itkToVoreen(TransformType::Pointer t);
+
+    const VolumeBase* getFixedVolume() const;
+    const VolumeBase* getMovingVolume() const;
 
 private:
     VolumePort fixedVolumeInport_;
     VolumePort movingVolumeInport_;
-    VolumePort outport_;
-
-    Volume* fixedVolumeFloat_;
-    Volume* movingVolumeFloat_;
-
-    TransformType::Pointer transform_;
 
     FloatMat4Property transformationMatrix_;
     IntProperty numLevels_;
     IntProperty numIterations_;
-    IntProperty numHistogramBins_;
-    FloatProperty numSamples_;
+    FloatProperty maxStepLength_;
+    FloatProperty minStepLength_;
+    FloatProperty rotScale_;
     FloatProperty relaxationFactor_;
+
+    // Metric properties:
+    StringOptionProperty metric_;
+    IntProperty numHistogramBins_;
+    IntProperty numSamples_;
     BoolProperty explicitPDF_;
+    FloatProperty lambda_;
+
     ButtonProperty updateButton_;
-    ButtonProperty resetButton_;
+    ButtonProperty stopButton_;
     ButtonProperty initializeButton_;
+
+    boost::thread workerThread_;
+    tgt::mat4 tempResult_;
+    bool tempResultUpdated_;
 
     static const std::string loggerCat_; ///< category used in logging
 };

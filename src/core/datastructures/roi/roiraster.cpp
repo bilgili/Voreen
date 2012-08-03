@@ -81,6 +81,7 @@ ROIRaster::ROIRaster(Grid grid, const ROIBase* roi) : ROISingle(grid) {
             }
         }
     }
+    optimize();
 }
 
 ROIRaster::ROIRaster(const ROIBase* roi) : ROISingle(roi->getGrid()) {
@@ -105,6 +106,7 @@ ROIRaster::ROIRaster(const ROIBase* roi) : ROISingle(roi->getGrid()) {
             }
         }
     }
+    optimize();
 }
 
 void ROIRaster::serialize(XmlSerializer& s) const {
@@ -302,7 +304,6 @@ void ROIRaster::erase(const ROIRaster* m) {
     ivec3 urb = tgt::max(llf_+ivec3(dims_), m->llf_+ivec3(m->dims_));
     ivec3 dims = urb - llf;
 
-
     ivec3 i;
     ivec3 offset = llf_ - llf;
     for(i.x=0; i.x<(int)dims_.x; i.x++) {
@@ -316,6 +317,58 @@ void ROIRaster::erase(const ROIRaster* m) {
             }
         }
     }
+}
+
+void ROIRaster::optimize() {
+    ivec3 llf = ivec3(0);
+    ivec3 urb = ivec3(0);
+    bool voxelTrue = false;
+    ivec3 i;
+    for(i.x=0; i.x<(int)dims_.x; i.x++) {
+        for(i.y=0; i.y<(int)dims_.y; i.y++) {
+            for(i.z=0; i.z<(int)dims_.z; i.z++) {
+                if(getVoxel(i)) {
+                    if(voxelTrue) {
+                        llf = min(llf, i);
+                        urb = max(urb, i);
+                        voxelTrue = true;
+                    }
+                    else {
+                        //first voxel:
+                        llf = i;
+                        urb = i;
+                        voxelTrue = true;
+                    }
+                }
+            }
+        }
+    }
+
+    llf += llf_;
+    urb += llf_;
+
+    ivec3 dims = (urb - llf) + ivec3(1);
+
+    //LINFO("Optimizing from " << llf_ << " +> " << dims_ << " to " << llf << " +> " << dims << "(" << getName() << ")");
+
+    if((svec3(dims) == dims_) && (llf == llf_))
+        return; //nothing to optimize here...
+
+    ROIRaster optimized(getGrid(), llf, dims, false);
+
+    ivec3 offset = llf_ - llf;
+    for(i.x=0; i.x<(int)dims_.x; i.x++) {
+        for(i.y=0; i.y<(int)dims_.y; i.y++) {
+            for(i.z=0; i.z<(int)dims_.z; i.z++) {
+                if(getVoxel(i))
+                    optimized.setVoxel(offset+i, true);
+            }
+        }
+    }
+
+    llf_ = optimized.llf_;
+    dims_ = optimized.dims_;
+    voxels_ = optimized.voxels_;
 }
 
 std::vector<vec3> computePCA(const std::vector<tgt::vec3>& points, vec3 center) {

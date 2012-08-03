@@ -34,13 +34,25 @@
 #include "modules/itk/utils/itkwrapper.h"
 
 #include "itkMultiResolutionImageRegistrationMethod.h"
-#include "itkTranslationTransform.h"
+
 #include "itkMattesMutualInformationImageToImageMetric.h"
+#include "itkMeanSquaresImageToImageMetric.h"
+#include "itkNormalizedCorrelationImageToImageMetric.h"
+#include "itkMeanReciprocalSquareDifferenceImageToImageMetric.h"
+#include "itkMutualInformationImageToImageMetric.h"
+#include "itkKullbackLeiblerCompareHistogramImageToImageMetric.h"
+#include "itkMeanSquaresHistogramImageToImageMetric.h"
+#include "itkCorrelationCoefficientHistogramImageToImageMetric.h"
+#include "itkGradientDifferenceImageToImageMetric.h"
+
 #include "itkLinearInterpolateImageFunction.h"
-#include "itkRegularStepGradientDescentOptimizer.h"
-#include "itkVersorRigid3DTransformOptimizer.h"
 #include "itkMultiResolutionPyramidImageFilter.h"
 #include "itkCenteredTransformInitializer.h"
+
+#include <Eigen/SVD>
+#include <Eigen/LU>
+
+//#include <boost/date_time.hpp>
 
 #include <iostream>
 
@@ -49,7 +61,7 @@ namespace voreen {
 using tgt::mat4;
 using tgt::vec3;
 
-template <typename TRegistration>
+template <typename RegistrationType>
 class RegistrationInterfaceCommand : public itk::Command
 {
 public:
@@ -58,23 +70,26 @@ public:
     typedef  itk::SmartPointer<Self>        Pointer;
     itkNewMacro( Self );
 protected:
-    RegistrationInterfaceCommand() {};
+    float minStepLength_;
+    float maxStepLength_;
 
+    RegistrationInterfaceCommand() : minStepLength_(0.001f), maxStepLength_(0.2f) {};
 public:
-    typedef   TRegistration                              RegistrationType;
-    typedef   RegistrationType *                         RegistrationPointer;
     typedef   itk::VersorRigid3DTransformOptimizer       OptimizerType;
-    typedef   OptimizerType *                            OptimizerPointer;
+
+    void setMinStepLength(float minStepLength) { minStepLength_ = minStepLength; }
+    void setMaxStepLength(float maxStepLength) { maxStepLength_ = maxStepLength; }
+    float getMinStepLength() { return minStepLength_; }
+    float getMaxStepLength() { return maxStepLength_; }
 
     void Execute(itk::Object * object, const itk::EventObject & event)
     {
         if( !(itk::IterationEvent().CheckEvent( &event )) )
-        {
             return;
-        }
-        RegistrationPointer registration = dynamic_cast<RegistrationPointer>( object );
 
-        OptimizerPointer optimizer = dynamic_cast< OptimizerPointer >( registration->GetOptimizer() );
+        RegistrationType* registration = dynamic_cast<RegistrationType*>(object);
+
+        OptimizerType* optimizer = dynamic_cast<OptimizerType*>( registration->GetOptimizer() );
 
         std::cout << "-------------------------------------" << std::endl;
         std::cout << "MultiResolution Level : " << registration->GetCurrentLevel()  << std::endl;
@@ -82,16 +97,16 @@ public:
 
         if ( registration->GetCurrentLevel() == 0 )
         {
-            //optimizer->SetMaximumStepLength( 16.00 );
-            optimizer->SetMaximumStepLength( 0.20 );
-            //optimizer->SetMaximumStepLength( 64.00 );
-            //optimizer->SetMinimumStepLength( 0.04 );
-            optimizer->SetMinimumStepLength( 0.0001 );
+            optimizer->SetMaximumStepLength(maxStepLength_);
+            optimizer->SetMinimumStepLength(minStepLength_);
         }
         else
         {
-            optimizer->SetMaximumStepLength( optimizer->GetMaximumStepLength() / 1.1 );
-            optimizer->SetMinimumStepLength( optimizer->GetMinimumStepLength() / 3.0 );
+            optimizer->SetMaximumStepLength( optimizer->GetMaximumStepLength() / 10.0 );
+            optimizer->SetMinimumStepLength( optimizer->GetMinimumStepLength() / 2.0 );
+
+            if(optimizer->GetStopCondition() == OptimizerType::Unknown)
+                registration->StopRegistration();
         }
     }
 
@@ -99,39 +114,37 @@ public:
 };
 
 
-//  The following section of code implements an observer
-//  that will monitor the evolution of the registration process.
-class CommandIterationUpdate : public itk::Command
+//void MutualInformationRegistrationObserver::Execute(const itk::Object* object, const itk::EventObject & event)
+void MutualInformationRegistrationObserver::Execute(itk::Object* object, const itk::EventObject& event)
 {
-    public:
-        typedef  CommandIterationUpdate   Self;
-        typedef  itk::Command             Superclass;
-        typedef  itk::SmartPointer<Self>  Pointer;
-        itkNewMacro( Self );
-    protected:
-        CommandIterationUpdate() {};
-    public:
-        //typedef   itk::RegularStepGradientDescentOptimizer OptimizerType;
-        typedef   itk::VersorRigid3DTransformOptimizer OptimizerType;
-        typedef   const OptimizerType *                    OptimizerPointer;
+    OptimizerType* optimizer = dynamic_cast<OptimizerType*>( object );
+    if( !(itk::IterationEvent().CheckEvent( &event )) )
+    {
+        return;
+    }
+    std::cout << optimizer->GetCurrentIteration() << "   ";
+    std::cout << optimizer->GetValue() << "   ";
+    std::cout << optimizer->GetCurrentPosition() << std::endl;
 
-        void Execute(itk::Object *caller, const itk::EventObject & event)
-        {
-            Execute( (const itk::Object *)caller, event);
-        }
+    // Update transformation matrix:
+    MutualInformationRegistration::ParametersType parameters = optimizer->GetCurrentPosition();
+    MutualInformationRegistration::TransformType::Pointer transform = MutualInformationRegistration::TransformType::New();
+    transform->SetParameters(parameters);
 
-        void Execute(const itk::Object * object, const itk::EventObject & event)
-        {
-            OptimizerPointer optimizer = dynamic_cast< OptimizerPointer >( object );
-            if( !(itk::IterationEvent().CheckEvent( &event )) )
-            {
-                return;
-            }
-            std::cout << optimizer->GetCurrentIteration() << "   ";
-            std::cout << optimizer->GetValue() << "   ";
-            std::cout << optimizer->GetCurrentPosition() << std::endl;
-        }
-};
+    try {
+        boost::this_thread::sleep(boost::posix_time::seconds(0));
+    }
+    catch(boost::thread_interrupted&)
+    {
+        optimizer->StopOptimization();
+    }
+
+    processor_->lockMutex();
+    processor_->tempResult_ = processor_->calculateVoreenTrafo(processor_->itkToVoreen(transform));
+    processor_->tempResultUpdated_ = true;
+    processor_->invalidate();
+    processor_->unlockMutex();
+}
 
 const std::string MutualInformationRegistration::loggerCat_("voreen.MutualInformationRegistration");
 
@@ -139,161 +152,324 @@ MutualInformationRegistration::MutualInformationRegistration()
     : VolumeProcessor(),
     fixedVolumeInport_(Port::INPORT, "fixedVolumeInport"),
     movingVolumeInport_(Port::INPORT, "movingVolumeInport"),
-    outport_(Port::OUTPORT, "output", 0),
-    fixedVolumeFloat_(0),
-    movingVolumeFloat_(0),
-    transformationMatrix_("voreenTransformMatrix", "Voreen transformation matrix", tgt::mat4::identity, tgt::mat4(-200.0), tgt::mat4(200.0), VALID),
+    transformationMatrix_("voreenTransformMatrix", "Voreen transformation matrix", tgt::mat4::identity, tgt::mat4(-2000.0), tgt::mat4(2000.0), VALID),
     numLevels_("numLevels", "Number of levels", 5, 1, 20, VALID),
     numIterations_("numIterations", "Number of iterations", 200, 1, 5000, VALID),
+    minStepLength_("minStepLength", "Min Step Length", 0.001f, 0.0f, 10.0f, VALID),
+    maxStepLength_("maxStepLength", "Max Step Length", 0.001f, 0.0f, 1000.0f, VALID),
+    rotScale_("rotScale", "Rotation Scale", 0.001f, 0.0f, 1000.0f, VALID),
+    metric_("metric", "Metric"),
     numHistogramBins_("numHistogramBins", "Histogram bins", 64, 1, 512, VALID),
-    numSamples_("numSamples", "Number of samples", 0.05f, 0.0f, 1.0f, VALID),
+    numSamples_("numSamples", "Number of samples [%]", 10, 1, 100, VALID),
     relaxationFactor_("relaxationFactor", "Relaxation factor", 0.9f, 0.0f, 2.0f, VALID),
     explicitPDF_("explicitPDF", "Use explicit PDF", false, VALID),
+    lambda_("lambda", "Lambda", 1.0f, 0.0f, 100.0f),
     updateButton_("updateButton", "Update"),
-    resetButton_("resetButton", "Reset"),
-    initializeButton_("initializeButton", "Initialize")
+    stopButton_("stopButton", "Stop"),
+    initializeButton_("initializeButton", "Initialize"),
+    tempResult_(mat4::identity),
+    tempResultUpdated_(false)
 {
     addPort(fixedVolumeInport_);
     addPort(movingVolumeInport_);
-    addPort(outport_);
+
+    addProperty(numLevels_);
+    numLevels_.setGroupID("framework");
+    setPropertyGroupGuiName("framework", "Framework");
+
+    addProperty(rotScale_);
+    rotScale_.setGroupID("optimizer");
+    rotScale_.setStepping(0.001f);
+    addProperty(minStepLength_);
+    minStepLength_.setGroupID("optimizer");
+    minStepLength_.setStepping(0.001f);
+    addProperty(maxStepLength_);
+    maxStepLength_.setGroupID("optimizer");
+    maxStepLength_.setStepping(0.001f);
+    addProperty(numIterations_);
+    numIterations_.setGroupID("optimizer");
+    addProperty(relaxationFactor_);
+    relaxationFactor_.setGroupID("optimizer");
+    setPropertyGroupGuiName("optimizer", "Optimizer");
+
+    //metric_.addOption("violaWells", "Viola & Wells"); // needs more work...
+    metric_.addOption("meanSquares", "Mean Squares");
+    metric_.addOption("mattes", "Mattes");
+    metric_.addOption("meanSquaresHistogram", "Mean Squares Histogram");
+    metric_.addOption("normalizedCorrelation", "Normalized Correlation");
+    //metric_.addOption("correlationCoefficient", "Correlation Coefficient Histogram"); // needs more work...
+    metric_.addOption("gradientDifference", "Gradient Difference");
+    //metric_.addOption("kullbackLeibler", "Kullback-Leibler"); // needs more work...
+    metric_.onChange(CallMemberAction<MutualInformationRegistration>(this, &MutualInformationRegistration::onMetricChange) );
+    addProperty(metric_);
+    metric_.setGroupID("metric");
+    addProperty(numHistogramBins_);
+    numHistogramBins_.setGroupID("metric");
+    numHistogramBins_.setVisible(false);
+    addProperty(numSamples_);
+    numSamples_.setGroupID("metric");
+    numSamples_.setVisible(false);
+    addProperty(explicitPDF_);
+    explicitPDF_.setGroupID("metric");
+    explicitPDF_.setVisible(false);
+    addProperty(lambda_);
+    lambda_.setGroupID("metric");
+    lambda_.setVisible(false);
+    setPropertyGroupGuiName("metric", "Metric");
 
     addProperty(transformationMatrix_);
-    addProperty(numLevels_);
-    addProperty(numIterations_);
-    addProperty(numHistogramBins_);
-    addProperty(numSamples_);
-    addProperty(relaxationFactor_);
-    addProperty(explicitPDF_);
-
     addProperty(updateButton_);
     updateButton_.onChange(CallMemberAction<MutualInformationRegistration>(this, &MutualInformationRegistration::updateRegistration));
-    addProperty(resetButton_);
-    resetButton_.onChange(CallMemberAction<MutualInformationRegistration>(this, &MutualInformationRegistration::resetRegistration));
+    addProperty(stopButton_);
+    stopButton_.onChange(CallMemberAction<MutualInformationRegistration>(this, &MutualInformationRegistration::stopRegistration));
     addProperty(initializeButton_);
     initializeButton_.onChange(CallMemberAction<MutualInformationRegistration>(this, &MutualInformationRegistration::initializeRegistration));
-
-    transform_ = TransformType::New();
 }
 
 
 void MutualInformationRegistration::deinitialize() throw (tgt::Exception) {
     VolumeProcessor::deinitialize();
-
-    delete movingVolumeFloat_;
-    movingVolumeFloat_ = 0;
-
-    delete fixedVolumeFloat_;
-    fixedVolumeFloat_ = 0;
 }
 
 Processor* MutualInformationRegistration::create() const {
     return new MutualInformationRegistration();
 }
 
-std::string MutualInformationRegistration::getProcessorInfo() const {
-    return std::string("ITK test processor (median filter)");
+const VolumeBase* MutualInformationRegistration::getFixedVolume() const {
+    return fixedVolumeInport_.getData();
 }
 
-bool MutualInformationRegistration::isReady() const {
-    return (movingVolumeInport_.isReady() && fixedVolumeInport_.isReady());
+const VolumeBase* MutualInformationRegistration::getMovingVolume() const {
+    return fixedVolumeInport_.getData();
 }
 
 void MutualInformationRegistration::process() {
-    VolumeBase* outputVolume = 0;
-
-    if(fixedVolumeInport_.hasChanged()) {
-        delete fixedVolumeFloat_;
-        fixedVolumeFloat_ = 0;
+    if(tempResultUpdated_) {
+        transformationMatrix_.set(tempResult_);
+        tempResultUpdated_ = false;
     }
-
-    if(movingVolumeInport_.hasChanged()) {
-        delete movingVolumeFloat_;
-        movingVolumeFloat_ = 0;
-    }
-
-    mat4 m = constructTrafoMatrix();
-    calculateVoreenTrafo(m);
-
-    outputVolume = new VolumeDecoratorReplace(movingVolumeInport_.getData(), "transformation", new Mat4MetaData(transformationMatrix_.get()));
-    outport_.setData(outputVolume);
 }
 
+void MutualInformationRegistration::onMetricChange() {
+    numHistogramBins_.setVisible(false);
+    numSamples_.setVisible(false);
+    explicitPDF_.setVisible(false);
+    lambda_.setVisible(false);
 
-void MutualInformationRegistration::updateRegistration() {
-    if(!isReady())
-        return;
+    if(metric_.get() == "mattes") {
+        numHistogramBins_.setVisible(true);
+        numSamples_.setVisible(true);
+        explicitPDF_.setVisible(true);
+    }
+    else if(metric_.get() == "violaWells") {
+    }
+    else if(metric_.get() == "meanSquares") {
+    }
+    else if(metric_.get() == "meanSquaresHistogram") {
+        numHistogramBins_.setVisible(true);
+    }
+    else if(metric_.get() == "normalizedCorrelation") {
+        lambda_.setVisible(true);
+    }
+    else if(metric_.get() == "correlationCoefficient") {
+    }
+    else if(metric_.get() == "gradientDifference") {
+    }
+    else if(metric_.get() == "kullbackLeibler") {
+    }
+}
 
-    convertVolumes();
+template<class fixedType, class movingType>
+void MutualInformationRegistration::performRegistration(const VolumeBase* fixedVolume, const VolumeBase* movingVolume) {
+    typedef itk::Image<fixedType, 3> FixedImageType;
+    typedef itk::Image<movingType, 3> MovingImageType;
 
-    //typedef itk::RegularStepGradientDescentOptimizer OptimizerType;
     typedef itk::VersorRigid3DTransformOptimizer OptimizerType;
     typedef OptimizerType::ScalesType       OptimizerScalesType;
-    typedef itk::LinearInterpolateImageFunction< InternalImageType, double             > InterpolatorType;
-    typedef itk::MattesMutualInformationImageToImageMetric< InternalImageType, InternalImageType >   MetricType;
-    typedef itk::MultiResolutionImageRegistrationMethod< InternalImageType, InternalImageType >   RegistrationType;
+    typedef itk::LinearInterpolateImageFunction<MovingImageType, double> InterpolatorType;
+    typedef itk::MultiResolutionImageRegistrationMethod<FixedImageType, MovingImageType>   RegistrationType;
 
-    typedef itk::MultiResolutionPyramidImageFilter< InternalImageType, InternalImageType >   FixedImagePyramidType;
-    typedef itk::MultiResolutionPyramidImageFilter< InternalImageType, InternalImageType >   MovingImagePyramidType;
+    typedef itk::MultiResolutionPyramidImageFilter<FixedImageType, FixedImageType>   FixedImagePyramidType; // second argument necessary?
+    typedef itk::MultiResolutionPyramidImageFilter<MovingImageType, MovingImageType>   MovingImagePyramidType;
 
-    OptimizerType::Pointer      optimizer     = OptimizerType::New();
-    InterpolatorType::Pointer   interpolator  = InterpolatorType::New();
-    RegistrationType::Pointer   registration  = RegistrationType::New();
-    MetricType::Pointer         metric        = MetricType::New();
+    typename OptimizerType::Pointer      optimizer     = OptimizerType::New();
+    typename InterpolatorType::Pointer   interpolator  = InterpolatorType::New();
+    typename RegistrationType::Pointer   registration  = RegistrationType::New();
+    TransformType::Pointer      transform     = TransformType::New();
 
-    FixedImagePyramidType::Pointer fixedImagePyramid = FixedImagePyramidType::New();
-    MovingImagePyramidType::Pointer movingImagePyramid = MovingImagePyramidType::New();
+    typename FixedImagePyramidType::Pointer fixedImagePyramid = FixedImagePyramidType::New();
+    typename MovingImagePyramidType::Pointer movingImagePyramid = MovingImagePyramidType::New();
+
+    //---------------------------------------------------------------------------------------------
+    // Metric setup:
+
+    if(metric_.get() == "mattes") {
+        typedef itk::MattesMutualInformationImageToImageMetric< FixedImageType, MovingImageType >   MetricType;
+        typename MetricType::Pointer         metric        = MetricType::New();
+
+        metric->SetNumberOfHistogramBins(numHistogramBins_.get());
+
+        size_t numVoxels = hmul(fixedVolume->getDimensions());
+        metric->SetNumberOfSpatialSamples(numVoxels * (static_cast<float>(numSamples_.get()) / 100.0f));
+
+        metric->ReinitializeSeed( 76926294 );
+
+        //// Define whether to calculate the metric derivative by explicitly
+        //// computing the derivatives of the joint PDF with respect to the Transform
+        //// parameters, or doing it by progressively accumulating contributions from
+        //// each bin in the joint PDF.
+        metric->SetUseExplicitPDFDerivatives(explicitPDF_.get());
+
+        registration->SetMetric(metric);
+    }
+    else if(metric_.get() == "meanSquares") {
+        typedef itk::MeanSquaresImageToImageMetric< FixedImageType, MovingImageType >   MetricType;
+        typename MetricType::Pointer         metric        = MetricType::New();
+
+        registration->SetMetric(metric);
+    }
+    else if(metric_.get() == "meanSquaresHistogram") {
+        typedef itk::MeanSquaresHistogramImageToImageMetric< FixedImageType, MovingImageType >   MetricType;
+        typename MetricType::Pointer         metric        = MetricType::New();
+        itk::Array<unsigned long> ar(2);
+        ar(0) = numHistogramBins_.get();
+        ar(1) = numHistogramBins_.get();
+        metric->SetHistogramSize(ar);
+
+        registration->SetMetric(metric);
+    }
+    else if(metric_.get() == "normalizedCorrelation") {
+        typedef itk::NormalizedCorrelationImageToImageMetric< FixedImageType, MovingImageType >   MetricType;
+        typename MetricType::Pointer         metric        = MetricType::New();
+
+        registration->SetMetric(metric);
+    }
+    else if(metric_.get() == "normalizedCorrelation") {
+        typedef itk::MeanReciprocalSquareDifferenceImageToImageMetric< FixedImageType, MovingImageType >   MetricType;
+        typename MetricType::Pointer         metric        = MetricType::New();
+        metric->SetLambda(lambda_.get());
+
+        registration->SetMetric(metric);
+    }
+    else if(metric_.get() == "violaWells") {
+        typedef itk::MutualInformationImageToImageMetric< FixedImageType, MovingImageType >   MetricType;
+        typename MetricType::Pointer         metric        = MetricType::New();
+
+        registration->SetMetric(metric);
+    }
+    else if(metric_.get() == "kullbackLeibler") {
+        typedef itk::KullbackLeiblerCompareHistogramImageToImageMetric< FixedImageType, MovingImageType >   MetricType;
+        typename MetricType::Pointer         metric        = MetricType::New();
+
+        registration->SetMetric(metric);
+    }
+    else if(metric_.get() == "correlationCoefficient") {
+        typedef itk::CorrelationCoefficientHistogramImageToImageMetric< FixedImageType, MovingImageType >   MetricType;
+        typename MetricType::Pointer         metric        = MetricType::New();
+
+        registration->SetMetric(metric);
+    }
+    else if(metric_.get() == "gradientDifference") {
+        typedef itk::GradientDifferenceImageToImageMetric< FixedImageType, MovingImageType >   MetricType;
+        typename MetricType::Pointer         metric        = MetricType::New();
+
+        registration->SetMetric(metric);
+    }
+    else {
+        LERROR("Unknown metric!");
+        return;
+    }
+
+    //---------------------------------------------------------------------------------------------
 
     registration->SetOptimizer(optimizer);
-    registration->SetTransform(transform_);
+    registration->SetTransform(transform);
     registration->SetInterpolator(interpolator);
-    registration->SetMetric(metric);
     registration->SetFixedImagePyramid(fixedImagePyramid);
     registration->SetMovingImagePyramid(movingImagePyramid);
 
-    OptimizerScalesType optimizerScales( transform_->GetNumberOfParameters() );
+    OptimizerScalesType optimizerScales( transform->GetNumberOfParameters() );
 
-    float rotScale = 1.0 / 1000.0f;
-    optimizerScales[0] = 1.0f;
-    optimizerScales[1] = 1.0f;
-    optimizerScales[2] = 1.0f;
-    optimizerScales[3] = rotScale;
-    optimizerScales[4] = rotScale;
-    optimizerScales[5] = rotScale;
+    optimizerScales[0] = rotScale_.get();
+    optimizerScales[1] = rotScale_.get();
+    optimizerScales[2] = rotScale_.get();
+    optimizerScales[3] = 1.0f;
+    optimizerScales[4] = 1.0f;
+    optimizerScales[5] = 1.0f;
     optimizer->SetScales( optimizerScales );
-    optimizer->SetMaximumStepLength(0.2);
-    optimizer->SetMinimumStepLength(0.0001);
+    optimizer->SetMaximumStepLength(maxStepLength_.get());
+    optimizer->SetMinimumStepLength(minStepLength_.get());
+    //optimizer->MinimizeOn();
 
-    InternalImageType::Pointer fixed = voreenToITK<float>(fixedVolumeFloat_);
-    InternalImageType::Pointer moving = voreenToITK<float>(movingVolumeFloat_);
+    typename FixedImageType::Pointer fixed = voreenToITK<fixedType>(fixedVolume);
+    typename MovingImageType::Pointer moving = voreenToITK<movingType>(movingVolume);
     registration->SetFixedImage(fixed);
     registration->SetMovingImage(moving);
     registration->SetFixedImageRegion( fixed->GetBufferedRegion() );
 
-    registration->SetInitialTransformParameters( transform_->GetParameters() );
+    // we want to use the current matrix (in the property) as starting point:
 
-    metric->SetNumberOfHistogramBins(numHistogramBins_.get());
+    // get the matrix from prop and account for existing tranformation of fixed image:
+    tgt::mat4 m = calculateITKTrafo();
 
-    size_t numVoxels = hmul(fixedVolumeFloat_->getDimensions());
-    metric->SetNumberOfSpatialSamples(numVoxels * numSamples_.get());
+    // ITK (i.e., VersorRigid3DTransformOptimizer) needs a orthogonal matrix and checks this with high precision
+    // we therefore compute a polar decomposition of the existing matrix in double precision:
+    Eigen::Matrix3d a; // copy matrix to Eigen
+    a(0, 0) = m[0][0];
+    a(0, 1) = m[0][1];
+    a(0, 2) = m[0][2];
 
-    metric->ReinitializeSeed( 76926294 );
+    a(1, 0) = m[1][0];
+    a(1, 1) = m[1][1];
+    a(1, 2) = m[1][2];
 
-    //// Define whether to calculate the metric derivative by explicitly
-    //// computing the derivatives of the joint PDF with respect to the Transform
-    //// parameters, or doing it by progressively accumulating contributions from
-    //// each bin in the joint PDF.
-    metric->SetUseExplicitPDFDerivatives(explicitPDF_.get());
+    a(2, 0) = m[2][0];
+    a(2, 1) = m[2][1];
+    a(2, 2) = m[2][2];
+
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(a, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    Eigen::Vector3d rhs;
+    svd.solve(rhs);
+    Eigen::Matrix3d u = svd.matrixU();
+    Eigen::Matrix3d v = svd.matrixV();
+
+    Eigen::Matrix3d rot = u * v.transpose(); // rotation matrix with scaling/inaccuracies removed
+
+    TransformType::MatrixType mITK; // copy this to ITK
+    mITK[0][0] = rot(0, 0);
+    mITK[0][1] = rot(0, 1);
+    mITK[0][2] = rot(0, 2);
+
+    mITK[1][0] = rot(1, 0);
+    mITK[1][1] = rot(1, 1);
+    mITK[1][2] = rot(1, 2);
+
+    mITK[2][0] = rot(2, 0);
+    mITK[2][1] = rot(2, 1);
+    mITK[2][2] = rot(2, 2);
+
+    transform->SetMatrix(mITK);
+
+    TransformType::OutputVectorType trITK;
+    trITK[0] = m[0][3];
+    trITK[1] = m[1][3];
+    trITK[2] = m[2][3];
+    transform->SetTranslation(trITK);
+
+    registration->SetInitialTransformParameters( transform->GetParameters() );
 
     optimizer->SetNumberOfIterations(numIterations_.get());
-
     optimizer->SetRelaxationFactor(relaxationFactor_.get());
 
     // Create the Command observer and register it with the optimizer.
-    CommandIterationUpdate::Pointer observer = CommandIterationUpdate::New();
+    MutualInformationRegistrationObserver::Pointer observer = MutualInformationRegistrationObserver::New();
+    observer->setProcessor(this);
     optimizer->AddObserver( itk::IterationEvent(), observer );
 
     typedef RegistrationInterfaceCommand<RegistrationType> CommandType;
-    CommandType::Pointer command = CommandType::New();
+    typename CommandType::Pointer command = CommandType::New();
+    command->setMinStepLength(minStepLength_.get());
+    command->setMaxStepLength(maxStepLength_.get());
     registration->AddObserver( itk::IterationEvent(), command );
 
     registration->SetNumberOfLevels(numLevels_.get());
@@ -305,94 +481,145 @@ void MutualInformationRegistration::updateRegistration() {
     }
     catch( itk::ExceptionObject & err )
     {
-        std::cout << "ExceptionObject caught !" << std::endl;
-        std::cout << err << std::endl;
-        //return EXIT_FAILURE;
+        LERROR("ITK ExceptionObject caught!");
+        LERROR(err);
+        return;
     }
 
     ParametersType finalParameters = registration->GetLastTransformParameters();
-    transform_->SetParameters(finalParameters);
+    transform->SetParameters(finalParameters);
 
-    unsigned int numberOfIterations = optimizer->GetCurrentIteration();
-
-    double bestValue = optimizer->GetValue();
-
-    // Print out results
-    std::cout << "Result = " << std::endl;
-    std::cout << " Versor " << finalParameters[0] << " " << finalParameters[1] << " " << finalParameters[2] << std::endl;
-    std::cout << " Translation " << finalParameters[1] << " " << finalParameters[4] << " " << finalParameters[5] << std::endl;
-    std::cout << " Iterations    = " << numberOfIterations << std::endl;
-    std::cout << " Metric value  = " << bestValue          << std::endl;
-
-    invalidate(INVALID_RESULT);
+    lockMutex();
+    tempResult_ = calculateVoreenTrafo(itkToVoreen(transform));
+    tempResultUpdated_ = true;
+    invalidate();
+    unlockMutex();
 }
 
-mat4 MutualInformationRegistration::constructTrafoMatrix() {
-    //Construct matrix:
-    mat4 itkMat = mat4::identity;
-    itk::Point<double, 3> p;
-
-    p[0] = 0.0;
-    p[1] = 0.0;
-    p[2] = 0.0;
-    itk::Point<double, 3> p2 = transform_->TransformPoint(p);
-
-    itkMat.elem[3] = p2[0];
-    itkMat.elem[7] = p2[1];
-    itkMat.elem[11] = p2[2];
-
-    itk::Vector<double, 3> v;
-    v[0] = 1.0;
-    v[1] = 0.0;
-    v[2] = 0.0;
-    itk::Vector<double, 3> v2 = transform_->TransformVector(v);
-
-    itkMat.elem[0] = v2[0];
-    itkMat.elem[4] = v2[1];
-    itkMat.elem[8] = v2[2];
-
-    v[0] = 0.0;
-    v[1] = 1.0;
-    v[2] = 0.0;
-    v2 = transform_->TransformVector(v);
-
-    itkMat.elem[1] = v2[0];
-    itkMat.elem[5] = v2[1];
-    itkMat.elem[9] = v2[2];
-
-    v[0] = 0.0;
-    v[1] = 0.0;
-    v[2] = 1.0;
-    v2 = transform_->TransformVector(v);
-
-    itkMat.elem[2] = v2[0];
-    itkMat.elem[6] = v2[1];
-    itkMat.elem[10] = v2[2];
-
-    return itkMat;
+void MutualInformationRegistration::stopRegistration() {
+    workerThread_.interrupt();
 }
 
-void MutualInformationRegistration::resetRegistration() {
-    transform_->SetIdentity();
-
-    invalidate(INVALID_RESULT);
-}
-
-void MutualInformationRegistration::initializeRegistration() {
+void MutualInformationRegistration::updateRegistration() {
     if(!isReady())
         return;
 
-    convertVolumes();
-    resetRegistration();
+    if(!workerThread_.timed_join(boost::posix_time::seconds(0))) {
+        LERROR("Thread is already running!");
+        return;
+    }
 
-    InternalImageType::Pointer fixed = voreenToITK<float>(fixedVolumeFloat_);
-    InternalImageType::Pointer moving = voreenToITK<float>(movingVolumeFloat_);
+    const VolumeBase* fixedVolume = fixedVolumeInport_.getData();
+    const VolumeBase* movingVolume = movingVolumeInport_.getData();
 
-    typedef itk::CenteredTransformInitializer< TransformType, InternalImageType, InternalImageType >  TransformInitializerType;
+    if(dynamic_cast<const VolumeRAM_UInt16*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitch<uint16_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Int16*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitch<int16_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_UInt8*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitch<uint8_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Int8*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitch<int8_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_UInt32*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitch<uint32_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Int32*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitch<int32_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Float*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitch<float>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Double*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitch<double>(fixedVolume, movingVolume);
+    else {
+        LERROR("Unsupported fixed volume type!");
+    }
 
-    TransformInitializerType::Pointer initializer = TransformInitializerType::New();
+}
 
-    initializer->SetTransform(transform_);
+template<class fixedType>
+void MutualInformationRegistration::typeSwitch(const VolumeBase* fixedVolume, const VolumeBase* movingVolume) {
+    if(dynamic_cast<const VolumeRAM_UInt16*>(movingVolume->getRepresentation<VolumeRAM>()))
+        workerThread_ = boost::thread(&MutualInformationRegistration::performRegistration<fixedType, uint16_t>, this, fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Int16*>(movingVolume->getRepresentation<VolumeRAM>()))
+        workerThread_ = boost::thread(&MutualInformationRegistration::performRegistration<fixedType, int16_t>, this, fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_UInt8*>(movingVolume->getRepresentation<VolumeRAM>()))
+        workerThread_ = boost::thread(&MutualInformationRegistration::performRegistration<fixedType, uint8_t>, this, fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Int8*>(movingVolume->getRepresentation<VolumeRAM>()))
+        workerThread_ = boost::thread(&MutualInformationRegistration::performRegistration<fixedType, int8_t>, this, fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_UInt32*>(movingVolume->getRepresentation<VolumeRAM>()))
+        workerThread_ = boost::thread(&MutualInformationRegistration::performRegistration<fixedType, uint32_t>, this, fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Int32*>(movingVolume->getRepresentation<VolumeRAM>()))
+        workerThread_ = boost::thread(&MutualInformationRegistration::performRegistration<fixedType, int32_t>, this, fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Float*>(movingVolume->getRepresentation<VolumeRAM>()))
+        workerThread_ = boost::thread(&MutualInformationRegistration::performRegistration<fixedType, float>, this, fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Double*>(movingVolume->getRepresentation<VolumeRAM>()))
+        workerThread_ = boost::thread(&MutualInformationRegistration::performRegistration<fixedType, double>, this, fixedVolume, movingVolume);
+    else {
+        LERROR("Unsupported moving volume type!");
+    }
+}
+
+mat4 MutualInformationRegistration::itkToVoreen(TransformType::Pointer t) {
+    mat4 m = mat4::identity;
+
+    TransformType::MatrixType mITK;
+    mITK = t->GetMatrix();
+    mITK[0][0] = m[0][0];
+    mITK[0][1] = m[0][1];
+    mITK[0][2] = m[0][2];
+
+    mITK[1][0] = m[1][0];
+    mITK[1][1] = m[1][1];
+    mITK[1][2] = m[1][2];
+
+    mITK[2][0] = m[2][0];
+    mITK[2][1] = m[2][1];
+    mITK[2][2] = m[2][2];
+
+    TransformType::OutputVectorType trITK;
+    trITK = t->GetTranslation();
+    m[0][3] = trITK[0];
+    m[1][3] = trITK[1];
+    m[2][3] = trITK[2];
+
+    return m;
+}
+
+template<class fixedType>
+void MutualInformationRegistration::typeSwitchInit(const VolumeBase* fixedVolume, const VolumeBase* movingVolume) {
+    if(dynamic_cast<const VolumeRAM_UInt16*>(movingVolume->getRepresentation<VolumeRAM>()))
+        performInitialization<fixedType, uint16_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Int16*>(movingVolume->getRepresentation<VolumeRAM>()))
+        performInitialization<fixedType, int16_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_UInt8*>(movingVolume->getRepresentation<VolumeRAM>()))
+        performInitialization<fixedType, uint8_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Int8*>(movingVolume->getRepresentation<VolumeRAM>()))
+        performInitialization<fixedType, int8_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_UInt32*>(movingVolume->getRepresentation<VolumeRAM>()))
+        performInitialization<fixedType, uint32_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Int32*>(movingVolume->getRepresentation<VolumeRAM>()))
+        performInitialization<fixedType, int32_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Float*>(movingVolume->getRepresentation<VolumeRAM>()))
+        performInitialization<fixedType, float>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Double*>(movingVolume->getRepresentation<VolumeRAM>()))
+        performInitialization<fixedType, double>(fixedVolume, movingVolume);
+    else {
+        LERROR("Unsupported moving volume type!");
+    }
+}
+
+template<class fixedType, class movingType>
+void MutualInformationRegistration::performInitialization(const VolumeBase* fixedVolume, const VolumeBase* movingVolume) {
+    typedef itk::Image<fixedType, 3> FixedImageType;
+    typedef itk::Image<movingType, 3> MovingImageType;
+
+    typename FixedImageType::Pointer fixed = voreenToITK<fixedType>(fixedVolume);
+    typename MovingImageType::Pointer moving = voreenToITK<movingType>(movingVolume);
+
+    typedef itk::CenteredTransformInitializer< TransformType, FixedImageType, MovingImageType >  TransformInitializerType;
+
+    typename TransformInitializerType::Pointer initializer = TransformInitializerType::New();
+    TransformType::Pointer      transform     = TransformType::New();
+
+    initializer->SetTransform(transform);
     initializer->SetFixedImage(fixed);
     initializer->SetMovingImage(moving);
 
@@ -408,84 +635,66 @@ void MutualInformationRegistration::initializeRegistration() {
     axis[2] = 1.0;
     const double angle = 0;
     rotation.Set(  axis, angle  );
-    transform_->SetRotation( rotation );
+    transform->SetRotation( rotation );
 
-    invalidate(INVALID_RESULT);
+    transformationMatrix_.set(calculateVoreenTrafo(itkToVoreen(transform)));
 }
 
-void MutualInformationRegistration::convertVolumes() {
+void MutualInformationRegistration::initializeRegistration() {
+    if(!isReady())
+        return;
+
     const VolumeBase* fixedVolume = fixedVolumeInport_.getData();
     const VolumeBase* movingVolume = movingVolumeInport_.getData();
 
-    if(!fixedVolumeFloat_) {
-        //fixedVolumeFloat_ = new VolumeRAM_Float(fixedVolume->getDimensions(), fixedVolume->getSpacing(), fixedVolume->getTransformation());
-        VolumeOperatorConvert voConvert;
-        fixedVolumeFloat_ = voConvert.apply<float>(fixedVolume);
-    }
-
-    if(!movingVolumeFloat_) {
-        //movingVolumeFloat_ = new VolumeRAM_Float(movingVolume->getDimensions(), movingVolume->getSpacing(), movingVolume->getTransformation());
-        VolumeOperatorConvert voConvert;
-        movingVolumeFloat_ = voConvert.apply<float>(movingVolume);
+    if(dynamic_cast<const VolumeRAM_UInt16*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitchInit<uint16_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Int16*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitchInit<int16_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_UInt8*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitchInit<uint8_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Int8*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitchInit<int8_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_UInt32*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitchInit<uint32_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Int32*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitchInit<int32_t>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Float*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitchInit<float>(fixedVolume, movingVolume);
+    else if(dynamic_cast<const VolumeRAM_Double*>(fixedVolume->getRepresentation<VolumeRAM>()))
+        typeSwitchInit<double>(fixedVolume, movingVolume);
+    else {
+        LERROR("Unsupported fixed volume type!");
     }
 }
 
-void MutualInformationRegistration::calculateVoreenTrafo(const mat4& itkMatrix) {
+tgt::mat4 MutualInformationRegistration::calculateVoreenTrafo(const mat4& itkMatrix) {
     const VolumeBase* fixed = fixedVolumeInport_.getData();
 
     mat4 invertedITKTransform;
     bool success = itkMatrix.invert(invertedITKTransform);
     if(!success) {
         LERROR("Failed to invert ITK transformation matrix!");
-        return;
+        return tgt::mat4::identity;
     }
     mat4 f_physicalToWorld = fixed->getPhysicalToWorldMatrix();
 
-    mat4 voreenMatrix = f_physicalToWorld * invertedITKTransform;
-    transformationMatrix_.set(voreenMatrix);
-    LINFO("Setting matrix");
+    return f_physicalToWorld * invertedITKTransform;
 }
 
+tgt::mat4 MutualInformationRegistration::calculateITKTrafo() {
+    const VolumeBase* fixed = fixedVolumeInport_.getData();
+    const VolumeBase* moving = movingVolumeInport_.getData();
 
-void MutualInformationRegistration::serialize(XmlSerializer& s) const {
-    VolumeProcessor::serialize(s);
+    mat4 t = transformationMatrix_.get();
+    mat4 tInv;
+    bool success = t.invert(tInv);
+    if(!success) {
+        LERROR("Failed to invert transformation matrix!");
+        return tgt::mat4::identity;
+    }
 
-    ParametersType parameters = transform_->GetParameters();
-    ParametersType fixedParameters = transform_->GetFixedParameters();
-
-    std::vector<double> params;
-    std::vector<double> fixedParams;
-
-    for(size_t i=0; i<parameters.GetSize(); i++)
-        params.push_back(parameters[i]);
-
-    for(size_t i=0; i<fixedParameters.GetSize(); i++)
-        fixedParams.push_back(fixedParameters[i]);
-
-    s.serialize("parameters", params);
-    s.serialize("fixedParameters", fixedParams);
-}
-
-void MutualInformationRegistration::deserialize(XmlDeserializer& s) {
-    VolumeProcessor::deserialize(s);
-
-    ParametersType parameters = transform_->GetParameters();
-    ParametersType fixedParameters = transform_->GetFixedParameters();
-
-    std::vector<double> params;
-    std::vector<double> fixedParams;
-
-    s.deserialize("parameters", params);
-    s.deserialize("fixedParameters", fixedParams);
-
-    for(size_t i=0; i<parameters.GetSize(); i++)
-        parameters[i] = params[i];
-
-    for(size_t i=0; i<fixedParameters.GetSize(); i++)
-        fixedParameters[i] = fixedParams[i];
-
-    transform_->SetParameters(parameters);
-    transform_->SetFixedParameters(fixedParameters);
+    return tInv * fixed->getPhysicalToWorldMatrix();
 }
 
 }   // namespace

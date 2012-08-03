@@ -81,6 +81,8 @@ public:
      */
     void clearTarget();
 
+    virtual void clear();
+
     /**
      * Returns true, if the port is connected and (if it is an inport) has a valid rendering.
      */

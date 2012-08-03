@@ -26,11 +26,17 @@
 #include "cpuraycaster.h"
 #include "voreen/core/datastructures/transfunc/transfunc2dprimitives.h"
 
+#ifdef VRN_MODULE_OPENMP
+#include "omp.h"
+#endif
+
 namespace voreen {
 
 using tgt::vec3;
 using tgt::vec4;
 using tgt::svec3;
+
+const float SAMPLING_BASE_INTERVAL_RCP = 200.0;
 
 CPURaycaster::CPURaycaster()
   : VolumeRaycaster()
@@ -115,8 +121,15 @@ void CPURaycaster::process() {
         exitPort_.getColorTexture()->downloadTextureToBuffer(GL_RGBA, GL_FLOAT));
     LGL_ERROR;
 
+    // retrieve tf texture
+    tgt::Texture* tfTexture = transferFunc_.get()->getTexture();
+    tfTexture->downloadTexture();
+
     // iterate over viewport and perform ray casting for each fragment
     for (int y=0; y < entryPort_.getSize().y; ++y) {
+#ifdef VRN_MODULE_OPENMP
+#pragma omp parallel for schedule(dynamic) shared(output,entryBuffer,exitBuffer,tfTexture,y)
+#endif
         for (int x=0; x < entryPort_.getSize().x; ++x) {
             vec4 gl_FragColor = vec4(0.f);
             int p = (y * entryPort_.getSize().x + x);
@@ -129,7 +142,7 @@ void CPURaycaster::process() {
             }
             else {
                 //fragCoords are lying inside the boundingbox
-                gl_FragColor = directRendering(frontPos.xyz(), backPos.xyz());
+                gl_FragColor = directRendering(frontPos.xyz(), backPos.xyz(), tfTexture);
             }
 
             output[p] = gl_FragColor;
@@ -148,7 +161,7 @@ void CPURaycaster::process() {
     LGL_ERROR;
 }
 
-vec4 CPURaycaster::directRendering(const vec3& first, const vec3& last) {
+vec4 CPURaycaster::directRendering(const vec3& first, const vec3& last, tgt::Texture* tfTexture) {
 
     tgtAssert(transferFunc_.get(), "no transfunc");
 
@@ -169,10 +182,6 @@ vec4 CPURaycaster::directRendering(const vec3& first, const vec3& last) {
 
     // use dimension with the highest resolution for calculating the sampling step size
     float samplingStepSize = 1.f / (tgt::max(volDim) * samplingRate_.get());
-
-    // retrieve tf texture
-    tgt::Texture* tfTexture = transferFunc_.get()->getTexture();
-    tfTexture->downloadTexture();
 
     // calculate ray parameters
     float tend;
@@ -229,10 +238,15 @@ vec4 CPURaycaster::directRendering(const vec3& first, const vec3& last) {
         }
 
         // perform compositing
-        if (color.a > 0.0f) {
-            // multiply alpha by samplingStepSize
+        if (color.a > 0.f) {
+
+            // apply opacity correction to accomodate for variable sampling intervals
+            color.a = 1.f - pow(1.f - color.a, samplingStepSize * SAMPLING_BASE_INTERVAL_RCP);
+
+            /*// multiply alpha by samplingStepSize
             // to accommodate for variable sampling rate
-            color.a *= samplingStepSize*200.f;
+            color.a *= samplingStepSize*200.f;*/
+
             vec3 result_rgb = vec3(result.elem) + (1.0f - result.a) * color.a * vec3(color.elem);
             result.a = result.a + (1.0f - result.a) * color.a;
 

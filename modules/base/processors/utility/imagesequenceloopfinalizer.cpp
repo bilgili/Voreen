@@ -91,6 +91,8 @@ void ImageSequenceLoopFinalizer::process() {
     // last iteration: image sequence is complete => write it to outport
     if (loopOutport_.getLoopIteration() == loopOutport_.getNumLoopIterations()-1) {
         outport_.setData(imageSequence_, false);
+    } else {
+        loopOutport_.invalidate();
     }
 
     LGL_ERROR;

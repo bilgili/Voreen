@@ -107,7 +107,7 @@ float VolumeHistogramIntensity::getNormalized(float i) const {
 }
 
 float VolumeHistogramIntensity::getLogNormalized(int i) const {
-     return (logf(static_cast<float>(1+hist_.getBucket(i)) ) / log( static_cast<float>(1+hist_.getMaxBucket())));
+     return (logf(static_cast<float>(1+hist_.getBucket(i)) ) / logf( static_cast<float>(1+hist_.getMaxBucket())));
 }
 
 float VolumeHistogramIntensity::getLogNormalized(float i) const {

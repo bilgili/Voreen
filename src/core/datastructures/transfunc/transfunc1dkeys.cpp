@@ -566,7 +566,6 @@ bool TransFunc1DKeys::loadTextTable(const std::string& filename) {
         return true;
     }
     else {
-        fclose(file);
         LWARNING("unable to open transfer function: " << filename);
         return false;
     }

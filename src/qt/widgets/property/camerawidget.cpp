@@ -137,11 +137,11 @@ void CameraWidget::createWidgets() {
     upBox->setLayout(upLayout);
 
     //cameraPosition_ = new FloatVec3Property("Position", "Position", tgt::vec3(0.0f), tgt::vec3(-FLT_MAX), tgt::vec3(FLT_MAX));
-    cameraPosition_ = new FloatVec3Property("Position", "Position", tgt::vec3(0.0f), tgt::vec3(-500.0f), tgt::vec3(500.0f));
+    cameraPosition_ = new FloatVec3Property("Position", "Position", tgt::vec3(0.0f), tgt::vec3(-5000.0f), tgt::vec3(5000.0f));
     cameraPosition_->set(cameraProp_->get().getPosition());
 
     //focusVector_ = new FloatVec3Property("Focus", "Focus", tgt::vec3(0.0f), tgt::vec3(-FLT_MAX), tgt::vec3(FLT_MAX));
-    focusVector_ = new FloatVec3Property("Focus", "Focus", tgt::vec3(0.0f), tgt::vec3(-500.0f), tgt::vec3(500.0f));
+    focusVector_ = new FloatVec3Property("Focus", "Focus", tgt::vec3(0.0f), tgt::vec3(-5000.0f), tgt::vec3(5000.0f));
     focusVector_->set(cameraProp_->get().getFocus());
 
     upVector_ = new FloatVec3Property("Upvector", "Upvector", tgt::vec3(0.0f), tgt::vec3(-1.0f), tgt::vec3(1.0f));

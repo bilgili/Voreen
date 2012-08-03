@@ -169,7 +169,7 @@ std::vector<std::string> strSplit(const std::string& str, char delim) {
     return elems;
 }
 
-bool endsWith(const std::string input, const std::string ending) {
+bool endsWith(const std::string& input, const std::string& ending) {
     size_t li = input.length();
     size_t le = ending.length();
     if(li >= le) {
@@ -183,12 +183,12 @@ bool endsWith(const std::string input, const std::string ending) {
         return false;
 }
 
-bool startsWith(const std::string input, const std::string start) {
+bool startsWith(const std::string& input, const std::string& start) {
     size_t li = input.length();
     size_t ls = start.length();
     if(li >= ls) {
-        for(size_t i=0; i<ls; i++) {
-            if(start[i] != input[i])
+        for (size_t i=0; i<ls; i++) {
+            if (start[i] != input[i])
                 return false;
         }
         return true;

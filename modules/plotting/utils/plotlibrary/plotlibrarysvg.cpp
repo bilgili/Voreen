@@ -23,16 +23,20 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#include "plotlibrarylatex.h"
+#include "plotlibrarysvg.h"
 
-#include "plotlibrarylatexrender.h"
-#include "plotrow.h"
+//#include "functionlibrary.h"
+#include "../../datastructures/plotrow.h"
+//#include "../interaction/plotpickingmanager.h"
+#include "plotlibrarysvgrender.h"
 
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/version.h"
 
+//#include "tgt/glmath.h"
 #include "tgt/tgt_math.h"
 #include "tgt/spline.h"
+//#include "tgt/quadric.h"
 #include "tgt/matrix.h"
 #include "tgt/vector.h"
 
@@ -45,17 +49,56 @@
 
 namespace voreen {
 
-const std::string PlotLibraryLatex::loggerCat_("voreen.plotting.PlotLibraryLatex");
+//namespace {
+///// compares pair<plot_t, color> but only the plot_t is used. We need it to order bars
+//struct MergedBarSorter {
+//    bool operator() (std::pair<plot_t, tgt::Color> a, std::pair<plot_t, tgt::Color> b) const {
+//        if (a.first >= 0 || b.first >= 0)
+//            return (a.first < b.first);
+//        else
+//            return (b.first < a.first);
+//    };
+//} mergedBarSorter;
+//};
 
-PlotLibraryLatex::PlotLibraryLatex()
+const std::string PlotLibrarySvg::loggerCat_("voreen.plotting.PlotLibrarySvg");
+
+PlotLibrarySvg::PlotLibrarySvg()
     : PlotLibraryFileBase()
     , plotLabelGroup_(&labelFont_, 5, tgt::Bounds(), tgt::Color(1, 1, 1, 0.75))
     , lineLabelGroup_(&labelFont_, 6, tgt::Bounds())
     , xAxisLabelGroup_(&labelFont_, 10, tgt::Bounds())
     , axisLabelGroup_(&labelFont_, 6)
-    , latexColor_(0.f,0.f,0.f,1.f)
+    , svgColor_(0.f,0.f,0.f,1.f)
     , textureNumber_(0)
+    , fountNumberCounter_(0)
     , renderVector_()
+    //, dimension_(TWO)
+    //, drawingColor_(0.0f, 0.0f, 0.0f, 1.0f)
+    //, fillColor_(0.0f, 0.0f, 0.0f, 0.5f)
+    //, fontColor_(0.0f, 0.0f, 0.0f, 1.0f)
+    //, highlightColor_(1.0f, 0.95f, 0.9f, 0.5f)
+    //, colorMap_(ColorMap::createColdHot())
+    //, minGlyphSize_(1.0f)
+    //, maxGlyphSize_(1.0f)
+    //, lineWidth_(1.0f)
+    //, barWidth_(0.5)
+    //, axesWidth_(1.0f)
+    //, fontSize_(10)
+    //, squeezeFactor_(1.0)
+    //, lineStyle_(PlotEntitySettings::CONTINUOUS)
+    //, glyphStyle_(PlotEntitySettings::POINT)
+    //, barMode_(GROUPED)
+    //, marginLeft_(60)
+    //, marginRight_(100)
+    //, marginBottom_(50)
+    //, marginTop_(50)
+    //, shear_(tgt::vec2(0.f,0.f))
+    //, lightingFlag_(false)
+    //, orthographicCameraFlag_(true)
+    //, texture_(0)
+    //, ppm_(NULL)
+    //, usePlotPickingManager_(false)
 {
     labelFont_.setSize(8);
     domain_[0] = Interval<plot_t>(0, 1, false, false);
@@ -69,73 +112,142 @@ PlotLibraryLatex::PlotLibraryLatex()
     minimumScaleStep_[2] = 40;
 }
 
-PlotLibraryLatex::~PlotLibraryLatex() {
+PlotLibrarySvg::~PlotLibrarySvg() {
     for (size_t i = 0; i < renderVector_.size(); ++i)
         delete renderVector_[i];
     renderVector_.clear();
 }
 
-void PlotLibraryLatex::beforeRender() {
-    latexOutput_.str("");
-    latexOutput_.clear();
-    latexColor_ = drawingColor_;
-    latexOutput_ << "%LaTeX with PSTricks extensions\n"
-        << "%%Creator: http://www.voreen.org " << VoreenVersion::getVersion() << "\n"
-        << "%%copyright: " << VoreenVersion::getCopyright() << "\n"
-        << "%%Please note this file requires PSTricks extensions\n"
-        << "\\documentclass{article}\n"
-        << "\\usepackage[utf8]{inputenc}\n"
-        << "\\pagestyle{empty}\n"
-        << "\\usepackage{pstricks}\n"
-        << "\\usepackage{pstricks-add}\n"
-        << "\\usepackage{pst-all}\n"
-        << "\\usepackage{color}\n"
-        << "\\usepackage{multido}\n"
-        << "\\usepackage{geometry}\n"
-        << "\\geometry{a2paper,left=10mm,right=10mm, top=1cm, bottom=2cm}\n"
-        << "\\begin{document}\n"
-        << "\\psset{xunit=.75pt,yunit=.75pt,runit=.75pt}\n"
-        << "\\begin{pspicture}(" << windowSize_.x << "," << windowSize_.y << ")\n";
+void PlotLibrarySvg::beforeRender() {
+    svgOutput_.str("");
+    svgOutput_.clear();
+    fountNumberCounter_ = 0;
+    svgColor_ = drawingColor_;
+    svgOutput_ << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        << "<!-- Created with Voreen " << VoreenVersion::getVersion() << " (http://www.voreen.org/) -->\n\n"
+        << "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n"
+        << "<svg xmlns=\"http://www.w3.org/2000/svg\"\n"
+        << "  xmlns:xlink=\"http://www.w3.org/1999/xlink\" xmlns:ev=\"http://www.w3.org/2001/xml-events\"\n"
+        << "  xmlns:voreen=\"http://www.voreen.org\"\n"
+        << "  version=\"1.1\" baseProfile=\"full\"\n"
+        << "  width=\"" << windowSize_.x << "px\" height=\"" << windowSize_.y << "px\" "
+        << "  viewBox=\"0 0 " << windowSize_.x << " " << windowSize_.y << "\" \n"
+        << "  voreen:version=\"" << VoreenVersion::getVersion() << "\"\n"
+        << "  voreen:copyright=\"" << VoreenVersion::getCopyright() << "\""
+        << " >\n"
+        << "<title id=\"title\">" << VoreenApplication::app()->getDisplayName() << " " << outputFile_ << " </title>\n"
+        << "<desc>Voreen PlotSVG-Output-File</desc>\n"
+        << "<defs>\n"
+        << "  <clipPath id=\"cp0\">\n"
+        << "    <rect x=\"" << -1 << "\" y=\"" << -1
+        << "\" width=\"" << windowSize_.x + 2
+        << "\" height=\"" << windowSize_.y + 2 << "\" />\n"
+        << "  </clipPath>\n"
+        << "  <clipPath id=\"cp1\">\n"
+        << "    <rect x=\"" << marginLeft_ << "\" y=\"" << marginBottom_
+        << "\" width=\"" << windowSize_.x - (marginLeft_+marginRight_)
+        << "\" height=\"" << windowSize_.y - (marginTop_+marginBottom_) << "\" />\n"
+        << "  </clipPath>\n"
+        << "  <clipPath id=\"cp2\">\n"
+        << "    <rect x=\"" << marginLeft_ - maxGlyphSize_/2.0 << "\" y=\"" << marginBottom_  - maxGlyphSize_/2.0
+        << "\" width=\"" << windowSize_.x - (marginLeft_+marginRight_) + maxGlyphSize_
+        << "\" height=\"" << windowSize_.y - (marginTop_+marginBottom_) + maxGlyphSize_  << "\" />\n"
+        << "  </clipPath>\n"
+        << "</defs>\n"
+        << "<g transform=\" translate(0 " << windowSize_.y << ") scale(1 -1)\">\n";
+     //   << "@font-face {\n"
+     //   << "  font-family: 'VoreenFontFamily';\n"
+     //   << "  src: url('font')  format('truetype');\n"
+     //   << "}\n";
     if (viewPortClipping_) {
-        latexOutput_ << "\\psclip{\\psframe[strokeopacity=0](-1,-1)(" << windowSize_.x+1
-        << "," << windowSize_.y+1 << ")}\n";
+        std::vector< Projection_Coordinates > points;
+        tgt::Vector3<plot_t> coor = tgt::Vector3<plot_t>(0,0,0);
+        points.push_back(Projection_Coordinates(coor,coor,coor));
+        coor = tgt::Vector3<plot_t>(windowSize_.x,0,0);
+        points.push_back(Projection_Coordinates(coor,coor,coor));
+        coor = tgt::Vector3<plot_t>(windowSize_.x,windowSize_.y,0);
+        points.push_back(Projection_Coordinates(coor,coor,coor));
+        coor = tgt::Vector3<plot_t>(0,windowSize_.y,0);
+        points.push_back(Projection_Coordinates(coor,coor,coor));
+        PlotLibrarySvgRenderPolygon polygon = PlotLibrarySvgRenderPolygon(points,tgt::Color(),tgt::Color(1,1,0.995,0.005),0,1,0,PlotEntitySettings::FILLNONE);
+        svgOutput_ << polygon.render();
     }
-    std::vector< PlotLibraryFileBase::Projection_Coordinates > points;
-    tgt::Vector3<plot_t> coor = tgt::Vector3<plot_t>(0,0,0);
-    points.push_back(Projection_Coordinates(coor,coor,coor));
-    coor = tgt::Vector3<plot_t>(windowSize_.x,0,0);
-    points.push_back(Projection_Coordinates(coor,coor,coor));
-    coor = tgt::Vector3<plot_t>(windowSize_.x,windowSize_.y,0);
-    points.push_back(Projection_Coordinates(coor,coor,coor));
-    coor = tgt::Vector3<plot_t>(0,windowSize_.y,0);
-    points.push_back(Projection_Coordinates(coor,coor,coor));
-    PlotLibraryLatexRenderPolygon polygon = PlotLibraryLatexRenderPolygon(points,tgt::Color(0,0,0,0),tgt::Color(1,1,0.995,0.005),0,1,0,PlotEntitySettings::FILLNONE);
-    latexOutput_ << polygon.render();
 }
-namespace {
-    struct PlotLibraryLatexSorter {
-        bool operator() (PlotLibraryLatexRender* a, PlotLibraryLatexRender* b) const {
-            return a->avgValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::Z_AXIS) > b->avgValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::Z_AXIS);
-        };
-    } PlotLibraryLatexSorter;
-};
 
-void PlotLibraryLatex::afterRender() {
+bool PlotLibrarySvg::PlotLibrarySvgSorter::operator() (PlotLibrarySvgRender* a, PlotLibrarySvgRender* b) const {
+    PlotLibrarySvgRenderLine* line1 = 0;
+    PlotLibrarySvgRenderLine* line2 = 0;
+    PlotLibrarySvgRenderPolygon* polygon1 = 0;
+    PlotLibrarySvgRenderPolygon* polygon2 = 0;
+    line1 = dynamic_cast<PlotLibrarySvgRenderLine*>(a);
+    line2 = dynamic_cast<PlotLibrarySvgRenderLine*>(b);
+    polygon1 = dynamic_cast<PlotLibrarySvgRenderPolygon*>(a);
+    polygon2 = dynamic_cast<PlotLibrarySvgRenderPolygon*>(b);
+    bool switched = false;
+    if ((line2 != 0) && (polygon1 != 0)) {
+        line1 = line2;
+        line2 = 0;
+        polygon2 = polygon1;
+        polygon1 = 0;
+        switched = true;
+    }
+    if ((line1 != 0) && (line2 != 0)) {
+        return a->avgValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::Z_AXIS) > b->avgValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::Z_AXIS);
+    }
+    else if ((line1 != 0) && (polygon2 != 0)) {
+        //return a->avgValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::Z_AXIS) > b->avgValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::Z_AXIS);
+        std::vector< tgt::Vector3<plot_t> > linePoints = line1->getPoints(PlotLibraryFileBase::PROJECTION);
+        std::vector< tgt::Vector2<plot_t> > linePoints2D, polygonPoints2D;
+        tgt::Vector2<plot_t> intersect;
+        tgt::Vector3<plot_t> intersectPointPolygon;
+        linePoints2D.push_back(linePoints[0].xy());
+        linePoints2D.push_back(linePoints[1].xy());
+        std::vector< tgt::Vector3<plot_t> > polygonPoints = polygon2->getPoints(PlotLibraryFileBase::PROJECTION);
+        for (size_t i = 0; i < polygonPoints.size(); ++i) {
+            polygonPoints2D.clear();
+            polygonPoints2D.push_back(polygonPoints[i].xy());
+            polygonPoints2D.push_back(polygonPoints[(i+1)%(polygonPoints.size()-1)].xy());
+            if (PlotLibraryFileBase::intersect_Ray_Ray(linePoints2D,polygonPoints2D,&intersect) == 1) {
+                if (intersect.x > 0 && intersect.x < 1 && intersect.y > 0 && intersect.y < 1) {
+                    intersectPointPolygon = polygonPoints[i] + intersect.x* (polygonPoints[(i+1)%(polygonPoints.size()-1)]-polygonPoints[i]);
+                    if (switched)
+                        return intersectPointPolygon.z > line1->getDeepValueAtAlpha(PlotLibraryFileBase::PROJECTION,intersect.y);
+                    else
+                        return intersectPointPolygon.z < line1->getDeepValueAtAlpha(PlotLibraryFileBase::PROJECTION,intersect.y);
+                }
+            }
+        }
+        //intersect = tgt::Vector2<plot_t>(polygon2->avgValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::X_AXIS),
+        //    polygon2->avgValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::Y_AXIS));
+        //if (intersect.x >= line1->minValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::X_AXIS) &&
+        //    intersect.x <= line1->maxValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::X_AXIS) &&
+        //    intersect.y >= line1->minValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::Y_AXIS) &&
+        //    intersect.y <= line1->maxValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::Y_AXIS)) {
+        //    return line1->getDeepValueAtValue(PlotLibraryFileBase::PROJECTION,intersect) > b->avgValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::Z_AXIS);
+        //}
+    }
+    return a->avgValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::Z_AXIS) > b->avgValue(PlotLibraryFileBase::PROJECTION,PlotLibrary::Z_AXIS);
+}
+
+
+
+
+void PlotLibrarySvg::afterRender() {
     if (dimension_ == THREE) {
-        PlotLibraryLatexRenderLine* line;
-        PlotLibraryLatexRenderPolygon* polygon;
+        PlotLibrarySvgRenderLine* line;
+        PlotLibrarySvgRenderPolygon* polygon;
         std::vector< tgt::Vector3<plot_t> > linePoints, polygonpoints, trianglePoints;
         std::vector< PlotLibraryFileBase::Projection_Coordinates > linecutPoints;
         tgt::Vector3<plot_t> result = tgt::Vector3<plot_t>();
-        std::vector< PlotLibraryLatexRender* >::iterator svgit;
-        std::vector< PlotLibraryLatexRender* > newLines, cutLines;
+        std::vector< PlotLibrarySvgRender* >::iterator svgit;
+        std::vector< PlotLibrarySvgRender* > newLines, cutLines;
         svgit = renderVector_.begin();
         while (svgit < renderVector_.end()) {
-            line = dynamic_cast<PlotLibraryLatexRenderLine*>(*svgit);
+            line = dynamic_cast<PlotLibrarySvgRenderLine*>(*svgit);
             if (line != 0) {
                 linePoints = line->getPoints(PlotLibraryFileBase::ORIGIN);
                 for (size_t j = 0; j < renderVector_.size(); ++j) {
-                    polygon = dynamic_cast<PlotLibraryLatexRenderPolygon*>(renderVector_[j]);
+                    polygon = dynamic_cast<PlotLibrarySvgRenderPolygon*>(renderVector_[j]);
                     if (polygon != 0) {
                         polygonpoints = polygon->getPoints(PlotLibraryFileBase::ORIGIN);
                         trianglePoints.clear();
@@ -185,37 +297,21 @@ void PlotLibraryLatex::afterRender() {
         for (size_t i = 0; i < newLines.size(); ++i) {
             renderVector_.push_back(newLines[i]);
         }
-        std::stable_sort(renderVector_.begin(),renderVector_.end(),PlotLibraryLatexSorter);
+        newLines.clear();
+        std::sort(renderVector_.begin(),renderVector_.end(),plotLibrarySvgSorter);
     }
-    for (size_t i = 0; i < renderVector_.size(); ++i){
-        if (renderVector_[i]->getClippingNumber() == 1) {
-            latexOutput_ << "\\psclip{\\psframe[strokeopacity=0]("
-                << marginLeft_ << "," << marginBottom_
-                << ")(" << windowSize_.x - marginRight_ << ","
-                << windowSize_.y - marginTop_ << ")}\n"
-                << renderVector_[i]->render()
-                << "\\endpsclip\n";
-        }
-        else if (renderVector_[i]->getClippingNumber() == 2) {
-            latexOutput_ << "\\psclip{\\psframe[strokeopacity=0](" << marginLeft_ - maxGlyphSize_/2.0
-                << "," << marginBottom_  - maxGlyphSize_/2.0
-                << ")(" << windowSize_.x - marginRight_ + maxGlyphSize_ << ","
-                << windowSize_.y - marginTop_ + maxGlyphSize_ << ")}\n"
-                << renderVector_[i]->render()
-                << "\\endpsclip\n";
-        }
-        else
-            latexOutput_ << renderVector_[i]->render();
-    }
-    if (viewPortClipping_)
-        latexOutput_ << "\\endpsclip\n";
-    latexOutput_ << "\\end{pspicture}\n\\end{document}";
-    std::ofstream latexfile (outputFile_.c_str(),std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-    latexfile << latexOutput_.str();
-    latexfile.close();
+    for (size_t i = 0; i < renderVector_.size(); ++i)
+        svgOutput_ << renderVector_[i]->render();
+    svgOutput_ << "</g></svg>";
+    std::ofstream svgfile (outputFile_.c_str(),std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+    svgfile << svgOutput_.str();
+    svgfile.close();
+    for (size_t i = 0; i < renderVector_.size(); ++i)
+        delete renderVector_[i];
+    renderVector_.clear();
 }
 
-bool PlotLibraryLatex::setRenderStatus() {
+bool PlotLibrarySvg::setRenderStatus() {
     if (usePlotPickingManager_)
         return false;
     // helper domains
@@ -243,10 +339,10 @@ bool PlotLibraryLatex::setRenderStatus() {
             //set up clipping planes
             tgt::dvec2 leftBottom = convertViewportToPlotCoordinates(tgt::ivec2(marginLeft_,marginBottom_));
             tgt::dvec2 rightTop = convertViewportToPlotCoordinates(tgt::ivec2(windowSize_.x-marginRight_,windowSize_.y-marginTop_));
-            clippingPlanes_.push_back(tgt::Vector4<plot_t>(1.0, 0.0, 0.0, -leftBottom.x));
-            clippingPlanes_.push_back(tgt::Vector4<plot_t>(-1.0, 0.0, 0.0, rightTop.x));
-            clippingPlanes_.push_back(tgt::Vector4<plot_t>(0.0, 1.0, 0.0, -leftBottom.y));
-            clippingPlanes_.push_back(tgt::Vector4<plot_t>(0.0, -1.0, 0.0, rightTop.y));
+            clippingPlanes_.push_back(tgt::Vector4d(1.0, 0.0, 0.0, -leftBottom.x));
+            clippingPlanes_.push_back(tgt::Vector4d(-1.0, 0.0, 0.0, rightTop.x));
+            clippingPlanes_.push_back(tgt::Vector4d(0.0, 1.0, 0.0, -leftBottom.y));
+            clippingPlanes_.push_back(tgt::Vector4d(0.0, -1.0, 0.0, rightTop.y));
         }
         else { //dimension_ == FAKETHREE
             tgt::Matrix4<plot_t> m = tgt::Matrix4<plot_t>(1,0,0,0,0,1,0,0,-shear_.x*static_cast<double>(xr-xl),
@@ -265,7 +361,6 @@ bool PlotLibraryLatex::setRenderStatus() {
         //if (lightingFlag_ == true && usePlotPickingManager_ == false) {
         //}
         modelviewMatrix_ = camera_.getViewMatrix();
-        ////plot into [-0.5,0.5]^3
         modelviewMatrix_ = modelviewMatrix_
             * tgt::Matrix4<plot_t>::createTranslation(tgt::Vector3<plot_t>(-0.5,-0.5,-0.5))
             * tgt::Matrix4<plot_t>::createScale(tgt::Vector3<plot_t>(1/domain_[0].size(),1/domain_[1].size(),1/domain_[2].size()))
@@ -289,25 +384,25 @@ bool PlotLibraryLatex::setRenderStatus() {
             near_ = camera_.getNearDist();
             far_ = camera_.getFarDist();
         }
-        clippingPlanes_.push_back(tgt::Vector4<plot_t>(1.0, 0.0, 0.0, -domain_[X_AXIS].getLeft()));
-        clippingPlanes_.push_back(tgt::Vector4<plot_t>(-1.0, 0.0, 0.0, domain_[X_AXIS].getRight()));
-        clippingPlanes_.push_back(tgt::Vector4<plot_t>(0.0, 1.0, 0.0, -domain_[Y_AXIS].getLeft()));
-        clippingPlanes_.push_back(tgt::Vector4<plot_t>(0.0, -1.0, 0.0, domain_[Y_AXIS].getRight()));
-        clippingPlanes_.push_back(tgt::Vector4<plot_t>(0.0, 0.0, 1.0, -domain_[Z_AXIS].getLeft()));
-        clippingPlanes_.push_back(tgt::Vector4<plot_t>(0.0, 0.0, -1.0, domain_[Z_AXIS].getRight()));
+        clippingPlanes_.push_back(tgt::Vector4d(1.0, 0.0, 0.0, -domain_[X_AXIS].getLeft()));
+        clippingPlanes_.push_back(tgt::Vector4d(-1.0, 0.0, 0.0, domain_[X_AXIS].getRight()));
+        clippingPlanes_.push_back(tgt::Vector4d(0.0, 1.0, 0.0, -domain_[Y_AXIS].getLeft()));
+        clippingPlanes_.push_back(tgt::Vector4d(0.0, -1.0, 0.0, domain_[Y_AXIS].getRight()));
+        clippingPlanes_.push_back(tgt::Vector4d(0.0, 0.0, 1.0, -domain_[Z_AXIS].getLeft()));
+        clippingPlanes_.push_back(tgt::Vector4d(0.0, 0.0, -1.0, domain_[Z_AXIS].getRight()));
 
         // we need to calculate which are the outer edges (used for selection and
         // labeling the axes)
         calculateSelectionEdges();
     }
-    latexColor_ = drawingColor_;
+    svgColor_ = drawingColor_;
     textureNumber_ = 0;
     modelviewMatrix_.invert(invertedmodelviewMatrix_);
 
     return true;
 }
 
-void PlotLibraryLatex::renderLine(const PlotData& data, int indexX, int indexY) {
+void PlotLibrarySvg::renderLine(const PlotData& data, int indexX, int indexY) {
     if (usePlotPickingManager_)
         return;
     //row iterator
@@ -329,9 +424,9 @@ void PlotLibraryLatex::renderLine(const PlotData& data, int indexX, int indexY) 
     double oldX = tagsInX ? i : it->getValueAt(indexX);
     double oldY = it->getValueAt(indexY);
     if (lineIsHighlighted)
-        latexColor_ = highlightColor_;
+        svgColor_ = highlightColor_;
     else
-        latexColor_ = drawingColor_;
+        svgColor_ = drawingColor_;
     for (++it, ++i; it != data.getRowsEnd(); ++it, ++i) {
         //we ignore rows with null entries
         if (it->getCellAt(indexX).isNull() || it->getCellAt(indexY).isNull()) {
@@ -341,7 +436,7 @@ void PlotLibraryLatex::renderLine(const PlotData& data, int indexX, int indexY) 
         y = it->getValueAt(indexY);
         point1 = convertPlotCoordinatesToViewport3Projection(oldX,oldY,0);
         point2 = convertPlotCoordinatesToViewport3Projection(x,y,0);
-        latexLine(point1,point2,latexColor_,1,lineWidth_,lineStyle_);
+        svgLine(point1,point2,svgColor_,1,lineWidth_,lineStyle_);
 
         //if x is out of the interval, we leave the loop
         if (x>= domain_[X_AXIS].getRight())
@@ -359,15 +454,15 @@ void PlotLibraryLatex::renderLine(const PlotData& data, int indexX, int indexY) 
         x = tagsInX ? i : it->getValueAt(indexX);
         y = it->getValueAt(indexY);
         if (it->getCellAt(indexY).isHighlighted())
-            latexColor_ = highlightColor_;
+            svgColor_ = highlightColor_;
         else
-            latexColor_ = drawingColor_;
+            svgColor_ = drawingColor_;
         point2 = convertPlotCoordinatesToViewport3Projection(x,y,0);
-        latexCircle(point2,maxGlyphSize_/2,latexColor_,latexColor_,2,1);
+        svgCircle(point2,maxGlyphSize_/2,svgColor_,svgColor_,2,1);
     }
 }
 
-void PlotLibraryLatex::renderSpline(const PlotData& data, int indexX, int indexY) {
+void PlotLibrarySvg::renderSpline(const PlotData& data, int indexX, int indexY) {
     if (usePlotPickingManager_)
         return;
     std::vector<PlotRowValue>::const_iterator it = data.getRowsBegin(); // row iterator
@@ -402,9 +497,9 @@ void PlotLibraryLatex::renderSpline(const PlotData& data, int indexX, int indexY
     //render spline, possibly with log coordinates
     GLfloat step = 1.f /spline.getStepCount();
     if (lineIsHighlighted)
-        latexColor_ = highlightColor_;
+        svgColor_ = highlightColor_;
     else
-        latexColor_ = drawingColor_;
+        svgColor_ = drawingColor_;
     for (GLfloat p = 0.f; p < 1.f; p+=step) {
         x = spline.getPoint(p).x;
         y = spline.getPoint(p).y;
@@ -412,7 +507,7 @@ void PlotLibraryLatex::renderSpline(const PlotData& data, int indexX, int indexY
         if (x >= domain_[X_AXIS].getRight())
             break;
     }
-    latexPolyline(points,latexColor_,latexColor_,1,lineWidth_,PlotEntitySettings::FILLNONE,lineStyle_);
+    svgPolyline(points,svgColor_,svgColor_,1,lineWidth_,PlotEntitySettings::FILLNONE,lineStyle_);
 
     // render the points
     for (it = data.getRowsBegin(), i = 0; it != data.getRowsEnd(); ++it, ++i) {
@@ -423,14 +518,14 @@ void PlotLibraryLatex::renderSpline(const PlotData& data, int indexX, int indexY
         x = tagsInX ? i : it->getValueAt(indexX);
         y = it->getValueAt(indexY);
         if (it->getCellAt(indexY).isHighlighted())
-            latexColor_ = highlightColor_;
+            svgColor_ = highlightColor_;
         else
-            latexColor_ = drawingColor_;
-        latexCircle(convertPlotCoordinatesToViewport3Projection(x,y,0),maxGlyphSize_/2,latexColor_,latexColor_,2);
+            svgColor_ = drawingColor_;
+        svgCircle(convertPlotCoordinatesToViewport3Projection(x,y,0),maxGlyphSize_/2,svgColor_,svgColor_,2);
     }
 }
 
-void PlotLibraryLatex::renderErrorline(const PlotData& data, int indexX, int indexY, int indexError) {
+void PlotLibrarySvg::renderErrorline(const PlotData& data, int indexX, int indexY, int indexError) {
     if (usePlotPickingManager_)
         return;
     std::vector<PlotRowValue>::const_iterator it = data.getRowsBegin();
@@ -450,7 +545,7 @@ void PlotLibraryLatex::renderErrorline(const PlotData& data, int indexX, int ind
     double errorTop      = it->getValueAt(indexY) + std::abs(it->getValueAt(indexError));
     double errorBottom   = it->getValueAt(indexY) - std::abs(it->getValueAt(indexError));
     double oldX, oldErrorTop, oldErrorBottom;
-    latexColor_ = fillColor_;
+    svgColor_ = fillColor_;
     // draw the errorline
     ++i;
     for (it = (++it); it != data.getRowsEnd(); ++it, ++i) {
@@ -462,7 +557,7 @@ void PlotLibraryLatex::renderErrorline(const PlotData& data, int indexX, int ind
             points.push_back(convertPlotCoordinatesToViewport3Projection(x,errorTop,0));
             points.push_back(convertPlotCoordinatesToViewport3Projection(x,errorBottom,0));
             points.push_back(convertPlotCoordinatesToViewport3Projection(oldX,oldErrorBottom,0));
-            latexPolygon(points,latexColor_,latexColor_,1,0);
+            svgPolygon(points,svgColor_,svgColor_,1,0);
         }
         oldX = x;
         oldErrorTop = errorTop;
@@ -476,10 +571,10 @@ void PlotLibraryLatex::renderErrorline(const PlotData& data, int indexX, int ind
     points.push_back(convertPlotCoordinatesToViewport3Projection(x,errorTop,0));
     points.push_back(convertPlotCoordinatesToViewport3Projection(x,errorBottom,0));
     points.push_back(convertPlotCoordinatesToViewport3Projection(oldX,oldErrorBottom,0));
-    latexPolygon(points,latexColor_,latexColor_,1,0);
+    svgPolygon(points,svgColor_,svgColor_,1,0);
 }
 
-void PlotLibraryLatex::renderErrorspline(const PlotData& data, int indexX, int indexY, int indexError) {
+void PlotLibrarySvg::renderErrorspline(const PlotData& data, int indexX, int indexY, int indexError) {
     if (usePlotPickingManager_)
         return;
     std::vector<PlotRowValue>::const_iterator it = data.getRowsBegin();
@@ -488,7 +583,7 @@ void PlotLibraryLatex::renderErrorspline(const PlotData& data, int indexX, int i
 
     // check if only values or only tags in given cells
     bool tagsInX = (data.getColumnType(indexX) == PlotBase::STRING);
-    latexColor_ = fillColor_;
+    svgColor_ = fillColor_;
     int i = 0;
     //go to the first row with non null entrys
     while (it->getCellAt(indexX).isNull() || it->getCellAt(indexY).isNull()) {
@@ -530,11 +625,11 @@ void PlotLibraryLatex::renderErrorspline(const PlotData& data, int indexX, int i
         points.push_back(convertPlotCoordinatesToViewport3Projection(splineBottom.getPoint(p)));
         points.push_back(convertPlotCoordinatesToViewport3Projection(splineBottom.getPoint(p+step)));
         points.push_back(convertPlotCoordinatesToViewport3Projection(splineTop.getPoint(p+step)));
-        latexPolygon(points,latexColor_,latexColor_,1,0);
+        svgPolygon(points,svgColor_,svgColor_,1,0);
     }
 }
 
-void PlotLibraryLatex::renderErrorbars(const PlotData& data, int indexX, int indexY, int indexError) {
+void PlotLibrarySvg::renderErrorbars(const PlotData& data, int indexX, int indexY, int indexError) {
     if (usePlotPickingManager_)
         return;
     PlotLibraryFileBase::Projection_Coordinates p11;
@@ -562,9 +657,9 @@ void PlotLibraryLatex::renderErrorbars(const PlotData& data, int indexX, int ind
             continue;
 
         if (it->getCellAt(indexError).isHighlighted())
-            latexColor_ = highlightColor_;
+            svgColor_ = highlightColor_;
         else
-            latexColor_ = drawingColor_;
+            svgColor_ = drawingColor_;
 
         double y = it->getValueAt(indexY);
         double yTop = it->getValueAt(indexY) + it->getValueAt(indexError);
@@ -573,23 +668,26 @@ void PlotLibraryLatex::renderErrorbars(const PlotData& data, int indexX, int ind
         y = logarithmicAxisFlags_[Y_AXIS] ? convertToLogCoordinates(y, Y_AXIS) : y;
         yTop = logarithmicAxisFlags_[Y_AXIS] ? convertToLogCoordinates(yTop, Y_AXIS) : yTop;
         yBottom = logarithmicAxisFlags_[Y_AXIS] ? convertToLogCoordinates(yBottom, Y_AXIS) : yBottom;
+
         p11 = projection_neu(x,yBottom,0);
         p12 = projection_neu(x,yTop,0);
-        latexLine(p11,p12,latexColor_,1,lineWidth_);
+        svgLine(p11,p12,svgColor_,1,lineWidth_);
+
         p21 = projection_neu(x-radius,yTop,0);
         p22 = projection_neu(x+radius,yTop,0);
-        latexLine(p21,p22,latexColor_,0,lineWidth_);
+        svgLine(p21,p22,svgColor_,0,lineWidth_);
+
         p31 = projection_neu(x-radius,yBottom,0);
         p32 = projection_neu(x+radius,yBottom,0);
-        latexLine(p31,p32,latexColor_,0,lineWidth_);
+        svgLine(p31,p32,svgColor_,0,lineWidth_);
+
         //tgt::Ellipse midpoint(tgt::dvec3(x, y, domain_[2].getLeft()), radius/2,
         //                      (radius*aspectRatio)/2, tgt::dvec3(0, 0, 1), tgt::dvec3(1, 0, 0 ), 32);
-        //midpoint.render();
-        latexEllipse(projection_neu(x,y,0),(p22.afterProjection_.x-p21.afterProjection_.x)*radius,(p22.afterProjection_.x-p21.afterProjection_.x)*radius,latexColor_,latexColor_,0,3,PlotEntitySettings::FILLNONE);
+        svgEllipse(projection_neu(x,y,0),(p22.afterProjection_.x-p21.afterProjection_.x)*radius,(p22.afterProjection_.x-p21.afterProjection_.x)*radius,svgColor_,svgColor_,0,3,PlotEntitySettings::FILLNONE);
     }
 }
 
-void PlotLibraryLatex::renderCandlesticks(const PlotData& data, int indexX, int stickTop,
+void PlotLibrarySvg::renderCandlesticks(const PlotData& data, int indexX, int stickTop,
                                      int stickBottom, int candleTop, int candleBottom) {
     if (usePlotPickingManager_)
         return;
@@ -622,40 +720,40 @@ void PlotLibraryLatex::renderCandlesticks(const PlotData& data, int indexX, int 
         // we divide the stick and the candle in top and bottom half
         // draw stick
         if (it->getCellAt(stickTop).isHighlighted())
-            latexColor_ = highlightColor_;
+            svgColor_ = highlightColor_;
         else
-            latexColor_ = drawingColor_;
-        latexLine(convertPlotCoordinatesToViewport3Projection(x,yStickTop,0),convertPlotCoordinatesToViewport3Projection(x,(yStickTop+yStickBottom)/2.0,0),latexColor_,1,lineWidth_);
+            svgColor_ = drawingColor_;
+        svgLine(convertPlotCoordinatesToViewport3Projection(x,yStickTop,0),convertPlotCoordinatesToViewport3Projection(x,(yStickTop+yStickBottom)/2.0,0),svgColor_,1,lineWidth_);
         if (it->getCellAt(stickBottom).isHighlighted())
-            latexColor_ = highlightColor_;
+            svgColor_ = highlightColor_;
         else
-            latexColor_ = drawingColor_;
-        latexLine(convertPlotCoordinatesToViewport3Projection(x,(yStickTop+yStickBottom)/2.0,0),convertPlotCoordinatesToViewport3Projection(x,yStickBottom,0),latexColor_,1,lineWidth_);
-        //draw candle
+            svgColor_ = drawingColor_;
+        svgLine(convertPlotCoordinatesToViewport3Projection(x,(yStickTop+yStickBottom)/2.0,0),convertPlotCoordinatesToViewport3Projection(x,yStickBottom,0),svgColor_,1,lineWidth_);
+    //    //draw candle
         if (it->getCellAt(candleTop).isHighlighted())
-            latexColor_ = highlightColor_;
+            svgColor_ = highlightColor_;
         else
-            latexColor_ = fillColor_;
+            svgColor_ = fillColor_;
         points.clear();
         points.push_back(convertPlotCoordinatesToViewport3Projection(x-width,yCandleTop,0));
         points.push_back(convertPlotCoordinatesToViewport3Projection(x-width,(yCandleBottom+yCandleTop)/2.0,0));
         points.push_back(convertPlotCoordinatesToViewport3Projection(x+width,(yCandleBottom+yCandleTop)/2.0,0));
         points.push_back(convertPlotCoordinatesToViewport3Projection(x+width,yCandleTop,0));
-        latexPolygon(points,latexColor_,latexColor_,1,lineWidth_);
+        svgPolygon(points,svgColor_,svgColor_,1,lineWidth_);
         if (it->getCellAt(candleBottom).isHighlighted())
-            latexColor_ = highlightColor_;
+            svgColor_ = highlightColor_;
         else
-            latexColor_ = fillColor_;
+            svgColor_ = fillColor_;
         points.clear();
         points.push_back(convertPlotCoordinatesToViewport3Projection(x-width,(yCandleBottom+yCandleTop)/2.0,0));
         points.push_back(convertPlotCoordinatesToViewport3Projection(x-width,yCandleBottom,0));
         points.push_back(convertPlotCoordinatesToViewport3Projection(x+width,yCandleBottom,0));
         points.push_back(convertPlotCoordinatesToViewport3Projection(x+width,(yCandleBottom+yCandleTop)/2.0,0));
-        latexPolygon(points,latexColor_,latexColor_,1,lineWidth_);
+        svgPolygon(points,svgColor_,svgColor_,1,lineWidth_);
     }
 }
 
-void PlotLibraryLatex::renderSurface(const PlotData& data, const std::vector<int>& triangleVertexIndices, bool wire,
+void PlotLibrarySvg::renderSurface(const PlotData& data, const std::vector<int>& triangleVertexIndices, bool wire,
                                 int indexX, int indexY, int indexZ, int indexCM, bool wireonly)  {
     if (usePlotPickingManager_ || !wire)
         return;
@@ -671,7 +769,7 @@ void PlotLibraryLatex::renderSurface(const PlotData& data, const std::vector<int
             indexCM = -1;
     }
     if ( indexCM == -1)
-        latexColor_ = drawingColor_;
+        svgColor_ = drawingColor_;
 
     // draw the triangles
     std::set<int> renderedHighlights; // we want to render each plot label // highlight only once
@@ -682,13 +780,13 @@ void PlotLibraryLatex::renderSurface(const PlotData& data, const std::vector<int
     std::vector< PlotLibraryFileBase::Projection_Coordinates > points;
     for (std::vector<int>::const_iterator it = triangleVertexIndices.begin(); it < triangleVertexIndices.end(); it += 3) {
         points.clear();
-        latexColor_ = drawingColor_;
+        svgColor_ = drawingColor_;
         for (int i=0; i<3; ++i) {
             const PlotRowValue& row = data.getRow(*(it+i));
 
             if (indexCM != -1 ) {
                 float c = static_cast<float>((row.getValueAt(indexCM) - colInterval.getLeft()) / colInterval.size());
-                latexColor_ = colorMap_.getColorAtPosition(c);
+                svgColor_ = colorMap_.getColorAtPosition(c);
             }
             p1 = convertPlotCoordinatesToViewport3Projection(row.getValueAt(indexX), row.getValueAt(indexY), row.getValueAt(indexZ));
             if (!wire && row.getCellAt(indexZ).isHighlighted()) {
@@ -698,13 +796,13 @@ void PlotLibraryLatex::renderSurface(const PlotData& data, const std::vector<int
                 points.push_back(p1);
         }
         if (wireonly)
-            latexPolygon(points,latexColor_,lineColor_,0,lineWidth_,PlotEntitySettings::FILLNONE);
+            svgPolygon(points,svgColor_,lineColor_,0,lineWidth_,PlotEntitySettings::FILLNONE);
         else
-            latexPolygon(points,latexColor_,lineColor_,0,lineWidth_);
+            svgPolygon(points,svgColor_,lineColor_,0,lineWidth_);
     }
 }
 
-void PlotLibraryLatex::renderHeightmap(const voreen::PlotData& data, const std::vector< std::list< tgt::dvec2 > >& voronoiRegions,
+void PlotLibrarySvg::renderHeightmap(const voreen::PlotData& data, const std::vector< std::list< tgt::dvec2 > >& voronoiRegions,
                                   bool wire, int indexZ, int indexCM, bool wireonly) {
     if (usePlotPickingManager_ || !wire)
         return;
@@ -730,13 +828,13 @@ void PlotLibraryLatex::renderHeightmap(const voreen::PlotData& data, const std::
             continue;
 
         if (!wire && pit->getCellAt(indexZ).isHighlighted())
-            latexColor_ = highlightColor_;
+            svgColor_ = highlightColor_;
         else if (indexCM != -1 ) {
             float c = static_cast<float>((pit->getValueAt(indexCM) - colInterval.getLeft()) / colInterval.size());
-            latexColor_ = colorMap_.getColorAtPosition(c);
+            svgColor_ = colorMap_.getColorAtPosition(c);
         }
         else {
-            latexColor_ = drawingColor_;
+            svgColor_ = drawingColor_;
         }
 
         plot_t height = pit->getValueAt(indexZ);
@@ -764,9 +862,9 @@ void PlotLibraryLatex::renderHeightmap(const voreen::PlotData& data, const std::
                     points.push_back(point3);
                     points.push_back(point4);
                     if (wireonly)
-                        latexPolygon(points,latexColor_,lineColor_,0,lineWidth_,PlotEntitySettings::FILLNONE);
+                        svgPolygon(points,svgColor_,lineColor_,0,lineWidth_,PlotEntitySettings::FILLNONE);
                     else
-                        latexPolygon(points,latexColor_,lineColor_,0,lineWidth_);
+                        svgPolygon(points,svgColor_,lineColor_,0,lineWidth_);
                 }
                 ++i;
             }
@@ -780,32 +878,32 @@ void PlotLibraryLatex::renderHeightmap(const voreen::PlotData& data, const std::
             points.push_back(point3);
             points.push_back(point4);
             if (wireonly)
-                latexPolygon(points,latexColor_,lineColor_,0,lineWidth_,PlotEntitySettings::FILLNONE);
+                svgPolygon(points,svgColor_,lineColor_,0,lineWidth_,PlotEntitySettings::FILLNONE);
             else
-                latexPolygon(points,latexColor_,lineColor_,0,lineWidth_);
+                svgPolygon(points,svgColor_,lineColor_,0,lineWidth_);
             points.clear();
             for (std::list< tgt::dvec2 >::const_iterator eit = rit->begin(); eit != rit->end(); ++eit) {
                 point1 = convertPlotCoordinatesToViewport3Projection(eit->x, eit->y, height);
                 points.push_back(point1);
             }
             if (wireonly)
-                latexPolygon(points,latexColor_,lineColor_,0,lineWidth_,PlotEntitySettings::FILLNONE);
+                svgPolygon(points,svgColor_,lineColor_,0,lineWidth_,PlotEntitySettings::FILLNONE);
             else
-                latexPolygon(points,latexColor_,lineColor_,0,lineWidth_);
+                svgPolygon(points,svgColor_,lineColor_,0,lineWidth_);
             points.clear();
             for (std::list< tgt::dvec2 >::const_iterator eit = rit->begin(); eit != rit->end(); ++eit) {
                 point1 = convertPlotCoordinatesToViewport3Projection(eit->x, eit->y, yMin);
                 points.push_back(point1);
             }
             if (wireonly)
-                latexPolygon(points,latexColor_,lineColor_,0,lineWidth_,PlotEntitySettings::FILLNONE);
+                svgPolygon(points,svgColor_,lineColor_,0,lineWidth_,PlotEntitySettings::FILLNONE);
             else
-                latexPolygon(points,latexColor_,lineColor_,0,lineWidth_);
+                svgPolygon(points,svgColor_,lineColor_,0,lineWidth_);
         }
     }
 }
 
-void PlotLibraryLatex::renderBars(const PlotData& data, std::vector<int> indicesY) {
+void PlotLibrarySvg::renderBars(const PlotData& data, std::vector<int> indicesY) {
     if (usePlotPickingManager_)
         return;
     std::vector<PlotRowValue>::const_iterator rowIt = data.getRowsBegin();
@@ -821,9 +919,9 @@ void PlotLibraryLatex::renderBars(const PlotData& data, std::vector<int> indices
         // we do not use the iterator because we also iterate through the colormap
         for (size_t i = 0; i < indicesY.size(); ++i) {
             if (rowIt->getCellAt(indicesY.at(i)).isHighlighted())
-                latexColor_ = highlightColor_;
+                svgColor_ = highlightColor_;
             else
-                latexColor_ = colorMap_.getColorAtIndex(static_cast<int>(i));
+                svgColor_ = colorMap_.getColorAtIndex(static_cast<int>(i));
             if (barMode_ == STACKED) {
                 if (rowIt->getCellAt(indicesY.at(i)).isNull() )
                     continue;
@@ -831,7 +929,7 @@ void PlotLibraryLatex::renderBars(const PlotData& data, std::vector<int> indices
                 //negative stacked bars do not make any sense and are ignored
                 if (newY < lastY)
                     continue;
-                renderSingleBar(row-barWidth_/2.0,row+barWidth_/2.0, lastY, newY, latexColor_);
+                renderSingleBar(row-barWidth_/2.0,row+barWidth_/2.0, lastY, newY, svgColor_);
                 lastY = newY;
             }
             else if (barMode_ == GROUPED) {
@@ -839,15 +937,15 @@ void PlotLibraryLatex::renderBars(const PlotData& data, std::vector<int> indices
                     continue;
                 double singleBarWidth = barWidth_/(1.0*static_cast<double>(indicesY.size()));
                 renderSingleBar(row-barWidth_/2.0+static_cast<double>(i)*singleBarWidth,
-                    row-barWidth_/2.0+static_cast<double>(i+1)*singleBarWidth, 0, rowIt->getValueAt(indicesY.at(i)), latexColor_);
+                    row-barWidth_/2.0+static_cast<double>(i+1)*singleBarWidth, 0, rowIt->getValueAt(indicesY.at(i)), svgColor_);
             }
 
             else { // MERGED
                 // we can't skip null entries, so we set them 0
                 if (rowIt->getCellAt(indicesY.at(i)).isNull())
-                    mergedBars.push_back(std::pair<plot_t, tgt::Color>(0, latexColor_));
+                    mergedBars.push_back(std::pair<plot_t, tgt::Color>(0, svgColor_));
                 // push the y value and the color index
-                mergedBars.push_back(std::pair<plot_t, tgt::Color>(rowIt->getValueAt(indicesY.at(i)), latexColor_));
+                mergedBars.push_back(std::pair<plot_t, tgt::Color>(rowIt->getValueAt(indicesY.at(i)), svgColor_));
             }
         }
         if (barMode_ == MERGED) {
@@ -857,8 +955,7 @@ void PlotLibraryLatex::renderBars(const PlotData& data, std::vector<int> indices
             std::vector<std::pair<plot_t, tgt::Color> >::const_iterator lastit;
             double squeeze = 1.0;
             for (it = mergedBars.begin(); it < mergedBars.end(); ++it) {
-                //glColor4fv(it->second.elem);
-                latexColor_ = it->second;
+                svgColor_ = it->second;
                 if (it == mergedBars.begin()) {
                     renderSingleBar(row-barWidth_/2.0,row+barWidth_/2.0, 0, it->first, it->second, squeeze);
                 }
@@ -872,7 +969,7 @@ void PlotLibraryLatex::renderBars(const PlotData& data, std::vector<int> indices
     }
 }
 
-void PlotLibraryLatex::renderNodeGraph(const PlotData& nodeData, const PlotData& connectionData, int indexX, int indexY, int indexDx, int indexDy) {
+void PlotLibrarySvg::renderNodeGraph(const PlotData& nodeData, const PlotData& connectionData, int indexX, int indexY, int indexDx, int indexDy) {
     if (usePlotPickingManager_)
         return;
     std::vector<PlotRowValue>::const_iterator it;
@@ -882,11 +979,11 @@ void PlotLibraryLatex::renderNodeGraph(const PlotData& nodeData, const PlotData&
     int i = 0;
     for (it = nodeData.getRowsBegin(); it != nodeData.getRowsEnd(); ++it, ++i) {
         // render node
-        latexColor_ = drawingColor_;
+        svgColor_ = drawingColor_;
         renderGlyph(it->getValueAt(indexX), it->getValueAt(indexY), 0, glyphSize);
 
         // render force vector
-        latexLine(convertPlotCoordinatesToViewport3Projection(it->getValueAt(indexX),it->getValueAt(indexY),0),
+        svgLine(convertPlotCoordinatesToViewport3Projection(it->getValueAt(indexX),it->getValueAt(indexY),0),
             convertPlotCoordinatesToViewport3Projection(it->getValueAt(indexX) + it->getValueAt(indexDx),
             it->getValueAt(indexY) + it->getValueAt(indexDy),0),
             fillColor_,1,lineWidth_);
@@ -910,14 +1007,14 @@ void PlotLibraryLatex::renderNodeGraph(const PlotData& nodeData, const PlotData&
         secondIt = nodeData.lower_bound(tester);
 
         if (firstIt != nodeData.getRowsEnd() && secondIt != nodeData.getRowsEnd()) {
-            latexLine(convertPlotCoordinatesToViewport3Projection(firstIt->getValueAt(indexX),firstIt->getValueAt(indexY),0),
+            svgLine(convertPlotCoordinatesToViewport3Projection(firstIt->getValueAt(indexX),firstIt->getValueAt(indexY),0),
                 convertPlotCoordinatesToViewport3Projection(secondIt->getValueAt(indexX),secondIt->getValueAt(indexY),0),
                 drawingColor_,1,lineWidth_);
         }
     }
 }
 
-void PlotLibraryLatex::renderColorMapLegend(const PlotData& data, int column, int number) {
+void PlotLibrarySvg::renderColorMapLegend(const PlotData& data, int column, int number) {
     tgt::Color c1, c2;
     std::stringstream ss;
     // ColorMaps with less than 2 colors may not exist
@@ -926,6 +1023,8 @@ void PlotLibraryLatex::renderColorMapLegend(const PlotData& data, int column, in
 
     Interval<plot_t>   interval = data.getInterval(column);
     const std::string& label    = data.getColumnLabel(column);
+
+    // switch to viewport coordinates
 
     // render legend
     int colorcount      = colorMap_.getColorCount();
@@ -940,47 +1039,51 @@ void PlotLibraryLatex::renderColorMapLegend(const PlotData& data, int column, in
     for (int i = 0; i < colorcount-1; ++i) {
         c1 = colorMap_.getColorAtIndex(i);
         c2 = colorMap_.getColorAtIndex(i+1);
-        tgt::Vector3<plot_t> point = tgt::Vector3<plot_t>(xStart + (i*stepWidth),yStart,0);
-        latexRect(PlotLibraryFileBase::Projection_Coordinates(point,point,point),stepWidth,height,c1,c2);
+        ss.clear();
+        ss.str("");
+        ss << "colormap" << i;
+        svgGradient(tgt::Vector2<plot_t>(0,0),tgt::Vector2<plot_t>(1,0),ss.str(),c1,c2);
+        tgt::Vector3<plot_t> startpoint = tgt::Vector3<plot_t>(xStart + (i*stepWidth),yStart,0);
+        PlotLibraryFileBase::Projection_Coordinates startPoint = PlotLibraryFileBase::Projection_Coordinates(startpoint,startpoint,startpoint);
+        svgRect(startPoint,stepWidth,height,ss.str());
     }
 
-    latexColor_ = drawingColor_;
+    svgColor_ = drawingColor_;
     std::vector< PlotLibraryFileBase::Projection_Coordinates > points;
-    tgt::Vector3<plot_t> coor;
-    coor = tgt::Vector3<plot_t>(xStart,yStart,0);
-    points.push_back(PlotLibraryFileBase::Projection_Coordinates(coor,coor,coor));
+    tgt::Vector3<plot_t> coor = tgt::Vector3<plot_t>(xStart,yStart,0);
+    points.push_back(Projection_Coordinates(coor,coor,coor));
     coor = tgt::Vector3<plot_t>(xStart,yStart + height,0);
-    points.push_back(PlotLibraryFileBase::Projection_Coordinates(coor,coor,coor));
+    points.push_back(Projection_Coordinates(coor,coor,coor));
     coor = tgt::Vector3<plot_t>(xStart + width,yStart + height,0);
-    points.push_back(PlotLibraryFileBase::Projection_Coordinates(coor,coor,coor));
+    points.push_back(Projection_Coordinates(coor,coor,coor));
     coor = tgt::Vector3<plot_t>(xStart + width,yStart,0);
-    points.push_back(PlotLibraryFileBase::Projection_Coordinates(coor,coor,coor));
+    points.push_back(Projection_Coordinates(coor,coor,coor));
     coor = tgt::Vector3<plot_t>(xStart,yStart,0);
-    points.push_back(PlotLibraryFileBase::Projection_Coordinates(coor,coor,coor));
-    latexPolygon(points,latexColor_,latexColor_,0,lineWidth_,PlotEntitySettings::FILLNONE);
+    points.push_back(Projection_Coordinates(coor,coor,coor));
+    svgPolyline(points,svgColor_,svgColor_,0,lineWidth_);
 
     // labels
     tgt::dvec3 position = tgt::dvec3(xStart, yStart + (height/2),0);
-    SmartLabelGroupBaseLatex::renderSingleLabel(&labelFont_, label,fontSize_,SmartLabel::MIDDLERIGHT, 4,position);
-    latexText(position,label,&labelFont_,fontSize_,fontColor_,SmartLabel::MIDDLERIGHT);
+    SmartLabelGroupBaseSvg::renderSingleLabel(&labelFont_, label,fontSize_,SmartLabel::MIDDLERIGHT, 4,position);
+    svgText(position,label,&labelFont_,fontSize_,fontColor_,SmartLabel::MIDDLERIGHT);
 
     ss.str("");
     ss.clear();
     ss << std::setprecision(4) << interval.getLeft();
-    position = tgt::dvec3(xStart, yStart, 0);
-    SmartLabelGroupBaseLatex::renderSingleLabel(&labelFont_, ss.str(),fontSize_, SmartLabel::BOTTOMCENTERED, 4,position);
-    latexText(position,ss.str(),&labelFont_,fontSize_,fontColor_,SmartLabel::BOTTOMCENTERED);
+    position = tgt::dvec3(xStart + xslide, yStart, 0);
+    SmartLabelGroupBaseSvg::renderSingleLabel(&labelFont_, ss.str(),fontSize_, SmartLabel::BOTTOMRIGHT, 4,position);
+    svgText(position,ss.str(),&labelFont_,fontSize_,fontColor_,SmartLabel::BOTTOMRIGHT);
 
     ss.str("");
     ss.clear();
     ss << std::setprecision(4) << interval.getRight();
-    position = tgt::dvec3(xStart + width, yStart, 0);
-    SmartLabelGroupBaseLatex::renderSingleLabel(&labelFont_, ss.str(),fontSize_, SmartLabel::BOTTOMRIGHT,4,position);
-    latexText(position,ss.str(),&labelFont_,fontSize_,fontColor_,SmartLabel::BOTTOMRIGHT);
+    position = tgt::dvec3(xStart + xslide + width, yStart, 0);
+    SmartLabelGroupBaseSvg::renderSingleLabel(&labelFont_, ss.str(),fontSize_, SmartLabel::BOTTOMRIGHT,4,position);
+    svgText(position,ss.str(),&labelFont_,fontSize_,fontColor_,SmartLabel::BOTTOMRIGHT);
 
 }
 
-void PlotLibraryLatex::renderScatter(const PlotData& data, int indexX, int indexY, int indexZ, int indexCM, int indexSize) {
+void PlotLibrarySvg::renderScatter(const PlotData& data, int indexX, int indexY, int indexZ, int indexCM, int indexSize) {
     if (usePlotPickingManager_)
         return;
     Interval<plot_t> colInterval(0, 0);
@@ -999,27 +1102,12 @@ void PlotLibraryLatex::renderScatter(const PlotData& data, int indexX, int index
         if (sizeInterval.size() == 0)
             indexSize = -1;
     }
-    tgt::Color textureColor = tgt::Color(0,0,0,0);
+
     if (texture_ != 0) {
-        GLfloat* textureBuffer = (GLfloat*)(texture_->downloadTextureToBuffer(GL_RGBA,GL_FLOAT));
-        std::vector< int > colorvector;
-        tgt::Color colorvalue;
-        colorvector.resize(255*255*255);
-        int r,g,b;
-        for (size_t i = 0; i < texture_->getArraySize(); ++i) {
-            colorvalue = tgt::Color(textureBuffer[4*i],textureBuffer[4*i+1],textureBuffer[4*i+2],textureBuffer[4*i+3]);
-            r = static_cast<int>(tgt::round(colorvalue.r*255));
-            g = static_cast<int>(tgt::round(colorvalue.r*255));
-            b = static_cast<int>(tgt::round(colorvalue.r*255));
-            colorvector[r*255*255+g*255+b] += 1;
-        }
-        size_t max = 0;
-        for (size_t i = 0; i < colorvector.size(); ++i) {
-            if (colorvector[i] > colorvector[max])
-                max = i;
-        }
-        textureColor = tgt::Color(static_cast<float>(max%255)/255.f,static_cast<float>((max/255)%255)/255.f,
-            static_cast<float>((max/(255*255))%255)/255.f,1);
+        ++textureNumber_;
+        svgOutput_ << "<defs><pattern id=\"texture" << textureNumber_ << "\" x=\"0\" y=\"0\" width=\"" << texture_->getDimensions().x << "\" height=\"" << texture_->getDimensions().y << "\" patternUnits=\"userSpaceOnUse\">\n"
+            << "  <image x=\"0\" y=\"0\" width=\"" << texture_->getDimensions().x << "\" height=\"" << texture_->getDimensions().y << "\" xlink:href=\"" << texturePath_ << "\" />\n"
+            << "</pattern></defs>\n";
     }
 
 
@@ -1036,17 +1124,15 @@ void PlotLibraryLatex::renderScatter(const PlotData& data, int indexX, int index
         //check if the point is inside the domains
         if (domain_[X_AXIS].contains(x) && domain_[Y_AXIS].contains(y) && (dimension_ == TWO || domain_[Z_AXIS].contains(z))) {
             // set color
-            if (texture_ != 0)
-                latexColor_ = textureColor;
-            else if ((indexZ != -1 && it->getCellAt(indexZ).isHighlighted())
+            if ((indexZ != -1 && it->getCellAt(indexZ).isHighlighted())
                     || (indexZ == -1 && it->getCellAt(indexY).isHighlighted()))
-                latexColor_ = highlightColor_;
+                svgColor_ = highlightColor_;
             else if (indexCM != -1 ) {
                 float c = static_cast<float>((it->getValueAt(indexCM) - colInterval.getLeft()) / colInterval.size());
-                latexColor_ = colorMap_.getColorAtPosition(c);
+                svgColor_ = colorMap_.getColorAtPosition(c);
             }
             else
-                latexColor_ = drawingColor_;
+                svgColor_ = drawingColor_;
             // set size
             if (indexSize != -1 ) {
                 size = minGlyphSize_ + (maxGlyphSize_ - minGlyphSize_) *
@@ -1057,10 +1143,10 @@ void PlotLibraryLatex::renderScatter(const PlotData& data, int indexX, int index
     }
 }
 
-void PlotLibraryLatex::renderAxes() {
+void PlotLibrarySvg::renderAxes() {
     // axes
 
-     latexColor_ = drawingColor_;
+     svgColor_ = drawingColor_;
 
     plot_t xl = domain_[0].getLeft();    plot_t xr = domain_[0].getRight();
     plot_t yl = domain_[1].getLeft();    plot_t yr = domain_[1].getRight();
@@ -1075,53 +1161,52 @@ void PlotLibraryLatex::renderAxes() {
     std::vector< PlotLibraryFileBase::Projection_Coordinates > points;
 
     if (! centerAxesFlag_) {
+        //x and y axes
         p1 = projection_neu(xl, yr, zl);
         p2 = projection_neu(xl, yl, zl);
         p3 = projection_neu(xr, yl, zl);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
-        latexLine(p2,p3,latexColor_,0,axesWidth_);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
+        svgLine(p2,p3,svgColor_,0,axesWidth_);
     }
 
     if (dimension_ == TWO) {
     //draw arrows with viewport coordinates
         int arrowSize = 5; // in pixel
-
         tgt::Vector3<plot_t> p11 = tgt::Vector3<plot_t>(windowSize_.x-marginRight_,marginBottom_,0);
         tgt::Vector3<plot_t> p12 = tgt::Vector3<plot_t>(windowSize_.x-marginRight_+4*arrowSize,marginBottom_,0);
         p1 = PlotLibraryFileBase::Projection_Coordinates(p11,p11,p11);
         p2 = PlotLibraryFileBase::Projection_Coordinates(p12,p12,p12);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
 
         p11 = tgt::Vector3<plot_t>(windowSize_.x-marginRight_+2*arrowSize,marginBottom_+arrowSize,0);
         p12 = tgt::Vector3<plot_t>(windowSize_.x-marginRight_+4*arrowSize,marginBottom_,0);
         p1 = PlotLibraryFileBase::Projection_Coordinates(p11,p11,p11);
         p2 = PlotLibraryFileBase::Projection_Coordinates(p12,p12,p12);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
 
         p11 = tgt::Vector3<plot_t>(windowSize_.x-marginRight_+2*arrowSize,marginBottom_-arrowSize,0);
         p12 = tgt::Vector3<plot_t>(windowSize_.x-marginRight_+4*arrowSize,marginBottom_,0);
         p1 = PlotLibraryFileBase::Projection_Coordinates(p11,p11,p11);
         p2 = PlotLibraryFileBase::Projection_Coordinates(p12,p12,p12);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
 
         p11 = tgt::Vector3<plot_t>(marginLeft_,windowSize_.y-marginTop_,0);
         p12 = tgt::Vector3<plot_t>(marginLeft_,windowSize_.y-marginTop_+4*arrowSize,0);
         p1 = PlotLibraryFileBase::Projection_Coordinates(p11,p11,p11);
         p2 = PlotLibraryFileBase::Projection_Coordinates(p12,p12,p12);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
 
         p11 = tgt::Vector3<plot_t>(marginLeft_ + arrowSize,windowSize_.y-marginTop_+2*arrowSize,0);
         p12 = tgt::Vector3<plot_t>(marginLeft_,windowSize_.y-marginTop_+4*arrowSize,0);
         p1 = PlotLibraryFileBase::Projection_Coordinates(p11,p11,p11);
         p2 = PlotLibraryFileBase::Projection_Coordinates(p12,p12,p12);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
 
         p11 = tgt::Vector3<plot_t>(marginLeft_ - arrowSize,windowSize_.y-marginTop_+2*arrowSize,0);
         p12 = tgt::Vector3<plot_t>(marginLeft_,windowSize_.y-marginTop_+4*arrowSize,0);
         p1 = PlotLibraryFileBase::Projection_Coordinates(p11,p11,p11);
         p2 = PlotLibraryFileBase::Projection_Coordinates(p12,p12,p12);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
-
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
     }
     else if (dimension_ == THREE) {
     //draw cube mesh
@@ -1131,29 +1216,26 @@ void PlotLibraryLatex::renderAxes() {
         p4 = projection_neu(xl, yr, zr);
         p5 = projection_neu(xr, yr, zr);
         p6 = projection_neu(xr, yr, zl);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
-        latexLine(p2,p3,latexColor_,0,axesWidth_);
-        latexLine(p3,p4,latexColor_,0,axesWidth_);
-        latexLine(p4,p5,latexColor_,0,axesWidth_);
-        latexLine(p5,p6,latexColor_,0,axesWidth_);
-        latexLine(p6,p1,latexColor_,0,axesWidth_);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
+        svgLine(p2,p3,svgColor_,0,axesWidth_);
+        svgLine(p3,p4,svgColor_,0,axesWidth_);
+        svgLine(p4,p5,svgColor_,0,axesWidth_);
+        svgLine(p5,p6,svgColor_,0,axesWidth_);
 
         p1 = projection_neu(xr, yl, zl);
         p2 = projection_neu(xr, yl, zr);
         p3 = projection_neu(xl, yl, zr);
         p4 = projection_neu(xl, yl, zl);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
-        latexLine(p2,p3,latexColor_,0,axesWidth_);
-        latexLine(p3,p4,latexColor_,0,axesWidth_);
-        latexLine(p4,p1,latexColor_,0,axesWidth_);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
+        svgLine(p2,p3,svgColor_,0,axesWidth_);
+        svgLine(p3,p4,svgColor_,0,axesWidth_);
 
         p1 = projection_neu(xr, yl, zr);
         p2 = projection_neu(xr, yr, zr);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
-
-        p1 = projection_neu(xl, yl, zr);
-        p2 = projection_neu(xl, yr, zr);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
+        p3 = projection_neu(xl, yl, zr);
+        p4 = projection_neu(xl, yr, zr);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
+        svgLine(p3,p4,svgColor_,0,axesWidth_);
     }
     else if (dimension_ == FAKETHREE) {
         //draw back
@@ -1166,16 +1248,16 @@ void PlotLibraryLatex::renderAxes() {
         points.push_back(p2);
         points.push_back(p3);
         points.push_back(p4);
-        latexPolygon(points,latexColor_,latexColor_,0,axesWidth_,PlotEntitySettings::FILLNONE);
+        svgPolygon(points,svgColor_,svgColor_,0,axesWidth_,PlotEntitySettings::FILLNONE);
 
         //draw bottom
         p1 = projection_neu(xl, yl, zl);
         p2 = projection_neu(xl, yl, zr);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
 
         p1 = projection_neu(xr, yl, zr);
         p2 = projection_neu(xr, yl, zl);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
 
         //draw left
         p1 = projection_neu(xl, yr, zr);
@@ -1187,31 +1269,33 @@ void PlotLibraryLatex::renderAxes() {
         points.push_back(p2);
         points.push_back(p3);
         points.push_back(p4);
-        latexPolygon(points,latexColor_,latexColor_,0,axesWidth_,PlotEntitySettings::FILLNONE);
+        svgPolygon(points,svgColor_,svgColor_,0,axesWidth_,PlotEntitySettings::FILLNONE);
 
         //draw zero
         p1 = projection_neu(xl, 0, zl);
         p2 = projection_neu(xl, 0, zr);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
 
         p1 = projection_neu(xr, 0, zr);
         p2 = projection_neu(xr, 0, zl);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
 
         //the front is always above the plot
         p1 = projection_neu(xl, 0, zr);
         p2 = projection_neu(xr, 0, zr);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
 
         p1 = projection_neu(xl, yl, zr);
         p2 = projection_neu(xr, yl, zr);
-        latexLine(p1,p2,latexColor_,0,axesWidth_);
+        svgLine(p1,p2,svgColor_,0,axesWidth_);
     }
+    //glEnable(GL_DEPTH_TEST);
+
 }
 
-void PlotLibraryLatex::renderAxisScales(Axis axis, bool helperLines, const std::string& label) {
+void PlotLibrarySvg::renderAxisScales(Axis axis, bool helperLines, const std::string& label) {
     tgt::dvec2 step = updateScaleSteps(axis);
-    latexColor_ = drawingColor_;
+    svgColor_ = drawingColor_;
     plot_t xl = domain_[0].getLeft();    plot_t xr = domain_[0].getRight();
     plot_t yl = domain_[1].getLeft();    plot_t yr = domain_[1].getRight();
     plot_t zl = domain_[2].getLeft();    plot_t zr = domain_[2].getRight();
@@ -1243,7 +1327,7 @@ void PlotLibraryLatex::renderAxisScales(Axis axis, bool helperLines, const std::
                 if (helperLines && dimension_ == TWO) {
                     PlotLibraryFileBase::Projection_Coordinates p1 = convertPlotCoordinatesToViewport3Projection(i, yl,0);
                     PlotLibraryFileBase::Projection_Coordinates p2 = convertPlotCoordinatesToViewport3Projection(i, yr,0);
-                    latexLine(p1,p2,latexColor_,0,axesWidth_/2.f);
+                    svgLine(p1,p2,svgColor_,0,axesWidth_/2.f);
                 }
             }
             else if (axis == Y_AXIS) {
@@ -1253,9 +1337,9 @@ void PlotLibraryLatex::renderAxisScales(Axis axis, bool helperLines, const std::
                     PlotLibraryFileBase::Projection_Coordinates p3 = convertPlotCoordinatesToViewport3Projection(xr, i, zl);
                     if (dimension_ == FAKETHREE) {
                         PlotLibraryFileBase::Projection_Coordinates p1 = convertPlotCoordinatesToViewport3Projection(xl, i, zr);
-                        latexLine(p1,p2,latexColor_,0,axesWidth_/2.f);
+                        svgLine(p1,p2,svgColor_,0,axesWidth_/2.f);
                     }
-                    latexLine(p2,p3,latexColor_,0,axesWidth_/2.f);
+                    svgLine(p2,p3,svgColor_,0,axesWidth_/2.f);
                 }
             }
         }
@@ -1452,40 +1536,40 @@ void PlotLibraryLatex::renderAxisScales(Axis axis, bool helperLines, const std::
                         p2 = projection_neu(i, yl, zl);
                         p3 = projection_neu(i, yr, zl);
                         p4 = projection_neu(i - step.x, yr, zl);
-                        latexLine(p1,p2,latexColor_,0,lineWidth_);
-                        latexLine(p2,p3,latexColor_,0,lineWidth_);
-                        latexLine(p3,p4,latexColor_,0,lineWidth_);
-                        latexLine(p4,p1,latexColor_,0,lineWidth_);
+                        svgLine(p1,p2,svgColor_,0,lineWidth_);
+                        svgLine(p2,p3,svgColor_,0,lineWidth_);
+                        svgLine(p3,p4,svgColor_,0,lineWidth_);
+                        svgLine(p4,p1,svgColor_,0,lineWidth_);
                     }
                     if (top) {
                         p1 = projection_neu(i, yl, zr);
                         p2 = projection_neu(i - step.x, yl, zr);
                         p3 = projection_neu(i - step.x, yr, zr);
                         p4 = projection_neu(i, yr, zr);
-                        latexLine(p1,p2,latexColor_,0,lineWidth_);
-                        latexLine(p2,p3,latexColor_,0,lineWidth_);
-                        latexLine(p3,p4,latexColor_,0,lineWidth_);
-                        latexLine(p4,p1,latexColor_,0,lineWidth_);
+                        svgLine(p1,p2,svgColor_,0,lineWidth_);
+                        svgLine(p2,p3,svgColor_,0,lineWidth_);
+                        svgLine(p3,p4,svgColor_,0,lineWidth_);
+                        svgLine(p4,p1,svgColor_,0,lineWidth_);
                     }
                     if (front) {
                         p1 = projection_neu(i - step.x, yl, zl);
                         p2 = projection_neu(i - step.x, yl, zr);
                         p3 = projection_neu(i, yl, zr);
                         p4 = projection_neu(i, yl, zl);
-                        latexLine(p1,p2,latexColor_,0,lineWidth_);
-                        latexLine(p2,p3,latexColor_,0,lineWidth_);
-                        latexLine(p3,p4,latexColor_,0,lineWidth_);
-                        latexLine(p4,p1,latexColor_,0,lineWidth_);
+                        svgLine(p1,p2,svgColor_,0,lineWidth_);
+                        svgLine(p2,p3,svgColor_,0,lineWidth_);
+                        svgLine(p3,p4,svgColor_,0,lineWidth_);
+                        svgLine(p4,p1,svgColor_,0,lineWidth_);
                     }
                     if (back) {
                         p1 = projection_neu(i, yr, zl);
                         p2 = projection_neu(i, yr, zr);
                         p3 = projection_neu(i - step.x, yr, zr);
                         p4 = projection_neu(i - step.x, yr, zl);
-                        latexLine(p1,p2,latexColor_,0,lineWidth_);
-                        latexLine(p2,p3,latexColor_,0,lineWidth_);
-                        latexLine(p3,p4,latexColor_,0,lineWidth_);
-                        latexLine(p4,p1,latexColor_,0,lineWidth_);
+                        svgLine(p1,p2,svgColor_,0,lineWidth_);
+                        svgLine(p2,p3,svgColor_,0,lineWidth_);
+                        svgLine(p3,p4,svgColor_,0,lineWidth_);
+                        svgLine(p4,p1,svgColor_,0,lineWidth_);
                     }
                 }
             }
@@ -1496,40 +1580,40 @@ void PlotLibraryLatex::renderAxisScales(Axis axis, bool helperLines, const std::
                         p2 = projection_neu(xr, i, zl);
                         p3 = projection_neu(xl, i, zl);
                         p4 = projection_neu(xl, i - step.x, zl);
-                        latexLine(p1,p2,latexColor_,0,lineWidth_);
-                        latexLine(p2,p3,latexColor_,0,lineWidth_);
-                        latexLine(p3,p4,latexColor_,0,lineWidth_);
-                        latexLine(p4,p1,latexColor_,0,lineWidth_);
+                        svgLine(p1,p2,svgColor_,0,lineWidth_);
+                        svgLine(p2,p3,svgColor_,0,lineWidth_);
+                        svgLine(p3,p4,svgColor_,0,lineWidth_);
+                        svgLine(p4,p1,svgColor_,0,lineWidth_);
                     }
                     if (top) {
                         p1 = projection_neu(xr, i, zr);
                         p2 = projection_neu(xr, i - step.x, zr);
                         p3 = projection_neu(xl, i - step.x, zr);
                         p4 = projection_neu(xl, i, zr);
-                        latexLine(p1,p2,latexColor_,0,lineWidth_);
-                        latexLine(p2,p3,latexColor_,0,lineWidth_);
-                        latexLine(p3,p4,latexColor_,0,lineWidth_);
-                        latexLine(p4,p1,latexColor_,0,lineWidth_);
+                        svgLine(p1,p2,svgColor_,0,lineWidth_);
+                        svgLine(p2,p3,svgColor_,0,lineWidth_);
+                        svgLine(p3,p4,svgColor_,0,lineWidth_);
+                        svgLine(p4,p1,svgColor_,0,lineWidth_);
                     }
                     if (left) {
                         p1 = projection_neu(xl, i - step.x, zr);
                         p2 = projection_neu(xl, i - step.x, zl);
                         p3 = projection_neu(xl, i, zl);
                         p4 = projection_neu(xl, i, zr);
-                        latexLine(p1,p2,latexColor_,0,lineWidth_);
-                        latexLine(p2,p3,latexColor_,0,lineWidth_);
-                        latexLine(p3,p4,latexColor_,0,lineWidth_);
-                        latexLine(p4,p1,latexColor_,0,lineWidth_);
+                        svgLine(p1,p2,svgColor_,0,lineWidth_);
+                        svgLine(p2,p3,svgColor_,0,lineWidth_);
+                        svgLine(p3,p4,svgColor_,0,lineWidth_);
+                        svgLine(p4,p1,svgColor_,0,lineWidth_);
                     }
                     if (right) {
                         p1 = projection_neu(xr, i, zr);
                         p2 = projection_neu(xr, i,  zl);
                         p3 = projection_neu(xr ,i - step.x, zl);
                         p4 = projection_neu(xr, i - step.x, zr);
-                        latexLine(p1,p2,latexColor_,0,lineWidth_);
-                        latexLine(p2,p3,latexColor_,0,lineWidth_);
-                        latexLine(p3,p4,latexColor_,0,lineWidth_);
-                        latexLine(p4,p1,latexColor_,0,lineWidth_);
+                        svgLine(p1,p2,svgColor_,0,lineWidth_);
+                        svgLine(p2,p3,svgColor_,0,lineWidth_);
+                        svgLine(p3,p4,svgColor_,0,lineWidth_);
+                        svgLine(p4,p1,svgColor_,0,lineWidth_);
                     }
                 }
             }
@@ -1540,40 +1624,40 @@ void PlotLibraryLatex::renderAxisScales(Axis axis, bool helperLines, const std::
                         p2 = projection_neu(xr, yr, i);
                         p3 = projection_neu(xl, yr, i);
                         p4 = projection_neu(xl, yr, i - step.x);
-                        latexLine(p1,p2,latexColor_,0,lineWidth_);
-                        latexLine(p2,p3,latexColor_,0,lineWidth_);
-                        latexLine(p3,p4,latexColor_,0,lineWidth_);
-                        latexLine(p4,p1,latexColor_,0,lineWidth_);
+                        svgLine(p1,p2,svgColor_,0,lineWidth_);
+                        svgLine(p2,p3,svgColor_,0,lineWidth_);
+                        svgLine(p3,p4,svgColor_,0,lineWidth_);
+                        svgLine(p4,p1,svgColor_,0,lineWidth_);
                     }
                     if (front) {
                         p1 = projection_neu(xr, yl, i);
                         p2 = projection_neu(xr, yl, i - step.x);
                         p3 = projection_neu(xl, yl, i - step.x);
                         p4 = projection_neu(xl, yl, i);
-                        latexLine(p1,p2,latexColor_,0,lineWidth_);
-                        latexLine(p2,p3,latexColor_,0,lineWidth_);
-                        latexLine(p3,p4,latexColor_,0,lineWidth_);
-                        latexLine(p4,p1,latexColor_,0,lineWidth_);
+                        svgLine(p1,p2,svgColor_,0,lineWidth_);
+                        svgLine(p2,p3,svgColor_,0,lineWidth_);
+                        svgLine(p3,p4,svgColor_,0,lineWidth_);
+                        svgLine(p4,p1,svgColor_,0,lineWidth_);
                     }
                     if (left) {
                         p1 = projection_neu(xl, yl, i - step.x);
                         p2 = projection_neu(xl, yr, i - step.x);
                         p3 = projection_neu(xl, yr, i);
                         p4 = projection_neu(xl, yl, i);
-                        latexLine(p1,p2,latexColor_,0,lineWidth_);
-                        latexLine(p2,p3,latexColor_,0,lineWidth_);
-                        latexLine(p3,p4,latexColor_,0,lineWidth_);
-                        latexLine(p4,p1,latexColor_,0,lineWidth_);
+                        svgLine(p1,p2,svgColor_,0,lineWidth_);
+                        svgLine(p2,p3,svgColor_,0,lineWidth_);
+                        svgLine(p3,p4,svgColor_,0,lineWidth_);
+                        svgLine(p4,p1,svgColor_,0,lineWidth_);
                     }
                     if (right) {
                         p1 = projection_neu(xr, yl, i);
                         p2 = projection_neu(xr, yr, i);
                         p3 = projection_neu(xr, yr, i - step.x);
                         p4 = projection_neu(xr, yl,i - step.x);
-                        latexLine(p1,p2,latexColor_,0,lineWidth_);
-                        latexLine(p2,p3,latexColor_,0,lineWidth_);
-                        latexLine(p3,p4,latexColor_,0,lineWidth_);
-                        latexLine(p4,p1,latexColor_,0,lineWidth_);
+                        svgLine(p1,p2,svgColor_,0,lineWidth_);
+                        svgLine(p2,p3,svgColor_,0,lineWidth_);
+                        svgLine(p3,p4,svgColor_,0,lineWidth_);
+                        svgLine(p4,p1,svgColor_,0,lineWidth_);
                     }
                 }
             }
@@ -1581,7 +1665,7 @@ void PlotLibraryLatex::renderAxisScales(Axis axis, bool helperLines, const std::
     }
 }
 
-void PlotLibraryLatex::renderAxisLabelScales(const PlotData& data, int indexLabel, bool helperLines) {
+void PlotLibrarySvg::renderAxisLabelScales(const PlotData& data, int indexLabel, bool helperLines) {
     std::string label;
     xAxisLabelGroup_.reset();
     xAxisLabelGroup_.setBounds(getBoundsBelowPlot());
@@ -1607,14 +1691,14 @@ void PlotLibraryLatex::renderAxisLabelScales(const PlotData& data, int indexLabe
             points.clear();
             points.push_back(convertPlotCoordinatesToViewport3Projection(x,domain_[1].getLeft(),0));
             points.push_back(convertPlotCoordinatesToViewport3Projection(x,domain_[1].getRight(),0));
-            latexLine(points.at(0),points.at(1),drawingColor_,0,axesWidth_/2.f);
+            svgLine(points.at(0),points.at(1),drawingColor_,0,axesWidth_/2.f);
         }
         x += 1;
     }
     renderSmartLabelGroup(&xAxisLabelGroup_);
 }
 
-void PlotLibraryLatex::renderLabel(tgt::vec3 pos, const SmartLabel::Alignment align, const std::string& text,
+void PlotLibrarySvg::renderLabel(tgt::vec3 pos, const SmartLabel::Alignment align, const std::string& text,
                               bool viewCoordinates, int padding) {
     if (!viewCoordinates)
         pos = convertPlotCoordinatesToViewport3(pos);
@@ -1625,33 +1709,33 @@ void PlotLibraryLatex::renderLabel(tgt::vec3 pos, const SmartLabel::Alignment al
     modelviewMatrix_ = tgt::Matrix4<plot_t>::createIdentity();
 
     tgt::dvec3 position = pos;
-    SmartLabelGroupBaseLatex::renderSingleLabel(&labelFont_,  text,fontSize_, align, static_cast<double>(padding), position);
-    latexText(position,text,&labelFont_,fontSize_,fontColor_,align);
+    SmartLabelGroupBaseSvg::renderSingleLabel(&labelFont_,  text,fontSize_, align, static_cast<double>(padding), position);
+    svgText(position,text,&labelFont_,fontSize_,fontColor_,align);
 
     projectionsMatrix_ = oldpjm;
     modelviewMatrix_ = oldmdlv;
 }
 
-void PlotLibraryLatex::renderLabel(tgt::dvec2 pos, const SmartLabel::Alignment align, const std::string& text, int padding) {
+void PlotLibrarySvg::renderLabel(tgt::dvec2 pos, const SmartLabel::Alignment align, const std::string& text, int padding) {
     tgt::Matrix4<plot_t> oldpjm = projectionsMatrix_;
     tgt::Matrix4<plot_t> oldmdlv = modelviewMatrix_;
     projectionsMatrix_ = plOrtho(0.0, windowSize_.x, 0.0, windowSize_.y, -1.0, 1.0);
     modelviewMatrix_ = tgt::Matrix4<plot_t>::createIdentity();
 
     tgt::dvec3 position = tgt::dvec3(pos,0.0);
-    SmartLabelGroupBaseLatex::renderSingleLabel(&labelFont_, text, fontSize_, align,static_cast<double>(padding), position);
-    latexText(position,text,&labelFont_,fontSize_,fontColor_,align);
+    SmartLabelGroupBaseSvg::renderSingleLabel(&labelFont_, text, fontSize_, align,static_cast<double>(padding), position);
+    svgText(position,text,&labelFont_,fontSize_,fontColor_,align);
 
     projectionsMatrix_ = oldpjm;
     modelviewMatrix_ = oldmdlv;
 }
 
-void PlotLibraryLatex::addPlotLabel(std::string text, tgt::vec3 position, tgt::Color color,
+void PlotLibrarySvg::addPlotLabel(std::string text, tgt::vec3 position, tgt::Color color,
                                int size, SmartLabel::Alignment align) {
     plotLabelGroup_.addLabel(text, position, color, size, align);
 }
 
-void PlotLibraryLatex::addLineLabel(std::string text, tgt::vec3 position, tgt::Color color,
+void PlotLibrarySvg::addLineLabel(std::string text, tgt::vec3 position, tgt::Color color,
                                int size, SmartLabel::Alignment align) {
     lineLabelGroup_.addLabel(text, position, color, size, align);
 }
@@ -1660,25 +1744,25 @@ void PlotLibraryLatex::addLineLabel(std::string text, tgt::vec3 position, tgt::C
 // helper functions
 //
 
-void PlotLibraryLatex::resetLineLabels() {
+void PlotLibrarySvg::resetLineLabels() {
     lineLabelGroup_.reset();
     lineLabelGroup_.setBounds(getBoundsRightOfPlot());
 }
 
-void PlotLibraryLatex::renderLineLabels() {
+void PlotLibrarySvg::renderLineLabels() {
     renderSmartLabelGroup(&lineLabelGroup_);
 }
 
-void PlotLibraryLatex::resetPlotLabels() {
+void PlotLibrarySvg::resetPlotLabels() {
     plotLabelGroup_.reset();
     plotLabelGroup_.setBounds(getBoundsPlot());
 }
 
-void PlotLibraryLatex::renderPlotLabels() {
+void PlotLibrarySvg::renderPlotLabels() {
     renderSmartLabelGroup(&plotLabelGroup_);
 }
 
-void PlotLibraryLatex::renderSmartLabelGroup(SmartLabelGroupBase* smg) {
+void PlotLibrarySvg::renderSmartLabelGroup(SmartLabelGroupBase* smg) {
     smg->performLayout();
 
     tgt::Matrix4<plot_t> oldpjm = projectionsMatrix_;
@@ -1687,8 +1771,8 @@ void PlotLibraryLatex::renderSmartLabelGroup(SmartLabelGroupBase* smg) {
     modelviewMatrix_ = tgt::Matrix4<plot_t>::createIdentity();
 
     smg->render();
-    if (dynamic_cast<SmartLabelGroupLatexNoLayoutWithBackground*>(smg) != 0) {
-        SmartLabelGroupLatexNoLayoutWithBackground* slglabel = static_cast<SmartLabelGroupLatexNoLayoutWithBackground*>(smg);
+    if (dynamic_cast<SmartLabelGroupSvgNoLayoutWithBackground*>(smg) != 0) {
+        SmartLabelGroupSvgNoLayoutWithBackground* slglabel = static_cast<SmartLabelGroupSvgNoLayoutWithBackground*>(smg);
         std::vector< std::vector< tgt::Vector3<double> > > polygonpoints = slglabel->getPolygonPoints();
         std::vector<SmartLabel> slabelvector = slglabel->getLabels();
         std::vector< tgt::Vector3<double> > points;
@@ -1700,14 +1784,14 @@ void PlotLibraryLatex::renderSmartLabelGroup(SmartLabelGroupBase* smg) {
                 points[k] = polygonpoints.at(i).at(k);
                 projPoints[k] = PlotLibraryFileBase::Projection_Coordinates(points[k],points[k],points[k]);
             }
-            latexPolygon(projPoints,slglabel->getBackgroundColor(),lineColor_,-1);
-            latexTextArea(tgt::Vector3<double>(points[0].x,points[0].y+(points[2].y-points[0].y),points[0].z),points[1].x-points[0].x,
+            svgPolygon(projPoints,slglabel->getBackgroundColor(),lineColor_,-1);
+            svgTextAreaSVG11(tgt::Vector3<double>(points[0].x,points[0].y+(points[2].y-points[0].y),points[0].z),points[1].x-points[0].x,
                 points[2].y-points[0].y,slabelvector[i].text_,
                 slglabel->getFont(),slabelvector[i].size_,slabelvector[i].color_);
         }
     }
     else {
-        SmartLabelGroupBaseLatex* slgb = dynamic_cast<SmartLabelGroupBaseLatex*>(smg);
+        SmartLabelGroupBaseSvg* slgb = dynamic_cast<SmartLabelGroupBaseSvg*>(smg);
         if (slgb != 0) {
             std::vector<SmartLabel> slabelvector = slgb->getLabels();
             tgt::Font* font = slgb->getFont();
@@ -1715,7 +1799,7 @@ void PlotLibraryLatex::renderSmartLabelGroup(SmartLabelGroupBase* smg) {
             for (size_t i = 0; i < slabelvector.size(); ++i) {
                 SmartLabel label = slabelvector.at(i);
                 pos = label.position_;
-                latexText(pos,label.text_,font,label.size_,label.color_,label.align_);
+                svgText(pos,label.text_,font,label.size_,label.color_,label.align_);
             }
         }
     }
@@ -1724,28 +1808,27 @@ void PlotLibraryLatex::renderSmartLabelGroup(SmartLabelGroupBase* smg) {
     modelviewMatrix_ = oldmdlv;
 }
 
-void PlotLibraryLatex::resetRenderStatus() {
+void PlotLibrarySvg::resetRenderStatus() {
     lineWidth_ = 1;
 }
 
-void PlotLibraryLatex::renderGlyph(plot_t x, plot_t y, plot_t z, plot_t size) {
+void PlotLibrarySvg::renderGlyph(plot_t x, plot_t y, plot_t z, plot_t size) {
     if (usePlotPickingManager_)
         return;
     PlotLibraryFileBase::Projection_Coordinates point = projection_neu(x,y,z);
     tgt::Vector3<plot_t> hpoint = point.afterProjection_;
-
     std::vector< PlotLibraryFileBase::Projection_Coordinates > points;
     if (glyphStyle_ == PlotEntitySettings::POINT) {
-        latexCircle(point,size/2,latexColor_,latexColor_,0);
+        svgCircle(point,size/2,svgColor_,svgColor_,0);
         return;
     }
     if (dimension_ == TWO){
         if (glyphStyle_ == PlotEntitySettings::CIRCLE){
             if (texture_ == 0) {
-                latexCircle(point,size/2,latexColor_,latexColor_,0);
+                svgCircle(point,size/2,svgColor_,svgColor_,0);
             }
             else
-                latexCircle(point,size/2,latexColor_,latexColor_,0,0,PlotEntitySettings::TEXTURE);
+                svgCircle(point,size/2,svgColor_,svgColor_,0,0,PlotEntitySettings::TEXTURE);
         }
         else if (glyphStyle_ == PlotEntitySettings::TRIANGLE){
             points.clear();
@@ -1756,10 +1839,10 @@ void PlotLibraryLatex::renderGlyph(plot_t x, plot_t y, plot_t z, plot_t size) {
             coor = tgt::Vector3<plot_t>(hpoint.x + size/3,hpoint.y - size/3,0);
             points.push_back(PlotLibraryFileBase::Projection_Coordinates(coor,coor,coor));
             if (texture_ == 0) {
-                latexPolygon(points,latexColor_,latexColor_,0);
+                svgPolygon(points,svgColor_,svgColor_,0);
             }
             else
-                latexPolygon(points,latexColor_,latexColor_,0,0,PlotEntitySettings::TEXTURE);
+                svgPolygon(points,svgColor_,svgColor_,0,0,PlotEntitySettings::TEXTURE);
         }
         else if (glyphStyle_ == PlotEntitySettings::QUAD){
             points.clear();
@@ -1772,38 +1855,38 @@ void PlotLibraryLatex::renderGlyph(plot_t x, plot_t y, plot_t z, plot_t size) {
             coor = tgt::Vector3<plot_t>(hpoint.x+size/2,hpoint.y + size/2,0);
             points.push_back(PlotLibraryFileBase::Projection_Coordinates(coor,coor,coor));
             if (texture_ == 0) {
-                latexPolygon(points,latexColor_,latexColor_,0);
+                svgPolygon(points,svgColor_,svgColor_,0);
             }
             else
-                latexPolygon(points,latexColor_,latexColor_,0,0,PlotEntitySettings::TEXTURE);
+                svgPolygon(points,svgColor_,svgColor_,0,0,PlotEntitySettings::TEXTURE);
         }
     }
     else if (dimension_ == THREE){
         if (glyphStyle_ == PlotEntitySettings::CIRCLE){
             if (texture_ == 0) {
-                latexSphere(tgt::Vector3<plot_t>(x,y,z),size,latexColor_,tgt::Color(1,1,1,0.01f),20,0,1);
+                svgSphere(tgt::Vector3<plot_t>(x,y,z),size,svgColor_,tgt::Color(1,1,1,0.01f),20,0,1);
             }
             else
-                latexSphere(tgt::Vector3<plot_t>(x,y,z),size,latexColor_,tgt::Color(1,1,1,0.01f),20,0,1,PlotEntitySettings::TEXTURE);
+                svgSphere(tgt::Vector3<plot_t>(x,y,z),size,svgColor_,tgt::Color(1,1,1,0.01f),20,0,1,PlotEntitySettings::TEXTURE);
         }
         else if (glyphStyle_ == PlotEntitySettings::TRIANGLE){
             if (texture_ == 0) {
-                latexTriangle3D(tgt::Vector3<plot_t>(x,y,z),size,size,latexColor_,tgt::Color(1,1,1,0.01f),0,1);
+                svgTriangle3D(tgt::Vector3<plot_t>(x,y,z),size,size,svgColor_,tgt::Color(1,1,1,0.01f),0,1);
             }
             else
-                latexTriangle3D(tgt::Vector3<plot_t>(x,y,z),size,size,latexColor_,tgt::Color(1,1,1,0.01f),0,1,PlotEntitySettings::TEXTURE);
+                svgTriangle3D(tgt::Vector3<plot_t>(x,y,z),size,size,svgColor_,tgt::Color(1,1,1,0.01f),0,1,PlotEntitySettings::TEXTURE);
         }
         else if (glyphStyle_ == PlotEntitySettings::QUAD){
             if (texture_ == 0) {
-                latexQuad(tgt::Vector3<plot_t>(x,y,z),size,size,size,latexColor_,tgt::Color(1,1,1,0.01f),0,1);
+                svgQuad(tgt::Vector3<plot_t>(x,y,z),size,size,size,svgColor_,tgt::Color(1,1,1,0.01f),0,1);
             }
             else
-                latexQuad(tgt::Vector3<plot_t>(x,y,z),size,size,size,latexColor_,tgt::Color(1,1,1,0.01f),0,1,PlotEntitySettings::TEXTURE);
+                svgQuad(tgt::Vector3<plot_t>(x,y,z),size,size,size,svgColor_,tgt::Color(1,1,1,0.01f),0,1,PlotEntitySettings::TEXTURE);
         }
     }
 }
 
-void PlotLibraryLatex::renderSingleBar(plot_t left, plot_t right, plot_t bottom, plot_t top, tgt::Color c, plot_t squeeze) {
+void PlotLibrarySvg::renderSingleBar(plot_t left, plot_t right, plot_t bottom, plot_t top, tgt::Color c, plot_t squeeze) {
     if (usePlotPickingManager_)
         return;
     PlotLibraryFileBase::Projection_Coordinates p1;
@@ -1833,7 +1916,7 @@ void PlotLibraryLatex::renderSingleBar(plot_t left, plot_t right, plot_t bottom,
     points[1] = p2;
     points[2] = p3;
     points[3] = p4;
-    latexPolygon(points,color,lineColor_,0,lineWidth_);
+    svgPolygon(points,color,lineColor_,0,lineWidth_);
 
     //back
     color = tgt::Color(0.8f*c.r, 0.8f*c.g, 0.8f*c.b, 1.0f);
@@ -1845,7 +1928,7 @@ void PlotLibraryLatex::renderSingleBar(plot_t left, plot_t right, plot_t bottom,
     points[1] = p2;
     points[2] = p3;
     points[3] = p4;
-    latexPolygon(points,color,lineColor_,0,lineWidth_);
+    svgPolygon(points,color,lineColor_,0,lineWidth_);
 
     //left
     color = tgt::Color(c.r, c.g, c.b, 1.0f);
@@ -1857,7 +1940,7 @@ void PlotLibraryLatex::renderSingleBar(plot_t left, plot_t right, plot_t bottom,
     points[1] = p2;
     points[2] = p3;
     points[3] = p4;
-    latexPolygon(points,color,lineColor_,0,lineWidth_);
+    svgPolygon(points,color,lineColor_,0,lineWidth_);
 
     //right
     color = tgt::Color(0.8f*c.r, 0.8f*c.g, 0.8f*c.b, 1.0f);
@@ -1869,7 +1952,7 @@ void PlotLibraryLatex::renderSingleBar(plot_t left, plot_t right, plot_t bottom,
     points[1] = p2;
     points[2] = p3;
     points[3] = p4;
-    latexPolygon(points,color,lineColor_,0,lineWidth_);
+    svgPolygon(points,color,lineColor_,0,lineWidth_);
 
     //top
     color = tgt::Color(0.9f*c.r, 0.9f*c.g, 0.9f*c.b, 1.0f);
@@ -1881,7 +1964,7 @@ void PlotLibraryLatex::renderSingleBar(plot_t left, plot_t right, plot_t bottom,
     points[1] = p2;
     points[2] = p3;
     points[3] = p4;
-    latexPolygon(points,color,lineColor_,0,lineWidth_);
+    svgPolygon(points,color,lineColor_,0,lineWidth_);
 
     //front
     color = tgt::Color(c.r, c.g, c.b, 1.0f);
@@ -1893,99 +1976,114 @@ void PlotLibraryLatex::renderSingleBar(plot_t left, plot_t right, plot_t bottom,
     points[1] = p2;
     points[2] = p3;
     points[3] = p4;
-    latexPolygon(points,color,lineColor_,0,lineWidth_);
+    svgPolygon(points,color,lineColor_,0,lineWidth_);
 }
 
-void PlotLibraryLatex::latexCircle(const PlotLibraryFileBase::Projection_Coordinates& point, plot_t radius, tgt::Color fillColor, tgt::Color borderColor, int clipping_number, double lineWidth, PlotEntitySettings::PolygonFillStyle fillStyle, PlotEntitySettings::LineStyle lineStyle) {
+void PlotLibrarySvg::svgCircle(const PlotLibraryFileBase::Projection_Coordinates& point, plot_t radius, tgt::Color fillColor, tgt::Color borderColor, int clipping_number, double lineWidth, PlotEntitySettings::PolygonFillStyle fillStyle, PlotEntitySettings::LineStyle lineStyle) {
     if (clipping_number == 0 || inClippRegion(point.afterModelview_))
-        renderVector_.push_back(new PlotLibraryLatexRenderCircle(point,radius,fillColor,borderColor,clipping_number,lineWidth,textureNumber_,fillStyle,lineStyle));
+        renderVector_.push_back(new PlotLibrarySvgRenderCircle(point,radius,fillColor,borderColor,clipping_number,lineWidth,textureNumber_,fillStyle,lineStyle));
 }
 
-void PlotLibraryLatex::latexLine(const PlotLibraryFileBase::Projection_Coordinates& startPoint, const PlotLibraryFileBase::Projection_Coordinates& endPoint, tgt::Color lineColor, int clipping_number, double lineWidth, PlotEntitySettings::LineStyle lineStyle) {
+void PlotLibrarySvg::svgLine(const PlotLibraryFileBase::Projection_Coordinates& startPoint, const PlotLibraryFileBase::Projection_Coordinates& endPoint, tgt::Color lineColor, int clipping_number, double lineWidth, PlotEntitySettings::LineStyle lineStyle) {
     if (clipping_number == 0 || inClippRegion(startPoint.afterModelview_) || inClippRegion(endPoint.afterModelview_))
-        renderVector_.push_back(new PlotLibraryLatexRenderLine(startPoint,endPoint,lineColor,clipping_number,lineWidth,lineStyle));
+        renderVector_.push_back(new PlotLibrarySvgRenderLine(startPoint,endPoint,lineColor,clipping_number,lineWidth,lineStyle));
 }
 
-void PlotLibraryLatex::latexPolygon(const std::vector< PlotLibraryFileBase::Projection_Coordinates >& points, tgt::Color fillColor, tgt::Color lineColor, int clipping_number, double lineWidth, PlotEntitySettings::PolygonFillStyle fillStyle, PlotEntitySettings::LineStyle lineStyle) {
+void PlotLibrarySvg::svgPolygon(const std::vector< PlotLibraryFileBase::Projection_Coordinates >& points, tgt::Color fillColor, tgt::Color lineColor, int clipping_number, double lineWidth, PlotEntitySettings::PolygonFillStyle fillStyle, PlotEntitySettings::LineStyle lineStyle) {
     if (clipping_number == 0 || inClippRegion(points))
-        renderVector_.push_back(new PlotLibraryLatexRenderPolygon(points,fillColor,lineColor,clipping_number,lineWidth,textureNumber_,fillStyle,lineStyle));
+        renderVector_.push_back(new PlotLibrarySvgRenderPolygon(points,fillColor,lineColor,clipping_number,lineWidth,textureNumber_,fillStyle,lineStyle));
 }
 
-void PlotLibraryLatex::latexPolyline(const std::vector< PlotLibraryFileBase::Projection_Coordinates >& points, tgt::Color fillColor, tgt::Color lineColor, int clipping_number, double lineWidth, PlotEntitySettings::PolygonFillStyle fillStyle, PlotEntitySettings::LineStyle lineStyle) {
+void PlotLibrarySvg::svgPolyline(const std::vector< PlotLibraryFileBase::Projection_Coordinates >& points, tgt::Color fillColor, tgt::Color lineColor, int clipping_number, double lineWidth, PlotEntitySettings::PolygonFillStyle fillStyle, PlotEntitySettings::LineStyle lineStyle) {
     if (clipping_number == 0 || inClippRegion(points))
-        renderVector_.push_back(new PlotLibraryLatexRenderPolyline(points,fillColor,lineColor,clipping_number,lineWidth,textureNumber_,fillStyle,lineStyle));
+        renderVector_.push_back(new PlotLibrarySvgRenderPolyline(points,fillColor,lineColor,clipping_number,lineWidth,textureNumber_,fillStyle,lineStyle));
 }
 
-void PlotLibraryLatex::latexEllipse(const PlotLibraryFileBase::Projection_Coordinates& mpoint, double xradius, double yradius, tgt::Color fillColor, tgt::Color lineColor, int clipping_number, double lineWidth, PlotEntitySettings::PolygonFillStyle fillStyle, PlotEntitySettings::LineStyle lineStyle) {
+void PlotLibrarySvg::svgEllipse(const PlotLibraryFileBase::Projection_Coordinates& mpoint, double xradius, double yradius, tgt::Color fillColor, tgt::Color lineColor, int clipping_number, double lineWidth, PlotEntitySettings::PolygonFillStyle fillStyle, PlotEntitySettings::LineStyle lineStyle) {
     if (clipping_number == 0 || inClippRegion(mpoint.afterModelview_))
-        renderVector_.push_back(new PlotLibraryLatexRenderEllipse(mpoint,xradius,yradius,fillColor,lineColor,clipping_number,lineWidth,textureNumber_,fillStyle,lineStyle));
+        renderVector_.push_back(new PlotLibrarySvgRenderEllipse(mpoint,xradius,yradius,fillColor,lineColor,clipping_number,lineWidth,textureNumber_,fillStyle,lineStyle));
 }
 
-void PlotLibraryLatex::latexRect(const PlotLibraryFileBase::Projection_Coordinates& startPoint, double stepWidth, double height, tgt::Color startColor, tgt::Color endColor) {
-    renderVector_.push_back(new PlotLibraryLatexRenderRect(startPoint,stepWidth,height,startColor,endColor));
+void PlotLibrarySvg::svgGradient(const tgt::Vector2<plot_t>& startPoint, const tgt::Vector2<plot_t>& endPoint, const std::string& id, tgt::Color startColor, tgt::Color endColor) {
+    svgOutput_ << "<defs><linearGradient id=\"" << id << "\" x1=\"" << startPoint.x << "\" y1=\"" << startPoint.y << "\" x2=\"" << endPoint.x << "\" y2=\"" << endPoint.y << "\">"
+        << "<stop stop-color=";
+    svgOutput_ << PlotLibrarySvgRender::svgColor(startColor);
+    svgOutput_ << " offset=\"0\" />"
+        << "<stop stop-color=";
+    svgOutput_ << PlotLibrarySvgRender::svgColor(endColor);
+    svgOutput_ << " offset=\"1\" />"
+        << "</linearGradient></defs>\n";
 }
 
-void PlotLibraryLatex::latexText(const tgt::Vector3<plot_t>& point, const std::string& text,  tgt::Font* /*font*/, double size, tgt::Color textColor, const SmartLabel::Alignment align) {
-    if (text.size() > 0) {
-        std::stringstream latexText;
-        std::stringstream controlledText;
-        latexText << "\\newrgbcolor{tcolor}{" << PlotLibraryLatexRender::latexColor(textColor) << "}\n";
-        latexText << "\\rput";
-        switch (align) {
-            case SmartLabel::TOPLEFT:
-                latexText << "[lt]";
-                break;
-            case SmartLabel::TOPCENTERED:
-                latexText << "[t]";
-                break;
-            case SmartLabel::TOPRIGHT:
-                latexText << "[rt]";
-                break;
-            case SmartLabel::MIDDLELEFT:
-                latexText << "[lB]";
-                break;
-            case SmartLabel::CENTERED:
-                latexText << "[B]";
-                break;
-            case SmartLabel::MIDDLERIGHT:
-                latexText << "[rB]";
-                break;
-            case SmartLabel::BOTTOMLEFT:
-                latexText << "[lb]";
-                break;
-            case SmartLabel::BOTTOMCENTERED:
-                latexText << "[b]";
-                break;
-            case SmartLabel::BOTTOMRIGHT:
-                latexText << "[rb]";
-                break;
-        }
-        for (size_t i = 0; i < text.size(); ++i) {
-            switch (text.at(i)) {
-                case '^' : controlledText << "\\^{}";
-                    break;
-                case '$' : controlledText << "\\$";
-                    break;
-                case '&' : controlledText << "\\&";
-                    break;
-                case '%' : controlledText << "\\%";
-                    break;
-                case '{' : controlledText << "\\{";
-                    break;
-                case '}' : controlledText << "\\}";
-                    break;
-                case '\\' : controlledText << "\\textbackslash";
-                    break;
-            default:
-                controlledText << text.at(i);
-            }
-        }
-        latexText << "(" << point.x << "," << point.y << "){\\fontsize{"<< size*0.85 <<"}{"<< size*0.85 <<"}\\selectfont\\textcolor{tcolor}{" << controlledText.str() << "}}\n";
-        renderVector_.push_back(new PlotLibraryLatexRenderText(point,latexText.str()));
+void PlotLibrarySvg::svgRect(const PlotLibraryFileBase::Projection_Coordinates& startPoint, double stepWidth, double height, const std::string& fillurl) {
+    renderVector_.push_back(new PlotLibrarySvgRenderRect(startPoint,stepWidth,height,fillurl));
+}
+
+void PlotLibrarySvg::svgText(const tgt::Vector3<plot_t>& point, const std::string& text,  tgt::Font* font, double size, tgt::Color textColor, const SmartLabel::Alignment align) {
+    std::stringstream svgText;
+    std::stringstream controlledText;
+    ++fountNumberCounter_;
+    svgText << "@font-face {\n"
+       << "  font-family: 'VoreenFontFamily" << fountNumberCounter_ << "';\n"
+       << "  src: url('" << font->getFontName() << "')  format('truetype');\n"
+       << "}\n";
+    svgText << "<g transform=\"translate(0 " << point.y << ") scale(1 -1) translate(0 " << -point.y << ")\"> ";
+    svgText << "<text x=\"" << point.x << "\" y=\"" << point.y << "\" font-family=\"VoreenFontFamily" << fountNumberCounter_
+        << "\" font-size=\"" << size << "\" font-style=\"normal\" fill=";
+    svgText << PlotLibrarySvgRender::svgColor(textColor);
+    svgText << " fill-opacity=";
+    svgText << PlotLibrarySvgRender::svgTransparancy(textColor);
+    switch (align) {
+        case SmartLabel::TOPLEFT:
+            svgText << " text-anchor=\"start\"";
+            break;
+        case SmartLabel::TOPCENTERED:
+            svgText << " text-anchor=\"middle\"";
+            break;
+        case SmartLabel::TOPRIGHT:
+            svgText << " text-anchor=\"end\"";
+            break;
+        case SmartLabel::MIDDLELEFT:
+            svgText << " text-anchor=\"start\"";
+            break;
+        case SmartLabel::CENTERED:
+            svgText << " text-anchor=\"middle\"";
+            break;
+        case SmartLabel::MIDDLERIGHT:
+            svgText << " text-anchor=\"end\"";
+            break;
+        case SmartLabel::BOTTOMLEFT:
+            svgText << " text-anchor=\"start\"";
+            break;
+        case SmartLabel::BOTTOMCENTERED:
+            svgText << " text-anchor=\"middle\"";
+            break;
+        case SmartLabel::BOTTOMRIGHT:
+            svgText << " text-anchor=\"end\"";
+            break;
     }
+    for (size_t i = 0; i < text.size(); ++i) {
+        switch (text.at(i)) {
+            case '&' : controlledText << "&amp;";
+                break;
+            case '<' : controlledText << "&lt;";
+                break;
+            case '>' : controlledText << "&gt;";
+                break;
+            case '\"' : controlledText << "&quot;";
+                break;
+            case '\'' : controlledText << "&apos;";
+                break;
+        default:
+            controlledText << text.at(i);
+        }
+    }
+
+    svgText << " >" << controlledText.str() << "</text> </g>\n";
+    renderVector_.push_back(new PlotLibrarySvgRenderText(point,svgText.str()));
 }
 
-void PlotLibraryLatex::latexTextArea(const tgt::Vector3<plot_t>& point, double /*width*/, double height, const std::string& text,  tgt::Font* font, double size, tgt::Color textColor) {
+void PlotLibrarySvg::svgTextAreaSVG11(const tgt::Vector3<plot_t>& point, double /*width*/, double height, const std::string& text,  tgt::Font* font, double size, tgt::Color textColor) {
     std::vector<std::string > copytext;
     copytext.resize(1);
     int j =0;
@@ -2013,11 +2111,48 @@ void PlotLibraryLatex::latexTextArea(const tgt::Vector3<plot_t>& point, double /
         }
     }
     for (size_t i = 0; i < copytext.size(); ++i) {
-        latexText(tgt::Vector3<plot_t>(point.x+3,point.y-(i+0.76)*height/copytext.size(),point.z),copytext[i],font,size,textColor,SmartLabel::MIDDLELEFT);
+        svgText(tgt::Vector3<plot_t>(point.x+3,point.y-(i+0.76)*height/copytext.size(),point.z),copytext[i],font,size,textColor,SmartLabel::BOTTOMLEFT);
     }
 }
 
-void PlotLibraryLatex::latexSphere(const tgt::Vector3<plot_t>& mpoint, double radius, tgt::Color fillColor, tgt::Color lineColor, int sections, int clipping_number, double lineWidth, PlotEntitySettings::PolygonFillStyle fillStyle, PlotEntitySettings::LineStyle lineStyle) {
+
+void PlotLibrarySvg::svgTextAreaSVG12(const tgt::Vector3<plot_t>& point, double width, double height, const std::string& text,  tgt::Font* font, double size, tgt::Color textColor) {
+    std::stringstream svgText;
+    svgText << "<g transform=\"translate(0 " << point.y << ") scale(1 -1) translate(0 " << -point.y << ")\"> ";
+    svgText << "<textArea x=\"" << point.x << "\" y=\"" << point.y << "\" width=\"" << width << "\" height=\"" << height << "\" "
+        << "line-increment=\"auto\" font-size=\"" << size << "\" font-family=\"" << font->getFontName()
+        << "\" fill=";
+    svgText << PlotLibrarySvgRender::svgColor(textColor);
+    svgText << " fill-opacity=" << PlotLibrarySvgRender::svgTransparancy(textColor);
+    std::string copytext = "";
+    for (size_t i = 0; i < text.size(); ++i) {
+        switch (text.at(i)) {
+            case 'y':
+            case 'z':
+                copytext += "<tbreak />";
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case '.':
+            case ':':
+            case ' ':
+            case 'x':
+                copytext += text.at(i);
+                break;
+        }
+    }
+    svgText << " >" << copytext << "</textArea> </g>\n";
+    renderVector_.push_back(new PlotLibrarySvgRenderText(point,svgText.str()));
+}
+
+void PlotLibrarySvg::svgSphere(const tgt::Vector3<plot_t>& mpoint, double radius, tgt::Color fillColor, tgt::Color lineColor, int sections, int clipping_number, double lineWidth, PlotEntitySettings::PolygonFillStyle fillStyle, PlotEntitySettings::LineStyle lineStyle) {
     PlotLibraryFileBase::Projection_Coordinates point = convertPlotCoordinatesToViewport3Projection(mpoint);
     if (inClippRegion(point.afterModelview_)) {
         double xscale = domain_[X_AXIS].size()/static_cast<double>(2*windowSize_.x);
@@ -2041,13 +2176,13 @@ void PlotLibraryLatex::latexSphere(const tgt::Vector3<plot_t>& mpoint, double ra
                 points[2] = point3;
                 points[3] = point4;
                 fakt = static_cast<float>(0.4 + (0.6*std::cos(theta)+ 1)/2.0);
-                latexPolygon(points,tgt::Color(fillColor.r*fakt,fillColor.g*fakt,fillColor.b*fakt,fillColor.a),lineColor,clipping_number,lineWidth,fillStyle,lineStyle);
+                svgPolygon(points,tgt::Color(fillColor.r*fakt,fillColor.g*fakt,fillColor.b*fakt,fillColor.a),lineColor,clipping_number,lineWidth,fillStyle,lineStyle);
             }
         }
     }
 }
 
-void PlotLibraryLatex::latexQuad(const tgt::Vector3<plot_t>& mpoint, double xsize, double ysize, double zsize, tgt::Color fillColor, tgt::Color lineColor, int clipping_number, double lineWidth,PlotEntitySettings::PolygonFillStyle fillStyle, PlotEntitySettings::LineStyle lineStyle) {
+void PlotLibrarySvg::svgQuad(const tgt::Vector3<plot_t>& mpoint, double xsize, double ysize, double zsize, tgt::Color fillColor, tgt::Color lineColor, int clipping_number, double lineWidth,PlotEntitySettings::PolygonFillStyle fillStyle, PlotEntitySettings::LineStyle lineStyle) {
     PlotLibraryFileBase::Projection_Coordinates point = convertPlotCoordinatesToViewport3Projection(mpoint);
     if (inClippRegion(point.afterModelview_)) {
         double xscale = domain_[X_AXIS].size()/static_cast<double>(2*windowSize_.x);
@@ -2111,12 +2246,12 @@ void PlotLibraryLatex::latexQuad(const tgt::Vector3<plot_t>& mpoint, double xsiz
         fillcolorvector.push_back(tgt::Color(fillColor.r*0.9f,fillColor.g*0.9f,fillColor.b*0.9f,fillColor.a));
 
         for (size_t i = 0; i < fillcolorvector.size(); ++i) {
-            latexPolygon(pointsvector[i],fillcolorvector[i],lineColor,clipping_number,lineWidth,fillStyle,lineStyle);
+            svgPolygon(pointsvector[i],fillcolorvector[i],lineColor,clipping_number,lineWidth,fillStyle,lineStyle);
         }
     }
 }
 
-void PlotLibraryLatex::latexTriangle3D(const tgt::Vector3<plot_t>& mpoint, double height, double weight, tgt::Color fillColor, tgt::Color lineColor, int clipping_number, double lineWidth, PlotEntitySettings::PolygonFillStyle fillStyle, PlotEntitySettings::LineStyle lineStyle) {
+void PlotLibrarySvg::svgTriangle3D(const tgt::Vector3<plot_t>& mpoint, double height, double weight, tgt::Color fillColor, tgt::Color lineColor, int clipping_number, double lineWidth, PlotEntitySettings::PolygonFillStyle fillStyle, PlotEntitySettings::LineStyle lineStyle) {
     PlotLibraryFileBase::Projection_Coordinates point = convertPlotCoordinatesToViewport3Projection(mpoint);
     if (inClippRegion(point.afterModelview_)) {
         double xscale = domain_[X_AXIS].size()/static_cast<double>(2*windowSize_.x);
@@ -2177,11 +2312,10 @@ void PlotLibraryLatex::latexTriangle3D(const tgt::Vector3<plot_t>& mpoint, doubl
                 }
             }
         }
-
-        //float fakt;
+        float fakt;
         for(size_t i = 0; i < sortvector.size(); ++i) {
-            //fakt = 0.6f*(i+1)/sortvector.size() + 0.4f;
-            latexPolygon(pointsvector[sortvector[i].second],fillColor,lineColor,clipping_number,lineWidth,fillStyle,lineStyle);
+            fakt = 0.6f*(i+1)/sortvector.size() + 0.4f;
+            svgPolygon(pointsvector[sortvector[i].second],tgt::Color(fillColor.r*fakt,fillColor.g*fakt,fillColor.b*fakt,fillColor.a),lineColor,clipping_number,lineWidth,fillStyle,lineStyle);
         }
     }
 }

@@ -232,8 +232,6 @@ VoreenMainWindow::VoreenMainWindow(const std::string& workspace, bool resetSetti
     , animationEditor_(0)
     , renderTargetViewer_(0)
     , guiMode_(MODE_NONE)
-    , canvasPos_(0, 0)
-    , canvasSize_(0, 0)
 {
 
     setDockOptions(QMainWindow::AnimatedDocks); // disallow tabbed docks
@@ -988,7 +986,8 @@ void VoreenMainWindow::openNetwork() {
     QList<QUrl> urls;
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getUserDataPath().c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("modules").c_str());
-//    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("networks").c_str());
+    if (QDir(VoreenApplication::app()->getBasePath("custommodules").c_str()).exists())
+        urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("custommodules").c_str());
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
     fileDialog.setSidebarUrls(urls);
@@ -1028,7 +1027,8 @@ bool VoreenMainWindow::saveNetworkAs() {
     QList<QUrl> urls;
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getUserDataPath().c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("modules").c_str());
-//    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("networks").c_str());
+    if (QDir(VoreenApplication::app()->getBasePath("custommodules").c_str()).exists())
+        urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("custommodules").c_str());
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
     fileDialog.setSidebarUrls(urls);
@@ -1188,9 +1188,11 @@ void VoreenMainWindow::openWorkspace() {
     fileDialog.setNameFilters(filters);
 
     QList<QUrl> urls;
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("workspaces").c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getUserDataPath().c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("modules").c_str());
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("workspaces").c_str());
+    if (QDir(VoreenApplication::app()->getBasePath("custommodules").c_str()).exists())
+        urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("custommodules").c_str());
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
     fileDialog.setSidebarUrls(urls);
@@ -1235,6 +1237,31 @@ bool VoreenMainWindow::saveWorkspace(const QString& filename) {
         }
     }
 
+    //safe development position of first canvas
+    if (vis_->getWorkspace() && vis_->getWorkspace()->getProcessorNetwork()) {
+       const ProcessorNetwork* network = vis_->getWorkspace()->getProcessorNetwork();
+       const std::vector<CanvasRenderer*>& processors = network->getProcessorsByType<CanvasRenderer>();
+
+       for (size_t i=0; i < processors.size(); ++i) {
+           ProcessorWidget* pw = processors[i]->getProcessorWidget();
+           if (pw) {
+               QProcessorWidget* qpw = dynamic_cast<QProcessorWidget*>(pw);
+               if (qpw) {
+                   //save only if we are in development mode
+                   if(guiMode_ == MODE_DEVELOPMENT){
+                       IVec2MetaData* sizeMeta = new IVec2MetaData(qpw->getSize());
+                       processors[i]->getMetaDataContainer().addMetaData("preferedDevelopmentCanvasSize",sizeMeta);
+                       IVec2MetaData* positionMeta = new IVec2MetaData(qpw->getPosition());
+                       processors[i]->getMetaDataContainer().addMetaData("preferedDevelopmentCanvasPosition",positionMeta);
+                       BoolMetaData* fullscreenMeta = new BoolMetaData(qpw->isFullScreen());
+                       processors[i]->getMetaDataContainer().addMetaData("preferedDevelopmentCanvasFS",fullscreenMeta);
+                   }
+               }
+           }
+           break;
+       }
+    }
+
     try {
         vis_->blockSignals(true);
         vis_->saveWorkspace(f, true, currentWorkspaceWorkDir_);
@@ -1267,9 +1294,11 @@ bool VoreenMainWindow::saveWorkspaceAs() {
     filters << "Voreen workspaces (*.vws)";
     fileDialog.setNameFilters(filters);
     QList<QUrl> urls;
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("workspaces").c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getUserDataPath().c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("modules").c_str());
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("workspaces").c_str());
+    if (QDir(VoreenApplication::app()->getBasePath("custommodules").c_str()).exists())
+        urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("custommodules").c_str());
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
     fileDialog.setSidebarUrls(urls);
@@ -1621,10 +1650,20 @@ void VoreenMainWindow::adjustCanvasWidgets(GuiMode guiMode) {
                 QProcessorWidget* qpw = dynamic_cast<QProcessorWidget*>(pw);
                 if (qpw) {
                     if (guiMode == MODE_APPLICATION) {
-                        canvasPos_ = qpw->getPosition();
-                        canvasSize_ = qpw->getSize();
+                        //save only on switch from dev to app
+                        if(guiMode_ == MODE_DEVELOPMENT){
+                            IVec2MetaData* sizeMeta = new IVec2MetaData(qpw->getSize());
+                            processors[i]->getMetaDataContainer().addMetaData("preferedDevelopmentCanvasSize",sizeMeta);
+                            IVec2MetaData* positionMeta = new IVec2MetaData(qpw->getPosition());
+                            processors[i]->getMetaDataContainer().addMetaData("preferedDevelopmentCanvasPosition",positionMeta);
+                            BoolMetaData* fullscreenMeta = new BoolMetaData(qpw->isFullScreen());
+                            processors[i]->getMetaDataContainer().addMetaData("preferedDevelopmentCanvasFS",fullscreenMeta);
+                        }
                         QMdiSubWindow* subw = mdiArea_->addSubWindow(qpw);
                         subw->showMaximized();
+                        //disable bool property
+                        Property* prop = processors[i]->getProperty("showFullScreen");
+                        if(prop) prop->setWidgetsEnabled(false);
                     }
                     else {
                         QObject* par = qpw->parent();
@@ -1638,11 +1677,29 @@ void VoreenMainWindow::adjustCanvasWidgets(GuiMode guiMode) {
                         qpw->setWindowFlags(Qt::Tool);
 
                         static_cast<QWidget*>(qpw)->setVisible(true);
-                        if (canvasSize_.x > 0 && canvasSize_.y > 0) {
-                            qpw->setSize(canvasSize_.x,  canvasSize_.y);
-                            qpw->setPosition(canvasPos_.x, canvasPos_.y);
+                        //restore canvas. if started in app mode, old values are loaded
+                        if(guiMode_ == MODE_APPLICATION){
+                            IVec2MetaData* positionMeta = dynamic_cast<IVec2MetaData*>(processors[i]->getMetaDataContainer().getMetaData("preferedDevelopmentCanvasPosition"));
+                            if (!positionMeta)
+                                LDEBUGC("voreenmainwindow", "adjustCanvasWidgets(): No meta data object returned");
+                            else
+                                qpw->setPosition(positionMeta->getValue().x, positionMeta->getValue().y);
+                            IVec2MetaData* sizeMeta = dynamic_cast<IVec2MetaData*>(processors[i]->getMetaDataContainer().getMetaData("preferedDevelopmentCanvasSize"));
+                            if (!sizeMeta)
+                                LDEBUGC("voreenmainwindow", "adjustCanvasWidgets(): No meta data object returned");
+                            else
+                                qpw->setSize(sizeMeta->getValue().x, sizeMeta->getValue().y);
+                            BoolMetaData* fullscreenMeta = dynamic_cast<BoolMetaData*>(processors[i]->getMetaDataContainer().getMetaData("preferedDevelopmentCanvasFS"));
+                            if (!sizeMeta)
+                                LDEBUGC("voreenmainwindow", "adjustCanvasWidgets(): No meta data object returned");
+                            else
+                                if(fullscreenMeta->getValue())
+                                    qpw->setWindowState(windowState() | Qt::WindowFullScreen);
                         }
                         qpw->show();
+                        //enable bool property
+                        Property* prop = processors[i]->getProperty("showFullScreen");
+                        if(prop) prop->setWidgetsEnabled(true);
                     }
                     return;
                 }

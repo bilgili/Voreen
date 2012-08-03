@@ -30,8 +30,8 @@
 #include "plotentitiesproperty.h"
 
 #include "voreen/core/properties/templateproperty.h"
-#include "../utils/plotselection.h"
-#include "../utils/plotzoomstate.h"
+#include "../datastructures/plotselection.h"
+#include "../datastructures/plotzoomstate.h"
 
 #include "tgt/vector.h"
 #include "tgt/logmanager.h"

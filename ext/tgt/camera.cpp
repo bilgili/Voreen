@@ -146,7 +146,10 @@ mat4 Camera::getProjectionMatrix() const {
         if(fovy > 175.f)
             fovy = 175.f;
 
-        return mat4::createPerspective(deg2rad(fovy), frust_.getRatio() * windowRatio_, frust_.getNearDist(), frust_.getFarDist());
+        if(windowRatio_ >= 1.0f)
+            return mat4::createPerspective(deg2rad(fovy), frust_.getRatio() * windowRatio_ , frust_.getNearDist(), frust_.getFarDist());
+        else
+            return mat4::createPerspective(atan(tan(deg2rad(fovy/2.f))/(windowRatio_* frust_.getRatio()))*2, frust_.getRatio() * windowRatio_ , frust_.getNearDist(), frust_.getFarDist());
     }
     else
         return getFrustumMatrix();

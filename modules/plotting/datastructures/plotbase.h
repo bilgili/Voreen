@@ -27,9 +27,11 @@
 #define VRN_PLOTBASE_H
 
 #include <string>
+#include <vector>
 
 #include "voreen/core/voreencoreapi.h"
 #include "voreen/core/utils/exception.h"
+#include "tgt/vector.h"
 
 namespace voreen {
 
@@ -83,6 +85,11 @@ public:
      **/
     void setColumnLabel(int column, std::string label);
 
+    void setColumnColorHint(int column, tgt::Color colorHint);
+    void removeColumnColorHint(int column);
+    bool hasColumnColorHint(int column) const;
+    tgt::Color getColumnColorHint(int column) const;
+
     /**
      * Returns the Type of column with index \a column, ordering: first key columns then data columns.
      *
@@ -114,8 +121,28 @@ protected:
     int keyColumnCount_;          ///< count of key columns
     int dataColumnCount_;         ///< count of data columns
 
-    std::string* columnLabels_;              ///< array of labels of columns, ordering: first key columns then data columns
-    ColumnType* columnTypes_;               ///< array of Types of columns, ordering: first key columns then data columns
+    struct Column {
+        std::string label_;
+        ColumnType type_;
+        bool hasColorHint_;
+        tgt::Color colorHint_;
+
+        Column(std::string label, ColumnType type) : label_(label), type_(type), hasColorHint_(false) {}
+        Column(std::string label, ColumnType type, tgt::Color colorHint) : label_(label), type_(type), hasColorHint_(true), colorHint_(colorHint) {}
+        bool operator==(const Column& c) const
+        {
+            if((label_ == c.label_) && (type_ == c.type_) && (hasColorHint_ == c.hasColorHint_)) {
+                if(hasColorHint_)
+                    return colorHint_ == c.colorHint_;
+                else
+                    return true;
+            }
+            else
+                return false;
+        }
+    };
+
+    std::vector<Column> columns_;
 };
 
 } // namespace voreen

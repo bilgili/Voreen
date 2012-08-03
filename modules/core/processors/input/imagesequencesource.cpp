@@ -45,7 +45,6 @@ ImageSequenceSource::ImageSequenceSource()
       imageDirectory_("imageDirectory","Image Directory", "Select Image Directory",
           "", "", FileDialogProperty::DIRECTORY),
       textureFiltering_("textureFiltering", "Enable Texture Filtering", true),
-      uploadTextureData_("uploadTextures", "Upload Textures", true),
       showProgressBar_("showProgressBar", "Show Progress Bar", true),
       reloadSequence_("reloadSequence", "Reload"),
       clearSequence_("clearSequence", "Clear Sequence"),
@@ -58,14 +57,12 @@ ImageSequenceSource::ImageSequenceSource()
     addPort(outport_);
 
     textureFiltering_.onChange(CallMemberAction<ImageSequenceSource>(this, &ImageSequenceSource::forceReload));
-    uploadTextureData_.onChange(CallMemberAction<ImageSequenceSource>(this, &ImageSequenceSource::forceReload));
     reloadSequence_.onClick(CallMemberAction<ImageSequenceSource>(this, &ImageSequenceSource::forceReload));
     clearSequence_.onClick(CallMemberAction<ImageSequenceSource>(this, &ImageSequenceSource::unsetDirectoryName));
     numImages_.setWidgetsEnabled(false);
 
     addProperty(imageDirectory_);
     addProperty(textureFiltering_);
-    addProperty(uploadTextureData_);
     addProperty(showProgressBar_);
     addProperty(reloadSequence_);
     addProperty(clearSequence_);
@@ -184,14 +181,6 @@ void ImageSequenceSource::loadImageSequence(const std::string& d)
             LWARNING("Failed to load image: " << filenames[i]);
     }
     LGL_ERROR;
-
-    // upload texture data
-    if (uploadTextureData_.get()) {
-        LINFO("Uploading texture data ...");
-        for (unsigned int i=0; i<imageSequence_->size(); i++)
-            imageSequence_->at(i)->uploadTexture();
-        LGL_ERROR;
-    }
 
     // clear progress
     if (progressDialog) {

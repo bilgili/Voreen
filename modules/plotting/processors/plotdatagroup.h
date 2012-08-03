@@ -27,8 +27,8 @@
 #define VRN_PLOTDATAGROUP_H
 
 #include "../ports/plotport.h"
-#include "../utils/plotdata.h"
-#include "../utils/aggregationfunction.h"
+#include "../datastructures/plotdata.h"
+#include "../datastructures/aggregationfunction.h"
 
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/properties/vectorproperty.h"

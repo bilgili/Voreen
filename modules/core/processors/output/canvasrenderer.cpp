@@ -48,6 +48,7 @@ CanvasRenderer::CanvasRenderer()
     : RenderProcessor()
     , canvasSize_("canvasSize", "Canvas Size", tgt::ivec2(256), tgt::ivec2(32), tgt::ivec2(2 << 12), Processor::VALID)
     , showCursor_("showCursor", "Show Cursor", true)
+    , showFullScreen_("showFullScreen", "Show Fullscreen (F11)", false)
     , screenshotFilename_("screenshotFilename", "File", "Select file...","", "*.*", FileDialogProperty::SAVE_FILE, Processor::VALID)
     , saveScreenshotButton_("saveScreenshot", "Save Screenshot")
     , canvas_(0)
@@ -59,7 +60,9 @@ CanvasRenderer::CanvasRenderer()
 {
     addPort(inport_);
     addProperty(canvasSize_);
+
     addProperty(showCursor_);
+    addProperty(showFullScreen_);
 
     addProperty(screenshotFilename_);
     addProperty(saveScreenshotButton_);
@@ -70,7 +73,8 @@ CanvasRenderer::CanvasRenderer()
     inport_.sizeOriginChanged(&inport_);
 
     canvasSize_.onChange(CallMemberAction<CanvasRenderer>(this, &CanvasRenderer::sizePropChanged));
-    showCursor_.onChange(CallMemberAction<CanvasRenderer>(this, &CanvasRenderer::cursorVisibilityChanged));
+    showCursor_.onChange(CallMemberAction<CanvasRenderer>(this, &CanvasRenderer::boolPropertyChanged));
+    showFullScreen_.onChange(CallMemberAction<CanvasRenderer>(this, &CanvasRenderer::boolPropertyChanged));
     saveScreenshotButton_.onChange(CallMemberAction<CanvasRenderer>(this, &CanvasRenderer::saveScreenshotClicked));
 }
 
@@ -380,7 +384,8 @@ void CanvasRenderer::sizePropChanged() {
     resizeCanvas(canvasSize_.get());
 }
 
-void CanvasRenderer::cursorVisibilityChanged() {
+
+void CanvasRenderer::boolPropertyChanged() {
     if(getProcessorWidget())
         getProcessorWidget()->updateFromProcessor();
 }
@@ -392,7 +397,7 @@ void CanvasRenderer::saveScreenshotClicked() {
     }
 
     try {
-        renderInportToImage(screenshotFilename_.get());
+        renderToImage(screenshotFilename_.get());
         LINFO("Saved rendering with dimensions " << inport_.getSize() << " to file: " << screenshotFilename_.get());
     }
     catch (VoreenException& e) {

@@ -51,6 +51,7 @@ TransFuncOverlay::TransFuncOverlay()
     , overlayDimensionsRelative_("overlayDimensionsRelative", "Overlay Dimensions (Relative)", tgt::vec2(0.25f), tgt::vec2(0.f), tgt::vec2(1.f))
     , overlayOpacity_("overlayOpacity", "Overlay Opacity", 1.f)
     , fontColor_("fontColor","Font Color", tgt::Color(0.f, 0.f, 0.f, 1.f))
+    , scalingProp_("scalingProp","Scaling",1.f,0.01,10000.f)
     , tfUnit_("tfUnit","Unit (max 7 Chars)","")
     , renderBorder_("renderBorder", "Render Border", true)
     , borderWidth_("borderWidth", "Border Width", 2.f, 0.1f, 10.f)
@@ -98,6 +99,8 @@ TransFuncOverlay::TransFuncOverlay()
     fontColor_.setGroupID("overlay settings");
     addProperty(tfUnit_);
     tfUnit_.setGroupID("overlay settings");
+    addProperty(scalingProp_);
+    scalingProp_.setGroupID("overlay settings");
     addProperty(renderBorder_);
     renderBorder_.setGroupID("overlay settings");
     addProperty(borderWidth_);
@@ -234,15 +237,15 @@ void TransFuncOverlay::process() {
                 fontProp_.get()->setLineWidth((float)privatePort_.getSize().x);
                 fontProp_.get()->setTextAlignment(tgt::Font::Left);
                 std::stringstream strstr;
-                strstr << tfi->getDomain(0).x;
+                strstr << tfi->getDomain(0).x * scalingProp_.get();
                 fontProp_.get()->render(tgt::vec3(ppSizeX_*0.3f,ppSizeY_*0.05f,0), strstr.str());
                 strstr.clear();
                 strstr.str("");
-                strstr << tfi->getDomain(0).x+((tfi->getDomain(0).y-tfi->getDomain(0).x)/2);
+                strstr << (tfi->getDomain(0).x+((tfi->getDomain(0).y-tfi->getDomain(0).x)/2)) * scalingProp_.get();
                 fontProp_.get()->render(tgt::vec3(ppSizeX_*0.3f,ppSizeY_*0.45f,0), strstr.str());
                 strstr.clear();
                 strstr.str("");
-                strstr << tfi->getDomain(0).y;
+                strstr << tfi->getDomain(0).y * scalingProp_.get();
                 fontProp_.get()->render(tgt::vec3(ppSizeX_*0.3f,ppSizeY_*0.85f,0), strstr.str());
             glPopMatrix();
         glPopAttrib();

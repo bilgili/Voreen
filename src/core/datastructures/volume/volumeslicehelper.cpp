@@ -33,41 +33,54 @@ using tgt::ivec2;
 using tgt::vec3;
 using tgt::mat4;
 
-FaceGeometry getSliceGeometry(const VolumeBase* vh, SliceAlignment alignment, float sliceIndex, bool applyTransformation) {
+FaceGeometry getSliceGeometry(const VolumeBase* vh, SliceAlignment alignment, float sliceIndex, bool applyTransformation, const std::vector<const VolumeBase*> secondaryVolumes) {
     FaceGeometry slice;
     vec3 urb = vh->getURB();
     vec3 llf = vh->getLLF();
     vec3 sp = vh->getSpacing();
+    tgt::Bounds b(llf, urb);
+
+    mat4 wToP = vh->getWorldToPhysicalMatrix();
+    for(size_t i=0; i<secondaryVolumes.size(); i++) {
+        tgt::Bounds sb(secondaryVolumes[i]->getLLF(), secondaryVolumes[i]->getURB());
+        tgt::Bounds sbTf = sb.transform(wToP * secondaryVolumes[i]->getPhysicalToWorldMatrix());
+
+        b.addPoint(sbTf.getLLF());
+        b.addPoint(sbTf.getURB());
+    }
+
+    vec3 bb_urb = b.getURB();
+    vec3 bb_llf = b.getLLF();
 
     switch(alignment) {
         case YZ_PLANE: {
                            float x = sliceIndex;
                            float xcoord = llf.x + (x+0.5f) * sp.x; // We want our slice to be in the center of voxels
 
-                           slice.addVertex(VertexGeometry(tgt::vec3(xcoord, urb.y, urb.z), tgt::vec3(xcoord, urb.y, urb.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-                           slice.addVertex(VertexGeometry(tgt::vec3(xcoord, urb.y, llf.z), tgt::vec3(xcoord, urb.y, llf.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-                           slice.addVertex(VertexGeometry(tgt::vec3(xcoord, llf.y, llf.z), tgt::vec3(xcoord, llf.y, llf.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-                           slice.addVertex(VertexGeometry(tgt::vec3(xcoord, llf.y, urb.z), tgt::vec3(xcoord, llf.y, urb.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+                           slice.addVertex(VertexGeometry(tgt::vec3(xcoord, bb_urb.y, bb_urb.z), tgt::vec3(xcoord, bb_urb.y, bb_urb.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+                           slice.addVertex(VertexGeometry(tgt::vec3(xcoord, bb_urb.y, bb_llf.z), tgt::vec3(xcoord, bb_urb.y, bb_llf.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+                           slice.addVertex(VertexGeometry(tgt::vec3(xcoord, bb_llf.y, bb_llf.z), tgt::vec3(xcoord, bb_llf.y, bb_llf.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+                           slice.addVertex(VertexGeometry(tgt::vec3(xcoord, bb_llf.y, bb_urb.z), tgt::vec3(xcoord, bb_llf.y, bb_urb.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
                        }
                        break;
         case XZ_PLANE: {
                            float y = sliceIndex;
                            float ycoord = llf.y + (y+0.5f) * sp.y; // We want our slice to be in the center of voxels
 
-                           slice.addVertex(VertexGeometry(tgt::vec3(urb.x, ycoord, urb.z), tgt::vec3(urb.x, ycoord, urb.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-                           slice.addVertex(VertexGeometry(tgt::vec3(urb.x, ycoord, llf.z), tgt::vec3(urb.x, ycoord, llf.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-                           slice.addVertex(VertexGeometry(tgt::vec3(llf.x, ycoord, llf.z), tgt::vec3(llf.x, ycoord, llf.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-                           slice.addVertex(VertexGeometry(tgt::vec3(llf.x, ycoord, urb.z), tgt::vec3(llf.x, ycoord, urb.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+                           slice.addVertex(VertexGeometry(tgt::vec3(bb_urb.x, ycoord, bb_urb.z), tgt::vec3(bb_urb.x, ycoord, bb_urb.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+                           slice.addVertex(VertexGeometry(tgt::vec3(bb_urb.x, ycoord, bb_llf.z), tgt::vec3(bb_urb.x, ycoord, bb_llf.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+                           slice.addVertex(VertexGeometry(tgt::vec3(bb_llf.x, ycoord, bb_llf.z), tgt::vec3(bb_llf.x, ycoord, bb_llf.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+                           slice.addVertex(VertexGeometry(tgt::vec3(bb_llf.x, ycoord, bb_urb.z), tgt::vec3(bb_llf.x, ycoord, bb_urb.z), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
                        }
                        break;
         case XY_PLANE: {
                            float z = sliceIndex;
                            float zcoord = llf.z + (z+0.5f) * sp.z; // We want our slice to be in the center of voxels
 
-                           slice.addVertex(VertexGeometry(tgt::vec3(urb.x, urb.y, zcoord), tgt::vec3(urb.x, urb.y, zcoord), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-                           slice.addVertex(VertexGeometry(tgt::vec3(urb.x, llf.y, zcoord), tgt::vec3(urb.x, llf.y, zcoord), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-                           slice.addVertex(VertexGeometry(tgt::vec3(llf.x, llf.y, zcoord), tgt::vec3(llf.x, llf.y, zcoord), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-                           slice.addVertex(VertexGeometry(tgt::vec3(llf.x, urb.y, zcoord), tgt::vec3(llf.x, urb.y, zcoord), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+                           slice.addVertex(VertexGeometry(tgt::vec3(bb_urb.x, bb_urb.y, zcoord), tgt::vec3(bb_urb.x, bb_urb.y, zcoord), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+                           slice.addVertex(VertexGeometry(tgt::vec3(bb_urb.x, bb_llf.y, zcoord), tgt::vec3(bb_urb.x, bb_llf.y, zcoord), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+                           slice.addVertex(VertexGeometry(tgt::vec3(bb_llf.x, bb_llf.y, zcoord), tgt::vec3(bb_llf.x, bb_llf.y, zcoord), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+                           slice.addVertex(VertexGeometry(tgt::vec3(bb_llf.x, bb_urb.y, zcoord), tgt::vec3(bb_llf.x, bb_urb.y, zcoord), tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
                        }
                        break;
         default: tgtAssert(false, "should not get here!");

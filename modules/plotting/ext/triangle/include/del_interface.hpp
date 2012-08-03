@@ -105,8 +105,8 @@ icc 9.0/9.1, gcc-4.1/3.4.6. <br>
 #define DEL_INTERFACE
 
 #include "dpoint.hpp"
-#include "../../utils/plotdata.h"
-#include "../../utils/interval.h"
+#include "../../datastructures/plotdata.h"
+#include "../../datastructures/interval.h"
 #include "tgt/vector.h"
 #include <vector>
 #include <list>

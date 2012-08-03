@@ -24,7 +24,7 @@
  ***********************************************************************************/
 
 #include "plotfunction.h"
-#include "functionlibrary.h"
+#include "../utils/functionlibrary.h"
 #include "plotdata.h"
 
 #include "tgt/logmanager.h"

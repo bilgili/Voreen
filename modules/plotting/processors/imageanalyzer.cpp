@@ -25,9 +25,9 @@
 
 #include "imageanalyzer.h"
 
-#include "../utils/aggregationfunction.h"
-#include "../utils/plotdata.h"
-#include "../utils/plotrow.h"
+#include "../datastructures/aggregationfunction.h"
+#include "../datastructures/plotdata.h"
+#include "../datastructures/plotrow.h"
 
 #include <limits>
 

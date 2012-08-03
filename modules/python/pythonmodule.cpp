@@ -23,6 +23,8 @@
  *                                                                                 *
  ***********************************************************************************/
 
+// include this at very first
+#include <Python.h>
 #include "modules/python/pythonmodule.h"
 
 #include "voreen/core/voreenapplication.h"

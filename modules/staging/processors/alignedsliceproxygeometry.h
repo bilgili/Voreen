@@ -78,6 +78,7 @@ protected:
     /// Property containing the currently selected slice
     IntProperty sliceIndex_;
     FloatProperty floatSliceIndex_;
+    BoolProperty restrictToMainVolume_;
     CameraProperty camera_;
     ButtonProperty alignCameraButton_;
     FloatVec3Property plane_;
@@ -86,6 +87,7 @@ protected:
     MWheelNumPropInteractionHandler<int> mwheelCycleHandler_;
 
     VolumePort inport_;
+    VolumePort secondaryVolumePort_;
     GeometryPort geomPort_;
     TextPort textPort_;
 

@@ -34,6 +34,7 @@
 #include <QFileDialog>
 #include <QGridLayout>
 #include <QMainWindow>
+#include <QMdiSubWindow>
 
 namespace voreen {
 
@@ -106,8 +107,25 @@ void CanvasRendererWidget::keyPressEvent(QKeyEvent* event) {
         screenshotTool_->setFocus();
     }
 #else
-void CanvasRendererWidget::keyPressEvent(QKeyEvent*) {
+void CanvasRendererWidget::keyPressEvent(QKeyEvent* event) {
 #endif
+    if (event->key() == Qt::Key_F11) {
+        if (canvasWidget_ && processor_) {
+
+            //return if it is the first canvas in application mode
+            if(dynamic_cast<QMdiSubWindow*>(parent())) return;
+
+            Property* prop = processor_->getProperty("showFullScreen");
+            if(prop) {
+                BoolProperty* bp = dynamic_cast<BoolProperty*>(prop);
+                if(isFullScreen()){
+                    bp->set(false);
+                } else {
+                    bp->set(true);
+                }
+            }
+        }
+    }
 }
 
 void CanvasRendererWidget::resizeEvent(QResizeEvent* event) {
@@ -135,6 +153,7 @@ void CanvasRendererWidget::showScreenshotTool() {
 
 void CanvasRendererWidget::updateFromProcessor() {
     if (canvasWidget_ && processor_) {
+        //handle show cursor
         Property* prop = processor_->getProperty("showCursor");
         if(prop) {
             BoolProperty* bp = dynamic_cast<BoolProperty*>(prop);
@@ -143,6 +162,43 @@ void CanvasRendererWidget::updateFromProcessor() {
                     canvasWidget_->setCursor(Qt::ArrowCursor);
                 else
                     canvasWidget_->setCursor(Qt::BlankCursor);
+            }
+        }
+        //handle fullscreen
+        prop = processor_->getProperty("showFullScreen");
+        if(prop) {
+            BoolProperty* bp = dynamic_cast<BoolProperty*>(prop);
+            if(bp) {
+                if(bp->get()){
+                    if(!isFullScreen()){
+                        if (processor_->isInitialized()) { //to not overwrite values if started in fullscreen
+                            //store prefered size/pos
+                            IVec2MetaData* sizeMeta = new IVec2MetaData(getSize());
+                            processor_->getMetaDataContainer().addMetaData("preferedNoFullscreenCanvasSize",sizeMeta);
+                            IVec2MetaData* positionMeta = new IVec2MetaData(getPosition());
+                            processor_->getMetaDataContainer().addMetaData("preferedNoFullscreenCanvasPosition",positionMeta);
+                        }
+                        //set fullscreen
+                        setWindowState(windowState() | Qt::WindowFullScreen);
+                    }
+                }
+                else {
+                    if(isFullScreen()){
+                        showNormal();
+                        //restore position
+                        IVec2MetaData* positionMeta = dynamic_cast<IVec2MetaData*>(processor_->getMetaDataContainer().getMetaData("preferedNoFullscreenCanvasPosition"));
+                        if (!positionMeta)
+                            LDEBUGC("voreen.core.io.output.CanvasRendererWidget", "updateFromProcessor(): No meta data object returned");
+                        else
+                            setPosition(positionMeta->getValue().x, positionMeta->getValue().y);
+                        //restore size
+                        IVec2MetaData* sizeMeta = dynamic_cast<IVec2MetaData*>(processor_->getMetaDataContainer().getMetaData("preferedNoFullscreenCanvasSize"));
+                        if (!sizeMeta)
+                            LDEBUGC("voreen.core.io.output.CanvasRendererWidget", "updateFromProcessor(): No meta data object returned");
+                        else
+                            setSize(sizeMeta->getValue().x, sizeMeta->getValue().y);
+                    }
+                }
             }
         }
     }

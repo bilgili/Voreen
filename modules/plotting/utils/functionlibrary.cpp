@@ -24,7 +24,7 @@
  ***********************************************************************************/
 
 #include "functionlibrary.h"
-#include "plotexpression.h"
+#include "../datastructures/plotexpression.h"
 #include "tgt/logmanager.h"
 
 #include <limits>

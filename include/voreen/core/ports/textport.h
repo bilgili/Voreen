@@ -54,6 +54,8 @@ public:
      */
     virtual bool isReady() const;
 
+    virtual void clear();
+
     virtual tgt::col3 getColorHint() const;
 
 protected:

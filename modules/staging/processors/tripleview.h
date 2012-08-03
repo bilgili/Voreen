@@ -58,7 +58,7 @@ public:
     virtual void onEvent(tgt::Event* e);
 protected:
     virtual void setDescriptions() {
-        setDescription("");
+        setDescription("Combines three input images in a horizontal layout.");
     }
 
     void toggleMaximization(tgt::MouseEvent* me);

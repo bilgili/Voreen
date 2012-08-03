@@ -32,7 +32,7 @@
 #include <QHeaderView>
 
 #include <set>
-#include "../utils/plotrow.h"
+#include "../datastructures/plotrow.h"
 
 namespace voreen {
 

@@ -19,6 +19,7 @@
     <file alias="console.png">../../resource/icons/console.png</file>
     <file alias="cursor-minus.png">../../resource/icons/cursor-minus.png</file>
     <file alias="deformation.png">../../resource/icons/deformation.png</file>
+	<file alias="delete.png">../../resource/icons/delete.png</file>
     <file alias="document-new_22x22.png">../../resource/icons/document-new_22x22.png</file>
     <file alias="document-new_32x32.png">../../resource/icons/document-new_22x22.png</file>
     <file alias="document_open.png">../../resource/icons/document_open.png</file>

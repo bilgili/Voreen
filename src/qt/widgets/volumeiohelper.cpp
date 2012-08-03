@@ -147,9 +147,11 @@ void VolumeIOHelper::showFileOpenDialog() {
 
     // sidebar URLs
     QList<QUrl> urls;
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("volumes").c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getUserDataPath().c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("modules").c_str());
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("volumes").c_str());
+    if (QDir(VoreenApplication::app()->getBasePath("custommodules").c_str()).exists())
+        urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("custommodules").c_str());
     if (VoreenApplication::app()->getTestDataPath() != "")
         urls << QUrl::fromLocalFile(VoreenApplication::app()->getTestDataPath().c_str());
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
@@ -283,9 +285,13 @@ void VolumeIOHelper::showFileSaveDialog(const VolumeBase* volume) {
 
     // sidebar URLs
     QList<QUrl> urls;
+    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("volumes").c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getUserDataPath().c_str());
     urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("modules").c_str());
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("volumes").c_str());
+    if (QDir(VoreenApplication::app()->getBasePath("custommodules").c_str()).exists())
+        urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("custommodules").c_str());
+    if (VoreenApplication::app()->getTestDataPath() != "")
+        urls << QUrl::fromLocalFile(VoreenApplication::app()->getTestDataPath().c_str());
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
     urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
 

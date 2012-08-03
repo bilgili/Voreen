@@ -24,8 +24,8 @@
  ***********************************************************************************/
 
 #include "plotselectionproperty.h"
-#include "../utils/plotdata.h"
-#include "../utils/plotrow.h"
+#include "../datastructures/plotdata.h"
+#include "../datastructures/plotrow.h"
 
 #include "tgt/assert.h"
 

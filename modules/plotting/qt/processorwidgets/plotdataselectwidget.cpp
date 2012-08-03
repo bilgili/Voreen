@@ -28,8 +28,8 @@
 #include "../plotpredicatedialog.h"
 #include "../plotdataextendedtablemodel.h"
 #include "../extendedtable.h"
-#include "../../utils/plotdata.h"
-#include "../../utils/plotpredicate.h"
+#include "../../datastructures/plotdata.h"
+#include "../../datastructures/plotpredicate.h"
 
 #include "voreen/qt/voreenapplicationqt.h"
 

@@ -49,6 +49,7 @@ OPTION(VRN_ADD_INSTALL_TARGET   "Add install target for creating a binary distri
 MARK_AS_ADVANCED(VRN_ADD_INSTALL_TARGET)
 
 IF(WIN32)
+    OPTION(VRN_GROUP_SOURCE_FILES   "Group source files by sub directory?"                      ON )
     OPTION(VRN_COPY_EXTERNAL_DLLS   "Copy external DLLs to bin directory?"                      ON )
     OPTION(VRN_INCREMENTAL_LINKING  "Enable incremental linking in Visual Studio debug builds?" ON )
     OPTION(VRN_GENERATE_MANIFEST    "Generate manifest in Visual Studio debug builds?"          OFF)

@@ -38,6 +38,7 @@ HistogramPainter::HistogramPainter(QWidget* parent, tgt::vec2 xRange, tgt::vec2 
     : QWidget(parent)
     , xRange_(xRange)
     , yRange_(yRange)
+    , yAxisLogarithmic_(true)
     , padding_(padding)
     , arrowLength_(arrowLength)
     , histogram_(0)
@@ -57,7 +58,13 @@ void HistogramPainter::setHistogram(VolumeHistogramIntensity* histogram) {
     cache_ = 0;
 }
 
-void HistogramPainter::setxRange(const tgt::vec2& xRange) {
+void HistogramPainter::setYAxisLogarithmic(bool logarithmic) {
+    yAxisLogarithmic_ = logarithmic;
+    delete cache_;
+    cache_ = 0;
+}
+
+void HistogramPainter::setXRange(const tgt::vec2& xRange) {
     if (xRange != xRange_) {
         xRange_ = xRange;
         delete cache_;
@@ -116,7 +123,7 @@ void HistogramPainter::paintEvent(QPaintEvent* event) {
                         points[vi][count].ry() = p.y;
                         count++;
                     }
-                    float value = histogram_->getLogNormalized(x);
+                    float value = (yAxisLogarithmic_ ? histogram_->getLogNormalized(x) : histogram_->getNormalized(x));
                     p = wtos(tgt::vec2(xpos, value * (yRange_[1] - yRange_[0]) + yRange_[0]));
 
                     // optimization: if the y-coord has not changed from the two last points

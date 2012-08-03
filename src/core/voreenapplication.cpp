@@ -572,7 +572,7 @@ void VoreenApplication::initialize() throw (VoreenException) {
     }
     catch (VoreenException& e) {
         LERROR("Failed to load modules: " << e.what());
-        throw e;
+        throw;
     }
     if (modules_.empty())
         LWARNING("No modules loaded");

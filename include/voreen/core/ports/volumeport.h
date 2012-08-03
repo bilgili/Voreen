@@ -74,7 +74,7 @@ public:
     /**
      * Saves the assigned volume to the given path.
      * If a filename without extension is passed,
-     * ".dat" is appended to it.
+     * ".vvd" is appended to it.
      *
      * @throws VoreenException If saving failed or
      *      no volume is assigned.
@@ -85,7 +85,7 @@ public:
     /**
      * Loads a volume from the given path and assigns it
      * to the port. If a filename without extension is passed,
-     * ".dat" is appended to it.
+     * ".vvd" is appended to it.
      *
      * @throws VoreenException if loading failed.
      */

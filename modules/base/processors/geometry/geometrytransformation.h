@@ -40,9 +40,9 @@ public:
     virtual ~GeometryTransformation();
     virtual Processor* create() const;
 
-    virtual std::string getCategory() const   { return "Geometry"; }
+    virtual std::string getCategory() const   { return "Geometry";               }
     virtual std::string getClassName() const  { return "GeometryTransformation"; }
-    virtual CodeState getCodeState() const    { return CODE_STATE_TESTING; }
+    virtual CodeState getCodeState() const    { return CODE_STATE_STABLE;        }
 
 protected:
     virtual void setDescriptions() {

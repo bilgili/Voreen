@@ -43,14 +43,17 @@ public:
     virtual Processor* create() const;
 
     virtual std::string getClassName() const { return "SingleVolumeSlicer"; }
-    virtual std::string getCategory() const  { return "Slice Rendering"; }
-    virtual CodeState getCodeState() const   { return CODE_STATE_TESTING; }
+    virtual std::string getCategory() const  { return "Slice Rendering";    }
+    virtual CodeState getCodeState() const   { return CODE_STATE_STABLE;    }
 
     virtual bool isReady() const;
 
 protected:
     virtual void setDescriptions() {
-        setDescription("This class implements a slicing based volume renderer. The slices are view plane aligned and clipped against the volume on the GPU as described in 'Real-Time Volume Graphics' (1st Ed., Chapter 3.5.1). At the moment no correct depth values are calculated. Currently only 1D transfer functions are supported.");
+        setDescription("This class implements a slicing based volume renderer. "
+            "The slices are view plane aligned and clipped against the volume on the GPU as described "
+            "in 'Real-Time Volume Graphics' (1st Ed., Chapter 3.5.1). "
+            "At the moment no correct depth values are calculated. Currently only 1D transfer functions are supported.");
     }
 
     virtual void process();

@@ -89,6 +89,8 @@ void QProcessorWidget::setPosition(int x, int y) {
         QWidget::move(xrel, yrel);
     }
     else {
+        //to remove the warning in fullscreen mode
+        if(!isFullScreen() && processor_->isInitialized())
         LWARNINGC("voreenqt.QProcessorWidget",
             "setPosition(" << x << ", " << y << "): '" << windowTitle().toStdString() <<
             "' would be placed outside visible desktop area. Ignoring.");

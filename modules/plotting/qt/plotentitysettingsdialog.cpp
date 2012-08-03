@@ -61,9 +61,8 @@ void PlotEntitySettingsDialog::createWidgets() {
     cbMainColumn_ = new QComboBox();
     fillComboBox(cbMainColumn_);
     cbMainColumn_->setCurrentIndex(cbMainColumn_->findData(entitySettings_.getMainColumnIndex()));
-    firstColor_ = toQColor(entitySettings_.getFirstColor());
     cclrFirst_ = new ClickableColorLabel("");
-    cclrFirst_->setColor(firstColor_);
+    cclrFirst_->setColor(toQColor(entitySettings_.getFirstColor()));
     switch (entitySettings_.getEntity()) {
         case PlotEntitySettings::LINE: {
             //create widgets
@@ -81,13 +80,12 @@ void PlotEntitySettingsDialog::createWidgets() {
             cbStyle_->setCurrentIndex(static_cast<int>(entitySettings_.getLineStyle()));
             chbSpline_ = new QCheckBox();
             chbErrorbar_ = new QCheckBox();
-            secondColor_ = toQColor(entitySettings_.getSecondColor());
             cclrSecond_ = new ClickableColorLabel("");
-            cclrSecond_->setColor(secondColor_);
+            cclrSecond_->setColor(toQColor(entitySettings_.getSecondColor()));
             cclrThird_ = new ClickableColorLabel("");
-            cclrThird_->setColor(firstColor_);
+            cclrThird_->setColor(cclrFirst_->getColor());
             cclrFourth_ = new ClickableColorLabel("");
-            cclrFourth_->setColor(secondColor_);
+            cclrFourth_->setColor(cclrFirst_->getColor());
             fillComboBox(cbCandleTopColumn_);
             fillComboBox(cbCandleBottomColumn_);
             fillComboBox(cbStickTopColumn_);
@@ -178,9 +176,8 @@ void PlotEntitySettingsDialog::createWidgets() {
             for (size_t i = 0; i < colorMapLabels.size(); ++i)
                 cbColorMap_->addItem(QString::fromStdString(colorMapLabels.at(i)));
             cbColorMap_->setVisible(false);
-            secondColor_ = toQColor(entitySettings_.getSecondColor());
             cclrSecond_ = new ClickableColorLabel("");
-            cclrSecond_->setColor(secondColor_);
+            cclrSecond_->setColor(toQColor(entitySettings_.getSecondColor()));
             chbWireOnly_ = new QCheckBox();
             chbHeightMap_ = new QCheckBox();
             cbOptionalColumn_ = new QComboBox();
@@ -330,37 +327,49 @@ QColor PlotEntitySettingsDialog::toQColor(tgt::Color color) {
 }
 
 void PlotEntitySettingsDialog::firstColorDialog() {
-    #if (QT_VERSION >= 0x040500)
-        QColor col = QColorDialog::getColor(firstColor_, this, "Color", QColorDialog::ShowAlphaChannel);
-    if(col.isValid())
-        firstColor_ = col;
-    #else   //if qt is < version 4.5 there is no way to set the alpha value to its correct value
-    firstColor_.setRgba(QColorDialog::getRgba(firstColor_.rgba()));
-    #endif
-    cclrFirst_->setColor(firstColor_);
-    //third ccclr only exist in line mode
-    if (entitySettings_.getEntity() == PlotEntitySettings::LINE)
-        cclrThird_->setColor(firstColor_);
-    entitySettings_.setFirstColor(toTgtColor(firstColor_));
-    entitySettings_.setUseTextureFlag(false);
+    QColor col = QColorDialog::getColor(cclrFirst_->getColor(), this, "Color", QColorDialog::ShowAlphaChannel);
+    if(col.isValid()) {
+        cclrFirst_->setColor(col);
+        //third ccclr only exist in line mode
+        if (entitySettings_.getEntity() == PlotEntitySettings::LINE)
+            cclrThird_->setColor(col);
+        entitySettings_.setFirstColor(toTgtColor(col));
+        entitySettings_.setUseTextureFlag(false);
+    }
 }
 
 void PlotEntitySettingsDialog::secondColorDialog() {
-    #if (QT_VERSION >= 0x040500)
-        QColor col = QColorDialog::getColor(secondColor_, this, "Color", QColorDialog::ShowAlphaChannel);
-    if(col.isValid())
-        secondColor_ = col;
-    #else   //if qt is < version 4.5 there is no way to set the alpha value to its correct value
-    secondColor_.setRgba(QColorDialog::getRgba(secondColor_.rgba()));
-    #endif
-    cclrSecond_->setColor(secondColor_);
-    if (entitySettings_.getEntity() == PlotEntitySettings::LINE)
-        cclrFourth_->setColor(secondColor_);
-    entitySettings_.setSecondColor(toTgtColor(secondColor_));
+    QColor col = QColorDialog::getColor(cclrSecond_->getColor(), this, "Color", QColorDialog::ShowAlphaChannel);
+    if(col.isValid()) {
+        cclrSecond_->setColor(col);
+        if (entitySettings_.getEntity() == PlotEntitySettings::LINE)
+            cclrFourth_->setColor(col);
+        entitySettings_.setSecondColor(toTgtColor(col));
+    }
 }
 
 void PlotEntitySettingsDialog::cbMainColumnChanged(int index) {
-    entitySettings_.setMainColumnIndex(cbMainColumn_->itemData(index).toInt());
+    int plotDataIndex = cbMainColumn_->itemData(index).toInt();
+
+    entitySettings_.setMainColumnIndex(plotDataIndex);
+
+    if(plotData_ && (plotDataIndex < plotData_->getColumnCount()) && plotData_->hasColumnColorHint(plotDataIndex)) {
+        // we have a color hint for this column
+        QColor col = toQColor(plotData_->getColumnColorHint(plotDataIndex));
+        cclrFirst_->setColor(col);
+
+        switch (entitySettings_.getEntity()) {
+            case PlotEntitySettings::LINE: cclrFourth_->setColor(col);
+            case PlotEntitySettings::SURFACE: cclrThird_->setColor(col);
+            break;
+            case PlotEntitySettings::BAR:
+            case PlotEntitySettings::SCATTER:
+            break;
+        }
+
+        entitySettings_.setFirstColor(toTgtColor(col));
+        entitySettings_.setSecondColor(toTgtColor(col));
+    }
 }
 
 void PlotEntitySettingsDialog::cbCandleTopColumnChanged(int index) {

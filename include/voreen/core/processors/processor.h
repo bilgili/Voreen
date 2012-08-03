@@ -34,6 +34,7 @@
 #include "tgt/event/eventlistener.h"
 
 #include <vector>
+#include <boost/thread.hpp>
 
 namespace voreen {
 
@@ -156,6 +157,11 @@ public:
      * this processor's class belongs to.
      */
     std::string getModuleName() const;
+
+    /**
+     * Returns the absolute directory of the module this processor belongs to.
+     */
+    std::string getModulePath() const;
 
     /**
      * Returns whether the processor has been successfully initialized.
@@ -392,6 +398,12 @@ protected:
      */
     virtual void afterProcess();
 
+    /// Calls clear() on all outports
+    virtual void clearOutports();
+
+    void lockMutex();
+    void unlockMutex();
+
     /**
      * Registers a port.
      *
@@ -548,6 +560,9 @@ private:
 
     /// used for cycle prevention during event propagation
     bool eventVisited_;
+
+    /// This mutex is locked by the NetworkEvaluator before beforeProcess() and unlocked after afterProcess().
+    boost::mutex mutex_;
 
     /**
      * Contains the associated meta data.

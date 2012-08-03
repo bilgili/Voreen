@@ -155,6 +155,19 @@ void RenderPort::clearTarget() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
+void RenderPort::clear() {
+    if (!isOutport())
+        LERROR("clear() called on inport");
+    else {
+        if(hasRenderTarget()) {
+            activateTarget();
+            clearTarget();
+            deactivateTarget();
+            invalidateResult();
+        }
+    }
+}
+
 void RenderPort::changeFormat(GLint internalColorFormat, GLint internalDepthFormat) {
     if (!isOutport()) {
         LERROR("changeFormat() called on inport");

@@ -30,11 +30,12 @@
 #include <typeinfo>
 #include <vector>
 
+#include "voreen/core/voreencoreapi.h"
 #include "voreen/core/ports/allports.h"
 
 namespace voreen {
 
-class PortTypeCheck {
+class VRN_CORE_API PortTypeCheck {
     public:
         virtual ~PortTypeCheck() {}
         virtual bool isA(const Port* p) const = 0;
@@ -44,7 +45,7 @@ class PortTypeCheck {
 
 // ----------------------------------------------------------------------------
 
-class PortTypeCheckReject : public PortTypeCheck {
+class VRN_CORE_API PortTypeCheckReject : public PortTypeCheck {
     public:
         virtual bool isA(const Port* /*p*/) const {
             return false;
@@ -59,7 +60,7 @@ class PortTypeCheckReject : public PortTypeCheck {
 
 // ----------------------------------------------------------------------------
 
-class LoopPortTypeCheck : public PortTypeCheck {
+class VRN_CORE_API LoopPortTypeCheck : public PortTypeCheck {
     public:
         LoopPortTypeCheck() :
             inverse_(false)
@@ -145,7 +146,7 @@ class GenericPortTypeCheck : public PortTypeCheck {
  *
  * @author  Dirk Feldmann, July/August 2009
  */
-class NetworkGraph {
+class VRN_CORE_API NetworkGraph {
 private:
 
     /**
@@ -488,8 +489,6 @@ public:
      * Convenience operator. Returns !(*this == other).
      */
     bool operator!=(const NetworkGraph& other) const;
-
-    void testPrune();
 
     /**
      * Indicates whether the given processor is containing within this graph.

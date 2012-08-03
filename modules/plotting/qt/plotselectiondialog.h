@@ -27,7 +27,7 @@
 #define VRN_PLOTSELECTIONDIALOG_H
 
 #include "plotselectionentrytablemodel.h"
-#include "../utils/plotselection.h"
+#include "../datastructures/plotselection.h"
 
 #include <QDialog>
 #include <QWidget>

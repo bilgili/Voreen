@@ -28,8 +28,8 @@
 #include "voreen/core/processors/processorwidget.h"
 #include "voreen/core/processors/processorwidgetfactory.h"
 
-#include "../utils/plotdata.h"
-#include "../utils/plotfunction.h"
+#include "../datastructures/plotdata.h"
+#include "../datastructures/plotfunction.h"
 
 #include <limits>
 

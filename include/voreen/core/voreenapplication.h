@@ -63,6 +63,7 @@ class CommandLineParser;
 class VRN_CORE_API VoreenApplication : private tgt::EventListener, public PropertyOwner {
 
     friend class Processor;
+    friend class NetworkEvaluator;
 
 public:
     /// Features used in this application

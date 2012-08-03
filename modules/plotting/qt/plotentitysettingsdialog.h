@@ -26,7 +26,7 @@
 #ifndef VRN_PLOTENTITYSETTINGSDIALOG_H
 #define VRN_PLOTENTITYSETTINGSDIALOG_H
 
-#include "../utils/plotentitysettings.h"
+#include "../datastructures/plotentitysettings.h"
 
 #include <QDialog>
 
@@ -120,9 +120,7 @@ private:
     QComboBox* cbColorMap_;
     QTabWidget* tabWidget_;
     ClickableColorLabel* cclrFirst_;
-    QColor firstColor_;
     ClickableColorLabel* cclrSecond_;
-    QColor secondColor_;
     ClickableColorLabel* cclrThird_;
     ClickableColorLabel* cclrFourth_;
     QDoubleSpinBox* sbMinGlyphSize_;

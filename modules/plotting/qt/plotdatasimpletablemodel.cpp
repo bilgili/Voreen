@@ -25,7 +25,7 @@
 
 #include "plotdatasimpletablemodel.h"
 
-#include "../utils/plotdata.h"
+#include "../datastructures/plotdata.h"
 
 #include "tgt/logmanager.h"
 

@@ -25,7 +25,7 @@
 
 #include "aggregationfunctionfactory.h"
 
-#include "aggregationfunction.h"
+#include "../datastructures/aggregationfunction.h"
 
 namespace voreen {
 

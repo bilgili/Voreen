@@ -25,7 +25,7 @@
 
 #include "plotdataproperty.h"
 
-#include "../utils/plotdata.h"
+#include "../datastructures/plotdata.h"
 
 namespace voreen {
 

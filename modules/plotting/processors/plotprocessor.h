@@ -46,12 +46,12 @@
 #include "voreen/core/properties/buttonproperty.h"
 #include "voreen/core/properties/optionproperty.h"
 
-#include "../utils/plotfunction.h"
-#include "../utils/plotdata.h"
-#include "../utils/plotlibrary.h"
-#include "../utils/plotlibraryopengl.h"
-#include "../utils/plotlibrarysvg.h"
-#include "../utils/plotlibrarylatex.h"
+#include "../datastructures/plotfunction.h"
+#include "../datastructures/plotdata.h"
+#include "../utils/plotlibrary/plotlibrary.h"
+#include "../utils/plotlibrary/plotlibraryopengl.h"
+#include "../utils/plotlibrary/plotlibrarysvg.h"
+#include "../utils/plotlibrary/plotlibrarylatex.h"
 #include "../interaction/plotpickingmanager.h"
 
 namespace voreen {

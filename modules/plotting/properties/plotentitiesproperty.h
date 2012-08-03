@@ -27,9 +27,9 @@
 #define VRN_PLOTENTITIESPROPERTY_H
 
 #include "voreen/core/properties/templateproperty.h"
-#include "../utils/colormap.h"
-#include "../utils/plotdata.h"
-#include "../utils/plotentitysettings.h"
+#include "../datastructures/colormap.h"
+#include "../datastructures/plotdata.h"
+#include "../datastructures/plotentitysettings.h"
 
 #include <vector>
 
@@ -44,10 +44,11 @@ template class VRN_CORE_API TemplateProperty<std::vector<PlotEntitySettings> >;
 class VRN_CORE_API PlotEntitiesProperty : public TemplateProperty<std::vector<PlotEntitySettings> > {
 public:
      ///load strategy
-    enum loadStrategy{
+    enum loadStrategy {
         LS_NON,             ///< load no data
         LS_NEW,             ///< load only new data column
-        LS_ALL};            ///< load all data column
+        LS_ALL              ///< load all data column
+    };
 
     PlotEntitiesProperty(const std::string& id, const std::string& guiText, PlotEntitySettings::Entity entities,
        std::vector<PlotEntitySettings> value = std::vector<PlotEntitySettings>(), Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT);
@@ -104,7 +105,6 @@ public:
     loadStrategy getLoadStrategy() const;
     void setLoadStrategy(loadStrategy ls);
 
-    /// returns the dataEmptyFlag_
     bool dataEmpty() const;
 
     /// returns the dataValidFlag_
@@ -140,7 +140,6 @@ private:
     int yColumnIndex_;                                ///< column index of y axis (SURFACE and SCATTER)
     ColorMap colorMap_;
 
-    bool dataEmptyFlag_;     ///< true if the data is empty
     bool dataValidFlag_;     ///< false if there is not enough data to plot something
 
     const PlotData* data_;   ///< pointer to plotdata

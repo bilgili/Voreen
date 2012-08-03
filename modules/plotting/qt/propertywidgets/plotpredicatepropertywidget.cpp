@@ -25,7 +25,7 @@
 
 #include "plotpredicatepropertywidget.h"
 
-#include "../../utils/plotpredicate.h"
+#include "../../datastructures/plotpredicate.h"
 #include "../../properties/plotpredicateproperty.h"
 
 #include <QListWidget>

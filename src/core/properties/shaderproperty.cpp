@@ -392,7 +392,7 @@ bool ShaderProperty::rebuild() {
                 shader_->attachObject(vert_);
             else {
                 allSuccessful = false;
-                LWARNINGC("voreen.ShaderProperty", "Failed to compile vertex shader: " << vert_->getCompilerLog());
+                LWARNINGC("voreen.ShaderProperty", "Failed to compile vertex shader (original filename" << vertFilename << "): " << vert_->getCompilerLog());
             }
         }
     }
@@ -431,7 +431,7 @@ bool ShaderProperty::rebuild() {
                 shader_->attachObject(frag_);
             else {
                 allSuccessful = false;
-                LWARNINGC("voreen.ShaderProperty", "Failed to compile fragment shader: " << frag_->getCompilerLog());
+                LWARNINGC("voreen.ShaderProperty", "Failed to compile fragment shader (original filename" << fragFilename << "): " << frag_->getCompilerLog());
             }
         }
     }
@@ -470,7 +470,7 @@ bool ShaderProperty::rebuild() {
                 shader_->attachObject(geom_);
             else {
                 allSuccessful = false;
-                LWARNINGC("voreen.ShaderProperty", "Failed to compile geometry shader: " << geom_->getCompilerLog());
+                LWARNINGC("voreen.ShaderProperty", "Failed to compile geometry shader (original filename" << geomFilename << "): " << geom_->getCompilerLog());
             }
         }
     }

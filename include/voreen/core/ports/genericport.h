@@ -77,6 +77,7 @@ public:
      */
     virtual bool isReady() const;
 
+    virtual void clear();
 protected:
     const T* portData_;
     bool ownsData_;
@@ -201,6 +202,18 @@ bool GenericPort<T>::isReady() const {
         return isConnected();
     else
         return (!getConnected().empty() && hasData() && checkConditions());
+}
+
+template <typename T>
+void GenericPort<T>::clear() {
+    if (isOutport()) {
+        if(ownsData_)
+            delete portData_;
+
+        portData_ = 0;
+    }
+    else
+        LERROR("clear() called on inport");
 }
 
 } // namespace

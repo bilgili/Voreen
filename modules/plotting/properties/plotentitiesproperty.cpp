@@ -34,7 +34,6 @@ PlotEntitiesProperty::PlotEntitiesProperty(const std::string& id, const std::str
     , xColumnIndex_(0)
     , yColumnIndex_(-1)
     , colorMap_(ColorMap::createColorMap(0))
-    , dataEmptyFlag_(true)
     , dataValidFlag_(false)
     , loadStrategy_(LS_ALL)
 {}
@@ -85,7 +84,7 @@ int PlotEntitiesProperty::getXColumnIndex() const {
 }
 
 bool PlotEntitiesProperty::setXColumnIndex(int index) {
-    if (dataEmptyFlag_ || index < 0 || index >= data_->getColumnCount())
+    if (dataEmpty() || index < 0 || index >= data_->getColumnCount())
         return false;
     else {
         xColumnIndex_ = index;
@@ -110,7 +109,7 @@ int PlotEntitiesProperty::getYColumnIndex() const {
 }
 
 bool PlotEntitiesProperty::setYColumnIndex(int index) {
-    if (dataEmptyFlag_ || index >= data_->getColumnCount())
+    if (dataEmpty() || index >= data_->getColumnCount())
         return false;
     else if (entities_ != PlotEntitySettings::SURFACE && entities_ != PlotEntitySettings::SCATTER)
         return false;
@@ -151,17 +150,12 @@ const PlotData* PlotEntitiesProperty::getPlotData() const {
 
 void PlotEntitiesProperty::setPlotData(const PlotData* data) {
     data_ = data;
-    //set emptydataflag_
-    dataEmptyFlag_ = true;
     dataValidFlag_ = false;
-    //check if data is empty
-    if (data_ && data_->getColumnCount() > 0 && !data_->rowsEmpty())
-        dataEmptyFlag_ = false;
 
     int possibleXIndex = 0;
     int possibleYIndex = -1;
 
-    if (!dataEmptyFlag_) {
+    if (!dataEmpty()) {
         switch (entities_) {
             case PlotEntitySettings::LINE:
             case PlotEntitySettings::BAR: {
@@ -223,7 +217,7 @@ void PlotEntitiesProperty::setPlotData(const PlotData* data) {
     }
 
     //possible reset
-    if (dataEmptyFlag_ || !possibleXAxis(xColumnIndex_) || !possibleYAxis(yColumnIndex_)) {
+    if (dataEmpty() || !possibleXAxis(xColumnIndex_) || !possibleYAxis(yColumnIndex_)) {
         xColumnIndex_ = possibleXIndex;
         yColumnIndex_ = possibleYIndex;
         value_.clear();
@@ -244,6 +238,7 @@ void PlotEntitiesProperty::setPlotData(const PlotData* data) {
             break;
         case LS_NON:
         case LS_NEW:
+            bool reset = false;
             for (size_t i = 0; i < value_.size(); ++i) {
                 if (!value_.at(i).fitsTo(data_)) {
                     xColumnIndex_ = possibleXIndex;
@@ -252,10 +247,23 @@ void PlotEntitiesProperty::setPlotData(const PlotData* data) {
                     if (possibleXAxis(xColumnIndex_) && possibleYAxis(yColumnIndex_)){
                         value_ = createAllEntitySettings();
                     }
+                    reset = true;
                     break;
                 }
             }
-            if(LS_NON == loadStrategy_) break;
+
+            // adjust colors to color hints:
+            if(!reset) {
+                for (size_t i=0; i<value_.size(); ++i) {
+                    int ci = value_.at(i).getMainColumnIndex();
+                    if (data_->hasColumnColorHint(ci)) {
+                        value_[i].setFirstColor(data_->getColumnColorHint(ci));
+                    }
+                }
+            }
+
+            if(loadStrategy_ == LS_NON)
+                break;
 
             //FIXME: if size is not well
             if(value_.size() < static_cast<size_t>(data_->getDataColumnCount())){
@@ -269,7 +277,7 @@ void PlotEntitiesProperty::setPlotData(const PlotData* data) {
 
 void PlotEntitiesProperty::setPlotEntitySettings(PlotEntitySettings settings, int index) {
     if (entities_ == settings.getEntity()) {
-        if (!dataEmptyFlag_) {
+        if (!dataEmpty()) {
             //new entity
             if (static_cast<size_t>(index) >= value_.size())
                 value_.push_back(settings);
@@ -285,7 +293,7 @@ void PlotEntitiesProperty::setPlotEntitySettings(PlotEntitySettings settings, in
 }
 
 void PlotEntitiesProperty::deletePlotEntitySettings(int index) {
-    if (!dataEmptyFlag_) {
+    if (!dataEmpty()) {
         if (static_cast<size_t>(index) < value_.size())
             value_.erase(value_.begin()+index);
         notifyAll();
@@ -293,7 +301,10 @@ void PlotEntitiesProperty::deletePlotEntitySettings(int index) {
 }
 
 bool PlotEntitiesProperty::dataEmpty() const {
-    return dataEmptyFlag_;
+    if (data_ && data_->getColumnCount() > 0 && !data_->rowsEmpty())
+        return false;
+    else
+        return true;
 }
 
 bool PlotEntitiesProperty::dataValid() const {
@@ -301,18 +312,20 @@ bool PlotEntitiesProperty::dataValid() const {
 }
 
 void PlotEntitiesProperty::applyColormap() {
-    if (!dataEmptyFlag_) {
+    if (!dataEmpty()) {
         ColorMap::GeneratingIterator cmit = colorMap_.getGeneratingIterator();
         for (size_t i = 0; i < value_.size(); ++i) {
             PlotEntitySettings es(value_.at(i));
-            es.setFirstColor(*cmit);
-            ++cmit;
-            if (es.getEntity() == PlotEntitySettings::LINE) {
-                es.setSecondColor(*cmit);
-                //++cmit;
-            }
-            else if (es.getEntity() == PlotEntitySettings::SURFACE) {
-                es.setSecondColor(tgt::Color(0.f, 0.f, 0.f, 1.f));
+            if(!(data_ && ((int)i < data_->getColumnCount()) && !data_->hasColumnColorHint((int)i))) {
+                es.setFirstColor(*cmit);
+                ++cmit;
+                if (es.getEntity() == PlotEntitySettings::LINE) {
+                    es.setSecondColor(*cmit);
+                    //++cmit;
+                }
+                else if (es.getEntity() == PlotEntitySettings::SURFACE) {
+                    es.setSecondColor(tgt::Color(0.f, 0.f, 0.f, 1.f));
+                }
             }
             setPlotEntitySettings(es, static_cast<int>(i));
         }
@@ -325,8 +338,7 @@ PlotEntitySettings PlotEntitiesProperty::createEntitySettings() const {
     }
     else {
         PlotEntitySettings es;
-        ColorMap::GeneratingIterator it = ColorMap::GeneratingIterator(&colorMap_,
-            static_cast<int>(value_.size()));
+        ColorMap::GeneratingIterator it = ColorMap::GeneratingIterator(&colorMap_, static_cast<int>(value_.size()));
         //find number column index
         int ci;
         for (ci = 0; ci < data_->getColumnCount(); ++ci) {
@@ -335,18 +347,21 @@ PlotEntitySettings PlotEntitiesProperty::createEntitySettings() const {
                 && (entities_ == PlotEntitySettings::LINE || entities_ == PlotEntitySettings::BAR || yColumnIndex_ != ci))
                 break;
         }
+        tgt::Color c = *it;
+        if(data_->hasColumnColorHint(ci))
+            c = data_->getColumnColorHint(ci);
         switch (entities_) {
             case PlotEntitySettings::LINE:
-                es = PlotEntitySettings(ci,*it,PlotEntitySettings::CONTINUOUS, false, -1,*it,false);
+                es = PlotEntitySettings(ci,c,PlotEntitySettings::CONTINUOUS, false, -1,c,false);
                 break;
             case PlotEntitySettings::BAR:
-                es = PlotEntitySettings(ci,*it);
+                es = PlotEntitySettings(ci,c);
                 break;
             case PlotEntitySettings::SURFACE:
-                es = PlotEntitySettings(ci,*it, false, tgt::Color(0.f, 0.f, 0.f, 1.f), ColorMap::createColorMap(0), false, -1);
+                es = PlotEntitySettings(ci,c, false, tgt::Color(0.f, 0.f, 0.f, 1.f), ColorMap::createColorMap(0), false, -1);
                 break;
             case PlotEntitySettings::SCATTER:
-                es = PlotEntitySettings(ci, *it, 1, 2, PlotEntitySettings::POINT);
+                es = PlotEntitySettings(ci, c, 1, 2, PlotEntitySettings::POINT);
                 break;
             default :
                 es = PlotEntitySettings();
@@ -371,18 +386,22 @@ std::vector<PlotEntitySettings> PlotEntitiesProperty::createAllEntitySettings() 
             if (data_->getColumnType(ci)==PlotBase::NUMBER
                     && xColumnIndex_ != ci
                     && (entities_ == PlotEntitySettings::LINE || entities_ == PlotEntitySettings::BAR || yColumnIndex_ != ci)) {
+                tgt::Color c = *it;
+                if(data_->hasColumnColorHint(ci))
+                    c = data_->getColumnColorHint(ci);
+
                 switch (entities_) {
                     case PlotEntitySettings::LINE:
-                        es = PlotEntitySettings(ci,*it,PlotEntitySettings::CONTINUOUS, false, -1,*it,false);
+                        es = PlotEntitySettings(ci,c,PlotEntitySettings::CONTINUOUS, false, -1,c,false);
                         break;
                     case PlotEntitySettings::BAR:
-                        es = PlotEntitySettings(ci,*it);
+                        es = PlotEntitySettings(ci,c);
                         break;
                     case PlotEntitySettings::SURFACE:
-                        es = PlotEntitySettings(ci,*it, false, tgt::Color(0.f, 0.f, 0.f, 1.f), ColorMap::createColorMap(0), false, -1);
+                        es = PlotEntitySettings(ci,c, false, tgt::Color(0.f, 0.f, 0.f, 1.f), ColorMap::createColorMap(0), false, -1);
                         break;
                     case PlotEntitySettings::SCATTER:
-                        es = PlotEntitySettings(ci, *it, 1, 2, PlotEntitySettings::POINT);
+                        es = PlotEntitySettings(ci, c, 1, 2, PlotEntitySettings::POINT);
                         break;
                     default :
                         es = PlotEntitySettings();
@@ -390,7 +409,8 @@ std::vector<PlotEntitySettings> PlotEntitiesProperty::createAllEntitySettings() 
                         break;
                 }
                 all.push_back(es);
-                ++it;
+                if(!data_->hasColumnColorHint(ci))
+                    ++it;
             }
         }
         return all;
@@ -449,7 +469,7 @@ void PlotEntitiesProperty::notifyAll() {
 
 bool PlotEntitiesProperty::possibleXAxis(int index) {
     //check if data empty or index out of bounds
-    if (dataEmptyFlag_ || index < 0 || index >= data_->getColumnCount())
+    if (dataEmpty() || index < 0 || index >= data_->getColumnCount())
         return false;
 
     //for LINE and BAR, label x axis is possible
@@ -468,7 +488,7 @@ bool PlotEntitiesProperty::possibleXAxis(int index) {
 
 bool PlotEntitiesProperty::possibleYAxis(int index) {
     //check if data empty or index out of bounds
-    if (dataEmptyFlag_ || index < -1 || index >= data_->getColumnCount())
+    if (dataEmpty() || index < -1 || index >= data_->getColumnCount())
         return false;
 
     //-1 isn't possible for SURFACE otherwise is it possible

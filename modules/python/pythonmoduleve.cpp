@@ -23,8 +23,8 @@
  *                                                                                 *
  ***********************************************************************************/
 
+#include "veplugin/pythoneditor.h"
 #include "pythonmoduleve.h"
-#include "../../modules/python/veplugin/pythoneditor.h"
 
 namespace voreen {
 

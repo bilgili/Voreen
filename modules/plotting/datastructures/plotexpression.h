@@ -28,8 +28,8 @@
 
 #include "interval.h"
 #include "plotbase.h"
-#include "parser/plotfunctiontoken.h"
-#include "parser/plotfunctionvisitor.h"
+#include "../utils/parser/plotfunctiontoken.h"
+#include "../utils/parser/plotfunctionvisitor.h"
 #include "voreen/core/voreencoreapi.h"
 
 namespace voreen {

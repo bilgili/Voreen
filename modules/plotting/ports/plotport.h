@@ -27,7 +27,7 @@
 #define VRN_PLOTPORT_H
 
 #include "voreen/core/ports/genericport.h"
-#include "../utils/plotbase.h"
+#include "../datastructures/plotbase.h"
 
 namespace voreen {
 

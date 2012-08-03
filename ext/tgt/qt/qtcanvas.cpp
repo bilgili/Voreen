@@ -131,22 +131,25 @@ void QtCanvas::toggleFullScreen() {
     that are associated with this canvas. The same is true for the other event-handling
     methods.
 */
-void QtCanvas::enterEvent(QEvent* /*e*/) {
+void QtCanvas::enterEvent(QEvent* e) {
     tgt::MouseEvent* enterEv = new tgt::MouseEvent(0, 0, tgt::MouseEvent::ENTER,
         tgt::MouseEvent::MODIFIER_NONE, tgt::MouseEvent::MOUSE_BUTTON_NONE, tgt::ivec2(width(), height()));
     eventHandler_->broadcast(enterEv);
+    QGLWidget::enterEvent(e);
 }
 
-void QtCanvas::leaveEvent(QEvent* /*e*/) {
+void QtCanvas::leaveEvent(QEvent* e) {
     tgt::MouseEvent* leaveEv = new tgt::MouseEvent(0, 0, tgt::MouseEvent::EXIT,
         tgt::MouseEvent::MODIFIER_NONE, tgt::MouseEvent::MOUSE_BUTTON_NONE, tgt::ivec2(width(), height()));
     eventHandler_->broadcast(leaveEv);
+    QGLWidget::leaveEvent(e);
 }
 
 void QtCanvas::mousePressEvent(QMouseEvent* e) {
     tgt::MouseEvent* prEv = new tgt::MouseEvent(e->x(), e->y(), tgt::MouseEvent::PRESSED,
         getModifier(e), getButton(e), tgt::ivec2(width(), height()));
     eventHandler_->broadcast(prEv);
+    QGLWidget::mousePressEvent(e);
 }
 
 // See mousePressEvent
@@ -154,6 +157,7 @@ void QtCanvas::mouseReleaseEvent (QMouseEvent* e) {
     tgt::MouseEvent* relEv = new tgt::MouseEvent(e->x(), e->y(), tgt::MouseEvent::RELEASED,
         getModifier(e), getButton(e), tgt::ivec2(width(), height()));
     eventHandler_->broadcast(relEv);
+    QGLWidget::mouseReleaseEvent(e);
 }
 
 // See mousePressEvent
@@ -161,6 +165,7 @@ void QtCanvas::mouseMoveEvent(QMouseEvent*  e) {
     tgt::MouseEvent* movEv = new tgt::MouseEvent(e->x(), e->y(), tgt::MouseEvent::MOTION,
         getModifier(e), getButtons(e), tgt::ivec2(width(), height())); // FIXME: submit information which mouse buttons are pressed
     eventHandler_->broadcast(movEv);
+    QGLWidget::mouseMoveEvent(e);
 }
 
 // See mousePressEvent
@@ -168,6 +173,7 @@ void QtCanvas::mouseDoubleClickEvent(QMouseEvent* e) {
     tgt::MouseEvent* dcEv = new tgt::MouseEvent(e->x(), e->y(), tgt::MouseEvent::DOUBLECLICK,
                                                 getModifier(e), getButton(e), tgt::ivec2(width(), height()));
     eventHandler_->broadcast(dcEv);
+    QGLWidget::mouseDoubleClickEvent(e);
 }
 
 // See mousePressEvent
@@ -179,24 +185,28 @@ void QtCanvas::wheelEvent(QWheelEvent* e) {
     tgt::MouseEvent* wheelEv = new tgt::MouseEvent(e->x(),e->y(), tgt::MouseEvent::WHEEL,
                                                    getModifier(e), b, tgt::ivec2(width(), height()));
     eventHandler_->broadcast(wheelEv);
+    QGLWidget::wheelEvent(e);
 }
 
 // See mousePressEvent
 void QtCanvas::keyPressEvent(QKeyEvent* event) {
     tgt::KeyEvent* ke = new tgt::KeyEvent(getKey(event->key()), getModifier(event), true);
     eventHandler_->broadcast(ke);
+    QGLWidget::keyPressEvent(event);
 }
 
 // See mousePressEvent
 void QtCanvas::keyReleaseEvent(QKeyEvent* event) {
     tgt::KeyEvent* ke = new tgt::KeyEvent(getKey(event->key()), getModifier(event), false);
     eventHandler_->broadcast(ke);
+    QGLWidget::keyReleaseEvent(event);
 }
 
 // yes, we need this in voreen FL
-void QtCanvas::timerEvent(QTimerEvent* /*e*/) {
+void QtCanvas::timerEvent(QTimerEvent* e) {
     tgt::TimeEvent* te = new tgt::TimeEvent();
     eventHandler_->broadcast(te);
+    QGLWidget::timerEvent(e);
 }
 
 tgt::MouseEvent::MouseButtons QtCanvas::getButton(QMouseEvent* e) {

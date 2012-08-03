@@ -94,6 +94,13 @@ bool TextPort::isReady() const {
     return Port::isReady();
 }
 
+void TextPort::clear() {
+    if (!isOutport())
+        LERROR("clear() called on inport");
+    else
+        portData_ = "";
+}
+
 bool TextPort::hasData() const {
     return true;
 }

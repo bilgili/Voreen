@@ -26,8 +26,8 @@
 #ifndef VRN_PLOTDATAINSERTER_H
 #define VRN_PLOTDATAINSERTER_H
 
-#include "plotdata.h"
-#include "plotcell.h"
+#include "../datastructures/plotdata.h"
+#include "../datastructures/plotcell.h"
 
 #include <string>
 #include <vector>

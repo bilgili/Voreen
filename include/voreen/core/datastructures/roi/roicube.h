@@ -30,7 +30,7 @@
 
 namespace voreen {
 
-class VRN_CORE_API  ROICube : public ROINormalizedGeometry {
+class VRN_CORE_API ROICube : public ROINormalizedGeometry {
 public:
     ROICube(Grid grid, tgt::vec3 center, tgt::vec3 dimensions);
     ROICube();

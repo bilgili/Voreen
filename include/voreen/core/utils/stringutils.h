@@ -117,10 +117,10 @@ template<typename T>
 std::string strJoin(const std::vector<T>& tokens, const std::string& delim);
 
 /// Returns true if \p input ends with \p ending
-VRN_CORE_API bool endsWith(const std::string input, const std::string ending);
+VRN_CORE_API bool endsWith(const std::string& input, const std::string& ending);
 
 /// Returns true if \p input starts with \p ending
-VRN_CORE_API bool startsWith(const std::string input, const std::string start);
+VRN_CORE_API bool startsWith(const std::string& input, const std::string& start);
 
 // ----------------------------------------------------------------------------
 // template definitions

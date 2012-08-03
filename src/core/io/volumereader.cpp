@@ -76,7 +76,7 @@ void VolumeReader::read(VolumeRAM* volume, FILE* fin) {
         size_t max = tgt::max(volume->getDimensions());
 
         // validate dimensions
-        if (max <= 0 || max > 1e5) {
+        if (max == 0 || max > 1e5) {
             LERROR("Invalid dimensions: " << volume->getDimensions());
             std::ostringstream stream;
             stream << volume->getDimensions();

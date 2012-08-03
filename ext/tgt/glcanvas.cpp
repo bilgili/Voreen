@@ -129,7 +129,6 @@ bool GLCanvas::takeScreenshot(std::string fname) {
 
    // Check if the file opened or not.
     if (!pFile) {
-        fclose(pFile);
         return false;
     }
 

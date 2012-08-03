@@ -72,6 +72,13 @@ ENDIF()
 INCLUDE_DIRECTORIES(${VRN_INCLUDE_DIRECTORIES} ${VRN_MODULE_INCLUDE_DIRECTORIES})
 TARGET_LINK_LIBRARIES(tgt ${VRN_EXTERNAL_LIBRARIES})
 
+# group source files by subdir
+IF(VRN_GROUP_SOURCE_FILES)
+    LIST(APPEND RemovePathPrefixes "ext/tgt")
+    DEFINE_SOURCE_GROUPS_FROM_SUBDIR(TGT_SOURCES ${VRN_HOME} RemovePathPrefixes)
+    DEFINE_SOURCE_GROUPS_FROM_SUBDIR(TGT_HEADERS ${VRN_HOME} RemovePathPrefixes)
+ENDIF()
+
 ################################################################################
 # deployment
 ################################################################################

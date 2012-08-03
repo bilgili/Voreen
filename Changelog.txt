@@ -1,6 +1,32 @@
 Voreen Changelog
 ----------------
 
+2012-08-03: Voreen 4.0.1
+------------------------
+
+   * Features:
+     o Canvas supports fullscreen mode (F11)
+     o Transfer function editor: histogram y-axis scale (logarithmic/linear) is selectable via menu     
+     o Visual Studio: source files can be grouped by directory (CMake option 'VRN_GROUP_SOURCE_FILES')
+
+   * Bug Fixes:
+     o ATI/AMD driver compatibility:
+       - compile error in mod_raysetup.frag with older drivers (macro escape sequence)
+       - texture upload in ImageSequenceSource
+       - distance attenuation in PointListRenderer
+     o ITKWrapper correctly handles volume offsets
+     o Absolute/relative path conversion in FileDialogProperty
+     o Occasional NetworkEditor crash when relocating arrows
+     o Opacity accomodation in CPURaycaster
+
+   * Minor Changes:
+     o Camera frustum adjustment is now consistent between horizontal and vertical canvas resizing
+     o CPURaycaster uses multi-threading via OpenMP
+     o NetworkEvaluator clears outports, if processor isn't ready
+     o Moved standard shader header generation from RenderProcessor to glsl.h/cpp
+     o tgt::QtCanvas passes events to QGLWidget base class
+
+
 2012-06-22: Voreen 4.0
 ----------------------
 

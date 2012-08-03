@@ -37,7 +37,7 @@
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/floatproperty.h"
 
-#include "../utils/plotcell.h"
+#include "../datastructures/plotcell.h"
 
 namespace voreen {
 

@@ -26,7 +26,7 @@
 #ifndef VRN_PLOTDATAEXTENDEDTABLEMODEL_H
 #define VRN_PLOTDATAEXTENDEDTABLEMODEL_H
 
-#include "../utils/plotdata.h"
+#include "../datastructures/plotdata.h"
 #include "../utils/functionlibrary.h"
 
 #include "plotdatasimpletablemodel.h"

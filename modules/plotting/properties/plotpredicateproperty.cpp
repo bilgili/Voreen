@@ -25,7 +25,7 @@
 
 #include "plotpredicateproperty.h"
 
-#include "../utils/plotpredicate.h"
+#include "../datastructures/plotpredicate.h"
 #include <sstream>
 
 

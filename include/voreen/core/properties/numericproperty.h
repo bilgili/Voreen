@@ -140,8 +140,23 @@ NumericProperty<T>::NumericProperty(const std::string& id, const std::string& gu
 
 template<typename T>
 void NumericProperty<T>::setMaxValue( const T& maxValue ) {
-    maxValue_ = maxValue;
-    this->updateWidgets();
+    if(maxValue_ != maxValue) {
+        maxValue_ = maxValue;
+        //check if min < max
+        T tempValue(tgt::clamp(minValue_,minValue_,maxValue_));
+        if (tempValue != minValue_){
+            LDEBUGC("voreen.NumericProperty",
+                    "setMaxValue: maxValue < minValue. Setting minValue = min(minValue,maxValue).");
+            this->setMinValue(tempValue);
+            return; //invalidate has been called in setMinValue
+        }
+        //check, if value_ < maxValue_
+        tempValue = tgt::clamp(value_,value_,maxValue_);
+        if(value_ != tempValue)
+            this->set(tempValue); //calls invalidate
+        else
+            this->updateWidgets();
+    }
 }
 
 template<typename T>
@@ -151,8 +166,23 @@ const T& NumericProperty<T>::getMaxValue() const {
 
 template<typename T>
 void NumericProperty<T>::setMinValue(const T& minValue) {
-    minValue_ = minValue;
-    this->updateWidgets();
+    if(minValue_ != minValue) {
+        minValue_ = minValue;
+        //check if min < max
+        T tempValue(-tgt::clamp(-minValue_,-minValue_,-maxValue_));
+        if (tempValue != maxValue_){
+            LDEBUGC("voreen.NumericProperty",
+                    "setMinValue: maxValue < minValue. Setting maxValue = max(minValue,maxValue).");
+            this->setMaxValue(tempValue);
+            return; //invalidate has been called in setMaxValue
+        }
+        //check, if value_ > minValue_
+        tempValue = -tgt::clamp(-minValue_,-minValue_,-value_);
+        if(value_ != tempValue)
+            this->set(tempValue); //calls invalidate
+        else
+            this->updateWidgets();
+    }
 }
 
 template<typename T>

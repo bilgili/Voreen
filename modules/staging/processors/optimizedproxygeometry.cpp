@@ -163,6 +163,7 @@ void OptimizedProxyGeometry::onModeChange() {
 void OptimizedProxyGeometry::onTransFuncChange() {
     if (transfunc_.get()->getTexture()->getHeight()>=2) {
         use2DTF_ = true;
+        LWARNING("Optimization for 2D TFs is untested!");
     } else {
         use2DTF_ = false;
     }
@@ -570,6 +571,7 @@ void OptimizedProxyGeometry::processCubeProxyGeometry() {
 
 tgt::vec4 OptimizedProxyGeometry::applyTransferFunction(tgt::ivec3 vox) {
     if (use2DTF_) {
+        // FIXME: RWM, TF domains...
         //linear interpolation
         float x,y;
         size_t x0,x1,y0,y1;
@@ -603,6 +605,8 @@ tgt::vec4 OptimizedProxyGeometry::applyTransferFunction(tgt::ivec3 vox) {
     } else {
         //linear interpolation
         float value = volvox_->getRepresentation<VolumeRAM>()->getVoxelNormalized(vox);
+        value = volvox_->getRealWorldMapping().normalizedToRealWorld(value);
+        value = transfunc_.get()->realWorldToNormalized(value);
         float x = value*(textf_->getWidth()-1);
         size_t x0 = (size_t)floor(x);
         size_t x1 = (size_t)ceil(x);
@@ -824,8 +828,12 @@ void OptimizedProxyGeometry::setUpOctreeLeaf(OctreeNode* node, tgt::ivec3 llf, t
         for(int y=llf.y; y<=urb.y; y++) {
             for(int z=llf.z; z<=urb.z; z++) {
                 val = volvox_->getRepresentation<VolumeRAM>()->getVoxelNormalized(tgt::ivec3(x,y,z));
-                if (val<node->minvox) node->minvox = val;
-                if (val>node->maxvox) node->maxvox = val;
+                val = volvox_->getRealWorldMapping().normalizedToRealWorld(val);
+
+                if (val<node->minvox)
+                    node->minvox = val;
+                if (val>node->maxvox)
+                    node->maxvox = val;
                 if (use2DTF_) {
                     val = volgradmag_->getRepresentation<VolumeRAM>()->getVoxelNormalized(tgt::ivec3(x,y,z));
                     if (val<node->mingrad) node->mingrad = val;

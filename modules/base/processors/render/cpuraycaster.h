@@ -58,9 +58,9 @@ protected:
 
     /**
      * Performs the actual ray casting for a single ray,
-     * which determined by the passed entry and exit points.
+     * which determined by the passed entry and exit points and the transfer function.
      */
-    virtual tgt::vec4 directRendering(const tgt::vec3& first, const tgt::vec3& last);
+    virtual tgt::vec4 directRendering(const tgt::vec3& first, const tgt::vec3& last, tgt::Texture* tfTexture);
     tgt::vec4 apply1DTF(tgt::Texture* tfTexture, float intensity);
     tgt::vec4 apply2DTF(tgt::Texture* tfTexture, float intensity, float gradientMagnitude);
 

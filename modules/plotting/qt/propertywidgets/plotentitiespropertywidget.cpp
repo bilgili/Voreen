@@ -27,7 +27,7 @@
 
 #include "../plotentitysettingsdialog.h"
 #include "../../properties/plotentitiesproperty.h"
-#include "../../utils/plotdata.h"
+#include "../../datastructures/plotdata.h"
 
 #include "voreen/qt/widgets/voreentoolwindow.h"
 

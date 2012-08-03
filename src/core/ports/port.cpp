@@ -292,6 +292,9 @@ void Port::setValid() {
     }
 }
 
+void Port::clear() {
+}
+
 bool Port::supportsCaching() const {
     return false;
 }

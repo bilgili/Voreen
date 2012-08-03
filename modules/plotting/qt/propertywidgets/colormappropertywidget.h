@@ -26,7 +26,7 @@
 #ifndef VRN_COLORMAPPROPERTYWIDGET_H
 #define VRN_COLORMAPPROPERTYWIDGET_H
 
-#include "../../utils/colormap.h"
+#include "../../datastructures/colormap.h"
 #include "voreen/qt/widgets/property/qpropertywidgetwitheditorwindow.h"
 #include "tgt/vector.h"
 

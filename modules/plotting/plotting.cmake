@@ -49,30 +49,32 @@ SET(MOD_CORE_SOURCES
     # Port sources
     ${MOD_DIR}/ports/plotport.cpp 
     
+    # Datastructures sources
+    ${MOD_DIR}/datastructures/aggregationfunction.cpp 
+    ${MOD_DIR}/datastructures/colormap.cpp
+    ${MOD_DIR}/datastructures/plotbase.cpp
+    ${MOD_DIR}/datastructures/plotcell.cpp
+    ${MOD_DIR}/datastructures/plotdata.cpp
+    ${MOD_DIR}/datastructures/plotentitysettings.cpp
+    ${MOD_DIR}/datastructures/plotexpression.cpp
+    ${MOD_DIR}/datastructures/plotfunction.cpp
+    ${MOD_DIR}/datastructures/plotpredicate.cpp
+    ${MOD_DIR}/datastructures/plotrow.cpp
+    ${MOD_DIR}/datastructures/plotselection.cpp
+
     # Utils sources
-    ${MOD_DIR}/utils/aggregationfunction.cpp 
     ${MOD_DIR}/utils/aggregationfunctionfactory.cpp
-    ${MOD_DIR}/utils/colormap.cpp
-    ${MOD_DIR}/utils/plotexpression.cpp
     ${MOD_DIR}/utils/functionlibrary.cpp
-    ${MOD_DIR}/utils/plotbase.cpp
-    ${MOD_DIR}/utils/plotentitysettings.cpp
-    ${MOD_DIR}/utils/plotdata.cpp
     ${MOD_DIR}/utils/plotdatainserter.cpp
-    ${MOD_DIR}/utils/plotcell.cpp
-    ${MOD_DIR}/utils/plotfunction.cpp
-    ${MOD_DIR}/utils/plotlibrarylatex.cpp
-    ${MOD_DIR}/utils/plotlibrarylatexrender.cpp
-    ${MOD_DIR}/utils/plotlibrary.cpp
-    ${MOD_DIR}/utils/plotlibraryfilebase.cpp
-    ${MOD_DIR}/utils/plotlibrarynonefilebase.cpp
-    ${MOD_DIR}/utils/plotlibraryopengl.cpp
-    ${MOD_DIR}/utils/plotlibrarysvg.cpp
-    ${MOD_DIR}/utils/plotlibrarysvgrender.cpp
-    ${MOD_DIR}/utils/plotrow.cpp
-    ${MOD_DIR}/utils/plotpredicate.cpp
+    ${MOD_DIR}/utils/plotlibrary/plotlibrary.cpp
+    ${MOD_DIR}/utils/plotlibrary/plotlibraryfilebase.cpp
+    ${MOD_DIR}/utils/plotlibrary/plotlibrarylatex.cpp
+    ${MOD_DIR}/utils/plotlibrary/plotlibrarylatexrender.cpp
+    ${MOD_DIR}/utils/plotlibrary/plotlibrarynonefilebase.cpp
+    ${MOD_DIR}/utils/plotlibrary/plotlibraryopengl.cpp
+    ${MOD_DIR}/utils/plotlibrary/plotlibrarysvg.cpp
+    ${MOD_DIR}/utils/plotlibrary/plotlibrarysvgrender.cpp
     ${MOD_DIR}/utils/plotpredicatefactory.cpp
-    ${MOD_DIR}/utils/plotselection.cpp
     ${MOD_DIR}/utils/smartlabel.cpp
     ${MOD_DIR}/utils/parser/plotfunctionterminals.cpp
     ${MOD_DIR}/utils/parser/plotfunctiongrammar.cpp
@@ -124,32 +126,34 @@ SET(MOD_CORE_HEADERS
     # Port headers
     ${MOD_DIR}/ports/plotport.h
 
+    # Datastructures headers
+    ${MOD_DIR}/datastructures/aggregationfunction.h
+    ${MOD_DIR}/datastructures/colormap.h
+    ${MOD_DIR}/datastructures/interval.h
+    ${MOD_DIR}/datastructures/plotbase.h
+    ${MOD_DIR}/datastructures/plotcell.h
+    ${MOD_DIR}/datastructures/plotdata.h
+    ${MOD_DIR}/datastructures/plotentitysettings.h
+    ${MOD_DIR}/datastructures/plotexpression.h
+    ${MOD_DIR}/datastructures/plotfunction.h
+    ${MOD_DIR}/datastructures/plotpredicate.h
+    ${MOD_DIR}/datastructures/plotrow.h
+    ${MOD_DIR}/datastructures/plotselection.h
+    ${MOD_DIR}/datastructures/plotzoomstate.h
+
     # Utils headers
-    ${MOD_DIR}/utils/aggregationfunction.h
     ${MOD_DIR}/utils/aggregationfunctionfactory.h
-    ${MOD_DIR}/utils/colormap.h
-    ${MOD_DIR}/utils/plotentitysettings.h
-    ${MOD_DIR}/utils/plotexpression.h
-    ${MOD_DIR}/utils/interval.h
     ${MOD_DIR}/utils/functionlibrary.h
-    ${MOD_DIR}/utils/plotbase.h
-    ${MOD_DIR}/utils/plotcell.h
-    ${MOD_DIR}/utils/plotdata.h
     ${MOD_DIR}/utils/plotdatainserter.h
-    ${MOD_DIR}/utils/plotfunction.h
-    ${MOD_DIR}/utils/plotlibrarylatex.h
-    ${MOD_DIR}/utils/plotlibrarylatexrender.h
-    ${MOD_DIR}/utils/plotlibrary.h
-    ${MOD_DIR}/utils/plotlibraryfilebase.h
-    ${MOD_DIR}/utils/plotlibrarynonefilebase.h
-    ${MOD_DIR}/utils/plotlibraryopengl.h
-    ${MOD_DIR}/utils/plotlibrarysvg.h
-    ${MOD_DIR}/utils/plotlibrarysvgrender.h
-    ${MOD_DIR}/utils/plotpredicate.h
+    ${MOD_DIR}/utils/plotlibrary/plotlibrarylatex.h
+    ${MOD_DIR}/utils/plotlibrary/plotlibrarylatexrender.h
+    ${MOD_DIR}/utils/plotlibrary/plotlibrary.h
+    ${MOD_DIR}/utils/plotlibrary/plotlibraryfilebase.h
+    ${MOD_DIR}/utils/plotlibrary/plotlibrarynonefilebase.h
+    ${MOD_DIR}/utils/plotlibrary/plotlibraryopengl.h
+    ${MOD_DIR}/utils/plotlibrary/plotlibrarysvg.h
+    ${MOD_DIR}/utils/plotlibrary/plotlibrarysvgrender.h
     ${MOD_DIR}/utils/plotpredicatefactory.h
-    ${MOD_DIR}/utils/plotrow.h
-    ${MOD_DIR}/utils/plotselection.h
-    ${MOD_DIR}/utils/plotzoomstate.h
     ${MOD_DIR}/utils/smartlabel.h
     ${MOD_DIR}/utils/parser/plotfunctionterminals.h
     ${MOD_DIR}/utils/parser/plotfunctiongrammar.h

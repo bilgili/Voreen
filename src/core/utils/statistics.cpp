@@ -42,6 +42,16 @@ Statistics::Statistics(bool collectSamples)
 {
 }
 
+void Statistics::reset() {
+   min_ = FLT_MAX;
+   max_ = FLT_MIN;
+   runningMean_ = 0.0f;
+   m2_ = 0.0f;
+   sum_ = 0.0f;
+   samples_.clear();
+   numSamples_ = 0;
+}
+
 void Statistics::addSample(float v) {
     numSamples_++;
 

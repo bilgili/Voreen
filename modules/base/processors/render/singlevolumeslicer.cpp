@@ -35,7 +35,7 @@ namespace voreen {
 SingleVolumeSlicer::SingleVolumeSlicer()
     : VolumeSlicer()
     , shaderProp_("slicing.shader", "Slicing shader", "sl_singlevolume.frag", "sl_singlevolume.vert")
-    , outport_(Port::OUTPORT, "image.output", true, Processor::INVALID_RESULT, GL_RGBA16F_ARB)
+    , outport_(Port::OUTPORT, "image.output", false, Processor::INVALID_RESULT, GL_RGBA16F_ARB)
     , cameraHandler_("cameraHandler", "Camera Handler", &camera_)
 {
 

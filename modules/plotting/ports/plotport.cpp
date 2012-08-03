@@ -24,7 +24,7 @@
  ***********************************************************************************/
 
 #include "plotport.h"
-#include "../utils/plotbase.h"
+#include "../datastructures/plotbase.h"
 
 namespace voreen {
 

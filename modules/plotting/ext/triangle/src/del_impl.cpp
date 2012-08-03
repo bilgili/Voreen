@@ -11,7 +11,7 @@
 #include <iostream>
 #include "../include/triangle_impl.hpp"
 #include "../include/del_interface.hpp"
-#include "../../../utils/plotrow.h"
+#include "../../../datastructures/plotrow.h"
 #include <new>
 #include <algorithm>
 #include <utility>

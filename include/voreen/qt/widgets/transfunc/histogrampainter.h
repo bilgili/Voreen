@@ -42,7 +42,7 @@ class VolumeHistogramIntensity;
  * paintEvent() which is called by Qt automatically.
  */
 class HistogramPainter : public QWidget {
-Q_OBJECT
+    Q_OBJECT
 public:
     /**
      * Constructor - inits member variables
@@ -71,7 +71,7 @@ public:
      *
      * @param xRange new x range
      */
-    void setxRange(const tgt::vec2& xRange);
+    void setXRange(const tgt::vec2& xRange);
 
 public slots:
     /**
@@ -80,6 +80,11 @@ public slots:
      * @param histogram the histogram that will be painted
      */
     void setHistogram(VolumeHistogramIntensity* histogram);
+
+    /**
+     * Determines whether a logarithmic scale is to be used on the y-axis.
+     */
+    void setYAxisLogarithmic(bool logarithmic);
 
 private:
     /**
@@ -90,10 +95,11 @@ private:
      */
     inline tgt::vec2 wtos(const tgt::vec2& p) const;
 
-    tgt::vec2 xRange_; ///< range in x direction
-    tgt::vec2 yRange_; ///< range in y direction
-    int padding_;      ///< additional padding at the border of the parent widget
-    int arrowLength_;  ///< length of the arrows in the parent widget
+    tgt::vec2 xRange_;      ///< range in x direction
+    tgt::vec2 yRange_;      ///< range in y direction
+    bool yAxisLogarithmic_; ///< use logarithmic y-axis
+    int padding_;           ///< additional padding at the border of the parent widget
+    int arrowLength_;       ///< length of the arrows in the parent widget
 
     VolumeHistogramIntensity* histogram_; ///< the histogram that is painted
 

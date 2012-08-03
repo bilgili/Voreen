@@ -41,7 +41,7 @@ struct QuadHidacHeader {
     float dxyr;
     float rho;
     std::vector<float> dt;
-    tgt::ivec3 dims;
+    tgt::svec3 dims;
     unsigned int frameTime;
     tgt::mat4 transformationMatrix;
 
@@ -54,7 +54,7 @@ struct QuadHidacHeader {
                       , nbrg(1)
                       , dxyr(0.0f)
                       , rho(0.0f)
-                      , dims(0)
+                      , dims(tgt::svec3(static_cast<size_t>(0)))
                       , frameTime(0)
                       , transformationMatrix(tgt::mat4::identity)
                       , dataOffset(0)

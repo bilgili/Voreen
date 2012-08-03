@@ -26,7 +26,7 @@
 #ifndef VRN_FUNCTIONLIBRARY_H
 #define VRN_FUNCTIONLIBRARY_H
 
-#include "plotbase.h"
+#include "../datastructures/plotbase.h"
 
 #include <vector>
 

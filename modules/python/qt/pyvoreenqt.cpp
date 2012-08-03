@@ -31,6 +31,7 @@
 #endif
 
 // Do this at very first
+#include "Python.h"
 #include "modules/python/pythonmodule.h"
 
 #include "modules/python/qt/pyvoreenqt.h"

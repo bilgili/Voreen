@@ -24,10 +24,10 @@
  ***********************************************************************************/
 
 #include "plotlibraryopengl.h"
-#include "plotrow.h"
+#include "../../datastructures/plotrow.h"
 
 #include "voreen/core/voreenapplication.h"
-#include "../interaction/plotpickingmanager.h"
+#include "../../interaction/plotpickingmanager.h"
 
 #include "tgt/glmath.h"
 #include "tgt/tgt_math.h"
@@ -141,6 +141,8 @@ bool PlotLibraryOpenGl::setRenderStatus() {
         glEnable(GL_POINT_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
         glEnable(GL_LINE_SMOOTH);
+        // FIXME Polygon smoothing does not seem to be well supported by many graphics cards; it often leads to visible seams between triangles.
+        // This setting will be disabled for bar plots for now (see renderSingleBar()). FL
         glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
         glEnable(GL_POLYGON_SMOOTH);
         //clear color buffer
@@ -1579,6 +1581,9 @@ void PlotLibraryOpenGl::renderSingleBar(plot_t left, plot_t right, plot_t bottom
     back = (back+squeeze*back+front-squeeze*front)/2.0;
     front = (back-squeeze*back+front+squeeze*front)/2.0;
 
+    if(!usePlotPickingManager_)
+        glDisable(GL_POLYGON_SMOOTH);
+
     for (int i = 0; i < 2; ++i) {
         // fill color
         if (i==0) {
@@ -1636,6 +1641,8 @@ void PlotLibraryOpenGl::renderSingleBar(plot_t left, plot_t right, plot_t bottom
         glDisable(GL_POLYGON_OFFSET_FILL);
     }
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    if(!usePlotPickingManager_)
+        glEnable(GL_POLYGON_SMOOTH);
 }
 
 tgt::dvec2 PlotLibraryOpenGl::convertPlotCoordinatesToViewport(const tgt::dvec3& plotCoordinates) const {

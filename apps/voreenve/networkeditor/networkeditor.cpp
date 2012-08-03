@@ -167,9 +167,10 @@ namespace {
 
         ProcessorNetwork* tmp = 0;
         try {
-            d.deserialize("ProcessorNetwork",tmp);
+            d.deserialize("ProcessorNetwork", tmp);
         }
-        catch(SerializationException e){
+        catch (SerializationException& e){
+            LWARNINGC("voreen.NetworkEditor", "Error during deserialization of temporary network:" << e.what());
             delete tmp;
             return false;
         }
@@ -792,16 +793,16 @@ void NetworkEditor::pasteActionSlot() {
     ProcessorNetwork* pasteNetwork; //= new ProcessorNetwork();
 
     try{
-        d.deserialize("ProcessorNetwork",pasteNetwork);
+        d.deserialize("ProcessorNetwork", pasteNetwork);
     }
-    catch(SerializationException e){
-        LWARNING("Deserialize network went wrong");
+    catch (SerializationException& e){
+        LWARNING("Error during network deserialization: " << e.what());
         return;
     }
 
     PositionMetaData* pos;
     if (!dynamic_cast<PositionMetaData*>(pasteNetwork->getProcessors()[0]->getMetaDataContainer().getMetaData("ProcessorGraphicsItem"))){
-        tgtAssert(true,"No Position MetaData");
+        tgtAssert(false, "No Position MetaData");
     }
     else {
         pos = dynamic_cast<PositionMetaData*>(pasteNetwork->getProcessors()[0]->getMetaDataContainer().getMetaData("ProcessorGraphicsItem"));
@@ -809,9 +810,9 @@ void NetworkEditor::pasteActionSlot() {
 
     int minX = pos->getX(); int maxX = pos->getX();
     int minY = pos->getY(); int maxY = pos->getY();
-    for(size_t i = 1; i < pasteNetwork->getProcessors().size(); ++i){
+    for (size_t i = 1; i < pasteNetwork->getProcessors().size(); ++i){
         if (!dynamic_cast<PositionMetaData*>(pasteNetwork->getProcessors()[i]->getMetaDataContainer().getMetaData("ProcessorGraphicsItem"))){
-            tgtAssert(true,"No Position MetaData");
+            tgtAssert(false,"No Position MetaData");
         }
         else {
             pos = dynamic_cast<PositionMetaData*>(pasteNetwork->getProcessors()[i]->getMetaDataContainer().getMetaData("ProcessorGraphicsItem"));
@@ -824,9 +825,9 @@ void NetworkEditor::pasteActionSlot() {
     }
     QPointF center((minX+maxX)/2,(minY+maxY)/2);
     center = rightClickPosition_-center;
-    for(size_t i = 0; i < pasteNetwork->getProcessors().size(); ++i){
+    for (size_t i = 0; i < pasteNetwork->getProcessors().size(); ++i){
         if (!dynamic_cast<PositionMetaData*>(pasteNetwork->getProcessors()[i]->getMetaDataContainer().getMetaData("ProcessorGraphicsItem"))){
-            tgtAssert(true,"No Position MetaData");
+            tgtAssert(false, "No Position MetaData");
         }
         else {
             pos = dynamic_cast<PositionMetaData*>(pasteNetwork->getProcessors()[i]->getMetaDataContainer().getMetaData("ProcessorGraphicsItem"));
@@ -976,7 +977,7 @@ void NetworkEditor::addHandleSlot() {
 
     ConnectionBundle* targetBundle = 0;
 
-    QList<ConnectionBundle*> bundlesToUnbundle;
+    //QList<ConnectionBundle*> bundlesToUnbundle;
     foreach(PortArrowGraphicsItem* arrow, items) {
         if(!arrow->isBundled())
             continue;
@@ -2474,7 +2475,7 @@ void NetworkEditor::removeConnectionFromBundles(const Port* outport, const Port*
     const QList<PortArrowGraphicsItem*>& arrowList = getPortGraphicsItem(outport)->getArrowList();
     foreach (PortArrowGraphicsItem* arrow, arrowList) {
 
-        if(arrow->getDestinationItem()->getPort() == inport && bundleMap_.contains(arrow)) {
+        if(arrow->getDestinationItem() && arrow->getDestinationItem()->getPort() == inport && bundleMap_.contains(arrow)) {
             ConnectionBundle* curBundle = bundleMap_.value(arrow);
             curBundle->arrowList_.removeAll(arrow);
             if(curBundle->arrowList_.size() <= 1) {

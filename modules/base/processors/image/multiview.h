@@ -40,15 +40,11 @@ public:
     ~MultiView();
 
     virtual bool isReady() const;
-    virtual void beforeProcess();
-    virtual void process();
 
     virtual std::string getCategory() const { return "View"; }
     virtual std::string getClassName() const { return "MultiView"; }
     virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
     virtual Processor* create() const;
-
-    virtual void initialize() throw (tgt::Exception);
 
     virtual void invalidate(int inv = INVALID_RESULT);
 
@@ -63,9 +59,12 @@ public:
 
 protected:
     virtual void setDescriptions() {
-        setDescription("");
+        setDescription("Combines an arbitrary number of input images to a single view.");
     }
 
+    virtual void beforeProcess();
+    virtual void process();
+    virtual void initialize() throw (tgt::Exception);
 
     void toggleMaximization(tgt::MouseEvent* me);
     void updateSizes();

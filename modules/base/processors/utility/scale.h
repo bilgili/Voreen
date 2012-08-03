@@ -79,7 +79,7 @@ public:
     virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
 protected:
     virtual void setDescriptions() {
-        setDescription("");
+        setDescription("Rescales the input image to the dimensions of the succeeding canvas.");
     }
 
     virtual void onEvent(tgt::Event* e);

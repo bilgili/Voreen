@@ -38,6 +38,7 @@ class VRN_CORE_API Statistics {
 public:
     /// Enable collectSamples to calculate median, q1, q3 later on.
     Statistics(bool collectSamples);
+    void reset();
 
     void addSample(float v);
 

@@ -25,7 +25,7 @@
 
 #include "lineplot.h"
 
-#include "../utils/plotrow.h"
+#include "../datastructures/plotrow.h"
 #include "tgt/tgt_math.h"
 
 #include <iomanip>

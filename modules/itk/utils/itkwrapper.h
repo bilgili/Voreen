@@ -35,7 +35,6 @@
 #include "itkImageRegionConstIterator.h"
 #include "itkRGBPixel.h"
 
-
 namespace voreen {
 
 void transferTransformation(const VolumeBase* input, Volume* output);
@@ -69,9 +68,9 @@ typename itk::Image<T, 3>::Pointer voreenToITK(const VolumeBase* handle) {
     importer->SetSpacing(spacing);
 
     double origin[3];
-    origin[0] = 0.0;
-    origin[1] = 0.0;
-    origin[2] = 0.0;
+    origin[0] = handle->getOffset().x;
+    origin[1] = handle->getOffset().y;
+    origin[2] = handle->getOffset().z;
     importer->SetOrigin(origin);
 
     const bool importFilterWillDeleteTheInputBuffer = false;
@@ -79,12 +78,10 @@ typename itk::Image<T, 3>::Pointer voreenToITK(const VolumeBase* handle) {
     const unsigned int totalNumberOfPixels = vol->getNumVoxels();
     importer->SetImportPointer(pixelData, totalNumberOfPixels, importFilterWillDeleteTheInputBuffer);
     importer->Update();
-  //  return importer->GetOutput();
 
     return importer->GetOutput();
-
-
 }
+
 // 2d Vector
 template<class T>
 typename itk::Image<itk::CovariantVector<T,2>, 3>::Pointer voreenVec2ToITKVec2(const VolumeBase* handle) {
@@ -114,9 +111,9 @@ typename itk::Image<itk::CovariantVector<T,2>, 3>::Pointer voreenVec2ToITKVec2(c
     importer->SetSpacing(spacing);
 
     double origin[3];
-    origin[0] = 0.0;
-    origin[1] = 0.0;
-    origin[2] = 0.0;
+    origin[0] = handle->getOffset().x;
+    origin[1] = handle->getOffset().y;
+    origin[2] = handle->getOffset().z;
     importer->SetOrigin(origin);
 
     const bool importFilterWillDeleteTheInputBuffer = false;
@@ -124,12 +121,10 @@ typename itk::Image<itk::CovariantVector<T,2>, 3>::Pointer voreenVec2ToITKVec2(c
     const unsigned int totalNumberOfPixels = vol->getNumVoxels();
     importer->SetImportPointer(pixelData, totalNumberOfPixels, importFilterWillDeleteTheInputBuffer);
     importer->Update();
-  //  return importer->GetOutput();
 
     return importer->GetOutput();
-
-
 }
+
 //3d vector
 template<class T>
 typename itk::Image<itk::CovariantVector<T,3>, 3>::Pointer voreenVec3ToITKVec3(const VolumeBase* handle) {
@@ -159,9 +154,9 @@ typename itk::Image<itk::CovariantVector<T,3>, 3>::Pointer voreenVec3ToITKVec3(c
     importer->SetSpacing(spacing);
 
     double origin[3];
-    origin[0] = 0.0;
-    origin[1] = 0.0;
-    origin[2] = 0.0;
+    origin[0] = handle->getOffset().x;
+    origin[1] = handle->getOffset().y;
+    origin[2] = handle->getOffset().z;
     importer->SetOrigin(origin);
 
     const bool importFilterWillDeleteTheInputBuffer = false;
@@ -169,11 +164,8 @@ typename itk::Image<itk::CovariantVector<T,3>, 3>::Pointer voreenVec3ToITKVec3(c
     const unsigned int totalNumberOfPixels = vol->getNumVoxels();
     importer->SetImportPointer(pixelData, totalNumberOfPixels, importFilterWillDeleteTheInputBuffer);
     importer->Update();
-  //  return importer->GetOutput();
 
     return importer->GetOutput();
-
-
 }
 
 //4d vector
@@ -205,9 +197,9 @@ typename itk::Image<itk::CovariantVector<T,4>, 3>::Pointer voreenVec4ToITKVec4(c
     importer->SetSpacing(spacing);
 
     double origin[3];
-    origin[0] = 0.0;
-    origin[1] = 0.0;
-    origin[2] = 0.0;
+    origin[0] = handle->getOffset().x;
+    origin[1] = handle->getOffset().y;
+    origin[2] = handle->getOffset().z;
     importer->SetOrigin(origin);
 
     const bool importFilterWillDeleteTheInputBuffer = false;
@@ -215,11 +207,8 @@ typename itk::Image<itk::CovariantVector<T,4>, 3>::Pointer voreenVec4ToITKVec4(c
     const unsigned int totalNumberOfPixels = vol->getNumVoxels();
     importer->SetImportPointer(pixelData, totalNumberOfPixels, importFilterWillDeleteTheInputBuffer);
     importer->Update();
-  //  return importer->GetOutput();
 
     return importer->GetOutput();
-
-
 }
 
 template<class T>
@@ -253,6 +242,7 @@ Volume* ITKToVoreenCopy(const typename itk::Image<T, 3>* vol) {
         ++it;
         ++data;
     }
+
     return new Volume(out, spacing, offset);
 }
 
@@ -288,6 +278,7 @@ Volume* ITKVec2ToVoreenVec2Copy(const typename itk::Image<itk::CovariantVector<T
         ++it;
         ++data;
     }
+
     return new Volume(out, spacing, offset);
 }
 
@@ -324,6 +315,7 @@ Volume* ITKVec3ToVoreenVec3Copy(const typename itk::Image<itk::CovariantVector<T
         ++it;
         ++data;
     }
+
     return new Volume(out, spacing, offset);
 }
 
@@ -360,6 +352,7 @@ Volume* ITKRGBToVoreenVec3Copy(const typename itk::Image<itk::RGBPixel<T>, 3>* v
         ++it;
         ++data;
     }
+
     return new Volume(out, spacing, offset);
 }
 
@@ -397,6 +390,7 @@ Volume* ITKVec4ToVoreenVec4Copy(const typename itk::Image<itk::CovariantVector<T
         ++it;
         ++data;
     }
+
     return new Volume(out, spacing, offset);
 }
 

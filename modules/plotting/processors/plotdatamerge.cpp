@@ -27,7 +27,7 @@
 
 #include "voreen/core/processors/processorwidget.h"
 #include "voreen/core/processors/processorwidgetfactory.h"
-#include "../utils/plotdata.h"
+#include "../datastructures/plotdata.h"
 
 namespace voreen {
 

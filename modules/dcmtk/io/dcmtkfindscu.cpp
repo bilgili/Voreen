@@ -72,6 +72,10 @@ END_EXTERN_C
 #include <dcmtk/dcmtls/tlslayer.h>
 #endif
 
+#ifdef WIN32
+#include <WinSock2.h>
+#endif
+
 #include "modules/dcmtk/io/dcmtkfindscu.h"
 #include "modules/dcmtk/io/dcmtkseriesinfo.h"
 

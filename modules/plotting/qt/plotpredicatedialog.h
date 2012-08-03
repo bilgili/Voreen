@@ -26,8 +26,8 @@
 #ifndef VRN_PLOTPREDICATEDIALOG_H
 #define VRN_PLOTPREDICATEDIALOG_H
 
-#include "../utils/plotbase.h"
-#include "../utils/plotcell.h"
+#include "../datastructures/plotbase.h"
+#include "../datastructures/plotcell.h"
 #include "../utils/plotpredicatefactory.h"
 
 #include <QDialog>

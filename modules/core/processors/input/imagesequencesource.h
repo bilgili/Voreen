@@ -119,7 +119,6 @@ protected:
 
     FileDialogProperty imageDirectory_; ///< Directory the images are loaded from.
     BoolProperty textureFiltering_;     ///< Enable linear filtering of loaded textures.
-    BoolProperty uploadTextureData_;    ///< Determines whether the images' texture data is uploaded to the GPU.
     BoolProperty showProgressBar_;      ///< Determines whether a progress dialog is shown during image loading.
     ButtonProperty reloadSequence_;     ///< Button for reloading the current sequence.
     ButtonProperty clearSequence_;      ///< Button for clearing the current sequence.

@@ -1042,7 +1042,7 @@ bool PlotData::insertImplicit(const std::vector<PlotCellImplicit> &implicitrow) 
 }
 
 Interval<plot_t> PlotData::getInterval(int column) const {
-    if (getColumnCount() <= column || rows_.empty() || columnTypes_[column] == EMPTY) {
+    if (getColumnCount() <= column || rows_.empty() || columns_[column].type_ == EMPTY) {
         Interval<plot_t> toReturn(0, 0, true, true);
         return toReturn;
     }
@@ -1058,7 +1058,7 @@ Interval<plot_t> PlotData::getSumInterval(const std::vector< int >& column) cons
     //only keep number columns
     std::vector<int>::const_iterator colIt;
     for (colIt = column.begin(); colIt < column.end(); ++colIt) {
-        if (columnTypes_[*colIt] == NUMBER)
+        if (columns_[*colIt].type_ == NUMBER)
             numberColumn.push_back(*colIt);
     }
 
@@ -1256,7 +1256,7 @@ void PlotData::updateIntervals(const PlotRowValue& row) {
     std::vector< PlotCellValue >::const_iterator rit = row.getCells().begin();
     int column = 0;
     for (; rit < row.getCells().end() && iit < intervals_.end(); ++iit, ++rit, ++column) {
-        if (columnTypes_[column] == PlotBase::STRING)
+        if (columns_[column].type_ == PlotBase::STRING)
             *iit = Interval<plot_t>(0, static_cast<plot_t>(rows_.size()) - 1, false, false);
         else if (rit->isValue()) {
             const plot_t& value = rit->getValue();

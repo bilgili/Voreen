@@ -25,7 +25,7 @@
 
 #include "linkevaluatorplotselection.h"
 #include "../plotselectionproperty.h"
-#include "../../utils/plotselection.h"
+#include "../../datastructures/plotselection.h"
 
 namespace voreen {
 

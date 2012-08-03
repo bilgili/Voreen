@@ -25,8 +25,8 @@
 
 #include "plotdatasource.h"
 #include "voreen/core/voreenapplication.h"
-#include "../utils/plotdata.h"
-#include "../utils/plotcell.h"
+#include "../datastructures/plotdata.h"
+#include "../datastructures/plotcell.h"
 
 #include <limits>
 #include "tgt/tgt_math.h"

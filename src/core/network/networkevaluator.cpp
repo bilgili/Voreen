@@ -289,12 +289,6 @@ void NetworkEvaluator::process() {
         LDEBUG("process(): rendering order is not defined!");
     }
 
-    // mark processed processor for validation
-    // note: we need to wait until all processors have been processed
-    // before validating them, in order to allow multiple occurrences of
-    // processors in the rendering order (loops)
-    std::set<Processor*> processed;
-
     // reset loop ports' iteration counters and progressbars
     for (size_t i = 0; i < renderingOrder_.size(); ++i) {
         Processor* processor = renderingOrder_[i];
@@ -329,104 +323,105 @@ void NetworkEvaluator::process() {
             needsProcessing = false;
 
         // run the processor, if it needs processing and is ready
-        if (needsProcessing && currentProcessor->isReady()) {
+        if (needsProcessing) {
+            if(currentProcessor->isReady()) {
 
-            // increase iteration counters
-            for (size_t j=0; j<loopPortMap_[currentProcessor].size(); ++j) {
-                Port* port = loopPortMap_[currentProcessor][j];
-                // note: modulo is required for nested loops
-                port->setLoopIteration((port->getLoopIteration()+1) % port->getNumLoopIterations());
-            }
-
-            // notify process wrappers
-            for (size_t j=0; j < processWrappers_.size(); ++j)
-                processWrappers_[j]->beforeProcess(currentProcessor);
-            if (glMode_)
-                LGL_ERROR;
-
-            try {
-                currentProcessor->performanceRecord_.setName(currentProcessor->getName());
-
-                if (glMode_ && sharedContext_)
-                    sharedContext_->getGLFocus();
-                {
-                    ProfilingBlock block("beforeprocess", currentProcessor->performanceRecord_);
-                    currentProcessor->beforeProcess();
+                // increase iteration counters
+                for (size_t j=0; j<loopPortMap_[currentProcessor].size(); ++j) {
+                    Port* port = loopPortMap_[currentProcessor][j];
+                    // note: modulo is required for nested loops
+                    port->setLoopIteration((port->getLoopIteration()+1) % port->getNumLoopIterations());
                 }
-                if (glMode_) {
-                    if (sharedContext_)
+
+                // notify process wrappers
+                for (size_t j=0; j < processWrappers_.size(); ++j)
+                    processWrappers_[j]->beforeProcess(currentProcessor);
+                if (glMode_)
+                    LGL_ERROR;
+
+                try {
+                    currentProcessor->performanceRecord_.setName(currentProcessor->getName());
+                    currentProcessor->lockMutex();
+
+                    if (glMode_ && sharedContext_)
                         sharedContext_->getGLFocus();
-                    LGL_ERROR;
-                }
+                    {
+                        ProfilingBlock block("beforeprocess", currentProcessor->performanceRecord_);
+                        currentProcessor->beforeProcess();
+                    }
+                    if (glMode_) {
+                        if (sharedContext_)
+                            sharedContext_->getGLFocus();
+                        LGL_ERROR;
+                    }
 #ifdef VRN_PRINT_PROFILING
-                currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getName()+".");
+                    currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getName()+".");
 #endif
-                if (!currentProcessor->isValid())
-                {
-                    ProfilingBlock block("process", currentProcessor->performanceRecord_);
-                    currentProcessor->process();
+                    if (!currentProcessor->isValid())
+                    {
+                        ProfilingBlock block("process", currentProcessor->performanceRecord_);
+                        currentProcessor->process();
+                    }
+                    if (glMode_ && sharedContext_)
+                        sharedContext_->getGLFocus();
+#ifdef VRN_PRINT_PROFILING
+                    currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getName()+".");
+#endif
+                    if (glMode_)
+                        LGL_ERROR;
+                    {
+                        ProfilingBlock block("afterprocess", currentProcessor->performanceRecord_);
+                        currentProcessor->afterProcess();
+                    }
+#ifdef VRN_PRINT_PROFILING
+                    currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getName()+".");
+#endif
+                    if (glMode_)
+                        LGL_ERROR;
+                    // assumption: a processor is valid after calling process()
+                    currentProcessor->setValid();
+                    currentProcessor->unlockMutex();
                 }
+                catch (VoreenException& e) {
+                    LERROR("process(): VoreenException from "
+                            << currentProcessor->getClassName()
+                            << " (" << currentProcessor->getName() << "): " << e.what());
+                }
+                catch (std::exception& e) {
+                    LERROR("process(): Exception from "
+                            << currentProcessor->getClassName()
+                            << " (" << currentProcessor->getName() << "): " << e.what());
+                }
+
                 if (glMode_ && sharedContext_)
                     sharedContext_->getGLFocus();
-#ifdef VRN_PRINT_PROFILING
-                currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getName()+".");
-#endif
+                // notify process wrappers
+                for (size_t j = 0; j < processWrappers_.size(); ++j)
+                    processWrappers_[j]->afterProcess(currentProcessor);
                 if (glMode_)
                     LGL_ERROR;
-                {
-                    ProfilingBlock block("afterprocess", currentProcessor->performanceRecord_);
-                    currentProcessor->afterProcess();
+
+                // break loop if network topology has changed (due to changes in loop port configurations)
+                if (checkForInvalidPorts()) {
+                    unlock();
+
+                    for (size_t j = 0; j < processWrappers_.size(); ++j)
+                        processWrappers_[j]->afterNetworkProcess();
+                    if (glMode_)
+                        LGL_ERROR;
+
+                    onNetworkChange();
+                    return;
                 }
-#ifdef VRN_PRINT_PROFILING
-                currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getName()+".");
-#endif
-                if (glMode_)
-                    LGL_ERROR;
-                // mark processor as processed during this rendering pass
-                processed.insert(currentProcessor);
             }
-            catch (VoreenException& e) {
-                LERROR("process(): VoreenException from "
-                    << currentProcessor->getClassName()
-                    << " (" << currentProcessor->getName() << "): " << e.what());
-             }
-             catch (std::exception& e) {
-                LERROR("process(): Exception from "
-                    << currentProcessor->getClassName()
-                    << " (" << currentProcessor->getName() << "): " << e.what());
-             }
-
-             if (glMode_ && sharedContext_)
-                 sharedContext_->getGLFocus();
-             // notify process wrappers
-             for (size_t j = 0; j < processWrappers_.size(); ++j)
-                processWrappers_[j]->afterProcess(currentProcessor);
-             if (glMode_)
-                LGL_ERROR;
-
-             // break loop if network topology has changed (due to changes in loop port configurations)
-             if (checkForInvalidPorts()) {
-                 unlock();
-
-                 for (size_t j = 0; j < processWrappers_.size(); ++j)
-                     processWrappers_[j]->afterNetworkProcess();
-                 if (glMode_)
-                    LGL_ERROR;
-
-                 onNetworkChange();
-                 return;
-             }
+            else {
+                // Processor isn't ready, clear outports:
+                currentProcessor->clearOutports();
+            }
         }
 
     }   // for (rendering order)
 
-    if (glMode_)
-        LGL_ERROR;
-
-    // assumption: a processor is valid after calling process(), except ports or processor itself is invalid
-    for (std::set<Processor*>::iterator iter = processed.begin(); iter != processed.end(); ++iter)
-        if ((*iter)->getInvalidationLevel() < Processor::INVALID_PORTS)
-            (*iter)->setValid();
     if (glMode_)
         LGL_ERROR;
 
@@ -443,6 +438,13 @@ void NetworkEvaluator::process() {
         processPending_ = false;
         updateCanvases();
     }
+
+    for(std::vector<Processor*>::const_iterator iter = getProcessorNetwork()->getProcessors().begin(); iter != getProcessorNetwork()->getProcessors().end(); ++iter)
+        if (!(*iter)->isValid() && (((*iter)->getClassName().compare("Canvas") != 0) && ((*iter)->getClassName().compare("StereoCanvas") != 0))){
+            tgtAssert(VoreenApplication::app(), "VoreenApplication not instantiated");
+            VoreenApplication::app()->scheduleNetworkProcessing();
+            break;
+        }
 }
 
 void NetworkEvaluator::removeProcessWrapper(const ProcessWrapper* w)  {
@@ -871,6 +873,11 @@ void NetworkEvaluator::CheckOpenGLStateProcessWrapper::checkState(Processor* p) 
     if (!checkGL(GL_DEPTH_CLEAR_VALUE, 1.f)) {
         glClearDepth(1.0);
         warn(p, "glClearDepth() was not set to 1.0");
+    }
+
+    if (!checkGL(GL_LIGHTING, false)) {
+        glDisable(GL_LIGHTING);
+        warn(p, "GL_LIGHTING was enabled");
     }
 
     if (!checkGL(GL_LINE_WIDTH, 1.f)) {

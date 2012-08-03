@@ -63,6 +63,11 @@ void main() {
         }
     }
 
-    gl_TexCoord[0] = vec4(0.5 * position + 0.5, 1.0);
-    gl_Position = gl_ModelViewProjectionMatrix * volumeStruct_.physicalToWorldMatrix_ * vec4(position, 1.0);
+    vec4 worldPos = volumeStruct_.physicalToWorldMatrix_ * vec4(position, 1.0);
+    // save texture coordinate
+    gl_TexCoord[0] = volumeStruct_.worldToTextureMatrix_ * worldPos;
+    // save physical CS coordinate
+    gl_TexCoord[1] = vec4(position, 1.0);
+    // write clip coordinates
+    gl_Position = gl_ModelViewProjectionMatrix * vec4(worldPos.xyz, 1.0);
 }

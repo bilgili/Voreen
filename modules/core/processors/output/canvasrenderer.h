@@ -70,7 +70,7 @@ public:
      * uses this reference to call update() on the canvas when its
      * invalidate() function is called.
      */
-    void setCanvas(tgt::GLCanvas* canvas);
+    virtual void setCanvas(tgt::GLCanvas* canvas);
 
     /**
      * Returns the associated canvas object, may be null.
@@ -86,10 +86,10 @@ public:
      *      Otherwise, no memory is allocated for the pixels and no rendered data
      *      are contained.
      */
-    const tgt::Texture* getImageColorTexture() const;
+    virtual const tgt::Texture* getImageColorTexture() const;
 
     /// @overload
-    tgt::Texture* getImageColorTexture();
+    virtual tgt::Texture* getImageColorTexture();
 
     /**
      * Returns the current depth texture part of the rendered image. The
@@ -100,10 +100,10 @@ public:
      *      Otherwise, no memory is allocated for the pixels and no rendered data
      *      are contained.
      */
-    const tgt::Texture* getImageDepthTexture() const;
+    virtual const tgt::Texture* getImageDepthTexture() const;
 
     /// @overload
-    tgt::Texture* getImageDepthTexture();
+    virtual tgt::Texture* getImageDepthTexture();
 
     /**
      * Writes the input rendering to an image file with the same
@@ -118,7 +118,7 @@ public:
      * @return true, if the render-to-image operation was successful.
      *      Otherwise, \c getRenderToImageError() returns a description of the error.
      */
-    bool renderToImage(const std::string &filename);
+    virtual bool renderToImage(const std::string &filename);
 
     /**
      * Writes the current input rendering to an image file with the specified dimensions.
@@ -134,7 +134,7 @@ public:
      * @return true, if the render-to-image operation was successful.
      *      Otherwise, \c getRenderToImageError() returns a description of the error.
      */
-    bool renderToImage(const std::string &filename, tgt::ivec2 dimensions);
+    virtual bool renderToImage(const std::string &filename, tgt::ivec2 dimensions);
 
     /**
      * Returns a description of the error that has occurred
@@ -160,13 +160,13 @@ public:
      * Resizes the associated PropertyWidget (if available) and the inport to the
      * passed dimensions.
      */
-    void resizeCanvas(tgt::ivec2 newsize);
+    virtual void resizeCanvas(tgt::ivec2 newsize);
 
     /**
      * To be called by VoreenPainter if the associated canvas has been resized,
      * but may also be called from the outside.
      */
-    void canvasResized(tgt::ivec2 newsize);
+    virtual void canvasResized(tgt::ivec2 newsize);
 
 protected:
     virtual void setDescriptions() {
@@ -188,14 +188,17 @@ protected:
      * @throws VoreenException if the CanvasRenderer's inport has no valid rendering,
      *      or the rendered image is too large to be downloaded from the GPU
      */
-    void renderInportToImage(const std::string& filename)
+    virtual void renderInportToImage(const std::string& filename)
         throw (VoreenException);
 
-    /// Stores thee current canvas size and may be used for adjusting it.
+    /// Stores the current canvas size and may be used for adjusting it.
     IntVec2Property canvasSize_;
 
     /// If false, the cursor is hidden when hovering over the canvas (widget)
     BoolProperty showCursor_;
+
+    /// If true, the canvas (widget) is in fullscreen
+    BoolProperty showFullScreen_;
 
     /// File path where canvas screenshots are to be saved to
     FileDialogProperty screenshotFilename_;
@@ -228,7 +231,7 @@ private:
     /// Calls resizeCanvasWidget() with the value currently assigned to the size property.
     void sizePropChanged();
 
-    void cursorVisibilityChanged();
+    void boolPropertyChanged();
 
     /// Triggered by the saveScreenshot ButtonProperty.
     void saveScreenshotClicked();

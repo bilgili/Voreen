@@ -41,6 +41,10 @@ void ClickableColorLabel::setColor(const QColor& color) {
     update();
 }
 
+QColor ClickableColorLabel::getColor() const {
+    return color_;
+}
+
 void ClickableColorLabel::mousePressEvent(QMouseEvent* e) {
     if (e->button() == Qt::LeftButton)
         emit(clicked());

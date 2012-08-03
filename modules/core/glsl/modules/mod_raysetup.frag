@@ -84,15 +84,12 @@ bool earlyRayTermination(inout float opacity, in float maxOpacity) {
         #define RAYCASTING_LOOP_COUNT 255*255
     #endif
 
-    #define WHILE(keepGoing)                                              \
-      for (int loop=0; keepGoing && loop<RAYCASTING_LOOP_COUNT; loop++) {
+    #define WHILE(keepGoing) for (int loop=0; keepGoing && loop<RAYCASTING_LOOP_COUNT; loop++) {
 
     #define END_WHILE }
 #else
     // Use two nested loops, should be supported everywhere
-    #define WHILE(keepGoing)                                   \
-      for (int loop0=0; keepGoing && loop0<255; loop0++) {      \
-          for (int loop1=0; keepGoing && loop1<255; loop1++) {
+    #define WHILE(keepGoing) for (int loop0=0; keepGoing && loop0<255; loop0++) { for (int loop1=0; keepGoing && loop1<255; loop1++) {
 
     #define END_WHILE } }
 #endif

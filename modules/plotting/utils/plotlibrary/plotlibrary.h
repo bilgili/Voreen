@@ -26,10 +26,10 @@
 #ifndef VRN_PLOTLIBRARY_H
 #define VRN_PLOTLIBRARY_H
 
-#include "colormap.h"
-#include "plotdata.h"
-#include "smartlabel.h"
-#include "plotentitysettings.h"
+#include "../../datastructures/colormap.h"
+#include "../../datastructures/plotdata.h"
+#include "../smartlabel.h"
+#include "../../datastructures/plotentitysettings.h"
 
 #include "tgt/vector.h"
 #include "tgt/font.h"
