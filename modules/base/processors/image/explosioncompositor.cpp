@@ -35,10 +35,10 @@ ExplosionCompositor::ExplosionCompositor()
     : ImageProcessor("image/compositor")
     , compositingMode_("blendMode", "Blend mode", Processor::INVALID_PROGRAM)
     , weightingFactor_("weightingFactor", "Weighting factor", 0.5f, 0.0f, 1.0f)
-    , inport0_(Port::INPORT, "image.inport0")
-    , interalPort_(Port::OUTPORT, "internalRenderPort", false)
-    , outport_(Port::OUTPORT, "image.outport")
-    , loopOutport_("loop.outport", Port::OUTPORT)
+    , inport0_(Port::INPORT, "image.inport0", "Image Input")
+    , interalPort_(Port::OUTPORT, "internalRenderPort", "internalRenderPort", false)
+    , outport_(Port::OUTPORT, "image.outport", "Image Output")
+    , loopOutport_(Port::OUTPORT, "loop.outport", "Loop Outport")
 {
     loopOutport_.setLoopPort(true);
 
@@ -104,7 +104,7 @@ void ExplosionCompositor::process() {
     if (loopOutport_.getLoopIteration() == (loopOutport_.getNumLoopIterations()-1)){
         outport_.activateTarget();
     } else {
-        loopOutport_.invalidate();
+        loopOutport_.invalidatePort();
     }
 
 

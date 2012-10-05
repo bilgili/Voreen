@@ -322,6 +322,22 @@ public:
     bool isLinkedWith(const Property* dest, bool transitive = false) const;
 
     /**
+     * Returns true, if a link evaluator exists between this and the destination
+     * property.
+     *
+     * @param dst the destination property whose link state is to be checked
+     */
+    bool isLinkableWith(const Property* dst) const;
+
+    /**
+     * Returns the gui name and id of all link evaluators available between this and 
+     * the destination property.
+     *
+     * @param dst the destination property whose link state is to be checked
+     */
+    std::vector<std::pair<std::string, std::string> > getCompatibleEvaluators(const voreen::Property* dst) const;
+
+    /**
      * Returns the meta data container of this processor.
      * External objects, such as GUI widgets, can use it
      * to store and retrieve persistent meta data without

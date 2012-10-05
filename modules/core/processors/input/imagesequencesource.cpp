@@ -41,7 +41,7 @@ const std::string ImageSequenceSource::loggerCat_("voreen.core.ImageSequenceSour
 
 ImageSequenceSource::ImageSequenceSource()
     : RenderProcessor(),
-      outport_(Port::OUTPORT, "imagesequence.out"),
+      outport_(Port::OUTPORT, "imagesequence.out", "ImageSequence Output"),
       imageDirectory_("imageDirectory","Image Directory", "Select Image Directory",
           "", "", FileDialogProperty::DIRECTORY),
       textureFiltering_("textureFiltering", "Enable Texture Filtering", true),
@@ -233,7 +233,7 @@ void ImageSequenceSource::setImageSequence(ImageSequence* sequence) {
     sequenceOwner_ = false;
 
     outport_.setData(imageSequence_, false);
-    outport_.invalidate();
+    outport_.invalidatePort();
     invalidate();
 
     numImages_.set(sequence ? static_cast<int>(sequence->size()) : 0);

@@ -80,6 +80,7 @@ namespace boost { namespace mpl {
     BOOST_MPL_AUX_LAMBDA_ARITY_PARAM(param) \
     /**/
 
+
 #define n_ BOOST_MPL_LIMIT_METAFUNCTION_ARITY
 namespace aux {
 

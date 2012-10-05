@@ -35,9 +35,9 @@ const std::string RenderStore::loggerCat_("voreen.RenderStore");
 
 RenderStore::RenderStore()
     : RenderProcessor()
-    , inport_(Port::INPORT, "image.input")
-    , privatePort_(Port::OUTPORT, "image.stored", true)
-    , outport_(Port::OUTPORT, "image.output")
+    , inport_(Port::INPORT, "image.input", "Image Input")
+    , privatePort_(Port::OUTPORT, "image.stored", "image.stored", true)
+    , outport_(Port::OUTPORT, "image.output", "Image Output")
     , shaderPrg_(0)
 {
 
@@ -152,73 +152,6 @@ tgt::vec4 RenderStore::getStoredTargetPixel(const tgt::ivec2 &pos) {
     else {
         return privatePort_.getRenderTarget()->getColorAtPos(pos);
     }
-}
-
-void RenderStore::portResized(RenderPort* /*p*/, tgt::ivec2 /*newsize*/) {
-    // nothing
-}
-
-void RenderStore::sizeOriginChanged(RenderPort* p) {
-    if (!p->getSizeOrigin()) {
-        const std::vector<Port*> outports = getOutports();
-        for (size_t i=0; i<outports.size(); ++i) {
-            RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
-            if (rp) {
-                if (rp->getSizeOrigin())
-                    return;
-            }
-        }
-    }
-
-    // do not propagate to inport
-    /*const std::vector<Port*> inports = getInports();
-    for (size_t i=0; i<inports.size(); ++i) {
-        RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
-        if (rp)
-            rp->sizeOriginChanged(p->getSizeOrigin());
-    } */
-}
-
-bool RenderStore::testSizeOrigin(const RenderPort* p, void* so) const {
-    tgtAssert(p->isOutport(), "testSizeOrigin used with inport");
-
-    if (so) {
-        const std::vector<Port*> outports = getOutports();
-        for (size_t i=0; i<outports.size(); ++i) {
-            if(p == outports[i])
-                continue;
-            RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
-            if (rp) {
-                if (rp->getSizeOrigin() && (rp->getSizeOrigin() != so)) {
-                    return false;
-                }
-            }
-        }
-    }
-
-    // do not test inport
-    /*const std::vector<Port*> inports = getInports();
-    for (size_t i=0; i<inports.size(); ++i) {
-        RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
-        if (rp) {
-            if (rp->getSizeOrigin() && (rp->getSizeOrigin() != so) ) {
-                testSizeOriginVisited_ = false;
-                return false;
-            }
-
-            const std::vector<Port*>& connectedOutports = inports[i]->getConnected();
-            for (size_t j=0; j<connectedOutports.size(); ++j) {
-                RenderPort* op = static_cast<RenderPort*>(connectedOutports[j]);
-
-                if (!static_cast<RenderProcessor*>(op->getProcessor())->testSizeOrigin(op, so)) {
-                    testSizeOriginVisited_ = false;
-                    return false;
-                }
-            }
-        }
-    } */
-
-    return true;
 }
 
 } // namespace voreen

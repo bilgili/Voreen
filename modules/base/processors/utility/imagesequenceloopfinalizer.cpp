@@ -34,9 +34,9 @@ const std::string ImageSequenceLoopFinalizer::loggerCat_("voreen.ImageSequenceLo
 
 ImageSequenceLoopFinalizer::ImageSequenceLoopFinalizer()
     : RenderProcessor(),
-      inport_(Port::INPORT, "rendering.in"),
-      outport_(Port::OUTPORT, "imagesequence.out"),
-      loopOutport_("loop.out", Port::OUTPORT),
+      inport_(Port::INPORT, "rendering.in", "Image Input"),
+      outport_(Port::OUTPORT, "imagesequence.out", "ImageSequence Output"),
+      loopOutport_(Port::OUTPORT, "loop.out", "Loop Outport"),
       textureFormat_("textureFormat", "Texture Format"),
       textureDataType_("textureDataType", "Texture Data Type"),
       keepPixelData_("keepPixelData", "Keep Pixel Data", true),
@@ -92,7 +92,7 @@ void ImageSequenceLoopFinalizer::process() {
     if (loopOutport_.getLoopIteration() == loopOutport_.getNumLoopIterations()-1) {
         outport_.setData(imageSequence_, false);
     } else {
-        loopOutport_.invalidate();
+        loopOutport_.invalidatePort();
     }
 
     LGL_ERROR;

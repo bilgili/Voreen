@@ -37,15 +37,15 @@ namespace voreen {
 
 MultiVolumeRaycaster::MultiVolumeRaycaster()
     : VolumeRaycaster()
-    , volumeInport1_(Port::INPORT, "volume1", false, Processor::INVALID_PROGRAM)
-    , volumeInport2_(Port::INPORT, "volume2", false, Processor::INVALID_PROGRAM)
-    , volumeInport3_(Port::INPORT, "volume3", false, Processor::INVALID_PROGRAM)
-    , volumeInport4_(Port::INPORT, "volume4", false, Processor::INVALID_PROGRAM)
-    , entryPort_(Port::INPORT, "image.entrypoints")
-    , exitPort_(Port::INPORT, "image.exitpoints")
-    , outport_(Port::OUTPORT, "image.output", true, Processor::INVALID_PROGRAM, GL_RGBA16F_ARB)
-    , outport1_(Port::OUTPORT, "image.output1", true, Processor::INVALID_PROGRAM, GL_RGBA16F_ARB)
-    , outport2_(Port::OUTPORT, "image.output2", true, Processor::INVALID_PROGRAM, GL_RGBA16F_ARB)
+    , volumeInport1_(Port::INPORT, "volume1", "Volume1 Input", false, Processor::INVALID_PROGRAM)
+    , volumeInport2_(Port::INPORT, "volume2", "Volume2 Input", false, Processor::INVALID_PROGRAM)
+    , volumeInport3_(Port::INPORT, "volume3", "Volume3 Input", false, Processor::INVALID_PROGRAM)
+    , volumeInport4_(Port::INPORT, "volume4", "Volume4 Input", false, Processor::INVALID_PROGRAM)
+    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_ORIGIN)
+    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_ORIGIN)
+    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER, GL_RGBA16F_ARB)
+    , outport1_(Port::OUTPORT, "image.output1", "Image1 Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER, GL_RGBA16F_ARB)
+    , outport2_(Port::OUTPORT, "image.output2", "Image2 Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER, GL_RGBA16F_ARB)
     , shaderProp_("raycast.prg", "Raycasting Shader", "rc_multivolume.frag", "passthrough.vert")
     , shadeMode1_("shading1", "Shading 1", Processor::INVALID_PROGRAM)
     , shadeMode2_("shading2", "Shading 2", Processor::INVALID_PROGRAM)
@@ -55,15 +55,6 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     , transferFunc2_("transferFunction2", "Transfer Function 2")
     , transferFunc3_("transferFunction3", "Transfer Function 3")
     , transferFunc4_("transferFunction4", "Transfer Function 4")
-    , texFilterMode1_("textureFilterMode1_", "Texture Filtering 1")
-    , texFilterMode2_("textureFilterMode2_", "Texture Filtering 2")
-    , texFilterMode3_("textureFilterMode3_", "Texture Filtering 3")
-    , texFilterMode4_("textureFilterMode4_", "Texture Filtering 4")
-    , texClampMode1_("textureClampMode1_", "Texture Clamp 1")
-    , texClampMode2_("textureClampMode2_", "Texture Clamp 2")
-    , texClampMode3_("textureClampMode3_", "Texture Clamp 3")
-    , texClampMode4_("textureClampMode4_", "Texture Clamp 4")
-    , texBorderIntensity_("textureBorderIntensity", "Texture Border Intensity", 0.f)
     , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
     , compositingMode1_("compositing1", "Compositing (OP2)", Processor::INVALID_PROGRAM)
     , compositingMode2_("compositing2", "Compositing (OP3)", Processor::INVALID_PROGRAM)
@@ -73,6 +64,10 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     volumeInport2_.addCondition(new PortConditionVolumeTypeGL());
     volumeInport3_.addCondition(new PortConditionVolumeTypeGL());
     volumeInport4_.addCondition(new PortConditionVolumeTypeGL());
+    volumeInport1_.showTextureAccessProperties(true);
+    volumeInport2_.showTextureAccessProperties(true);
+    volumeInport3_.showTextureAccessProperties(true);
+    volumeInport4_.showTextureAccessProperties(true);
     addPort(volumeInport1_);
     addPort(volumeInport2_);
     addPort(volumeInport3_);
@@ -167,59 +162,6 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     lightAttenuation_.setGroupID("lighting");
     setPropertyGroupGuiName("lighting", "Lighting Parameters");
 
-    // volume texture filtering
-    texFilterMode1_.addOption("nearest", "Nearest",  GL_NEAREST);
-    texFilterMode1_.addOption("linear",  "Linear",   GL_LINEAR);
-    texFilterMode1_.selectByKey("linear");
-    addProperty(texFilterMode1_);
-    texFilterMode2_.addOption("nearest", "Nearest",  GL_NEAREST);
-    texFilterMode2_.addOption("linear",  "Linear",   GL_LINEAR);
-    texFilterMode2_.selectByKey("linear");
-    addProperty(texFilterMode2_);
-    texFilterMode3_.addOption("nearest", "Nearest",  GL_NEAREST);
-    texFilterMode3_.addOption("linear",  "Linear",   GL_LINEAR);
-    texFilterMode3_.selectByKey("linear");
-    addProperty(texFilterMode3_);
-    texFilterMode4_.addOption("nearest", "Nearest",  GL_NEAREST);
-    texFilterMode4_.addOption("linear",  "Linear",   GL_LINEAR);
-    texFilterMode4_.selectByKey("linear");
-    addProperty(texFilterMode4_);
-
-    // volume texture clamping
-    texClampMode1_.addOption("clamp",           "Clamp",             GL_CLAMP);
-    texClampMode1_.addOption("clamp-to-edge",   "Clamp to Edge",     GL_CLAMP_TO_EDGE);
-    texClampMode1_.addOption("clamp-to-border", "Clamp to Border",   GL_CLAMP_TO_BORDER);
-    texClampMode1_.selectByKey("clamp-to-edge");
-    addProperty(texClampMode1_);
-    texClampMode2_.addOption("clamp",           "Clamp",             GL_CLAMP);
-    texClampMode2_.addOption("clamp-to-edge",   "Clamp to Edge",     GL_CLAMP_TO_EDGE);
-    texClampMode2_.addOption("clamp-to-border", "Clamp to Border",   GL_CLAMP_TO_BORDER);
-    texClampMode2_.selectByKey("clamp-to-edge");
-    addProperty(texClampMode2_);
-    texClampMode3_.addOption("clamp",           "Clamp",             GL_CLAMP);
-    texClampMode3_.addOption("clamp-to-edge",   "Clamp to Edge",     GL_CLAMP_TO_EDGE);
-    texClampMode3_.addOption("clamp-to-border", "Clamp to Border",   GL_CLAMP_TO_BORDER);
-    texClampMode3_.selectByKey("clamp-to-edge");
-    addProperty(texClampMode3_);
-    texClampMode4_.addOption("clamp",           "Clamp",             GL_CLAMP);
-    texClampMode4_.addOption("clamp-to-edge",   "Clamp to Edge",     GL_CLAMP_TO_EDGE);
-    texClampMode4_.addOption("clamp-to-border", "Clamp to Border",   GL_CLAMP_TO_BORDER);
-    texClampMode4_.selectByKey("clamp-to-edge");
-    addProperty(texClampMode4_);
-    addProperty(texBorderIntensity_);
-
-    // assign texture access properties to property group
-    texFilterMode1_.setGroupID("textureAccess");
-    texFilterMode2_.setGroupID("textureAccess");
-    texFilterMode3_.setGroupID("textureAccess");
-    texFilterMode4_.setGroupID("textureAccess");
-    texClampMode1_.setGroupID("textureAccess");
-    texClampMode2_.setGroupID("textureAccess");
-    texClampMode3_.setGroupID("textureAccess");
-    texClampMode4_.setGroupID("textureAccess");
-    texBorderIntensity_.setGroupID("textureAccess");
-    setPropertyGroupGuiName("textureAccess", "Volume Texture Access");
-
     // listen to changes of properties that influence the GUI state (i.e. visibility of other props)
     classificationMode_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
     shadeMode_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
@@ -227,10 +169,6 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     compositingMode1_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
     compositingMode2_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
     applyLightAttenuation_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
-    texClampMode1_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
-    texClampMode2_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
-    texClampMode3_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
-    texClampMode4_.onChange(CallMemberAction<MultiVolumeRaycaster>(this, &MultiVolumeRaycaster::adjustPropertyVisibilities));
 }
 
 Processor* MultiVolumeRaycaster::create() const {
@@ -325,9 +263,9 @@ void MultiVolumeRaycaster::process() {
                     volumeInport1_.getData(),
                     &volUnit1,
                     "volume1_","volumeStruct1_",
-                    texClampMode1_.getValue(),
-                    tgt::vec4(texBorderIntensity_.get()),
-                    texFilterMode1_.getValue())
+                    volumeInport1_.getTextureClampModeProperty().getValue(),
+                    tgt::vec4(volumeInport1_.getTextureBorderIntensityProperty().get()),
+                    volumeInport1_.getTextureFilterModeProperty().getValue())
                 );
         volumeHandles.push_back(volumeInport1_.getData());
     }
@@ -336,9 +274,9 @@ void MultiVolumeRaycaster::process() {
                     volumeInport2_.getData(),
                     &volUnit2,
                     "volume2_","volumeStruct2_",
-                    texClampMode2_.getValue(),
-                    tgt::vec4(texBorderIntensity_.get()),
-                    texFilterMode2_.getValue())
+                    volumeInport2_.getTextureClampModeProperty().getValue(),
+                    tgt::vec4(volumeInport2_.getTextureBorderIntensityProperty().get()),
+                    volumeInport2_.getTextureFilterModeProperty().getValue())
                 );
         volumeHandles.push_back(volumeInport2_.getData());
     }
@@ -347,9 +285,9 @@ void MultiVolumeRaycaster::process() {
                     volumeInport3_.getData(),
                     &volUnit3,
                     "volume3_","volumeStruct3_",
-                    texClampMode3_.getValue(),
-                    tgt::vec4(texBorderIntensity_.get()),
-                    texFilterMode3_.getValue())
+                    volumeInport3_.getTextureClampModeProperty().getValue(),
+                    tgt::vec4(volumeInport3_.getTextureBorderIntensityProperty().get()),
+                    volumeInport3_.getTextureFilterModeProperty().getValue())
                 );
         volumeHandles.push_back(volumeInport3_.getData());
     }
@@ -358,9 +296,9 @@ void MultiVolumeRaycaster::process() {
                     volumeInport4_.getData(),
                     &volUnit4,
                     "volume4_","volumeStruct4_",
-                    texClampMode4_.getValue(),
-                    tgt::vec4(texBorderIntensity_.get()),
-                    texFilterMode4_.getValue())
+                    volumeInport4_.getTextureClampModeProperty().getValue(),
+                    tgt::vec4(volumeInport4_.getTextureBorderIntensityProperty().get()),
+                    volumeInport4_.getTextureFilterModeProperty().getValue())
                 );
         volumeHandles.push_back(volumeInport4_.getData());
     }
@@ -624,12 +562,6 @@ void MultiVolumeRaycaster::adjustPropertyVisibilities() {
     isoValue_.setVisible(useIsovalue);
 
     lightAttenuation_.setVisible(applyLightAttenuation_.get());
-
-    bool showBorderIntensity = !texClampMode1_.isSelected("clamp-to-edge") |
-                               !texClampMode2_.isSelected("clamp-to-edge") |
-                               !texClampMode3_.isSelected("clamp-to-edge") |
-                               !texClampMode4_.isSelected("clamp-to-edge");
-    texBorderIntensity_.setVisible(showBorderIntensity);
 }
 
 } // namespace

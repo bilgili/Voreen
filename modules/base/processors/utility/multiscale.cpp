@@ -34,10 +34,11 @@ MultiScale::MultiScale()
       scalingMode3_("scalingMode3", "Scaling Mode 3", Processor::INVALID_RESULT),
       scalingMode4_("scalingMode4", "Scaling Mode 4", Processor::INVALID_RESULT),
       selectionMode_("selectionMode", "Selection Mode", Processor::INVALID_RESULT),
-      outport1_(Port::OUTPORT, "image.outport1"),
-      outport2_(Port::OUTPORT, "image.outport2"),
-      outport3_(Port::OUTPORT, "image.outport3"),
-      outport4_(Port::OUTPORT, "image.outport4")
+      inport_(Port::INPORT, "image.inport", "inport", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN),
+      outport1_(Port::OUTPORT, "image.outport1", "Image1 Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER),
+      outport2_(Port::OUTPORT, "image.outport2", "Image2 Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER),
+      outport3_(Port::OUTPORT, "image.outport3", "Image3 Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER),
+      outport4_(Port::OUTPORT, "image.outport4", "Image4 Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
 {
 
     scalingMode1_.addOption("brute-force",     "Brute force",            0);
@@ -82,17 +83,24 @@ MultiScale::MultiScale()
     selectionMode_.addOption("height",         "Height");
     addProperty(selectionMode_);
 
+    addPort(inport_);
+
     addPort(outport1_);
     addPort(outport2_);
     addPort(outport3_);
     addPort(outport4_);
+    
+    outport1_.onSizeReceiveChange(this, &MultiScale::portSizeReceiveChanged);
+    outport2_.onSizeReceiveChange(this, &MultiScale::portSizeReceiveChanged);
+    outport3_.onSizeReceiveChange(this, &MultiScale::portSizeReceiveChanged);
+    outport4_.onSizeReceiveChange(this, &MultiScale::portSizeReceiveChanged);
 }
 
 MultiScale::~MultiScale() {}
 
 void MultiScale::initialize() throw (tgt::Exception) {
     ScalingProcessor::initialize();
-    inport_.resize(selectBest());
+    inport_.requestSize(selectBest());
 }
 
 bool MultiScale::isReady() const {
@@ -159,10 +167,10 @@ void MultiScale::process() {
     LGL_ERROR;
 }
 
-void MultiScale::textureContainerChanged(RenderPort* /*p*/) {
-    //TODO: tc_
-    //portResized(p);
+void MultiScale::portSizeReceiveChanged() {
+    inport_.requestSize(selectBest());
 }
+
 
 tgt::ivec2 MultiScale::selectBest() {
     if (!outport1_.isConnected() && !outport2_.isConnected() && !outport3_.isConnected() && !outport4_.isConnected())
@@ -171,96 +179,88 @@ tgt::ivec2 MultiScale::selectBest() {
     tgt::ivec2 best(0,0);
 
     if (selectionMode_.get() == "size") {
-        if (outport1_.isConnected() && (hmul(best) < hmul(outport1_.getSize())))
-            best = outport1_.getSize();
+        if (outport1_.isConnected() && (hmul(best) < hmul(outport1_.getReceivedSize())))
+            best = outport1_.getReceivedSize();
 
-        if (outport2_.isConnected() && (hmul(best) < hmul(outport2_.getSize())))
-            best = outport2_.getSize();
+        if (outport2_.isConnected() && (hmul(best) < hmul(outport2_.getReceivedSize())))
+            best = outport2_.getReceivedSize();
 
-        if (outport3_.isConnected() && (hmul(best) < hmul(outport3_.getSize())))
-            best = outport3_.getSize();
+        if (outport3_.isConnected() && (hmul(best) < hmul(outport3_.getReceivedSize())))
+            best = outport3_.getReceivedSize();
 
-        if (outport4_.isConnected() && (hmul(best) < hmul(outport4_.getSize())))
-            best = outport4_.getSize();
+        if (outport4_.isConnected() && (hmul(best) < hmul(outport4_.getReceivedSize())))
+            best = outport4_.getReceivedSize();
     }
     else if (selectionMode_.get() == "aspect-ratio") {
 
         float bestAR = 999999.0;
         if (outport1_.isConnected()) {
-            float ar = outport1_.getSize().x / (float)outport1_.getSize().y;
+            float ar = outport1_.getReceivedSize().x / (float)outport1_.getReceivedSize().y;
             ar = std::max(ar, 1.0f/ar);
                if (ar < bestAR) {
-                best = outport1_.getSize();
+                best = outport1_.getReceivedSize();
                 bestAR = best.x / (float)best.y;
                 bestAR = std::max(bestAR, 1.0f/bestAR);
             }
         }
 
         if (outport2_.isConnected()) {
-            float ar = outport2_.getSize().x / (float)outport2_.getSize().y;
+            float ar = outport2_.getReceivedSize().x / (float)outport2_.getReceivedSize().y;
             ar = std::max(ar, 1.0f/ar);
                if (ar < bestAR) {
-                best = outport2_.getSize();
+                best = outport2_.getReceivedSize();
                 bestAR = best.x / (float)best.y;
                 bestAR = std::max(bestAR, 1.0f/bestAR);
             }
         }
 
         if(outport3_.isConnected()) {
-            float ar = outport3_.getSize().x / (float)outport3_.getSize().y;
+            float ar = outport3_.getReceivedSize().x / (float)outport3_.getReceivedSize().y;
             ar = std::max(ar, 1.0f/ar);
                if (ar < bestAR) {
-                best = outport3_.getSize();
+                best = outport3_.getReceivedSize();
                 bestAR = best.x / (float)best.y;
                 bestAR = std::max(bestAR, 1.0f/bestAR);
             }
         }
 
         if(outport4_.isConnected()) {
-            float ar = outport4_.getSize().x / (float)outport4_.getSize().y;
+            float ar = outport4_.getReceivedSize().x / (float)outport4_.getReceivedSize().y;
             ar = std::max(ar, 1.0f/ar);
                if (ar < bestAR) {
-                best = outport4_.getSize();
+                best = outport4_.getReceivedSize();
                 bestAR = best.x / (float)best.y;
                 bestAR = std::max(bestAR, 1.0f/bestAR);
             }
         }
     }
     else if (selectionMode_.get() == "width") {
-        if (outport1_.isConnected() && (best.x < outport1_.getSize().x))
-            best = outport1_.getSize();
+        if (outport1_.isConnected() && (best.x < outport1_.getReceivedSize().x))
+            best = outport1_.getReceivedSize();
 
-        if (outport2_.isConnected() && (best.x < outport2_.getSize().x))
-            best = outport2_.getSize();
+        if (outport2_.isConnected() && (best.x < outport2_.getReceivedSize().x))
+            best = outport2_.getReceivedSize();
 
-        if (outport3_.isConnected() && (best.x < outport3_.getSize().x))
-            best = outport3_.getSize();
+        if (outport3_.isConnected() && (best.x < outport3_.getReceivedSize().x))
+            best = outport3_.getReceivedSize();
 
-        if (outport4_.isConnected() && (best.x < outport4_.getSize().x))
-            best = outport4_.getSize();
+        if (outport4_.isConnected() && (best.x < outport4_.getReceivedSize().x))
+            best = outport4_.getReceivedSize();
     }
     else if (selectionMode_.get() == "height") {
-        if (outport1_.isConnected() && (best.y < outport1_.getSize().y))
-            best = outport1_.getSize();
+        if (outport1_.isConnected() && (best.y < outport1_.getReceivedSize().y))
+            best = outport1_.getReceivedSize();
 
-        if (outport2_.isConnected() && (best.y < outport2_.getSize().y))
-            best = outport2_.getSize();
+        if (outport2_.isConnected() && (best.y < outport2_.getReceivedSize().y))
+            best = outport2_.getReceivedSize();
 
-        if (outport3_.isConnected() && (best.y < outport3_.getSize().y))
-            best = outport3_.getSize();
+        if (outport3_.isConnected() && (best.y < outport3_.getReceivedSize().y))
+            best = outport3_.getReceivedSize();
 
-        if (outport4_.isConnected() && (best.y < outport4_.getSize().y))
-            best = outport4_.getSize();
+        if (outport4_.isConnected() && (best.y < outport4_.getReceivedSize().y))
+            best = outport4_.getReceivedSize();
     }
     return best;
-}
-
-void MultiScale::portResized(RenderPort* p, tgt::ivec2 newsize) {
-    p->resize(newsize);
-    tgt::ivec2 best = selectBest();
-    if (best != tgt::ivec2(0))
-        inport_.resize(best);
-    invalidate();
 }
 
 } // voreen namespace

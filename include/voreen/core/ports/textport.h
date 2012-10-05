@@ -33,10 +33,14 @@ namespace voreen {
 
 class TextPort : public Port {
 public:
-    explicit TextPort(PortDirection direction, const std::string& name,
+    explicit TextPort(PortDirection direction, const std::string& name, const std::string& guiName = "",
                         bool allowMultipleConnections = false,
                         Processor::InvalidationLevel invalidationLevel = Processor::INVALID_PARAMETERS);
     ~TextPort();
+
+    virtual std::string getClassName() const {return "TextPort";}
+    virtual std::string getContentDescription() const;
+    virtual std::string getContentDescriptionHTML() const;
 
     virtual void setData(const std::string& str);
 

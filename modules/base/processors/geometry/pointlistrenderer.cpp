@@ -55,7 +55,7 @@ PointListRenderer::PointListRenderer()
     , pointDistAttenuation_("pointDistAttenuation", "Point Distance Attenuation", tgt::vec3(1.f, 0.f, 0.f), tgt::vec3(0.f), tgt::vec3(10.f))
     , sphereDiameter_("sphereDiameter", "Sphere Diameter", 0.01f, 0.001f, 0.1f)
     , sphereSlicesStacks_("sphereSlicesStacks", "Sphere Slices/Stacks", 20, 10, 100)
-    , geometryInport_(Port::INPORT, "geometry.input")
+    , geometryInport_(Port::INPORT, "geometry.input", "Geometry Input")
 {
     color_.setViews(Property::COLOR);
     // Coordinate systems

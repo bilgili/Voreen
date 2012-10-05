@@ -32,25 +32,9 @@ using tgt::ivec2;
 
 ScalingProcessor::ScalingProcessor()
     : ImageProcessor("image/scale"),
-      distributeEvents_("distributeEvents", "Distribute Events", true, Processor::VALID),
-      inport_(Port::INPORT, "image.inport")
+      distributeEvents_("distributeEvents", "Distribute Events", true, Processor::VALID)
 {
-
     addProperty(distributeEvents_);
-    addPort(inport_);
-}
-
-bool ScalingProcessor::testSizeOrigin(const RenderPort* p, void* so) const {
-    if(p->getSizeOrigin() == so)
-        return true;
-
-    if(!so)
-        return true;
-
-    if(!p->getSizeOrigin())
-        return true;
-
-    return false;
 }
 
 void ScalingProcessor::applyScalingMatrix(int scalingMode, RenderPort* inport, RenderPort* outport) {
@@ -144,7 +128,7 @@ tgt::MouseEvent* ScalingProcessor::transformMouseCoordinates(tgt::MouseEvent* e,
 
     // compute transformation
     vec2 pixelOffset = ((1.f - scalingFactor) * vec2(outport->getSize())) / 2.f;
-    vec2 pixelScale = (vec2(outport->getSize())*scalingFactor) / vec2(inport_.getSize());
+    vec2 pixelScale = (vec2(outport->getSize())*scalingFactor) / vec2(inport->getSize());
     vec2 trafoCoords = (vec2(e->coord()) - pixelOffset)/pixelScale;
 
     // clone event and assign transformed coords
@@ -159,7 +143,8 @@ tgt::MouseEvent* ScalingProcessor::transformMouseCoordinates(tgt::MouseEvent* e,
 SingleScale::SingleScale()
     : ScalingProcessor(),
     scalingMode_("scaling", "Scaling Mode", Processor::INVALID_RESULT),
-    outport_(Port::OUTPORT, "image.outport")
+    inport_(Port::INPORT, "image.inport", "Image Input"),
+    outport_(Port::OUTPORT, "image.outport", "Image Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
 {
 
     scalingMode_.addOption("brute-force",     "Brute force",            0);
@@ -171,6 +156,7 @@ SingleScale::SingleScale()
     scalingMode_.select("keep-ratio-all");
     addProperty(scalingMode_);
 
+    addPort(inport_);
     addPort(outport_);
 }
 
@@ -203,16 +189,6 @@ void SingleScale::process() {
     program_->deactivate();
     glActiveTexture(GL_TEXTURE0);
     LGL_ERROR;
-}
-
-void SingleScale::sizeOriginChanged(RenderPort* /*p*/) {
-    invalidate();
-}
-
-
-void SingleScale::portResized(RenderPort* /*p*/, tgt::ivec2 newsize) {
-    invalidate();
-    outport_.resize(newsize);
 }
 
 void SingleScale::onEvent(tgt::Event* e) {

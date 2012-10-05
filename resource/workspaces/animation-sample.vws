@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="" readonly="true">
-        <ProcessorNetwork version="12">
+        <ProcessorNetwork version="13">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -14,6 +14,13 @@
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-247" y="234" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="47" y="109" width="481" height="454" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="47" y="109" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="481" y="454" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize">
@@ -22,7 +29,18 @@
                         <Property name="saveScreenshot" />
                         <Property name="screenshotFilename" noPathSet="true" value="" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref26">
+                                    <value x="481" y="454" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="GeometryProcessor" name="Geometry Processor" id="ref0">
@@ -30,7 +48,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-271" y="42" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" id="ref12">
+                        <Property name="camera" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref28">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="722" y="373" />
                             </MetaData>
@@ -40,6 +58,25 @@
                         </Property>
                         <Property name="renderGeometries" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref29">
+                                    <value x="481" y="454" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.output.renderSizeReceive" id="ref27">
+                                    <value x="481" y="454" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -75,9 +112,25 @@
                             <value x="0.192157" y="0.192157" z="0.192157" w="1" />
                         </Property>
                         <Property name="repeat" value="1" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
-                        <Property name="texture" value="" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
+                        <Property name="texture" noPathSet="false" value="" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="BoundingBoxRenderer" name="Bounding Box" id="ref5">
@@ -96,6 +149,19 @@
                             <value x="10" y="10" z="10" />
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="geometry">
+                            <Properties />
+                        </Port>
+                        <Port name="volume">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="LightWidgetRenderer" name="Light - Widget" id="ref9">
@@ -109,6 +175,8 @@
                         <Property name="mouseEvent.moveSphere" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="set.showLightWidget" value="true" />
                     </Properties>
+                    <Inports />
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="PlaneWidgetProcessor" name="PlaneWidgetProcessor" id="ref6">
@@ -116,19 +184,19 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-465" y="41" />
                     </MetaData>
                     <Properties>
-                        <Property name="backClipPlane" value="40" id="ref16" />
-                        <Property name="bottomClipPlane" value="0" id="ref22" />
+                        <Property name="backClipPlane" value="40" id="ref15" />
+                        <Property name="bottomClipPlane" value="0" id="ref21" />
                         <Property name="enableBackZ" value="true" />
                         <Property name="enableBottomY" value="true" />
                         <Property name="enableFrontZ" value="true" />
                         <Property name="enableLeftX" value="true" />
                         <Property name="enableRightX" value="true" />
                         <Property name="enableTopY" value="true" />
-                        <Property name="frontClipPlane" value="0" id="ref18" />
+                        <Property name="frontClipPlane" value="0" id="ref17" />
                         <Property name="innerColor">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
-                        <Property name="leftClipPlane" value="40" id="ref26" />
+                        <Property name="leftClipPlane" value="40" id="ref25" />
                         <Property name="lightPosition">
                             <value x="2.29999995" y="1.5" z="1.5" w="1" />
                         </Property>
@@ -136,9 +204,9 @@
                         <Property name="manipulatorScaling" value="1" />
                         <Property name="mouseEvent.clipplaneMovement" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="mouseEvent.synchronizedMovement" enabled="false" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
-                        <Property name="rightClipPlane" value="19" id="ref24" />
+                        <Property name="rightClipPlane" value="19" id="ref23" />
                         <Property name="showInnerBB" value="false" />
-                        <Property name="topClipPlane" value="40" id="ref20" />
+                        <Property name="topClipPlane" value="40" id="ref19" />
                         <Property name="useSphereManipulatorBackY" value="false" />
                         <Property name="useSphereManipulatorBottomZ" value="false" />
                         <Property name="useSphereManipulatorFrontY" value="false" />
@@ -155,6 +223,16 @@
                             <value x="0" y="0" z="1" w="1" />
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="volume">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="SingleVolumeRaycaster" name="SingleVolumeRaycaster" id="ref3">
@@ -163,7 +241,7 @@
                     </MetaData>
                     <Properties>
                         <Property name="applyLightAttenuation" value="false" />
-                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" id="ref13">
+                        <Property name="camera" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref13">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="46" y="122" />
                             </MetaData>
@@ -210,9 +288,6 @@
                         </Property>
                         <Property name="samplingRate" value="5" />
                         <Property name="shading" value="phong" />
-                        <Property name="textureBorderIntensity" value="0" />
-                        <Property name="textureClampMode_" value="clamp-to-edge" />
-                        <Property name="textureFilterMode_" value="linear" />
                         <Property name="transferFunction" AlwaysFitDomain="false">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="true" x="41" y="615" width="501" height="281" />
@@ -245,6 +320,55 @@
                             </TransferFunction>
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeOrigin" id="ref33">
+                                    <value x="481" y="454" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeOrigin" id="ref31">
+                                    <value x="481" y="454" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.output.renderSizeReceive" id="ref30">
+                                    <value x="481" y="454" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.output1">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.output1.renderSizeReceive">
+                                    <value x="481" y="454" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.output2">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.output2.renderSizeReceive">
+                                    <value x="481" y="454" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSource" name="VolumeSource" id="ref4">
@@ -254,6 +378,14 @@
                     <Properties>
                         <Property name="volumeURL" url="../volumes/nucleon.vvd?preferredReader=VvdVolumeReader" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="CubeProxyGeometry" name="CubeProxyGeometry" id="ref7">
@@ -261,15 +393,31 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-204" y="-262" />
                     </MetaData>
                     <Properties>
-                        <Property name="backClippingPlane" value="40" id="ref19" />
-                        <Property name="bottomClippingPlane" value="0" id="ref17" />
-                        <Property name="frontClippingPlane" value="0" id="ref21" />
-                        <Property name="leftClippingPlane" value="40" id="ref25" />
+                        <Property name="backClippingPlane" value="40" id="ref18" />
+                        <Property name="bottomClippingPlane" value="0" id="ref16" />
+                        <Property name="frontClippingPlane" value="0" id="ref20" />
+                        <Property name="leftClippingPlane" value="40" id="ref24" />
                         <Property name="resetClipPlanes" />
-                        <Property name="rightClippingPlane" value="19" id="ref23" />
-                        <Property name="topClippingPlane" value="40" id="ref15" />
+                        <Property name="rightClippingPlane" value="19" id="ref22" />
+                        <Property name="topClippingPlane" value="40" id="ref14" />
                         <Property name="useClipping" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="MeshEntryExitPoints" name="MeshEntryExitPoints" id="ref8">
@@ -277,7 +425,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-205" y="-174" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" id="ref14">
+                        <Property name="camera" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref12">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-955" y="376" />
                             </MetaData>
@@ -291,6 +439,29 @@
                         <Property name="useCulling" value="true" />
                         <Property name="useFloatRenderTargets" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="proxgeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.entrypoints.renderSizeReceive" id="ref34">
+                                    <value x="481" y="454" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.exitpoints.renderSizeReceive" id="ref32">
+                                    <value x="481" y="454" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -438,79 +609,109 @@
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref14" />
+                    <DestinationProperty type="FloatProperty" ref="ref15" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref15" />
+                    <DestinationProperty type="FloatProperty" ref="ref14" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref16" />
+                    <DestinationProperty type="FloatProperty" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref17" />
+                    <DestinationProperty type="FloatProperty" ref="ref16" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref18" />
+                    <DestinationProperty type="FloatProperty" ref="ref19" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref19" />
+                    <DestinationProperty type="FloatProperty" ref="ref18" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref20" />
+                    <DestinationProperty type="FloatProperty" ref="ref21" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref21" />
+                    <DestinationProperty type="FloatProperty" ref="ref20" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref22" />
+                    <DestinationProperty type="FloatProperty" ref="ref23" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref23" />
+                    <DestinationProperty type="FloatProperty" ref="ref22" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref24" />
+                    <DestinationProperty type="FloatProperty" ref="ref25" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref25" />
+                    <DestinationProperty type="FloatProperty" ref="ref24" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref26" />
+                    <DestinationProperty ref="ref27" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref28" />
+                    <DestinationProperty type="CameraProperty" ref="ref13" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref29" />
+                    <DestinationProperty ref="ref30" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
                     <SourceProperty type="CameraProperty" ref="ref13" />
                     <DestinationProperty type="CameraProperty" ref="ref12" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
+                    <SourceProperty ref="ref31" />
+                    <DestinationProperty ref="ref32" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref33" />
+                    <DestinationProperty ref="ref34" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
                     <SourceProperty type="CameraProperty" ref="ref13" />
-                    <DestinationProperty type="CameraProperty" ref="ref14" />
+                    <DestinationProperty type="CameraProperty" ref="ref28" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="CameraProperty" ref="ref14" />
-                    <DestinationProperty type="CameraProperty" ref="ref13" />
+                    <SourceProperty type="CameraProperty" ref="ref12" />
+                    <DestinationProperty type="CameraProperty" ref="ref28" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="FloatProperty" ref="ref15" />
-                    <DestinationProperty type="FloatProperty" ref="ref16" />
-                    <Evaluator type="LinkEvaluatorFloatId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="FloatProperty" ref="ref16" />
-                    <DestinationProperty type="FloatProperty" ref="ref15" />
-                    <Evaluator type="LinkEvaluatorFloatId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="FloatProperty" ref="ref17" />
-                    <DestinationProperty type="FloatProperty" ref="ref18" />
-                    <Evaluator type="LinkEvaluatorFloatId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="FloatProperty" ref="ref18" />
-                    <DestinationProperty type="FloatProperty" ref="ref17" />
-                    <Evaluator type="LinkEvaluatorFloatId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="FloatProperty" ref="ref19" />
-                    <DestinationProperty type="FloatProperty" ref="ref20" />
-                    <Evaluator type="LinkEvaluatorFloatId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="FloatProperty" ref="ref20" />
-                    <DestinationProperty type="FloatProperty" ref="ref19" />
-                    <Evaluator type="LinkEvaluatorFloatId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="FloatProperty" ref="ref21" />
-                    <DestinationProperty type="FloatProperty" ref="ref22" />
-                    <Evaluator type="LinkEvaluatorFloatId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="FloatProperty" ref="ref22" />
-                    <DestinationProperty type="FloatProperty" ref="ref21" />
-                    <Evaluator type="LinkEvaluatorFloatId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="FloatProperty" ref="ref23" />
-                    <DestinationProperty type="FloatProperty" ref="ref24" />
-                    <Evaluator type="LinkEvaluatorFloatId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="FloatProperty" ref="ref24" />
-                    <DestinationProperty type="FloatProperty" ref="ref23" />
-                    <Evaluator type="LinkEvaluatorFloatId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="FloatProperty" ref="ref25" />
-                    <DestinationProperty type="FloatProperty" ref="ref26" />
-                    <Evaluator type="LinkEvaluatorFloatId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="FloatProperty" ref="ref26" />
-                    <DestinationProperty type="FloatProperty" ref="ref25" />
-                    <Evaluator type="LinkEvaluatorFloatId" />
+                    <SourceProperty type="CameraProperty" ref="ref28" />
+                    <DestinationProperty type="CameraProperty" ref="ref12" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>
@@ -540,26 +741,26 @@
                             <propertyOwner type="GeometryProcessor" ref="ref0" />
                             <timeline type="CameraPropertyTimelineState">
                                 <values>
-                                    <value key="0" type="KeyValue_Camera" time="0" smooth="true" winRatio="1">
+                                    <value key="0" type="KeyValue_Camera" time="0" smooth="true">
                                         <before />
-                                        <after type="default linear: linear interpolation" id="ref27">
+                                        <after type="default linear: linear interpolation" id="ref35">
                                             <properties />
                                         </after>
                                         <position x="-3.16516089" y="1.88449895" z="2.34805989" />
                                         <focus x="-0.14060999" y="-0.205892" z="0.00218" />
                                         <upVector x="0.3551189" y="0.87701076" z="-0.3236399" />
                                     </value>
-                                    <value key="8.26659966" type="KeyValue_Camera" time="8.26659966" smooth="true" winRatio="1">
-                                        <before type="default linear: linear interpolation" ref="ref27" />
-                                        <after type="default linear: linear interpolation" id="ref28">
+                                    <value key="8.26659966" type="KeyValue_Camera" time="8.26659966" smooth="true">
+                                        <before type="default linear: linear interpolation" ref="ref35" />
+                                        <after type="default linear: linear interpolation" id="ref36">
                                             <properties />
                                         </after>
                                         <position x="-0.00917132" y="1.42812872" z="4.0436511" />
                                         <focus x="-0.14060999" y="-0.205892" z="0.00218" />
                                         <upVector x="0.00864667" y="0.92695886" z="-0.37506333" />
                                     </value>
-                                    <value key="14.19999981" type="KeyValue_Camera" time="14.19999981" smooth="true" winRatio="1">
-                                        <before type="default linear: linear interpolation" ref="ref28" />
+                                    <value key="14.19999981" type="KeyValue_Camera" time="14.19999981" smooth="true">
+                                        <before type="default linear: linear interpolation" ref="ref36" />
                                         <after />
                                         <position x="3.24528742" y="2.14890146" z="1.42042756" />
                                         <focus x="-0.14060999" y="-0.205892" z="0.00218" />
@@ -737,13 +938,13 @@
                                     <value key="0" type="KeyValue_vec4" time="0" smooth="true">
                                         <value x="-1.29331696" y="0.73342502" z="-0.94778198" w="1" />
                                         <before />
-                                        <after type="default linear: linear interpolation" id="ref29">
+                                        <after type="default linear: linear interpolation" id="ref37">
                                             <properties />
                                         </after>
                                     </value>
                                     <value key="13.83329964" type="KeyValue_vec4" time="13.83329964" smooth="true">
                                         <value x="-0.66830707" y="0.65767539" z="-2.09656882" w="1" />
-                                        <before type="default linear: linear interpolation" ref="ref29" />
+                                        <before type="default linear: linear interpolation" ref="ref37" />
                                         <after />
                                     </value>
                                 </values>
@@ -928,7 +1129,7 @@
                                             <domain x="0" y="1" />
                                         </value>
                                         <before />
-                                        <after type="default linear (keywise if possible): linear interpolation" id="ref30">
+                                        <after type="default linear (keywise if possible): linear interpolation" id="ref38">
                                             <properties />
                                         </after>
                                     </value>
@@ -959,7 +1160,7 @@
                                             </Keys>
                                             <domain x="0" y="1" />
                                         </value>
-                                        <before type="default linear (keywise if possible): linear interpolation" ref="ref30" />
+                                        <before type="default linear (keywise if possible): linear interpolation" ref="ref38" />
                                         <after />
                                     </value>
                                 </values>
@@ -969,26 +1170,26 @@
                             <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
                             <timeline type="CameraPropertyTimelineState">
                                 <values>
-                                    <value key="0" type="KeyValue_Camera" time="0" smooth="true" winRatio="1">
+                                    <value key="0" type="KeyValue_Camera" time="0" smooth="true">
                                         <before />
-                                        <after type="default linear: linear interpolation" id="ref31">
+                                        <after type="default linear: linear interpolation" id="ref39">
                                             <properties />
                                         </after>
                                         <position x="-3.16516089" y="1.88449895" z="2.34805989" />
                                         <focus x="-0.14060999" y="-0.205892" z="0.00218" />
                                         <upVector x="0.3551189" y="0.87701076" z="-0.3236399" />
                                     </value>
-                                    <value key="8.26659966" type="KeyValue_Camera" time="8.26659966" smooth="true" winRatio="1">
-                                        <before type="default linear: linear interpolation" ref="ref31" />
-                                        <after type="default linear: linear interpolation" id="ref32">
+                                    <value key="8.26659966" type="KeyValue_Camera" time="8.26659966" smooth="true">
+                                        <before type="default linear: linear interpolation" ref="ref39" />
+                                        <after type="default linear: linear interpolation" id="ref40">
                                             <properties />
                                         </after>
                                         <position x="-0.00917132" y="1.42812872" z="4.0436511" />
                                         <focus x="-0.14060999" y="-0.205892" z="0.00218" />
                                         <upVector x="0.00864667" y="0.92695886" z="-0.37506333" />
                                     </value>
-                                    <value key="14.19999981" type="KeyValue_Camera" time="14.19999981" smooth="true" winRatio="1">
-                                        <before type="default linear: linear interpolation" ref="ref32" />
+                                    <value key="14.19999981" type="KeyValue_Camera" time="14.19999981" smooth="true">
+                                        <before type="default linear: linear interpolation" ref="ref40" />
                                         <after />
                                         <position x="3.24528742" y="2.14890146" z="1.42042756" />
                                         <focus x="-0.14060999" y="-0.205892" z="0.00218" />
@@ -1070,13 +1271,13 @@
                                     <value key="0" type="KeyValue_vec4" time="0" smooth="true">
                                         <value x="-1.29331696" y="0.73342502" z="-0.94778198" w="1" />
                                         <before />
-                                        <after type="default linear: linear interpolation" id="ref33">
+                                        <after type="default linear: linear interpolation" id="ref41">
                                             <properties />
                                         </after>
                                     </value>
                                     <value key="13.83329964" type="KeyValue_vec4" time="13.83329964" smooth="true">
                                         <value x="-0.66830707" y="0.65767539" z="-2.09656882" w="1" />
-                                        <before type="default linear: linear interpolation" ref="ref33" />
+                                        <before type="default linear: linear interpolation" ref="ref41" />
                                         <after />
                                     </value>
                                 </values>
@@ -1178,12 +1379,12 @@
                                 <values>
                                     <value key="0" type="KeyValue_float" time="0" value="19" smooth="true">
                                         <before />
-                                        <after type="default linear: linear interpolation" id="ref34">
+                                        <after type="default linear: linear interpolation" id="ref42">
                                             <properties />
                                         </after>
                                     </value>
                                     <value key="3.43330002" type="KeyValue_float" time="3.43330002" value="8" smooth="true">
-                                        <before type="default linear: linear interpolation" ref="ref34" />
+                                        <before type="default linear: linear interpolation" ref="ref42" />
                                         <after />
                                     </value>
                                 </values>
@@ -1195,12 +1396,12 @@
                                 <values>
                                     <value key="0" type="KeyValue_float" time="0" value="40" smooth="true">
                                         <before />
-                                        <after type="default linear: linear interpolation" id="ref35">
+                                        <after type="default linear: linear interpolation" id="ref43">
                                             <properties />
                                         </after>
                                     </value>
                                     <value key="15.89999962" type="KeyValue_float" time="15.89999962" value="20" smooth="true">
-                                        <before type="default linear: linear interpolation" ref="ref35" />
+                                        <before type="default linear: linear interpolation" ref="ref43" />
                                         <after />
                                     </value>
                                 </values>
@@ -1303,26 +1504,26 @@
                             <propertyOwner type="MeshEntryExitPoints" ref="ref8" />
                             <timeline type="CameraPropertyTimelineState">
                                 <values>
-                                    <value key="0" type="KeyValue_Camera" time="0" smooth="true" winRatio="1">
+                                    <value key="0" type="KeyValue_Camera" time="0" smooth="true">
                                         <before />
-                                        <after type="default linear: linear interpolation" id="ref36">
+                                        <after type="default linear: linear interpolation" id="ref44">
                                             <properties />
                                         </after>
                                         <position x="-3.16516089" y="1.88449895" z="2.34805989" />
                                         <focus x="-0.14060999" y="-0.205892" z="0.00218" />
                                         <upVector x="0.3551189" y="0.87701076" z="-0.3236399" />
                                     </value>
-                                    <value key="8.26659966" type="KeyValue_Camera" time="8.26659966" smooth="true" winRatio="1">
-                                        <before type="default linear: linear interpolation" ref="ref36" />
-                                        <after type="default linear: linear interpolation" id="ref37">
+                                    <value key="8.26659966" type="KeyValue_Camera" time="8.26659966" smooth="true">
+                                        <before type="default linear: linear interpolation" ref="ref44" />
+                                        <after type="default linear: linear interpolation" id="ref45">
                                             <properties />
                                         </after>
                                         <position x="-0.00917132" y="1.42812872" z="4.0436511" />
                                         <focus x="-0.14060999" y="-0.205892" z="0.00218" />
                                         <upVector x="0.00864667" y="0.92695886" z="-0.37506333" />
                                     </value>
-                                    <value key="14.19999981" type="KeyValue_Camera" time="14.19999981" smooth="true" winRatio="1">
-                                        <before type="default linear: linear interpolation" ref="ref37" />
+                                    <value key="14.19999981" type="KeyValue_Camera" time="14.19999981" smooth="true">
+                                        <before type="default linear: linear interpolation" ref="ref45" />
                                         <after />
                                         <position x="3.24528742" y="2.14890146" z="1.42042756" />
                                         <focus x="-0.14060999" y="-0.205892" z="0.00218" />

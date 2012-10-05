@@ -1,21 +1,39 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="11">
+        <ProcessorNetwork version="13">
             <Processors>
                 <Processor type="Canvas" name="Canvas" id="ref1">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-488" y="417" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="99" y="112" width="400" height="400" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="99" y="112" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="400" y="400" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" id="ref9">
                             <value x="400" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/3d-texture.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/3d-texture.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref13">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="SliceViewer" id="ref0">
@@ -30,6 +48,12 @@
                         <Property name="boundaryColor">
                             <value x="0" y="0" z="1" w="1" />
                         </Property>
+                        <Property name="distanceLegendColor">
+                            <value x="1" y="1" z="1" w="1" />
+                        </Property>
+                        <Property name="distanceLegendPos">
+                            <value x="0.05" y="0.1" />
+                        </Property>
                         <Property name="fontSize" value="14" />
                         <Property name="mouseEvent.Shift" lod="1" enabled="true" mouseAction="3" mouseButtons="1" keyCode="0" modifier="192" shareEvents="false" />
                         <Property name="mouseEvent.cursorPositionMove" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="true" />
@@ -42,6 +66,7 @@
                             <value.row2 x="0" y="0" z="1" w="0" />
                             <value.row3 x="0" y="0" z="0" w="1" />
                         </Property>
+                        <Property name="renderDistanceLegend" value="false" />
                         <Property name="renderSliceBoundaries" value="true" />
                         <Property name="showCursorInformation" value="onMove" />
                         <Property name="showSliceNumber" value="true" />
@@ -75,6 +100,20 @@
                         </Property>
                         <Property name="zoomFactor" value="1" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="image.outport.renderSizeReceive" id="ref14">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="mouseWheelHandler">
                             <Properties>
@@ -93,8 +132,14 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-290" y="147" />
                     </MetaData>
                     <Properties>
-                        <Property name="volumeURL" url="input/rgb/visiblefemale-head-rgb.dat?timeframe=0&amp;preferredReader=DatVolumeReader" />
+                        <Property name="volumeURL" url="input/rgb/visiblefemale-head-rgb.dat?preferredReader=DatVolumeReader&amp;timeframe=0" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="SliceViewer" id="ref3">
@@ -109,6 +154,12 @@
                         <Property name="boundaryColor">
                             <value x="0" y="0" z="1" w="1" />
                         </Property>
+                        <Property name="distanceLegendColor">
+                            <value x="1" y="1" z="1" w="1" />
+                        </Property>
+                        <Property name="distanceLegendPos">
+                            <value x="0.05" y="0.1" />
+                        </Property>
                         <Property name="fontSize" value="14" />
                         <Property name="mouseEvent.Shift" lod="1" enabled="true" mouseAction="3" mouseButtons="1" keyCode="0" modifier="192" shareEvents="false" />
                         <Property name="mouseEvent.cursorPositionMove" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="true" />
@@ -121,6 +172,7 @@
                             <value.row2 x="0" y="0" z="1" w="0" />
                             <value.row3 x="0" y="0" z="0" w="1" />
                         </Property>
+                        <Property name="renderDistanceLegend" value="false" />
                         <Property name="renderSliceBoundaries" value="true" />
                         <Property name="showCursorInformation" value="onMove" />
                         <Property name="showSliceNumber" value="true" />
@@ -154,6 +206,20 @@
                         </Property>
                         <Property name="zoomFactor" value="1" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="image.outport.renderSizeReceive" id="ref16">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="mouseWheelHandler">
                             <Properties>
@@ -179,6 +245,12 @@
                         <Property name="boundaryColor">
                             <value x="0" y="0" z="1" w="1" />
                         </Property>
+                        <Property name="distanceLegendColor">
+                            <value x="1" y="1" z="1" w="1" />
+                        </Property>
+                        <Property name="distanceLegendPos">
+                            <value x="0.05" y="0.1" />
+                        </Property>
                         <Property name="fontSize" value="14" />
                         <Property name="mouseEvent.Shift" lod="1" enabled="true" mouseAction="3" mouseButtons="1" keyCode="0" modifier="192" shareEvents="false" />
                         <Property name="mouseEvent.cursorPositionMove" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="true" />
@@ -191,6 +263,7 @@
                             <value.row2 x="0" y="0" z="1" w="0" />
                             <value.row3 x="0" y="0" z="0" w="1" />
                         </Property>
+                        <Property name="renderDistanceLegend" value="false" />
                         <Property name="renderSliceBoundaries" value="true" />
                         <Property name="showCursorInformation" value="onMove" />
                         <Property name="showSliceNumber" value="true" />
@@ -224,6 +297,20 @@
                         </Property>
                         <Property name="zoomFactor" value="1" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="image.outport.renderSizeReceive" id="ref18">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="mouseWheelHandler">
                             <Properties>
@@ -249,6 +336,12 @@
                         <Property name="boundaryColor">
                             <value x="0" y="0" z="1" w="1" />
                         </Property>
+                        <Property name="distanceLegendColor">
+                            <value x="1" y="1" z="1" w="1" />
+                        </Property>
+                        <Property name="distanceLegendPos">
+                            <value x="0.05" y="0.1" />
+                        </Property>
                         <Property name="fontSize" value="14" />
                         <Property name="mouseEvent.Shift" lod="1" enabled="true" mouseAction="3" mouseButtons="1" keyCode="0" modifier="192" shareEvents="false" />
                         <Property name="mouseEvent.cursorPositionMove" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="true" />
@@ -261,6 +354,7 @@
                             <value.row2 x="0" y="0" z="1" w="0" />
                             <value.row3 x="0" y="0" z="0" w="1" />
                         </Property>
+                        <Property name="renderDistanceLegend" value="false" />
                         <Property name="renderSliceBoundaries" value="true" />
                         <Property name="showCursorInformation" value="onMove" />
                         <Property name="showSliceNumber" value="true" />
@@ -294,6 +388,20 @@
                         </Property>
                         <Property name="zoomFactor" value="1" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="image.outport.renderSizeReceive" id="ref20">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="mouseWheelHandler">
                             <Properties>
@@ -317,9 +425,20 @@
                             <value x="400" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/2d-texture-axial.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/2d-texture-axial.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref15">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas 3" id="ref7">
@@ -332,9 +451,20 @@
                             <value x="400" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/2d-texture-cor.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/2d-texture-cor.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref17">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas 4" id="ref8">
@@ -347,9 +477,20 @@
                             <value x="400" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/2d-texture-sag.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/2d-texture-sag.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref19">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -451,10 +592,27 @@
                     <DestinationProperty type="IntVec2Property" ref="ref11" />
                     <Evaluator type="LinkEvaluatorIVec2Id" />
                 </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref13" />
+                    <DestinationProperty ref="ref14" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref15" />
+                    <DestinationProperty ref="ref16" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref17" />
+                    <DestinationProperty ref="ref18" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref19" />
+                    <DestinationProperty ref="ref20" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
             </PropertyLinks>
-            <PropertyStateCollections />
-            <PropertyStateFileReferences />
-            <PropertyStateDirectoryReferences />
         </ProcessorNetwork>
         <Animation />
     </Workspace>

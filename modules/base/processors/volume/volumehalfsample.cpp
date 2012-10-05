@@ -34,8 +34,8 @@ const std::string VolumeHalfsample::loggerCat_("voreen.base.VolumeHalfsample");
 
 VolumeHalfsample::VolumeHalfsample()
     : CachingVolumeProcessor(),
-    inport_(Port::INPORT, "input"),
-    outport_(Port::OUTPORT, "output", 0),
+    inport_(Port::INPORT, "input", "Volume Input"),
+    outport_(Port::OUTPORT, "output", "Volume Output", false),
     enableProcessing_("enableProcessing", "Enable")
 {
     addPort(inport_);

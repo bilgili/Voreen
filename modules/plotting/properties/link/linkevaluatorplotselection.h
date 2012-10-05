@@ -38,7 +38,7 @@ public:
 
     virtual void eval(Property* src, Property* dest) throw (VoreenException);
 
-    virtual std::string name() const;
+    virtual std::string getGuiName() const { return "Plot Selection"; }
 
     virtual std::string getClassName() const { return "LinkEvaluatorPlotSelection"; }
 

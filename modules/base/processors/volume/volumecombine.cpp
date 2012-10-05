@@ -39,9 +39,9 @@ const std::string VolumeCombine::loggerCat_("voreen.VolumeCombine");
 
 VolumeCombine::VolumeCombine()
     : CachingVolumeProcessor()
-    , inportFirst_(Port::INPORT, "volume.first")
-    , inportSecond_(Port::INPORT, "volume.second")
-    , outport_(Port::OUTPORT, "outport", true)
+    , inportFirst_(Port::INPORT, "volume.first", "Volume1 Input")
+    , inportSecond_(Port::INPORT, "volume.second", "Volume2 Input")
+    , outport_(Port::OUTPORT, "outport", "Volume Output", true)
     , enableProcessing_("enabled", "Enable", true)
     , combineFunction_("combineFunction", "Combine Function")
     , factorC_("factorC", "Factor c", 0.5f, -2.f, 2.f)

@@ -125,6 +125,8 @@ public:
     /// Returns whether this widget has been initialized.
     bool isInitialized() const;
 
+    /// Returns the porcessor
+    const Processor* getProcessor() const;
 protected:
 
     /// Saves the widget's geometry to the processor's meta data for serialization.

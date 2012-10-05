@@ -1,21 +1,39 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="11">
+        <ProcessorNetwork version="13">
             <Processors>
                 <Processor type="Canvas" name="Canvas Points" id="ref1">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-609" y="251" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="56" y="97" width="400" height="400" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="56" y="97" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="400" y="400" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" id="ref13">
                             <value x="400" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/points.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/points.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref16">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="PointListRenderer" name="PointListRenderer Points" id="ref3">
@@ -37,6 +55,12 @@
                         <Property name="sphereDiameter" value="0.025" />
                         <Property name="sphereSlicesStacks" value="30" />
                     </Properties>
+                    <Inports>
+                        <Port name="geometry.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="GeometryProcessor" name="Geometry Processor" id="ref0">
@@ -54,6 +78,24 @@
                         </Property>
                         <Property name="renderGeometries" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="image.output.renderSizeReceive" id="ref17">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -81,11 +123,17 @@
                     </MetaData>
                     <Properties>
                         <Property name="clearGeometry" />
-                        <Property name="geometryFile" value="input/geometry/cow-skeleton-pointlist-world.vge" />
+                        <Property name="geometryFile" noPathSet="false" value="input/geometry/cow-skeleton-pointlist-world.vge" />
                         <Property name="geometryType" value="geometry" />
                         <Property name="loadGeometry" />
                         <Property name="skipItems" value="0" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="geometry.pointlist">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="GeometryProcessor" name="GeometryProcessor" id="ref6">
@@ -103,6 +151,24 @@
                         </Property>
                         <Property name="renderGeometries" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="image.output.renderSizeReceive" id="ref19">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -143,6 +209,12 @@
                         <Property name="sphereDiameter" value="0.025" />
                         <Property name="sphereSlicesStacks" value="30" />
                     </Properties>
+                    <Inports>
+                        <Port name="geometry.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas Spheres" id="ref7">
@@ -155,9 +227,20 @@
                             <value x="400" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/spheres.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/spheres.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref18">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="GeometryProcessor" name="GeometryProcessor 2" id="ref8">
@@ -175,6 +258,24 @@
                         </Property>
                         <Property name="renderGeometries" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="image.output.renderSizeReceive" id="ref21">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -215,6 +316,12 @@
                         <Property name="sphereDiameter" value="0.025" />
                         <Property name="sphereSlicesStacks" value="30" />
                     </Properties>
+                    <Inports>
+                        <Port name="geometry.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas IllumSpheres" id="ref9">
@@ -227,9 +334,20 @@
                             <value x="400" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/illum-spheres.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/illum-spheres.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref20">
+                                    <value x="400" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -360,10 +478,22 @@
                     <DestinationProperty type="IntVec2Property" ref="ref14" />
                     <Evaluator type="LinkEvaluatorIVec2Id" />
                 </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref16" />
+                    <DestinationProperty ref="ref17" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref18" />
+                    <DestinationProperty ref="ref19" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref20" />
+                    <DestinationProperty ref="ref21" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
             </PropertyLinks>
-            <PropertyStateCollections />
-            <PropertyStateFileReferences />
-            <PropertyStateDirectoryReferences />
         </ProcessorNetwork>
         <Animation />
     </Workspace>

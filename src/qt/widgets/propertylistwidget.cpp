@@ -30,6 +30,8 @@
 #include "voreen/qt/widgets/property/volumeurlpropertywidget.h"
 #include "voreen/qt/widgets/property/volumeurllistpropertywidget.h"
 
+#include "voreen/core/ports/port.h"
+
 #include <QVBoxLayout>
 #include <QToolButton>
 
@@ -246,10 +248,14 @@ void PropertyListWidget::hideLodControls(bool hide) {
     if(processorNetwork_ != 0) {
         for (size_t i=0; i<processorNetwork_->numProcessors(); ++i) {
             Processor* proc = processorNetwork_->getProcessors().at(i);
-            const std::vector<Property*>& props = proc->getProperties();
+            std::vector<Property*> propertyList = proc->getProperties();
+            for (size_t i=0; i<proc->getPorts().size(); i++) {
+                std::vector<Property*> portProps = proc->getPorts().at(i)->getProperties();
+                propertyList.insert(propertyList.end(), portProps.begin(), portProps.end());
+            }
 
-            for (size_t ii = 0; ii < props.size(); ++ii) {
-                const std::set<PropertyWidget*> widgets = props.at(ii)->getPropertyWidgets();
+            for (size_t ii = 0; ii < propertyList.size(); ++ii) {
+                const std::set<PropertyWidget*> widgets = propertyList.at(ii)->getPropertyWidgets();
                 std::set<PropertyWidget*>::const_iterator it = widgets.begin();
                 while(it != widgets.end()) {
                     if (QPropertyWidget* qWidget = dynamic_cast<QPropertyWidget*>(*it)) {

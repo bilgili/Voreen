@@ -42,7 +42,7 @@ SliceProxyGeometry::SliceProxyGeometry()
     , position_("planePosition", "Plane Position", 0.0f, -10.0f, 10.0f)
     , size_("size", "Quad size", 10.0f, 0.1f, 100.0f)
     , mwheelCycleHandler_("mouseWheelHandler", "Slice Cycling", &position_)
-    , geomPort_(Port::OUTPORT, "geometry")
+    , geomPort_(Port::OUTPORT, "geometry", "Geometry Output")
 {
     addInteractionHandler(mwheelCycleHandler_);
 

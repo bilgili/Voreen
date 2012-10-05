@@ -37,8 +37,8 @@ const std::string VolumeFiltering::loggerCat_("voreen.VolumeFiltering");
 
 VolumeFiltering::VolumeFiltering()
     : CachingVolumeProcessor()
-    , inport_(Port::INPORT, "volumehandle.input")
-    , outport_(Port::OUTPORT, "volumehandle.output", 0)
+    , inport_(Port::INPORT, "volumehandle.input", "Volume Input")
+    , outport_(Port::OUTPORT, "volumehandle.output", "Volume Output", false)
     , enableProcessing_("enableProcessing", "Enable")
     , filteringOperator_("filteringOperator", "Operator")
     , kernelSize_("kernelSize", "Kernel Size")

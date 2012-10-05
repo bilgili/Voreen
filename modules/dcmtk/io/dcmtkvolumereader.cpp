@@ -112,6 +112,7 @@ DcmtkVolumeReader::DcmtkVolumeReader(ProgressBar* progress)
       scalars_(0)
 {
     extensions_.push_back("dcm");
+    extensions_.push_back("ima");
     //extensions_.push_back("dicom");
 
     filenames_.push_back("DICOMDIR");

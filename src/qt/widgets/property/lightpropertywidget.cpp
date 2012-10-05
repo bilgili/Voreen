@@ -52,54 +52,65 @@ LightPropertyWidget::LightPropertyWidget(FloatVec4Property* prop, QWidget* paren
     layout_->addWidget(light_);
     layout_->addWidget(followCam_);
     connect(light_, SIGNAL(lightWidgetChanged(tgt::vec4)), this, SLOT(changeWidgetLight(tgt::vec4)));
-    PropertyOwner* propOwner = prop->getOwner();
-    VolumeRenderer* vol = dynamic_cast<VolumeRenderer*>(propOwner);
-    if (vol) {
-        std::vector<Property*> props = vol->getProperties();
-        std::vector<Property*>::iterator it = props.begin();
-        while (it != props.end()) {
-            if (dynamic_cast<CameraProperty*>(*it))
-                dynamic_cast<CameraProperty*>(*it)->onChange(CallMemberAction<LightPropertyWidget>(this, &LightPropertyWidget::cameraUpdate));
 
-            ++it;
-        }
+    CameraProperty* camProp = getCamera();
+    if(camProp) {
+        camProp->onChange(CallMemberAction<LightPropertyWidget>(this, &LightPropertyWidget::cameraUpdate));
+        light_->setLightPosition(camProp->get().getViewMatrix().getRotationalPart() * property_->get());
+        cameraUpdate();
     }
-
-    light_->setLightPosition(getCamera().getViewMatrix().getRotationalPart() * property_->get());
 
     addVisibilityControls();
     // we have to add this widget to the property to enable automatic metadata serialization
     property_->addWidget(this);
 }
 
-tgt::Camera LightPropertyWidget::getCamera() {
+CameraProperty* LightPropertyWidget::getCamera() {
     PropertyOwner* propOwner = property_->getOwner();  // this should not be done on any change but for some reason the roation matrix is invalid when the camera is moved!
-    tgt::Camera camera;
+
     if (dynamic_cast<VolumeRenderer*>(propOwner)) {
         VolumeRenderer* vol = dynamic_cast<VolumeRenderer*>(propOwner);
         std::vector<Property*> props = vol->getProperties();
         std::vector<Property*>::iterator it = props.begin();
-        while (it != props.end()){
-            if(dynamic_cast<CameraProperty*>(*it)) {
-                camera = (dynamic_cast<CameraProperty*>(*it)->get());
-            }
+        while (it != props.end()) {
+            if(CameraProperty* camProp = dynamic_cast<CameraProperty*>(*it))
+                return camProp;
             ++it;
         }
     }
-    return camera;
+    return 0;
 }
 
 void LightPropertyWidget::changeWidgetLight(tgt::vec4 lightPos) {
-    const tgt::Camera& camera = getCamera();
+    const CameraProperty* camProp = getCamera();
+    if(!camProp)
+        return;
+
+    noUpdateFromProp_ = true;
+
+    const tgt::Camera& camera = camProp->get();
 
     //hackish, but we don't want an additional updateFromProperty of the lightwidget which caused the call of this function in the first place and which is already updated FL
-    noUpdateFromProp_ = true;
     property_->set(camera.getViewMatrixInverse().getRotationalPart() * lightPos);
     noUpdateFromProp_ = false;
 }
 
 void LightPropertyWidget::cameraUpdate() {
-    const tgt::Camera& camera = getCamera();
+    const CameraProperty* camProp = getCamera();
+    if(!camProp)
+        return;
+
+    float maxVal = camProp->getMaxValue() / 50.f;
+    if(maxVal != property_->getMaxValue().x) {
+        float oldRelDist = length(property_->get().xyz()) / property_->getMaxValue().x;
+        light_->setMinDist(maxVal * 0.1f);
+        light_->setMaxDist(maxVal);
+        property_->setMinValue(tgt::vec4(-maxVal));
+        property_->setMaxValue(tgt::vec4(maxVal));
+        property_->set(property_->get() * oldRelDist);
+    }
+
+    const tgt::Camera& camera = camProp->get();
     if (followCam_->isChecked()) {
         noUpdateFromProp_ = true;
         property_->set(camera.getViewMatrixInverse().getRotationalPart() * light_->getLightPosition());

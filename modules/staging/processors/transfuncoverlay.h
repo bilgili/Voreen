@@ -54,10 +54,6 @@ public:
 
     bool isReady() const;
 
-    virtual void sizeOriginChanged(RenderPort* p);
-    virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
-    virtual bool testSizeOrigin(const RenderPort* p, void* so) const;
-
 protected:
     virtual void setDescriptions() {
         setDescription("Provides an overlay that renders a transfer function.");
@@ -79,6 +75,7 @@ private:
 
     FontProperty fontProp_;
     TransFuncProperty transferFunc_;
+    BoolProperty renderPreIntegrationTable_;
     BoolProperty renderOverlay_;
     OptionProperty<bool> usePixelCoordinates_;
     IntVec2Property overlayBottomLeft_;             ///< pixel coordinates
@@ -94,9 +91,6 @@ private:
     FloatVec4Property borderColor_;
 
     tgt::Shader* copyShader_;
-
-    int ppSizeX_;
-    int ppSizeY_;
 };
 
 } // namespace

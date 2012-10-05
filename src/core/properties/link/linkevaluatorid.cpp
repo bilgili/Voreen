@@ -48,6 +48,9 @@ void LinkEvaluatorCameraId::eval(Property* src, Property* dst) throw (VoreenExce
     cam.setUpVector(srcCam.getUpVector());
     cam.setFrustum(srcCam.getFrustum());
     cam.setProjectionMode(srcCam.getProjectionMode());
+    cam.setStereoEyeMode(srcCam.getStereoEyeMode(), false);
+    cam.setStereoEyeSeparation(srcCam.getStereoEyeSeparation(), false);
+    cam.setStereoAxisMode(srcCam.getStereoAxisMode());
 
     dstCast->set(cam);
     dstCast->getTrackball()->setMoveCenter(srcCast->getTrackball()->getMoveCenter());
@@ -56,6 +59,27 @@ void LinkEvaluatorCameraId::eval(Property* src, Property* dst) throw (VoreenExce
 }
 
 bool LinkEvaluatorCameraId::arePropertiesLinkable(const Property* p1, const Property* p2) const {
+    tgtAssert(p1, "null pointer");
+    tgtAssert(p2, "null pointer");
+
+    return (dynamic_cast<const CameraProperty*>(p1) && dynamic_cast<const CameraProperty*>(p2));
+}
+
+// -----------------------------------
+
+void LinkEvaluatorCameraOrientationId::eval(Property* src, Property* dst) throw (VoreenException) {
+    CameraProperty* dstCast = static_cast<CameraProperty*>(dst);
+    CameraProperty* srcCast = static_cast<CameraProperty*>(src);
+
+    tgt::Camera cam = dstCast->get();
+    tgt::Camera srcCam = srcCast->get();
+
+    cam.positionCamera(cam.getFocus() - cam.getFocalLength() * srcCam.getLook(), cam.getFocus(), srcCam.getUpVector());
+
+    dstCast->set(cam);
+}
+
+bool LinkEvaluatorCameraOrientationId::arePropertiesLinkable(const Property* p1, const Property* p2) const {
     tgtAssert(p1, "null pointer");
     tgtAssert(p2, "null pointer");
 
@@ -118,6 +142,36 @@ void LinkEvaluatorCameraLookId::eval(Property* src, Property* dst) throw (Voreen
 }
 
 bool LinkEvaluatorCameraLookId::arePropertiesLinkable(const Property* p1, const Property* p2) const {
+    tgtAssert(p1, "null pointer");
+    tgtAssert(p2, "null pointer");
+    bool result = false;
+    result |= (dynamic_cast<const CameraProperty*>(p1) && dynamic_cast<const FloatVec3Property*>(p2));
+    result |= (dynamic_cast<const CameraProperty*>(p2) && dynamic_cast<const FloatVec3Property*>(p1));
+    return result;
+}
+
+//-----------------------------------------------------------------------------
+//
+void LinkEvaluatorCameraFocusId::eval(Property* src, Property* dst) throw (VoreenException) {
+    bool camToProp = true;
+    CameraProperty* camProp = dynamic_cast<CameraProperty*>(src);
+    FloatVec3Property* vecProp = dynamic_cast<FloatVec3Property*>(dst);
+    if(!camProp) {
+        camToProp = false;
+        camProp = dynamic_cast<CameraProperty*>(dst);
+        vecProp = dynamic_cast<FloatVec3Property*>(src);
+    }
+
+    tgt::Camera cam = camProp->get();
+    if(camToProp)
+        vecProp->set(cam.getFocus());
+    else {
+        cam.setFocus(vecProp->get());
+        camProp->set(cam);
+    }
+}
+
+bool LinkEvaluatorCameraFocusId::arePropertiesLinkable(const Property* p1, const Property* p2) const {
     tgtAssert(p1, "null pointer");
     tgtAssert(p2, "null pointer");
     bool result = false;

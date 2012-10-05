@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="11">
+        <ProcessorNetwork version="13">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -21,8 +21,14 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-302" y="-293" />
                     </MetaData>
                     <Properties>
-                        <Property name="volumeURL" url="input/flow/heart_pet_01.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" />
+                        <Property name="volumeURL" url="input/flow/heart_pet_01.raw.dat?preferredReader=DatVolumeReader&amp;timeframe=0" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="FlowOrthogonalSliceRenderer" name="FlowOrthogonalSliceRenderer" id="ref1">
@@ -30,7 +36,6 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-345" y="-70" />
                     </MetaData>
                     <Properties>
-                        <Property name="applyColorModulation" value="false" />
                         <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="50" fovy="45.00000381" id="ref13">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="521" y="246" />
@@ -46,7 +51,7 @@
                         <Property name="textureClampMode_" value="clamp-to-edge" />
                         <Property name="textureFilterMode" value="linear" />
                         <Property name="textureMode" value="3d-texture" />
-                        <Property name="transferFunction">
+                        <Property name="transferFunction" AlwaysFitDomain="false">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
@@ -69,6 +74,20 @@
                         <Property name="useZXSliceProp" value="true" />
                         <Property name="useZYSliceProp" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="image.outport.renderSizeReceive" id="ref17">
+                                    <value x="650" y="650" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -104,23 +123,52 @@
                             <value x="0.2" y="0.2" z="0.2" w="1" />
                         </Property>
                         <Property name="repeat" value="1" />
-                        <Property name="texture" value="" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="texture" noPathSet="false" value="" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas" id="ref4">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-16" y="369" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="28" y="112" width="650" height="650" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="28" y="112" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="650" y="650" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize">
                             <value x="650" y="650" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/rendering.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/rendering.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref16">
+                                    <value x="650" y="650" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="FlowOrthogonalSliceRenderer" name="FlowOrthogonalSliceRenderer 2" id="ref5">
@@ -128,7 +176,6 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-77" y="-62" />
                     </MetaData>
                     <Properties>
-                        <Property name="applyColorModulation" value="false" />
                         <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="50" fovy="45.00000381" id="ref14">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="521" y="246" />
@@ -144,7 +191,7 @@
                         <Property name="textureClampMode_" value="clamp-to-edge" />
                         <Property name="textureFilterMode" value="linear" />
                         <Property name="textureMode" value="3d-texture" />
-                        <Property name="transferFunction">
+                        <Property name="transferFunction" AlwaysFitDomain="false">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
@@ -189,6 +236,20 @@
                         <Property name="useZXSliceProp" value="true" />
                         <Property name="useZYSliceProp" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="image.outport.renderSizeReceive" id="ref18">
+                                    <value x="650" y="650" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -217,6 +278,16 @@
                     <Properties>
                         <Property name="volumeID" value="0" id="ref12" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumecollection">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="PathlineRenderer3D" name="PathlineRenderer3D" id="ref7">
@@ -259,6 +330,23 @@
                         <Property name="useBoundingBoxProp" value="true" />
                         <Property name="useCoordinateAxisProp" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumecollection.context">
+                            <Properties />
+                        </Port>
+                        <Port name="volumecollection.flow">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.pathlines">
+                            <Properties>
+                                <Property name="image.pathlines.renderSizeReceive" id="ref19">
+                                    <value x="650" y="650" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -287,10 +375,25 @@
                     <Properties>
                         <Property name="addDepth" value="false" />
                         <Property name="blendMode" value="weighted-average" />
+                        <Property name="pipethrough" value="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
                         <Property name="weightFirst" value="1" />
                         <Property name="weightSecond" value="1" />
                         <Property name="weightingFactor" value="0.5" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.inport0">
+                            <Properties />
+                        </Port>
+                        <Port name="image.inport1">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Compositor" name="Compositer 2" id="ref8">
@@ -300,10 +403,25 @@
                     <Properties>
                         <Property name="addDepth" value="false" />
                         <Property name="blendMode" value="depth-test" />
+                        <Property name="pipethrough" value="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
                         <Property name="weightFirst" value="1" />
                         <Property name="weightSecond" value="1" />
                         <Property name="weightingFactor" value="0.5" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.inport0">
+                            <Properties />
+                        </Port>
+                        <Port name="image.inport1">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeCollectionSource" name="VolumeCollectionSource Flow" id="ref9">
@@ -313,31 +431,37 @@
                     <Properties>
                         <Property name="volumeURLList">
                             <VolumeURLs>
-                                <url value="input/flow/v1-0.flow?preferredReader=FlowReader" />
-                                <url value="input/flow/v2-1.flow?preferredReader=FlowReader" />
-                                <url value="input/flow/v3-2.flow?preferredReader=FlowReader" />
-                                <url value="input/flow/v4-3.flow?preferredReader=FlowReader" />
-                                <url value="input/flow/v5-4.flow?preferredReader=FlowReader" />
-                                <url value="input/flow/v6-5.flow?preferredReader=FlowReader" />
-                                <url value="input/flow/v7-6.flow?preferredReader=FlowReader" />
-                                <url value="input/flow/v8-7.flow?preferredReader=FlowReader" />
-                                <url value="input/flow/v9-8.flow?preferredReader=FlowReader" />
-                                <url value="input/flow/v10-9.flow?preferredReader=FlowReader" />
+                                <url value="input/flow/v1-0.flow" />
+                                <url value="input/flow/v2-1.flow" />
+                                <url value="input/flow/v3-2.flow" />
+                                <url value="input/flow/v4-3.flow" />
+                                <url value="input/flow/v5-4.flow" />
+                                <url value="input/flow/v6-5.flow" />
+                                <url value="input/flow/v7-6.flow" />
+                                <url value="input/flow/v8-7.flow" />
+                                <url value="input/flow/v9-8.flow" />
+                                <url value="input/flow/v10-9.flow" />
                             </VolumeURLs>
                             <Selection>
-                                <entry url="input/flow/v1-0.flow?preferredReader=FlowReader" value="true" />
-                                <entry url="input/flow/v10-9.flow?preferredReader=FlowReader" value="true" />
-                                <entry url="input/flow/v2-1.flow?preferredReader=FlowReader" value="true" />
-                                <entry url="input/flow/v3-2.flow?preferredReader=FlowReader" value="true" />
-                                <entry url="input/flow/v4-3.flow?preferredReader=FlowReader" value="true" />
-                                <entry url="input/flow/v5-4.flow?preferredReader=FlowReader" value="true" />
-                                <entry url="input/flow/v6-5.flow?preferredReader=FlowReader" value="true" />
-                                <entry url="input/flow/v7-6.flow?preferredReader=FlowReader" value="true" />
-                                <entry url="input/flow/v8-7.flow?preferredReader=FlowReader" value="true" />
-                                <entry url="input/flow/v9-8.flow?preferredReader=FlowReader" value="true" />
+                                <entry url="input/flow/v1-0.flow" value="true" />
+                                <entry url="input/flow/v10-9.flow" value="true" />
+                                <entry url="input/flow/v2-1.flow" value="true" />
+                                <entry url="input/flow/v3-2.flow" value="true" />
+                                <entry url="input/flow/v4-3.flow" value="true" />
+                                <entry url="input/flow/v5-4.flow" value="true" />
+                                <entry url="input/flow/v6-5.flow" value="true" />
+                                <entry url="input/flow/v7-6.flow" value="true" />
+                                <entry url="input/flow/v8-7.flow" value="true" />
+                                <entry url="input/flow/v9-8.flow" value="true" />
                             </Selection>
                         </Property>
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumecollection">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeCollectionSource" name="VolumeCollectionSource Pet" id="ref10">
@@ -347,31 +471,37 @@
                     <Properties>
                         <Property name="volumeURLList">
                             <VolumeURLs>
-                                <url value="input/flow/heart_pet_01.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" />
-                                <url value="input/flow/heart_pet_02.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" />
-                                <url value="input/flow/heart_pet_03.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" />
-                                <url value="input/flow/heart_pet_04.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" />
-                                <url value="input/flow/heart_pet_05.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" />
-                                <url value="input/flow/heart_pet_06.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" />
-                                <url value="input/flow/heart_pet_07.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" />
-                                <url value="input/flow/heart_pet_08.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" />
-                                <url value="input/flow/heart_pet_09.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" />
-                                <url value="input/flow/heart_pet_10.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" />
+                                <url value="input/flow/heart_pet_01.raw.dat?timeframe=0" />
+                                <url value="input/flow/heart_pet_02.raw.dat?timeframe=0" />
+                                <url value="input/flow/heart_pet_03.raw.dat?timeframe=0" />
+                                <url value="input/flow/heart_pet_04.raw.dat?timeframe=0" />
+                                <url value="input/flow/heart_pet_05.raw.dat?timeframe=0" />
+                                <url value="input/flow/heart_pet_06.raw.dat?timeframe=0" />
+                                <url value="input/flow/heart_pet_07.raw.dat?timeframe=0" />
+                                <url value="input/flow/heart_pet_08.raw.dat?timeframe=0" />
+                                <url value="input/flow/heart_pet_09.raw.dat?timeframe=0" />
+                                <url value="input/flow/heart_pet_10.raw.dat?timeframe=0" />
                             </VolumeURLs>
                             <Selection>
-                                <entry url="input/flow/heart_pet_01.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" value="true" />
-                                <entry url="input/flow/heart_pet_02.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" value="true" />
-                                <entry url="input/flow/heart_pet_03.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" value="true" />
-                                <entry url="input/flow/heart_pet_04.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" value="true" />
-                                <entry url="input/flow/heart_pet_05.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" value="true" />
-                                <entry url="input/flow/heart_pet_06.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" value="true" />
-                                <entry url="input/flow/heart_pet_07.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" value="true" />
-                                <entry url="input/flow/heart_pet_08.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" value="true" />
-                                <entry url="input/flow/heart_pet_09.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" value="true" />
-                                <entry url="input/flow/heart_pet_10.raw.dat?timeframe=0&amp;preferredReader=DatVolumeReader" value="true" />
+                                <entry url="input/flow/heart_pet_01.raw.dat?timeframe=0" value="true" />
+                                <entry url="input/flow/heart_pet_02.raw.dat?timeframe=0" value="true" />
+                                <entry url="input/flow/heart_pet_03.raw.dat?timeframe=0" value="true" />
+                                <entry url="input/flow/heart_pet_04.raw.dat?timeframe=0" value="true" />
+                                <entry url="input/flow/heart_pet_05.raw.dat?timeframe=0" value="true" />
+                                <entry url="input/flow/heart_pet_06.raw.dat?timeframe=0" value="true" />
+                                <entry url="input/flow/heart_pet_07.raw.dat?timeframe=0" value="true" />
+                                <entry url="input/flow/heart_pet_08.raw.dat?timeframe=0" value="true" />
+                                <entry url="input/flow/heart_pet_09.raw.dat?timeframe=0" value="true" />
+                                <entry url="input/flow/heart_pet_10.raw.dat?timeframe=0" value="true" />
                             </Selection>
                         </Property>
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumecollection">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -519,10 +649,22 @@
                     <DestinationProperty type="CameraProperty" ref="ref15" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref16" />
+                    <DestinationProperty ref="ref17" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref16" />
+                    <DestinationProperty ref="ref18" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref16" />
+                    <DestinationProperty ref="ref19" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
             </PropertyLinks>
-            <PropertyStateCollections />
-            <PropertyStateFileReferences />
-            <PropertyStateDirectoryReferences />
         </ProcessorNetwork>
         <Animation />
     </Workspace>

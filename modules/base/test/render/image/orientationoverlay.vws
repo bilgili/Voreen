@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="11">
+        <ProcessorNetwork version="13">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -18,7 +18,7 @@
                     </MetaData>
                     <Properties>
                         <Property name="applyLightAttenuation" value="false" />
-                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="514.54998779" fovy="45.00000381" id="ref9">
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="514.54998779" fovy="45.00000381" id="ref10">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="35" y="108" />
                             </MetaData>
@@ -58,12 +58,17 @@
                             <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
                         </Property>
                         <Property name="materialShininess" value="60" />
+                        <Property name="raycast.prg" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="samplingRate" value="3.5" />
                         <Property name="shading" value="phong" />
                         <Property name="textureBorderIntensity" value="0" />
                         <Property name="textureClampMode_" value="clamp-to-edge" />
                         <Property name="textureFilterMode_" value="linear" />
-                        <Property name="transferFunction">
+                        <Property name="transferFunction" AlwaysFitDomain="false">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
@@ -110,21 +115,81 @@
                             </TransferFunction>
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeOrigin" id="ref16">
+                                    <value x="321" y="319" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeOrigin" id="ref18">
+                                    <value x="321" y="319" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="image.output.renderSizeReceive" id="ref15">
+                                    <value x="321" y="319" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.output1">
+                            <Properties>
+                                <Property name="image.output1.renderSizeReceive">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.output2">
+                            <Properties>
+                                <Property name="image.output2.renderSizeReceive">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas" id="ref3">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-470" y="471" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="308" y="92" width="321" height="319" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="308" y="92" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="321" y="319" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize">
                             <value x="321" y="319" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/canvas.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/canvas.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref14">
+                                    <value x="321" y="319" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Background" name="Background" id="ref2">
@@ -141,8 +206,19 @@
                             <value x="0.39215699" y="0.39215699" z="0.39215699" w="1" />
                         </Property>
                         <Property name="repeat" value="1" />
-                        <Property name="texture" value="" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="texture" noPathSet="false" value="" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSource" name="VolumeSource" id="ref4">
@@ -152,6 +228,12 @@
                     <Properties>
                         <Property name="volumeURL" url="input/nucleon.vvd?preferredReader=VvdVolumeReader" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="MeshEntryExitPoints" name="MeshEntryExitPoints" id="ref6">
@@ -159,7 +241,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-401" y="-90" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="514.54998779" fovy="45.00000381" id="ref10">
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="514.54998779" fovy="45.00000381" id="ref9">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="721" y="372" />
                             </MetaData>
@@ -173,6 +255,27 @@
                         <Property name="useCulling" value="true" />
                         <Property name="useFloatRenderTargets" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="proxgeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeReceive" id="ref17">
+                                    <value x="321" y="319" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeReceive" id="ref19">
+                                    <value x="321" y="319" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -208,6 +311,16 @@
                         <Property name="topClippingPlane" value="40" />
                         <Property name="useClipping" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="OrientationOverlay" name="OrientationOverlay" id="ref1">
@@ -229,15 +342,30 @@
                         <Property name="drawAxes" value="false" />
                         <Property name="drawCube" value="true" />
                         <Property name="drawTextures" value="true" />
-                        <Property name="filenameBack" value="input/images/orientation/coronal_b.png" />
-                        <Property name="filenameBottom" value="input/images/orientation/axial_b.png" />
-                        <Property name="filenameFront" value="input/images/orientation/coronal_f.png" />
-                        <Property name="filenameLeft" value="input/images/orientation/sagittal_l.png" />
-                        <Property name="filenameRight" value="input/images/orientation/sagittal_r.png" />
-                        <Property name="filenameTop" value="input/images/orientation/axial_t.png" />
+                        <Property name="filenameBack" noPathSet="false" value="input/images/orientation/coronal_b.png" />
+                        <Property name="filenameBottom" noPathSet="false" value="input/images/orientation/axial_b.png" />
+                        <Property name="filenameFront" noPathSet="false" value="input/images/orientation/coronal_f.png" />
+                        <Property name="filenameLeft" noPathSet="false" value="input/images/orientation/sagittal_l.png" />
+                        <Property name="filenameRight" noPathSet="false" value="input/images/orientation/sagittal_r.png" />
+                        <Property name="filenameTop" noPathSet="false" value="input/images/orientation/axial_t.png" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="shiftX" value="0.80000001" />
                         <Property name="shiftY" value="0.2" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="OrientationOverlay" name="OrientationOverlay 2" id="ref7">
@@ -259,15 +387,30 @@
                         <Property name="drawAxes" value="false" />
                         <Property name="drawCube" value="true" />
                         <Property name="drawTextures" value="true" />
-                        <Property name="filenameBack" value="input/images/orientation/coronal_b.png" />
-                        <Property name="filenameBottom" value="input/images/orientation/axial_b.png" />
-                        <Property name="filenameFront" value="input/images/orientation/coronal_f.png" />
-                        <Property name="filenameLeft" value="input/images/orientation/sagittal_l.png" />
-                        <Property name="filenameRight" value="input/images/orientation/sagittal_r.png" />
-                        <Property name="filenameTop" value="input/images/orientation/axial_t.png" />
+                        <Property name="filenameBack" noPathSet="false" value="input/images/orientation/coronal_b.png" />
+                        <Property name="filenameBottom" noPathSet="false" value="input/images/orientation/axial_b.png" />
+                        <Property name="filenameFront" noPathSet="false" value="input/images/orientation/coronal_f.png" />
+                        <Property name="filenameLeft" noPathSet="false" value="input/images/orientation/sagittal_l.png" />
+                        <Property name="filenameRight" noPathSet="false" value="input/images/orientation/sagittal_r.png" />
+                        <Property name="filenameTop" noPathSet="false" value="input/images/orientation/axial_t.png" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="shiftX" value="0.44999999" />
                         <Property name="shiftY" value="0.2" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="OrientationOverlay" name="OrientationOverlay 3" id="ref8">
@@ -289,15 +432,30 @@
                         <Property name="drawAxes" value="true" />
                         <Property name="drawCube" value="false" />
                         <Property name="drawTextures" value="true" />
-                        <Property name="filenameBack" value="input/images/orientation/coronal_b.png" />
-                        <Property name="filenameBottom" value="input/images/orientation/axial_b.png" />
-                        <Property name="filenameFront" value="input/images/orientation/coronal_f.png" />
-                        <Property name="filenameLeft" value="input/images/orientation/sagittal_l.png" />
-                        <Property name="filenameRight" value="input/images/orientation/sagittal_r.png" />
-                        <Property name="filenameTop" value="input/images/orientation/axial_t.png" />
+                        <Property name="filenameBack" noPathSet="false" value="input/images/orientation/coronal_b.png" />
+                        <Property name="filenameBottom" noPathSet="false" value="input/images/orientation/axial_b.png" />
+                        <Property name="filenameFront" noPathSet="false" value="input/images/orientation/coronal_f.png" />
+                        <Property name="filenameLeft" noPathSet="false" value="input/images/orientation/sagittal_l.png" />
+                        <Property name="filenameRight" noPathSet="false" value="input/images/orientation/sagittal_r.png" />
+                        <Property name="filenameTop" noPathSet="false" value="input/images/orientation/axial_t.png" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="shiftX" value="0.12" />
                         <Property name="shiftY" value="0.2" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -392,7 +550,12 @@
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty type="CameraProperty" ref="ref10" />
-                    <DestinationProperty type="CameraProperty" ref="ref9" />
+                    <DestinationProperty type="CameraProperty" ref="ref11" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref11" />
+                    <DestinationProperty type="CameraProperty" ref="ref10" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
@@ -407,25 +570,15 @@
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty type="CameraProperty" ref="ref10" />
-                    <DestinationProperty type="CameraProperty" ref="ref11" />
+                    <DestinationProperty type="CameraProperty" ref="ref12" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="CameraProperty" ref="ref11" />
+                    <SourceProperty type="CameraProperty" ref="ref12" />
                     <DestinationProperty type="CameraProperty" ref="ref10" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="CameraProperty" ref="ref9" />
-                    <DestinationProperty type="CameraProperty" ref="ref12" />
-                    <Evaluator type="LinkEvaluatorCameraId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="CameraProperty" ref="ref12" />
-                    <DestinationProperty type="CameraProperty" ref="ref9" />
-                    <Evaluator type="LinkEvaluatorCameraId" />
-                </PropertyLink>
-                <PropertyLink>
                     <SourceProperty type="CameraProperty" ref="ref11" />
                     <DestinationProperty type="CameraProperty" ref="ref12" />
                     <Evaluator type="LinkEvaluatorCameraId" />
@@ -436,13 +589,13 @@
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="CameraProperty" ref="ref9" />
+                    <SourceProperty type="CameraProperty" ref="ref10" />
                     <DestinationProperty type="CameraProperty" ref="ref13" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
                     <SourceProperty type="CameraProperty" ref="ref13" />
-                    <DestinationProperty type="CameraProperty" ref="ref9" />
+                    <DestinationProperty type="CameraProperty" ref="ref10" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
@@ -455,10 +608,27 @@
                     <DestinationProperty type="CameraProperty" ref="ref12" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref14" />
+                    <DestinationProperty ref="ref15" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref10" />
+                    <DestinationProperty type="CameraProperty" ref="ref9" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref16" />
+                    <DestinationProperty ref="ref17" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref18" />
+                    <DestinationProperty ref="ref19" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
             </PropertyLinks>
-            <PropertyStateCollections />
-            <PropertyStateFileReferences />
-            <PropertyStateDirectoryReferences />
         </ProcessorNetwork>
         <Animation />
     </Workspace>

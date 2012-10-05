@@ -36,8 +36,8 @@ const std::string MetaDataExtractor::loggerCat_("voreen.base.MetaDataExtractor")
 
 MetaDataExtractor::MetaDataExtractor()
     : Processor(),
-    inport_(Port::INPORT, "volume.inport"),
-    outport_(Port::OUTPORT, "text", 0),
+    inport_(Port::INPORT, "volume.inport", "Volume Input"),
+    outport_(Port::OUTPORT, "text", "Text Output", false),
     expressionProperty_("expression", "Expression"),
     dumpButtonProperty_("dumpButton", "Dump to Console", VALID),
     updateButtonProperty_("updateButton", "Update Meta Data List", VALID)

@@ -38,7 +38,6 @@ CameraProperty::CameraProperty(const std::string& id, const std::string& guiText
                        int invalidationLevel)
         : TemplateProperty<Camera>(id, guiText, value, invalidationLevel)
         , track_(0)
-        , adjustProjectionToViewport_(adjustProjectionToViewport)
         , maxValue_(maxValue)
 {}
 
@@ -88,12 +87,29 @@ void CameraProperty::setNearDist(float dist) {
     notifyChange();
 }
 
-void CameraProperty::setAdjustProjectionToViewport(bool adjust) {
-    adjustProjectionToViewport_ = adjust;
+bool CameraProperty::setStereoEyeSeparation(float separation) {
+    bool result = value_.setStereoEyeSeparation(separation);
+    if(result)
+        notifyChange();
+    return result;
 }
 
-bool CameraProperty::getAdjustProjectionToViewport() const {
-    return adjustProjectionToViewport_;
+bool CameraProperty::setStereoEyeMode(tgt::Camera::StereoEyeMode mode) {
+    bool result = value_.setStereoEyeMode(mode);
+    if(result)
+        notifyChange();
+    return result;
+}
+
+//bool CameraProperty::stereoShift(tgt::vec3 shift) {
+    //bool result = value_.stereoShift(shift);
+    //if(result)
+        //notifyChange();
+    //return result;
+//}
+
+void CameraProperty::setStereoAxisMode(tgt::Camera::StereoAxisMode mode) {
+    value_.setStereoAxisMode(mode);
 }
 
 void CameraProperty::setMaxValue(float val) {
@@ -119,18 +135,9 @@ void CameraProperty::notifyChange() {
     invalidateOwner();
 }
 
-void CameraProperty::viewportChanged(const tgt::ivec2& viewport) {
-
-    if (adjustProjectionToViewport_) {
-        value_.setWindowRatio(static_cast<float>(viewport.x) / viewport.y);
-        invalidateOwner(invalidationLevel_);
-    }
-}
-
 void CameraProperty::serialize(XmlSerializer& s) const {
     Property::serialize(s);
 
-    s.serialize("adjustProjectionToViewport", adjustProjectionToViewport_);
     s.serialize("projectionMode", (int)value_.getProjectionMode());
 
     s.serialize("position", value_.getPosition());
@@ -145,12 +152,14 @@ void CameraProperty::serialize(XmlSerializer& s) const {
     s.serialize("frustFar", value_.getFarDist());
 
     s.serialize("fovy", value_.getFovy());
+
+    s.serialize("eyeMode", (int)value_.getStereoEyeMode());
+    s.serialize("eyeSeparation", value_.getStereoEyeSeparation());
+    s.serialize("axisMode", (int)value_.getStereoAxisMode());
 }
 
 void CameraProperty::deserialize(XmlDeserializer& s) {
     Property::deserialize(s);
-
-    s.deserialize("adjustProjectionToViewport", adjustProjectionToViewport_);
 
     try {
         float left, right, bottom, top, nearP, farP;
@@ -191,10 +200,24 @@ void CameraProperty::deserialize(XmlDeserializer& s) {
     catch(SerializationException&) {
         s.removeLastError();
     }
+
+    try {
+        int eyeMode, axisMode;
+        float eyeSep;
+        s.deserialize("eyeMode", eyeMode);
+        s.deserialize("eyeSeparation", eyeSep);
+        s.deserialize("axisMode", axisMode);
+        value_.setStereoEyeMode((tgt::Camera::StereoEyeMode)eyeMode, false);
+        value_.setStereoEyeSeparation(eyeSep, false);
+        value_.setStereoAxisMode((tgt::Camera::StereoAxisMode)axisMode);
+    }
+    catch(SerializationException&) {
+        s.removeLastError();
+    }
 }
 
-void CameraProperty::look() {
-    value_.look();
+void CameraProperty::look(tgt::ivec2 viewportSize) {
+    value_.look(viewportSize);
 }
 
 VoreenTrackball* CameraProperty::getTrackball() {

@@ -108,7 +108,7 @@ VolumeURLPropertyWidget::VolumeURLPropertyWidget(VolumeURLProperty* volumeHandle
     QAction* loadVolumeAction = new QAction(tr("Load Volume..."), loadButton_);
     loadVolumeAction->setIcon(QPixmap(":/qt/icons/open-volume.png"));
     loadMenu->addAction(loadVolumeAction);
-#ifdef VRN_MODULE_GDCM
+#ifdef VRN_GDCM_VERSION_22
     QAction* dicomServerAction = new QAction(tr("Load from DICOM Server..."), loadButton_);
     //dicomServerAction->setIcon(QPixmap(":/qt/icons/open-volume.png"));
     loadMenu->addAction(dicomServerAction);
@@ -183,10 +183,14 @@ VolumeURLPropertyWidget::VolumeURLPropertyWidget(VolumeURLProperty* volumeHandle
     connect(clearButton_, SIGNAL(clicked()),
         this, SLOT(clearVolume()));
 
-#ifdef VRN_MODULE_GDCM
+#ifdef VRN_GDCM_VERSION_22
     tgtAssert(dicomConnectionDialog_, "DicomConnectionDialog is null");
     connect(dicomServerAction, SIGNAL(triggered()),
         this, SLOT(showDicomConnectionDialog()));
+    connect(dicomConnectionDialog_, SIGNAL(loadFromURL(const std::string&, VolumeReader*)),
+        &volumeIOHelper_, SLOT(loadURL(const std::string&, VolumeReader*)));
+#elif defined VRN_MODULE_GDCM
+    tgtAssert(dicomConnectionDialog_, "DicomConnectionDialog is null");
     connect(dicomConnectionDialog_, SIGNAL(loadFromURL(const std::string&, VolumeReader*)),
         &volumeIOHelper_, SLOT(loadURL(const std::string&, VolumeReader*)));
 #endif

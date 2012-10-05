@@ -99,6 +99,17 @@ public:
     virtual void serialize(XmlSerializer& s) const;
     virtual void deserialize(XmlDeserializer& s);
 
+    /**
+     * Returns a DateTime object storing the current calender time.
+     */
+    static DateTime now();
+
+    bool operator==(const DateTime& dt) const;
+
+    bool operator>(const DateTime& dt) const;
+    
+    bool operator<(const DateTime& dt) const;
+
 protected:
     /// Checks all values and logs a warning, if out of range
     void checkValueRanges() const;

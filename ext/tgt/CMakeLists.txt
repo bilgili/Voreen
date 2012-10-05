@@ -32,7 +32,6 @@ SET(TGT_SOURCES
     frustum.cpp
     glcanvas.cpp
     gpucapabilities.cpp
-    gpucapabilitieswindows.cpp
     init.cpp
     light.cpp
     logmanager.cpp

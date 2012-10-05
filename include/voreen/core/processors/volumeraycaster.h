@@ -29,6 +29,7 @@
 #include "tgt/types.h"
 #include "tgt/shadermanager.h"
 #include "tgt/textureunit.h"
+#include "tgt/exception.h"
 
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/processors/volumerenderer.h"
@@ -54,9 +55,6 @@ class VRN_CORE_API VolumeRaycaster : public VolumeRenderer {
 public:
     VolumeRaycaster();
 
-    /// Save the requested size(newsize) in size_ and resize all renderports, using interactionMode() and interactionCoarseness_.
-    virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
-
     /// Switches interaction coarseness on/off by resizing all renderports.
     virtual void interactionModeToggled();
 
@@ -68,6 +66,8 @@ public:
     virtual void invalidate(int inv = INVALID_RESULT);
 
 protected:
+    virtual void initialize() throw (tgt::Exception);
+
     /**
      * Defines ray-casting macros to be used in the shader.
      * The volume handle parameter has only to be passed
@@ -94,6 +94,15 @@ protected:
      */
     virtual bool bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct> &volumes,
         const tgt::Camera* camera = 0, const tgt::vec4& lightPosition = tgt::vec4(0.f));
+
+    /// TODO: doc
+    virtual void adjustRenderOutportSizes();
+
+    /// TODO: doc
+    virtual void updateInputSizeRequests();
+    
+    /// Calculate sampling step size for a given volume using the current sampling rate
+    float getSamplingStepSize(const VolumeBase* vol);
 
     FloatProperty samplingRate_;  ///< Sampling rate of the raycasting, specified relative to the size of one voxel
     FloatProperty isoValue_;      ///< The used isovalue, when isosurface raycasting is enabled

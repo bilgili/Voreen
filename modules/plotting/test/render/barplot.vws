@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="12">
+        <ProcessorNetwork version="13">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -12,8 +12,15 @@
             <Processors>
                 <Processor type="Canvas" name="Canvas" id="ref5">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-326" y="140" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="486" y="49" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="98" y="118" width="648" height="422" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="98" y="118" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="648" y="422" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" id="ref9">
@@ -22,12 +29,23 @@
                         <Property name="saveScreenshot" />
                         <Property name="screenshotFilename" noPathSet="false" value="output/barplot.jpg" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref13">
+                                    <value x="648" y="422" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="PlotDataSource" name="PlotDataSource" id="ref0">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-128" y="-120" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="684" y="-210" />
                     </MetaData>
                     <Properties>
                         <Property name="Separator" value=";" />
@@ -37,11 +55,17 @@
                         <Property name="inputFile" noPathSet="false" value="input/plotting/data_fmo.csv" />
                         <Property name="recalculate" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="PlotDataOutPort">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="BarPlot" name="BarPlot" id="ref1">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-326" y="16" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="486" y="-74" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="false" x="4" y="4" width="256" height="140" />
                     </MetaData>
                     <Properties>
@@ -207,11 +231,25 @@
                         <Property name="yLabelOption" value="user" />
                         <Property name="yScaleStep" value="40" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outport">
+                            <Properties>
+                                <Property name="outport.renderSizeReceive" id="ref14">
+                                    <value x="648" y="422" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="BarPlot" name="BarPlot 2" id="ref2">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-191" y="18" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="621" y="-72" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="false" x="1020" y="4" width="256" height="140" />
                     </MetaData>
                     <Properties>
@@ -374,11 +412,25 @@
                         <Property name="yLabelOption" value="user" />
                         <Property name="yScaleStep" value="40" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outport">
+                            <Properties>
+                                <Property name="outport.renderSizeReceive" id="ref16">
+                                    <value x="648" y="422" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="BarPlot" name="BarPlot 3" id="ref3">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-49" y="17" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="763" y="-73" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="false" x="268" y="4" width="256" height="140" />
                     </MetaData>
                     <Properties>
@@ -541,11 +593,25 @@
                         <Property name="yLabelOption" value="user" />
                         <Property name="yScaleStep" value="40" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outport">
+                            <Properties>
+                                <Property name="outport.renderSizeReceive" id="ref18">
+                                    <value x="648" y="422" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="BarPlot" name="BarPlot 4" id="ref4">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="84" y="18" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="896" y="-72" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="false" x="532" y="4" width="256" height="140" />
                     </MetaData>
                     <Properties>
@@ -711,11 +777,25 @@
                         <Property name="yLabelOption" value="user" />
                         <Property name="yScaleStep" value="40" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outport">
+                            <Properties>
+                                <Property name="outport.renderSizeReceive" id="ref20">
+                                    <value x="648" y="422" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas 2" id="ref6">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-191" y="141" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="621" y="50" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="143" y="183" width="648" height="422" />
                     </MetaData>
                     <Properties>
@@ -725,12 +805,23 @@
                         <Property name="saveScreenshot" />
                         <Property name="screenshotFilename" noPathSet="false" value="output/barplot2.jpg" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref15">
+                                    <value x="648" y="422" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas 3" id="ref7">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-50" y="141" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="762" y="50" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="200" y="257" width="648" height="422" />
                     </MetaData>
                     <Properties>
@@ -740,12 +831,23 @@
                         <Property name="saveScreenshot" />
                         <Property name="screenshotFilename" noPathSet="false" value="output/barplot3.jpg" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref17">
+                                    <value x="648" y="422" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas 4" id="ref8">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="85" y="141" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="897" y="50" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="263" y="333" width="648" height="422" />
                     </MetaData>
                     <Properties>
@@ -755,7 +857,18 @@
                         <Property name="saveScreenshot" />
                         <Property name="screenshotFilename" noPathSet="false" value="output/barplot4.jpg" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref19">
+                                    <value x="648" y="422" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -856,6 +969,26 @@
                     <SourceProperty type="IntVec2Property" ref="ref12" />
                     <DestinationProperty type="IntVec2Property" ref="ref11" />
                     <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref13" />
+                    <DestinationProperty ref="ref14" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref15" />
+                    <DestinationProperty ref="ref16" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref17" />
+                    <DestinationProperty ref="ref18" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref19" />
+                    <DestinationProperty ref="ref20" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>

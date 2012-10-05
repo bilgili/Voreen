@@ -122,10 +122,10 @@ void Cache::addInport(Port* inport) {
         return;
 
     if (inport->supportsCaching()) {
-        inports_.push_back(inport->getName());
+        inports_.push_back(inport->getID());
     }
     else {
-        LWARNING("Port '" << inport->getName() << "' does not support caching");
+        LWARNING("Port '" << inport->getID() << "' does not support caching");
     }
 }
 
@@ -146,10 +146,10 @@ void Cache::addOutport(Port* outport) {
         return;
 
     if (outport->supportsCaching()) {
-        outports_.push_back(outport->getName());
+        outports_.push_back(outport->getID());
     }
     else {
-        LWARNING("Port '" << outport->getName() << "' does not support caching");
+        LWARNING("Port '" << outport->getID() << "' does not support caching");
     }
 }
 
@@ -251,7 +251,7 @@ bool Cache::restoreOutportsFromDir(const std::string& dir) {
             return false;
         }
 
-        std::string portName = p->getName();
+        std::string portName = p->getID();
         // remove points from port name since it is used as filename
         portName = strReplaceAll(portName, ".", "_");
 
@@ -260,7 +260,7 @@ bool Cache::restoreOutportsFromDir(const std::string& dir) {
                 p->loadData(dir + portName);
             }
             catch (VoreenException& e) {
-                LERROR("Failed to restore data for port '" << p->getName() << "': "
+                LERROR("Failed to restore data for port '" << p->getID() << "': "
                         << e.what());
                 return false;
             }
@@ -287,7 +287,7 @@ bool Cache::storeOutportsToDir(const std::string& dir) {
             return false;
         }
 
-        std::string portName = p->getName();
+        std::string portName = p->getID();
         // remove points from port name since it is used as filename
         portName = strReplaceAll(portName, ".", "_");
         if (p->hasData()) {
@@ -295,7 +295,7 @@ bool Cache::storeOutportsToDir(const std::string& dir) {
                 p->saveData(dir + portName);
             }
             catch(VoreenException& e) {
-                LERROR("Failed to serialize data of port '" + p->getName() + "': "
+                LERROR("Failed to serialize data of port '" + p->getID() + "': "
                     << e.what() << ". Removing broken cache directory.");
                 FileSys.deleteDirectoryRecursive(dir);
                 return false;

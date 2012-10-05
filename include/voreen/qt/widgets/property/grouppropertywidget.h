@@ -42,6 +42,8 @@ public:
     void addWidget(QPropertyWidget*, QWidget*, const QString);
     virtual void updateFromProperty();
 
+    Property* getProperty() const;
+
     /// Check if there is a visible property (used to hide grouping widget in user mode if necessary)
     bool isAnyPropertyVisible(Property::LODSetting lod);
 

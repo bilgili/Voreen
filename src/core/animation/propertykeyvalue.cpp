@@ -83,7 +83,6 @@ void PropertyKeyValue<tgt::Camera>::serialize(XmlSerializer& s) const {
     s.serialize("position", value_.getPosition());
     s.serialize("focus", value_.getFocus());
     s.serialize("upVector", value_.getUpVector());
-    s.serialize("winRatio", value_.getWindowRatio());
 }
 
 template <>
@@ -108,7 +107,6 @@ void PropertyKeyValue<tgt::Camera>::deserialize(XmlDeserializer& s) {
     } catch(SerializationException&) {
         s.removeLastError();
     }
-    value_.setWindowRatio(winRatio);
 }
 
 template class PropertyKeyValue<float>;

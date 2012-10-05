@@ -47,10 +47,10 @@ AlignedSliceProxyGeometry::AlignedSliceProxyGeometry()
     , plane_("plane", "Plane", vec3(1.0f, 0.0f, 0.0f), vec3(-5.0f), vec3(5.0f))
     , planeDist_("planeDist", "Plane Distance", 0.0f, -1000.0f, 1000.0f)
     , mwheelCycleHandler_("mouseWheelHandler", "Slice Cycling", &sliceIndex_)
-    , inport_(Port::INPORT, "volume")
-    , secondaryVolumePort_(Port::INPORT, "secondaryVolumes", true)
-    , geomPort_(Port::OUTPORT, "geometry")
-    , textPort_(Port::OUTPORT, "text")
+    , inport_(Port::INPORT, "volume", "Volume Input")
+    , secondaryVolumePort_(Port::INPORT, "secondaryVolumes", "Secondary Volumes", true)
+    , geomPort_(Port::OUTPORT, "geometry", "Geometry Output")
+    , textPort_(Port::OUTPORT, "text", "Text Output")
 {
     addInteractionHandler(mwheelCycleHandler_);
 

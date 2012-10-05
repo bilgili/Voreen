@@ -33,9 +33,9 @@ namespace voreen {
 
 ImageOverlay::ImageOverlay()
     : ImageProcessor("image/compositor")
-    , imageInport_(Port::INPORT, "image.in")
-    , overlayInport_(Port::INPORT, "image.overlay")
-    , outport_(Port::OUTPORT, "image.out")
+    , imageInport_(Port::INPORT, "image.in", "Image Input")
+    , overlayInport_(Port::INPORT, "image.overlay", "Overlay Input")
+    , outport_(Port::OUTPORT, "image.out", "Image Output")
     , renderOverlay_("renderOverlay", "Render Overlay", true)
     , usePixelCoordinates_("usePixelCoordinates", "Use Pixel Coordinates", true)
     , overlayBottomLeft_("overlayBottomLeft", "Overlay Bottom Left", tgt::ivec2(10), tgt::ivec2(-4096), tgt::ivec2(4096))
@@ -67,8 +67,6 @@ ImageOverlay::ImageOverlay()
     addProperty(renderBorder_);
     addProperty(borderWidth_);
     addProperty(borderColor_);
-
-    overlayInport_.sizeOriginChanged(&overlayInport_);
 }
 
 Processor* ImageOverlay::create() const {
@@ -103,6 +101,7 @@ std::string ImageOverlay::generateHeader(const tgt::GpuCapabilities::GlVersion* 
 }
 
 void ImageOverlay::beforeProcess() {
+    ImageProcessor::beforeProcess();
     if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
         compile();
 }
@@ -213,73 +212,19 @@ void ImageOverlay::process() {
     LGL_ERROR;
 }
 
-void ImageOverlay::sizeOriginChanged(RenderPort* p) {
-    if (!p->getSizeOrigin()) {
-        if (outport_.getSizeOrigin())
-            return;
-    }
-
-    imageInport_.sizeOriginChanged(p->getSizeOrigin());
-}
-
-void ImageOverlay::portResized(RenderPort* /*p*/, tgt::ivec2 newsize) {
-    // cycle prevention
-    if (portResizeVisited_)
-        return;
-
-    portResizeVisited_ = true;
-
-    // propagate to predecessing RenderProcessors
-    imageInport_.resize(newsize);
-
-    //distribute to outports
-    outport_.resize(newsize);
-
-    overlayDimensionsChanged();
-
-    invalidate();
-
-    portResizeVisited_ = false;
-}
-
-bool ImageOverlay::testSizeOrigin(const RenderPort* p, void* so) const {
-    tgtAssert(p->isOutport(), "testSizeOrigin used with inport");
-
-    if (so) {
-        if (outport_.getSizeOrigin() && (outport_.getSizeOrigin() != so)) {
-            return false;
-        }
-    }
-
-    if (imageInport_.getSizeOrigin() && (imageInport_.getSizeOrigin() != so) ) {
-        return false;
-    }
-
-    const std::vector<const Port*>& connectedOutports = imageInport_.getConnected();
-    for (size_t j=0; j<connectedOutports.size(); ++j) {
-        const RenderPort* op = static_cast<const RenderPort*>(connectedOutports[j]);
-
-        if (!static_cast<RenderProcessor*>(op->getProcessor())->testSizeOrigin(op, so)) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 void ImageOverlay::overlayDimensionsChanged() {
 
     if (!isInitialized() || !outport_.isReady())
         return;
 
-    if (usePixelCoordinates_.get()) {
+    /*if (usePixelCoordinates_.get()) {
         if (tgt::hand(tgt::greaterThan(overlayDimensions_.get(), tgt::ivec2(0))))
             overlayInport_.resize(overlayDimensions_.get());
     }
     else {
         if (tgt::hand(tgt::greaterThan(overlayDimensionsRelative_.get(), tgt::vec2(0.f))))
             overlayInport_.resize(overlayDimensionsRelative_.get() * tgt::vec2(outport_.getSize()));
-    }
+    } */
 }
 
 } // namespace voreen

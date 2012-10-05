@@ -85,6 +85,7 @@
         ) \
     /**/
 
+
 #endif // BOOST_MPL_CFG_NO_OWN_PP_PRIMITIVES
 
 #define BOOST_MPL_PP_DEF_PARAMS_TAIL(i, param, value) \

@@ -45,11 +45,11 @@ TabbedView::TabbedView()
     , tabText2_("tabText2", "Tab 2 Label:", "Tab 2")
     , tabText3_("tabText3", "Tab 3 Label:", "Tab 3")
     , tabText4_("tabText4", "Tab 4 Label:", "Tab 4")
-    , outport_(Port::OUTPORT, "outport")
-    , inport1_(Port::INPORT, "inport1")
-    , inport2_(Port::INPORT, "inport2")
-    , inport3_(Port::INPORT, "inport3")
-    , inport4_(Port::INPORT, "inport4")
+    , outport_(Port::OUTPORT, "outport", "Image Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
+    , inport1_(Port::INPORT, "inport1", "Image1 Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+    , inport2_(Port::INPORT, "inport2", "Image2 Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+    , inport3_(Port::INPORT, "inport3", "Image3 Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+    , inport4_(Port::INPORT, "inport4", "Image4 Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
     , insideViewPort_(false)
     , mouseOverButton_(-1)
     , isDragging_(false)
@@ -89,10 +89,7 @@ TabbedView::TabbedView()
     addPort(inport3_);
     addPort(inport4_);
 
-    inport1_.sizeOriginChanged(this);
-    inport2_.sizeOriginChanged(this);
-    inport3_.sizeOriginChanged(this);
-    inport4_.sizeOriginChanged(this);
+    outport_.onSizeReceiveChange<TabbedView>(this, &TabbedView::updateSizes);
 }
 
 TabbedView::~TabbedView() {
@@ -252,13 +249,7 @@ void TabbedView::process() {
 
 void TabbedView::initialize() throw (tgt::Exception) {
     RenderProcessor::initialize();
-}
-
-void TabbedView::portResized(RenderPort* /*p*/, tgt::ivec2 newsize) {
-    outport_.resize(newsize);
-
     updateSizes();
-    invalidate();
 }
 
 int TabbedView::getBorderWidth() {
@@ -273,25 +264,25 @@ int TabbedView::getBorderWidth() {
 }
 
 ivec2 TabbedView::getInternalSize() {
-    if (outport_.getSize() == tgt::ivec2(0))
+    if (outport_.getReceivedSize() == tgt::ivec2(0))
         return ivec2(0, 0);
     else {
         if(!hideTabbar_.get())
-            return outport_.getSize() - ivec2(0, getBorderWidth());
+            return outport_.getReceivedSize() - ivec2(0, getBorderWidth());
         else
-            return outport_.getSize();
+            return outport_.getReceivedSize();
     }
 }
 
 void TabbedView::updateSizes() {
-    if (outport_.getSize() == tgt::ivec2(0))
+    if (outport_.getReceivedSize() == tgt::ivec2(0))
         return;
 
     tgt::ivec2 subsize = getInternalSize();
-    inport1_.resize(subsize);
-    inport2_.resize(subsize);
-    inport3_.resize(subsize);
-    inport4_.resize(subsize);
+    inport1_.requestSize(subsize);
+    inport2_.requestSize(subsize);
+    inport3_.requestSize(subsize);
+    inport4_.requestSize(subsize);
 }
 
 void TabbedView::handleMouseEvent(tgt::MouseEvent* e) {
@@ -428,22 +419,6 @@ void TabbedView::handleMouseEvent(tgt::MouseEvent* e) {
             }
         }
     }
-}
-
-void TabbedView::sizeOriginChanged(RenderPort* /*p*/) {
-}
-
-bool TabbedView::testSizeOrigin(const RenderPort* p, void* so) const {
-    if(p->getSizeOrigin() == so)
-        return true;
-
-    if(!so)
-        return true;
-
-    if(!p->getSizeOrigin())
-        return true;
-
-    return false;
 }
 
 void TabbedView::invalidate(int inv) {

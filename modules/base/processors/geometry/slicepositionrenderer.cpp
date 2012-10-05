@@ -48,7 +48,7 @@ SlicePositionRenderer::SlicePositionRenderer()
     , stipplePattern_("boundingBoxStipplePattern", "Stipple Pattern", 65535, 1,65535)
     , renderPlanes_("renderPlanes", "Render Planes", true)
     , planeAlphaFactor_("planeAlpha", "Plane Alpha Factor", 0.25f, 0.f, 1.f)
-    , inport_(Port::INPORT, "volume")
+    , inport_(Port::INPORT, "volume", "Volume Input")
 {
     addPort(inport_);
 

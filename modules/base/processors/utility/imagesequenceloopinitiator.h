@@ -35,6 +35,7 @@ namespace voreen {
  * All images of the input sequence are processed by the loop.
  */
 class ImageSequenceLoopInitiator : public RenderProcessor {
+
 public:
     ImageSequenceLoopInitiator();
     virtual Processor* create() const;
@@ -62,7 +63,7 @@ protected:
 
     ImageSequencePort inport_;
     RenderPort outport_;
-    Port loopInport_;
+    LoopPort loopInport_;
 
     static const std::string loggerCat_; ///< category used in logging
 };

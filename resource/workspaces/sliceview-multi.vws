@@ -1,0 +1,1366 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="" readonly="true">
+        <ProcessorNetwork version="13">
+            <MetaData>
+                <MetaItem name="autoLinkCameras" type="BoolMetaData" value="false" />
+            </MetaData>
+            <Processors>
+                <Processor type="VolumeSource" name="VolumeSource" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-231" y="-318" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeURL" url="../volumes/walnut.vvd?preferredReader=VvdVolumeReader" />
+                    </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="MultiSliceViewer" name="MultiSliceViewer" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-302" y="-164" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="alignCameraButton" lod="1" id="ref11" />
+                        <Property name="blendingFactor1" value="0.5" id="ref23" />
+                        <Property name="blendingFactor2" value="0.5" id="ref31" />
+                        <Property name="blendingFactor3" lod="1" value="0.5" id="ref35" />
+                        <Property name="blendingFactor4" lod="1" value="0.5" id="ref39" />
+                        <Property name="blendingMode1" value="maximumAlpha" id="ref21" />
+                        <Property name="blendingMode2" value="over" id="ref27" />
+                        <Property name="blendingMode3" lod="1" value="maximumAlpha" id="ref33" />
+                        <Property name="blendingMode4" lod="1" value="maximumAlpha" id="ref37" />
+                        <Property name="cacheSize" value="20" />
+                        <Property name="camera" lod="1" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="2.671875" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="149" y="496" />
+                            </MetaData>
+                            <position x="0" y="0" z="-1.3359375" />
+                            <focus x="0" y="0" z="0" />
+                            <upVector x="0" y="-1" z="0" />
+                        </Property>
+                        <Property name="mainInport" value="1" id="ref9" />
+                        <Property name="plane" lod="1">
+                            <value x="-0" y="-0" z="1" />
+                        </Property>
+                        <Property name="planeDist" lod="1" value="-0.2421875" />
+                        <Property name="restrictToMainVolume" value="true" id="ref7" />
+                        <Property name="samplingRate" value="2" id="ref63" />
+                        <Property name="sliceAlignmentProp" lod="1" value="xy-plane" />
+                        <Property name="sliceIndex" lod="1" value="41" />
+                        <Property name="textureBorderIntensity" value="0" id="ref57" />
+                        <Property name="textureClampMode1_" value="clamp-to-edge" id="ref49" />
+                        <Property name="textureClampMode2_" value="clamp-to-edge" id="ref51" />
+                        <Property name="textureClampMode3_" lod="1" value="clamp-to-edge" id="ref53" />
+                        <Property name="textureClampMode4_" lod="1" value="clamp-to-edge" id="ref55" />
+                        <Property name="textureFilterMode1_" value="linear" id="ref41" />
+                        <Property name="textureFilterMode2_" value="linear" id="ref43" />
+                        <Property name="textureFilterMode3_" lod="1" value="linear" id="ref45" />
+                        <Property name="textureFilterMode4_" lod="1" value="linear" id="ref47" />
+                        <Property name="textureMode1" value="3d-texture" id="ref59" />
+                        <Property name="textureMode2" value="3d-texture" id="ref25" />
+                        <Property name="textureMode3" lod="1" value="3d-texture" id="ref29" />
+                        <Property name="textureMode4" lod="1" value="3d-texture" id="ref61" />
+                        <Property name="transferFunction1" AlwaysFitDomain="false" id="ref13">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0" split="false">
+                                        <colorL r="0" g="0" b="0" a="255" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="1" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="0.28789195" />
+                            </TransferFunction>
+                        </Property>
+                        <Property name="transferFunction2" AlwaysFitDomain="false" id="ref15">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.134868" split="false">
+                                        <colorL r="153" g="0" b="255" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.31889763" split="false">
+                                        <colorL r="129" g="90" b="255" a="102" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.52362204" split="false">
+                                        <colorL r="255" g="0" b="0" a="91" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.74409449" split="false">
+                                        <colorL r="4" g="255" b="0" a="110" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.95669293" split="false">
+                                        <colorL r="88" g="255" b="86" a="163" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="1" />
+                            </TransferFunction>
+                        </Property>
+                        <Property name="transferFunction3" lod="1" AlwaysFitDomain="false" id="ref17">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0" split="false">
+                                        <colorL r="0" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="1" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="1" />
+                            </TransferFunction>
+                        </Property>
+                        <Property name="transferFunction4" lod="1" AlwaysFitDomain="false" id="ref19">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0" split="false">
+                                        <colorL r="0" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="1" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="1" />
+                            </TransferFunction>
+                        </Property>
+                    </Properties>
+                    <Inports>
+                        <Port name="volume1">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                        <Port name="volume2">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                        <Port name="volume3">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                        <Port name="volume4">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="geometry">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                        <Port name="output">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="output.renderSizeReceive" id="ref96">
+                                    <value x="251" y="307" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="text">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers>
+                        <Handler name="interactionHandler">
+                            <Properties>
+                                <Property name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                        <Handler name="mouseWheelHandler">
+                            <Properties>
+                                <Property name="mouseWheelHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="98" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="MultiSliceViewer" name="MultiSliceViewer 2" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-165" y="-164" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="alignCameraButton" lod="1" id="ref12" />
+                        <Property name="blendingFactor1" lod="1" value="0.5" id="ref24" />
+                        <Property name="blendingFactor2" lod="1" value="0.5" id="ref32" />
+                        <Property name="blendingFactor3" lod="1" value="0.5" id="ref36" />
+                        <Property name="blendingFactor4" lod="1" value="0.5" id="ref40" />
+                        <Property name="blendingMode1" lod="1" value="maximumAlpha" id="ref22" />
+                        <Property name="blendingMode2" lod="1" value="over" id="ref28" />
+                        <Property name="blendingMode3" lod="1" value="maximumAlpha" id="ref34" />
+                        <Property name="blendingMode4" lod="1" value="maximumAlpha" id="ref38" />
+                        <Property name="cacheSize" lod="1" value="21" id="ref69" />
+                        <Property name="camera" lod="1" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="2.25" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1276" y="4" />
+                            </MetaData>
+                            <position x="0" y="-1.125" z="0" />
+                            <focus x="0" y="0" z="0" />
+                            <upVector x="-0" y="-0" z="1" />
+                        </Property>
+                        <Property name="mainInport" lod="1" value="1" id="ref10" />
+                        <Property name="plane" lod="1">
+                            <value x="0" y="1" z="0" />
+                        </Property>
+                        <Property name="planeDist" lod="1" value="-0.2265625" />
+                        <Property name="restrictToMainVolume" lod="1" value="true" id="ref8" />
+                        <Property name="samplingRate" lod="1" value="2" id="ref64" />
+                        <Property name="sliceAlignmentProp" lod="1" value="xz-plane" />
+                        <Property name="sliceIndex" lod="1" value="33" />
+                        <Property name="textureBorderIntensity" lod="1" value="0" id="ref58" />
+                        <Property name="textureClampMode1_" lod="1" value="clamp-to-edge" id="ref50" />
+                        <Property name="textureClampMode2_" lod="1" value="clamp-to-edge" id="ref52" />
+                        <Property name="textureClampMode3_" lod="1" value="clamp-to-edge" id="ref54" />
+                        <Property name="textureClampMode4_" lod="1" value="clamp-to-edge" id="ref56" />
+                        <Property name="textureFilterMode1_" lod="1" value="linear" id="ref42" />
+                        <Property name="textureFilterMode2_" lod="1" value="linear" id="ref44" />
+                        <Property name="textureFilterMode3_" lod="1" value="linear" id="ref46" />
+                        <Property name="textureFilterMode4_" lod="1" value="linear" id="ref48" />
+                        <Property name="textureMode1" lod="1" value="3d-texture" id="ref60" />
+                        <Property name="textureMode2" lod="1" value="3d-texture" id="ref26" />
+                        <Property name="textureMode3" lod="1" value="3d-texture" id="ref30" />
+                        <Property name="textureMode4" lod="1" value="3d-texture" id="ref62" />
+                        <Property name="transferFunction1" lod="1" AlwaysFitDomain="false" id="ref14">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0" split="false">
+                                        <colorL r="0" g="0" b="0" a="255" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="1" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="0.28789195" />
+                            </TransferFunction>
+                        </Property>
+                        <Property name="transferFunction2" lod="1" AlwaysFitDomain="false" id="ref16">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.134868" split="false">
+                                        <colorL r="153" g="0" b="255" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.31889763" split="false">
+                                        <colorL r="129" g="90" b="255" a="102" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.52362204" split="false">
+                                        <colorL r="255" g="0" b="0" a="91" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.74409449" split="false">
+                                        <colorL r="4" g="255" b="0" a="110" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.95669293" split="false">
+                                        <colorL r="88" g="255" b="86" a="163" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="1" />
+                            </TransferFunction>
+                        </Property>
+                        <Property name="transferFunction3" lod="1" AlwaysFitDomain="false" id="ref18">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0" split="false">
+                                        <colorL r="0" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="1" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="1" />
+                            </TransferFunction>
+                        </Property>
+                        <Property name="transferFunction4" lod="1" AlwaysFitDomain="false" id="ref20">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0" split="false">
+                                        <colorL r="0" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="1" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="1" />
+                            </TransferFunction>
+                        </Property>
+                    </Properties>
+                    <Inports>
+                        <Port name="volume1">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                        <Port name="volume2">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                        <Port name="volume3">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                        <Port name="volume4">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="geometry">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                        <Port name="output">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="output.renderSizeReceive" id="ref98">
+                                    <value x="251" y="307" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="text">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers>
+                        <Handler name="interactionHandler">
+                            <Properties>
+                                <Property name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                        <Handler name="mouseWheelHandler">
+                            <Properties>
+                                <Property name="mouseWheelHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="98" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="MultiSliceViewer" name="MultiSliceViewer 3" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-19" y="-164" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="alignCameraButton" lod="1" id="ref78" />
+                        <Property name="blendingFactor1" lod="1" value="0.5" id="ref66" />
+                        <Property name="blendingFactor2" lod="1" value="0.5" id="ref71" />
+                        <Property name="blendingFactor3" lod="1" value="0.5" id="ref81" />
+                        <Property name="blendingFactor4" lod="1" value="0.5" id="ref83" />
+                        <Property name="blendingMode1" lod="1" value="maximumAlpha" id="ref77" />
+                        <Property name="blendingMode2" lod="1" value="over" id="ref68" />
+                        <Property name="blendingMode3" lod="1" value="maximumAlpha" id="ref80" />
+                        <Property name="blendingMode4" lod="1" value="maximumAlpha" id="ref82" />
+                        <Property name="cacheSize" lod="1" value="21" id="ref70" />
+                        <Property name="camera" lod="1" projectionMode="0" frustLeft="-0.890625" frustRight="0.890625" frustBottom="-0.890625" frustTop="0.890625" frustNear="0.01" frustFar="3" fovy="178.71340942" eyeMode="1" eyeSeparation="1" axisMode="0">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1276" y="4" />
+                            </MetaData>
+                            <position x="-1.5" y="0" z="0" />
+                            <focus x="0" y="0" z="0" />
+                            <upVector x="-0" y="-0" z="1" />
+                        </Property>
+                        <Property name="mainInport" lod="1" value="1" id="ref65" />
+                        <Property name="plane" lod="1">
+                            <value x="1" y="0" z="0" />
+                        </Property>
+                        <Property name="planeDist" lod="1" value="-0.1328125" />
+                        <Property name="restrictToMainVolume" lod="1" value="true" id="ref73" />
+                        <Property name="samplingRate" lod="1" value="2" id="ref67" />
+                        <Property name="sliceAlignmentProp" lod="1" value="yz-plane" />
+                        <Property name="sliceIndex" lod="1" value="55" />
+                        <Property name="textureBorderIntensity" lod="1" value="0" id="ref92" />
+                        <Property name="textureClampMode1_" lod="1" value="clamp-to-edge" id="ref88" />
+                        <Property name="textureClampMode2_" lod="1" value="clamp-to-edge" id="ref89" />
+                        <Property name="textureClampMode3_" lod="1" value="clamp-to-edge" id="ref90" />
+                        <Property name="textureClampMode4_" lod="1" value="clamp-to-edge" id="ref91" />
+                        <Property name="textureFilterMode1_" lod="1" value="linear" id="ref84" />
+                        <Property name="textureFilterMode2_" lod="1" value="linear" id="ref85" />
+                        <Property name="textureFilterMode3_" lod="1" value="linear" id="ref86" />
+                        <Property name="textureFilterMode4_" lod="1" value="linear" id="ref87" />
+                        <Property name="textureMode1" lod="1" value="3d-texture" id="ref93" />
+                        <Property name="textureMode2" lod="1" value="3d-texture" id="ref72" />
+                        <Property name="textureMode3" lod="1" value="3d-texture" id="ref94" />
+                        <Property name="textureMode4" lod="1" value="3d-texture" />
+                        <Property name="transferFunction1" lod="1" AlwaysFitDomain="false" id="ref74">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0" split="false">
+                                        <colorL r="0" g="0" b="0" a="255" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="1" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="0.28789195" />
+                            </TransferFunction>
+                        </Property>
+                        <Property name="transferFunction2" lod="1" AlwaysFitDomain="false" id="ref79">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.134868" split="false">
+                                        <colorL r="153" g="0" b="255" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.31889763" split="false">
+                                        <colorL r="129" g="90" b="255" a="102" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.52362204" split="false">
+                                        <colorL r="255" g="0" b="0" a="91" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.74409449" split="false">
+                                        <colorL r="4" g="255" b="0" a="110" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.95669293" split="false">
+                                        <colorL r="88" g="255" b="86" a="163" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="1" />
+                            </TransferFunction>
+                        </Property>
+                        <Property name="transferFunction3" lod="1" AlwaysFitDomain="false" id="ref75">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0" split="false">
+                                        <colorL r="0" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="1" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="1" />
+                            </TransferFunction>
+                        </Property>
+                        <Property name="transferFunction4" lod="1" AlwaysFitDomain="false" id="ref76">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0" split="false">
+                                        <colorL r="0" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="1" split="false">
+                                        <colorL r="255" g="255" b="255" a="255" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="1" />
+                            </TransferFunction>
+                        </Property>
+                    </Properties>
+                    <Inports>
+                        <Port name="volume1">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                        <Port name="volume2">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                        <Port name="volume3">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                        <Port name="volume4">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="geometry">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                        <Port name="output">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="output.renderSizeReceive" id="ref100">
+                                    <value x="251" y="307" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="text">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers>
+                        <Handler name="interactionHandler">
+                            <Properties>
+                                <Property name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                        <Handler name="mouseWheelHandler">
+                            <Properties>
+                                <Property name="mouseWheelHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="98" keyCode="0" modifier="0" shareEvents="false" />
+                            </Properties>
+                        </Handler>
+                    </InteractionHandlers>
+                </Processor>
+                <Processor type="Canvas" name="Canvas" id="ref5">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-181" y="110" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="329" y="462" width="755" height="307" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="329" y="462" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="755" y="307" />
+                        </MetaItem>
+                    </MetaData>
+                    <Properties>
+                        <Property name="canvasSize" lod="1">
+                            <value x="755" y="307" />
+                        </Property>
+                        <Property name="saveScreenshot" lod="1" />
+                        <Property name="screenshotFilename" lod="1" noPathSet="true" value="" />
+                        <Property name="showCursor" lod="1" value="true" />
+                        <Property name="showFullScreen" lod="1" value="false" />
+                    </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref101">
+                                    <value x="755" y="307" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="TripleView" name="TripleView" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-182" y="7" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="gridColor" lod="1">
+                            <value x="1" y="1" z="1" w="1" />
+                        </Property>
+                        <Property name="maximizeOnDoubleClick" lod="1" value="true" />
+                        <Property name="maximized" lod="1" value="0" />
+                        <Property name="mouseEvent.maximize" lod="1" enabled="true" mouseAction="8" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                        <Property name="mouseEvent.move" lod="1" enabled="true" mouseAction="103" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
+                        <Property name="showGrid" lod="1" value="true" />
+                    </Properties>
+                    <Inports>
+                        <Port name="inport1">
+                            <Properties>
+                                <Property name="inport1.renderSizeOrigin" id="ref95">
+                                    <value x="251" y="307" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport2">
+                            <Properties>
+                                <Property name="inport2.renderSizeOrigin" id="ref97">
+                                    <value x="251" y="307" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport3">
+                            <Properties>
+                                <Property name="inport3.renderSizeOrigin" id="ref99">
+                                    <value x="251" y="307" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outport">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="outport.renderSizeReceive" id="ref102">
+                                    <value x="755" y="307" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSource" name="VolumeSource 2" id="ref6">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-80" y="-318" />
+                    </MetaData>
+                    <Properties>
+                        <Property name="volumeURL" url="../volumes/nucleon.vvd?preferredReader=VvdVolumeReader" />
+                    </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volume1">
+                        <Processor type="MultiSliceViewer" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volume1">
+                        <Processor type="MultiSliceViewer" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volume1">
+                        <Processor type="MultiSliceViewer" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="output">
+                        <Processor type="MultiSliceViewer" ref="ref1" />
+                    </Outport>
+                    <Inport name="inport1">
+                        <Processor type="TripleView" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="output">
+                        <Processor type="MultiSliceViewer" ref="ref2" />
+                    </Outport>
+                    <Inport name="inport2">
+                        <Processor type="TripleView" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="output">
+                        <Processor type="MultiSliceViewer" ref="ref3" />
+                    </Outport>
+                    <Inport name="inport3">
+                        <Processor type="TripleView" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="outport">
+                        <Processor type="TripleView" ref="ref4" />
+                    </Outport>
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref5" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref6" />
+                    </Outport>
+                    <Inport name="volume2">
+                        <Processor type="MultiSliceViewer" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref6" />
+                    </Outport>
+                    <Inport name="volume2">
+                        <Processor type="MultiSliceViewer" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref6" />
+                    </Outport>
+                    <Inport name="volume2">
+                        <Processor type="MultiSliceViewer" ref="ref3" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks>
+                <PropertyLink>
+                    <SourceProperty type="BoolProperty" ref="ref7" />
+                    <DestinationProperty type="BoolProperty" ref="ref8" />
+                    <Evaluator type="LinkEvaluatorBoolId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="BoolProperty" ref="ref8" />
+                    <DestinationProperty type="BoolProperty" ref="ref7" />
+                    <Evaluator type="LinkEvaluatorBoolId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref9" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref10" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref10" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref9" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="ButtonProperty" ref="ref11" />
+                    <DestinationProperty type="ButtonProperty" ref="ref12" />
+                    <Evaluator type="LinkEvaluatorButtonId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="ButtonProperty" ref="ref12" />
+                    <DestinationProperty type="ButtonProperty" ref="ref11" />
+                    <Evaluator type="LinkEvaluatorButtonId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref13" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref14" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref14" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref13" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref15" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref16" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref16" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref15" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref17" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref18" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref18" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref19" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref20" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref20" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref19" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref21" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref22" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref22" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref21" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref23" />
+                    <DestinationProperty type="FloatProperty" ref="ref24" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref24" />
+                    <DestinationProperty type="FloatProperty" ref="ref23" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref25" />
+                    <DestinationProperty ref="ref26" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref26" />
+                    <DestinationProperty ref="ref25" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref27" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref28" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref28" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref27" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref29" />
+                    <DestinationProperty ref="ref30" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref30" />
+                    <DestinationProperty ref="ref29" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref31" />
+                    <DestinationProperty type="FloatProperty" ref="ref32" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref32" />
+                    <DestinationProperty type="FloatProperty" ref="ref31" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref33" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref34" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref34" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref33" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref35" />
+                    <DestinationProperty type="FloatProperty" ref="ref36" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref36" />
+                    <DestinationProperty type="FloatProperty" ref="ref35" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref37" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref38" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref38" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref37" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref39" />
+                    <DestinationProperty type="FloatProperty" ref="ref40" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref40" />
+                    <DestinationProperty type="FloatProperty" ref="ref39" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref41" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref42" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref42" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref41" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref43" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref44" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref44" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref43" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref45" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref46" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref46" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref45" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref47" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref48" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref48" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref47" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref49" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref50" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref50" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref49" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref51" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref52" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref52" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref51" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref53" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref54" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref54" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref53" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref55" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref56" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref56" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref55" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref57" />
+                    <DestinationProperty type="FloatProperty" ref="ref58" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref58" />
+                    <DestinationProperty type="FloatProperty" ref="ref57" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref59" />
+                    <DestinationProperty ref="ref60" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref60" />
+                    <DestinationProperty ref="ref59" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref61" />
+                    <DestinationProperty ref="ref62" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref62" />
+                    <DestinationProperty ref="ref61" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref63" />
+                    <DestinationProperty type="FloatProperty" ref="ref64" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref64" />
+                    <DestinationProperty type="FloatProperty" ref="ref63" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref10" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref65" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref65" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref10" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref24" />
+                    <DestinationProperty type="FloatProperty" ref="ref66" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref66" />
+                    <DestinationProperty type="FloatProperty" ref="ref24" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref64" />
+                    <DestinationProperty type="FloatProperty" ref="ref67" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref67" />
+                    <DestinationProperty type="FloatProperty" ref="ref64" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref28" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref68" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref68" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref28" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntegerProperty" ref="ref69" />
+                    <DestinationProperty type="IntegerProperty" ref="ref70" />
+                    <Evaluator type="LinkEvaluatorIntId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntegerProperty" ref="ref70" />
+                    <DestinationProperty type="IntegerProperty" ref="ref69" />
+                    <Evaluator type="LinkEvaluatorIntId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref32" />
+                    <DestinationProperty type="FloatProperty" ref="ref71" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref71" />
+                    <DestinationProperty type="FloatProperty" ref="ref32" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref26" />
+                    <DestinationProperty ref="ref72" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref72" />
+                    <DestinationProperty ref="ref26" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="BoolProperty" ref="ref8" />
+                    <DestinationProperty type="BoolProperty" ref="ref73" />
+                    <Evaluator type="LinkEvaluatorBoolId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="BoolProperty" ref="ref73" />
+                    <DestinationProperty type="BoolProperty" ref="ref8" />
+                    <Evaluator type="LinkEvaluatorBoolId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref14" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref74" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref74" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref14" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref18" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref75" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref75" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref18" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref20" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref76" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref76" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref20" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref22" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref77" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref77" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref22" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="ButtonProperty" ref="ref12" />
+                    <DestinationProperty type="ButtonProperty" ref="ref78" />
+                    <Evaluator type="LinkEvaluatorButtonId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="ButtonProperty" ref="ref78" />
+                    <DestinationProperty type="ButtonProperty" ref="ref12" />
+                    <Evaluator type="LinkEvaluatorButtonId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref16" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref79" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref79" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref16" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref34" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref80" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref80" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref34" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref36" />
+                    <DestinationProperty type="FloatProperty" ref="ref81" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref81" />
+                    <DestinationProperty type="FloatProperty" ref="ref36" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref38" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref82" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="StringOptionProperty" ref="ref82" />
+                    <DestinationProperty type="StringOptionProperty" ref="ref38" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref40" />
+                    <DestinationProperty type="FloatProperty" ref="ref83" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref83" />
+                    <DestinationProperty type="FloatProperty" ref="ref40" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref42" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref84" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref84" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref42" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref44" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref85" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref85" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref44" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref46" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref86" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref86" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref46" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref48" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref87" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntOptionProperty" ref="ref87" />
+                    <DestinationProperty type="IntOptionProperty" ref="ref48" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref50" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref88" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref88" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref50" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref52" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref89" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref89" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref52" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref54" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref90" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref90" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref54" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref56" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref91" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="GLEnumOptionProperty" ref="ref91" />
+                    <DestinationProperty type="GLEnumOptionProperty" ref="ref56" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref58" />
+                    <DestinationProperty type="FloatProperty" ref="ref92" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref92" />
+                    <DestinationProperty type="FloatProperty" ref="ref58" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref60" />
+                    <DestinationProperty ref="ref93" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref93" />
+                    <DestinationProperty ref="ref60" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref30" />
+                    <DestinationProperty ref="ref94" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref94" />
+                    <DestinationProperty ref="ref30" />
+                    <Evaluator type="LinkEvaluatorStringId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref95" />
+                    <DestinationProperty ref="ref96" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref97" />
+                    <DestinationProperty ref="ref98" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref99" />
+                    <DestinationProperty ref="ref100" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref101" />
+                    <DestinationProperty ref="ref102" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+            </PropertyLinks>
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

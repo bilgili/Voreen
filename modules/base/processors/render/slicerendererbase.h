@@ -161,9 +161,6 @@ protected:
     TransFuncProperty transferFunc_;
 
     OptionProperty<TextureMode> texMode_;     ///< use 2D slice textures or 3D volume texture?
-    IntOptionProperty texFilterMode_;         ///< texture filtering mode to use for volume access
-    GLEnumOptionProperty texClampMode_;       ///< texture clamp mode to use for the volume
-    FloatProperty texBorderIntensity_;        ///< clamp border intensity
 
     tgt::Shader* sliceShader_;
     tgt::Shader* legendShader_;               ///< shader for blending the legend over the slice

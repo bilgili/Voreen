@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="11">
+        <ProcessorNetwork version="13">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -17,21 +17,45 @@
                     <Properties>
                         <Property name="volumeURL" url="input/flow/carotid.flow?preferredReader=FlowReader" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas" id="ref3">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-52" y="14" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="47" y="138" width="655" height="535" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="47" y="138" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="655" y="535" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize">
                             <value x="655" y="535" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/rendering.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/rendering.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref4">
+                                    <value x="655" y="535" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Background" name="Background" id="ref2">
@@ -48,8 +72,19 @@
                             <value x="0.2" y="0.2" z="0.2" w="1" />
                         </Property>
                         <Property name="repeat" value="1" />
-                        <Property name="texture" value="" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="texture" noPathSet="false" value="" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="StreamlineRenderer3D" name="StreamlineRenderer3D" id="ref1">
@@ -81,6 +116,20 @@
                         <Property name="useBoundingBoxProp" value="true" />
                         <Property name="useCoordinateAxisProp" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.flow">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.streamlines">
+                            <Properties>
+                                <Property name="image.streamlines.renderSizeReceive" id="ref5">
+                                    <value x="655" y="535" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -130,10 +179,13 @@
                 </Connection>
             </Connections>
             <CoProcessorConnections />
-            <PropertyLinks />
-            <PropertyStateCollections />
-            <PropertyStateFileReferences />
-            <PropertyStateDirectoryReferences />
+            <PropertyLinks>
+                <PropertyLink>
+                    <SourceProperty ref="ref4" />
+                    <DestinationProperty ref="ref5" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+            </PropertyLinks>
         </ProcessorNetwork>
         <Animation />
     </Workspace>

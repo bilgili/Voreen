@@ -40,7 +40,7 @@ const std::string ValuedRegionalMaximaImageFilter::loggerCat_("voreen.ValuedRegi
 ValuedRegionalMaximaImageFilter::ValuedRegionalMaximaImageFilter()
     : ITKProcessor(),
     inport_(Port::INPORT, "input"),
-    outport_(Port::OUTPORT, "output", 0)
+    outport_(Port::OUTPORT, "output")
 {
     addPort(inport_);
     addPort(outport_);

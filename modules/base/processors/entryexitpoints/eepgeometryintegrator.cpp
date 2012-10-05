@@ -35,13 +35,13 @@ const std::string EEPGeometryIntegrator::loggerCat_("voreen.EEPGeometryIntegrato
 
 EEPGeometryIntegrator::EEPGeometryIntegrator()
     : ImageProcessor("eep_geometry")
-    , inport0_(Port::INPORT, "image.entry")
-    , inport1_(Port::INPORT, "image.exit")
-    , geometryPort_(Port::INPORT, "image.geometry")
-    , volumeInport_(Port::INPORT, "volumehandle.volumehandle", false, Processor::INVALID_RESULT)
-    , entryPort_(Port::OUTPORT, "image.postentry", true, Processor::INVALID_PROGRAM)
-    , exitPort_(Port::OUTPORT, "image.postexit", true, Processor::INVALID_PROGRAM)
-    , tmpPort_(Port::OUTPORT, "image.tmp", false)
+    , inport0_(Port::INPORT, "image.entry", "Entry Input")
+    , inport1_(Port::INPORT, "image.exit", "Exit Input")
+    , geometryPort_(Port::INPORT, "image.geometry", "Geometry Image Input")
+    , volumeInport_(Port::INPORT, "volumehandle.volumehandle", "Volume Input", false, Processor::INVALID_RESULT)
+    , entryPort_(Port::OUTPORT, "image.postentry", "Entry Output", true, Processor::INVALID_PROGRAM)
+    , exitPort_(Port::OUTPORT, "image.postexit", "Exit Output", true, Processor::INVALID_PROGRAM)
+    , tmpPort_(Port::OUTPORT, "image.tmp", "image.tmp", false)
     , useFloatRenderTargets_("useFloatRenderTargets", "Use float rendertargets", false)
     , camera_("camera", "Camera", tgt::Camera(tgt::vec3(0.f, 0.f, 3.5f), tgt::vec3(0.f, 0.f, 0.f), tgt::vec3(0.f, 1.f, 0.f)))
 {
@@ -62,7 +62,7 @@ Processor* EEPGeometryIntegrator::create() const {
 }
 
 void EEPGeometryIntegrator::beforeProcess() {
-    RenderProcessor::beforeProcess();
+    ImageProcessor::beforeProcess();
 
     RenderPort& refPort = (entryPort_.isReady() ? entryPort_ : exitPort_);
 

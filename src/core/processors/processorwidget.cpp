@@ -79,6 +79,10 @@ bool ProcessorWidget::isInitialized() const {
     return initialized_;
 }
 
+const Processor* ProcessorWidget::getProcessor() const {
+    return processor_;
+}
+
 void ProcessorWidget::saveGeometryToMeta() {
     tgtAssert(processor_, "No processor");
 

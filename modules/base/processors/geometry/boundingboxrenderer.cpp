@@ -36,8 +36,8 @@ const std::string BoundingBoxRenderer::loggerCat_("voreen.base.BoundingBoxRender
 
 BoundingBoxRenderer::BoundingBoxRenderer()
     : GeometryRendererBase()
-    , volumeInport_(Port::INPORT, "volume")
-    , geometryInport_(Port::INPORT, "geometry")
+    , volumeInport_(Port::INPORT, "volume", "Volume Input")
+    , geometryInport_(Port::INPORT, "geometry", "Geometry Input")
     , bboxColor_("boundingboxColor", "Color", tgt::vec4(0.8f, 0.8f, 0.8f, 1.0f))
     , width_("boundingBoxWidth", "Line width", 1.0f, 1.0f, 10.0f)
     , stippleFactor_("boundingBoxStippleFactor", "Stipple factor", 1, 0, 255)

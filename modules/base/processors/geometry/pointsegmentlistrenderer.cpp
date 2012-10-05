@@ -52,7 +52,7 @@ PointSegmentListRenderer::PointSegmentListRenderer()
       pointSmooth_("pointSmooth", "Point Smooth", false),
       sphereDiameter_("sphereDiameter", "Sphere Diameter", 0.01f, 0.001f, 0.1f),
       sphereSlicesStacks_("sphereSlicesStacks", "Sphere Slices/Stacks", 20, 10, 100),
-      geometryInport_(Port::INPORT, "geometry.input")
+      geometryInport_(Port::INPORT, "geometry.input", "Geometry Input")
 {
     color_.setViews(Property::COLOR);
 

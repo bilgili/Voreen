@@ -34,8 +34,8 @@ const std::string VolumeOffset::loggerCat_("voreen.base.VolumeOffset");
 
 VolumeOffset::VolumeOffset()
     : VolumeProcessor(),
-    inport_(Port::INPORT, "volumehandle.input"),
-    outport_(Port::OUTPORT, "volumehandle.output", 0),
+    inport_(Port::INPORT, "volumehandle.input", "Volume Input"),
+    outport_(Port::OUTPORT, "volumehandle.output", "Volume Output", false),
     enableProcessing_("enabled", "Enable", false),
     offset_("offset", "Offset", tgt::vec3(0.0f), tgt::vec3(-100.0), tgt::vec3(100.0))
 {

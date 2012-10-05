@@ -71,6 +71,11 @@ private:
     tgt::Texture* tex_;
 };
 
+//TODO:
+//Slice* getVolumeSlice(const VolumeBase* vh, SliceAlignment alignment, float sliceIndex);
+
+Slice* getVolumeSlice(const VolumeBase* vh, SliceAlignment alignment, int sliceIndex);
+
 Slice* getVolumeSlice(const VolumeBase* vh, tgt::plane pl, float samplingRate);
 
 } // namespace voreen

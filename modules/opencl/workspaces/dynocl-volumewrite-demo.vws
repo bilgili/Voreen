@@ -1,14 +1,11 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <VolumeContainer>
-            <VolumeHandles />
-        </VolumeContainer>
-        <ProcessorNetwork version="10">
+        <ProcessorNetwork version="13">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
-                        <item type="DynamicCLProcessor" ref="ref5" />
+                        <item type="SingleVolumeRaycaster" ref="ref3" />
                     </values>
                 </MetaItem>
                 <MetaItem name="Zoom" type="ZoomMetaData">
@@ -22,13 +19,33 @@
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-473" y="198" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="168" y="219" width="500" height="538" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="168" y="219" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="500" y="538" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize">
                             <value x="500" y="538" />
                         </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" noPathSet="true" value="" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref8">
+                                    <value x="500" y="538" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Background" name="Background" id="ref0">
@@ -45,8 +62,23 @@
                             <value x="0.39215699" y="0.39215699" z="0.39215699" w="1" />
                         </Property>
                         <Property name="repeat" value="1" />
-                        <Property name="texture" value="" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
+                        <Property name="texture" noPathSet="false" value="" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="MeshEntryExitPoints" name="MeshEntryExitPoints" id="ref2">
@@ -54,7 +86,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-401" y="-90" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="50" id="ref6">
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45.00000381" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref7">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="721" y="372" />
                             </MetaData>
@@ -68,9 +100,31 @@
                         <Property name="useCulling" value="true" />
                         <Property name="useFloatRenderTargets" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="proxgeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeReceive" id="ref11">
+                                    <value x="500" y="538" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeReceive" id="ref13">
+                                    <value x="500" y="538" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
+                                <Property name="cameraHandler.adjustCamera" value="bigsizechange" />
                                 <Property name="cameraHandler.interactionMetaphor" value="trackball" />
                                 <Property name="cameraHandler.moveBackward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
                                 <Property name="cameraHandler.moveDown" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
@@ -78,15 +132,17 @@
                                 <Property name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.resetTrackballCenter" />
                                 <Property name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="31" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property name="cameraHandler.shift" lod="1" enabled="true" mouseAction="31" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property name="cameraHandler.shiftTrackballCenter" value="scenecenter" />
                                 <Property name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="31" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
                             </Properties>
                         </Handler>
                     </InteractionHandlers>
                 </Processor>
-                <Processor type="CubeMeshProxyGeometry" name="MeshProxyGeometry" id="ref4">
+                <Processor type="CubeProxyGeometry" name="MeshProxyGeometry" id="ref4">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-401" y="-182" />
                     </MetaData>
@@ -100,20 +156,36 @@
                         <Property name="topClippingPlane" value="127" />
                         <Property name="useClipping" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
-                <Processor type="DynamicCLProcessor" name="DynamicCLProcessor" programModified="true" programFilename="../../../modules/opencl/cl/simple.cl" id="ref5">
+                <Processor type="DynamicCLProcessor" name="DynamicCLProcessor" programModified="true" programFilename="../cl/simple.cl" id="ref5">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-406" y="-315" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="-1262" y="343" width="1192" height="480" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-796" y="-172" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="1637" y="357" width="1194" height="480" />
                     </MetaData>
                     <Properties>
                         <Property name="test" value="8.02000046" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="vol">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-796" y="-172" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="-1504" y="327" width="1194" height="480" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-406" y="-315" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="1637" y="357" width="1194" height="480" />
                     </MetaData>
                     <programSource>
                         <![CDATA[
@@ -158,9 +230,9 @@ __kernel void standardKernel(float test, //$ implicit function control value @mi
                     </MetaData>
                     <Properties>
                         <Property name="applyLightAttenuation" value="false" />
-                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="50" id="ref7">
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45.00000381" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref6">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1660" y="20" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="0" y="0" />
                             </MetaData>
                             <position x="3.96118784" y="-1.09571862" z="1.43155146" />
                             <focus x="0.07758917" y="0.15190507" z="-0.074252" />
@@ -197,14 +269,19 @@ __kernel void standardKernel(float test, //$ implicit function control value @mi
                             <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
                         </Property>
                         <Property name="materialShininess" value="60" />
+                        <Property name="raycast.prg" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="samplingRate" value="2" />
                         <Property name="shading" value="phong" />
                         <Property name="textureBorderIntensity" value="0" />
                         <Property name="textureClampMode_" value="clamp-to-edge" />
                         <Property name="textureFilterMode_" value="linear" />
-                        <Property name="transferFunction">
+                        <Property name="transferFunction" AlwaysFitDomain="false">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="true" x="-1640" y="40" width="493" height="259" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="true" x="1187" y="0" width="493" height="300" />
                             </MetaData>
                             <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
                                 <Keys>
@@ -218,9 +295,52 @@ __kernel void standardKernel(float test, //$ implicit function control value @mi
                                         <colorL r="255" g="0" b="0" a="255" />
                                     </key>
                                 </Keys>
+                                <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeOrigin" id="ref10">
+                                    <value x="500" y="538" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeOrigin" id="ref12">
+                                    <value x="500" y="538" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="image.output.renderSizeReceive" id="ref9">
+                                    <value x="500" y="538" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.output1">
+                            <Properties>
+                                <Property name="image.output1.renderSizeReceive">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.output2">
+                            <Properties>
+                                <Property name="image.output2.renderSizeReceive">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -251,7 +371,7 @@ __kernel void standardKernel(float test, //$ implicit function control value @mi
                 </Connection>
                 <Connection>
                     <Outport name="proxygeometry.geometry">
-                        <Processor type="CubeMeshProxyGeometry" ref="ref4" />
+                        <Processor type="CubeProxyGeometry" ref="ref4" />
                     </Outport>
                     <Inport name="proxgeometry.geometry">
                         <Processor type="MeshEntryExitPoints" ref="ref2" />
@@ -262,7 +382,7 @@ __kernel void standardKernel(float test, //$ implicit function control value @mi
                         <Processor type="DynamicCLProcessor" ref="ref5" />
                     </Outport>
                     <Inport name="volumehandle.volumehandle">
-                        <Processor type="CubeMeshProxyGeometry" ref="ref4" />
+                        <Processor type="CubeProxyGeometry" ref="ref4" />
                     </Inport>
                 </Connection>
                 <Connection>
@@ -285,14 +405,29 @@ __kernel void standardKernel(float test, //$ implicit function control value @mi
             <CoProcessorConnections />
             <PropertyLinks>
                 <PropertyLink>
-                    <SourceProperty ref="ref6" />
-                    <DestinationProperty ref="ref7" />
+                    <SourceProperty type="CameraProperty" ref="ref6" />
+                    <DestinationProperty type="CameraProperty" ref="ref7" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty ref="ref7" />
-                    <DestinationProperty ref="ref6" />
+                    <SourceProperty ref="ref8" />
+                    <DestinationProperty ref="ref9" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref7" />
+                    <DestinationProperty type="CameraProperty" ref="ref6" />
                     <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref10" />
+                    <DestinationProperty ref="ref11" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref12" />
+                    <DestinationProperty ref="ref13" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>

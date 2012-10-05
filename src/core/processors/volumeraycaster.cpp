@@ -24,7 +24,8 @@
  ***********************************************************************************/
 
 #include "voreen/core/processors/volumeraycaster.h"
-#include "voreen/core/utils/voreenpainter.h"
+#include "voreen/core/utils/classificationmodes.h"
+#include "voreen/core/properties/cameraproperty.h"
 
 #include "tgt/vector.h"
 
@@ -57,6 +58,20 @@ VolumeRaycaster::VolumeRaycaster()
     initProperties();
 }
 
+void VolumeRaycaster::initialize() throw (tgt::Exception) {
+    VolumeRenderer::initialize();
+
+    // listen to port size receives on outports
+    const std::vector<Port*> outports = getOutports();
+    for (size_t i=0; i<outports.size(); i++) {
+        RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
+        if (rp && rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER)
+            rp->onSizeReceiveChange<VolumeRaycaster>(this, &VolumeRaycaster::updateInputSizeRequests);
+    }
+
+    updateInputSizeRequests();
+}
+
 /*
     further methods
 */
@@ -75,11 +90,7 @@ std::string VolumeRaycaster::generateHeader(const tgt::GpuCapabilities::GlVersio
         headerSource += "calcGradientFiltered(volume, volumeStruct, samplePos);\n";
 
     // configure classification
-    headerSource += "#define RC_APPLY_CLASSIFICATION(transFunc, transFuncTex, voxel) ";
-    if (classificationMode_.isSelected("none"))
-        headerSource += "vec4(voxel.a);\n";
-    else if (classificationMode_.isSelected("transfer-function"))
-        headerSource += "applyTF(transFunc, transFuncTex, voxel);\n";
+    headerSource += ClassificationModes::getShaderDefineFunction(classificationMode_.get());
 
     // configure shading mode
     headerSource += "#define APPLY_SHADING(n, pos, lPos, cPos, ka, kd, ks) ";
@@ -139,9 +150,7 @@ void VolumeRaycaster::initProperties() {
     gradientMode_.addOption("filtered",             "Filtered"              );
     gradientMode_.select("central-differences");
 
-    classificationMode_.addOption("none", "none");
-    classificationMode_.addOption("transfer-function", "Transfer Function");
-    classificationMode_.select("transfer-function");
+    ClassificationModes::fillProperty(&classificationMode_);
 
     shadeMode_.addOption("none",                   "none"                   );
     shadeMode_.addOption("phong-diffuse",          "Phong (Diffuse)"        );
@@ -185,22 +194,16 @@ void VolumeRaycaster::setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera
     shader->setIgnoreUniformLocationError(false);
 }
 
-void VolumeRaycaster::portResized(RenderPort* p, tgt::ivec2 newsize) {
-    size_ = newsize;
-
-    int scale = 1;
-    if (interactionMode())
-        scale = interactionCoarseness_.get();
-
-    VolumeRenderer::portResized(p, scale*newsize);
-}
-
 void VolumeRaycaster::interactionModeToggled() {
     if (interactionMode()) {
         switchToInteractionMode_ = true;
     }
     else {
         switchToInteractionMode_ = false;
+
+        updateInputSizeRequests();
+
+        /* TODO: remove (used before sizelinking)
 
         if (interactionCoarseness_.get() != 1) {
             // propagate to predecessing RenderProcessors
@@ -227,7 +230,7 @@ void VolumeRaycaster::interactionModeToggled() {
             }
         }
         if(interactionQuality_.get() != 1.0f)
-            invalidate();
+            invalidate(); */
     }
     VolumeRenderer::interactionModeToggled();
 }
@@ -236,6 +239,10 @@ void VolumeRaycaster::invalidate(int inv) {
     if (switchToInteractionMode_) {
         switchToInteractionMode_ = false;
 
+        updateInputSizeRequests();
+
+        /* TODO: remove (used before sizelinking)
+        
         if (interactionCoarseness_.get() != 1) {
             // propagate to predecessing RenderProcessors
             const std::vector<Port*> inports = getInports();
@@ -259,10 +266,22 @@ void VolumeRaycaster::invalidate(int inv) {
                 RenderPort* rp = pports[i];
                 rp->resize(size_ / interactionCoarseness_.get());
             }
-        }
+        } */
     }
 
     VolumeRenderer::invalidate(inv);
+}
+
+float VolumeRaycaster::getSamplingStepSize(const VolumeBase* vol) {
+    tgt::ivec3 dim = vol->getDimensions();
+
+    // use dimension with the highest resolution for calculating the sampling step size
+    float samplingStepSize = 1.f / (tgt::max(dim) * samplingRate_.get());
+
+    if (interactionMode())
+        samplingStepSize /= interactionQuality_.get();
+
+    return samplingStepSize;
 }
 
 bool VolumeRaycaster::bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct> &volumes,
@@ -281,21 +300,90 @@ bool VolumeRaycaster::bindVolumes(tgt::Shader* shader, const std::vector<VolumeS
             LWARNING("No volume texture");
         }
         else {
-            tgt::ivec3 dim = volumes[0].volume_->getDimensions();
-
-            // use dimension with the highest resolution for calculating the sampling step size
-            float samplingStepSize = 1.f / (tgt::max(dim) * samplingRate_.get());
-
-            if (interactionMode())
-                samplingStepSize /= interactionQuality_.get();
-
-            shader->setUniform("samplingStepSize_", samplingStepSize);
+            shader->setUniform("samplingStepSize_", getSamplingStepSize(volumes[0].volume_));
             LGL_ERROR;
         }
     }
     shader->setIgnoreUniformLocationError(false);
 
     return true;
+}
+
+void VolumeRaycaster::adjustRenderOutportSizes() {
+    // detect received size of first connected size receiving outport
+    tgt::ivec2 receivedSize = tgt::ivec2(-1);
+    const std::vector<Port*> outports = getOutports();
+    for (size_t i=0; i<outports.size(); ++i) {
+        RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
+        if (rp && rp->isConnected() && rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER) {
+            receivedSize = rp->getReceivedSize();
+            break;
+        }
+    }
+
+    // if no size has been received, use size of first connected inport
+    if (receivedSize == tgt::ivec2(-1)) {
+        const std::vector<Port*> inports = getInports();
+        for (size_t i=0; i<inports.size(); ++i) {
+            RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
+            if (rp && rp->isConnected()) {
+                receivedSize = rp->getSize();
+                break;
+            }
+        }
+    }
+
+    // if still no valid receivedSize, nothing can be done
+    if (receivedSize == tgt::ivec2(-1))
+        return;
+
+    // set output size to received size, downscaled by coarseness factor if in interaction mode
+    tgt::ivec2 outputSize = receivedSize;
+    if (interactionMode())
+        outputSize /= interactionCoarseness_.get();
+
+    // assign output dimensions to connected render outports
+    bool portsResized = false;
+    for (size_t i=0; i<outports.size(); ++i) {
+        RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
+        if (rp && rp->isConnected() && rp->getSize() != outputSize) {
+            rp->resize(outputSize);
+            portsResized = true;
+        }
+    }
+
+    // resize private render ports to outputSize
+    const std::vector<RenderPort*> privateRenderPorts = getPrivateRenderPorts();
+    for (size_t i=0; i<privateRenderPorts.size(); i++) 
+        privateRenderPorts.at(i)->resize(outputSize);
+}
+
+void VolumeRaycaster::updateInputSizeRequests() {
+    // detect received size of first connected size receiving outport
+    tgt::ivec2 receivedSize = tgt::ivec2(-1);
+    const std::vector<Port*> outports = getOutports();
+    for (size_t i=0; i<outports.size(); ++i) {
+        RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
+        if (rp && rp->isConnected() && rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER) {
+            receivedSize = rp->getReceivedSize();
+            break;
+        }
+    }
+
+    // request received output size from connected inports
+    if (receivedSize != tgt::ivec2(-1)) {
+        tgt::ivec2 requestSize = receivedSize;
+        if (interactionMode())
+            requestSize /= interactionCoarseness_.get();
+
+        const std::vector<Port*> inports = getInports();
+        for (size_t i=0; i<inports.size(); ++i) {
+            RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
+            if (rp && rp->isConnected() && rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_ORIGIN)
+                rp->requestSize(requestSize);
+        }
+    }
+
 }
 
 } // namespace voreen

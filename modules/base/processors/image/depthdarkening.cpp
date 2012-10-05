@@ -35,8 +35,8 @@ DepthDarkening::DepthDarkening()
     : ImageProcessorBypassable("image/depthdarkening")
     , sigma_("sigma", "Sigma", 2.0f, 0.1f, 10.0f)
     , lambda_("lambda", "Lambda", 10.0f, 0.0f, 20.0f)
-    , inport_(Port::INPORT, "image.inport")
-    , outport_(Port::OUTPORT, "image.outport")
+    , inport_(Port::INPORT, "image.inport", "Image Input")
+    , outport_(Port::OUTPORT, "image.outport", "Image Output")
     , privatePort_(Port::OUTPORT, "image.privateport")
 {
     addProperty(sigma_);

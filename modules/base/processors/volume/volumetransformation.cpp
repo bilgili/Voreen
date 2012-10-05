@@ -38,8 +38,8 @@ const std::string VolumeTransformation::loggerCat_("voreen.base.VolumeTransforma
 
 VolumeTransformation::VolumeTransformation()
     : VolumeProcessor()
-    , inport_(Port::INPORT, "volumehandle.input")
-    , outport_(Port::OUTPORT, "volumehandle.output", 0)
+    , inport_(Port::INPORT, "volumehandle.input", "Volume Input")
+    , outport_(Port::OUTPORT, "volumehandle.output", "Volume Output", false)
     , enableProcessing_("enableProcessing", "Enable")
     , transformationMode_("transformationMode", "Transformation Mode")
     , sourceCoordinateSystem_("sourceCoordinateSystem", "Source Coordinate System")

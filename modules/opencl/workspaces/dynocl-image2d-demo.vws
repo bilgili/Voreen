@@ -1,14 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <VolumeContainer>
-            <VolumeHandles>
-                <VolumeHandle id="ref7">
-                    <Origin filename="../../../data/volumes/nucleon.vvd" />
-                </VolumeHandle>
-            </VolumeHandles>
-        </VolumeContainer>
-        <ProcessorNetwork version="10">
+        <ProcessorNetwork version="13">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -20,25 +13,49 @@
                 <Processor type="Canvas" name="Canvas" id="ref4">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-473" y="198" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="730" y="644" width="371" height="339" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="85" y="556" width="463" height="342" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="85" y="556" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="463" y="342" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize">
-                            <value x="371" y="339" />
+                            <value x="463" y="342" />
                         </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" noPathSet="true" value="" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref6">
+                                    <value x="463" y="342" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSource" name="VolumeSource" id="ref0">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-478" y="-282" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-476" y="-281" />
                     </MetaData>
                     <Properties>
-                        <Property name="volumeHandle">
-                            <value ref="ref7" />
-                        </Property>
+                        <Property name="volumeURL" url="../../../resource/volumes/nucleon.vvd?preferredReader=VvdVolumeReader" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="MeshEntryExitPoints" name="MeshEntryExitPoints" id="ref2">
@@ -46,13 +63,13 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-401" y="-90" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="50">
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45.00000381" eyeMode="1" eyeSeparation="1" axisMode="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="721" y="372" />
                             </MetaData>
-                            <position x="-6.14128447" y="-6.45225906" z="-2.28113627" />
-                            <focus x="-0.00256624" y="0.01287666" z="-0.02998093" />
-                            <upVector x="0.247427" y="0.10060916" z="-0.96366888" />
+                            <position x="9.1773243" y="0.33323842" z="-5.05361795" />
+                            <focus x="0.00244925" y="-0.0325712" z="0.00208898" />
+                            <upVector x="-0.13777076" y="-0.93806034" z="-0.31790271" />
                         </Property>
                         <Property name="jitterEntryPoints" value="false" />
                         <Property name="jitterStepLength" value="0.005" />
@@ -60,9 +77,31 @@
                         <Property name="useCulling" value="true" />
                         <Property name="useFloatRenderTargets" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="proxgeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeReceive" id="ref12">
+                                    <value x="463" y="342" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeReceive" id="ref10">
+                                    <value x="463" y="342" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
+                                <Property name="cameraHandler.adjustCamera" value="bigsizechange" />
                                 <Property name="cameraHandler.interactionMetaphor" value="trackball" />
                                 <Property name="cameraHandler.moveBackward" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
                                 <Property name="cameraHandler.moveDown" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
@@ -70,15 +109,17 @@
                                 <Property name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property name="cameraHandler.resetTrackballCenter" />
                                 <Property name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="31" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property name="cameraHandler.shift" lod="1" enabled="true" mouseAction="31" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property name="cameraHandler.shiftTrackballCenter" value="scenecenter" />
                                 <Property name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="31" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
                             </Properties>
                         </Handler>
                     </InteractionHandlers>
                 </Processor>
-                <Processor type="CubeMeshProxyGeometry" name="MeshProxyGeometry" id="ref1">
+                <Processor type="CubeProxyGeometry" name="MeshProxyGeometry" id="ref1">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-401" y="-182" />
                     </MetaData>
@@ -92,20 +133,62 @@
                         <Property name="topClippingPlane" value="40" />
                         <Property name="useClipping" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
-                <Processor type="DynamicCLProcessor" name="DynamicCLProcessor" programModified="true" programFilename="../../../modules/opencl/cl/simple.cl" id="ref3">
+                <Processor type="DynamicCLProcessor" name="DynamicCLProcessor" programModified="true" programFilename="../cl/simple.cl" id="ref3">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-399" y="11" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="73" y="211" width="1011" height="480" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-398" y="11" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="1775" y="288" width="1267" height="480" />
                     </MetaData>
                     <Properties>
                         <Property name="test" value="0.5" />
                     </Properties>
+                    <Inports>
+                        <Port name="Color Inport 1">
+                            <Properties>
+                                <Property name="Color Inport 1.renderSizeOrigin" id="ref11">
+                                    <value x="463" y="342" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="Color Inport 2">
+                            <Properties>
+                                <Property name="Color Inport 2.renderSizeOrigin" id="ref9">
+                                    <value x="463" y="342" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outCol">
+                            <Properties>
+                                <Property name="outCol.renderSizeReceive" id="ref8">
+                                    <value x="463" y="342" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="outCol2">
+                            <Properties>
+                                <Property name="outCol2.renderSizeReceive" id="ref7">
+                                    <value x="463" y="342" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-426" y="7" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="-1315" y="316" width="1267" height="480" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="1775" y="288" width="1267" height="480" />
                     </MetaData>
                     <programSource>
                         <![CDATA[
@@ -113,10 +196,10 @@
 __constant sampler_t smpNorm = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;
 
 // Simple OpenCL kernel.  Extend it's arguments to dynamically generate ports and properties.
-__kernel void standardKernel(__global read_only image2d_t inCol, //$ first color inport @name="Color Inport 1" @workdimssource=true
-							 __global read_only image2d_t inCol2, //$ second color inport @name="Color Inport 2"
-                             __global write_only image2d_t outCol, //$ first color outport
-                             __global write_only image2d_t outCol2, //$ second color outport
+__kernel void standardKernel( read_only image2d_t inCol, //$ first color inport @name="Color Inport 1"
+							  read_only image2d_t inCol2, //$ second color inport @name="Color Inport 2"
+                              write_only image2d_t outCol, //$ first color outport @workdimssource=true
+                              write_only image2d_t outCol2, //$ second color outport
 	                         float test //$ float property to test @min=0.1 @max=0.9 @value=0.5
                             )
 {
@@ -135,27 +218,30 @@ __kernel void standardKernel(__global read_only image2d_t inCol, //$ first color
 ]]>
                     </programSource>
                 </Processor>
-                <Processor type="Canvas" name="Canvas 2" id="ref6">
+                <Processor type="Canvas" name="Canvas 2" id="ref5">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-332" y="183" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="1151" y="743" width="492" height="276" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-323" y="202" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="1169" y="377" width="469" height="375" />
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize">
-                            <value x="492" y="276" />
+                            <value x="469" y="375" />
                         </Property>
+                        <Property name="saveScreenshot" />
+                        <Property name="screenshotFilename" noPathSet="true" value="" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
-                    <InteractionHandlers />
-                </Processor>
-                <Processor type="SingleScale" name="SingleScale" id="ref5">
-                    <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-334" y="98" />
-                    </MetaData>
-                    <Properties>
-                        <Property name="distributeEvents" value="true" />
-                        <Property name="scaling" value="1:1" />
-                    </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="469" y="375" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -165,7 +251,7 @@ __kernel void standardKernel(__global read_only image2d_t inCol, //$ first color
                         <Processor type="VolumeSource" ref="ref0" />
                     </Outport>
                     <Inport name="volumehandle.volumehandle">
-                        <Processor type="CubeMeshProxyGeometry" ref="ref1" />
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
                     </Inport>
                 </Connection>
                 <Connection>
@@ -186,7 +272,7 @@ __kernel void standardKernel(__global read_only image2d_t inCol, //$ first color
                 </Connection>
                 <Connection>
                     <Outport name="proxygeometry.geometry">
-                        <Processor type="CubeMeshProxyGeometry" ref="ref1" />
+                        <Processor type="CubeProxyGeometry" ref="ref1" />
                     </Outport>
                     <Inport name="proxgeometry.geometry">
                         <Processor type="MeshEntryExitPoints" ref="ref2" />
@@ -204,21 +290,34 @@ __kernel void standardKernel(__global read_only image2d_t inCol, //$ first color
                     <Outport name="outCol2">
                         <Processor type="DynamicCLProcessor" ref="ref3" />
                     </Outport>
-                    <Inport name="image.inport">
-                        <Processor type="SingleScale" ref="ref5" />
-                    </Inport>
-                </Connection>
-                <Connection>
-                    <Outport name="image.outport">
-                        <Processor type="SingleScale" ref="ref5" />
-                    </Outport>
                     <Inport name="image.input">
-                        <Processor type="Canvas" ref="ref6" />
+                        <Processor type="Canvas" ref="ref5" />
                     </Inport>
                 </Connection>
             </Connections>
             <CoProcessorConnections />
-            <PropertyLinks />
+            <PropertyLinks>
+                <PropertyLink>
+                    <SourceProperty ref="ref6" />
+                    <DestinationProperty ref="ref7" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref6" />
+                    <DestinationProperty ref="ref8" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref9" />
+                    <DestinationProperty ref="ref10" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref11" />
+                    <DestinationProperty ref="ref12" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+            </PropertyLinks>
         </ProcessorNetwork>
         <Animation />
     </Workspace>

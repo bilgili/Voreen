@@ -31,7 +31,6 @@
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/optionproperty.h"
 
-
 namespace voreen {
 
 /**
@@ -49,9 +48,6 @@ public:
 
     void process() = 0;
 
-    //Test if a textureContainerChanged on port p with tc would result in a conflict
-    virtual bool testSizeOrigin(const RenderPort* p, void* so) const;
-
 protected:
 
     void applyScalingMatrix(int scalingMode, RenderPort* inport, RenderPort* outport);
@@ -60,8 +56,6 @@ protected:
     virtual void onEvent(tgt::Event* e);
 
     BoolProperty distributeEvents_;
-
-    RenderPort inport_;
 };
 
 class VRN_CORE_API SingleScale : public ScalingProcessor {
@@ -73,19 +67,18 @@ public:
     virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
     virtual Processor* create() const {return new SingleScale();}
 
-    void process();
-
-    virtual void sizeOriginChanged(RenderPort* p);
-    virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
 protected:
     virtual void setDescriptions() {
         setDescription("Rescales the input image to the dimensions of the succeeding canvas.");
     }
 
+    void process();
+
     virtual void onEvent(tgt::Event* e);
 
     IntOptionProperty scalingMode_;    ///< What compositing mode should be applied for second outport
 
+    RenderPort inport_;
     RenderPort outport_;
 };
 } // namespace voreen

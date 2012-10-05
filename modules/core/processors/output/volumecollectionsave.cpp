@@ -35,7 +35,7 @@ const std::string VolumeCollectionSave::loggerCat_("voreen.core.VolumeCollection
 
 VolumeCollectionSave::VolumeCollectionSave()
     : VolumeProcessor()
-    , inport_(Port::INPORT, "volumehandle.input", false)
+    , inport_(Port::INPORT, "volumehandle.input", "VolumeCollection Input", false)
     , outputDirectory_("outputDirectory", "Directory", "Select directory...",
         "", "", FileDialogProperty::DIRECTORY)
     , baseName_("basename", "Basename")

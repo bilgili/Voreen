@@ -29,8 +29,8 @@ namespace voreen {
 
 MultiVolumeProxyGeometry::MultiVolumeProxyGeometry()
     : Processor()
-    , inport_(Port::INPORT, "volumehandle.volumehandle", true)
-    , outport_(Port::OUTPORT, "proxygeometry.geometry")
+    , inport_(Port::INPORT, "volumehandle.volumehandle", "Volume Input", true)
+    , outport_(Port::OUTPORT, "proxygeometry.geometry", "Proxy Geometry Output")
 {
     addPort(inport_);
     addPort(outport_);

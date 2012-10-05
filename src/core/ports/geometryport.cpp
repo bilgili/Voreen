@@ -31,9 +31,9 @@
 
 namespace voreen {
 
-GeometryPort::GeometryPort(PortDirection direction, const std::string& name,
+GeometryPort::GeometryPort(PortDirection direction, const std::string& name, const std::string& guiName,
       bool allowMultipleConnections, Processor::InvalidationLevel invalidationLevel)
-    : GenericPort<Geometry>(direction, name, allowMultipleConnections, invalidationLevel)
+    : GenericPort<Geometry>(direction, name, guiName, allowMultipleConnections, invalidationLevel)
 {}
 
 bool GeometryPort::supportsCaching() const {

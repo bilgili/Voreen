@@ -37,8 +37,8 @@ const std::string ConnectedComponents2D::loggerCat_("voreen.connexe.ConnectedCom
 
 ConnectedComponents2D::ConnectedComponents2D()
     : ImageProcessor("copyimage"),
-      inport_(Port::INPORT, "inport"),
-      outport_(Port::OUTPORT, "outport"),
+      inport_(Port::INPORT, "inport", "Image Input"),
+      outport_(Port::OUTPORT, "outport", "Image Output"),
       channel_("channel", "Channel"),
       connectivity_("connectivity", "Connectivity"),
       minComponentSize_("minComponentSize", "Min Component Size", 1, 1, 100000),

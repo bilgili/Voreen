@@ -165,7 +165,7 @@ public:
      *
      * @returns distance between vertex geometry and given plane
      */
-    double getDistanceToPlane(const tgt::vec4& plane, double epsilon = 1e-6) const;
+    double getDistanceToPlane(const tgt::vec4& plane, double epsilon = 1e-5) const;
 
     /**
      * Returns the distance between this and the given vertex geometry.
@@ -255,7 +255,7 @@ public:
      * @param clipPlane an arbitrary clipping plane
      * @param epsilon the accuracy for vertex geometry comparison
      */
-    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-6);
+    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-5);
 
     /**
      * Returns true, if the spatial coordinates, texture coordinates,
@@ -264,7 +264,7 @@ public:
      * @param vertex the vertex to compare
      * @param epsilon maximum distance at which two vertices are to be considered equal
      */
-    bool equals(const VertexGeometry& vertex, double epsilon = 1e-6) const;
+    bool equals(const VertexGeometry& vertex, double epsilon = 1e-5) const;
 
     /**
      * Returns true, if the passed Geometry is a VertexGeometry and its spatial coordinates,
@@ -272,7 +272,7 @@ public:
      *
      * @see Geometry::equals
      */
-    virtual bool equals(const Geometry* geometry, double epsilon = 1e-6) const;
+    virtual bool equals(const Geometry* geometry, double epsilon = 1e-5) const;
 
     /**
      * Returns a bounding box of zero volume enclosing the vertex.

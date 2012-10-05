@@ -57,10 +57,6 @@ void LinkEvaluatorPlotSelection::eval(Property* src, Property* dst) throw (Voree
     static_cast<PlotSelectionProperty*>(dst)->set(targetNewVec);
 }
 
-std::string LinkEvaluatorPlotSelection::name() const {
-    return "plot selection";
-}
-
 bool LinkEvaluatorPlotSelection::arePropertiesLinkable(const Property* p1, const Property* p2) const {
     tgtAssert(p1, "null pointer");
     tgtAssert(p2, "null pointer");

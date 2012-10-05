@@ -72,10 +72,10 @@ ExplosionProxyGeometry::ExplosionProxyGeometry()
                                      tgt::MouseEvent::MOUSE_BUTTON_LEFT,
                                      tgt::MouseEvent::PRESSED | tgt::MouseEvent::MOTION | tgt::MouseEvent::RELEASED,
                                      tgt::Event::Modifier(tgt::Event::CTRL | tgt::Event::ALT))
-    , inportVolume_(Port::INPORT, "volumehandle.in")
-    , loopInport_("loop.inport", Port::INPORT)
-    , outportProxyGeometry_(Port::OUTPORT, "geometry.proxy")
-    , outportRenderGeometry_(Port::OUTPORT, "geometry.render")
+    , inportVolume_(Port::INPORT, "volumehandle.in", "Volume Input")
+    , loopInport_(Port::INPORT, "loop.inport", "Loop Inport")
+    , outportProxyGeometry_(Port::OUTPORT, "geometry.proxy", "Proxy Geometry")
+    , outportRenderGeometry_(Port::OUTPORT, "geometry.render", "Render Geometry")
     , pickingBuffer_(Port::OUTPORT, "pickingBuffer")
 {
     brickColor_.setViews(Property::COLOR);
@@ -1309,7 +1309,7 @@ void ExplosionProxyGeometry::registerForSelecting(std::vector<Brick> bricklist) 
 
     // set modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
-    tgt::loadMatrix(camera_.get().getProjectionMatrix());
+    tgt::loadMatrix(camera_.get().getProjectionMatrix(pickingBuffer_.getSize()));
     glMatrixMode(GL_MODELVIEW);
     tgt::loadMatrix(camera_.get().getViewMatrix());
     LGL_ERROR;
@@ -1490,7 +1490,7 @@ void ExplosionProxyGeometry::onTranslateSelectedBricksEvent(tgt::MouseEvent * e)
             deltaX = e->coord().x - startCoord_.x;
             deltaY = startCoord_.y - e->coord().y;
 
-            tgt::mat4 projection_tgt = camera_.get().getProjectionMatrix();
+            tgt::mat4 projection_tgt = camera_.get().getProjectionMatrix(idManager_.getRenderTarget()->getSize());
             tgt::mat4 modelview_tgt = camera_.get().getViewMatrix();
             for (int i = 0; i < 4; ++i) {
                 modelview[i+0]   = modelview_tgt[i].x;
@@ -1543,7 +1543,7 @@ void ExplosionProxyGeometry::onTranslateSelectedBricksEvent(tgt::MouseEvent * e)
 }
 
 void ExplosionProxyGeometry::canvasSizeChanged() {
-    RenderProcessor::portResized(0, canvasSize_.get());
+    //RenderProcessor::portResized(0, canvasSize_.get());
 }
 
 

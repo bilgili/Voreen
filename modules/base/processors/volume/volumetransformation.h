@@ -43,9 +43,9 @@ public:
     virtual ~VolumeTransformation();
     virtual Processor* create() const;
 
-    virtual std::string getCategory() const   { return "Volume Processing"; }
+    virtual std::string getCategory() const   { return "Volume Processing";    }
     virtual std::string getClassName() const  { return "VolumeTransformation"; }
-    virtual CodeState getCodeState() const    { return CODE_STATE_TESTING; }
+    virtual CodeState getCodeState() const    { return CODE_STATE_STABLE;      }
 
 protected:
     virtual void setDescriptions() {

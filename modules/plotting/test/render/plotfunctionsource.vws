@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="12">
+        <ProcessorNetwork version="13">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -22,6 +22,12 @@
                         <Property name="maxLength" value="200" />
                         <Property name="selfDescription" value="" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="PlotFunctionOutPort">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="LinePlot" name="LinePlot" id="ref1">
@@ -53,7 +59,7 @@
                         <Property name="pLVPC" value="true" />
                         <Property name="plotDataTable">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-66" y="-244" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-970" y="417" />
                             </MetaData>
                         </Property>
                         <Property name="plotEntitiesProperty" guiName="Line Selection" entities="0" xCI="0" yCI="-1" loadStrategy="0">
@@ -151,12 +157,33 @@
                         <Property name="zoom" lod="1" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                         <Property name="zoomAdditive" lod="1" enabled="true" mouseAction="7" mouseButtons="4" keyCode="0" modifier="1" shareEvents="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outport">
+                            <Properties>
+                                <Property name="outport.renderSizeReceive" id="ref4">
+                                    <value x="892" y="593" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas" id="ref2">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-174" y="-366" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="54" y="100" width="892" height="593" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="92" y="148" width="892" height="593" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="92" y="148" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="892" y="593" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize">
@@ -165,7 +192,18 @@
                         <Property name="saveScreenshot" />
                         <Property name="screenshotFilename" noPathSet="false" value="output/canvas.jpg" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref3">
+                                    <value x="892" y="593" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -188,7 +226,13 @@
                 </Connection>
             </Connections>
             <CoProcessorConnections />
-            <PropertyLinks />
+            <PropertyLinks>
+                <PropertyLink>
+                    <SourceProperty ref="ref3" />
+                    <DestinationProperty ref="ref4" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+            </PropertyLinks>
         </ProcessorNetwork>
         <Animation />
     </Workspace>

@@ -103,6 +103,7 @@ void DynamicCLProcessor::initialize() throw (tgt::Exception) {
 
     getProcessorWidget()->updateFromProcessor();
     buildProgram();
+    portResized();
 
     initialized_ = true;
 }
@@ -140,6 +141,8 @@ void DynamicCLProcessor::buildAndInit() {
         curArgs_ = tmpArgs;
         return;
     }
+
+    portResized();
 }
 
 void DynamicCLProcessor::beforeProcess() {
@@ -336,7 +339,7 @@ void DynamicCLProcessor::generateSharedTextures() {
             // FIXME: there is a voreen bug where render targets are destroyed when a renderport is disconnected.  After reconnection, the renderport has to be ready (which it
             // isn't due to the missing renderport).  Thus, the render processor is not ready, and therefore it's beforeProcess method will not be called.  However, this method reinitializes the port's RenderTarget...
             if(rp && rp->isConnected() && !rp->getRenderTarget())
-                LWARNING("RenderTarget was not (re-)initialized for port '" << rp->getName() << "'.");
+                LWARNING("RenderTarget was not (re-)initialized for port '" << rp->getID() << "'.");
             else
                 colTex = rp->getColorTexture();
 
@@ -348,13 +351,44 @@ void DynamicCLProcessor::generateSharedTextures() {
     }
 }
 
-void DynamicCLProcessor::portResized(RenderPort* p, tgt::ivec2 newsize) {
+// TODO: ATM, any outport resize will lead to size propagation from the first connected outport to all inports; all outports will be also be resized to that size.
+// This should be configurable using tags in the cl code.
+void DynamicCLProcessor::portResized() {
     // apparently, it is important to delete the CL memory objects before deleting the associated OpenGL textures from the fbo
     for(size_t i = 0; i < curSharedTexs_.size(); i++)
         delete curSharedTexs_.at(i);
+
     curSharedTexs_.clear();
+
     regenerateSharedTextures_ = true;
-    RenderProcessor::portResized(p, newsize);
+
+    tgt::ivec2 size = tgt::ivec2(-1);
+
+    for(size_t i = 0; i < curArgs_.size(); i++) {
+        if(curArgs_.at(i).attType_ == IMAGE2D && curArgs_.at(i).att_ == OUTPORT) {
+            RenderPort* rp = (RenderPort*)(getPort(curArgs_.at(i).values_["name"]));
+            if(rp->getReceivedSize() != tgt::ivec2(-1)) {
+                size = rp->getReceivedSize();
+                break;
+            }
+        }
+    }
+
+    if(size == tgt::ivec2(-1))
+        return;
+
+    for(size_t i = 0; i < curArgs_.size(); i++) {
+        if(curArgs_.at(i).attType_ == IMAGE2D) {
+            RenderPort* rp = (RenderPort*)(getPort(curArgs_.at(i).values_["name"]));
+            if(curArgs_.at(i).att_ == INPORT)
+                rp->requestSize(size);
+            else if(curArgs_.at(i).att_ == OUTPORT) {
+                RenderSizeReceiveProperty* srp = rp->getSizeReceiveProperty();
+                if(srp)
+                    srp->set(size);
+            }
+        }
+    }
 }
 
 void DynamicCLProcessor::process() {
@@ -773,6 +807,10 @@ void DynamicCLProcessor::setWorkDimensions() {
 
     for(size_t i = 0; i < curArgs_.size(); i++) {
         if(!curWorkDimensionSource_ && curArgs_[i].values_["workdimssource"] == "true") {
+            if(curArgs_[i].attType_ == IMAGE2D && curArgs_[i].att_ == INPORT) {
+                LWARNING("Currently, image inports can not be used as the kernel working dimension source, please use outports instead.");
+                break;
+            }
             curWorkDimensionSource_ = &(curArgs_[i]);
             LINFO("Using argument '" << curArgs_[i].values_["name"] << "' as kernel dimensions source");
         }
@@ -783,7 +821,7 @@ void DynamicCLProcessor::setWorkDimensions() {
     if(!curWorkDimensionSource_) {
         LINFO("Working dimensions source not specified.");
         for(size_t i = 0; i < curArgs_.size(); i++) {
-            if(curArgs_[i].attType_ == IMAGE2D || curArgs_[i].attType_ == IMAGE3D) {
+            if((curArgs_[i].attType_ == IMAGE2D && curArgs_[i].att_ == OUTPORT) || curArgs_[i].attType_ == IMAGE3D) {
                 LINFO("Using argument '" << curArgs_[i].values_["name"] << "' as source");
                 curWorkDimensionSource_ = &(curArgs_[i]);
                 break;
@@ -906,13 +944,13 @@ void DynamicCLProcessor::removeOldPortsAndProperties() {
 void DynamicCLProcessor::addNewInport(ArgInfo& arg) {
     if(arg.attType_ == IMAGE2D) {
         LINFO("Adding image inport '" + arg.values_["name"] + "'");
-        RenderPort* imgInport = new RenderPort(Port::INPORT, arg.values_["name"], false, arg.invLevel_, GL_RGBA16);
+        RenderPort* imgInport = new RenderPort(Port::INPORT, arg.values_["name"], arg.values_["name"], false, arg.invLevel_, RenderPort::RENDERSIZE_ORIGIN, GL_RGBA16);
         addPort(imgInport);
         initializePort(imgInport);
         portArgMap_[imgInport] = &arg;
     } else if(arg.attType_ == IMAGE3D) {
         LINFO("Adding volume inport '" + arg.values_["name"] + "'");
-        VolumePort* volInport = new VolumePort(Port::INPORT, arg.values_["name"], false, arg.invLevel_);
+        VolumePort* volInport = new VolumePort(Port::INPORT, arg.values_["name"], arg.values_["name"], false, arg.invLevel_);
         addPort(volInport);
         initializePort(volInport);
         portArgMap_[volInport] = &arg;
@@ -922,13 +960,14 @@ void DynamicCLProcessor::addNewInport(ArgInfo& arg) {
 void DynamicCLProcessor::addNewOutport(ArgInfo& arg) {
     if(arg.attType_ == IMAGE2D) {
         LINFO("Adding image outport '" + arg.values_["name"] + "'");
-        RenderPort* imgOutport = new RenderPort(Port::OUTPORT, arg.values_["name"], true, arg.invLevel_);
+        RenderPort* imgOutport = new RenderPort(Port::OUTPORT, arg.values_["name"], arg.values_["name"], true, arg.invLevel_, RenderPort::RENDERSIZE_RECEIVER, GL_RGBA16);
         addPort(imgOutport);
         initializePort(imgOutport);
+        imgOutport->onSizeReceiveChange<DynamicCLProcessor>(this, &DynamicCLProcessor::portResized);
         portArgMap_[imgOutport] = &arg;
     } else if(arg.attType_ == IMAGE3D) {
         LINFO("Adding volume outport '" + arg.values_["name"] + "'");
-        VolumePort* volOutport = new VolumePort(Port::OUTPORT, arg.values_["name"], true, arg.invLevel_);
+        VolumePort* volOutport = new VolumePort(Port::OUTPORT, arg.values_["name"], arg.values_["name"], true, arg.invLevel_);
         addPort(volOutport);
         initializePort(volOutport);
         portArgMap_[volOutport] = &arg;

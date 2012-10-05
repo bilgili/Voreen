@@ -64,6 +64,9 @@ protected:
     virtual std::string generateHeader();
 
 private:
+    /// Requests the received output render size from the render inport.
+    void passThroughSizeRequest();
+
     tgt::Shader* shaderPrg_;
     IDManager idManager_;
 

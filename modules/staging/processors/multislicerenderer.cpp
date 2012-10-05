@@ -77,12 +77,12 @@ MultiSliceRenderer::MultiSliceRenderer()
     , texClampMode3_("textureClampMode3_", "Texture Clamp 3")
     , texClampMode4_("textureClampMode4_", "Texture Clamp 4")
     , texBorderIntensity_("textureBorderIntensity", "Texture Border Intensity", 0.f)
-    , volumeInport1_(Port::INPORT, "volume1", false, Processor::INVALID_PROGRAM)
-    , volumeInport2_(Port::INPORT, "volume2", false, Processor::INVALID_PROGRAM)
-    , volumeInport3_(Port::INPORT, "volume3", false, Processor::INVALID_PROGRAM)
-    , volumeInport4_(Port::INPORT, "volume4", false, Processor::INVALID_PROGRAM)
-    , entryPort_(Port::INPORT, "image.entrypoints")
-    , outport_(Port::OUTPORT, "image.output", true, Processor::INVALID_PROGRAM)
+    , volumeInport1_(Port::INPORT, "volume1", "Volume1 Input", false, Processor::INVALID_PROGRAM)
+    , volumeInport2_(Port::INPORT, "volume2", "volume2 Input", false, Processor::INVALID_PROGRAM)
+    , volumeInport3_(Port::INPORT, "volume3", "volume3 Input", false, Processor::INVALID_PROGRAM)
+    , volumeInport4_(Port::INPORT, "volume4", "volume4 Input", false, Processor::INVALID_PROGRAM)
+    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input")
+    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_PROGRAM)
 {
     addProperty(camera_);
 

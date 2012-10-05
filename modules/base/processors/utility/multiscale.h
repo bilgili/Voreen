@@ -40,21 +40,21 @@ public:
 
     virtual std::string getCategory() const { return "Utility"; }
     virtual std::string getClassName() const { return "MultiScale"; }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } 
     virtual Processor* create() const {return new MultiScale();}
-    virtual void initialize() throw (tgt::Exception);
 
     virtual bool isReady() const;
-    void process();
 
-    virtual void textureContainerChanged(RenderPort* p);
-    virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
-
-    tgt::ivec2 selectBest();
 protected:
     virtual void setDescriptions() {
         setDescription("Selects the optimal size for previous renderers from all connected outports and resizes the output for other outports. This processor is only needed when working with multiple canvases of independant size.");
     }
+
+    virtual void initialize() throw (tgt::Exception);
+    virtual void process();
+
+    void portSizeReceiveChanged();
+    tgt::ivec2 selectBest();
 
     IntOptionProperty scalingMode1_;
     IntOptionProperty scalingMode2_;
@@ -63,6 +63,7 @@ protected:
 
     StringOptionProperty selectionMode_;
 
+    RenderPort inport_;
     RenderPort outport1_;
     RenderPort outport2_;
     RenderPort outport3_;

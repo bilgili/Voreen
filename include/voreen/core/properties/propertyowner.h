@@ -164,6 +164,9 @@ public:
 protected:
     /**
      * Registers a property at the owner.
+     *
+     * @note The property owner does not take ownership of the passed property,
+     *  i.e., deleting the property is up to the caller.
      */
     virtual void addProperty(Property* prop);
 
@@ -172,6 +175,8 @@ protected:
 
     /**
      * Unregisters a property at the owner.
+     *
+     * @note The unregistered property is not deleted.
      */
     virtual void removeProperty(Property* prop);
 

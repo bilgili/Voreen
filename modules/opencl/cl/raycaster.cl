@@ -31,7 +31,7 @@ __constant float SAMPLING_BASE_INTERVAL_RCP = 200.0;
 /**
  * Makes a simple raycast through the volume for entry to exit point with minimal diffuse shading.
  */
-float4 simpleRaycast(__global read_only image3d_t volumeTex, __global read_only image2d_t tfData, const float4 entryPoint, const float4 exitPoint, float* depth, const float stepSize) {
+float4 simpleRaycast(read_only image3d_t volumeTex, read_only image2d_t tfData, const float4 entryPoint, const float4 exitPoint, float* depth, const float stepSize) {
 
     // result color
     float4 result = (float4)(0.0, 0.0, 0.0, 0.0);
@@ -50,7 +50,7 @@ float4 simpleRaycast(__global read_only image3d_t volumeTex, __global read_only 
         float4 color = read_imagef(tfData, smpNorm, (float2)(read_imagef(volumeTex, smpNorm, sample).x, 0.0));
 
         // apply opacity correction to accomodate for variable sampling intervals
-        color.w = 1.0 - pow(1.0 - color.w, stepSize * SAMPLING_BASE_INTERVAL_RCP);
+        color.w = 1.f - pow(1.f - color.w, stepSize * SAMPLING_BASE_INTERVAL_RCP);
 
         // Add a little shading.  calcGradient is declared in mod_gradients.cl
         float4 norm = normalize(calcGradient(sample, volumeTex));
@@ -79,11 +79,11 @@ float4 simpleRaycast(__global read_only image3d_t volumeTex, __global read_only 
 
 //main for raycasting. This function is called for every pixel in view.
 // TODO: Depth values are currently not read or written as OpenCL does not support OpenGL GL_DEPTH_COMPONENT image formats.
-__kernel void raycast(__global read_only image3d_t volumeTex,
-                      __global read_only image2d_t tfData,
-                      __global read_only image2d_t entryTexCol,
-                      __global read_only image2d_t exitTexCol,
-                      __global write_only image2d_t outCol,
+__kernel void raycast( read_only image3d_t volumeTex,
+                       read_only image2d_t tfData,
+                       read_only image2d_t entryTexCol,
+                       read_only image2d_t exitTexCol,
+                       write_only image2d_t outCol,
                       //__global read_only image2d_t entryTexDepth,
                       //__global read_only image2d_t exitTexDepth,
                       //__global write_only image2d_t outDepth,

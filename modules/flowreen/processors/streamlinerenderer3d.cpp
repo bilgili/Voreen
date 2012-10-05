@@ -49,8 +49,8 @@ StreamlineRenderer3D::StreamlineRenderer3D()
     displayLists_(0),
     shader_(0),
     seedingPositions_(0),
-    volInport_(Port::INPORT, "volumehandle.flow"),
-    imgOutport_(Port::OUTPORT, "image.streamlines")
+    volInport_(Port::INPORT, "volumehandle.flow", "Flow Volume Input"),
+    imgOutport_(Port::OUTPORT, "image.streamlines", "Streamlines Image Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
 {
     CallMemberAction<StreamlineRenderer3D> streamlineChange(this,
         &StreamlineRenderer3D::onStreamlineNumberChange);
@@ -168,7 +168,7 @@ void StreamlineRenderer3D::process() {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
 
-    camProp_.look();
+    camProp_.look(imgOutport_.getSize());
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

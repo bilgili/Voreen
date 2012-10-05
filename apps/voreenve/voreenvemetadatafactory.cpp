@@ -24,14 +24,14 @@
  ***********************************************************************************/
 
 #include "voreenvemetadatafactory.h"
-#include "networkeditor/connectionbundle.h"
+//#include "networkeditor/connectionbundle.h"
 
 #include "voreen/core/datastructures/meta/selectionmetadata.h"
 
 namespace voreen {
 
 VoreenVEMetaDataFactory::VoreenVEMetaDataFactory() {
-    registerType("SelectionMetaData::ConnectionBundle", new SelectionMetaData<ConnectionBundleMetaData>());
+//    registerType("SelectionMetaData::ConnectionBundle", new SelectionMetaData<ConnectionBundleMetaData>());
 }
 
 } // namespace voreen

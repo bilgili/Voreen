@@ -118,7 +118,7 @@ void MultiplanarSliceRenderer::process() {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
 
-    camProp_.look();
+    camProp_.look(outport_.getSize());
 
     // transform bounding box by dataset transformation matrix
     glMatrixMode(GL_MODELVIEW);

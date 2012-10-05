@@ -31,6 +31,7 @@
 #include "voreen/core/datastructures/transfunc/transfuncfactory.h"
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
 #include "voreen/core/network/portconnection.h"
+#include "voreen/core/network/networkgraph.h"
 #include "voreen/core/ports/allports.h"
 #include "voreen/core/processors/processorfactory.h"
 #include "voreen/core/processors/renderprocessor.h"
@@ -38,6 +39,10 @@
 #include "voreen/core/properties/link/propertylink.h"
 #include "voreen/core/properties/link/linkevaluatorbase.h"
 #include "voreen/core/properties/link/linkevaluatorfactory.h"
+
+#include <vector>
+#include <map>
+#include <queue>
 #include <sstream>
 
 using std::vector;
@@ -49,7 +54,7 @@ const std::string ProcessorNetwork::loggerCat_("voreen.ProcessorNetwork");
 namespace {
 
 // Increase this counter when incompatible changes are introduced into the serialization format
-const int NETWORK_VERSION = 12;
+const int NETWORK_VERSION = 13; //< introduction of render size linking
 
 std::string serializeProperty(Property* p) {
     XmlSerializer s;
@@ -110,7 +115,7 @@ void ProcessorNetwork::removeProcessor(Processor* processor) {
 
     // clear processor's connections and links
     disconnectPorts(processor);
-    removePropertyLinks(processor);
+    removePropertyLinksFromProcessor(processor);
 
     // remove processor from vector
     std::vector<Processor*>::iterator iter = std::find(processors_.begin(), processors_.end(), processor);
@@ -297,100 +302,108 @@ bool ProcessorNetwork::empty() const {
 
 
 ProcessorNetwork* ProcessorNetwork::cloneSubNetwork(std::vector<Processor*> vec){
-    //test, if all processors are from this PN
-    for(size_t i =0; i < vec.size(); ++i){
-        if(!contains(vec[i])){
-            LWARNING("(ProcessorNetwork::cloneSubNetwork) Only procesors from this ProcessorNetwork can be cloned. return 0");
+    // test, if all processors are from this PN
+    for (size_t i =0; i < vec.size(); ++i){
+        if (!contains(vec[i])){
+            LERROR("cloneSubNetwork(): only processors from this ProcessorNetwork can be cloned");
             return 0;
         }
     }
 
     ProcessorNetwork* result = new ProcessorNetwork();
-    //clone processors
-    for(size_t i = 0; i < vec.size(); ++i){
+
+    // clone processors
+    for (size_t i = 0; i < vec.size(); ++i)
         result->addProcessor(vec[i]->clone());
-    }
-    //set connections
-    for(size_t i = 0; i < vec.size(); ++i){ //each processor
+
+    // set connections
+    for(size_t i = 0; i < vec.size(); ++i){ // each processor
         std::vector<Port*> outports = vec[i]->getOutports();
-        for(size_t j = 0; j < outports.size(); ++j) {//each outport
+        for (size_t j = 0; j < outports.size(); ++j) { //each outport
             const std::vector<const Port*> inports = outports[j]->getConnected();
-            for(size_t k = 0; k < inports.size(); ++k){ //each inport
-                for(size_t l = 0; l < vec.size(); ++l){ //each processor
-                    if(vec[l] == inports[k]->getProcessor()){
-                        result->connectPorts(result->processors_[i]->getOutports()[j],result->processors_[l]->getPort(inports[k]->getName()));
+            for (size_t k = 0; k < inports.size(); ++k){ // each inport
+                for (size_t l = 0; l < vec.size(); ++l){ // each processor
+                    if (vec[l] == inports[k]->getProcessor()){
+                        result->connectPorts(result->processors_[i]->getOutports()[j],
+                            result->processors_[l]->getPort(inports[k]->getName()));
                         break;
                     }
                 }
             }
         }
     }
-    //set coports
-     for(size_t i = 0; i < vec.size(); ++i){ //each processor
+
+    // set coports
+    for(size_t i = 0; i < vec.size(); ++i){ //each processor
         std::vector<CoProcessorPort*> outports = vec[i]->getCoProcessorOutports();
-        for(size_t j = 0; j < outports.size(); ++j) {//each outport
+        for (size_t j = 0; j < outports.size(); ++j) { //each outport
             const std::vector<const Port*> inports = outports[j]->getConnected();
-            for(size_t k = 0; k < inports.size(); ++k){ //each inport
-                for(size_t l = 0; l < vec.size(); ++l){ //each processor
-                    if(vec[l] == inports[k]->getProcessor()){
-                        result->connectPorts(result->processors_[i]->getCoProcessorOutports()[j],result->processors_[l]->getPort(inports[k]->getName()));
+            for (size_t k = 0; k < inports.size(); ++k){ //each inport
+                for (size_t l = 0; l < vec.size(); ++l){ //each processor
+                    if (vec[l] == inports[k]->getProcessor()){
+                        result->connectPorts(result->processors_[i]->getCoProcessorOutports()[j],
+                            result->processors_[l]->getPort(inports[k]->getName()));
                         break;
                     }
                 }
             }
         }
     }
-    //set links
-    for(size_t i = 0; i < propertyLinks_.size(); ++i){
+
+    // set links
+    for (size_t i = 0; i < propertyLinks_.size(); ++i){
         Property* src = 0; Property* dest = 0;
-        //check, if links are in the subnetwork
+        // check, if links are in the subnetwork
         for(size_t j = 0; j < vec.size();++j){
-            if(vec[j] == propertyLinks_[i]->getDestinationProperty()->getOwner()){
+            if (vec[j] == propertyLinks_[i]->getDestinationProperty()->getOwner()){
                 dest = result->getProcessors()[j]->getProperty(propertyLinks_[i]->getDestinationProperty()->getID());
             }
-            if(vec[j] == propertyLinks_[i]->getSourceProperty()->getOwner()){
+            if (vec[j] == propertyLinks_[i]->getSourceProperty()->getOwner()){
                 src = result->getProcessors()[j]->getProperty(propertyLinks_[i]->getSourceProperty()->getID());
             }
         }
-        if(src && dest)
-            result->createPropertyLink(src,dest,propertyLinks_[i]->getLinkEvaluator()->create());
+        if (src && dest)
+            result->createPropertyLink(src, dest, propertyLinks_[i]->getLinkEvaluator()->create());
     }
+
     result->notifyNetworkChanged();
     return result;
 }
 
 void ProcessorNetwork::mergeSubNetwork(ProcessorNetwork* pnw){
-    //add processors
-    for(size_t i = 0; i < pnw->processors_.size(); ++i){
+    // add processors
+    for (size_t i=0; i < pnw->processors_.size(); ++i){
         addProcessor(pnw->processors_[i]);
     }
-    //add connections
-    for(size_t i = 0; i < pnw->processors_.size(); ++i){
+
+    // add connections
+    for (size_t i=0; i < pnw->processors_.size(); ++i){
         std::vector<Port*> outports = pnw->processors_[i]->getOutports();
-        for(size_t j = 0; j < outports.size(); ++j){
+        for (size_t j = 0; j < outports.size(); ++j){
             const std::vector<const Port*> inports = outports[j]->getConnected();
-            for(size_t k = 0; k < inports.size(); ++k){
-                notifyPortConnectionAdded(outports[j],inports[k]);
-            }
-        }
-    }
-    //add coconnections
-    for(size_t i = 0; i < pnw->processors_.size(); ++i){
-        std::vector<CoProcessorPort*> outports = pnw->processors_[i]->getCoProcessorOutports();
-        for(size_t j = 0; j < outports.size(); ++j){
-            const std::vector<const Port*> inports = outports[j]->getConnected();
-            for(size_t k = 0; k < inports.size(); ++k){
-                notifyPortConnectionAdded(outports[j],inports[k]);
+            for (size_t k = 0; k < inports.size(); ++k){
+                notifyPortConnectionAdded(outports[j], inports[k]);
             }
         }
     }
 
-    for(size_t i = 0; i < pnw->propertyLinks_.size(); ++i){
+    // add coconnections
+    for (size_t i=0; i < pnw->processors_.size(); ++i){
+        std::vector<CoProcessorPort*> outports = pnw->processors_[i]->getCoProcessorOutports();
+        for (size_t j = 0; j < outports.size(); ++j){
+            const std::vector<const Port*> inports = outports[j]->getConnected();
+            for (size_t k = 0; k < inports.size(); ++k){
+                notifyPortConnectionAdded(outports[j], inports[k]);
+            }
+        }
+    }
+
+    for (size_t i=0; i < pnw->propertyLinks_.size(); ++i){
         propertyLinks_.push_back(pnw->propertyLinks_[i]);
         notifyPropertyLinkAdded(pnw->propertyLinks_[i]);
     }
 
-    //delete old network
+    // delete passed network
     pnw->processors_.clear();
     pnw->propertyLinks_.clear();
     delete pnw;
@@ -409,6 +422,10 @@ bool ProcessorNetwork::connectPorts(Port* outport, Port* inport) {
         notifyPortConnectionAdded(outport, inport);
 
     return result;
+}
+
+bool ProcessorNetwork::connectPorts(Port& inport, Port& outport) {
+    return connectPorts(&inport, &outport);
 }
 
 void ProcessorNetwork::disconnectPorts(Port* outport, Port* inport)  {
@@ -457,6 +474,10 @@ void ProcessorNetwork::disconnectPorts(Processor* processor) {
     }
 }
 
+void ProcessorNetwork::disconnectPorts(Port& inport, Port& outport) {
+    disconnectPorts(&inport, &outport);
+}
+
 void ProcessorNetwork::addProcessorInConnection(Port* outport, Port* inport, Processor* processor) {
     tgtAssert(inport, "passed null pointer");
     tgtAssert(inport->isInport(), "no inport");
@@ -484,43 +505,45 @@ void ProcessorNetwork::addProcessorInConnection(Port* outport, Port* inport, Pro
     }
 }
 
-void ProcessorNetwork::removePropertyLinks(Property* property) {
+int ProcessorNetwork::removePropertyLinksFromProperty(Property* property) {
     tgtAssert(property, "null pointer passed");
-    tgtAssert(dynamic_cast<Processor*>(property->getOwner()), "passed property is not owned by a processor");
-    tgtAssert(contains(dynamic_cast<Processor*>(property->getOwner())), "passed property's owner is not part of the network");
+    tgtAssert(dynamic_cast<Processor*>(property->getOwner()) || dynamic_cast<Port*>(property->getOwner()), 
+        "passed property is owned neither by a processor nor by a port");
+    tgtAssert(contains(getOwningProcessor(property)), "passed property's owner is not part of the network");
 
+    int numRemoved = 0;
     for (size_t i = 0; i < propertyLinks_.size(); ++i) {
         PropertyLink* link = propertyLinks_[i];
         if ((link->getSourceProperty() == property) || (link->getDestinationProperty() == property)) {
             removePropertyLink(link);
             i--; // removePropertyLink also deletes the link object
+            numRemoved++;
         }
     }
+    return numRemoved;
 }
 
-void ProcessorNetwork::removePropertyLinks(Processor* processor) {
-    tgtAssert(processor, "null pointer passed");
-    tgtAssert(contains(processor), "passed processor is not part of the network");
-
-    for (size_t i = 0; i < propertyLinks_.size(); ++i) {
-        PropertyLink* link = propertyLinks_[i];
-        if ((link->getSourceProperty()->getOwner() == processor) || (link->getDestinationProperty()->getOwner() == processor)) {
-            removePropertyLink(link);
-            i--; // removePropertyLink also deletes the link object
-        }
-    }
+int ProcessorNetwork::removePropertyLinksFromProcessor(Processor* processor) {
+    return removePropertyLinksFromProcessor<Property>(processor);
 }
 
 PropertyLink* ProcessorNetwork::createPropertyLink(Property* src, Property* dest, LinkEvaluatorBase* linkEvaluator) {
-    tgtAssert(src && dest, "Null pointer passed");
-    tgtAssert(src != dest, "Source and destination property are the same");
-    if (linkEvaluator) {
-        tgtAssert(!containsLink(src, dest, linkEvaluator), "Link already existed in the network");
+    tgtAssert(src && dest, "null pointer passed");
+    tgtAssert(src != dest, "source and destination property are equal");
+    
+    tgtAssert(dynamic_cast<Processor*>(src->getOwner()) || dynamic_cast<Port*>(src->getOwner()), 
+        "passed src property is owned neither by a processor nor by a port");
+    tgtAssert(contains(getOwningProcessor(src)), "passed src property's owner is not part of the network");
+
+    tgtAssert(dynamic_cast<Processor*>(dest->getOwner()) || dynamic_cast<Port*>(dest->getOwner()), 
+        "passed dest property is owned neither by a processor nor by a port");
+    tgtAssert(contains(getOwningProcessor(dest)), "passed dest property's owner is not part of the network"); 
+
+    // check whether the properties are already linked
+    if (linkEvaluator && containsPropertyLink(src, dest, linkEvaluator)) {
+        LERROR("createPropertyLink(): this link already exists");
+        return 0;
     }
-    tgtAssert(dynamic_cast<Processor*>(src->getOwner()), "passed src property is not owned by a processor");
-    tgtAssert(contains(dynamic_cast<Processor*>(src->getOwner())), "passed src property's owner is not part of the network");
-    tgtAssert(dynamic_cast<Processor*>(dest->getOwner()), "passed dest property is not owned by a processor");
-    tgtAssert(contains(dynamic_cast<Processor*>(dest->getOwner())), "passed dest property's owner is not part of the network");
 
     // check for event properties
     if (dynamic_cast<EventPropertyBase*>(src)) {
@@ -536,13 +559,13 @@ PropertyLink* ProcessorNetwork::createPropertyLink(Property* src, Property* dest
 
     // multiple links (with same direction) between two properties are not allowed
     if (src->isLinkedWith(dest, false)) {
-        LWARNING(src->getOwner()->getName() << "::" << src->getID() << " and " <<
-                dest->getOwner()->getName() << "::" << dest->getID() << " are already linked");
+        LWARNING(src->getFullyQualifiedID() << " and " <<
+                dest->getFullyQualifiedID() << " are already linked");
         delete linkEvaluator;
         return 0;
     }
 
-    // if no link evaluator passed, iterate over modules' link evaluator factories to create compatible id evaluator
+    // if no link evaluator passed, iterate over modules' link evaluator factories and use first compatible evaluator
     if (!linkEvaluator) {
         const std::vector<VoreenModule*>& modules = VoreenApplication::app()->getModules();
         for (size_t i=0; i<modules.size() && !linkEvaluator; i++) {
@@ -550,13 +573,11 @@ PropertyLink* ProcessorNetwork::createPropertyLink(Property* src, Property* dest
             for (size_t j=0; j<factories.size() && !linkEvaluator; j++) {
                 LinkEvaluatorFactory* factory = factories.at(j);
                 std::vector<std::pair<std::string, std::string> > compatibleEvals = factory->getCompatibleLinkEvaluators(src, dest);
-                for (size_t k=0; k<compatibleEvals.size() && !linkEvaluator; k++) {
-                    if (compatibleEvals.at(k).second == "id") {
-                        LDEBUG("Creating LinkEvaluator: " << compatibleEvals.at(k).first);
-                        linkEvaluator = factory->createEvaluator(compatibleEvals.at(k).first);
-                        if (!linkEvaluator)
-                            LWARNING("Failed to create LinkEvaluator: " << compatibleEvals.at(k).first);
-                    }
+                if (!compatibleEvals.empty()) {
+                    LDEBUG("Creating LinkEvaluator: " << compatibleEvals.front().first);
+                    linkEvaluator = factory->createEvaluator(compatibleEvals.front().first);
+                    if (!linkEvaluator)
+                        LWARNING("Failed to create LinkEvaluator: " << compatibleEvals.front().first);
                 }
             }
         }
@@ -583,8 +604,7 @@ PropertyLink* ProcessorNetwork::createPropertyLink(Property* src, Property* dest
         return link;
     }
     else {
-        LWARNING(src->getOwner()->getName() << "::" << src->getID() << " is not linkable to " <<
-                dest->getOwner()->getName() << "::" << dest->getID());
+        LWARNING(src->getFullyQualifiedID() << " is not linkable to " << dest->getFullyQualifiedID());
         delete link;
         return 0;
     }
@@ -592,7 +612,7 @@ PropertyLink* ProcessorNetwork::createPropertyLink(Property* src, Property* dest
 }
 
 void ProcessorNetwork::removePropertyLink(PropertyLink* propertyLink) {
-    tgtAssert(propertyLink, "Null pointer passed");
+    tgtAssert(propertyLink, "null pointer passed");
 
     // remove property link if it is contained by the network
     bool propertyLinkRemoved = false;
@@ -611,27 +631,51 @@ void ProcessorNetwork::removePropertyLink(PropertyLink* propertyLink) {
     }
 }
 
+bool ProcessorNetwork::removePropertyLink(Property* src, Property* dst) {
+    tgtAssert(src, "null pointer passed");
+    tgtAssert(dst, "null pointer passed");
+
+    // remove property link if it is contained by the network
+    bool propertyLinkRemoved = false;
+    PropertyLink* propertyLink = 0;
+    for (size_t i=0; i<propertyLinks_.size(); ++i) {
+        if ((src == propertyLinks_.at(i)->getSourceProperty()) && (dst == propertyLinks_.at(i)->getDestinationProperty())) {
+            propertyLink = propertyLinks_.at(i);
+            propertyLinks_.erase(propertyLinks_.begin() + i);
+            propertyLinkRemoved = true;
+            break;
+        }
+    }
+
+    // notify observers and then delete the link
+    if (propertyLinkRemoved) {
+        notifyPropertyLinkRemoved(propertyLink);
+        delete propertyLink;
+    }
+
+    return propertyLinkRemoved;
+}
+
 const vector<PropertyLink*>& ProcessorNetwork::getPropertyLinks() const {
     return propertyLinks_;
 }
 
-int ProcessorNetwork::linkProperties(const std::vector<Property*>& properties,
+int ProcessorNetwork::createPropertyLinksBetweenProperties(const std::vector<Property*>& properties,
         LinkEvaluatorBase* linkEvaluator, bool replace, bool transitive) {
 
     // filter properties that do not belong to a processor in the network
     std::vector<Property*> linkProperties;
     for (size_t i=0; i<properties.size(); ++i) {
-        Processor* owner = dynamic_cast<Processor*>(properties[i]->getOwner());
+        Processor* owner = getOwningProcessor(properties[i]);
         if (!owner) {
-            LWARNING("Property is not owned by a processor: " << properties[i]->getOwner()->getName() << ":" << properties[i]->getID());
+            LWARNING("Property is not (directly or indirectly) owned by a processor: " << properties[i]->getFullyQualifiedID());
             continue;
         }
 
         if (contains(owner))
             linkProperties.push_back(properties[i]);
         else
-            LWARNING("Property's owner is not part of the network: " << owner->getName() <<
-                ":" << properties[i]->getID());
+            LWARNING("Property's owner is not part of the network: " << properties[i]->getFullyQualifiedID());
     }
 
     // need at least two properties to link
@@ -694,11 +738,450 @@ int ProcessorNetwork::linkProperties(const std::vector<Property*>& properties,
     return numLinks;
 }
 
-void ProcessorNetwork::clearPropertyLinks() {
+int ProcessorNetwork::removePropertyLinksFromSubNetwork(const std::vector<Processor*>& processors) {
+    return removePropertyLinksFromSubNetwork<Property>(processors);
+}
+
+PropertyLink* ProcessorNetwork::getRenderSizeLink(RenderPort* source, RenderPort* dest) {
+    tgtAssert(source && dest, "null pointer passed");
+
+    Property* sourceProp = 0;
+    if (source->getSizeOriginProperty())
+        sourceProp = source->getSizeOriginProperty();
+    else if (source->getSizeReceiveProperty())
+        sourceProp = source->getSizeReceiveProperty();
+    else
+        return 0;
+
+    Property* destProp = 0;
+    if (dest->getSizeOriginProperty())
+        destProp = dest->getSizeOriginProperty();
+    else if (dest->getSizeReceiveProperty())
+        destProp = dest->getSizeReceiveProperty();
+    else
+        return 0;
+
+    tgtAssert(sourceProp && destProp, "unexpected null pointer");
+    PropertyLink* link = sourceProp->getLink(destProp);
+    if (link && dynamic_cast<LinkEvaluatorRenderSize*>(link->getLinkEvaluator()))
+        return link;
+    else
+        return 0;
+}
+
+PropertyLink* ProcessorNetwork::getRenderSizeLink(RenderPort& source, RenderPort& destination) {
+    return getRenderSizeLink(&source, &destination);
+}
+
+PropertyLink* ProcessorNetwork::createRenderSizeLink(RenderPort* source, RenderPort* dest) {
+    tgtAssert(source && dest, "null pointer passed");
+
+    Property* sourceProp = 0;
+    if (source->getSizeOriginProperty())
+        sourceProp = source->getSizeOriginProperty();
+    else if (source->getSizeReceiveProperty())
+        sourceProp = source->getSizeReceiveProperty();
+    else {
+        LWARNING("createRenderSizeLink(): passed source port is neither a size origin nor a size receiver");
+        return 0;
+    }
+
+    Property* destProp = 0;
+    if (dest->getSizeOriginProperty()) {
+        destProp = dest->getSizeOriginProperty();
+        if (source->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER) {
+            LWARNING("createRenderSizeLink(): render size link from a receiver to a origin is not possible");
+            return 0;
+        }
+    }
+    else if (dest->getSizeReceiveProperty())
+        destProp = dest->getSizeReceiveProperty();
+    else {
+        LWARNING("createRenderSizeLink(): passed dest port is neither a size origin nor a size receiver");
+        return 0;
+    }
+
+    tgtAssert(sourceProp && destProp, "unexpected null pointer");
+    if (getRenderSizeLink(source, dest)) {
+        LWARNING("createRenderSizeLink(): size link from '" << source->getQualifiedName() << "' to '" << 
+            dest->getQualifiedName() << "' already exists.");
+        return 0;
+    }
+    else {
+        return createPropertyLink(sourceProp, destProp, new LinkEvaluatorRenderSize());
+    }
+}
+
+PropertyLink* ProcessorNetwork::createRenderSizeLink(RenderPort& source, RenderPort& destination) {
+    return createRenderSizeLink(&source, &destination);
+}
+
+bool ProcessorNetwork::removeRenderSizeLink(RenderPort* source, RenderPort* dest) {
+    tgtAssert(source && dest, "null pointer passed");
+    PropertyLink* link = getRenderSizeLink(source, dest);
+    if (link) {
+        removePropertyLink(link);
+        return true;
+    }
+    else 
+        return false;
+}
+
+bool ProcessorNetwork::removeRenderSizeLink(RenderPort& source, RenderPort& destination) {
+    return removeRenderSizeLink(&source, &destination);
+}
+
+int ProcessorNetwork::removeRenderSizeLinksFromProcessor(Processor* processor) {
+    tgtAssert(processor, "null pointer passed");
+    tgtAssert(contains(processor), "passed processor is not part of the network");
+
+    // collect render ports of processor
+    std::vector<RenderPort*> processorPorts;
+    std::vector<Port*> tPorts = processor->getPorts();
+    for (size_t i=0; i<tPorts.size(); i++)
+        if (RenderPort* renderPort = dynamic_cast<RenderPort*>(tPorts.at(i)))
+            processorPorts.push_back(renderPort);
+
+    // iterate over render ports of all processors and remove links to/from processorPorts
+    int numRemoved = 0;
+    for (size_t i=0; i<processors_.size(); i++) {
+        std::vector<Port*> tPorts = processors_.at(i)->getPorts();
+        for (size_t j=0; j<tPorts.size(); j++) {
+            RenderPort* networkPort = dynamic_cast<RenderPort*>(tPorts.at(j));
+            if (networkPort) {
+                for (size_t k=0; k<processorPorts.size(); k++) {
+                    if (removeRenderSizeLink(networkPort, processorPorts.at(k)))
+                        numRemoved++;
+                    if (removeRenderSizeLink(processorPorts.at(k), networkPort))
+                        numRemoved++;
+                }
+            }
+        }
+    }
+
+    return numRemoved;
+}
+
+int ProcessorNetwork::createRenderSizeLinksWithinSubNetwork(const std::vector<Processor*>& linkProcessors, bool replaceExisting /*= false*/) {
+    // check, if all processors are part of this network
+    for (size_t i=0; i < linkProcessors.size(); ++i){
+        if (!contains(linkProcessors[i])){
+            LERROR("createRenderSizeLinksInSubNetwork(): processor '" << linkProcessors[i]->getName() << "' is not part of this network");
+            tgtAssert(false, "processor is not part of this network");
+            return 0;
+        }
+    }   
+       
+    // create inverse map from render size receivers to linked origins for existing links
+    std::map<RenderPort*, std::vector<RenderPort*> > receiverToOriginMapExisting =
+        getRenderSizeReceiverToOriginsMap(processors_);
+
+    // determine for each render receiver port (dest) of the passed processors the corresponding render size origins (sources)
+    // it should be linked with
+    std::map<RenderPort*, std::vector<RenderPort*> > receiverToOriginMap;
+    for (std::vector<Processor*>::const_iterator procIt=linkProcessors.begin(); procIt != linkProcessors.end(); ++procIt) {
+        Processor* proc = *procIt;
+        std::vector<Port*> outports = proc->getOutports();
+        for (std::vector<Port*>::iterator outportIt=outports.begin(); outportIt != outports.end(); ++outportIt) {
+            RenderPort* rootPort = dynamic_cast<RenderPort*>(*outportIt);
+            if (!rootPort || rootPort->getRenderSizePropagation() != RenderPort::RENDERSIZE_RECEIVER)
+                continue;
+            receiverToOriginMap.insert(std::make_pair(rootPort, getSuccessingRenderSizeOrigins(rootPort, linkProcessors)));
+        }
+    }
+
+    // create render size links
+    int numCreated = 0;
+    std::map<RenderPort*, std::vector<RenderPort*> >::iterator receiverIt;
+    for (receiverIt = receiverToOriginMap.begin(); receiverIt != receiverToOriginMap.end(); ++receiverIt) {
+        RenderPort* receiver = receiverIt->first;
+        tgtAssert(receiver->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER, "not a render size receiver");
+
+        // check if origin has been found
+        std::vector<RenderPort*> origins = receiverIt->second;
+        if (origins.empty())
+            continue;
+
+        // remove duplicates in origins vector
+        std::vector<RenderPort*>::iterator uniqueIt = std::unique(origins.begin(), origins.end());
+        origins.resize(uniqueIt - origins.begin());
+
+        // check, if receiver already has a size link
+        if (receiverToOriginMapExisting.count(receiver) && !receiverToOriginMapExisting[receiver].empty()) {
+            std::vector<RenderPort*> existingOrigins = receiverToOriginMapExisting[receiver];
+            if (existingOrigins.size() == 1 && origins.size() == 1 && existingOrigins.front() == origins.front()) {
+                // single size link to be created for this receiver already exists => do nothing
+                continue;
+            }
+            else if (!replaceExisting) {
+                LINFO("Render size receiver '" << receiver->getQualifiedName() << "' already has size link(s). No render size link created.");
+                continue;
+            }
+            else {
+                // remove existing size links to this receiver
+                LWARNING("Removing existing size links to receiver: " << receiver->getQualifiedName());
+                for (size_t i=0; i<existingOrigins.size(); i++)
+                    removeRenderSizeLink(existingOrigins.at(i), receiver);
+            }
+        }
+
+        // create size link, if exactly one size origin has been found for this receiver
+        if (origins.size() == 1) {
+            RenderPort* origin = origins.front();
+            tgtAssert(origin->getRenderSizePropagation() == RenderPort::RENDERSIZE_ORIGIN, "not a render size origin");
+            tgtAssert(receiver->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER, "not a render size receiver");
+            createRenderSizeLink(origin, receiver);
+            numCreated++;
+        }
+        else {
+            LWARNING("Multiple potential render size origins for render size receiver: " << receiver->getQualifiedName());
+        }
+    }
+    
+    return numCreated;
+}
+
+int ProcessorNetwork::createRenderSizeLinksOverConnection(RenderPort* outport, RenderPort* inport, bool replaceExisting) {
+    tgtAssert(outport && inport, "null pointer passed");
+    tgtAssert(outport->isOutport(), "passed port is not an outport");
+    tgtAssert(inport->isInport(), "passed port is not an inport");
+    tgtAssert(outport->isConnectedTo(inport), "passed ports are not connected");
+
+    // determine size origin successor of inport
+    RenderPort* originPort = 0;
+    if (inport->getRenderSizePropagation() == RenderPort::RENDERSIZE_ORIGIN)
+        originPort = inport;
+    else {
+        std::vector<RenderPort*> originSuccessors = getSuccessingRenderSizeOrigins(inport, processors_);
+        if (originSuccessors.size() == 1)
+            originPort = originSuccessors.front(); 
+        else if (originSuccessors.size() > 1) {
+            // multiple origins => no size link over connection possible
+            LWARNING("Multiple potential render size origins. No render size link created."); 
+            return 0;
+        }
+        else {
+            // no origin => no size link over connection possible
+            return 0;
+        }
+    }
+    tgtAssert(originPort, "no origin port");
+
+    // create inverse map from render size receivers to linked origins for existing links
+    std::map<RenderPort*, std::vector<RenderPort*> > receiverToOriginMapExisting =
+        getRenderSizeReceiverToOriginsMap(processors_);
+
+    // determine size receiving predecessors of outport
+    std::vector<RenderPort*> receiverPredecessors;
+    if (outport->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER)
+        receiverPredecessors.push_back(outport);
+    else
+        receiverPredecessors = getPredecessingRenderSizeReceivers(outport, processors_);
+
+    // determine for each size predecessor (receiver) its size successors (origins) 
+    //std::map<RenderPort*, RenderPort*> receiverToOriginMap;
+    std::vector<RenderPort*> receiverPortsToLink;
+    for (size_t i=0; i<receiverPredecessors.size(); i++) {
+        RenderPort* receiverPort = receiverPredecessors.at(i);
+        tgtAssert(receiverPort->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER, "port is not a size receiver");
+
+        // get size origin successors considering the entire network topology
+        std::vector<RenderPort*> tOrigins = getSuccessingRenderSizeOrigins(receiverPort, processors_);
+        // if receiver has only one potential origin, which equals the connection successor, create size link
+        if (tOrigins.size() == 1 && tOrigins.front() == originPort)
+            receiverPortsToLink.push_back(receiverPort);  
+        else if (tOrigins.size() > 1) {
+            LWARNING("Multiple potential render size origins for render size receiver: " << receiverPort->getQualifiedName() 
+                << ". No render size link created.");
+        }
+    }
+
+    // create render size links
+    int numCreated = 0;
+    for (size_t i=0; i<receiverPortsToLink.size(); i++) {
+        RenderPort* receiverPort = receiverPortsToLink.at(i);
+        tgtAssert(receiverPort->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER, "not a render size receiver");
+
+        // check, if receiver already has a size link
+        if (receiverToOriginMapExisting.count(receiverPort) && !receiverToOriginMapExisting[receiverPort].empty()) {
+            std::vector<RenderPort*> existingOrigins = receiverToOriginMapExisting[receiverPort];
+            if (existingOrigins.size() == 1 && existingOrigins.front() == originPort) {
+                // single size link to be created for this receiver already exists => do nothing
+                continue;
+            }
+            else if (!replaceExisting) {
+                LINFO("Render size receiver '" << receiverPort->getQualifiedName() << "' already has size link(s). No render size link created.");
+                continue;
+            }
+            else {
+                // remove existing size links to this receiver
+                LWARNING("Removing existing size links to receiver: " << receiverPort->getQualifiedName());
+                for (size_t j=0; j<existingOrigins.size(); j++)
+                    removeRenderSizeLink(existingOrigins.at(j), receiverPort);
+            }
+        }
+
+        // create size link
+        tgtAssert(originPort->getRenderSizePropagation() == RenderPort::RENDERSIZE_ORIGIN, "not a render size origin");
+        createRenderSizeLink(originPort, receiverPort);
+        numCreated++;
+    }
+
+    return numCreated;
+}
+
+int ProcessorNetwork::createRenderSizeLinksForProcessor(Processor* processor, bool replaceExisting) {
+    tgtAssert(processor, "null pointer passed");
+    tgtAssert(contains(processor), "passed processor is not part of the network");
+
+    // call createRenderSizeLinksOverConnection() for all incoming and outgoing render port connections
+    int numCreated = 0;
+    
+    // render inports
+    std::vector<Port*> inports = processor->getInports();
+    for (size_t i=0; i<inports.size(); i++) {
+        RenderPort* renderInport = dynamic_cast<RenderPort*>(inports.at(i));
+        if (renderInport) {
+            std::vector<const Port*> connectedOutports = renderInport->getConnected();
+            for (size_t j=0; j<connectedOutports.size(); j++) {
+                const RenderPort* renderOutport = dynamic_cast<const RenderPort*>(connectedOutports.at(j));
+                tgtAssert(renderOutport, "RenderPort connected to non-RenderPort");
+                numCreated += createRenderSizeLinksOverConnection(const_cast<RenderPort*>(renderOutport), renderInport, replaceExisting);
+            }
+        }
+    }
+
+    // render outport
+    std::vector<Port*> outports = processor->getOutports();
+    for (size_t i=0; i<outports.size(); i++) {
+        RenderPort* renderOutport = dynamic_cast<RenderPort*>(outports.at(i));
+        if (renderOutport) {
+            std::vector<const Port*> connectedInports = renderOutport->getConnected();
+            for (size_t j=0; j<connectedInports.size(); j++) {
+                const RenderPort* renderInport = dynamic_cast<const RenderPort*>(connectedInports.at(j));
+                tgtAssert(renderInport, "RenderPort connected to non-RenderPort");
+                numCreated += createRenderSizeLinksOverConnection(renderOutport, const_cast<RenderPort*>(renderInport), replaceExisting);
+            }
+        }
+    }
+
+    return numCreated;
+}
+
+int ProcessorNetwork::removeRenderSizeLinksFromSubNetwork(const std::vector<Processor*>& subNetwork) {
+    // check, if all processors are part of this network
+    for (size_t i=0; i < subNetwork.size(); ++i){
+        if (!contains(subNetwork[i])){
+            LERROR("removeRenderSizeLinksFromSubNetwork(): processor '" << subNetwork[i]->getName() << "' is not part of this network");
+            tgtAssert(false, "removeRenderSizeLinksFromSubNetwork(): processor is not part of this network");
+            return 0;
+        }
+    }
+
+    int numRemoved = 0;
+
+    // collect render size receivers in passed sub network
+    std::set<Property*> sizeReceivers;
+    for (size_t i=0; i<subNetwork.size(); i++) {
+        Processor* proc = subNetwork.at(i);
+        std::vector<Port*> outports = proc->getOutports();
+        for (size_t j=0; j<outports.size(); j++) {
+            RenderPort* rp = dynamic_cast<RenderPort*>(outports.at(j));
+            if (rp && rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER) {
+                tgtAssert(rp->getSizeReceiveProperty(), "render size receiver without receive property");
+                sizeReceivers.insert(rp->getSizeReceiveProperty());
+            }
+                
+        }
+    }
+
+    // iterate over size origins in sub network and remove all size links to collected size receivers
+    for (size_t i=0; i<subNetwork.size(); i++) {
+        Processor* proc = subNetwork.at(i);
+        std::vector<Port*> inports = proc->getInports();
+        for (size_t j=0; j<inports.size(); j++) {
+            RenderPort* rp = dynamic_cast<RenderPort*>(inports.at(j));
+            if (rp && rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_ORIGIN) {
+                tgtAssert(rp->getSizeOriginProperty(), "render size origin without origin property");
+                std::vector<PropertyLink*> links = rp->getSizeOriginProperty()->getLinks();
+                for (size_t k=0; k<links.size(); k++) {
+                    PropertyLink* link = links.at(k);
+                    if (dynamic_cast<LinkEvaluatorRenderSize*>(link->getLinkEvaluator()) &&
+                            sizeReceivers.count(link->getDestinationProperty())) {
+                        removePropertyLink(link);
+                        numRemoved++;
+                    }
+                }
+            }
+        }
+    }
+
+    return numRemoved;
+}
+
+int ProcessorNetwork::removeRenderSizeLinksOverConnection(RenderPort* outport, RenderPort* inport) {
+    tgtAssert(outport->isOutport(), "passed port is not an outport");
+    tgtAssert(inport->isInport(), "passed port is not an inport");
+
+    // determine size origin successor of inport
+    RenderPort* originPort = 0;
+    if (inport->getRenderSizePropagation() == RenderPort::RENDERSIZE_ORIGIN)
+        originPort = inport;
+    else {
+        std::vector<RenderPort*> originSuccessors = getSuccessingRenderSizeOrigins(inport, processors_);
+        if (originSuccessors.size() == 1)
+            originPort = originSuccessors.front(); 
+        else if (originSuccessors.size() > 1) {
+            // multiple origins => no size link over connection possible
+            LWARNING("Multiple potential render size origins. No render size link removed."); 
+            return 0;
+        }
+        else {
+            // no origin => no size link over connection possible
+            return 0;
+        }
+    }
+    tgtAssert(originPort, "no origin port");
+
+    // determine size receiving predecessors of outport
+    std::set<RenderPort*> receiverPredecessors;
+    if (outport->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER)
+        receiverPredecessors.insert(outport);
+    else {
+        std::vector<RenderPort*> preds = getPredecessingRenderSizeReceivers(outport, processors_);
+        receiverPredecessors.insert(preds.begin(), preds.end());
+    }
+    if (receiverPredecessors.empty())
+        return 0;
+
+    // remove all size links from origins to receivers
+    int numRemoved = 0;
+    RenderSizeOriginProperty* originProp = originPort->getSizeOriginProperty();
+    tgtAssert(originProp, "render size origin without size origin property");
+    std::vector<PropertyLink*> links = originProp->getLinks();
+    for (size_t i=0; i<links.size(); i++) {
+        PropertyLink* link = links.at(i);
+        RenderSizeReceiveProperty* receiveProp = dynamic_cast<RenderSizeReceiveProperty*>(link->getDestinationProperty());
+        if (receiveProp && dynamic_cast<LinkEvaluatorRenderSize*>(link->getLinkEvaluator())) {
+            RenderPort* receiverPort = dynamic_cast<RenderPort*>(receiveProp->getOwner());
+            tgtAssert(receiverPort, "RenderSizeReceiveProperty is not owned by a RenderPort");
+            if (receiverPredecessors.count(receiverPort)) {
+                removePropertyLink(link);
+                numRemoved++;
+            }
+        }
+    }
+
+    return numRemoved;
+}
+
+int ProcessorNetwork::removeAllPropertyLinks() {
     std::vector<PropertyLink*> links = getPropertyLinks();
+    int numRemoved = static_cast<int>(links.size());
     while (!propertyLinks_.empty()) {
         removePropertyLink(propertyLinks_.front());
     }
+    return numRemoved;
 }
 
 bool ProcessorNetwork::isPropertyLinked(const Property* property) const {
@@ -710,7 +1193,7 @@ bool ProcessorNetwork::isPropertyLinked(const Property* property) const {
     return false;
 }
 
-bool ProcessorNetwork::containsLink(const Property* src, const Property* dest, LinkEvaluatorBase* evaluator) const {
+bool ProcessorNetwork::containsPropertyLink(const Property* src, const Property* dest, LinkEvaluatorBase* evaluator) const {
     for (size_t i = 0; i < propertyLinks_.size(); ++i) {
         PropertyLink* link = propertyLinks_[i];
         bool sourcePropertyMatches = (link->getSourceProperty() == src);
@@ -800,13 +1283,13 @@ void ProcessorNetwork::deserialize(XmlDeserializer& s) {
                 addOn += "Outport: '";
                 if (it->getOutport()->getProcessor())
                     addOn += it->getOutport()->getProcessor()->getName() + "::";
-                addOn += it->getOutport()->getName() + "' ";
+                addOn += it->getOutport()->getID() + "' ";
             }
             if (it->getInport()) {
                 addOn += "Inport: '";
                 if (it->getInport()->getProcessor())
                     addOn += it->getInport()->getProcessor()->getName() + "::";
-                addOn += it->getInport()->getName() + "'";
+                addOn += it->getInport()->getID() + "'";
             }
             s.addError(SerializationException("Port connection could not be established. " + addOn));
         }
@@ -876,6 +1359,176 @@ void ProcessorNetwork::deserialize(XmlDeserializer& s) {
     notifyNetworkChanged();
 }
 
+std::vector<std::string> ProcessorNetwork::getErrors() const {
+    return errorList_;
+}
+
+void ProcessorNetwork::setErrors(const std::vector<std::string>& errorList) {
+    errorList_ = errorList;
+}
+
+Processor* ProcessorNetwork::getOwningProcessor(Property* property) const {
+    if (Processor* processor = dynamic_cast<Processor*>(property->getOwner()))
+        return processor;
+    else if (Port* port = dynamic_cast<Port*>(property->getOwner()))
+        return port->getProcessor();
+    else
+        return 0;
+}
+
+std::vector<RenderPort*> ProcessorNetwork::getPredecessingRenderSizeReceivers(RenderPort* rootPort, const std::vector<Processor*>& subNetwork) const {
+    tgtAssert(rootPort, "null pointer passed");
+
+    std::vector<RenderPort*> result;
+
+    std::queue<RenderPort*> worklist;
+    if (rootPort->isInport())
+        worklist.push(rootPort);
+    else {
+        std::vector<Port*> inports = rootPort->getProcessor()->getInports();
+        for (size_t i=0; i<inports.size(); i++) {
+            RenderPort* rp = dynamic_cast<RenderPort*>(inports.at(i));
+            if (rp)
+                worklist.push(rp);
+        }
+    }
+
+    std::set<RenderPort*> processed; //< for cycle detection
+    while (!worklist.empty()) {
+        RenderPort* curPort = worklist.front();
+        worklist.pop();
+        tgtAssert(curPort, "null pointer in worklist");
+        tgtAssert(curPort->isInport(), "outport in worklist");
+        processed.insert(curPort);
+        if (curPort->isLoopPort()) //< do not traverse over loop ports
+            continue;
+        const std::vector<const Port*> predecessors = curPort->getConnected();
+        for (std::vector<const Port*>::const_iterator succIt=predecessors.begin(); succIt != predecessors.end(); ++succIt) {
+            const RenderPort* predecessorPort = dynamic_cast<const RenderPort*>(*succIt);
+            Processor* predecessorProc = predecessorPort->getProcessor();
+            if (!predecessorPort) {
+                LWARNING("RenderInport connected to non-RenderOutport");
+                continue;
+            }
+            tgtAssert(predecessorPort->isOutport(), "inport not connected to an outport");
+            if (predecessorPort->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER && 
+                std::find(subNetwork.begin(), subNetwork.end(), predecessorProc) != subNetwork.end()  ) {
+                    // outport is size receiver and owning processor is to be linked 
+                    // => save outport as corresponding size receiver and stop traversal 
+                    result.push_back(const_cast<RenderPort*>(predecessorPort));
+            }
+            else {
+                // outport is not a size receiver port or owning processor is not to be size linked 
+                // => add owning processor's render inports to worklist, unless they are size origins themselves
+                std::vector<Port*> predInports = predecessorProc->getInports();
+                for (size_t s=0; s<predInports.size(); s++) {
+                    RenderPort* predRenderPort = dynamic_cast<RenderPort*>(predInports.at(s));
+                    if (predRenderPort && !processed.count(predRenderPort)) {
+                        if (predRenderPort->getRenderSizePropagation() == RenderPort::RENDERSIZE_DEFAULT ||
+                                std::find(subNetwork.begin(), subNetwork.end(), predecessorProc) == subNetwork.end())
+                            worklist.push(predRenderPort);
+                    }
+                }
+            }
+        }
+    }
+
+    return result;
+
+}
+
+std::vector<RenderPort*> ProcessorNetwork::getSuccessingRenderSizeOrigins(RenderPort* rootPort, const std::vector<Processor*>& subNetwork) const {
+    tgtAssert(rootPort, "null pointer passed");
+
+    std::vector<RenderPort*> result;
+
+    std::queue<RenderPort*> worklist;
+    if (rootPort->isOutport())
+        worklist.push(rootPort);
+    else {
+        std::vector<Port*> outports = rootPort->getProcessor()->getOutports();
+        for (size_t i=0; i<outports.size(); i++) {
+            RenderPort* rp = dynamic_cast<RenderPort*>(outports.at(i));
+            if (rp)
+                worklist.push(rp);
+        }
+    }
+    
+    std::set<RenderPort*> processed; //< for cycle prevention
+    while (!worklist.empty()) {
+        RenderPort* curPort = worklist.front();
+        worklist.pop();
+        tgtAssert(curPort, "null pointer in worklist");
+        tgtAssert(curPort->isOutport(), "inport in worklist");
+        processed.insert(curPort);
+        if (curPort->isLoopPort())  //< do not traverse over loop ports
+            continue;
+        const std::vector<const Port*> successors = curPort->getConnected();
+        for (std::vector<const Port*>::const_iterator succIt=successors.begin(); succIt != successors.end(); ++succIt) {
+            const RenderPort* successorPort = dynamic_cast<const RenderPort*>(*succIt);
+            Processor* successorProc = successorPort->getProcessor();
+            if (!successorPort) {
+                LWARNING("RenderOutport connected to non-RenderInport");
+                continue;
+            }
+            tgtAssert(successorPort->isInport(), "outport not connected to an inport");
+            if (successorPort->getRenderSizePropagation() == RenderPort::RENDERSIZE_ORIGIN && 
+                std::find(subNetwork.begin(), subNetwork.end(), successorProc) != subNetwork.end()  ) {
+                    // inport is size origin and owning processor is to be linked 
+                    // => save inport as corresponding size origin for root port and stop traversal 
+                    result.push_back(const_cast<RenderPort*>(successorPort));
+            }
+            else {
+                // inport is not a size origin or owning processor is not to be size linked 
+                // => add owning processor's render outports to worklist, unless they are size receivers themselves
+                std::vector<Port*> succOutports = successorProc->getOutports();
+                for (size_t s=0; s<succOutports.size(); s++) {
+                    RenderPort* succRenderPort = dynamic_cast<RenderPort*>(succOutports.at(s));
+                    if (succRenderPort && !processed.count(succRenderPort)) {
+                        if (succRenderPort->getRenderSizePropagation() == RenderPort::RENDERSIZE_DEFAULT ||
+                                std::find(subNetwork.begin(), subNetwork.end(), successorProc) == subNetwork.end())
+                            worklist.push(succRenderPort);
+                    }
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+std::map<RenderPort*, std::vector<RenderPort*> > ProcessorNetwork::getRenderSizeReceiverToOriginsMap(
+    const std::vector<Processor*> subNetwork) const 
+{
+    std::map<RenderPort*, std::vector<RenderPort*> > result;
+    for (size_t i=0; i<subNetwork.size(); i++) {
+        Processor* proc = subNetwork.at(i);
+        std::vector<Port*> inports = proc->getInports();
+        for (size_t j=0; j<inports.size(); j++) {
+            RenderPort* rp = dynamic_cast<RenderPort*>(inports.at(j));
+            if (rp && rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_ORIGIN) {
+                tgtAssert(rp->getSizeOriginProperty(), "Render size origin without origin property");
+                std::vector<PropertyLink*> links = rp->getSizeOriginProperty()->getLinks();
+                for (size_t k=0; k<links.size(); k++) {
+                    if (dynamic_cast<LinkEvaluatorRenderSize*>(links.at(k)->getLinkEvaluator())) {
+                        Property* destProp = links.at(k)->getDestinationProperty();
+                        RenderPort* destPort = dynamic_cast<RenderPort*>(destProp->getOwner());
+                        if (destPort && destPort->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER) {
+                            if (!result.count(destPort))
+                                result.insert(std::make_pair(destPort, std::vector<RenderPort*>()));
+                            result[destPort].push_back(rp);
+                        }
+                    }
+                }
+            }
+        }
+    }          
+
+    return result;
+}
+
+// observer methods
+
 void ProcessorNetwork::notifyNetworkChanged() const {
     vector<ProcessorNetworkObserver*> observers = getObservers();
     for (size_t i=0; i<observers.size(); ++i)
@@ -925,14 +1578,6 @@ void ProcessorNetwork::notifyPropertyLinkRemoved(const PropertyLink* link) const
         observers[i]->propertyLinkRemoved(link);
 }
 
-std::vector<std::string> ProcessorNetwork::getErrors() const {
-    return errorList_;
-}
-
-void ProcessorNetwork::setErrors(const std::vector<std::string>& errorList) {
-    errorList_ = errorList;
-}
-
 std::vector<Property*> ProcessorNetwork::getPropertiesByID(const std::string& id) const {
     std::vector<Property*> result;
     for (size_t i = 0; i < processors_.size(); ++i) {
@@ -943,7 +1588,7 @@ std::vector<Property*> ProcessorNetwork::getPropertiesByID(const std::string& id
 }
 
 void ProcessorNetwork::preparePropertyRemoval(Property* property) {
-    removePropertyLinks(property);
+    removePropertyLinksFromProperty(property);
 }
 
 void ProcessorNetwork::processorWidgetCreated(const Processor* /*processor*/) {

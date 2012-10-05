@@ -8,6 +8,7 @@
 // For more information, see http://www.boost.org/libs/range/
 //
 
+
 #ifndef BOOST_RANGE_DETAIL_REMOVE_BOUNDS_HPP
 #define BOOST_RANGE_DETAIL_REMOVE_BOUNDS_HPP
 

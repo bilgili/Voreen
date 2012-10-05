@@ -147,7 +147,7 @@ class GenericPortTypeCheck : public PortTypeCheck {
  * @author  Dirk Feldmann, July/August 2009
  */
 class VRN_CORE_API NetworkGraph {
-private:
+public:
 
     /**
      * Class for representing a node within the Graph. The nodes store the related
@@ -426,9 +426,11 @@ private:
         CollectSuccessorsVisitor();
         virtual ~CollectSuccessorsVisitor();
         const std::set<GraphNode*>& getSuccessors() const;
+        const std::vector<GraphNode*>& getSuccessorsOrdered() const;
         virtual bool visit(GraphNode* const graphNode);
     private:
         std::set<GraphNode*> successors_;
+        std::vector<GraphNode*> successorOrdered_;
     };  // class CollectSuccessorsVisitor
 
 public:
@@ -499,55 +501,6 @@ public:
     bool containsProcessor(Processor* const processor) const;
 
     /**
-     * Returns true, if \p successor is a successor of \p predecessor
-     * in the network graph.
-     */
-    bool isSuccessor(Processor* predecessor, Processor* successor) const;
-
-    /**
-     * Returns true, if \p processor lies on a path between \p pathRoot and \p pathEnd.
-.     */
-    bool isPathElement(Processor* processor, Processor* pathRoot, Processor* pathEnd) const;
-
-    /**
-     * Traverses the entire graph in breadth-first order. This means,
-     * that every node within the graph is a potential root. The roots
-     * for the search are determined by <code>identifyRoots()</code>.
-     * Thereby, all connected components will be found. This method
-     * internally calls <code>traverseBreadthFirstInternal()</code>.
-     * After traversing, all bool marks of the nodes are set to true.
-     * Before traversing, this method sets all bool markers of the nodes
-     * to false. Furthermore, the breadth-first search determines the
-     * minimal distance to the root for this node, for each connected
-     * component of the graph.
-     *
-     * @param   visitor A visitor according to the visitor design-pattern
-     *                  which is applied to each node when it is discovered
-     *                  by breadth-first search, and if it is not NULL.
-     */
-    void fullTraverseBreadthFirst(GraphVisitor* const visitor = 0) const;
-
-    /**
-     * Traverses the entire graph in depth-first order. This means, that
-     * every node within the graph is a potential root. The roots for the
-     * search are determined by <code>identifyRoots()</code>. Thereby,
-     * all connected components will be found. This method internally calls
-     * <code>traverseBreadthFirstInternal()</code>.
-     * After traversing, all discovery timestamps and all finalization
-     * timestamps are > 0. Before traversing, all these timestamps are set
-     * to 0 again.
-     *
-     * @param   onDiscoveryVisitor  A vistor according to the visitor desgin-
-     * pattern which will be applied to all nodes when they are discovered by
-     * the depth-first search, and if it is not NULL.
-     * @param   onFinishVisitor  A vistor according to the visitor desgin-
-     * pattern which will be applied to all nodes when they are finished by
-     * the depth-first search, and if it is not NULL.
-     */
-    void fullTraverseDepthFirst(GraphVisitor* const onDiscoveryVisitor = 0,
-        GraphVisitor* const onFinishVisitor = 0) const;
-
-    /**
      * Returns all processors from all nodes in this graph. The order may be
      * chosen to be unsorted or the processors can be ordered according to the
      * ID of their nodes. The ID of the nodes corresponds to the order of insertion
@@ -592,12 +545,67 @@ public:
     NetworkGraph* getTransposed() const;
 
     /**
+     * Returns true, if \p successor is a direct or indirect successor of \p predecessor
+     * in the network graph.
+     */
+    bool isSuccessor(Processor* predecessor, Processor* successor) const;
+
+    /**
+     * Returns true, if \p successor is a direct or indirect successor of \p predecessorPort
+     * in the network graph. The passed port may be an inport or an outport.
+     */
+    bool isSuccessor(Port* predecessorPort, Processor* successor) const;
+
+    /**
+     * Returns true, if \p successorPort is a direct or indirect successor of \p predecessor
+     * in the network graph. The passed port may be an inport or an outport.
+     */
+    bool isSuccessor(Processor* predecessor, Port* successorPort) const;
+
+    /**
+     * Returns true, if \p successor is a direct or indirect successor of \p predecessor
+     * in the network graph. Both parameters may be inports or outports.
+     */
+    bool isSuccessor(Port* predecessor, Port* successor) const;
+
+    /**
+     * Returns true, if \p processor lies on a path between \p pathRoot and \p pathEnd.
+.     */
+    bool isPathElement(Processor* processor, Processor* pathRoot, Processor* pathEnd) const;
+
+    /**
+     * Returns true, if \p processor lies on a path between \p pathRootPort and \p pathEndPort.
+     * Both ports may either be an inport or an outport.
+     */
+    bool isPathElement(Processor* processor, Port* pathRootPort, Port* pathEndPort) const;
+
+    /**
+     * Returns true, if \p port lies on a path between \p pathRootPort and \p pathEndPort.
+     * All passed ports may either be an inport or an outport. 
+     * If \p port is identical to \p pathRootPort or \p pathEndPort and a path between root and end exists, 
+     * \p port is defined to be an path element.
+.    */
+    bool isPathElement(Port* port, Port* pathRootPort, Port* pathEndPort) const;
+
+    /**
      * Returns all predecessing processors of the passed processors.
      *
      * @param  processors The processors whose predecessors are to be determined.
      * @return Set of predecessing processors without duplicates, including the passed ones.
      */
     std::set<Processor*> getPredecessors(const std::set<Processor*>& processors) const;
+
+    /// @overload
+    std::set<Processor*> getPredecessors(Processor* processor) const;
+
+    /**
+     * Returns all predecessing processors of the passed port, 
+     * which must be an inport.
+     *
+     * @param port The port whose predecessors are to be determined.
+     * @return Set of predecessing processors without duplicates.
+     */
+    std::set<Processor*> getPredecessors(Port* inport) const;
 
     /**
      * Returns all successing processors of the passed processors.
@@ -606,6 +614,56 @@ public:
      * @return Set of successing processors without duplicates, including the passed ones.
      */
     std::set<Processor*> getSuccessors(const std::set<Processor*>& processors) const;
+
+    /// @overload
+    std::set<Processor*> getSuccessors(Processor* processor) const;
+
+    /**
+     * Returns all successing processors of the passed port, 
+     * which must be an outport.
+     *
+     * @param port The port whose successors are to be determined.
+     * @return Set of successing processors without duplicates.
+     */
+    std::set<Processor*> getSuccessors(Port* outport) const;
+
+    /**
+     * Traverses the entire graph in breadth-first order. This means,
+     * that every node within the graph is a potential root. The roots
+     * for the search are determined by <code>identifyRoots()</code>.
+     * Thereby, all connected components will be found. This method
+     * internally calls <code>traverseBreadthFirstInternal()</code>.
+     * After traversing, all bool marks of the nodes are set to true.
+     * Before traversing, this method sets all bool markers of the nodes
+     * to false. Furthermore, the breadth-first search determines the
+     * minimal distance to the root for this node, for each connected
+     * component of the graph.
+     *
+     * @param   visitor A visitor according to the visitor design-pattern
+     *                  which is applied to each node when it is discovered
+     *                  by breadth-first search, and if it is not NULL.
+     */
+    void fullTraverseBreadthFirst(GraphVisitor* const visitor = 0) const;
+
+    /**
+     * Traverses the entire graph in depth-first order. This means, that
+     * every node within the graph is a potential root. The roots for the
+     * search are determined by <code>identifyRoots()</code>. Thereby,
+     * all connected components will be found. This method internally calls
+     * <code>traverseBreadthFirstInternal()</code>.
+     * After traversing, all discovery timestamps and all finalization
+     * timestamps are > 0. Before traversing, all these timestamps are set
+     * to 0 again.
+     *
+     * @param   onDiscoveryVisitor  A vistor according to the visitor desgin-
+     * pattern which will be applied to all nodes when they are discovered by
+     * the depth-first search, and if it is not NULL.
+     * @param   onFinishVisitor  A vistor according to the visitor desgin-
+     * pattern which will be applied to all nodes when they are finished by
+     * the depth-first search, and if it is not NULL.
+     */
+    void fullTraverseDepthFirst(GraphVisitor* const onDiscoveryVisitor = 0,
+        GraphVisitor* const onFinishVisitor = 0) const;
 
     /**
      * Sorts the graph topolocial. The topological sorting is used to determine the
@@ -620,7 +678,7 @@ public:
      * will be included.
      * @return  Topological sorting of processors which can be used as rendering order.
      */
-    std::vector<Processor*> sortTopological(const std::set<Processor*>& processorSubset = std::set<Processor*>()) const;
+    std::vector<Processor*> sortTopologically(const std::set<Processor*>& processorSubset = std::set<Processor*>()) const;
 
     /**
      * Performs breadth-first search in the graph, starting at the node which

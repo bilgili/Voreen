@@ -1,27 +1,26 @@
-/***********************************************************************************
- *                                                                                 *
- * Voreen - The Volume Rendering Engine                                            *
- *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
- * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
- * For a list of authors please refer to the file "CREDITS.txt".                   *
- *                                                                                 *
- * This file is part of the Voreen software package. Voreen is free software:      *
- * you can redistribute it and/or modify it under the terms of the GNU General     *
- * Public License version 2 as published by the Free Software Foundation.          *
- *                                                                                 *
- * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
- * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
- *                                                                                 *
- * You should have received a copy of the GNU General Public License in the file   *
- * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
- *                                                                                 *
- * For non-commercial academic use see the license exception specified in the file *
- * "LICENSE-academic.txt". To get information about commercial licensing please    *
- * contact the authors.                                                            *
- *                                                                                 *
- ***********************************************************************************/
+/**********************************************************************
+ *                                                                    *
+ * tgt - Tiny Graphics Toolbox                                        *
+ *                                                                    *
+ * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the tgt library. This library is free         *
+ * software; you can redistribute it and/or modify it under the terms *
+ * of the GNU Lesser General Public License version 2.1 as published  *
+ * by the Free Software Foundation.                                   *
+ *                                                                    *
+ * This library is distributed in the hope that it will be useful,    *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU Lesser General Public License for more details.                *
+ *                                                                    *
+ * You should have received a copy of the GNU Lesser General Public   *
+ * License in the file "LICENSE.txt" along with this library.         *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ **********************************************************************/
 
 #include "tgt/glut/glutcanvas.h"
 
@@ -134,6 +133,7 @@ void GLUTCanvas::mouseMotion(const int& x, const int& y) {
     // Create tgt and broadcast it
     MouseEvent* moveEvent = new MouseEvent(x, y, MouseEvent::MOTION, Event::MODIFIER_NONE, holdButton_, getSize());
     getEventHandler()->broadcast(moveEvent);
+    paint();
 }
 
 void GLUTCanvas::passiveMouseMotion(const int& x, const int& y) {
@@ -143,6 +143,7 @@ void GLUTCanvas::passiveMouseMotion(const int& x, const int& y) {
     // Create tgt and broadcast it
     MouseEvent* moveEvent = new MouseEvent(x, y, MouseEvent::MOTION, Event::MODIFIER_NONE, MouseEvent::MOUSE_BUTTON_NONE, getSize());
     getEventHandler()->broadcast(moveEvent);
+    paint();
 }
 
 void GLUTCanvas::mousePressed(const int& button, const int& state, const int& x, const int& y, const int& modifier) {
@@ -175,6 +176,7 @@ void GLUTCanvas::mousePressed(const int& button, const int& state, const int& x,
     // Create and broadcast event
     MouseEvent* mousePressedEvent = new MouseEvent(x, y, action, tgtModifier, pressedButton, getSize());
     getEventHandler()->broadcast(mousePressedEvent);
+    paint();
 }
 
 void GLUTCanvas::keyboard(const unsigned char& key, const int& x, const int& y, const int& modifier)
@@ -194,6 +196,7 @@ void GLUTCanvas::keyboard(const unsigned char& key, const int& x, const int& y, 
     tgt::KeyEvent* ke_release = new tgt::KeyEvent(tgtKey, tgtModifier, false);
     eventHandler_->broadcast(ke_press);
     eventHandler_->broadcast(ke_release);
+    paint();
 }
 
 void GLUTCanvas::keyboardSpecial(const int& key, const int& x, const int& y, const int& modifier) {
@@ -209,10 +212,12 @@ void GLUTCanvas::keyboardSpecial(const int& key, const int& x, const int& y, con
     tgt::KeyEvent* ke_release = new tgt::KeyEvent(tgtKey, tgtModifier, false);
     eventHandler_->broadcast(ke_press);
     eventHandler_->broadcast(ke_release);
+    paint();
 }
 
 void GLUTCanvas::reshape(int width, int height) {
     sizeChanged(ivec2(width, height));
+    paint();
 }
 
 void GLUTCanvas::visibility(const int& /*visible*/) {

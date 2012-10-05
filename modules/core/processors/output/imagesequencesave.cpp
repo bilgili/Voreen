@@ -39,7 +39,7 @@ const std::string ImageSequenceSave::loggerCat_("voreen.core.ImageSequenceSave")
 
 ImageSequenceSave::ImageSequenceSave()
     : RenderProcessor()
-    , inport_(Port::INPORT, "imagesequence.input", false)
+    , inport_(Port::INPORT, "imagesequence.input", "ImageSequence Input", false)
     , outputDirectory_("outputDirectory", "Directory", "Select directory...",
         "", "", FileDialogProperty::DIRECTORY)
     , baseName_("basename", "Basename")

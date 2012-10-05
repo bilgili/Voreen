@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="12">
+        <ProcessorNetwork version="13">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -19,7 +19,14 @@
                 <Processor type="Canvas" name="Canvas" id="ref7">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-353" y="418" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="1402" y="282" width="512" height="512" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="113" y="120" width="512" height="512" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="113" y="120" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="512" y="512" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" lod="1">
@@ -28,7 +35,18 @@
                         <Property name="saveScreenshot" />
                         <Property name="screenshotFilename" noPathSet="false" value="output/canvas.png" />
                         <Property name="showCursor" lod="1" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref20">
+                                    <value x="512" y="512" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSource" name="VolumeSource Static" id="ref0">
@@ -38,6 +56,12 @@
                     <Properties>
                         <Property name="volumeURL" url="input/nucleon.vvd?preferredReader=VvdVolumeReader" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="MultiSliceRenderer" name="MultiSliceRenderer" id="ref1">
@@ -156,6 +180,28 @@
                             </TransferFunction>
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="image.entrypoints">
+                            <Properties />
+                        </Port>
+                        <Port name="volume1">
+                            <Properties />
+                        </Port>
+                        <Port name="volume2">
+                            <Properties />
+                        </Port>
+                        <Port name="volume3">
+                            <Properties />
+                        </Port>
+                        <Port name="volume4">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
@@ -185,9 +231,26 @@
                             <value x="-0" y="-0" z="1" />
                         </Property>
                         <Property name="planeDist" lod="1" value="0.02499998" id="ref17" />
+                        <Property name="restrictToMainVolume" value="false" />
                         <Property name="sliceAlignmentProp" value="xy-plane" />
                         <Property name="sliceIndex" value="20" />
                     </Properties>
+                    <Inports>
+                        <Port name="secondaryVolumes">
+                            <Properties />
+                        </Port>
+                        <Port name="volume">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="geometry">
+                            <Properties />
+                        </Port>
+                        <Port name="text">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="mouseWheelHandler">
                             <Properties>
@@ -215,6 +278,27 @@
                         <Property name="useCulling" lod="1" value="false" />
                         <Property name="useFloatRenderTargets" lod="1" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="proxgeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeReceive" id="ref21">
+                                    <value x="512" y="512" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeReceive">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -259,6 +343,28 @@
                         </Property>
                         <Property name="voreen.fontprop" lod="1" fontType="TextureFont" fontSize="15" fontName="VeraMono.ttf" textAlignment="Right" verticalTextAlignment="Top" lineWidth="502" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text0">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text1">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text2">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text3">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Background" name="Background 2" id="ref6">
@@ -282,6 +388,16 @@
                         </Property>
                         <Property name="texture" lod="1" noPathSet="false" value="" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeTransformation" name="VolumeTransformation" id="ref8">
@@ -299,6 +415,16 @@
                         </Property>
                         <Property name="transformationMode" value="concatenate" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="volumehandle.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="InteractiveRegistrationWidget" name="InteractiveRegistrationWidget" id="ref3">
@@ -338,6 +464,22 @@
                             <value.row3 x="0" y="0" z="0" w="1" />
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="input">
+                            <Properties />
+                        </Port>
+                        <Port name="volume">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="output">
+                            <Properties />
+                        </Port>
+                        <Port name="text">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSource" name="VolumeSource Moving" id="ref9">
@@ -347,6 +489,12 @@
                     <Properties>
                         <Property name="volumeURL" url="input/walnut_uint8.vvd?preferredReader=VvdVolumeReader" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -507,6 +655,11 @@
                     <SourceProperty type="CameraProperty" ref="ref10" />
                     <DestinationProperty type="CameraProperty" ref="ref19" />
                     <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref20" />
+                    <DestinationProperty ref="ref21" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>

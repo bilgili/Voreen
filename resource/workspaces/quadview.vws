@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="" readonly="true">
-        <ProcessorNetwork version="12">
+        <ProcessorNetwork version="13">
             <MetaData>
                 <MetaItem name="Zoom" type="ZoomMetaData">
                     <transform.row0 x="0.6749577522277832" y="0" z="0" />
@@ -24,6 +24,22 @@
                         <Property name="topClippingPlane" value="113" />
                         <Property name="useClipping" lod="1" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="SingleVolumeRaycaster" name="SingleVolumeRaycaster" id="ref2">
@@ -32,7 +48,7 @@
                     </MetaData>
                     <Properties>
                         <Property name="applyLightAttenuation" value="false" />
-                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" id="ref28">
+                        <Property name="camera" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref32">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="722" y="373" />
                             </MetaData>
@@ -48,7 +64,7 @@
                         <Property name="gammaValue1" value="0" />
                         <Property name="gammaValue2" value="0" />
                         <Property name="gradient" value="central-differences" />
-                        <Property name="interactionCoarseness" value="2" />
+                        <Property name="interactionCoarseness" value="3" />
                         <Property name="interactionQuality" value="1" />
                         <Property name="interpolation.coarseness" value="false" />
                         <Property name="isoValue" value="0.5" />
@@ -74,14 +90,11 @@
                         <Property name="materialShininess" value="60" />
                         <Property name="raycast.prg" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-982" y="299" width="700" height="700" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
                         </Property>
-                        <Property name="samplingRate" value="9.75609779" />
+                        <Property name="samplingRate" value="3" />
                         <Property name="shading" value="phong" />
-                        <Property name="textureBorderIntensity" value="0" />
-                        <Property name="textureClampMode_" value="clamp-to-edge" />
-                        <Property name="textureFilterMode_" value="linear" />
                         <Property name="transferFunction" AlwaysFitDomain="false">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
@@ -105,12 +118,68 @@
                             </TransferFunction>
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeOrigin" id="ref43">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeOrigin" id="ref41">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.output.renderSizeReceive" id="ref46">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.output1">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.output1.renderSizeReceive">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.output2">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.output2.renderSizeReceive">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas" id="ref11">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-334" y="502" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="64" y="109" width="747" height="550" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="298" y="91" width="747" height="550" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="298" y="91" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="747" y="550" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize">
@@ -119,7 +188,18 @@
                         <Property name="saveScreenshot" />
                         <Property name="screenshotFilename" noPathSet="false" value="" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref33">
+                                    <value x="747" y="550" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSource" name="VolumeSource" id="ref4">
@@ -129,6 +209,14 @@
                     <Properties>
                         <Property name="volumeURL" url="../volumes/walnut.vvd?preferredReader=VvdVolumeReader" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="QuadView" name="QuadView" id="ref10">
@@ -145,6 +233,46 @@
                         <Property name="mouseEvent.move" lod="1" enabled="true" mouseAction="103" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="showGrid" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport1">
+                            <Properties>
+                                <Property name="inport1.renderSizeOrigin" id="ref30">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport2">
+                            <Properties>
+                                <Property name="inport2.renderSizeOrigin" id="ref35">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport3">
+                            <Properties>
+                                <Property name="inport3.renderSizeOrigin" id="ref37">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport4">
+                            <Properties>
+                                <Property name="inport4.renderSizeOrigin" id="ref39">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outport">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="outport.renderSizeReceive" id="ref34">
+                                    <value x="747" y="550" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="GeometryProcessor" name="Geometry Processor" id="ref3">
@@ -152,7 +280,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-545" y="165" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" id="ref29">
+                        <Property name="camera" lod="1" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref28">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="722" y="373" />
                             </MetaData>
@@ -162,6 +290,25 @@
                         </Property>
                         <Property name="renderGeometries" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref45">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.output.renderSizeReceive" id="ref31">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -209,6 +356,16 @@
                         </Property>
                         <Property name="zSliceIndex" lod="1" value="54" id="ref14" />
                     </Properties>
+                    <Inports>
+                        <Port name="volume">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="SliceViewer" name="AxialSlice" id="ref6">
@@ -243,12 +400,9 @@
                         <Property name="showSliceNumber" value="true" />
                         <Property name="sliceAlignmentProp" value="xy-plane" />
                         <Property name="sliceIndex" value="54" id="ref13" />
-                        <Property name="sliceX" value="57" />
+                        <Property name="sliceX" value="72" />
                         <Property name="sliceY" value="2" />
                         <Property name="sliceZ" value="54" />
-                        <Property name="textureBorderIntensity" value="0" />
-                        <Property name="textureClampMode_" value="clamp-to-edge" />
-                        <Property name="textureFilterMode" value="linear" />
                         <Property name="textureMode" value="3d-texture" />
                         <Property name="transferFunction" AlwaysFitDomain="false" id="ref25">
                             <MetaData>
@@ -271,6 +425,25 @@
                         </Property>
                         <Property name="zoomFactor" value="1" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.outport.renderSizeReceive" id="ref36">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="mouseWheelHandler">
                             <Properties>
@@ -317,11 +490,8 @@
                         <Property name="sliceAlignmentProp" value="yz-plane" />
                         <Property name="sliceIndex" value="61" id="ref19" />
                         <Property name="sliceX" value="61" />
-                        <Property name="sliceY" value="82" />
-                        <Property name="sliceZ" value="110" />
-                        <Property name="textureBorderIntensity" value="0" />
-                        <Property name="textureClampMode_" value="clamp-to-edge" />
-                        <Property name="textureFilterMode" value="linear" />
+                        <Property name="sliceY" value="14" />
+                        <Property name="sliceZ" value="83" />
                         <Property name="textureMode" value="3d-texture" />
                         <Property name="transferFunction" AlwaysFitDomain="false" id="ref27">
                             <MetaData>
@@ -344,6 +514,25 @@
                         </Property>
                         <Property name="zoomFactor" value="1" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.outport.renderSizeReceive" id="ref40">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="mouseWheelHandler">
                             <Properties>
@@ -392,9 +581,6 @@
                         <Property name="sliceX" value="124" />
                         <Property name="sliceY" value="41" />
                         <Property name="sliceZ" value="59" />
-                        <Property name="textureBorderIntensity" value="0" />
-                        <Property name="textureClampMode_" value="clamp-to-edge" />
-                        <Property name="textureFilterMode" value="linear" />
                         <Property name="textureMode" value="3d-texture" />
                         <Property name="transferFunction" AlwaysFitDomain="false" id="ref26">
                             <MetaData>
@@ -417,6 +603,25 @@
                         </Property>
                         <Property name="zoomFactor" value="1" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.outport.renderSizeReceive" id="ref38">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="mouseWheelHandler">
                             <Properties>
@@ -435,7 +640,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-481" y="-78" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" id="ref30">
+                        <Property name="camera" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref29">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -449,6 +654,29 @@
                         <Property name="useCulling" value="true" />
                         <Property name="useFloatRenderTargets" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="proxgeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.entrypoints.renderSizeReceive" id="ref44">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                                <Property name="image.exitpoints.renderSizeReceive" id="ref42">
+                                    <value x="373" y="275" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -491,6 +719,18 @@
                         </Property>
                         <Property name="texture" noPathSet="true" value="" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="BoundingBoxRenderer" name="BoundingBoxRenderer" id="ref9">
@@ -509,6 +749,19 @@
                             <value x="10" y="10" z="10" />
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="geometry">
+                            <Properties />
+                        </Port>
+                        <Port name="volume">
+                            <Properties>
+                                <Property name="textureBorderIntensity" value="0" />
+                                <Property name="textureClampMode_" value="clamp-to-edge" />
+                                <Property name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -730,23 +983,63 @@
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="CameraProperty" ref="ref29" />
-                    <DestinationProperty type="CameraProperty" ref="ref30" />
-                    <Evaluator type="LinkEvaluatorCameraId" />
+                    <SourceProperty ref="ref30" />
+                    <DestinationProperty ref="ref31" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="CameraProperty" ref="ref30" />
-                    <DestinationProperty type="CameraProperty" ref="ref29" />
-                    <Evaluator type="LinkEvaluatorCameraId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="CameraProperty" ref="ref30" />
+                    <SourceProperty type="CameraProperty" ref="ref32" />
                     <DestinationProperty type="CameraProperty" ref="ref28" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref29" />
+                    <DestinationProperty type="CameraProperty" ref="ref32" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref33" />
+                    <DestinationProperty ref="ref34" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref35" />
+                    <DestinationProperty ref="ref36" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref37" />
+                    <DestinationProperty ref="ref38" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref39" />
+                    <DestinationProperty ref="ref40" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref41" />
+                    <DestinationProperty ref="ref42" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref43" />
+                    <DestinationProperty ref="ref44" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref32" />
+                    <DestinationProperty type="CameraProperty" ref="ref29" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref45" />
+                    <DestinationProperty ref="ref46" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
                     <SourceProperty type="CameraProperty" ref="ref28" />
-                    <DestinationProperty type="CameraProperty" ref="ref30" />
+                    <DestinationProperty type="CameraProperty" ref="ref32" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
             </PropertyLinks>

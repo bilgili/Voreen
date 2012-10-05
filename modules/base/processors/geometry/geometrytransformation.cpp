@@ -34,8 +34,8 @@ const std::string GeometryTransformation::loggerCat_("voreen.base.GeometryTransf
 
 GeometryTransformation::GeometryTransformation()
     : Processor()
-    , inport_(Port::INPORT, "volumehandle.input")
-    , outport_(Port::OUTPORT, "volumehandle.output", 0)
+    , inport_(Port::INPORT, "geometry.input", "Geometry Input")
+    , outport_(Port::OUTPORT, "geometry.output", "Geometry Output", false)
     , enableProcessing_("enableProcessing", "Enable")
     , transformMatrix_("transformMatrix", "Transformation Matrix", tgt::mat4::identity, tgt::mat4(-1e10), tgt::mat4(1e10))
 {

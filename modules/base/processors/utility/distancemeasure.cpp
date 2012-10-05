@@ -38,9 +38,9 @@ namespace voreen {
 
 DistanceMeasure::DistanceMeasure()
     : ImageProcessor("image/distance")
-    , imgInport_(Port::INPORT, "image")
-    , fhpInport_(Port::INPORT, "fhp", false, Processor::INVALID_PROGRAM, GL_RGBA16F_ARB)
-    , outport_(Port::OUTPORT, "image.output")
+    , imgInport_(Port::INPORT, "image", "Image Input")
+    , fhpInport_(Port::INPORT, "fhp", "First-hit-points Input", false, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB)
+    , outport_(Port::OUTPORT, "image.output", "Image Output")
     , camera_("camera", "Camera", tgt::Camera(tgt::vec3(0.f, 0.f, 3.5f), tgt::vec3(0.f, 0.f, 0.f), tgt::vec3(0.f, 1.f, 0.f)))
     , unit_("unit", "Display unit", "mm")
     , unitFactor_("unitFactor", "Scale factor", 1.0f, 0.0f, 1000.0f)
@@ -68,7 +68,7 @@ DistanceMeasure::DistanceMeasure()
     mouseStartPos2D_ = tgt::ivec2(0, 0);
     mouseStartPos3D_ = tgt::vec4(0.0f);
 
-    font_ = new tgt::Font(VoreenApplication::app()->getFontPath("VeraMono.ttf"), 11, tgt::Font::BitmapFont);
+    font_ = new tgt::Font(VoreenApplication::app()->getFontPath("VeraMono.ttf"), 16, tgt::Font::BitmapFont);
 }
 
 DistanceMeasure::~DistanceMeasure() {
@@ -183,16 +183,17 @@ void DistanceMeasure::process() {
         float scaleFactorX = 2.0f / static_cast<float>(imgInport_.getSize().x);
         float scaleFactorY = 2.0f / static_cast<float>(imgInport_.getSize().y);
         glScalef(scaleFactorX, scaleFactorY, 1);
-        glColor3f(0.0f, 0.0f, 0.0f);
+        glColor4f(0.0f, 0.0f, 0.0f, 1.f);
         font_->render(tgt::vec3(static_cast<float>(mouseCurPos2D_.x+11), static_cast<float>(mouseCurPos2D_.y+11), 0.0f), label);
-        glColor3f(1.0f, 1.0f, 1.0f);
+        glColor4f(0.7f, 0.7f, 0.7f, 1.f);
         font_->render(tgt::vec3(static_cast<float>(mouseCurPos2D_.x+10), static_cast<float>(mouseCurPos2D_.y+10), 0.0f), label);
 
+        glLineWidth(2.f);
         glBegin(GL_LINES);
-            glColor3f(0.0f, 0.0f, 0.0f);
+            glColor4f(0.0f, 0.0f, 0.0f, 1.f);
             glVertex2i(mouseStartPos2D_.x, mouseStartPos2D_.y);
             glVertex2i(mouseCurPos2D_.x, mouseCurPos2D_.y);
-            glColor3f(1.0f, 1.0f, 1.0f);
+            glColor4f(1.0f, 1.0f, 1.0f, 1.f);
             glVertex2i(mouseStartPos2D_.x+1, mouseStartPos2D_.y+1);
             glVertex2i(mouseCurPos2D_.x+1, mouseCurPos2D_.y+1);
         glEnd();
@@ -217,7 +218,7 @@ void DistanceMeasure::process() {
             // set modelview and projection matrices
             glMatrixMode(GL_PROJECTION);
             glPushMatrix();
-            tgt::loadMatrix(camera_.get().getProjectionMatrix());
+            tgt::loadMatrix(camera_.get().getProjectionMatrix(outport_.getSize()));
             glMatrixMode(GL_MODELVIEW);
             glPushMatrix();
             glLoadIdentity();

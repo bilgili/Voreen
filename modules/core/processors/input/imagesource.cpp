@@ -44,7 +44,7 @@ const std::string ImageSource::loggerCat_("voreen.core.ImageSource");
 
 ImageSource::ImageSource()
     : RenderProcessor(),
-      outport_(Port::OUTPORT, "image.out"),
+      outport_(Port::OUTPORT, "image.out", "Image Output"),
       imageFile_("imageFile", "Image File", "Image File", VoreenApplication::app()->getUserDataPath()),
       clearImage_("clearButton", "Clear Image"),
       imageSize_("imageSize", "Image Size", tgt::ivec2(0), tgt::ivec2(0), tgt::ivec2(1 << 12), VALID),

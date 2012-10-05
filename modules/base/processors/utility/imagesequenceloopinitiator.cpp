@@ -35,9 +35,9 @@ const std::string ImageSequenceLoopInitiator::loggerCat_("voreen.ImageSequenceLo
 ImageSequenceLoopInitiator::ImageSequenceLoopInitiator()
     : RenderProcessor(),
       shader_(0),
-      inport_(Port::INPORT, "imagesequence.in"),
-      outport_(Port::OUTPORT, "image.out"),
-      loopInport_("loop.in", Port::INPORT)
+      inport_(Port::INPORT, "imagesequence.in", "ImageSequence Input"),
+      outport_(Port::OUTPORT, "image.out", "ImageSequence Output"),
+      loopInport_(Port::INPORT, "loop.in", "Loop Inport")
 {
     loopInport_.setLoopPort(true);
 

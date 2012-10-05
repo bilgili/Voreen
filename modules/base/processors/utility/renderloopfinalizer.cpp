@@ -34,9 +34,9 @@ namespace voreen {
 RenderLoopFinalizer::RenderLoopFinalizer()
     : RenderProcessor(),
       shaderPrg_(0),
-      inport_(Port::INPORT, "image.inport"),
-      outport_(Port::OUTPORT, "image.outport"),
-      loopOutport_(Port::OUTPORT, "loop.outport")
+      inport_(Port::INPORT, "image.inport", "Image Input"),
+      outport_(Port::OUTPORT, "image.outport", "Image Output"),
+      loopOutport_(Port::OUTPORT, "loop.outport", "Loop Outport")
 {
     loopOutport_.setLoopPort(true);
 

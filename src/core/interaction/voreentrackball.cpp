@@ -52,7 +52,7 @@ VoreenTrackball::VoreenTrackball(CameraProperty* camera)
 
     tgtAssert(camera, "No camera");
 
-    center_ = camera_->get().getFocus();
+    center_ = tgt::vec3(0.f);
 
     //saveCameraParameters();
 
@@ -97,21 +97,18 @@ vec3 VoreenTrackball::coordTransform(const vec3& axis) const {
 }
 
 void VoreenTrackball::rotate(Quaternion<float> quat) {
+    if(moveCenter_)
+        center_ = camera_->get().getFocus();
+
     vec3 position = camera_->get().getPosition();
-    if(moveCenter_)
-        position -= center_;
+    position -= center_;
     position = quat::rotate(position, quat);
-    if(moveCenter_)
-        position += center_;
+    position += center_;
 
     vec3 focus = camera_->get().getFocus();
-    if(moveCenter_)
-        focus -= center_;
-    //// Usually focus - center == 0, so no need to rotate. But if we combine trackball
-    //// with some other navigations, this might be useful.
+    focus -= center_;
     focus = quat::rotate(focus, quat);
-    if(moveCenter_)
-        focus += center_;
+    focus += center_;
 
     vec3 upVector = camera_->get().getUpVector();
     upVector = quat::rotate(upVector, quat);
@@ -187,10 +184,6 @@ void VoreenTrackball::move(float length, vec3 axis) {
     axis = coordTransform(axis);
 
     moveCamera(-axis);
-    //if (moveCenter_) {
-        center_ -= axis;
-    //};
-
 }
 
 void VoreenTrackball::move(const vec2& newMouse, const vec2& lastMouse) {
@@ -228,6 +221,8 @@ void VoreenTrackball::zoomAbsolute(float focallength) {
 
 float VoreenTrackball::getCenterDistance() {
     //return dot( center_ - camera_->get().getPosition(), camera_->get().getLook() );
+    if(moveCenter_)
+        center_ = camera_->get().getFocus();
     return length(camera_->get().getPosition() - center_);
 }
 /*
@@ -277,7 +272,7 @@ CameraProperty* VoreenTrackball::getCamera() const {
 void VoreenTrackball::setCamera(CameraProperty* camera) {
     tgtAssert(camera, "No camera");
     camera_ = camera;
-    center_ = camera_->get().getFocus();
+    //center_ = camera_->get().getFocus();
 }
 
 } // namespace

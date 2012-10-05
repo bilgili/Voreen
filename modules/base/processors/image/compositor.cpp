@@ -39,9 +39,9 @@ Compositor::Compositor()
     , weightSecond_("weightSecond", "Weight (Second Image)", 1.0f, 0.f, 1.0f)
     , addDepth_("addDepth", "Add Depth", false)
     , pipeThroughIfSecondNotReady_("pipethrough", "Pipe first image through if second is not ready", false)
-    , inport0_(Port::INPORT, "image.inport0")
-    , inport1_(Port::INPORT, "image.inport1")
-    , outport_(Port::OUTPORT, "image.outport")
+    , inport0_(Port::INPORT, "image.inport0", "Image0 Input")
+    , inport1_(Port::INPORT, "image.inport1", "Image1 Input")
+    , outport_(Port::OUTPORT, "image.outport", "Image Output")
 {
 
     compositingMode_.addOption("depth-test",                "Depth Test",                   "MODE_DEPTH_TEST");

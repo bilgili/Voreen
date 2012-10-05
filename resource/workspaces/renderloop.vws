@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="" readonly="true">
-        <ProcessorNetwork version="12">
+        <ProcessorNetwork version="13">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -9,42 +9,99 @@
                         <item type="RenderLoopInitiator" ref="ref0" />
                     </values>
                 </MetaItem>
+                <MetaItem name="ZoomCenter" type="Vec2MetaData">
+                    <value x="10.36332035" y="-196" />
+                </MetaItem>
             </MetaData>
             <Processors>
                 <Processor type="Canvas" name="Canvas" id="ref3">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-444" y="271" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-83" y="-32" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="319" y="101" width="321" height="319" />
+                        <MetaItem name="Processor_GI" type="PositionMetaData" x="-444" y="271" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="319" y="101" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="321" y="319" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
-                        <Property name="canvasSize">
+                        <Property name="canvasSize" id="ref6">
                             <value x="321" y="319" />
                         </Property>
                         <Property name="saveScreenshot" />
                         <Property name="screenshotFilename" noPathSet="true" value="" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="321" y="319" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="RenderLoopInitiator" name="RenderLoopInitiator" id="ref0">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-437" y="-30" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-77" y="-318" />
+                        <MetaItem name="Processor_GI" type="PositionMetaData" x="-437" y="-30" />
                     </MetaData>
                     <Properties>
                         <Property name="numIterations" value="5" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.inport">
+                            <Properties />
+                        </Port>
+                        <Port name="loop.inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="RenderLoopFinalizer" name="RenderLoopFinalizer" id="ref2">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-442" y="166" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-81" y="-130" />
+                        <MetaItem name="Processor_GI" type="PositionMetaData" x="-442" y="166" />
                     </MetaData>
                     <Properties />
+                    <Inports>
+                        <Port name="image.inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                        <Port name="loop.outport">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Gaussian" name="Gaussian" id="ref1">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-419" y="66" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-58" y="-221" />
+                        <MetaItem name="Processor_GI" type="PositionMetaData" x="-419" y="66" />
                     </MetaData>
                     <Properties>
                         <Property name="blurAlpha" value="true" />
@@ -60,19 +117,40 @@
                         </Property>
                         <Property name="sigma" value="2" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ImageSource" name="ImageSource" id="ref4">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-443" y="-135" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-82" y="-420" />
+                        <MetaItem name="Processor_GI" type="PositionMetaData" x="-443" y="-135" />
                     </MetaData>
                     <Properties>
                         <Property name="clearButton" />
                         <Property name="imageFile" noPathSet="false" value="../textures/nucleon.png" />
-                        <Property name="imageSize">
+                        <Property name="imageSize" id="ref5">
                             <value x="321" y="319" />
                         </Property>
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="image.out">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -119,7 +197,13 @@
                 </Connection>
             </Connections>
             <CoProcessorConnections />
-            <PropertyLinks />
+            <PropertyLinks>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref5" />
+                    <DestinationProperty type="IntVec2Property" ref="ref6" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+            </PropertyLinks>
         </ProcessorNetwork>
         <Animation />
     </Workspace>

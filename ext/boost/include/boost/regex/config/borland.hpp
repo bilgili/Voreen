@@ -16,6 +16,7 @@
   *   DESCRIPTION: regex borland-specific config setup.
   */
 
+
 #if defined(__BORLANDC__)
 #  if (__BORLANDC__ == 0x550) || (__BORLANDC__ == 0x551)
       // problems with std::basic_string and dll RTL:

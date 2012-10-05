@@ -1,12 +1,10 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="11">
+        <ProcessorNetwork version="13">
             <MetaData>
-                <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
-                    <values>
-                        <item type="GeometryTransformation" ref="ref2" />
-                    </values>
+                <MetaItem name="ZoomCenter" type="Vec2MetaData">
+                    <value x="-252" y="102" />
                 </MetaItem>
             </MetaData>
             <Processors>
@@ -16,11 +14,19 @@
                     </MetaData>
                     <Properties>
                         <Property name="clearGeometry" />
-                        <Property name="geometryFile" value="input/geometry/cow-skeleton-pointlist-world.vge" />
+                        <Property name="geometryFile" noPathSet="false" value="input/geometry/cow-skeleton-pointlist-world.vge" />
                         <Property name="geometryType" value="geometry" />
                         <Property name="loadGeometry" />
                         <Property name="skipItems" value="0" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="geometry.pointlist">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="GeometryTransformation" id="ref1">
@@ -40,6 +46,18 @@ disabled]]>
                             <value.row3 x="0" y="0" z="0" w="1" />
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="geometry.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="geometry.output">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="GeometryTransformation" name="GeometryTransformation" id="ref2">
@@ -55,6 +73,18 @@ disabled]]>
                             <value.row3 x="0" y="0" z="0" w="1" />
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="geometry.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="geometry.output">
+                            <Properties>
+                                <Property name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="GeometrySave" name="GeometrySave" id="ref3">
@@ -63,9 +93,15 @@ disabled]]>
                     </MetaData>
                     <Properties>
                         <Property name="continousSave" value="false" />
-                        <Property name="file" value="output/disabled.vge" />
+                        <Property name="file" noPathSet="false" value="output/disabled.vge" />
                         <Property name="save" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="GeometrySave" name="GeometrySave 2" id="ref4">
@@ -74,9 +110,15 @@ disabled]]>
                     </MetaData>
                     <Properties>
                         <Property name="continousSave" value="false" />
-                        <Property name="file" value="output/transformed.vge" />
+                        <Property name="file" noPathSet="false" value="output/transformed.vge" />
                         <Property name="save" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -85,7 +127,7 @@ disabled]]>
                     <Outport name="geometry.pointlist">
                         <Processor type="GeometrySource" ref="ref0" />
                     </Outport>
-                    <Inport name="volumehandle.input">
+                    <Inport name="geometry.input">
                         <Processor type="GeometryTransformation" ref="ref1" />
                     </Inport>
                 </Connection>
@@ -93,12 +135,12 @@ disabled]]>
                     <Outport name="geometry.pointlist">
                         <Processor type="GeometrySource" ref="ref0" />
                     </Outport>
-                    <Inport name="volumehandle.input">
+                    <Inport name="geometry.input">
                         <Processor type="GeometryTransformation" ref="ref2" />
                     </Inport>
                 </Connection>
                 <Connection>
-                    <Outport name="volumehandle.output">
+                    <Outport name="geometry.output">
                         <Processor type="GeometryTransformation" ref="ref1" />
                     </Outport>
                     <Inport name="inport">
@@ -106,7 +148,7 @@ disabled]]>
                     </Inport>
                 </Connection>
                 <Connection>
-                    <Outport name="volumehandle.output">
+                    <Outport name="geometry.output">
                         <Processor type="GeometryTransformation" ref="ref2" />
                     </Outport>
                     <Inport name="inport">
@@ -116,9 +158,6 @@ disabled]]>
             </Connections>
             <CoProcessorConnections />
             <PropertyLinks />
-            <PropertyStateCollections />
-            <PropertyStateFileReferences />
-            <PropertyStateDirectoryReferences />
         </ProcessorNetwork>
         <Animation />
     </Workspace>

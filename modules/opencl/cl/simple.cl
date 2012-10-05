@@ -26,9 +26,9 @@
 __constant sampler_t smpNorm = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;
 
 // Simple OpenCL kernel.  Extend it's arguments to dynamically generate ports and properties.
-__kernel void standardKernel(__global read_only image2d_t inCol, //$ color inport
-                             __global write_only image2d_t outCol, //$ color outport
-                             float test //$ float property to test
+__kernel void standardKernel(read_only image2d_t inCol, //$ color inport
+                             write_only image2d_t outCol, //$ color outport
+                             float test //$ float property to test @min=0.0 @max=1.0 @value=0.5
                             )
 {
     //output image pixel coordinates

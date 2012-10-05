@@ -31,7 +31,7 @@ const std::string TextSource::loggerCat_("voreen.core.TextSource");
 
 TextSource::TextSource()
     : Processor(),
-    outport_(Port::OUTPORT, "text", 0),
+    outport_(Port::OUTPORT, "text", "Text Output", false),
     text_("text", "Text", "")
 {
     addPort(outport_);

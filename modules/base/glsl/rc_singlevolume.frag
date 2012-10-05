@@ -71,6 +71,8 @@ void rayTraversal(in vec3 first, in vec3 last) {
     float tIncr = 0.0;
     float tEnd  = 1.0;
     float tDepth = -1.0;
+    float lastIntensity = 0.0f; //used for pre-integrated transfer-functions
+    //TODO: transform to real-world value?
 
     float f_max_i = 0.0;   // used for MIDA raycasting
     float f_max_i1 = 0.0;  // used for MIDA raycasting
@@ -98,10 +100,12 @@ void rayTraversal(in vec3 first, in vec3 last) {
 
         // if opacity greater zero, apply compositing
         if (color.a > 0.0) {
-            result = RC_APPLY_COMPOSITING(result, color, samplePos, voxel.xyz, t, samplingStepSize_, tDepth);
+            result  = RC_APPLY_COMPOSITING(result, color, samplePos, voxel.xyz, t, samplingStepSize_, tDepth);
             result1 = RC_APPLY_COMPOSITING_1(result1, color, samplePos, voxel.xyz, t, samplingStepSize_, tDepth);
             result2 = RC_APPLY_COMPOSITING_2(result2, color, samplePos, voxel.xyz, t, samplingStepSize_, tDepth);
         }
+
+        lastIntensity = voxel.a;
 
         finished = earlyRayTermination(result.a, EARLY_RAY_TERMINATION_OPACITY);
         t += tIncr;

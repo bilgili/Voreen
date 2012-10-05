@@ -37,10 +37,10 @@ template class VRN_CORE_API GenericPort<Geometry>;
 
 class VRN_CORE_API GeometryPort : public GenericPort<Geometry> {
 public:
-    GeometryPort(PortDirection direction, const std::string& name,
+    GeometryPort(PortDirection direction, const std::string& name, const std::string& guiName = "",
                  bool allowMultipleConnections = false,
                  Processor::InvalidationLevel invalidationLevel = Processor::INVALID_PROGRAM);
-
+    virtual std::string getClassName() const {return "GeometryPort";}
     /// This port type supports caching.
     virtual bool supportsCaching() const;
 

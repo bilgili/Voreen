@@ -37,11 +37,11 @@ namespace voreen {
 class PlotPort : public GenericPort<PlotBase> {
 public:
 
-    PlotPort(PortDirection direction, const std::string& name,
+    PlotPort(PortDirection direction, const std::string& name, const std::string& guiName = "",
                         bool allowMultipleConnections = false,
                         Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT);
     ~PlotPort();
-
+    virtual std::string getClassName() const {return "PlotPort";}
 
     /**
      * Assigns the passed PlotBase handle to the port and

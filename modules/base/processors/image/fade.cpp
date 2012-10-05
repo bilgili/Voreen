@@ -35,8 +35,8 @@ Fade::Fade()
     : ImageProcessorBypassable("image/fade"),
       fading_("fading", "Fade factor", 0.0f),
       color_("color", "Color", tgt::vec4(0.0f, 0.0f, 0.0f, 1.0f)),
-      inport_(Port::INPORT, "image.inport"),
-      outport_(Port::OUTPORT, "image.outport")
+      inport_(Port::INPORT, "image.inport", "Image Input"),
+      outport_(Port::OUTPORT, "image.outport", "Image Output")
 {
     color_.setViews(Property::COLOR);
 

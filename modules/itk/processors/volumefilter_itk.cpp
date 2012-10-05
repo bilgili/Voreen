@@ -42,7 +42,7 @@ const std::string VolumeFilterITK::loggerCat_("voreen.VolumeFilterITK");
 VolumeFilterITK::VolumeFilterITK()
     : VolumeProcessor(),
     inport_(Port::INPORT, "input"),
-    outport_(Port::OUTPORT, "output", 0)
+    outport_(Port::OUTPORT, "output")
 {
     addPort(inport_);
     addPort(outport_);

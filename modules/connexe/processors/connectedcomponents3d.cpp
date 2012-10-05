@@ -35,8 +35,8 @@ const std::string ConnectedComponents3D::loggerCat_("voreen.connexe.ConnectedCom
 
 ConnectedComponents3D::ConnectedComponents3D()
     : CachingVolumeProcessor(),
-      inport_(Port::INPORT, "inport"),
-      outport_(Port::OUTPORT, "outport"),
+      inport_(Port::INPORT, "inport", "Volume Input"),
+      outport_(Port::OUTPORT, "outport", "Volume Output"),
       enableProcessing_("enabled", "Enable", true),
       connectivity_("connectivity", "Connectivity"),
       minComponentSize_("minComponentSize", "Min Component Size", 1, 1, 10000000),

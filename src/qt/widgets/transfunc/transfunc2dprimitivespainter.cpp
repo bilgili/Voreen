@@ -354,7 +354,8 @@ void TransFunc2DPrimitivesPainter::paint() {
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     tf_->paintInEditor();
-
+    
+    glBlendFunc(GL_ONE, GL_ZERO);
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
 }

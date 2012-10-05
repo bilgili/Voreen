@@ -223,7 +223,7 @@ float FlowSliceRenderer2D::getTextureScalingFactor(const tgt::vec2& viewportSize
             scaling = zoom;
         else {
             zoom_ = ZOOM_FULL_SIZE;
-            textureZoomProp_->set(0);
+            textureZoomProp_->set("");
             textureZoomProp_->updateWidgets();
         }
     }

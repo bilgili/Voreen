@@ -34,7 +34,7 @@ TextSeriesSource::TextSeriesSource()
     , filename_("seriesfile", "Text Series File", "Select Text Series File",
                 VoreenApplication::app()->getUserDataPath("volumes"), "Text File (*.txt)")
     , step_("step", "Time Step", 0, 0, 1000)
-    , outport_(Port::OUTPORT, "text.outport", true)
+    , outport_(Port::OUTPORT, "text.outport", "text.outport", true)
 {
     filename_.onChange(CallMemberAction<TextSeriesSource>(this, &TextSeriesSource::openTextFile));
     addProperty(filename_);

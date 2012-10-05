@@ -39,7 +39,7 @@ const std::string VolumeSource::loggerCat_("voreen.core.VolumeSource");
 VolumeSource::VolumeSource()
     : Processor()
     , volumeURL_("volumeURL", "Volume", "")
-    , outport_(Port::OUTPORT, "volumehandle.volumehandle", 0)
+    , outport_(Port::OUTPORT, "volumehandle.volumehandle", "Volume Output")
 {
     addPort(outport_);
     addProperty(volumeURL_);

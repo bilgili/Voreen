@@ -33,6 +33,7 @@
 #include "voreen/core/properties/vectorproperty.h"
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/voreenapplication.h"
+#include "../ports/textureport.h"
 
 using tgt::Texture;
 
@@ -75,7 +76,7 @@ protected:
      */
     void clearTexture();
 
-    GenericPort<tgt::Texture> texturePort_;
+    TexturePort texturePort_;
     FileDialogProperty textureFile_;  ///< Path of the loaded texture file.
     ButtonProperty loadTexButton_;    ///< Loads the texture.
     IntVec2Property textureSize_;     ///< Read-only property providing the dimensions of the loaded image.

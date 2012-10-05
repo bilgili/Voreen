@@ -49,7 +49,7 @@ const std::string GradientVectorFlow::loggerCat_("voreen.GradientVectorFlow");
 GradientVectorFlow::GradientVectorFlow()
     : ITKProcessor(),
     inport_(Port::INPORT, "input"),
-    outport_(Port::OUTPORT, "output", 0),
+    outport_(Port::OUTPORT, "output"),
     noiseLevel_("noiseLevel", "Noise Level", 500.0f, 0.0f, 10000.0f),
     timeStep_("timeStep", "Time Step", 0.001f, 0.0f, 1.0f),
     numSteps_("numSteps", "Num Steps", 20, 1, 1000),

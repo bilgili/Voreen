@@ -32,10 +32,6 @@ void LinkEvaluatorBoolInvert::eval(Property* src, Property* dst) throw (VoreenEx
     static_cast<BoolProperty*>(dst)->set(!static_cast<BoolProperty*>(src)->get());
 }
 
-std::string LinkEvaluatorBoolInvert::name() const {
-    return "boolInvert";
-}
-
 bool LinkEvaluatorBoolInvert::arePropertiesLinkable(const Property* p1, const Property* p2) const {
     tgtAssert(p1, "null pointer");
     tgtAssert(p2, "null pointer");

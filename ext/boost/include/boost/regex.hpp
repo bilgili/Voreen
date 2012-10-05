@@ -18,6 +18,7 @@
   *                entry point for the template regex code.
   */
 
+
 /* start with C compatibility API */
 
 #ifndef BOOST_RE_REGEX_HPP

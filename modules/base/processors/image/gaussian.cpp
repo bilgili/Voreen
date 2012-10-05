@@ -40,9 +40,9 @@ Gaussian::Gaussian()
       blurBlue_("blurBlue", "Blue channel", true),
       blurAlpha_("blurAlpha", "Alpha channel", true),
       blurDepth_("blurDepth", "Depth channel", false),
-      inport_(Port::INPORT, "image.inport"),
-      outport_(Port::OUTPORT, "image.outport"),
-      privatePort_(Port::OUTPORT, "image.privateport", true)
+      inport_(Port::INPORT, "image.inport", "Image Input"),
+      outport_(Port::OUTPORT, "image.outport", "Image Output"),
+      privatePort_(Port::OUTPORT, "image.privateport", "image.privateport", true)
 {
     addProperty(sigma_);
     addProperty(blurRed_);

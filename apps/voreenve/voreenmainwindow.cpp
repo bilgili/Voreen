@@ -591,7 +591,7 @@ void VoreenMainWindow::createMenus() {
     //
     helpMenu_ = menu_->addMenu(tr("&Help"));
 
-    helpFirstStepsAct_ = new QAction(QIcon(":/qt/icons/help.png"), tr("&Getting Started Guide..."), this);
+    helpFirstStepsAct_ = new QAction(QIcon(":/qt/icons/help.png"), tr("&Getting Started..."), this);
     helpFirstStepsAct_->setShortcut(tr("F1"));
     connect(helpFirstStepsAct_, SIGNAL(triggered()), this, SLOT(helpFirstSteps()));
     helpMenu_->addAction(helpFirstStepsAct_);
@@ -1490,11 +1490,7 @@ void VoreenMainWindow::setReuseTargets() {
 //
 
 void VoreenMainWindow::helpFirstSteps() {
-    QString path(VoreenApplication::app()->getBasePath("doc/gettingstarted/gsg.html").c_str());
-    HelpBrowser* help = new HelpBrowser(QUrl::fromLocalFile(path), tr("VoreenVE Help"));
-    help->resize(1050, 700);
-    help->show();
-    connect(this, SIGNAL(closeMainWindow()), help, SLOT(close()));
+    QDesktopServices::openUrl(QUrl("http://voreen.uni-muenster.de/?q=user-interface"));
 }
 
 void VoreenMainWindow::helpTutorialSlides() {

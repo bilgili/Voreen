@@ -141,9 +141,14 @@ const std::set<NetworkGraph::GraphNode*>& NetworkGraph::CollectSuccessorsVisitor
     return successors_;
 }
 
+const std::vector<NetworkGraph::GraphNode*>& NetworkGraph::CollectSuccessorsVisitor::getSuccessorsOrdered() const {
+    return successorOrdered_;
+}
+
 bool NetworkGraph::CollectSuccessorsVisitor::visit(NetworkGraph::GraphNode* const graphNode) {
     if (graphNode) {
         successors_.insert(graphNode);
+        successorOrdered_.push_back(graphNode);
         return true;
     }
     return false;
@@ -249,8 +254,80 @@ bool NetworkGraph::isSuccessor(Processor* predecessor, Processor* successor) con
     return (successors.find(successor) != successors.end());
 }
 
+bool NetworkGraph::isSuccessor(Port* predecessorPort, Processor* successor) const {
+    tgtAssert(predecessorPort, "null pointer passed");
+    tgtAssert(successor, "null pointer passed");
+    if (predecessorPort->isOutport())
+        return (getSuccessors(predecessorPort).count(successor));
+    else if (predecessorPort->isInport())
+        return (isSuccessor(predecessorPort->getProcessor(), successor));
+    else {
+        LERROR("isSuccessor(): passed port is neither inport nor outport");
+        return false;
+    }
+}
+
+bool NetworkGraph::isSuccessor(Port* predecessor, Port* successor) const {
+    tgtAssert(predecessor, "null pointer passed");
+    tgtAssert(successor, "null pointer passed");
+
+    if (predecessor == successor)
+        return true;
+    else if (predecessor->isInport() && successor->isInport())
+        return (isSuccessor(predecessor->getProcessor(), successor));
+    else if (predecessor->isOutport() && successor->isInport())
+        return (isSuccessor(predecessor, successor->getProcessor()) && isSuccessor(predecessor->getProcessor(), successor));
+    else if (predecessor->isOutport() && successor->isOutport())
+        return (isSuccessor(predecessor, successor->getProcessor()));
+    else if (predecessor->isInport() && successor->isOutport())
+        return (isSuccessor(predecessor->getProcessor(), successor->getProcessor()));
+    else {
+        LERROR("isSuccessor(): passed ports are neither inports not outports");
+        return false;
+    }
+}
+
+bool NetworkGraph::isSuccessor(Processor* predecessor, Port* successorPort) const {
+    tgtAssert(predecessor, "null pointer passed");
+    tgtAssert(successorPort, "null pointer passed");
+
+    if (successorPort->isInport()) 
+        return (getPredecessors(successorPort).count(predecessor) > 0);
+    else if (successorPort->isOutport())
+        return (isSuccessor(predecessor, successorPort->getProcessor()));
+    else {
+        LERROR("isSuccessor(): passed port is neither inport nor outport");
+        return false;
+    }
+}
+
 bool NetworkGraph::isPathElement(Processor* processor, Processor* pathRoot, Processor* pathEnd) const {
     return (isSuccessor(pathRoot, processor) && isSuccessor(processor, pathEnd));
+}
+
+bool NetworkGraph::isPathElement(Processor* processor, Port* pathRoot, Port* pathEnd) const {
+    tgtAssert(processor, "null pointer passed");
+    tgtAssert(pathRoot, "null pointer passed");
+    tgtAssert(pathEnd, "null pointer passed");
+
+    if (pathRoot == pathEnd)
+        return (pathRoot->getProcessor() == processor);
+    else if (pathRoot->isInport() && pathEnd->isInport())
+        return (isSuccessor(pathRoot->getProcessor(), processor) && isSuccessor(processor, pathEnd));
+    else if (pathRoot->isOutport() && pathEnd->isInport())
+        return (isSuccessor(pathRoot, processor) && isSuccessor(processor, pathEnd));
+    else if (pathRoot->isOutport() && pathEnd->isOutport())
+        return (isSuccessor(pathRoot, processor) && isSuccessor(processor, pathEnd->getProcessor()));
+    else if (pathRoot->isInport() && pathEnd->isOutport())
+        return (isSuccessor(pathRoot->getProcessor(), processor) && isSuccessor(processor, pathEnd->getProcessor()));
+    else {
+        LERROR("isSuccessor(): passed ports are neither inports not outports");
+        return false;
+    }
+}
+
+bool NetworkGraph::isPathElement(Port* port, Port* pathRoot, Port* pathEnd) const {
+        return (isSuccessor(pathRoot, port) && isSuccessor(port, pathEnd));
 }
 
 void NetworkGraph::fullTraverseBreadthFirst(GraphVisitor* const visitor) const {
@@ -352,6 +429,40 @@ std::set<Processor*> NetworkGraph::getPredecessors(const std::set<Processor*>& p
     return networkGraphTransposed_->getSuccessors(processors);
 }
 
+std::set<Processor*> NetworkGraph::getPredecessors(Processor* processor) const {
+    tgtAssert(processor, "null pointer passed");
+    std::set<Processor*> procSet;
+    procSet.insert(processor);
+    return getPredecessors(procSet);
+}
+
+std::set<Processor*> NetworkGraph::getPredecessors(Port* inport) const {
+    tgtAssert(inport, "null pointer passed");
+    tgtAssert(inport->isInport(), "passed port is not an inport");
+    Processor* ownerProc = inport->getProcessor();
+    tgtAssert(containsProcessor(ownerProc), "passed port's processor is not part of the network graph");
+
+    // get all direct predecessors of the port
+    std::set<Processor*> directPortPredecessors;
+    const std::vector<const Port*> connectedPorts = inport->getConnected();
+    for (size_t i=0; i<connectedPorts.size(); i++)
+        directPortPredecessors.insert(connectedPorts.at(i)->getProcessor());
+
+    // remove all direct predecessors that are not connected in the network graph
+    std::set<Processor*> procPredecessors = getPredecessors(ownerProc);
+    std::set<Processor*>::iterator it = directPortPredecessors.begin();
+    while (it != directPortPredecessors.end()) {
+        if (!procPredecessors.count(*it)) {
+            directPortPredecessors.erase(it++);
+        } else {
+            ++it;
+        }
+    }
+    
+    // get predecessors of remaining direct port predecessors
+    return getPredecessors(directPortPredecessors);
+}
+
 std::set<Processor*> NetworkGraph::getSuccessors(const std::set<Processor*>& processors) const {
 
     std::set<Processor*> result;
@@ -372,7 +483,41 @@ std::set<Processor*> NetworkGraph::getSuccessors(const std::set<Processor*>& pro
     return result;
 }
 
-std::vector<Processor*> NetworkGraph::sortTopological(const std::set<Processor*>& processorSubset) const {
+std::set<Processor*> NetworkGraph::getSuccessors(Processor* processor) const {
+    tgtAssert(processor, "null pointer passed");
+    std::set<Processor*> procSet;
+    procSet.insert(processor);
+    return getSuccessors(procSet);
+}
+
+std::set<Processor*> NetworkGraph::getSuccessors(Port* outport) const {
+    tgtAssert(outport, "null pointer passed");
+    tgtAssert(outport->isOutport(), "passed port is not an outport");
+    Processor* ownerProc = outport->getProcessor();
+    tgtAssert(containsProcessor(ownerProc), "passed port's processor is not part of the network graph");
+
+    // get all direct successors of the port
+    std::set<Processor*> directPortSuccessors;
+    const std::vector<const Port*> connectedPorts = outport->getConnected();
+    for (size_t i=0; i<connectedPorts.size(); i++)
+        directPortSuccessors.insert(connectedPorts.at(i)->getProcessor());
+
+    // remove all direct successors that are not connected in the network graph
+    std::set<Processor*> procSuccessors = getSuccessors(ownerProc);
+    std::set<Processor*>::iterator it = directPortSuccessors.begin();
+    while (it != directPortSuccessors.end()) {
+        if (!procSuccessors.count(*it)) {
+            directPortSuccessors.erase(it++);
+        } else {
+            ++it;
+        }
+    }
+
+    // get successors of remaining direct port predecessors
+    return getSuccessors(directPortSuccessors);
+}
+
+std::vector<Processor*> NetworkGraph::sortTopologically(const std::set<Processor*>& processorSubset) const {
     // Perfrom depth-first search at first
     //
     fullTraverseDepthFirst();
@@ -597,12 +742,12 @@ void NetworkGraph::unrollLoops(const PortTypeCheck& loopType) {
 
             // check loop ports for multiple connections
             if (destPort->getConnected().size() > 1) {
-                LWARNING("Loop port \"" << destPort->getName() << "\" of processor \"" <<
+                LWARNING("Loop port \"" << destPort->getID() << "\" of processor \"" <<
                          destProc->getName() << "\" has multiple connections. Skipping.");
                 continue;
             }
             if (srcPort->getConnected().size() > 1) {
-                LWARNING("Loop port \"" << srcPort->getName() << "\" of processor \"" <<
+                LWARNING("Loop port \"" << srcPort->getID() << "\" of processor \"" <<
                          srcProc->getName() << "\" has multiple connections. Skipping.");
                 continue;
             }

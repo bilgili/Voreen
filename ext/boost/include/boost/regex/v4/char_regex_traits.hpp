@@ -16,6 +16,7 @@
   *   DESCRIPTION: Declares deprecated traits classes char_regex_traits<>.
   */
 
+
 #ifndef BOOST_REGEX_V4_CHAR_REGEX_TRAITS_HPP
 #define BOOST_REGEX_V4_CHAR_REGEX_TRAITS_HPP
 

@@ -44,7 +44,7 @@ const std::string AnisotropicDiffusion::loggerCat_("voreen.AnisotropicDiffusion"
 AnisotropicDiffusion::AnisotropicDiffusion()
     : ITKProcessor(),
     inport_(Port::INPORT, "input"),
-    outport_(Port::OUTPORT, "output", 0),
+    outport_(Port::OUTPORT, "output"),
     timeStep_("timeStep", "Time Step", 0.05f, 0.0f, 1.0f),
     conductance_("conductance", "Conductance", 2.0f, 0.0f, 10.0f),
     steps_("steps", "Steps", 5, 1, 100)

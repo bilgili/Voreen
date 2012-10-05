@@ -34,8 +34,8 @@ namespace voreen {
 Mean::Mean()
     : ImageProcessorBypassable("image/mean"),
       halfKernelDim_("halfKernelDim", "Half kernel size", 1, 1, 10),
-      inport_(Port::INPORT, "image.inport"),
-      outport_(Port::OUTPORT, "image.outport")
+      inport_(Port::INPORT, "image.inport", "Image Input"),
+      outport_(Port::OUTPORT, "image.outport", "Image Output")
 {
     addProperty(halfKernelDim_);
 

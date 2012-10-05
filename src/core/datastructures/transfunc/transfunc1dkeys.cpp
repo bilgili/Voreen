@@ -27,6 +27,8 @@
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
 #include "voreen/core/datastructures/transfunc/transfuncfactory.h"
 
+#include "voreen/core/datastructures/transfunc/preintegrationtable.h"
+
 #ifdef VRN_MODULE_DEVIL
     #include <IL/il.h>
 #endif
@@ -55,6 +57,7 @@ TransFunc1DKeys::TransFunc1DKeys(int width)
     , lowerThreshold_(0.f)
     , upperThreshold_(1.f)
     , domain_(0.0, 1.0f)
+    , preIntegrationTable_(NULL)
 {
     loadFileFormats_.push_back("tfi");
     loadFileFormats_.push_back("lut");
@@ -79,11 +82,15 @@ TransFunc1DKeys::TransFunc1DKeys(const TransFunc1DKeys& tf)
                 tf.format_, tf.dataType_, tf.filter_)
 {
     updateFrom(tf);
+    //pre-integration table is not copied
+    preIntegrationTable_ = 0;
 }
 
 TransFunc1DKeys::~TransFunc1DKeys() {
     for (size_t i = 0; i < keys_.size(); ++i)
         delete keys_[i];
+
+    delete preIntegrationTable_;
 }
 
 bool TransFunc1DKeys::operator==(const TransFunc1DKeys& tf) {
@@ -114,6 +121,7 @@ void TransFunc1DKeys::setToStandardFunc() {
     keys_.push_back(new TransFuncMappingKey(1.f, col4(255)));
 
     textureInvalid_ = true;
+    clearPreIntegrationTable();
 }
 
 tgt::vec4 TransFunc1DKeys::getMeanValue(float segStart, float segEnd) const {
@@ -189,6 +197,7 @@ void TransFunc1DKeys::setThresholds(float lower, float upper) {
     lowerThreshold_ = lower;
     upperThreshold_ = upper;
     textureInvalid_ = true;
+    clearPreIntegrationTable();
 }
 
 void TransFunc1DKeys::setThresholds(const tgt::vec2& thresholds) {
@@ -214,6 +223,7 @@ const std::vector<TransFuncMappingKey*> TransFunc1DKeys::getKeys() const {
 void TransFunc1DKeys::setKeys(std::vector<TransFuncMappingKey*> keys) {
     keys_ = keys;
     textureInvalid_ = true;
+    clearPreIntegrationTable();
 }
 
 void TransFunc1DKeys::reset(){
@@ -233,6 +243,7 @@ void TransFunc1DKeys::addKey(TransFuncMappingKey* key) {
     keys_.insert(keyIterator, key);
 
     textureInvalid_ = true;
+    clearPreIntegrationTable();
 }
 
 bool sortFunction(TransFuncMappingKey* a, TransFuncMappingKey* b) {
@@ -243,6 +254,7 @@ void TransFunc1DKeys::updateKey(TransFuncMappingKey* /*key*/) {
     std::sort(keys_.begin(), keys_.end(), sortFunction);
 
     textureInvalid_ = true;
+    clearPreIntegrationTable();
 }
 
 void TransFunc1DKeys::removeKey(TransFuncMappingKey* key) {
@@ -252,6 +264,7 @@ void TransFunc1DKeys::removeKey(TransFuncMappingKey* key) {
     delete key;
 
     textureInvalid_ = true;
+    clearPreIntegrationTable();
 }
 
 void TransFunc1DKeys::clearKeys() {
@@ -265,6 +278,7 @@ void TransFunc1DKeys::clearKeys() {
     keys_.clear();
 
     textureInvalid_ = true;
+    clearPreIntegrationTable();
 }
 
 bool TransFunc1DKeys::isEmpty() const {
@@ -495,6 +509,7 @@ bool TransFunc1DKeys::loadTfi(const std::string& filename) {
         LWARNING("Loading transfer function failed.");
 
     invalidateTexture();
+    clearPreIntegrationTable();
     return success;
 }
 
@@ -961,6 +976,31 @@ void TransFunc1DKeys::setDomain(tgt::vec2 domain, int dimension) {
 
     if(dimension == 0)
         domain_ = domain;
+}
+
+void TransFunc1DKeys::clearPreIntegrationTable() {
+    delete preIntegrationTable_;
+    preIntegrationTable_ = 0;
+}
+
+const PreIntegrationTable* TransFunc1DKeys::getPreIntegrationTable(float samplingStepSize, size_t dimension, bool useIntegral) {
+    size_t dim;
+
+    if (dimension == 0)
+        dim = static_cast<size_t>(std::min(dimensions_.x, 1024));
+    else
+        dim = dimension;
+
+    if (!preIntegrationTable_ || (dim != preIntegrationTable_->getDimension()) || (samplingStepSize != preIntegrationTable_->getSamplingStepSize()) || useIntegral != preIntegrationTable_->usesIntegral()) {
+        delete preIntegrationTable_;
+        preIntegrationTable_ = 0;
+
+        preIntegrationTable_ = new PreIntegrationTable(const_cast<TransFunc1DKeys*>(this), dim, samplingStepSize, useIntegral);
+
+        //preIntegrationTable_->computeTable();
+    }
+
+    return preIntegrationTable_;
 }
 
 // --------------------------------------------------------------------------------

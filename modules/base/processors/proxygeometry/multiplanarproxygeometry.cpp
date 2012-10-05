@@ -31,8 +31,8 @@ using tgt::vec3;
 
 MultiPlanarProxyGeometry::MultiPlanarProxyGeometry()
   : Processor()
-  , inport_(Port::INPORT, "volume.in")
-  , outport_(Port::OUTPORT, "proxygeometry.out")
+  , inport_(Port::INPORT, "volume.in", "Volume Input")
+  , outport_(Port::OUTPORT, "proxygeometry.out", "Proxy Geometry Output")
   , slicePosX_("slicePosX", "Slice Pos (X)", 0.5f, 0.f, 1.f)
   , slicePosY_("slicePosY", "Slice Pos (Y)", 0.5f, 0.f, 1.f)
   , slicePosZ_("slicePosZ", "Slice Pos (Z)", 0.5f, 0.f, 1.f)

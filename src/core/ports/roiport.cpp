@@ -31,9 +31,9 @@
 
 namespace voreen {
 
-ROIPort::ROIPort(PortDirection direction, const std::string& name,
+ROIPort::ROIPort(PortDirection direction, const std::string& name, const std::string& guiName,
       bool allowMultipleConnections, Processor::InvalidationLevel invalidationLevel)
-    : GenericPort<ROICollection>(direction, name, allowMultipleConnections, invalidationLevel)
+    : GenericPort<ROICollection>(direction, name, guiName, allowMultipleConnections, invalidationLevel)
 {}
 
 } // namespace

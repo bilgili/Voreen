@@ -30,7 +30,6 @@
 
 #include "voreen/core/properties/cameraproperty.h"
 #include "voreen/core/properties/transfuncproperty.h"
-#include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/shaderproperty.h"
 
 namespace voreen {
@@ -69,7 +68,6 @@ private:
     ShaderProperty shader_;           ///< the property that stores the used shader
     TransFuncProperty transferFunc_;  ///< the property that controls the transfer function
     CameraProperty camera_;           ///< necessary for depth value calculation
-    IntOptionProperty texFilterMode_; ///< texture filtering mode to use for volume access
 };
 
 

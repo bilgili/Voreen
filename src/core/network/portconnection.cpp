@@ -34,7 +34,7 @@ PortConnection::PortEntry::PortEntry(Port* port)
 {}
 
 void PortConnection::PortEntry::serialize(XmlSerializer& s) const {
-    s.serialize("name", port_->getName());
+    s.serialize("name", port_->getID());
     s.serialize("Processor", port_->getProcessor());
 }
 
@@ -52,7 +52,7 @@ void PortConnection::PortEntry::deserialize(XmlDeserializer& s) {
 
     std::vector<Port*> ports = processor->getPorts();
     for (size_t i=0; i<ports.size(); ++i) {
-        if (ports[i]->getName() == name) {
+        if (ports[i]->getID() == name) {
             port_ = ports[i];
             break;
         }

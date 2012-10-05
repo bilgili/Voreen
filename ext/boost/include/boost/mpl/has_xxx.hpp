@@ -278,6 +278,7 @@ struct trait \
     BOOST_MPL_HAS_XXX_TRAIT_NAMED_DEF(BOOST_PP_CAT(has_,name), name, false) \
 /**/
 
+
 #if !defined(BOOST_MPL_CFG_NO_HAS_XXX_TEMPLATE)
 
 // Create a boolean Metafunction to detect a nested template

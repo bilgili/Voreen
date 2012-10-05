@@ -26,12 +26,9 @@
 #include "cpuraycaster.h"
 #include "voreen/core/datastructures/transfunc/transfunc2dprimitives.h"
 
-#ifdef VRN_MODULE_OPENMP
-#include "omp.h"
-#endif
-
 namespace voreen {
 
+using tgt::vec2;
 using tgt::vec3;
 using tgt::vec4;
 using tgt::svec3;
@@ -40,13 +37,14 @@ const float SAMPLING_BASE_INTERVAL_RCP = 200.0;
 
 CPURaycaster::CPURaycaster()
   : VolumeRaycaster()
-  , volumePort_(Port::INPORT, "volumehandle.volumehandle")
-  , gradientVolumePort_(Port::INPORT, "volumehandle.gradientvolumehandle")
-  , entryPort_(Port::INPORT, "image.entryports")
-  , exitPort_(Port::INPORT, "image.exitports")
-  , outport_(Port::OUTPORT, "image.output", true, INVALID_RESULT, GL_RGBA16F_ARB)
+  , volumePort_(Port::INPORT, "volumehandle.volumehandle", "Volume Input")
+  , gradientVolumePort_(Port::INPORT, "volumehandle.gradientvolumehandle", "Gradient Volume Input")
+  , entryPort_(Port::INPORT, "image.entryports", "Entry Points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+  , exitPort_(Port::INPORT, "image.exitports", "Exit Points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+  , outport_(Port::OUTPORT, "image.output", "Image Output", true, INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER, GL_RGBA16F_ARB)
   , transferFunc_("transferFunction", "Transfer function")
   , texFilterMode_("textureFilterMode_", "Texture Filtering")
+  , preIntegrationTableSize_("preIntegrationTableSize", "Width of pre-integration table")
 {
     addPort(volumePort_);
     addPort(gradientVolumePort_);
@@ -61,6 +59,16 @@ CPURaycaster::CPURaycaster()
     texFilterMode_.addOption("linear",  "Linear",   GL_LINEAR);
     texFilterMode_.selectByKey("linear");
     addProperty(texFilterMode_);
+
+    addProperty(classificationMode_);
+
+    preIntegrationTableSize_.addOption("deriveFromBitDepth", "Derive from bit depth", 0);
+    preIntegrationTableSize_.addOption("256", "256", 256);
+    preIntegrationTableSize_.addOption("512", "512", 512);
+    preIntegrationTableSize_.addOption("1024", "1024", 1024);
+    preIntegrationTableSize_.select("deriveFromBitDepth");
+    addProperty(preIntegrationTableSize_);
+
 }
 
 Processor* CPURaycaster::create() const {
@@ -79,9 +87,12 @@ void CPURaycaster::process() {
     LGL_ERROR;
 
     // determine TF type
+    TransFunc1DKeys* tfi = 0;
+    TransFunc2DPrimitives* tfig = 0;
     intensityGradientTF_ = false;
+
     if (transferFunc_.get()) {
-        TransFunc1DKeys* tfi = dynamic_cast<TransFunc1DKeys*>(transferFunc_.get());
+        tfi = dynamic_cast<TransFunc1DKeys*>(transferFunc_.get());
         if (tfi == 0) {
             TransFunc2DPrimitives* tfig = dynamic_cast<TransFunc2DPrimitives*>(transferFunc_.get());
             if (tfig == 0) {
@@ -104,6 +115,27 @@ void CPURaycaster::process() {
             LERROR("Gradient volume dimensions differ from intensity volume dimensions");
             return;
         }
+        if (startsWith(classificationMode_.getKey(), "pre-integrated")) {
+            LERROR("Pre-integration cannot be used with 2D tfs.");
+            return;
+        }
+    }
+
+    // retrieve intensity volume
+    const VolumeRAM* volume = volumePort_.getData()->getRepresentation<VolumeRAM>();
+    tgtAssert(volume, "no input volume");
+    tgt::svec3 volDim = volume->getDimensions();
+
+    // use dimension with the highest resolution for calculating the sampling step size
+    float samplingStepSize = 1.f / (tgt::max(volDim) * samplingRate_.get());
+
+    const PreIntegrationTable* table = 0;
+
+    if (tfi) {
+        if(classificationMode_.getKey() == "pre-integrated-integral")
+            table = tfi->getPreIntegrationTable(samplingStepSize, static_cast<size_t>(preIntegrationTableSize_.getValue()), true);
+        else if(classificationMode_.getKey() == "pre-integrated")
+            table = tfi->getPreIntegrationTable(samplingStepSize, static_cast<size_t>(preIntegrationTableSize_.getValue()), false);
     }
 
     // activate outport
@@ -127,9 +159,7 @@ void CPURaycaster::process() {
 
     // iterate over viewport and perform ray casting for each fragment
     for (int y=0; y < entryPort_.getSize().y; ++y) {
-#ifdef VRN_MODULE_OPENMP
-#pragma omp parallel for schedule(dynamic) shared(output,entryBuffer,exitBuffer,tfTexture,y)
-#endif
+#pragma omp parallel for schedule(dynamic) shared(volume,samplingStepSize,table,output,entryBuffer,exitBuffer,tfTexture,y)
         for (int x=0; x < entryPort_.getSize().x; ++x) {
             vec4 gl_FragColor = vec4(0.f);
             int p = (y * entryPort_.getSize().x + x);
@@ -142,7 +172,7 @@ void CPURaycaster::process() {
             }
             else {
                 //fragCoords are lying inside the boundingbox
-                gl_FragColor = directRendering(frontPos.xyz(), backPos.xyz(), tfTexture);
+                gl_FragColor = directRendering(frontPos.xyz(), backPos.xyz(), tfTexture, volume, samplingStepSize, table);
             }
 
             output[p] = gl_FragColor;
@@ -161,15 +191,15 @@ void CPURaycaster::process() {
     LGL_ERROR;
 }
 
-vec4 CPURaycaster::directRendering(const vec3& first, const vec3& last, tgt::Texture* tfTexture) {
+vec4 CPURaycaster::directRendering(const vec3& first, const vec3& last, tgt::Texture* tfTexture, const VolumeRAM* volume, float samplingStepSize, const PreIntegrationTable* table) {
 
     tgtAssert(transferFunc_.get(), "no transfunc");
 
-    // retrieve intensity volume
-    const VolumeRAM* volume = volumePort_.getData()->getRepresentation<VolumeRAM>();
-    tgtAssert(volume, "no input volume");
     tgt::svec3 volDim = volume->getDimensions();
     tgt::vec3 volDimF = tgt::vec3((volume->getDimensions() - svec3(1)));
+
+    //get real world mapping
+    RealWorldMapping rwm = volumePort_.getData()->getRealWorldMapping();
 
     // retrieve gradient volume, if 2D TF is to be applied
     const VolumeRAM* volumeGradient = 0;
@@ -179,9 +209,6 @@ vec4 CPURaycaster::directRendering(const vec3& first, const vec3& last, tgt::Tex
         tgtAssert(volumeGradient->getNumChannels() >= 3, "gradient volume has less than three channels");
         tgtAssert(volumeGradient->getDimensions() == volDim, "dimensions mismatch");
     }
-
-    // use dimension with the highest resolution for calculating the sampling step size
-    float samplingStepSize = 1.f / (tgt::max(volDim) * samplingRate_.get());
 
     // calculate ray parameters
     float tend;
@@ -199,6 +226,8 @@ vec4 CPURaycaster::directRendering(const vec3& first, const vec3& last, tgt::Tex
         direction = normalize(direction);
     }
 
+    float lastIntensity = 0.f; //for pre-integration
+
     // ray-casting loop
     vec4 result = vec4(0.0f);
     float depthT = -1.0f;
@@ -213,46 +242,62 @@ vec4 CPURaycaster::directRendering(const vec3& first, const vec3& last, tgt::Tex
         else
             LERROR("Unknown texture filter mode");
 
-        // no shading is applied
-        vec4 color;
-        if (!intensityGradientTF_)
-            color = apply1DTF(tfTexture, intensity);
-        else {
-            tgt::vec3 grad;
-            if (texFilterMode_.getValue() == GL_NEAREST) {
-                tgt::ivec3 iSample = tgt::iround(sample*volDimF);
-                grad.x = volumeGradient->getVoxelNormalized(iSample, 0);
-                grad.y = volumeGradient->getVoxelNormalized(iSample, 1);
-                grad.z = volumeGradient->getVoxelNormalized(iSample, 2);
-            }
-            else if (texFilterMode_.getValue() == GL_LINEAR) {
-                grad.x = volumeGradient->getVoxelNormalizedLinear(sample*volDimF, 0);
-                grad.y = volumeGradient->getVoxelNormalizedLinear(sample*volDimF, 1);
-                grad.z = volumeGradient->getVoxelNormalizedLinear(sample*volDimF, 2);
-            }
-            else
-                LERROR("Unknown texture filter mode");
+        vec4 color = vec4(intensity);
 
-            float gradMag = tgt::clamp(tgt::length(grad), 0.f, 1.f);
-            color = apply2DTF(tfTexture, intensity, gradMag);
+        //pre-integration
+        if (startsWith(classificationMode_.getKey(), "pre-integrated")) {
+            if (!table)
+                return vec4(0.f);
+
+            //apply realworld mapping and TF domain
+            intensity = rwm.normalizedToRealWorld(intensity);
+            intensity = transferFunc_.get()->realWorldToNormalized(intensity);
+
+            color = table->classify(lastIntensity, intensity);
+
+            lastIntensity = intensity;
+        }
+        else if (classificationMode_.getKey() == "transfer-function") {
+            if (!intensityGradientTF_) {
+                //apply realworld mapping and TF domain
+                intensity = rwm.normalizedToRealWorld(intensity);
+                intensity = transferFunc_.get()->realWorldToNormalized(intensity);
+
+                //no shading is applied
+                color = apply1DTF(tfTexture, intensity);
+            }
+            else {
+                tgt::vec3 grad;
+                if (texFilterMode_.getValue() == GL_NEAREST) {
+                    tgt::ivec3 iSample = tgt::iround(sample*volDimF);
+                    grad.x = volumeGradient->getVoxelNormalized(iSample, 0);
+                    grad.y = volumeGradient->getVoxelNormalized(iSample, 1);
+                    grad.z = volumeGradient->getVoxelNormalized(iSample, 2);
+                }
+                else if (texFilterMode_.getValue() == GL_LINEAR) {
+                    grad.x = volumeGradient->getVoxelNormalizedLinear(sample*volDimF, 0);
+                    grad.y = volumeGradient->getVoxelNormalizedLinear(sample*volDimF, 1);
+                    grad.z = volumeGradient->getVoxelNormalizedLinear(sample*volDimF, 2);
+                }
+                else
+                    LERROR("Unknown texture filter mode");
+
+                float gradMag = tgt::clamp(tgt::length(grad), 0.f, 1.f);
+                color = apply2DTF(tfTexture, intensity, gradMag);
+            }
+        }
+        else {
+            //no classification
         }
 
         // perform compositing
-        if (color.a > 0.f) {
-
+        if (color.a > 0.0f) {
             // apply opacity correction to accomodate for variable sampling intervals
             color.a = 1.f - pow(1.f - color.a, samplingStepSize * SAMPLING_BASE_INTERVAL_RCP);
 
-            /*// multiply alpha by samplingStepSize
-            // to accommodate for variable sampling rate
-            color.a *= samplingStepSize*200.f;*/
-
-            vec3 result_rgb = vec3(result.elem) + (1.0f - result.a) * color.a * vec3(color.elem);
+            //actual compositing
+            result.xyz() = result.xyz() + (1.0f - result.a) * color.a * vec3(color.elem);
             result.a = result.a + (1.0f - result.a) * color.a;
-
-            result.r = result_rgb.r;
-            result.g = result_rgb.g;
-            result.b = result_rgb.b;
         }
 
         // save first hit ray parameter for depth value calculation
@@ -279,7 +324,8 @@ vec4 CPURaycaster::directRendering(const vec3& first, const vec3& last, tgt::Tex
 }
 
 vec4 CPURaycaster::apply1DTF(tgt::Texture* tfTexture, float intensity) {
-    vec4 value = vec4(tfTexture->texel<tgt::col4>(size_t(intensity * (tfTexture->getWidth()-1)))) / 255.f;
+    int widthMinusOne = tfTexture->getWidth()-1;
+    tgt::vec4 value = tgt::vec4(tfTexture->texel<tgt::col4>(static_cast<size_t>(tgt::clamp(tgt::iround(intensity * widthMinusOne), 0, widthMinusOne)))) / 255.f;
     return value;
 }
 

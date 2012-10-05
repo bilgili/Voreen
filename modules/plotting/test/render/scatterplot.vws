@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="12">
+        <ProcessorNetwork version="13">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -13,7 +13,14 @@
                 <Processor type="Canvas" name="Canvas" id="ref3">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="227" y="58" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="95" y="133" width="718" height="535" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="102" y="138" width="718" height="535" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="102" y="138" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="718" y="535" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" id="ref7">
@@ -22,7 +29,18 @@
                         <Property name="saveScreenshot" />
                         <Property name="screenshotFilename" noPathSet="false" value="output/canvas.jpg" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref9">
+                                    <value x="718" y="535" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="PlotDataSource" name="PlotDataSource" id="ref0">
@@ -37,6 +55,12 @@
                         <Property name="inputFile" noPathSet="false" value="input/plotting/data_randompoints.csv" />
                         <Property name="recalculate" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="PlotDataOutPort">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ScatterPlot" name="ScatterPlot" id="ref1">
@@ -176,15 +200,15 @@
                                             <item>
                                                 <First value="-1" />
                                                 <Second type="PlotPredicateBetweenOrEqual">
-                                                    <lowerThreshold isValue="true" isTag="false" isHighlighted="false" value="40.05555390819533557" />
-                                                    <upperThreshold isValue="true" isTag="false" isHighlighted="false" value="88.27777760747221691" />
+                                                    <lowerThreshold isValue="true" isTag="false" isHighlighted="false" value="40.055553908195336" />
+                                                    <upperThreshold isValue="true" isTag="false" isHighlighted="false" value="88.277777607472217" />
                                                 </Second>
                                             </item>
                                             <item>
                                                 <First value="-2" />
                                                 <Second type="PlotPredicateBetweenOrEqual">
-                                                    <lowerThreshold isValue="true" isTag="false" isHighlighted="false" value="55.33583931709576831" />
-                                                    <upperThreshold isValue="true" isTag="false" isHighlighted="false" value="117.20050142197848686" />
+                                                    <lowerThreshold isValue="true" isTag="false" isHighlighted="false" value="55.335839317095768" />
+                                                    <upperThreshold isValue="true" isTag="false" isHighlighted="false" value="117.20050142197849" />
                                                 </Second>
                                             </item>
                                         </selection>
@@ -211,6 +235,20 @@
                         <Property name="zoom" lod="1" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                         <Property name="zoomAdditive" lod="1" enabled="true" mouseAction="7" mouseButtons="4" keyCode="0" modifier="1" shareEvents="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outport">
+                            <Properties>
+                                <Property name="outport.renderSizeReceive" id="ref10">
+                                    <value x="718" y="535" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -365,6 +403,20 @@
                         <Property name="zoom" lod="1" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                         <Property name="zoomAdditive" lod="1" enabled="true" mouseAction="7" mouseButtons="4" keyCode="0" modifier="1" shareEvents="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outport">
+                            <Properties>
+                                <Property name="outport.renderSizeReceive" id="ref12">
+                                    <value x="718" y="535" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -394,7 +446,7 @@
                 <Processor type="Canvas" name="Canvas 2" id="ref4">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="368" y="57" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="210" y="194" width="718" height="535" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="200" y="239" width="718" height="535" />
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" id="ref8">
@@ -403,7 +455,18 @@
                         <Property name="saveScreenshot" />
                         <Property name="screenshotFilename" noPathSet="false" value="output/canvas2.jpg" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref11">
+                                    <value x="718" y="535" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -462,6 +525,16 @@
                     <SourceProperty type="IntVec2Property" ref="ref8" />
                     <DestinationProperty type="IntVec2Property" ref="ref7" />
                     <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref9" />
+                    <DestinationProperty ref="ref10" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref11" />
+                    <DestinationProperty ref="ref12" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>

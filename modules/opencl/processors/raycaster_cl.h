@@ -54,7 +54,7 @@ public:
     virtual bool isReady() const;
 
     virtual Processor* create() const;
-    virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
+    void portResized();
 
 protected:
     virtual void setDescriptions() {
@@ -66,6 +66,8 @@ protected:
 
     virtual void initialize() throw (tgt::Exception);
     virtual void deinitialize() throw (tgt::Exception);
+
+    void updateTF();
 
     // ports
     VolumePort volumePort_;

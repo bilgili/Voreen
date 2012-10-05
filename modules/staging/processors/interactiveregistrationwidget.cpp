@@ -42,11 +42,10 @@ const std::string InteractiveRegistrationWidget::loggerCat_("voreen.InteractiveR
 
 InteractiveRegistrationWidget::InteractiveRegistrationWidget()
     : RenderProcessor()
-    , volumePort_(Port::INPORT, "volume", Processor::VALID)
-    , inport_(Port::INPORT, "input")
-    , outport_(Port::OUTPORT, "output")
+    , inport_(Port::INPORT, "input", "Image Input")
+    , outport_(Port::OUTPORT, "output", "Image Output")
     , pickingPort_(Port::OUTPORT, "picking")
-    , textPort_(Port::OUTPORT, "text")
+    , textPort_(Port::OUTPORT, "text", "Text Output")
     , transformMatrix_("transformMatrix", "Transformation Matrix", tgt::mat4::identity, tgt::mat4(-2000.0), tgt::mat4(2000.0))
     , point_("point", "Point", vec3(0.0f), vec3(-999999.9f), vec3(999999.9f))
     , plane_("plane", "Plane", vec3(1.0f, 0.0f, 0.0f), vec3(-5.0f), vec3(5.0f), Processor::VALID)
@@ -57,7 +56,7 @@ InteractiveRegistrationWidget::InteractiveRegistrationWidget()
     , ringRadius_("ringRadius", "Ring Radius", 50.0f, 1.0f, 300.0f)
     , ringColor_("ringColor", "Ring Color", vec4(0.0f, 1.0f, 0.0f, 0.8f))
     , sphereColor_("sphereColor", "Sphere Color", vec4(0.0f, 0.0f, 1.0f, 0.8f))
-    , centerPoint_("centerPoint", "Center Point", Processor::VALID)
+    , centerPoint_("centerWidget", "Center Widget", Processor::VALID)
     , copyShader_(0)
     , lastCoord_(0)
     , startDragCoord_(0.0f)
@@ -65,7 +64,6 @@ InteractiveRegistrationWidget::InteractiveRegistrationWidget()
     , rotAngle_(0.0f)
     , mouseDown_(-1)
 {
-    addPort(volumePort_);
     addPort(inport_);
     addPort(outport_);
     addPrivateRenderPort(pickingPort_);
@@ -366,17 +364,12 @@ void InteractiveRegistrationWidget::planeChanged() {
 }
 
 void InteractiveRegistrationWidget::centerPoint() {
-    const VolumeBase* vh = volumePort_.getData();
-    if(vh) {
-        vec3 centerPhysical = (vec3(vh->getDimensions()) * vh->getSpacing() * 0.5f) + vh->getOffset();
-        vec3 centerWorld = vh->getPhysicalToWorldMatrix() * centerPhysical;
+    tgt::line3 l = camera_.get().getViewRay(outport_.getSize(), outport_.getSize() / 2);
+    tgt::plane p(normalize(plane_.get()), planeDist_.get());
 
-        vec3 n = normalize(plane_.get());
-        tgt::plane pl(n, planeDist_.get());
-        float dist = pl.distance(centerWorld);
-
-        point_.set(centerWorld - (dist * n));
-    }
+    float t;
+    if(p.intersect(l, t)) 
+        point_.set(l.getFromParam(t));
 }
 
 void InteractiveRegistrationWidget::onEvent(tgt::Event* e) {

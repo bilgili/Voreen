@@ -33,7 +33,7 @@ const std::string GeometrySave::loggerCat_("voreen.core.GeometrySave");
 
 GeometrySave::GeometrySave()
     : Processor()
-    ,  inport_(Port::INPORT, "inport")
+    ,  inport_(Port::INPORT, "inport", "Geometry Input")
     ,  fileProp_("file", "Geometry File", "Select Voreen geometry file...", "./",
             "Voreen Geometry files (*.vge)", FileDialogProperty::SAVE_FILE)
     ,  saveButton_("save", "Save")

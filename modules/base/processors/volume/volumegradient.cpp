@@ -34,8 +34,8 @@ const std::string VolumeGradient::loggerCat_("voreen.base.VolumeGradient");
 
 VolumeGradient::VolumeGradient()
     : CachingVolumeProcessor(),
-    inport_(Port::INPORT, "volumehandle.input"),
-    outport_(Port::OUTPORT, "volumehandle.output", 0),
+    inport_(Port::INPORT, "volumehandle.input", "Volume Input"),
+    outport_(Port::OUTPORT, "volumehandle.output", "Volume Output", false),
     enableProcessing_("enableProcessing", "Enable"),
     technique_("technique", "Technique")
 {

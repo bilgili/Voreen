@@ -34,9 +34,10 @@ const std::string ImageSelector::loggerCat_("voreen.core.ImageSelector");
 
 ImageSelector::ImageSelector()
     : RenderProcessor(),
-      inport_(Port::INPORT, "imagesequence.in", 0),
-      outport_(Port::OUTPORT, "image.out", 0),
+      inport_(Port::INPORT, "imagesequence.in", "ImageSequence Input", false),
+      outport_(Port::OUTPORT, "image.out", "image.out", false),
       imageID_("imageID", "Selected Image", 0, 0, 100),
+      imageSize_("imageSize", "Image Size", tgt::ivec2(0), tgt::ivec2(0), tgt::ivec2(1 << 12), VALID),
       wheelHandler_("wheelHandler.imageCycling", "Image Cycling", &imageID_),
       shader_(0)
 {
@@ -44,6 +45,8 @@ ImageSelector::ImageSelector()
     addPort(outport_);
 
     addProperty(imageID_);
+    addProperty(imageSize_);
+    imageSize_.setWidgetsEnabled(false);
     addInteractionHandler(&wheelHandler_);
 }
 
@@ -67,6 +70,7 @@ void ImageSelector::process() {
 
     // adjust outport size to texture dimensions
     outport_.resize(tex->getDimensions().xy());
+    imageSize_.set(tex->getDimensions().xy());
 
     // clear outport
     outport_.activateTarget();

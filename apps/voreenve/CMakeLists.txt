@@ -12,33 +12,51 @@ SET(VRN_VE_SOURCES
     main.cpp
     voreenmainwindow.cpp
     voreenmoduleve.cpp
-    voreenveapplication.cpp
+    voreenveapplication.cpp    
     voreenvemetadatafactory.cpp
     voreenveplugin.cpp
-    voreenvisualization.cpp
-    networkeditor/aggregationgraphicsitem.cpp
-    networkeditor/arrowgraphicsitem.cpp
-    networkeditor/arrowheadselectiongraphicsitem.cpp
-    networkeditor/connectionbundle.cpp
-    networkeditor/connectionbundlehandle.cpp
-    networkeditor/linkarrowgraphicsitem.cpp
-    networkeditor/linkarrowgraphicsitemstub.cpp
-    networkeditor/linkdialogarrowgraphicsitem.cpp
-    networkeditor/linkdialoggraphicsview.cpp
-    networkeditor/linkdialogprocessorgraphicsitem.cpp
-    networkeditor/linkdialogpropertygraphicsitem.cpp
+    voreenvisualization.cpp    
+
+    #editor
     networkeditor/networkeditor.cpp
-    networkeditor/openpropertylistbutton.cpp
-    networkeditor/portarrowgraphicsitem.cpp
-    networkeditor/portgraphicsitem.cpp
-    networkeditor/processorgraphicsitem.cpp
-    networkeditor/progressbargraphicsitem.cpp
-    networkeditor/propertygraphicsitem.cpp
-    networkeditor/propertylinkdialog.cpp
-    networkeditor/propertylistgraphicsitem.cpp
-    networkeditor/rootgraphicsitem.cpp
-    networkeditor/textgraphicsitem.cpp
-    networkeditor/widgetindicatorbutton.cpp
+    
+    #dialogs
+    networkeditor/dialogs/propertylinkdialog.cpp
+    
+    #utils
+    networkeditor/dialogs/utils/splitgraphicsview.cpp
+
+    #style
+    networkeditor/styles/nwestyle_classic.cpp
+
+    #gi
+    networkeditor/graphicitems/nwebasegraphicsitem.cpp
+
+    #core
+    networkeditor/graphicitems/core/aggregationgraphicsitem.cpp
+    networkeditor/graphicitems/core/portgraphicsitem.cpp
+    networkeditor/graphicitems/core/portownergraphicsitem.cpp
+    networkeditor/graphicitems/core/processorgraphicsitem.cpp
+    networkeditor/graphicitems/core/propertygraphicsitem.cpp
+    networkeditor/graphicitems/core/propertylistgraphicsitem.cpp    
+    networkeditor/graphicitems/core/propertyownergraphicsitem.cpp
+
+    #connections
+    networkeditor/graphicitems/connections/connectionbasegraphicsitem.cpp
+    networkeditor/graphicitems/connections/portownerlinkarrowgraphicsitem.cpp
+    networkeditor/graphicitems/connections/propertylinkarrowgraphicsitem.cpp
+    networkeditor/graphicitems/connections/portarrowgraphicsitem.cpp
+    networkeditor/graphicitems/connections/portsizelinkarrowgraphicsitem.cpp
+
+    #tooltips
+    networkeditor/graphicitems/tooltips/tooltipbasegraphicsitem.cpp
+    networkeditor/graphicitems/tooltips/tooltipportgraphicsitem.cpp
+
+    #utils
+    networkeditor/graphicitems/utils/renamabletextgraphicsitem.cpp
+    networkeditor/graphicitems/utils/progressbargraphicsitem.cpp
+    networkeditor/graphicitems/utils/widgettogglebuttongraphicsitem.cpp
+    networkeditor/graphicitems/utils/propertylistbuttongraphicsitem.cpp
 )
 
 # headers
@@ -46,19 +64,35 @@ SET(VRN_VE_HEADERS
     voreenmainwindow.h
     voreenveapplication.h
     voreenvisualization.h
-    networkeditor/aggregationgraphicsitem.h
-    networkeditor/linkdialoggraphicsview.h
-    networkeditor/linkdialogpropertygraphicsitem.h
+    
+    #networkeditor
     networkeditor/networkeditor.h
-    networkeditor/openpropertylistbutton.h
-    networkeditor/portgraphicsitem.h
-    networkeditor/processorgraphicsitem.h
-    networkeditor/propertygraphicsitem.h 
-    networkeditor/propertylinkdialog.h
-    networkeditor/propertylistgraphicsitem.h
-    networkeditor/rootgraphicsitem.h
-    networkeditor/textgraphicsitem.h
-    networkeditor/widgetindicatorbutton.h
+    
+    #dialogs
+    networkeditor/dialogs/propertylinkdialog.h
+    
+    #utils
+    networkeditor/dialogs/utils/splitgraphicsview.h
+
+    #gi
+    networkeditor/graphicitems/nwebasegraphicsitem.h
+
+    #core
+    networkeditor/graphicitems/core/aggregationgraphicsitem.h
+    networkeditor/graphicitems/core/portgraphicsitem.h
+    networkeditor/graphicitems/core/portownergraphicsitem.h
+    networkeditor/graphicitems/core/processorgraphicsitem.h
+    networkeditor/graphicitems/core/propertygraphicsitem.h
+    networkeditor/graphicitems/core/propertylistgraphicsitem.h
+    networkeditor/graphicitems/core/propertyownergraphicsitem.h
+
+    #tooltips
+    networkeditor/graphicitems/tooltips/tooltipbasegraphicsitem.h
+
+    #utils
+    networkeditor/graphicitems/utils/renamabletextgraphicsitem.h
+    networkeditor/graphicitems/utils/propertylistbuttongraphicsitem.h
+    networkeditor/graphicitems/utils/widgettogglebuttongraphicsitem.h
 )
 
 # headers that do not need to be run through moc
@@ -66,18 +100,26 @@ SET(VRN_VE_HEADERS_NONMOC
     voreenmoduleve.h
     voreenveplugin.h
     voreenvemetadatafactory.h
-    networkeditor/arrowgraphicsitem.h
-    networkeditor/arrowheadselectiongraphicsitem.h
-    networkeditor/connectionbundle.h
-    networkeditor/connectionbundlehandle.h
-    networkeditor/hastooltip.h
-    networkeditor/linkarrowgraphicsitem.h
-    networkeditor/linkarrowgraphicsitemstub.h
-    networkeditor/linkdialogarrowgraphicsitem.h
-    networkeditor/linkdialogprocessorgraphicsitem.h
-    networkeditor/networkeditor_common.h
-    networkeditor/portarrowgraphicsitem.h
-    networkeditor/progressbargraphicsitem.h
+    
+    #connections
+    networkeditor/graphicitems/connections/connectionbasegraphicsitem.h
+    networkeditor/graphicitems/connections/portownerlinkarrowgraphicsitem.h
+    networkeditor/graphicitems/connections/propertylinkarrowgraphicsitem.h
+    networkeditor/graphicitems/connections/portarrowgraphicsitem.h
+    networkeditor/graphicitems/connections/portsizelinkarrowgraphicsitem.h 
+    
+    #tooltips
+    networkeditor/graphicitems/tooltips/tooltipportgraphicsitem.h    
+    
+    #settings
+    networkeditor/networkeditor_settings.h
+
+    #utils
+    networkeditor/graphicitems/utils/progressbargraphicsitem.h
+    
+    #style
+    networkeditor/styles/nwestyle_base.h
+    networkeditor/styles/nwestyle_classic.h
 )
 
 # add module sources and headers

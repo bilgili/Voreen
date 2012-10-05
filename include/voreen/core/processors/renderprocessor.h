@@ -57,31 +57,6 @@ public:
     virtual void invalidate(int inv = INVALID_RESULT);
 
     /**
-     * @brief Notifies the Processor of a changed SizeOrigin on port p.
-     *
-     * This default implementation notifies all (render-) inports of this change.
-     *
-     * If p has a NULL sizeOrigin this is only propagated if all outports have a NULL sizeOrigin.
-     */
-    virtual void sizeOriginChanged(RenderPort* p);
-
-    /**
-     * @brief Requests a resize of RenderPort p to newsize.
-     *
-     *  This default implementation resizes all (render-) outports and private ports to newsize
-     *  and requests a resize on all (render-) inports.
-     *
-     *  viewportChanged(newsize) is called on all CameraProperties and the Processor is invalidated.
-     *
-     * @param p The RenderPort to resize. (Not automatically resized to allow interaction coarseness)
-     * @param newsize The requested size.
-     */
-    virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
-
-    ///Test if a textureContainerChanged on port p with so would result in a conflict
-    virtual bool testSizeOrigin(const RenderPort* p, void* so) const;
-
-    /**
      * Returns the registered private render ports of this processor.
      *
      * \sa addPrivateRenderPort
@@ -100,17 +75,17 @@ protected:
     virtual void deinitialize() throw (tgt::Exception);
 
     /**
-     * Calls adjustRenderOutportDimensions().
+     * Calls adjustRenderOutportSizes().
      *
      * @see Processor::beforeProcess
      */
     virtual void beforeProcess();
 
     /**
-     * Adjusts the dimensions of all render outports to the size
-     * of the largest render outport (if the outports have no size origin assigned).
+     * Adjusts the dimensions of all render outports 
+     * TODO: expain strategy
      */
-    virtual void adjustRenderOutportDimensions();
+    virtual void adjustRenderOutportSizes();
 
     /**
      * Allocate or deallocate RenderTargets in outports.
@@ -143,18 +118,12 @@ protected:
     /// Renders a screen-aligned quad with depth func GL_ALWAYS.
     void renderQuad();
 
-    /// used for cycle prevention during render port size propagation
-    bool portResizeVisited_;
-
     static const std::string loggerCat_; ///< category used in logging
 
 private:
     /// The private render ports this processor has. Private ports
     /// are mapped to rendertargets no other processor has access to.
     std::vector<RenderPort*> privateRenderPorts_;
-
-    /// used for cycle prevention during size origin test
-    mutable bool testSizeOriginVisited_;
 };
 
 } // namespace voreen

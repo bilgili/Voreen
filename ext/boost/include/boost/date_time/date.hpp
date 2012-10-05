@@ -48,6 +48,7 @@ namespace date_time {
     day representations.
   */
 
+
   template<class T, class calendar, class duration_type_>
   class date : private
        boost::less_than_comparable<T

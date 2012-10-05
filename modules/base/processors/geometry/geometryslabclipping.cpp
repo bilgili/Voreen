@@ -29,8 +29,8 @@ namespace voreen {
 
 GeometrySlabClipping::GeometrySlabClipping()
     : Processor()
-    , inport_(Port::INPORT, "geometry.geometry")
-    , outport_(Port::OUTPORT, "geometry.clippedgeometry")
+    , inport_(Port::INPORT, "geometry.geometry", "Geometry Input")
+    , outport_(Port::OUTPORT, "geometry.clippedgeometry", "Clipped Geometry Output")
     , enabled_("enabled", "Enabled", true)
     , normal_("slabNormal", "Slab Normal", tgt::vec3(0, 1, 0), tgt::vec3(-1), tgt::vec3(1))
     , position_("slabPosition", "Slab Position", 0.0f, -100.0f, 100.0f)
@@ -67,8 +67,9 @@ void GeometrySlabClipping::process() {
     }
 
     Geometry* outputGeometry = inputGeometry->clone();
-    outputGeometry->clip(tgt::vec4(tgt::normalize( normal_.get()), position_.get() + thickness_.get()/2.f));
-    outputGeometry->clip(tgt::vec4(tgt::normalize(-normal_.get()), -position_.get() + thickness_.get()/2.f));
+    double epsilon = static_cast<double>(tgt::length(outputGeometry->getBoundingBox().diagonal())) * 1e-6;
+    outputGeometry->clip(tgt::vec4(tgt::normalize( normal_.get()), position_.get() + thickness_.get()/2.f), epsilon);
+    outputGeometry->clip(tgt::vec4(tgt::normalize(-normal_.get()), -position_.get() + thickness_.get()/2.f), epsilon);
 
     outport_.setData(outputGeometry);
 }

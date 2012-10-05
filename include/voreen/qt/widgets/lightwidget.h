@@ -48,6 +48,8 @@ public:
 public slots:
     void setLightPosition(const tgt::vec4&);
     tgt::vec4 getLightPosition() const;
+    void setMinDist(double);
+    void setMaxDist(double);
 
 protected:
     void mousePressEvent(QMouseEvent*);

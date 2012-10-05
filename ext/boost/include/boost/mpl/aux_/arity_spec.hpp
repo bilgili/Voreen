@@ -47,6 +47,7 @@ struct arity< \
     BOOST_MPL_AUX_NONTYPE_ARITY_SPEC(i,typename,name) \
 /**/
 
+
 #if defined(BOOST_MPL_CFG_EXTENDED_TEMPLATE_PARAMETERS_MATCHING) \
     && !defined(BOOST_MPL_CFG_NO_FULL_LAMBDA_SUPPORT)
 #   define BOOST_MPL_AUX_TEMPLATE_ARITY_SPEC(i, name) \

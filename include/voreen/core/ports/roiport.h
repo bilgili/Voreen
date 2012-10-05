@@ -37,9 +37,10 @@ template class VRN_CORE_API GenericPort<ROICollection>;
 
 class VRN_CORE_API ROIPort : public GenericPort<ROICollection> {
 public:
-    ROIPort(PortDirection direction, const std::string& name,
+    ROIPort(PortDirection direction, const std::string& name, const std::string& guiName = "",
                  bool allowMultipleConnections = false,
                  Processor::InvalidationLevel invalidationLevel = Processor::INVALID_PROGRAM);
+    virtual std::string getClassName() const {return "ROIPort";}
 };
 
 } // namespace

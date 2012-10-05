@@ -39,6 +39,7 @@
     a rich subset of Container interface.
 */
 
+
 namespace boost
 {
     namespace iterator_range_detail

@@ -30,6 +30,8 @@
 
 namespace voreen {
 
+#define ON_PROPERTY_CHANGE(PROPERTY,PROCESSOR,FUNCTION) PROPERTY.onChange(CallMemberAction<PROCESSOR>(this, &PROCESSOR::FUNCTION));
+
 /**
  * This Action can call a member function of an Object with signature void mem()
  */

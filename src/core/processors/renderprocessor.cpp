@@ -48,8 +48,6 @@ const std::string RenderProcessor::loggerCat_("voreen.RenderProcessor");
 
 RenderProcessor::RenderProcessor()
     : Processor()
-    , portResizeVisited_(false)
-    , testSizeOriginVisited_(false)
 {}
 
 void RenderProcessor::initialize() throw (tgt::Exception) {
@@ -60,6 +58,9 @@ void RenderProcessor::initialize() throw (tgt::Exception) {
     for (size_t i=0; i<pports.size(); ++i) {
         pports[i]->initialize();
     }
+    LGL_ERROR;
+
+    adjustRenderOutportSizes();
     LGL_ERROR;
 }
 
@@ -92,81 +93,12 @@ void RenderProcessor::invalidate(int inv) {
     }
 }
 
-void RenderProcessor::sizeOriginChanged(RenderPort* p) {
-    if (!p->getSizeOrigin()) {
-        const std::vector<Port*> outports = getOutports();
-        for (size_t i=0; i<outports.size(); ++i) {
-            RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
-            if (rp) {
-                if (rp->getSizeOrigin())
-                    return;
-            }
-        }
-    }
-
-    const std::vector<Port*> inports = getInports();
-    for (size_t i=0; i<inports.size(); ++i) {
-        RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
-        if (rp)
-            rp->sizeOriginChanged(p->getSizeOrigin());
-    }
-}
-
-bool RenderProcessor::testSizeOrigin(const RenderPort* p, void* so) const {
-    tgtAssert(p->isOutport(), "testSizeOrigin used with inport");
-
-    // cycle prevention
-    if (testSizeOriginVisited_)
-        return true;
-    testSizeOriginVisited_ = true;
-
-    if (so) {
-        const std::vector<Port*> outports = getOutports();
-        for (size_t i=0; i<outports.size(); ++i) {
-            if(p == outports[i])
-                continue;
-            RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
-            if (rp) {
-                if (rp->getSizeOrigin() && (rp->getSizeOrigin() != so)) {
-                    testSizeOriginVisited_ = false;
-                    return false;
-                }
-            }
-        }
-    }
-
-    const std::vector<Port*> inports = getInports();
-    for (size_t i=0; i<inports.size(); ++i) {
-        RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
-        if (rp) {
-            if (rp->getSizeOrigin() && (rp->getSizeOrigin() != so) ) {
-                testSizeOriginVisited_ = false;
-                return false;
-            }
-
-            const std::vector<const Port*> connectedOutports = inports[i]->getConnected();
-            for (size_t j=0; j<connectedOutports.size(); ++j) {
-                const RenderPort* op = static_cast<const RenderPort*>(connectedOutports[j]);
-
-                if (!static_cast<RenderProcessor*>(op->getProcessor())->testSizeOrigin(op, so)) {
-                    testSizeOriginVisited_ = false;
-                    return false;
-                }
-            }
-        }
-    }
-
-    testSizeOriginVisited_ = false;
-
-    return true;
-}
-
 void RenderProcessor::beforeProcess() {
     Processor::beforeProcess();
 
     tgtAssert(isInitialized(), "No initialized");
     manageRenderTargets();
-    adjustRenderOutportDimensions();
+    adjustRenderOutportSizes();
 }
 
 void RenderProcessor::manageRenderTargets() {
@@ -188,97 +120,63 @@ void RenderProcessor::manageRenderTargets() {
     }
 }
 
-void RenderProcessor::adjustRenderOutportDimensions() {
-
-    // detect largest inport dimension
-    tgt::ivec2 dim(-1);
+void RenderProcessor::adjustRenderOutportSizes() {
+    // detect dimension of first connected render inport
+    tgt::ivec2 inputDim(-1);
     const std::vector<Port*> inports = getInports();
-    for (size_t i=0; i<inports.size(); ++i) {
+    for (size_t i=0; i<inports.size() && inputDim == tgt::ivec2(-1); ++i) {
         RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
-        if (rp && rp->hasRenderTarget() && (rp->getSize().x >= dim.x && rp->getSize().y >= dim.y))
-            dim = rp->getSize();
+        if (rp && rp->hasRenderTarget())
+            inputDim = rp->getSize();
     }
-    if (dim == tgt::ivec2(-1))
-        return;
 
-    // assign largest inport dimension to all render outports without size origin
-    bool assigned = false;
+    // - assign inport dimension to all connected render outports, which are not size receivers
+    // - if a outport is a size receiver, assign its received rendering size to it
+    tgt::ivec2 resizeDim = tgt::ivec2(-1);
     const std::vector<Port*> outports = getOutports();
     for (size_t i=0; i<outports.size(); ++i) {
         RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
-        if (rp && rp->isConnected() && (rp->getSizeOrigin() == 0)) {
-            rp->resize(dim);
-            assigned = true;
-        }
-    }
+        if (!rp || !rp->isConnected())
+            continue;
 
-    // assign size to private ports
-    if (assigned) {
-        const std::vector<RenderPort*> privatePorts = getPrivateRenderPorts();
-        for (size_t i=0; i<privatePorts.size(); ++i) {
-            privatePorts[i]->resize(dim);
-        }
-    }
-
-}
-
-void RenderProcessor::portResized(RenderPort* /*p*/, tgt::ivec2 newsize) {
-
-    // cycle prevention
-    if (portResizeVisited_)
-        return;
-
-    portResizeVisited_ = true;
-
-    // propagate to predecessing RenderProcessors
-    const std::vector<Port*> inports = getInports();
-    for(size_t i=0; i<inports.size(); ++i) {
-        RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
-        if (rp)
-            rp->resize(newsize);
-    }
-
-    //distribute to outports:
-    const std::vector<Port*> outports = getOutports();
-    for(size_t i=0; i<outports.size(); ++i) {
-        RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
-        if (rp)
-            rp->resize(newsize);
-    }
-
-    //distribute to private ports:
-    const std::vector<RenderPort*> pports = getPrivateRenderPorts();
-    for (size_t i=0; i<pports.size(); ++i) {
-        RenderPort* rp = pports[i];
-        rp->resize(newsize);
-    }
-
-    // notify camera properties about viewport change
-    if(newsize != tgt::ivec2(0,0)) {
-        const std::vector<Property*> properties = getProperties();
-        for (size_t i=0; i<properties.size(); ++i) {
-            CameraProperty* cameraProp = dynamic_cast<CameraProperty*>(properties[i]);
-            if (cameraProp) {
-                cameraProp->viewportChanged(newsize);
+        if (rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_DEFAULT) {
+            if (inputDim != rp->getSize() && inputDim != tgt::ivec2(-1)) {
+                rp->resize(inputDim);
+                if (resizeDim == tgt::ivec2(-1))
+                    resizeDim = inputDim;
             }
         }
+        else if (rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER) {
+            RenderSizeReceiveProperty* receiveProp = rp->getSizeReceiveProperty();
+            tgtAssert(receiveProp, "Render outport is size receiver, but has no SizeReceiveProperty");
+            if (receiveProp->get() != rp->getSize()) {
+                rp->resize(receiveProp->get());
+                if (resizeDim == tgt::ivec2(-1))
+                    resizeDim = receiveProp->get();
+            }
+        }
+        else {
+            LERROR("Render outport has invalid render size propgation mode (RENDERSIZE_REQUESTER): " << rp->getQualifiedName());
+        }
     }
 
-    invalidate();
-
-    portResizeVisited_ = false;
+    // resize private render ports to resizeDim
+    if (resizeDim != tgt::ivec2(-1)) {
+        for (size_t i=0; i<privateRenderPorts_.size(); i++) 
+            privateRenderPorts_.at(i)->resize(resizeDim);
+    } 
 }
 
 void RenderProcessor::addPrivateRenderPort(RenderPort* port) {
     port->setProcessor(this);
     privateRenderPorts_.push_back(port);
 
-    map<std::string, Port*>::const_iterator it = portMap_.find(port->getName());
+    map<std::string, Port*>::const_iterator it = portMap_.find(port->getID());
     if (it == portMap_.end())
-        portMap_.insert(std::make_pair(port->getName(), port));
+        portMap_.insert(std::make_pair(port->getID(), port));
     else {
-        LERROR("Port with name " << port->getName() << " has already been inserted!");
-        tgtAssert(false, std::string("Port with name " + port->getName() + " has already been inserted").c_str());
+        LERROR("Port with name " << port->getID() << " has already been inserted!");
+        tgtAssert(false, std::string("Port with name " + port->getID() + " has already been inserted").c_str());
     }
 }
 
@@ -331,12 +229,12 @@ void RenderProcessor::setGlobalShaderParameters(tgt::Shader* shader, const tgt::
     if (camera) {
         shader->setUniform("cameraPosition_", camera->getPosition());
         shader->setUniform("viewMatrix_", camera->getViewMatrix());
-        shader->setUniform("projectionMatrix_", camera->getProjectionMatrix());
+        shader->setUniform("projectionMatrix_", camera->getProjectionMatrix(screenDim));
         tgt::mat4 viewInvert;
         if(camera->getViewMatrix().invert(viewInvert))
             shader->setUniform("viewMatrixInverse_", viewInvert);
         tgt::mat4 projInvert;
-        if(camera->getProjectionMatrix().invert(projInvert))
+        if(camera->getProjectionMatrix(screenDim).invert(projInvert))
             shader->setUniform("projectionMatrixInverse_", projInvert);
     }
 

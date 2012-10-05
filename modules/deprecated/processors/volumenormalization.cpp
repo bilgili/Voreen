@@ -31,7 +31,7 @@ namespace voreen {
 VolumeNormalization::VolumeNormalization()
     : CachingVolumeProcessor()
     , inport_(Port::INPORT, "volume.inport")
-    , outport_(Port::OUTPORT, "volume.outport", true)
+    , outport_(Port::OUTPORT, "volume.outport", "volume.outport", true)
     , enableProcessing_("enableProcessing", "Enable")
 {
     addPort(inport_);

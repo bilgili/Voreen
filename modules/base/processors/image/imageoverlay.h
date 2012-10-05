@@ -51,10 +51,6 @@ public:
 
     bool isReady() const;
 
-    virtual void sizeOriginChanged(RenderPort* p);
-    virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
-    virtual bool testSizeOrigin(const RenderPort* p, void* so) const;
-
 protected:
     virtual void setDescriptions() {
         setDescription("Renders an overlay on top of the input image. The overlay position and size is either specified in pixel coordinates or in normalized coordinates.");

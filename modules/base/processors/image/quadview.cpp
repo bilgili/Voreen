@@ -33,21 +33,15 @@ QuadView::QuadView()
     , gridColor_("gridColor", "Grid color", tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f))
     , maximized_("maximized", "Maximized sub-view", 0, 0, 4)
     , maximizeOnDoubleClick_("maximizeOnDoubleClick", "Maximize on double click", true)
-#ifdef _MSC_VER
-#pragma warning(disable:4355)  // passing 'this' is safe here
-#endif
     , maximizeEventProp_("mouseEvent.maximize", "Maximize Event", this, &QuadView::toggleMaximization,
         tgt::MouseEvent::MOUSE_BUTTON_LEFT, tgt::MouseEvent::DOUBLECLICK, tgt::MouseEvent::MODIFIER_NONE)
-#ifdef _MSC_VER
-#pragma warning(disable:4355)  // passing 'this' is safe here
-#endif
     , mouseMoveEventProp_("mouseEvent.move", "Move Event", this, &QuadView::mouseMove,
-    tgt::MouseEvent::MOUSE_BUTTON_NONE, tgt::MouseEvent::MOTION | tgt::MouseEvent::CLICK | tgt::MouseEvent::ENTER_EXIT, tgt::MouseEvent::MODIFIER_NONE)
-    , outport_(Port::OUTPORT, "outport")
-    , inport1_(Port::INPORT, "inport1")
-    , inport2_(Port::INPORT, "inport2")
-    , inport3_(Port::INPORT, "inport3")
-    , inport4_(Port::INPORT, "inport4")
+        tgt::MouseEvent::MOUSE_BUTTON_NONE, tgt::MouseEvent::MOTION | tgt::MouseEvent::CLICK | tgt::MouseEvent::ENTER_EXIT, tgt::MouseEvent::MODIFIER_NONE)
+    , outport_(Port::OUTPORT, "outport", "Image Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
+    , inport1_(Port::INPORT, "inport1", "Image1 Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+    , inport2_(Port::INPORT, "inport2", "Image2 Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+    , inport3_(Port::INPORT, "inport3", "Image3 Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+    , inport4_(Port::INPORT, "inport4", "Image4 Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
     , currentPort_(-1)
     , isDragging_(false)
 {
@@ -66,10 +60,7 @@ QuadView::QuadView()
     addPort(inport3_);
     addPort(inport4_);
 
-    inport1_.sizeOriginChanged(this);
-    inport2_.sizeOriginChanged(this);
-    inport3_.sizeOriginChanged(this);
-    inport4_.sizeOriginChanged(this);
+    outport_.onSizeReceiveChange<QuadView>(this, &QuadView::portSizeReceiveChanged);
 }
 
 QuadView::~QuadView() {
@@ -275,11 +266,8 @@ void QuadView::initialize() throw (tgt::Exception) {
     updateSizes();
 }
 
-void QuadView::portResized(RenderPort* /*p*/, tgt::ivec2 newsize) {
-    outport_.resize(newsize);
-
+void QuadView::portSizeReceiveChanged() {
     updateSizes();
-    invalidate();
 }
 
 void QuadView::updateSizes() {
@@ -287,21 +275,21 @@ void QuadView::updateSizes() {
         return;
 
     if(maximized_.get() == 0) {
-        tgt::ivec2 subsize = outport_.getSize() / 2;
-        inport1_.resize(subsize);
-        inport2_.resize(subsize);
-        inport3_.resize(subsize);
-        inport4_.resize(subsize);
+        tgt::ivec2 subsize = outport_.getReceivedSize() / 2;
+        inport1_.requestSize(subsize);
+        inport2_.requestSize(subsize);
+        inport3_.requestSize(subsize);
+        inport4_.requestSize(subsize);
     }
     else {
         switch(maximized_.get()) {
-            case 1: inport1_.resize(outport_.getSize());
+            case 1: inport1_.requestSize(outport_.getReceivedSize());
                     break;
-            case 2: inport2_.resize(outport_.getSize());
+            case 2: inport2_.requestSize(outport_.getReceivedSize());
                     break;
-            case 3: inport3_.resize(outport_.getSize());
+            case 3: inport3_.requestSize(outport_.getReceivedSize());
                     break;
-            case 4: inport4_.resize(outport_.getSize());
+            case 4: inport4_.requestSize(outport_.getReceivedSize());
                     break;
             default:;
         }
@@ -404,22 +392,6 @@ void QuadView::mouseMove(tgt::MouseEvent* e) {
             default:;
         }
     }
-}
-
-void QuadView::sizeOriginChanged(RenderPort* /*p*/) {
-}
-
-bool QuadView::testSizeOrigin(const RenderPort* p, void* so) const {
-    if(p->getSizeOrigin() == so)
-        return true;
-
-    if(!so)
-        return true;
-
-    if(!p->getSizeOrigin())
-        return true;
-
-    return false;
 }
 
 void QuadView::invalidate(int inv) {

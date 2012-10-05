@@ -33,8 +33,8 @@ namespace voreen {
 
 ImageThreshold::ImageThreshold()
     : ImageProcessorBypassable("image/imagethreshold"),
-    inport_(Port::INPORT, "image.inport"),
-    outport_(Port::OUTPORT, "image.outport"),
+    inport_(Port::INPORT, "image.inport", "Image Input"),
+    outport_(Port::OUTPORT, "image.outport", "Image Output"),
     lowerThreshold_("lowerThreshold", "Lower Threshold", 0.f, 0.0f, 1.f),
     upperThreshold_("upperThreshold", "Upper Threshold", 1.f, 0.0f, 1.f),
     lowerMaskColor_("lowerMaskColor", "Lower Mask Color", tgt::Color(0.f)),

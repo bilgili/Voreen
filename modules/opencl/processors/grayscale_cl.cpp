@@ -35,8 +35,8 @@ using namespace cl;
 GrayscaleCL::GrayscaleCL()
     : RenderProcessor()
     , saturation_("saturation", "Saturation", 0.0f)
-    , inport_(Port::INPORT, "inport")
-    , outport_(Port::OUTPORT, "outport")
+    , inport_(Port::INPORT, "inport", "Image Input")
+    , outport_(Port::OUTPORT, "outport", "Image Output")
     , prog_(0)
 {
     // register properties and ports:
@@ -96,6 +96,7 @@ void GrayscaleCL::process() {
             commandQueue->finish();
 
             outport_.validateResult();
+            outport_.invalidatePort();
         }
     }
 }

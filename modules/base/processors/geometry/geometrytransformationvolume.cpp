@@ -36,9 +36,9 @@ const std::string GeometryTransformationVolume::loggerCat_("voreen.base.Geometry
 
 GeometryTransformationVolume::GeometryTransformationVolume()
   : Processor()
-  , geometryInport_(Port::INPORT, "geometry.inport")
-  , volumeInport_(Port::INPORT, "volume.inport")
-  , geometryOutport_(Port::OUTPORT, "geometry.outport")
+  , geometryInport_(Port::INPORT, "geometry.inport", "Geometry Input")
+  , volumeInport_(Port::INPORT, "volume.inport", "Volume Input")
+  , geometryOutport_(Port::OUTPORT, "geometry.outport", "Transformed Geometry Output")
   , enableProcessing_("enableProcessing", "Enable", true)
   , sourceCoordinateSystem_("sourceCoordinateSystem", "Source Coordinate System")
   , targetCoordinateSystem_("targetCoordinateSystem", "Dest Coordinate System")

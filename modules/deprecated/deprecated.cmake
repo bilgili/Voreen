@@ -5,6 +5,7 @@
 SET(MOD_CORE_MODULECLASS DeprecatedModule)
 
 SET(MOD_CORE_SOURCES
+    ${MOD_DIR}/ports/textureport.cpp
     ${MOD_DIR}/processors/buttonoverlayprocessor.cpp
     ${MOD_DIR}/processors/canny.cpp 
     ${MOD_DIR}/processors/rawtexturesave.cpp 
@@ -21,6 +22,7 @@ SET(MOD_CORE_SOURCES
 )
 
 SET(MOD_CORE_HEADERS
+    ${MOD_DIR}/ports/textureport.h
     ${MOD_DIR}/processors/buttonoverlayprocessor.h
     ${MOD_DIR}/processors/textseriessource.h
     ${MOD_DIR}/processors/targettotexture.h

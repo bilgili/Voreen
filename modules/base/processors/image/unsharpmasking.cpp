@@ -39,8 +39,8 @@ UnsharpMasking::UnsharpMasking()
       amount_("amount", "Amount", 1.0f, 0.f, 10.0f),
       threshold_("threshold", "Threshhold", 0.f, 0.f, 0.5f),
       alpha_("alpha", "Process Alpha-Channel", true),
-      inport_(Port::INPORT, "image.inport"),
-      outport_(Port::OUTPORT, "image.outport"),
+      inport_(Port::INPORT, "image.inport", "Image Input"),
+      outport_(Port::OUTPORT, "image.outport", "Image Output"),
       privatePort_(Port::OUTPORT, "image.privateport")
 {
     addProperty(sigma_);

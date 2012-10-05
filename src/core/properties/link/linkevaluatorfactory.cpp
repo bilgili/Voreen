@@ -62,7 +62,7 @@ std::vector<std::pair<std::string, std::string> > LinkEvaluatorFactory::getCompa
     std::map<std::string, const LinkEvaluatorBase*>::const_iterator it;
     for (it = typeMap_.begin(); it != typeMap_.end(); ++it) {
         if (it->second->arePropertiesLinkable(p1, p2))
-            compatible.push_back(std::pair<std::string, std::string>(it->first, it->second->name()));
+            compatible.push_back(std::pair<std::string, std::string>(it->first, it->second->getGuiName()));
     }
     return compatible;
 }

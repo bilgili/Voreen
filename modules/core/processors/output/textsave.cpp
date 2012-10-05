@@ -33,7 +33,7 @@ const std::string TextSave::loggerCat_("voreen.core.TextSave");
 
 TextSave::TextSave()
     : Processor()
-    ,  inport_(Port::INPORT, "inport")
+    ,  inport_(Port::INPORT, "inport", "Text Input")
     ,  fileProp_("file", "Text File", "Select text file...", "./",
             "Text files (*.txt)", FileDialogProperty::SAVE_FILE)
     , saveButton_("save", "Save")

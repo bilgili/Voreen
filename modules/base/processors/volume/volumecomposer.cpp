@@ -37,9 +37,9 @@ const std::string VolumeComposer::loggerCat_("voreen.base.VolumeComposer");
 
 VolumeComposer::VolumeComposer()
     : VolumeProcessor(),
-      inportImages_(Port::INPORT, "imagesequence.in"),
-      inportVolumes_(Port::INPORT, "volumecollection.in"),
-      outport_(Port::OUTPORT, "volume.out"),
+      inportImages_(Port::INPORT, "imagesequence.in", "ImageSequence Input"),
+      inportVolumes_(Port::INPORT, "volumecollection.in", "VolumeColletion Input"),
+      outport_(Port::OUTPORT, "volume.out", "Volume Output"),
       voxelSpacing_("voxelSpacing", "Voxel Spacing", tgt::vec3(1.f), tgt::vec3(0.0001f), tgt::vec3(10.f))
 {
     addPort(inportImages_);

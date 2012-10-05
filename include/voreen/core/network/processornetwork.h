@@ -30,6 +30,8 @@
 #include "voreen/core/utils/exception.h"
 #include "voreen/core/network/processornetworkobserver.h"
 #include "voreen/core/processors/processor.h"
+#include "voreen/core/properties/link/propertylink.h"
+#include "voreen/core/properties/link/linkevaluatorbase.h"
 
 #include <sstream>
 
@@ -37,9 +39,9 @@ namespace voreen {
 
 class NetworkSerializer;
 class Property;
-class PropertyLink;
 class LinkEvaluatorBase;
 class Port;
+class RenderPort;
 
 #ifdef DLL_TEMPLATE_INST
 template class VRN_CORE_API Observable<ProcessorNetworkObserver>;
@@ -152,7 +154,7 @@ public:
      *
      * @param processor the processor to rename. Must be part of the network.
      * @param name the name to assign. Must not be empty and must not be
-     *      assigned to any prcessor in the network.
+     *      assigned to any processor in the network.
      *
      * @throw VoreenException if the passed processor is not contained by the
      *        network, or if the passed name is empty or already assigned
@@ -177,6 +179,9 @@ public:
      */
     bool connectPorts(Port* inport, Port* outport);
 
+    /// @overload
+    bool connectPorts(Port& inport, Port& outport);
+
     /**
      * Deletes the connection between the passed ports.
      *
@@ -187,8 +192,11 @@ public:
      */
     void disconnectPorts(Port* inport, Port* outport);
 
+    /// @overload
+    void disconnectPorts(Port& inport, Port& outport);
+
     /**
-     * Removes all ingoing and outgoing port connections
+     * Removes all incoming and outgoing port connections
      * from the passed processor.
      *
      * @param processor the processor to disconnect.
@@ -197,9 +205,38 @@ public:
     void disconnectPorts(Processor* processor);
 
     /**
+     * Returns all processor properties in the network
+     * with the specified id.
+     */
+    std::vector<Property*> getPropertiesByID(const std::string& id) const;
+
+    /**
+     * Returns all processor properties in the network matching
+     * the given template type.
+     */
+    template<class T>
+    std::vector<T*> getPropertiesByType() const;
+
+    /**
      * Returns the network's property links.
      */
     const std::vector<PropertyLink*>& getPropertyLinks() const;
+
+    /**
+     * Returns true, is the passed property object is
+     * the source or destination of any property link.
+     */
+    bool isPropertyLinked(const Property* property) const;
+
+    /**
+     * Tests whether the ProcessorNetwork contains a link with between the two passed Properties with
+     * the explicit LinkEvaluatorBase
+     *
+     * @param src The source property of the link
+     * @param dest The destination property of the link
+     * @param evaluator The evaluator of the link
+     */
+    bool containsPropertyLink(const Property* src, const Property* dest, LinkEvaluatorBase* evaluator) const;
 
     /**
      * Creates a property link, if possible and no link already exists from the source to the destination,
@@ -218,36 +255,18 @@ public:
     PropertyLink* createPropertyLink(Property* src, Property* dest, LinkEvaluatorBase* linkEvaluator = 0);
 
     /**
-     * Removes a property link from the network and deletes it.
-     */
-    void removePropertyLink(PropertyLink* propertyLink);
-
-    /**
-     * Removes all links from the passed property and deletes them.
+     * Creates incoming and outgoing links from properties of the passed processor 
+     * to all other properties in the network. Property pairs that are already linked
+     * are ignored.
      *
-     * @param property the property to unlink. Must be owned by a processor
-     *      that is part of the network.
+     * @tparam T Type of properties to consider, including subtypes.
+     * @param processor Processor whose properties are to be linked.
+     * @param evaluator Evaluator to use for creating the links. Is deleted by the function. 
+     *        If the null pointer is passed, the first compatible evaluator will be used.
+     * @return The number of created property links.
      */
-    void removePropertyLinks(Property* property);
-
-    /**
-     * Removes all ingoing and outgoing property links
-     * from the properties of the passed processor and deletes them.
-     *
-     * @param processor processor to unlink. Must be an element of the network.
-     */
-    void removePropertyLinks(Processor* processor);
-
-    /**
-     * Removes all property links from the network and deletes them.
-     */
-    void clearPropertyLinks();
-
-    /**
-     * Returns true, is the passed property object is
-     * the source or destination of any property link.
-     */
-    bool isPropertyLinked(const Property* property) const;
+    template<class T>
+    int createPropertyLinksForProcessor(Processor* processor, LinkEvaluatorBase* evaluator = 0);
 
     /**
      * Creates links between the passed properties.
@@ -266,12 +285,12 @@ public:
      *
      * @return the number of links that have been created
      */
-    int linkProperties(const std::vector<Property*>& properties, LinkEvaluatorBase* linkEvaluator = 0,
-        bool replace = true, bool transitive = true);
+    int createPropertyLinksBetweenProperties(const std::vector<Property*>& properties, LinkEvaluatorBase* linkEvaluator = 0,
+        bool replace = false, bool transitive = true);
 
     /**
-     * Creates links between a subset of processor properties that is specified
-     * by the passed filter criteria.
+     * Creates links between the properties of the passed sub network,
+     * which are additionally constricted by several filter criteria.
      *
      * @tparam T Type of the properties to be linked, including subtypes.
      *      Use \c Property to embrace all types.
@@ -292,30 +311,167 @@ public:
      * @return the number of links that have been created
      */
     template<class T>
-    int linkProperties(const std::vector<Processor*>& processors, const std::vector<std::string>& propertyIDs,
-        LinkEvaluatorBase* linkEvaluator = 0, bool replace = true, bool transitive = true);
+    int createPropertyLinksWithinSubNetwork(const std::vector<Processor*>& processors, const std::vector<std::string>& propertyIDs,
+        LinkEvaluatorBase* linkEvaluator = 0, bool replace = false, bool transitive = true);
 
     /**
-     * Tests whether the ProcessorNetwork contains a link with between the two passed Properties with
-     * the explicit LinEvaluatorBase
-     * \param src The source property of the link
-     * \param dest The destination property of the link
-     * \param evaluator The evaluator of the link
+     * Removes a property link from the network and deletes it.
      */
-    bool containsLink(const Property* src, const Property* dest, LinkEvaluatorBase* evaluator) const;
+    void removePropertyLink(PropertyLink* propertyLink);
 
     /**
-     * Returns all processor properties in the network
-     * with the specified id.
+     * Removes the property link between the passed properties, if such link exists, and deletes it.
+     *
+     * @return true, if a link between the properties existed and has been removed
      */
-    std::vector<Property*> getPropertiesByID(const std::string& id) const;
+    bool removePropertyLink(Property* src, Property* dst);
 
     /**
-     * Returns all processor properties in the network matching
-     * the given template type.
+     * Removes all property links from the network and deletes them.
+     *
+     * @return Number of removed links.
+     */
+    int removeAllPropertyLinks();
+
+    /**
+     * Removes all incoming and outgoing links from the passed property and deletes them.
+     *
+     * @param property the property to unlink. Must be owned by a processor
+     *      that is part of the network.
+     * @return Number of removed property links.
+     */
+    int removePropertyLinksFromProperty(Property* property);
+
+    /**
+     * Removes all incoming and outgoing property links
+     * from the properties of the passed processor and deletes them.
+     *
+     * @param processor processor to unlink. Must be an element of the network.
+     * @return Number of removed property links.
+     */
+    int removePropertyLinksFromProcessor(Processor* processor);
+
+    /**
+     * Removes all incoming and outgoing property links from the properties
+     * that are owned by the passed processor and whose type matches the
+     * specified template parameter (including subtypes).
+     *
+     * @tparam T property type (including subtypes) whose links are to be removed.
+     * @param processor processor to unlink. Must be an element of the network.
+     * @return Number of removed property links.
      */
     template<class T>
-    std::vector<T*> getPropertiesByType() const;
+    int removePropertyLinksFromProcessor(Processor* processor);
+
+    /**
+     * Removes and deletes all links between properties that are owned by
+     * the passed processors.
+     *
+     * @param processors Sub-network whose properties should be unlinked. Pass an empty
+     *        empty vector for embracing the entire network.
+     * @return Number of removed property links.
+     */
+    int removePropertyLinksFromSubNetwork(const std::vector<Processor*>& processors);
+
+    /**
+     * Removes and deleted all property links between properties that are owned by
+     * the passed processors and whose types matches the specified template parameter.
+     *
+     * @tparam T Property types whose links should be deleted (including subtypes).
+     * @param processors Sub-network whose properties should be unlinked. Pass an empty
+     *        empty vector for embracing the entire network.
+     * @return Number of removed property links.
+     */
+    template<class T>
+    int removePropertyLinksFromSubNetwork(const std::vector<Processor*>& processors);
+
+    /**
+     * Creates a render size link from \p source to \p destination, which must both be
+     * either a render size origin or a render size receiver. 
+     * Usually, a size link exists between a render size origin inport and a render size receiving outport.
+     * A render size link from a size receiver to a size origin is not possible.
+     *
+     * @return The created render size link.
+     */
+    PropertyLink* createRenderSizeLink(RenderPort* source, RenderPort* destination);
+
+    /// @overload
+    PropertyLink* createRenderSizeLink(RenderPort& source, RenderPort& destination);
+
+    /**
+     * Removes the render size link from \p source to \p dest, if such a link exists.
+     *
+     * @return true, if a link has been removed.
+     */
+    bool removeRenderSizeLink(RenderPort* source, RenderPort* destination);
+
+    /// @overload
+    bool removeRenderSizeLink(RenderPort& source, RenderPort& destination);
+
+    /**
+     * Returns the render size link from \p source to \p destination,
+     * or null if no such link exists.
+     */
+    PropertyLink* getRenderSizeLink(RenderPort* source, RenderPort* destination);
+
+    /// @overload
+    PropertyLink* getRenderSizeLink(RenderPort& source, RenderPort& destination);
+
+    /**
+     * Creates render size links between the passed processors' RenderPorts 
+     * according to the current network topology.
+     *
+     * @param processors The subnetwork to consider
+     * @param replaceExisting if true, existing render size links are replaced
+     *
+     * @return The number of created render size links.
+     */
+    int createRenderSizeLinksWithinSubNetwork(const std::vector<Processor*>& processors, bool replaceExisting = false);
+
+    /**
+     * Creates render size links that span the port connection from \p outport, 
+     * which must be an outport, to \p inport, which must be an inport. 
+     *
+     * @param replaceExisting if true, existing render size links are replaced
+     *
+     * @return The number of created render size links.
+     */
+    int createRenderSizeLinksOverConnection(RenderPort* outport, RenderPort* inport, bool replaceExisting = false);
+
+    /**
+     * Creates render size links from/to the passed processor's RenderPorts,
+     * by considering the network topology.
+     * 
+     * @param replaceExisting if true, existing render size links are replaced
+     *
+     * @return The number of created render size links.
+     */
+    int createRenderSizeLinksForProcessor(Processor* processor, bool replaceExisting = false);
+
+    /**
+     * Removes all render size links between the passed processors' RenderPorts.
+     *
+     * @return The number of removed render size links.
+     */
+    int removeRenderSizeLinksFromSubNetwork(const std::vector<Processor*>& processors);
+
+    /**
+     * Removes all render size links that span the port connection from \p outport,
+     * which must be an outport, to \p inport, which must be an inport. 
+     *
+     * @note A actual connection between the passed ports does not necessarily have to exist.
+     *
+     * @return The number of created render size links.
+     */
+    int removeRenderSizeLinksOverConnection(RenderPort* outport, RenderPort* inport);
+
+    /**
+     * Removes all incoming and outgoing render size links from/to the 
+     * passed processor's RenderPorts.
+     *
+     * @return The number of removed render size links. 
+     */
+    int removeRenderSizeLinksFromProcessor(Processor* processor);
 
     /**
      * Set the version of the network file.
@@ -415,6 +571,30 @@ public:
     const std::vector<std::string>& getReferencedFiles() const;
 
 private:
+    /**
+     * Returns the processor that directly or indirectly owns the passed property.
+     * Indirect ownership means that the processor owns another property owner,
+     * e.g. a port, that owns the property.
+     */
+    Processor* getOwningProcessor(Property* property) const;
+
+    /**
+     * Returns all RenderPort size receivers that are direct predecessors of \p renderPort,
+     * i.e., all size receivers that are connected to \c renderPort through a path, which does
+     * not contain any other size receivers. Ports not owned by a processor of \p subNetwork are ignored.
+     */
+    std::vector<RenderPort*> getPredecessingRenderSizeReceivers(RenderPort* renderPort, const std::vector<Processor*>& subNetwork) const;
+
+    /**
+     * Returns all RenderPort size origins that are direct successors of \p renderPort,
+     * i.e., all size origins that are connected to \c renderPort through a path, which does
+     * not contain any other size origin. Ports not owned by a processor of \p subNetwork are ignored.
+     */
+    std::vector<RenderPort*> getSuccessingRenderSizeOrigins(RenderPort* renderPort, const std::vector<Processor*>& subNetwork) const;
+
+    /// Returns a map from render inports to the render outports they are linked with, within the passed sub network.
+    std::map<RenderPort*, std::vector<RenderPort*> > getRenderSizeReceiverToOriginsMap(const std::vector<Processor*> subNetwork) const;
+    
     /// Calls networkChanged() on the registered observers.
     void notifyNetworkChanged() const;
 
@@ -486,7 +666,7 @@ std::vector<T*> ProcessorNetwork::getPropertiesByType() const {
 }
 
 template<class T>
-int ProcessorNetwork::linkProperties(const std::vector<Processor*>& processors,
+int ProcessorNetwork::createPropertyLinksWithinSubNetwork(const std::vector<Processor*>& processors,
     const std::vector<std::string>& propertyIDs,
     LinkEvaluatorBase* linkEvaluator,
     bool replace, bool transitive) {
@@ -518,7 +698,91 @@ int ProcessorNetwork::linkProperties(const std::vector<Processor*>& processors,
     }
 
     // passed collected properties to helper function
-    return linkProperties(linkProps, linkEvaluator, replace, transitive);
+    return createPropertyLinksBetweenProperties(linkProps, linkEvaluator, replace, transitive);
+}
+
+template<class T>
+int ProcessorNetwork::createPropertyLinksForProcessor(Processor* processor, LinkEvaluatorBase* evaluator) {
+    tgtAssert(processor, "null pointer passed");
+    tgtAssert(contains(processor), "passed processor is not part of the network");
+
+    // collect matching properties of passed processor
+    std::vector<T*> procProperties = processor->getPropertiesByType<T>();
+
+    // get all matching properties in the network
+    std::vector<T*> networkProperties = getPropertiesByType<T>();
+
+    // create links from processor properties to network properties
+    int numCreated = 0;
+    for (size_t i=0; i<procProperties.size(); i++) {
+        T* procProperty = procProperties.at(i);
+        tgtAssert(procProperty, "null pointer");
+        for (size_t j=0; j<networkProperties.size(); j++) {
+            T* networkProperty = networkProperties.at(j);
+            tgtAssert(networkProperty, "null pointer");
+            if (procProperty == networkProperty)
+                continue;
+            if (!procProperty->isLinkedWith(networkProperty))
+                if (createPropertyLink(procProperty, networkProperty, evaluator ? evaluator->create() : 0))
+                    numCreated++;
+            if (!networkProperty->isLinkedWith(procProperty))
+                if (createPropertyLink(networkProperty, procProperty, evaluator ? evaluator->create() : 0))
+                    numCreated++;
+        }
+    }
+
+    delete evaluator;
+    return numCreated;
+}
+
+template<class T>
+int ProcessorNetwork::removePropertyLinksFromProcessor(Processor* processor) {
+    tgtAssert(processor, "null pointer passed");
+    tgtAssert(contains(processor), "passed processor is not part of the network");
+
+    int numRemoved = 0;
+    for (size_t i = 0; i < propertyLinks_.size(); ++i) {
+        PropertyLink* link = propertyLinks_[i];
+        if ( (getOwningProcessor(link->getSourceProperty()) == processor && dynamic_cast<T*>(link->getSourceProperty())) ||
+             (getOwningProcessor(link->getDestinationProperty()) == processor && dynamic_cast<T*>(link->getDestinationProperty())) ) {
+                removePropertyLink(link);
+                i--; // removePropertyLink also deletes the link object
+            numRemoved++;
+        }
+    }
+    return numRemoved;
+}
+
+template<class T>
+int ProcessorNetwork::removePropertyLinksFromSubNetwork(const std::vector<Processor*>& processors) {
+    // determine processors whose links are to be removed
+    std::vector<Processor*> linkProcessors = (processors.empty() ? getProcessors() : processors);
+
+    // collect properties to unlink
+    std::set<Property*> unlinkProps;
+    for (size_t i=0; i<linkProcessors.size(); ++i) {
+        Processor* curProcessor = linkProcessors[i];
+        if (!contains(curProcessor)) {
+            LWARNING("Processor is not part of the network: " << curProcessor->getName());
+            continue;
+        }
+
+        std::vector<T*> procProps = curProcessor->getPropertiesByType<T>();
+        unlinkProps.insert(procProps.begin(), procProps.end());
+    }
+
+    // delete all links between any pair of unlinkProps
+    int numRemoved = 0;
+    std::vector<PropertyLink*> links = std::vector<PropertyLink*>(getPropertyLinks());
+    for (size_t i=0; i<links.size(); i++) {
+        PropertyLink* link = links.at(i);
+        if (unlinkProps.count(link->getSourceProperty()) && unlinkProps.count(link->getDestinationProperty())) {
+            removePropertyLink(link);
+            numRemoved++;
+        }
+    }
+
+    return numRemoved;
 }
 
 } //namespace voreen

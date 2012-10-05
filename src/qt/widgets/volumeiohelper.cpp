@@ -55,10 +55,6 @@
 #include <QUrl>
 #include <QSettings>
 
-#ifdef _MSC_VER
-#include "tgt/gpucapabilitieswindows.h"
-#endif
-
 namespace voreen {
 
 const std::string VolumeIOHelper::loggerCat_("voreen.qt.VolumeIOHelper");

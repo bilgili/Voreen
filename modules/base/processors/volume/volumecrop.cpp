@@ -38,8 +38,8 @@ const std::string VolumeCrop::loggerCat_("voreen.base.VolumeCrop");
 
 VolumeCrop::VolumeCrop()
     : CachingVolumeProcessor()
-    , inport_(Port::INPORT, "volumehandle.input")
-    , outport_(Port::OUTPORT, "volumehandle.output", 0)
+    , inport_(Port::INPORT, "volumehandle.input", "Volume Input")
+    , outport_(Port::OUTPORT, "volumehandle.output", "Volume Output", false)
     , clipRight_("rightClippingPlane", "Right Clip Plane (x)", 0, 0, 100000)
     , clipLeft_("leftClippingPlane", "Left Clip Plane (x)", 1, 1, 100000)
     , clipFront_("frontClippingPlane", "Front Clip Plane (y)", 0, 0, 100000)

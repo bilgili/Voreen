@@ -33,8 +33,8 @@ namespace voreen {
 
 Grayscale::Grayscale()
     : ImageProcessorBypassable("image/grayscale"), // loads fragment shader pp_grayscale.frag
-      inport_(Port::INPORT, "inport"),
-      outport_(Port::OUTPORT, "outport"),
+      inport_(Port::INPORT, "inport", "Image Input"),
+      outport_(Port::OUTPORT, "outport", "Image Output"),
       saturation_("saturation", "Saturation", 0.f)
 {
     // register ports and properties

@@ -25,9 +25,10 @@
 
 #include "voreen/core/properties/link/corelinkevaluatorfactory.h"
 
-#include "voreen/core/properties/link/dependencylinkevaluators.h"
+//#include "voreen/core/properties/link/dependencylinkevaluators.h"
 #include "voreen/core/properties/link/linkevaluatorboolinvert.h"
 #include "voreen/core/properties/link/linkevaluatorid.h"
+#include "voreen/core/ports/renderport.h"
 
 namespace voreen {
 
@@ -69,6 +70,8 @@ CoreLinkEvaluatorFactory::CoreLinkEvaluatorFactory() {
     // -----------------
 
     // id
+    registerType(new LinkEvaluatorRenderSize());      //< specialized ivec2 id link for rendering sizes 
+
     registerType(new LinkEvaluatorIVec2Id());
     registerType(new LinkEvaluatorIVec3Id());
     registerType(new LinkEvaluatorIVec4Id());
@@ -147,16 +150,17 @@ CoreLinkEvaluatorFactory::CoreLinkEvaluatorFactory() {
 //    registerType(new LinkEvaluatorVolumeHandleId());
 
     registerType(new LinkEvaluatorCameraId());
+    registerType(new LinkEvaluatorCameraOrientationId());
     registerType(new LinkEvaluatorCameraPosId());
     registerType(new LinkEvaluatorCameraLookId());
+    registerType(new LinkEvaluatorCameraFocusId());
 
     registerType(new LinkEvaluatorTransFuncId());
 
     registerType(new LinkEvaluatorButtonId());
 
     //Dependency links:
-    registerType(new DependencyLinkEvaluator);
-//    registerType(new DependencyLinkEvaluatorVolumeHandle());
+    //registerType(new DependencyLinkEvaluator);
 
 }
 

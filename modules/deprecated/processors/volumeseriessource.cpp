@@ -45,7 +45,7 @@ VolumeSeriesSource::VolumeSeriesSource()
                 VoreenApplication::app()->getUserDataPath("volumes"), "Volume Series Files (*.sdat)",
                 FileDialogProperty::OPEN_FILE, Processor::INVALID_RESULT)
     , step_("step", "Time Step", 0, 0, 1000)
-    , outport_(Port::OUTPORT, "volumehandle.volumehandle", 0)
+    , outport_(Port::OUTPORT, "volumehandle.volumehandle", "volumehandle.volumehandle", false)
     , needUpload_(false)
 {
     addProperty(filename_);

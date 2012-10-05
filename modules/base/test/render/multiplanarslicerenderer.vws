@@ -1,21 +1,39 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="11">
+        <ProcessorNetwork version="13">
             <Processors>
                 <Processor type="Canvas" name="Canvas 2D uint16" id="ref3">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-485" y="71" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="43" y="110" width="500" height="400" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="43" y="107" width="500" height="400" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="43" y="107" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="500" y="400" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" id="ref10">
                             <value x="500" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/2D-uint16.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/2D-uint16.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref34">
+                                    <value x="500" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSource" name="VolumeSource uint16" id="ref0">
@@ -25,6 +43,12 @@
                     <Properties>
                         <Property name="volumeURL" url="input/walnut_medium.vvd?preferredReader=VvdVolumeReader" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="MultiplanarSliceRenderer" name="MultiplanarSliceRenderer 2D uint16" id="ref1">
@@ -67,6 +91,20 @@
                             </TransferFunction>
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="image.outport.renderSizeReceive" id="ref35">
+                                    <value x="500" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -93,7 +131,6 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-292" y="-57" />
                     </MetaData>
                     <Properties>
-                        <Property name="applyColorModulation" value="false" />
                         <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="50" fovy="45.00000381" id="ref16">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1049" y="342" />
@@ -129,6 +166,20 @@
                             </TransferFunction>
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="image.outport.renderSizeReceive" id="ref37">
+                                    <value x="500" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -160,9 +211,20 @@
                             <value x="500" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/3D-uint16.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/3D-uint16.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref36">
+                                    <value x="500" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSource" name="VolumeSource int16" id="ref5">
@@ -172,6 +234,12 @@
                     <Properties>
                         <Property name="volumeURL" url="input/walnut_medium_int16.vvd?preferredReader=VvdVolumeReader" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="MultiplanarSliceRenderer" name="MultiplanarSliceRenderer 2D int16" id="ref6">
@@ -179,7 +247,6 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-7" y="-57" />
                     </MetaData>
                     <Properties>
-                        <Property name="applyColorModulation" value="false" />
                         <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="50" fovy="45.00000381" id="ref15">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1049" y="342" />
@@ -215,6 +282,20 @@
                             </TransferFunction>
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="image.outport.renderSizeReceive" id="ref39">
+                                    <value x="500" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -239,16 +320,27 @@
                 <Processor type="Canvas" name="Canvas 2D int16" id="ref8">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="42" y="68" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="568" y="108" width="500" height="400" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="568" y="106" width="500" height="400" />
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" id="ref32">
                             <value x="500" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/2D-int16.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/2D-int16.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref38">
+                                    <value x="500" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="MultiplanarSliceRenderer" name="MultiplanarSliceRenderer 3D int16" id="ref7">
@@ -256,7 +348,6 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="228" y="-57" />
                     </MetaData>
                     <Properties>
-                        <Property name="applyColorModulation" value="false" />
                         <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="50" fovy="45.00000381" id="ref27">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1049" y="342" />
@@ -292,6 +383,20 @@
                             </TransferFunction>
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties>
+                                <Property name="image.outport.renderSizeReceive" id="ref41">
+                                    <value x="500" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -323,9 +428,20 @@
                             <value x="500" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/3D-int16.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/3D-int16.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref40">
+                                    <value x="500" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -587,10 +703,27 @@
                     <DestinationProperty type="IntVec2Property" ref="ref32" />
                     <Evaluator type="LinkEvaluatorIVec2Id" />
                 </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref34" />
+                    <DestinationProperty ref="ref35" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref36" />
+                    <DestinationProperty ref="ref37" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref38" />
+                    <DestinationProperty ref="ref39" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref40" />
+                    <DestinationProperty ref="ref41" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
             </PropertyLinks>
-            <PropertyStateCollections />
-            <PropertyStateFileReferences />
-            <PropertyStateDirectoryReferences />
         </ProcessorNetwork>
         <Animation />
     </Workspace>

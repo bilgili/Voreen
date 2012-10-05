@@ -25,6 +25,10 @@
 
 #include "voreen/core/properties/property.h"
 #include "voreen/core/properties/propertywidget.h"
+#include "voreen/core/properties/link/linkevaluatorfactory.h"
+
+#include "voreen/core/voreenapplication.h"
+#include "voreen/core/voreenmodule.h"
 
 namespace voreen {
 
@@ -356,6 +360,54 @@ bool Property::isLinkedWith(const Property* dest, bool transitive) const {
     }
 
     return false;
+}
+
+bool Property::isLinkableWith(const voreen::Property* dst) const{
+
+    if (!VoreenApplication::app()) {
+        LERRORC("voreen.property", "VoreenApplication not instantiated");
+        return false;
+    }
+    const std::vector<voreen::VoreenModule*>& modules = VoreenApplication::app()->getModules();
+
+    for (size_t m=0; m<modules.size(); m++) {
+        const std::vector<LinkEvaluatorFactory*>& factories = modules.at(m)->getLinkEvaluatorFactories();
+        for (size_t i=0; i<factories.size(); i++) {
+            if (factories.at(i)->arePropertiesLinkable(this, dst))
+                return true;
+        }
+    }
+
+    return false;
+}
+
+std::vector<std::pair<std::string, std::string> > Property::getCompatibleEvaluators(const voreen::Property* dst) const{
+
+    std::vector<std::pair<std::string, std::string> > result;
+
+    if (!VoreenApplication::app()) {
+        LERRORC("voreen.property", "VoreenApplication not instantiated");
+        return result;
+    }
+    const std::vector<VoreenModule*>& modules = VoreenApplication::app()->getModules();
+
+    for (size_t m=0; m<modules.size(); m++) {
+        const std::vector<LinkEvaluatorFactory*>& factories = modules.at(m)->getLinkEvaluatorFactories();
+        for (size_t i=0; i<factories.size(); i++) {
+            std::vector<std::pair<std::string, std::string> > evaluators = factories.at(i)->getCompatibleLinkEvaluators(this, dst);
+            result.insert(result.end(), evaluators.begin(), evaluators.end());
+        }
+    }
+
+    // put size link evaluator to front (HACK)
+    /*for (size_t i=1; i<result.size(); i++) {
+        if (result.at(i).first == "LinkEvaluatorRenderSize") {
+            std::swap(result.at(0), result.at(i));
+            break;
+        }
+    }*/
+
+    return result;
 }
 
 std::string Property::getTypeDescription() const {

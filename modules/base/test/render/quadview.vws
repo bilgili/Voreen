@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="11">
+        <ProcessorNetwork version="13">
             <Processors>
                 <Processor type="ImageSource" name="ImageSource" id="ref0">
                     <MetaData>
@@ -9,11 +9,17 @@
                     </MetaData>
                     <Properties>
                         <Property name="clearButton" />
-                        <Property name="imageFile" value="input/images/nucleon_background.png" />
+                        <Property name="imageFile" noPathSet="false" value="input/images/nucleon_background.png" />
                         <Property name="imageSize">
                             <value x="321" y="319" />
                         </Property>
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="image.out">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="QuadView" name="QuadView" id="ref1">
@@ -30,21 +36,78 @@
                         <Property name="mouseEvent.move" lod="1" enabled="true" mouseAction="103" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="showGrid" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport1">
+                            <Properties>
+                                <Property name="inport1.renderSizeOrigin">
+                                    <value x="256" y="256" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport2">
+                            <Properties>
+                                <Property name="inport2.renderSizeOrigin">
+                                    <value x="256" y="256" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport3">
+                            <Properties>
+                                <Property name="inport3.renderSizeOrigin">
+                                    <value x="256" y="256" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport4">
+                            <Properties>
+                                <Property name="inport4.renderSizeOrigin">
+                                    <value x="256" y="256" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outport">
+                            <Properties>
+                                <Property name="outport.renderSizeReceive" id="ref11">
+                                    <value x="512" y="512" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas" id="ref4">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-474" y="117" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="85" y="107" width="512" height="512" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="85" y="107" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="512" y="512" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize">
                             <value x="512" y="512" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/quadview.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/quadview.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref10">
+                                    <value x="512" y="512" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ImageSource" name="ImageSource 2" id="ref5">
@@ -53,11 +116,17 @@
                     </MetaData>
                     <Properties>
                         <Property name="clearButton" />
-                        <Property name="imageFile" value="input/images/walnut.png" />
+                        <Property name="imageFile" noPathSet="false" value="input/images/walnut.png" />
                         <Property name="imageSize">
                             <value x="512" y="512" />
                         </Property>
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="image.out">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ImageSource" name="ImageSource 3" id="ref6">
@@ -66,11 +135,17 @@
                     </MetaData>
                     <Properties>
                         <Property name="clearButton" />
-                        <Property name="imageFile" value="input/images/5042-ds.png" />
+                        <Property name="imageFile" noPathSet="false" value="input/images/5042-ds.png" />
                         <Property name="imageSize">
                             <value x="512" y="512" />
                         </Property>
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="image.out">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ImageSource" name="ImageSource 4" id="ref7">
@@ -79,11 +154,17 @@
                     </MetaData>
                     <Properties>
                         <Property name="clearButton" />
-                        <Property name="imageFile" value="input/images/634-ds.jpg" />
+                        <Property name="imageFile" noPathSet="false" value="input/images/634-ds.jpg" />
                         <Property name="imageSize">
                             <value x="512" y="512" />
                         </Property>
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="image.out">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="QuadView" name="QuadView 2" id="ref2">
@@ -100,6 +181,45 @@
                         <Property name="mouseEvent.move" lod="1" enabled="true" mouseAction="103" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="showGrid" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport1">
+                            <Properties>
+                                <Property name="inport1.renderSizeOrigin">
+                                    <value x="256" y="256" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport2">
+                            <Properties>
+                                <Property name="inport2.renderSizeOrigin">
+                                    <value x="256" y="256" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport3">
+                            <Properties>
+                                <Property name="inport3.renderSizeOrigin">
+                                    <value x="256" y="256" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport4">
+                            <Properties>
+                                <Property name="inport4.renderSizeOrigin">
+                                    <value x="256" y="256" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outport">
+                            <Properties>
+                                <Property name="outport.renderSizeReceive" id="ref13">
+                                    <value x="512" y="512" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas 2" id="ref8">
@@ -112,9 +232,20 @@
                             <value x="512" y="512" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/quadview-partly.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/quadview-partly.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref12">
+                                    <value x="512" y="512" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="QuadView" name="QuadView 3" id="ref3">
@@ -131,6 +262,45 @@
                         <Property name="mouseEvent.move" lod="1" enabled="true" mouseAction="103" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="showGrid" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport1">
+                            <Properties>
+                                <Property name="inport1.renderSizeOrigin">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport2">
+                            <Properties>
+                                <Property name="inport2.renderSizeOrigin">
+                                    <value x="512" y="512" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport3">
+                            <Properties>
+                                <Property name="inport3.renderSizeOrigin">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport4">
+                            <Properties>
+                                <Property name="inport4.renderSizeOrigin">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outport">
+                            <Properties>
+                                <Property name="outport.renderSizeReceive" id="ref15">
+                                    <value x="512" y="512" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas 3" id="ref9">
@@ -143,9 +313,20 @@
                             <value x="512" y="512" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/quadview-maximized.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/quadview-maximized.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref14">
+                                    <value x="512" y="512" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -264,10 +445,23 @@
                 </Connection>
             </Connections>
             <CoProcessorConnections />
-            <PropertyLinks />
-            <PropertyStateCollections />
-            <PropertyStateFileReferences />
-            <PropertyStateDirectoryReferences />
+            <PropertyLinks>
+                <PropertyLink>
+                    <SourceProperty ref="ref10" />
+                    <DestinationProperty ref="ref11" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref12" />
+                    <DestinationProperty ref="ref13" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref14" />
+                    <DestinationProperty ref="ref15" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+            </PropertyLinks>
         </ProcessorNetwork>
         <Animation />
     </Workspace>

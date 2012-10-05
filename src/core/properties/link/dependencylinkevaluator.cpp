@@ -72,7 +72,7 @@ void DependencyLinkEvaluator::deserializeProperty(Property* p, std::string s) co
     p->deserializeValue(d);
 }
 
-std::string DependencyLinkEvaluator::name() const {
+std::string DependencyLinkEvaluator::getGuiName() const {
     return "DependencyLink";
 }
 

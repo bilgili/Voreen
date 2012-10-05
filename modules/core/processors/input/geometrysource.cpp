@@ -51,7 +51,7 @@ GeometrySource::GeometrySource()
     skipItemCount_("skipItems", "Items to skip after each point", 0),
     loadGeometry_("loadGeometry", "Load Geometry"),
     clearGeometry_("clearGeometry", "Clear Geometry"),
-    outport_(Port::OUTPORT, "geometry.pointlist")
+    outport_(Port::OUTPORT, "geometry.pointlist", "PointList Output")
 {
     geometryType_.addOption("geometry", "Voreen Geometry (.vge)");
     geometryType_.addOption("pointlist", "Pointlist");

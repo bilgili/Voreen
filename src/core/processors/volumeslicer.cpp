@@ -48,8 +48,8 @@ VolumeSlicer::VolumeSlicer()
     , nSeq_(0)
     , v1_(0)
     , v2_(0)
-    , geometryInport_(Port::INPORT, "proxgeometry.geometry")
-    , volumeInport_(Port::INPORT, "volumehandle.volumehandle", false, Processor::INVALID_PROGRAM)
+    , geometryInport_(Port::INPORT, "proxgeometry.geometry", "Proxy Geometry Input")
+    , volumeInport_(Port::INPORT, "volumehandle.volumehandle", "Volume Input", false, Processor::INVALID_PROGRAM)
     , maxLength_(0.f)
     , frontIdx_(0)
     , backIdx_(0)
@@ -153,7 +153,7 @@ void VolumeSlicer::setupUniforms(tgt::Shader* slicingPrg) {
     cubeVertices_[7] = tgt::vec3(urb.x, llf.y, llf.z);
 
     // compute front index needed for clipping
-    float minCameraDistance = 1000.0;//std::numeric_limits<float>::max(); // distance between camera and closest vertex
+    float minCameraDistance = std::numeric_limits<float>::max(); // distance between camera and closest vertex
     float maxCameraDistance = 0.0;
 
     for (unsigned int i=0;i<8;i++) {
@@ -174,7 +174,7 @@ void VolumeSlicer::setupUniforms(tgt::Shader* slicingPrg) {
     tgt::ivec3 dim = volumeInport_.getData()->getRepresentation<VolumeGL>()->getTexture()->getDimensions();
 
     // compute the distance between two adjacent slices in texture coordinates
-    sliceDistance_ = 1.0f / (tgt::min(dim) * samplingRate_.get());
+    sliceDistance_ = maxLength_ / (tgt::max(dim) * samplingRate_.get());
 
     //if (interactionMode())
     //    sliceDistance /= interactionQuality_.get();

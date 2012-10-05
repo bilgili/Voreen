@@ -569,6 +569,7 @@ namespace boost{
 //   void g(BOOST_EXPLICIT_TEMPLATE_TYPE(T)) { ... }
 //
 
+
 #if defined(BOOST_NO_EXPLICIT_FUNCTION_TEMPLATE_ARGUMENTS) && defined(__cplusplus)
 
 #  include "boost/type.hpp"

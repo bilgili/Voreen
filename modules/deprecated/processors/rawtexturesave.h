@@ -32,6 +32,7 @@
 #include "voreen/core/properties/buttonproperty.h"
 #include "voreen/core/properties/vectorproperty.h"
 #include "voreen/core/voreenapplication.h"
+#include "../ports/textureport.h"
 
 using tgt::Texture;
 
@@ -68,7 +69,7 @@ protected:
     virtual void initialize() throw (tgt::Exception);
     virtual void deinitialize() throw (tgt::Exception);
 
-    GenericPort<tgt::Texture> texturePort_;
+    TexturePort texturePort_;
     FileDialogProperty textureFile_;  ///< Path of the saved texture file.
     ButtonProperty saveTexButton_;    ///< saves the texture.
 

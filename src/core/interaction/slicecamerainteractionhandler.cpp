@@ -154,7 +154,8 @@ void SliceCameraInteractionHandler::shiftEvent(tgt::MouseEvent* e) {
 
         //get offset in world coordinates:
         tgt::Frustum f = cameraProp_->get().getFrustum();
-        vec2 windowSizeWorld = vec2((f.getRight() - f.getLeft()) * cameraProp_->get().getWindowRatio(), f.getTop() - f.getBottom());
+        float windowRatio = static_cast<float>(e->viewport().x) / e->viewport().y;
+        vec2 windowSizeWorld = vec2((f.getRight() - f.getLeft()) * windowRatio, f.getTop() - f.getBottom());
         vec2 mouseOffsetNormalized = vec2(mOffset) / vec2(e->viewport());
 
         vec3 offset(0.0f);
@@ -173,7 +174,8 @@ void SliceCameraInteractionHandler::shiftEvent(tgt::MouseEvent* e) {
 
         //get offset in world coordinates:
         tgt::Frustum f = cameraProp_->get().getFrustum();
-        vec2 windowSizeWorld = vec2((f.getRight() - f.getLeft()) * cameraProp_->get().getWindowRatio(), f.getTop() - f.getBottom());
+        float windowRatio = static_cast<float>(e->viewport().x) / e->viewport().y;
+        vec2 windowSizeWorld = vec2((f.getRight() - f.getLeft()) * windowRatio, f.getTop() - f.getBottom());
         vec2 mouseOffsetNormalized = vec2(mOffset) / vec2(e->viewport());
 
         vec3 offset(0.0f);

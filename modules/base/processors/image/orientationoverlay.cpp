@@ -41,9 +41,9 @@ const std::string OrientationOverlay::loggerCat_("voreen.OrientationOverlay");
 
 OrientationOverlay::OrientationOverlay()
     : ImageProcessor("image/orientationoverlay")
-    , inport_(Port::INPORT, "image.input")
-    , outport_(Port::OUTPORT, "image.output")
-    , privatePort_(Port::OUTPORT, "image.tmp", false)
+    , inport_(Port::INPORT, "image.input", "Image Input")
+    , outport_(Port::OUTPORT, "image.output", "Image Output")
+    , privatePort_(Port::OUTPORT, "image.tmp", "image.tmp", false)
     , drawCube_("drawCube", "Draw Cube", true)
     , drawAxes_("drawAxes", "Draw Axes", false)
     , drawTextures_("drawTextures", "Draw Cube Textures", true)
@@ -150,6 +150,7 @@ bool OrientationOverlay::isReady() const {
 }
 
 void OrientationOverlay::beforeProcess() {
+    ImageProcessor::beforeProcess();
     if (reloadTextures_)
         loadTextures();
 }

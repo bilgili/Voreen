@@ -41,6 +41,7 @@
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/floatproperty.h"
 #include "voreen/core/properties/filedialogproperty.h"
+#include "voreen/core/properties/link/linkevaluatorfactory.h"
 #include "voreen/core/io/serialization/xmlserializer.h"
 #include "voreen/core/io/serialization/xmldeserializer.h"
 #include "voreen/core/processors/cache.h"
@@ -56,9 +57,6 @@
 #include <iostream>
 
 #ifdef WIN32
-#ifdef _MSC_VER
-    #include "tgt/gpucapabilitieswindows.h"
-#endif
     #include <shlobj.h>
 #else
     #include <stdlib.h>
@@ -706,20 +704,10 @@ void VoreenApplication::initializeGL() throw (VoreenException) {
     if (!overrideGLSLVersion_.empty()) {
         LWARNING("Overriding detected GLSL version " << GpuCaps.getShaderVersion()
             << " with version: " << overrideGLSLVersion_);
-#ifdef _MSC_VER
-        bool success = GpuCaps.overrideGLSLVersion(overrideGLSLVersion_);
-        if (success)
-            GpuCapsWin.overrideGLSLVersion(overrideGLSLVersion_);
-#else
         GpuCaps.overrideGLSLVersion(overrideGLSLVersion_);
-#endif
     }
 
-#ifdef _MSC_VER
-    GpuCapsWin.logCapabilities(false, true);
-#else
     GpuCaps.logCapabilities(false, true);
-#endif
 
     // OpenGL initialize modules
     LINFO("OpenGL initializing modules");
@@ -892,6 +880,32 @@ PropertyWidget* VoreenApplication::createPropertyWidget(Property* property) cons
         }
     }
     return 0;
+}
+
+LinkEvaluatorBase* VoreenApplication::createLinkEvaluator(const std::string& typeString) const{
+    for (size_t m=0; m<getModules().size(); m++) {
+        const std::vector<LinkEvaluatorFactory*>& factories = getModules().at(m)->getLinkEvaluatorFactories();
+        for (size_t i=0; i<factories.size(); i++) {
+            LinkEvaluatorBase* evaluator = factories.at(i)->createEvaluator(typeString);
+            if (evaluator)
+                return evaluator;
+        }
+    }
+    return 0;
+}
+
+bool VoreenApplication::lazyInstantiation(Property* property) const {
+    tgtAssert(property, "null pointer passed");
+
+    const std::vector<VoreenModule*>& modules = getModules();
+    for (size_t m=0; m<modules.size(); m++) {
+        const std::vector<PropertyWidgetFactory*>& factories = modules_.at(m)->getPropertyWidgetFactories();
+        for (size_t f=0; f<factories.size(); f++) {
+            if(!factories.at(f)->lazyInstantiation(property))
+                return false;
+        }
+    }
+    return true;
 }
 
 tgt::Timer* VoreenApplication::createTimer(tgt::EventHandler* /*handler*/) const {

@@ -33,9 +33,9 @@ namespace voreen {
 
 ImageMasking::ImageMasking()
     : ImageProcessorBypassable("image/mask")
-    , inport_(Port::INPORT, "image.input")
-    , inportMask_(Port::INPORT, "image.mask")
-    , outport_(Port::OUTPORT, "image.output", true)
+    , inport_(Port::INPORT, "image.input", "Image Input")
+    , inportMask_(Port::INPORT, "image.mask", "MaskImage Input")
+    , outport_(Port::OUTPORT, "image.output", "Image Output", true)
     , maskColor_("maskColor", "Mask Color", tgt::Color(0.0f, 0.0f, 0.0f, 0.0f))
 {
     maskColor_.setViews(Property::COLOR);

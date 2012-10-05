@@ -24,6 +24,7 @@
  ***********************************************************************************/
 
 #include "voreen/core/ports/renderport.h"
+#include "voreen/core/properties/vectorproperty.h"
 #include "voreen/core/datastructures/rendertarget.h"
 #include "voreen/core/processors/renderprocessor.h"
 
@@ -39,26 +40,117 @@ namespace voreen {
 
 using namespace tgt;
 
+const std::string RENDERSIZE_ORIGIN_PROPERTY_ID = "renderSizeOrigin";
+const std::string RENDERSIZE_RECEIVE_PROPERTY_ID = "renderSizeReceive";
+
 const std::string RenderPort::loggerCat_("voreen.RenderPort");
 
-RenderPort::RenderPort(PortDirection direction, const std::string& name,
+RenderSizeOriginProperty::RenderSizeOriginProperty(const std::string& id, const std::string& guiText, 
+      const tgt::ivec2& value, int invalidationLevel/*=Processor::INVALID_RESULT*/) 
+    : IntVec2Property(id, guiText, value, tgt::ivec2(2), tgt::ivec2(8192), invalidationLevel)
+{}
+RenderSizeOriginProperty::RenderSizeOriginProperty() 
+    : IntVec2Property("", "", tgt::ivec2(0), tgt::ivec2(2), tgt::ivec2(8192), Processor::INVALID_RESULT)
+{}
+
+RenderSizeReceiveProperty::RenderSizeReceiveProperty(const std::string& id, const std::string& guiText, const tgt::ivec2& value, 
+      int invalidationLevel/*=Processor::INVALID_RESULT*/)
+    : IntVec2Property(id, guiText, value, tgt::ivec2(2), tgt::ivec2(8192), invalidationLevel)   
+{}
+RenderSizeReceiveProperty::RenderSizeReceiveProperty() 
+    : IntVec2Property("", "", tgt::ivec2(0), tgt::ivec2(2), tgt::ivec2(8192), Processor::INVALID_RESULT)
+{}
+
+bool LinkEvaluatorRenderSize::arePropertiesLinkable(const Property* p1, const Property* p2) const  {
+    return ( (dynamic_cast<const RenderSizeOriginProperty*>(p1) && dynamic_cast<const RenderSizeOriginProperty*>(p2)) ||
+             (dynamic_cast<const RenderSizeReceiveProperty*>(p1) && dynamic_cast<const RenderSizeReceiveProperty*>(p2)) ||
+             (dynamic_cast<const RenderSizeOriginProperty*>(p1) && dynamic_cast<const RenderSizeReceiveProperty*>(p2)) );
+}
+
+void LinkEvaluatorRenderSize::eval(Property* src, Property* dst) throw (VoreenException) {
+    tgtAssert(arePropertiesLinkable(src,dst),"RenderSizeLink between wrong propery types");
+
+    IntVec2Property* src_ = dynamic_cast<IntVec2Property*>(src);
+    IntVec2Property* dst_ = dynamic_cast<IntVec2Property*>(dst);
+
+    dst_->set(src_->get());
+}
+
+//-----------------------------------------------------------------------------
+
+RenderPort::RenderPort(PortDirection direction, const std::string& id, const std::string& guiName,
                        bool allowMultipleConnections, Processor::InvalidationLevel invalidationLevel,
+                       RenderSizePropagation renderSizePropagation,
                        GLint internalColorFormat, GLint internalDepthFormat)
-    : Port(name, direction, allowMultipleConnections, invalidationLevel)
+    : Port(direction, id, guiName, allowMultipleConnections, invalidationLevel)
     , renderTarget_(0)
     , validResult_(false)
     , size_(128,128)
-    , sizeOrigin_(0)
+    , renderSizePropagation_(renderSizePropagation)
     , internalColorFormat_(internalColorFormat)
     , internalDepthFormat_(internalDepthFormat)
     , renderTargetSharing_(false)
 {
+    if (renderSizePropagation_ == RENDERSIZE_ORIGIN) {
+        if (direction == INPORT) {
+            RenderSizeOriginProperty* originProp = new RenderSizeOriginProperty(id + "." + RENDERSIZE_ORIGIN_PROPERTY_ID,"Render Size Origin");
+            originProp->setGroupID(id);
+            addProperty(originProp);
+            setPropertyGroupGuiName(id, (isInport() ? "Inport: " : "Outport: ") + guiName);
+            originProp->setVisible(false);
+        }
+        else {
+            LERROR("Render size propagation mode 'RENDERSIZE_ORIGIN' only allowed for inports (" << getQualifiedName() << ")");
+        }
+    }
+
+    if (renderSizePropagation_ == RENDERSIZE_RECEIVER) {
+        if (direction == INPORT) {
+            LERROR("Render size propagation mode 'RENDERSIZE_RECEIVER' only allowed for outports (" << getQualifiedName() << ")");
+        }
+        else {
+            RenderSizeReceiveProperty* receiveProp = new RenderSizeReceiveProperty(id + "." + RENDERSIZE_RECEIVE_PROPERTY_ID,"Render Size Receive");
+            receiveProp->setGroupID(id);
+            addProperty(receiveProp);
+            setPropertyGroupGuiName(id, (isInport() ? "Inport: " : "Outport: ") + guiName);
+            receiveProp->setVisible(false);
+        }
+    }
+
 }
 
 RenderPort::~RenderPort() {
     if (renderTarget_)
-        LERROR("~RenderPort(): '" << getName()
+        LERROR("~RenderPort(): '" << getID()
                 << "' has not been deinitialized before destruction");
+
+    RenderSizeOriginProperty* originProp = dynamic_cast<RenderSizeOriginProperty*>(getProperty(id_ + "." + RENDERSIZE_ORIGIN_PROPERTY_ID));
+    if (originProp) {
+        removeProperty(originProp);
+        delete originProp;
+    }
+
+    RenderSizeReceiveProperty* receiveProp = dynamic_cast<RenderSizeReceiveProperty*>(getProperty(id_ + "." + RENDERSIZE_RECEIVE_PROPERTY_ID));
+    if (receiveProp) {
+        removeProperty(receiveProp);
+        delete receiveProp;
+    }
+}
+
+std::string RenderPort::getContentDescription() const {
+    std::stringstream strstr;
+    strstr  << getGuiName() << std::endl 
+            << "Type: " << getClassName() << std::endl
+            << "Size: " << getSize().x << " x " << getSize().y;
+    return strstr.str();
+}
+
+std::string RenderPort::getContentDescriptionHTML() const {
+    std::stringstream strstr;
+    strstr  << "<center><font><b>" << getGuiName() << "</b></font></center>"
+            << "Type: " << getClassName() << "<br>"
+            << "Size: " << getSize().x << " x " << getSize().y;
+    return strstr.str();
 }
 
 void RenderPort::setProcessor(Processor* p) {
@@ -68,7 +160,7 @@ void RenderPort::setProcessor(Processor* p) {
     tgtAssert(rp, "RenderPort attached to processor of wrong type (RenderProcessor expected)");
     if (!rp)
         LERROR("RenderPort attached to processor of wrong type (RenderProcessor expected): "
-                << p->getName() << "." << getName());
+                << p->getName() << "." << getID());
 }
 
 void RenderPort::initialize() throw (tgt::Exception) {
@@ -86,7 +178,7 @@ void RenderPort::initialize() throw (tgt::Exception) {
     renderTarget_->initialize(internalColorFormat_, internalDepthFormat_);
 
     tgtAssert(processor_, "Not attached to processor!");
-    renderTarget_->setDebugLabel(processor_->getName()+ "::" + getName());
+    renderTarget_->setDebugLabel(processor_->getName()+ "::" + getID());
     renderTarget_->resize(size_);
     validResult_ = false;
     LGL_ERROR;
@@ -106,23 +198,23 @@ void RenderPort::deinitialize() throw (tgt::Exception) {
 void RenderPort::activateTarget(const std::string& debugLabel) {
     if (isOutport()) {
         if (renderTarget_) {
-            renderTarget_->activateTarget(processor_->getName()+ ":" + getName()
+            renderTarget_->activateTarget(processor_->getName()+ ":" + getID()
                 + (debugLabel.empty() ? "" : ": " + debugLabel));
             validateResult();
         }
         else
             LERROR("Trying to activate RenderPort without RenderTarget (" <<
-            processor_->getName() << ":" << getName() << ")");
+            processor_->getName() << ":" << getID() << ")");
     }
     else {
         if (getRenderTarget()) {
-            getRenderTarget()->activateTarget(processor_->getName()+ ":" + getName()
+            getRenderTarget()->activateTarget(processor_->getName()+ ":" + getID()
                 + (debugLabel.empty() ? "" : ": " + debugLabel));
             //validateResult();
         }
         else
             LERROR("Trying to activate RenderPort without RenderTarget (" <<
-            processor_->getName() << ":" << getName() << ")");
+            processor_->getName() << ":" << getID() << ")");
         //LERROR("activateTarget() called on inport (" <<
             //processor_->getName() << ":" << getName() << ")");
     }
@@ -132,7 +224,7 @@ void RenderPort::deactivateTarget() {
     if (isOutport()) {
         if (renderTarget_){
             renderTarget_->deactivateTarget();
-            invalidate();
+            invalidatePort();
         }
         else
             LERROR("Trying to activate RenderPort without RenderTarget");
@@ -182,7 +274,7 @@ void RenderPort::changeFormat(GLint internalColorFormat, GLint internalDepthForm
     renderTarget_ = new RenderTarget();
     renderTarget_->initialize(internalColorFormat, internalDepthFormat);
     renderTarget_->resize(s);
-    invalidate();
+    invalidatePort();
 
     internalColorFormat_ = internalColorFormat;
     internalDepthFormat_ = internalDepthFormat;
@@ -233,24 +325,6 @@ void RenderPort::invalidateResult() {
         LERROR("invalidateResult() called on inport");
 }
 
-bool RenderPort::doesSizeOriginConnectFailWithPort(Port* inport) const {
-    tgtAssert(inport, "passed null pointer");
-
-    RenderPort* rin = dynamic_cast<RenderPort*>(inport);
-    if (!rin)
-        return false;
-
-    bool unEqual = this != rin;
-    bool outIsOutport = isOutport();
-    bool inIsInport = rin->isInport();
-    bool processorUnEqual = getProcessor() != rin->getProcessor();
-    bool isNotConnected = !isConnectedTo(rin);
-    bool thisIsConnected = rin->isConnected();
-    bool thisAllowsMultiple = rin->allowMultipleConnections();
-
-    return rin && unEqual && outIsOutport && inIsInport && processorUnEqual && isNotConnected && (!thisIsConnected || thisAllowsMultiple);
-}
-
 bool RenderPort::isReady() const {
     bool validInport = isInport() && hasValidResult();
     bool validOutport = isOutport() && hasRenderTarget();
@@ -272,41 +346,9 @@ void RenderPort::setTextureParameters(tgt::Shader* shader, const std::string& un
 bool RenderPort::connect(Port* inport) {
     if (Port::connect(inport)) {
         RenderPort* rp = static_cast<RenderPort*>(inport);
-        sizeOriginChanged(rp->getSizeOrigin());
-        if (rp->getSizeOrigin()) {
-            static_cast<RenderProcessor*>(getProcessor())->portResized(this, rp->size_);
-        }
         return true;
     }
     return false;
-}
-
-void* RenderPort::getSizeOrigin() const {
-    if (isOutport()) {
-        for (size_t i=0; i<getNumConnections(); ++i) {
-            if (static_cast<const RenderPort*>(getConnected()[i])->getSizeOrigin())
-                return static_cast<const RenderPort*>(getConnected()[i])->getSizeOrigin();
-        }
-        return 0;
-    }
-    else
-        return sizeOrigin_;
-}
-
-
-bool RenderPort::testConnectivity(const Port* inport) const {
-    if (!Port::testConnectivity(inport))
-        return false;
-
-    const RenderPort* rp = static_cast<const RenderPort*>(inport);
-
-    if (rp->getSizeOrigin() == 0)
-        return true;
-
-    if (rp->getSizeOrigin() == getSizeOrigin())
-        return true;
-
-    return static_cast<RenderProcessor*>(getProcessor())->testSizeOrigin(this, rp->getSizeOrigin());
 }
 
 void RenderPort::disconnect(Port* other) {
@@ -314,27 +356,7 @@ void RenderPort::disconnect(Port* other) {
 
     RenderPort* rp = static_cast<RenderPort*>(other);
     if (isOutport()) {
-        if (getSizeOrigin() != rp->getSizeOrigin())
-            static_cast<RenderProcessor*>(getProcessor())->sizeOriginChanged(this);
-        other->invalidate();
-    }
-}
-
-void RenderPort::sizeOriginChanged(void* so) {
-    if (isOutport()) {
-        static_cast<RenderProcessor*>(getProcessor())->sizeOriginChanged(this);
-        validResult_ = false;
-    }
-    else {
-        if (sizeOrigin_ == so)
-            return;
-        sizeOrigin_ = so;
-        for (size_t i = 0; i < connectedPorts_.size(); ++i) {
-            RenderPort* rp = static_cast<RenderPort*>(connectedPorts_[i]);
-            rp->sizeOriginChanged(so);
-            if (so)
-                rp->resize(size_);
-        }
+        other->invalidatePort();
     }
 }
 
@@ -353,13 +375,8 @@ void RenderPort::resize(const tgt::ivec2& newsize) {
         size_ = newsize;
     }
     else {
-        size_ = newsize;
-        if (!getSizeOrigin())
-            return;
-        for (size_t i = 0; i < connectedPorts_.size(); ++i) {
-            RenderPort* rp = static_cast<RenderPort*>(connectedPorts_[i]);
-            static_cast<RenderProcessor*>(rp->getProcessor())->portResized(rp, newsize);
-        }
+        LERROR("resize() called on render inport: " << getQualifiedName());
+        //size_ = newsize;
     }
 }
 
@@ -475,7 +492,7 @@ void RenderPort::saveToImage(const std::string& /*filename*/) throw (VoreenExcep
 void RenderPort::setRenderTarget(RenderTarget* renderTarget) {
     if (isOutport()) {
         renderTarget_ = renderTarget;
-        invalidate();
+        invalidatePort();
     }
     else {
         LERROR("setRenderTarget() called on inport");
@@ -522,6 +539,46 @@ bool RenderPort::hasData() const {
 
 tgt::col3 RenderPort::getColorHint() const {
     return tgt::col3(0, 0, 255);
+}
+
+RenderPort::RenderSizePropagation RenderPort::getRenderSizePropagation() const {
+    return renderSizePropagation_;
+}
+
+RenderSizeOriginProperty* RenderPort::getSizeOriginProperty() const {
+    return dynamic_cast<RenderSizeOriginProperty*>(getProperty(id_ + "." + RENDERSIZE_ORIGIN_PROPERTY_ID));
+}
+
+RenderSizeReceiveProperty* RenderPort::getSizeReceiveProperty() const {
+    return dynamic_cast<RenderSizeReceiveProperty*>(getProperty(id_ + "." + RENDERSIZE_RECEIVE_PROPERTY_ID));
+}
+
+void RenderPort::requestSize(const tgt::ivec2& size) {
+    if (!isInport()) {
+        LERROR("requestSize() called on outport: " << getQualifiedName());
+        return;
+    }
+    if (getRenderSizePropagation() != RENDERSIZE_ORIGIN) {
+        LERROR("requestSize() called on inport that is not a port size origin: " << getQualifiedName());
+        return;
+    }
+
+    tgtAssert(getSizeOriginProperty(), "render size origin without SizeOriginProperty");
+    getSizeOriginProperty()->set(size);
+}
+
+tgt::ivec2 RenderPort::getReceivedSize() const {
+    if (!isOutport()) {
+        LERROR("getReceivedSize() called on inport: " << getQualifiedName());
+        return tgt::ivec2(0);
+    }
+    if (getRenderSizePropagation() != RENDERSIZE_RECEIVER) {
+        LERROR("getReceivedSize() called on outport that is no port size receiver: " << getQualifiedName());
+        return tgt::ivec2(0);
+    }
+
+    tgtAssert(getSizeReceiveProperty(), "port size receiver has no SizeReceiveProperty");
+    return getSizeReceiveProperty()->get();
 }
 
 //-------------------------------------------------------------------------------
@@ -601,7 +658,7 @@ void PortGroup::deactivateTargets() {
     fbo_->deactivate();
     for (size_t i=0; i < ports_.size();++i) {
         if (ignoreConnectivity_ || ports_[i]->isConnected()) {
-            ports_[i]->invalidate();
+            ports_[i]->invalidatePort();
         }
     }
 }

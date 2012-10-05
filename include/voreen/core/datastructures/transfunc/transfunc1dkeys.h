@@ -34,6 +34,8 @@ namespace voreen {
 
 class TransFuncMappingKey;
 
+class PreIntegrationTable;
+
 /**
  * One dimensional, piece-wise linear transfer function based on key values.
  *
@@ -273,6 +275,17 @@ public:
     virtual void setDomain(float lower, float upper, int dimension) { setDomain(tgt::vec2(lower, upper), dimension); }
 
     virtual void reset();
+
+    /**
+     * Returns the pre-integration table of the transfer function.
+     * If necessary, the table is re-computed.
+     *
+     * @param dimension width of the pre-integration table, 0 chooses the width according to the bit depth of the volume (up to 1024)
+     * @param samplingStepSize the segment length used for rendering
+     * @param useIntegral @see PreIntegrationTable
+     */
+    const PreIntegrationTable* getPreIntegrationTable(float samplingStepSize = 1.f, size_t dimension = 0, bool useIntegral = true);
+
 protected:
     /**
      * Loads a transfer function from an file with ending tfi.
@@ -356,12 +369,19 @@ protected:
      */
     void generateKeys(unsigned char* data);
 
+    /**
+     * This method is called whenever the transfer function changes so that the pre-integration table has to be re-computed
+     */
+    void clearPreIntegrationTable();
+
     std::vector<TransFuncMappingKey*> keys_; ///< internal representation of the transfer function as a set of keys
 
     float lowerThreshold_; ///< lower threshold
     float upperThreshold_; ///< upper threshold
 
     tgt::vec2 domain_;
+
+    PreIntegrationTable* preIntegrationTable_; ///< for using the transfer function with pre-integration
 
     static const std::string loggerCat_; ///< logger category
 };

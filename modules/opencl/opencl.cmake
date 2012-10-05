@@ -4,36 +4,63 @@
 ################################################################################
 
 IF(WIN32)
-    FIND_PATH( 
-        NVIDIA_GPU_COMPUTING_SDK 
-        NAMES CL/cl.h OpenCL/common/inc/CL/cl.h
-        DOC "Path to the Nvidia GPU Computing SDK"
-    )
-    IF(NOT EXISTS ${NVIDIA_GPU_COMPUTING_SDK})
-        MESSAGE(FATAL_ERROR "Nvidia GPU Computing SDK not found! Please set Option 'NVIDIA_GPU_COMPUTING_SDK'!")
-    ENDIF()
-    
-    FIND_PATH(
-        OPENCL_INCLUDE_DIR
-        NAMES CL/cl.h
-        PATHS ${NVIDIA_GPU_COMPUTING_SDK}
-        PATH_SUFFIXES include OpenCL/common/inc
-    )
-    
-    IF(VRN_WIN32)
-        FIND_LIBRARY(
-            OPENCL_LIBRARY
-            NAMES OpenCL.lib
-            PATHS ${NVIDIA_GPU_COMPUTING_SDK}
-            PATH_SUFFIXES lib/Win32 OpenCL/common/lib/Win32
-        )
-    ELSEIF(VRN_WIN64)
-        FIND_LIBRARY(
-            OPENCL_LIBRARY
-            NAMES OpenCL.lib
-            PATHS ${NVIDIA_GPU_COMPUTING_SDK}
-            PATH_SUFFIXES lib/x64 OpenCL/common/lib/x64
-        )
+
+    FIND_PATH(NVIDIA_OPENCL_BASEDIR
+              "OpenCL/common/inc/CL/cl.h"
+              PATH  $ENV{NVSDKCOMPUTE_ROOT})
+              
+    FIND_PATH(AMD_OPENCL_BASEDIR Cl/cl.h
+              PATHS
+              $ENV{AMDAPPSDKROOT}/include
+              $ENV{ATISTREAMSDKROOT}/include)   
+
+    IF(NVIDIA_OPENCL_BASEDIR)
+        # Setup for NVIDIA CUDA SDK
+        FIND_PATH(OPENCL_INCLUDE_DIR
+                  NAMES CL/cl.hpp OpenCL/cl.hpp CL/cl.h OpenCL/cl.h
+                  PATHS $ENV{NVSDKCOMPUTE_ROOT}/OpenCL/common/inc/)
+        MESSAGE(STATUS "  - NVidia CUDA OpenCL include path: " ${OPENCL_INCLUDE_DIR})
+      
+        IF(VRN_WIN64)
+            FIND_LIBRARY(OPENCL_LIBRARY
+                         NAMES OpenCL
+                         PATHS $ENV{NVSDKCOMPUTE_ROOT}/OpenCL/common/lib/x64)
+        ELSE()
+            FIND_LIBRARY(OPENCL_LIBRARY
+                         NAMES OpenCL
+                         PATHS $ENV{NVSDKCOMPUTE_ROOT}/OpenCL/common/lib/Win32)
+        ENDIF()
+
+        MESSAGE(STATUS "  - NVidia CUDA OpenCL library path: " ${OPENCL_LIBRARY})
+
+    ELSEIF(AMD_OPENCL_BASEDIR)
+        # Setup for AMD/ATI Stream-SDK    
+        FIND_PATH( OPENCL_INCLUDE_DIR
+                   NAMES CL/cl.hpp OpenCL/cl.hpp CL/cl.h OpenCL/cl.h
+                   PATHS
+                   $ENV{AMDAPPSDKROOT}/include
+                   $ENV{ATISTREAMSDKROOT}/include )
+
+        MESSAGE(STATUS "  - AMD/ATI Stream OpenCL include path: " ${OPENCL_INCLUDE_DIR})
+
+        IF(VRN_WIN64)
+            FIND_LIBRARY(OPENCL_LIBRARY
+                         NAMES OpenCL
+                         PATHS 
+                         $ENV{AMDAPPSDKROOT}lib/x64_64
+                         $ENV{ATISTREAMSDKROOT}lib/x64_64)
+        ELSE()
+            FIND_LIBRARY(OPENCL_LIBRARY
+                         NAMES OpenCL
+                         PATHS 
+                         $ENV{AMDAPPSDKROOT}lib/x64
+                         $ENV{ATISTREAMSDKROOT}lib/x64)
+        ENDIF()
+        MESSAGE(STATUS "  - AMD/ATI Stream OpenCL library path: " ${OPENCL_LIBRARY})
+ 
+        #for openCL 1.2
+        ADD_DEFINITIONS( -DCL_USE_DEPRECATED_OPENCL_1_0_APIS )
+        ADD_DEFINITIONS( -DCL_USE_DEPRECATED_OPENCL_1_1_APIS )
     ENDIF()
 
 ELSEIF(UNIX)
@@ -70,12 +97,12 @@ ELSEIF(UNIX)
 ENDIF()
 
 IF(OPENCL_INCLUDE_DIR AND OPENCL_LIBRARY)
-    MESSAGE(STATUS "  - Found OpenCL library")
+    #MESSAGE(STATUS "  - Found OpenCL library")
     SET(MOD_INCLUDE_DIRECTORIES "${OPENCL_INCLUDE_DIR}")
     SET(MOD_LIBRARIES "${OPENCL_LIBRARY}")
     MARK_AS_ADVANCED(OPENCL_INCLUDE_DIR OPENCL_LIBRARY)
 ELSE()
-    MESSAGE(FATAL_ERROR "OpenCL library not found (OPENCL_INCLUDE_DIR and/or OPENCL_LIBRARY missing)!")
+    MESSAGE(FATAL_ERROR "OpenCL library not found: Please set either NVIDIA_OPENCL_BASEDIR or AMD_OPENCL_BASEDIR")
     MARK_AS_ADVANCED(CLEAR OPENCL_INCLUDE_DIR OPENCL_LIBRARY)
 ENDIF()
 
@@ -137,4 +164,3 @@ SET(MOD_QT_HEADERS_NONMOC
     ${MOD_DIR}/qt/openclprocessorwidgetfactory.h
     ${MOD_DIR}/qt/openclhighlighter.h
 )
-

@@ -44,6 +44,10 @@ public:
     virtual ~PropertyWidgetFactory() {}
 
     virtual PropertyWidget* createWidget(Property*) const = 0;
+
+    virtual bool lazyInstantiation(Property*) const {
+        return true;
+    }
 };
 
 } // namespace

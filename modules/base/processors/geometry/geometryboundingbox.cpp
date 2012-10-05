@@ -37,7 +37,7 @@ namespace voreen {
 GeometryBoundingBox::GeometryBoundingBox()
     : Processor()
     , inport_(Port::INPORT, "geometry.input")
-    , outport_(Port::OUTPORT, "geometry.output", true)
+    , outport_(Port::OUTPORT, "geometry.output", "geometry.output", true)
 {
     addPort(inport_);
     addPort(outport_);

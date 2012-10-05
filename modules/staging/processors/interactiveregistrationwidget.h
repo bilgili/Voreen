@@ -74,7 +74,6 @@ protected:
     void centerPoint();
 
 private:
-    VolumePort volumePort_;
     RenderPort inport_;
     RenderPort outport_;
     RenderPort pickingPort_;

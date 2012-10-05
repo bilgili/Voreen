@@ -27,6 +27,8 @@
 
 #include "tgt/textureunit.h"
 #include "voreen/core/ports/conditions/portconditionvolumetype.h"
+#include "voreen/core/datastructures/transfunc/preintegrationtable.h"
+#include "voreen/core/utils/classificationmodes.h"
 
 #include <sstream>
 
@@ -39,12 +41,12 @@ const std::string SingleVolumeRaycaster::loggerCat_("voreen.SingleVolumeRaycaste
 
 SingleVolumeRaycaster::SingleVolumeRaycaster()
     : VolumeRaycaster()
-    , volumeInport_(Port::INPORT, "volumehandle.volumehandle", false, Processor::INVALID_PROGRAM)
-    , entryPort_(Port::INPORT, "image.entrypoints")
-    , exitPort_(Port::INPORT, "image.exitpoints")
-    , outport_(Port::OUTPORT, "image.output", true, Processor::INVALID_PROGRAM)
-    , outport1_(Port::OUTPORT, "image.output1", true, Processor::INVALID_PROGRAM)
-    , outport2_(Port::OUTPORT, "image.output2", true, Processor::INVALID_PROGRAM)
+    , volumeInport_(Port::INPORT, "volumehandle.volumehandle", "Volume Input", false, Processor::INVALID_PROGRAM)
+    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER)
+    , outport1_(Port::OUTPORT, "image.output1", "Image1 Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER)
+    , outport2_(Port::OUTPORT, "image.output2", "Image2 Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER)
     , shaderProp_("raycast.prg", "Raycasting Shader", "rc_singlevolume.frag", "passthrough.vert")
     , transferFunc_("transferFunction", "Transfer Function")
     , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
@@ -53,12 +55,10 @@ SingleVolumeRaycaster::SingleVolumeRaycaster()
     , gammaValue_("gammaValue", "Gamma Value (OP1)", 0, -1, 1)
     , gammaValue1_("gammaValue1", "Gamma Value (OP2)", 0, -1, 1)
     , gammaValue2_("gammaValue2", "Gamma Value (OP3)", 0, -1, 1)
-    , texFilterMode_("textureFilterMode_", "Texture Filtering")
-    , texClampMode_("textureClampMode_", "Texture Clamp")
-    , texBorderIntensity_("textureBorderIntensity", "Texture Border Intensity", 0.f)
 {
     // ports
     volumeInport_.addCondition(new PortConditionVolumeTypeGL());
+    volumeInport_.showTextureAccessProperties(true);
     addPort(volumeInport_);
     addPort(entryPort_);
     addPort(exitPort_);
@@ -121,26 +121,6 @@ SingleVolumeRaycaster::SingleVolumeRaycaster()
     lightAttenuation_.setGroupID("lighting");
     setPropertyGroupGuiName("lighting", "Lighting Parameters");
 
-    // volume texture filtering
-    texFilterMode_.addOption("nearest", "Nearest",  GL_NEAREST);
-    texFilterMode_.addOption("linear",  "Linear",   GL_LINEAR);
-    texFilterMode_.selectByKey("linear");
-    addProperty(texFilterMode_);
-
-    // volume texture clamping
-    texClampMode_.addOption("clamp",           "Clamp",             GL_CLAMP);
-    texClampMode_.addOption("clamp-to-edge",   "Clamp to Edge",     GL_CLAMP_TO_EDGE);
-    texClampMode_.addOption("clamp-to-border", "Clamp to Border",   GL_CLAMP_TO_BORDER);
-    texClampMode_.selectByKey("clamp-to-edge");
-    addProperty(texClampMode_);
-    addProperty(texBorderIntensity_);
-
-    // assign texture access properties to property group
-    texFilterMode_.setGroupID("textureAccess");
-    texClampMode_.setGroupID("textureAccess");
-    texBorderIntensity_.setGroupID("textureAccess");
-    setPropertyGroupGuiName("textureAccess", "Volume Texture Access");
-
     // listen to changes of properties that influence the GUI state (i.e. visibility of other props)
     classificationMode_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
     shadeMode_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
@@ -148,7 +128,6 @@ SingleVolumeRaycaster::SingleVolumeRaycaster()
     compositingMode1_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
     compositingMode2_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
     applyLightAttenuation_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
-    texClampMode_.onChange(CallMemberAction<SingleVolumeRaycaster>(this, &SingleVolumeRaycaster::adjustPropertyVisibilities));
 }
 
 Processor* SingleVolumeRaycaster::create() const {
@@ -218,8 +197,7 @@ void SingleVolumeRaycaster::process() {
     tgt::TextureUnit transferUnit;
     transferUnit.activate();
     LGL_ERROR;
-    if (transferFunc_.get())
-        transferFunc_.get()->bind();
+    ClassificationModes::bindTexture(classificationMode_.get(), transferFunc_.get(), getSamplingStepSize(volumeInport_.getData()));
 
     portGroup_.activateTargets();
     portGroup_.clearTargets();
@@ -243,9 +221,9 @@ void SingleVolumeRaycaster::process() {
         volumeInport_.getData(),
         &volUnit,
         "volume_","volumeStruct_",
-        texClampMode_.getValue(),
-        tgt::vec4(texBorderIntensity_.get()),
-        texFilterMode_.getValue())
+        volumeInport_.getTextureClampModeProperty().getValue(),
+        tgt::vec4(volumeInport_.getTextureBorderIntensityProperty().get()),
+        volumeInport_.getTextureFilterModeProperty().getValue())
     );
 
     // initialize shader
@@ -271,9 +249,8 @@ void SingleVolumeRaycaster::process() {
         compositingMode2_.isSelected("iso") )
         raycastPrg->setUniform("isoValue_", isoValue_.get());
 
-    if (classificationMode_.get() == "transfer-function") {
+    if (ClassificationModes::usesTransferFunction(classificationMode_.get()))
         transferFunc_.get()->setUniform(raycastPrg, "transferFunc_", "transferFuncTex_", transferUnit.getUnitNumber());
-    }
 
     if (compositingMode_.isSelected("mida"))
         raycastPrg->setUniform("gammaValue_", gammaValue_.get());
@@ -301,7 +278,7 @@ void SingleVolumeRaycaster::process() {
 std::string SingleVolumeRaycaster::generateHeader() {
     std::string headerSource = VolumeRaycaster::generateHeader();
 
-    headerSource += transferFunc_.get()->getShaderDefines();
+    headerSource += ClassificationModes::getShaderDefineSamplerType(classificationMode_.get(), transferFunc_.get()); 
 
     // configure compositing mode for port 2
     headerSource += "#define RC_APPLY_COMPOSITING_1(result, color, samplePos, gradient, t, samplingStepSize, tDepth) ";
@@ -348,8 +325,6 @@ void SingleVolumeRaycaster::adjustPropertyVisibilities() {
     isoValue_.setVisible(useIsovalue);
 
     lightAttenuation_.setVisible(applyLightAttenuation_.get());
-
-    texBorderIntensity_.setVisible(!texClampMode_.isSelected("clamp-to-edge"));
 
     gammaValue_.setVisible(compositingMode_.isSelected("mida"));
     gammaValue1_.setVisible(compositingMode1_.isSelected("mida"));

@@ -244,6 +244,7 @@ const VolumeBase* MutualInformationRegistration::getMovingVolume() const {
 }
 
 void MutualInformationRegistration::process() {
+    // mutex is locked by NetworkEvaluator
     if(tempResultUpdated_) {
         transformationMatrix_.set(tempResult_);
         tempResultUpdated_ = false;

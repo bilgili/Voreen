@@ -29,17 +29,24 @@
 #include "voreen/core/processors/volumeraycaster.h"
 #include "voreen/core/properties/transfuncproperty.h"
 #include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/buttonproperty.h"
 
 #include "voreen/core/ports/volumeport.h"
+
+#include "voreen/core/datastructures/transfunc/preintegrationtable.h"
 
 namespace voreen {
 
 /**
- * Performs a simple raycasting on the CPU.
+ * This is a simple CPURaycaster.
+ * The processor allows the use of pre-integration for 1D transfer functions.
+ * OpenMP is used for multithreading, if the OpenMP module is activated.
  */
 class CPURaycaster : public VolumeRaycaster {
 public:
     CPURaycaster();
+
     virtual Processor* create() const;
 
     virtual std::string getClassName() const  { return "CPURaycaster"; }
@@ -51,16 +58,18 @@ public:
 
 protected:
     virtual void setDescriptions() {
-        setDescription("Performs a simple ray casting on the CPU. Please note: This is more a proof-of-concept than an actually usable processor (very slow!).");
+        setDescription("Performs a simple ray casting on the CPU. Supports OpenMP for parallization (if OpenMP Module is activated) and Pre-Integration for 1D transfer functions.");
     }
 
     virtual void process();
 
+private:
+
     /**
      * Performs the actual ray casting for a single ray,
-     * which determined by the passed entry and exit points and the transfer function.
+     * which determined by the passed entry and exit points.
      */
-    virtual tgt::vec4 directRendering(const tgt::vec3& first, const tgt::vec3& last, tgt::Texture* tfTexture);
+    virtual tgt::vec4 directRendering(const tgt::vec3& first, const tgt::vec3& last, tgt::Texture* tfTexture, const VolumeRAM* volume, float samplingStepSize, const PreIntegrationTable* table = 0);
     tgt::vec4 apply1DTF(tgt::Texture* tfTexture, float intensity);
     tgt::vec4 apply2DTF(tgt::Texture* tfTexture, float intensity, float gradientMagnitude);
 
@@ -73,6 +82,7 @@ protected:
     TransFuncProperty transferFunc_;   ///< the property that controls the transfer-function
     IntOptionProperty texFilterMode_;  ///< texture filtering mode to use for volume access
 
+    IntOptionProperty preIntegrationTableSize_; ///< sets the width of the Pre-Integration table
     bool intensityGradientTF_;
 };
 

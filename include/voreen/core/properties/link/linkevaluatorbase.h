@@ -43,13 +43,6 @@ class Property;
 class VRN_CORE_API LinkEvaluatorBase : public AbstractSerializable {
 public:
     virtual ~LinkEvaluatorBase() {}
-    ///Called by PropertyLink for executing the link.
-    virtual void eval(Property* src, Property* dst) throw (VoreenException) = 0;
-
-    virtual void propertiesChanged(Property* src, Property* dst);
-
-    ///Returns the evaluator's GUI name.
-    virtual std::string name() const = 0;
 
     /**
      * Returns the name of this class as a string.
@@ -58,6 +51,14 @@ public:
      * This method is expected to be re-implemented by each concrete subclass.
      */
     virtual std::string getClassName() const = 0;
+
+    ///Returns the evaluator's GUI name.
+    virtual std::string getGuiName() const = 0;
+
+    ///Called by PropertyLink for executing the link.
+    virtual void eval(Property* src, Property* dst) throw (VoreenException) = 0;
+
+    virtual void propertiesChanged(Property* src, Property* dst);
 
     //Returns true if the LinkEvaluator can link the two properties.
     virtual bool arePropertiesLinkable(const Property* src, const Property* dst) const = 0;

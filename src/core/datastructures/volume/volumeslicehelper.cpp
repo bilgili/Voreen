@@ -24,6 +24,7 @@
  ***********************************************************************************/
 
 #include "voreen/core/datastructures/volume/volumeslicehelper.h"
+#include "voreen/core/datastructures/roi/roibase.h"
 #include "tgt/logmanager.h"
 
 namespace voreen {
@@ -126,6 +127,95 @@ tgt::mat4 Slice::getWorldToTextureMatrix() const {
 
 //-------------------------------------------------------------------------------------------------
 
+Slice* getVolumeSlice(const VolumeBase* vh, SliceAlignment alignment, int sliceIndex) {
+    vec3 urb = vh->getURB();
+    vec3 llf = vh->getLLF();
+    vec3 sp = vh->getSpacing();
+    tgt::Bounds b(llf, urb);
+    tgt::svec3 dims = vh->getDimensions();
+    const VolumeRAM* vol = vh->getRepresentation<VolumeRAM>();
+
+    vec3 bb_urb = b.getURB();
+    vec3 bb_llf = b.getLLF();
+
+    vec3 origin(0.0f);
+    vec3 xVec(0.0f);
+    vec3 yVec(0.0f);
+    tgt::Texture* tex = 0;
+
+    switch(alignment) {
+        case YZ_PLANE: {
+                           float x = static_cast<float>(sliceIndex);
+                           float xcoord = llf.x + (x+0.5f) * sp.x; // We want our slice to be in the center of voxels
+
+                           origin = vec3(xcoord, bb_llf.y, bb_llf.z);
+                           xVec = vec3(xcoord, bb_urb.y, bb_llf.z);
+                           yVec = vec3(xcoord, bb_llf.y, bb_urb.z);
+
+                           tex = new tgt::Texture(tgt::ivec3(dims.yz(), 1), GL_ALPHA, GL_ALPHA32F_ARB, GL_FLOAT, tgt::Texture::LINEAR); //TODO: make dependent on input, add support for multiple channels
+
+                           for(int y=0; y<static_cast<int>(dims.y); y++) {
+                               for(int z=0; z<static_cast<int>(dims.z); z++) {
+                                   float value = vol->getVoxelNormalized(sliceIndex, y, z);
+                                   tex->texel< float >(y, z) = value;
+                               }
+                           }
+
+                           tex->uploadTexture();
+                       }
+                       break;
+        case XZ_PLANE: {
+                           float y = static_cast<float>(sliceIndex);
+                           float ycoord = llf.y + (y+0.5f) * sp.y; // We want our slice to be in the center of voxels
+
+                           origin = vec3(bb_llf.x, ycoord, bb_llf.z);
+                           xVec = vec3(bb_urb.x, ycoord, bb_llf.z);
+                           yVec = vec3(bb_llf.x, ycoord, bb_urb.z);
+
+                           tex = new tgt::Texture(tgt::ivec3(static_cast<int>(dims.x), static_cast<int>(dims.z), 1), GL_ALPHA, GL_ALPHA32F_ARB, GL_FLOAT, tgt::Texture::LINEAR); //TODO: make dependent on input, add support for multiple channels
+                           for(int x=0; x<static_cast<int>(dims.x); x++) {
+                               for(int z=0; z<static_cast<int>(dims.z); z++) {
+                                   float value = vol->getVoxelNormalized(x, sliceIndex, z);
+                                   tex->texel< float >(x, z) = value;
+                               }
+                           }
+
+                           tex->uploadTexture();
+                       }
+                       break;
+        case XY_PLANE: {
+                           float z = static_cast<float>(sliceIndex);
+                           float zcoord = llf.z + (z+0.5f) * sp.z; // We want our slice to be in the center of voxels
+
+                           origin = vec3(bb_llf.x, bb_llf.y, zcoord);
+                           xVec = vec3(bb_urb.x, bb_llf.y, zcoord);
+                           yVec = vec3(bb_llf.x, bb_urb.y, zcoord);
+
+                           tex = new tgt::Texture(tgt::ivec3(dims.xy(), 1), GL_ALPHA, GL_ALPHA32F_ARB, GL_FLOAT, tgt::Texture::LINEAR); //TODO: make dependent on input, add support for multiple channels
+                           for(int y=0; y<static_cast<int>(dims.y); y++) {
+                               for(int x=0; x<static_cast<int>(dims.x); x++) {
+                                   float value = vol->getVoxelNormalized(x, y, sliceIndex);
+                                   tex->texel< float >(x, y) = value;
+                               }
+                           }
+
+                           tex->uploadTexture();
+                       }
+                       break;
+        default: tgtAssert(false, "should not get here!");
+    }
+
+    origin = vh->getPhysicalToWorldMatrix() * origin;
+    xVec = vh->getPhysicalToWorldMatrix() * xVec;
+    yVec = vh->getPhysicalToWorldMatrix() * yVec;
+    xVec = xVec - origin;
+    yVec = yVec - origin;
+
+    return new Slice(origin, xVec, yVec, tex, vh->getRealWorldMapping());
+}
+
+//-------------------------------------------------------------------------------------------------
+
 Slice* getVolumeSlice(const VolumeBase* vh, tgt::plane pl, float samplingRate) {
     const VolumeRAM* vol = vh->getRepresentation<VolumeRAM>();
     if(!vol)
@@ -141,6 +231,36 @@ Slice* getVolumeSlice(const VolumeBase* vh, tgt::plane pl, float samplingRate) {
     yMax.y = urb.y;
     vec3 zMax = center;
     zMax.z = urb.z;
+
+    // check whether the plane normal matches one of the main directions of the volume:
+    tgt::plane plVoxel = transform(pl, vh->getWorldToVoxelMatrix());
+    if(fabs(fabs(dot(vec3(1.0f, 0.0f, 0.0f), plVoxel.n)) - 1.0f) < 0.01f) {
+        float sliceNumber = vh->getDimensions().x - (plVoxel.d * plVoxel.n.x);
+        sliceNumber -= 0.5f;
+
+        float integral = tgt::round(sliceNumber);
+        if(fabs(sliceNumber - integral) < 0.1f)
+            return getVolumeSlice(vh, YZ_PLANE, static_cast<int>(sliceNumber));
+        //else TODO
+    }
+    else if(fabs(fabs(dot(vec3(0.0f, 1.0f, 0.0f), plVoxel.n)) - 1.0f) < 0.01f) {
+        float sliceNumber = vh->getDimensions().y - (plVoxel.d * plVoxel.n.y);
+        sliceNumber -= 0.5f;
+
+        float integral = tgt::round(sliceNumber);
+        if(fabs(sliceNumber - integral) < 0.1f)
+            return getVolumeSlice(vh, XZ_PLANE, static_cast<int>(sliceNumber));
+        //else TODO
+    }
+    else if(fabs(fabs(dot(vec3(0.0f, 0.0f, 1.0f), plVoxel.n)) - 1.0f) < 0.01f) {
+        float sliceNumber = vh->getDimensions().z - (plVoxel.d * plVoxel.n.z);
+        sliceNumber -= 0.5f;
+
+        float integral = tgt::round(sliceNumber);
+        if(fabs(sliceNumber - integral) < 0.1f)
+            return getVolumeSlice(vh, XY_PLANE, static_cast<int>(sliceNumber));
+        //else TODO
+    }
 
     // transform to world coordinates:
     mat4 pToW = vh->getPhysicalToWorldMatrix();
@@ -174,10 +294,12 @@ Slice* getVolumeSlice(const VolumeBase* vh, tgt::plane pl, float samplingRate) {
            maxVec.y, temp.y, pl.n.y, center.y,
            maxVec.z, temp.z, pl.n.z, center.z,
            0.0f,     0.0f,   0.0f,   1.0f);
+    tgt::mat4 mInv = tgt::mat4::identity;
+    m.invert(mInv);
 
     // transform bounds to temp system in order to construct new coordinate frame
     tgt::Bounds b(vh->getLLF(), vh->getURB());
-    b = b.transform(m*pToW);
+    b = b.transform(mInv*pToW);
 
     // construct new coordinate frame:
     vec3 origin = center;

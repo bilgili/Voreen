@@ -37,8 +37,8 @@ VolumeMirror::VolumeMirror()
     mirrorX_("mirrorX", "Mirror X", false),
     mirrorY_("mirrorY", "Mirror Y", false),
     mirrorZ_("mirrorZ", "Mirror Z", false),
-    inport_(Port::INPORT, "volumehandle.input"),
-    outport_(Port::OUTPORT, "volumehandle.output", 0)
+    inport_(Port::INPORT, "volumehandle.input", "Volume Input"),
+    outport_(Port::OUTPORT, "volumehandle.output", "Volume Output", false)
 {
     addProperty(mirrorX_);
     addProperty(mirrorY_);

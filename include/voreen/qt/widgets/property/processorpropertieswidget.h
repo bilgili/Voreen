@@ -50,7 +50,7 @@ public:
 
     enum widgetInstantiationState {
         NONE,
-        ONLY_TF,
+        ONLY_NONLAZY,
         ALL
     };
 

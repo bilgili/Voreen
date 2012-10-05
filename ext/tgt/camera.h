@@ -1,27 +1,26 @@
-/***********************************************************************************
- *                                                                                 *
- * Voreen - The Volume Rendering Engine                                            *
- *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
- * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
- * For a list of authors please refer to the file "CREDITS.txt".                   *
- *                                                                                 *
- * This file is part of the Voreen software package. Voreen is free software:      *
- * you can redistribute it and/or modify it under the terms of the GNU General     *
- * Public License version 2 as published by the Free Software Foundation.          *
- *                                                                                 *
- * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
- * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
- *                                                                                 *
- * You should have received a copy of the GNU General Public License in the file   *
- * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
- *                                                                                 *
- * For non-commercial academic use see the license exception specified in the file *
- * "LICENSE-academic.txt". To get information about commercial licensing please    *
- * contact the authors.                                                            *
- *                                                                                 *
- ***********************************************************************************/
+/**********************************************************************
+ *                                                                    *
+ * tgt - Tiny Graphics Toolbox                                        *
+ *                                                                    *
+ * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the tgt library. This library is free         *
+ * software; you can redistribute it and/or modify it under the terms *
+ * of the GNU Lesser General Public License version 2.1 as published  *
+ * by the Free Software Foundation.                                   *
+ *                                                                    *
+ * This library is distributed in the hope that it will be useful,    *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU Lesser General Public License for more details.                *
+ *                                                                    *
+ * You should have received a copy of the GNU Lesser General Public   *
+ * License in the file "LICENSE.txt" along with this library.         *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ **********************************************************************/
 
 #ifndef TGT_CAMERA_H
 #define TGT_CAMERA_H
@@ -49,6 +48,17 @@ public:
         ORTHOGRAPHIC,
         PERSPECTIVE,
         FRUSTUM
+    };
+
+    enum StereoEyeMode {
+        EYE_LEFT,
+        EYE_MIDDLE,
+        EYE_RIGHT
+    };
+
+    enum StereoAxisMode {
+        ON_AXIS,
+        OFF_AXIS
     };
 
     /**
@@ -81,11 +91,19 @@ public:
 
     /// Setter / Getter
     void setPosition(const vec3& pos) {
+        if(eyeMode_ != EYE_MIDDLE)
+            stereoFrustumShift(getStereoShift(eyeMode_, EYE_MIDDLE));
         position_ = pos;
+        if(eyeMode_ != EYE_MIDDLE)
+            stereoFrustumShift(getStereoShift(EYE_MIDDLE, eyeMode_));
         invalidateVM();
     }
     void setFocus(const vec3& foc) {
+        if(eyeMode_ != EYE_MIDDLE)
+            stereoFrustumShift(getStereoShift(eyeMode_, EYE_MIDDLE));
         focus_  = foc;
+        if(eyeMode_ != EYE_MIDDLE)
+            stereoFrustumShift(getStereoShift(EYE_MIDDLE, eyeMode_));
         invalidateVM();
     }
     void setUpVector(const vec3& up) {
@@ -203,19 +221,35 @@ public:
     }
 
     void setFocalLength(float f)   {
+        if(eyeMode_ != EYE_MIDDLE)
+            stereoFrustumShift(getStereoShift(eyeMode_, EYE_MIDDLE));
         setFocus(getPosition() + f * getLook());
+        if(eyeMode_ != EYE_MIDDLE)
+            stereoFrustumShift(getStereoShift(EYE_MIDDLE, eyeMode_));
     }
 
     float getFocalLength() const   {
         return distance(getFocus(), getPosition());
     }
 
-    void setWindowRatio(float r) {
-        windowRatio_ = r;
+    bool setStereoEyeMode(StereoEyeMode mode, bool updateCam = true);
+
+    StereoEyeMode getStereoEyeMode() const {
+        return eyeMode_;
     }
 
-    float getWindowRatio() const {
-        return windowRatio_;
+    bool setStereoEyeSeparation(float separation, bool updateCam = true);
+
+    float getStereoEyeSeparation() const {
+        return eyeSeparation_;
+    }
+
+    void setStereoAxisMode(StereoAxisMode mode) {
+        axisMode_ = mode;
+    }
+
+    StereoAxisMode getStereoAxisMode() const {
+        return axisMode_;
     }
 
     quat getQuat() const {
@@ -246,7 +280,9 @@ public:
     }
 
     /// actually turns on the Camera.
-    void look();
+    void look(float windowRatio);
+    /// @overload
+    void look(ivec2 windowSize);
 
     /// Update the frustum with the current camera parameters.
     /// This method MUST be called before a culling-method is used.  The reason this is not called
@@ -270,10 +306,14 @@ public:
     mat4 getRotateMatrix() const;
 
     /// This method returns the frustum matrix
-    virtual mat4 getFrustumMatrix() const;
+    virtual mat4 getFrustumMatrix(float windowRatio) const;
+    ///@overload
+    virtual mat4 getFrustumMatrix(ivec2 windowSize) const;
 
     /// This method returns the projection matrix
-    virtual mat4 getProjectionMatrix() const;
+    virtual mat4 getProjectionMatrix(float windowRatio) const;
+    ///@overload
+    virtual mat4 getProjectionMatrix(ivec2 windowSize) const;
 
     line3 getViewRay(ivec2 vp, ivec2 pixel) const;
     vec3 project(ivec2 vp, vec3 point) const;
@@ -282,6 +322,7 @@ public:
     bool operator!=(const Camera& rhs) const;
 
 protected:
+
     /// viewMatrix will not always be up to date according to position-, focus- and upVector.
     /// Make sure it is up to date.
     void updateVM() const {
@@ -296,6 +337,11 @@ protected:
         viewMatrixValid_ = false;
     }
 
+    void stereoShift(tgt::vec3 shift);
+    void stereoFrustumShift(tgt::vec3 shift);
+    void stereoCameraShift(tgt::vec3 shift);
+    tgt::vec3 getStereoShift(StereoEyeMode from, StereoEyeMode to) const;
+
     vec3 position_; /// location of the camera
     vec3 focus_;    /// location, the camera looks at
     vec3 upVector_; /// up vector, always normalized
@@ -304,14 +350,17 @@ protected:
     /// camera
     Frustum frust_;
 
-    float windowRatio_; /// Keep window ratio separate from frustum ratio
-
     /// This is the actual matrix that holds the current orientation and position of the
     /// Camera.
     mutable mat4 viewMatrix_;
     mutable bool viewMatrixValid_; /// if the model-view matrix is up-to-date
 
     ProjectionMode projectionMode_;
+
+    /// Parameters used for stereo viewing
+    float eyeSeparation_;
+    StereoEyeMode eyeMode_;
+    StereoAxisMode axisMode_;
 };
 
 } //namespace tgt

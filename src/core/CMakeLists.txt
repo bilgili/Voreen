@@ -72,6 +72,7 @@ SET(VRN_CORE_SOURCES
     datastructures/roi/roicylinder.cpp
     datastructures/roi/roisingle.cpp
     datastructures/roi/roicollection.cpp
+    datastructures/transfunc/preintegrationtable.cpp
     datastructures/transfunc/transfunc.cpp
     datastructures/transfunc/transfunc1dkeys.cpp
     datastructures/transfunc/transfunc2dprimitives.cpp
@@ -189,6 +190,7 @@ SET(VRN_CORE_SOURCES
     properties/link/linkevaluatorid.cpp
     properties/link/propertylink.cpp
     
+    utils/classificationmodes.cpp
     utils/commandlineparser.cpp
     utils/glsl.cpp
     utils/hashing.cpp
@@ -279,6 +281,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/datastructures/geometry/vertexgeometry.h
     ../../include/voreen/core/datastructures/meta/aggregationmetadata.h 
     ../../include/voreen/core/datastructures/meta/coremetadatafactory.h
+    ../../include/voreen/core/datastructures/meta/filelistmetadata.h
     ../../include/voreen/core/datastructures/meta/metadatabase.h
     ../../include/voreen/core/datastructures/meta/metadatacontainer.h
     ../../include/voreen/core/datastructures/meta/primitivemetadata.h 
@@ -301,6 +304,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/datastructures/roi/roisphere.h
     ../../include/voreen/core/datastructures/roi/roicylinder.h
     ../../include/voreen/core/datastructures/roi/roicollection.h
+    ../../include/voreen/core/datastructures/transfunc/preintegrationtable.h
     ../../include/voreen/core/datastructures/transfunc/transfunc.h
     ../../include/voreen/core/datastructures/transfunc/transfunc1dkeys.h
     ../../include/voreen/core/datastructures/transfunc/transfunc2dprimitives.h    
@@ -463,6 +467,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/properties/link/linkevaluatoridgeneric.h
     ../../include/voreen/core/properties/link/propertylink.h
 
+    ../../include/voreen/core/utils/classificationmodes.h
     ../../include/voreen/core/utils/commandlineparser.h
     ../../include/voreen/core/utils/exception.h
     ../../include/voreen/core/utils/glsl.h

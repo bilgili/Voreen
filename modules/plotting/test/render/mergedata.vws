@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="12">
+        <ProcessorNetwork version="13">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -11,7 +11,7 @@
                 <MetaItem name="Zoom" type="ZoomMetaData">
                     <transform.row0 x="0.85330522060394287" y="0" z="0" />
                     <transform.row1 x="0" y="0.85330522060394287" z="0" />
-                    <transform.row2 x="-326.860565185546875" y="398.080902099609375" z="1" />
+                    <transform.row2 x="-326.86056518554687" y="398.08090209960937" z="1" />
                 </MetaItem>
             </MetaData>
             <Processors>
@@ -617,15 +617,15 @@
                                             <item>
                                                 <First value="-1" />
                                                 <Second type="PlotPredicateBetweenOrEqual">
-                                                    <lowerThreshold isValue="true" isTag="false" isHighlighted="false" value="6.73563239393390489" />
+                                                    <lowerThreshold isValue="true" isTag="false" isHighlighted="false" value="6.7356323939339049" />
                                                     <upperThreshold isValue="true" isTag="false" isHighlighted="false" value="7" />
                                                 </Second>
                                             </item>
                                             <item>
                                                 <First value="-2" />
                                                 <Second type="PlotPredicateBetweenOrEqual">
-                                                    <lowerThreshold isValue="true" isTag="false" isHighlighted="false" value="-5346.68781170150396065" />
-                                                    <upperThreshold isValue="true" isTag="false" isHighlighted="false" value="112273.36608627150417306" />
+                                                    <lowerThreshold isValue="true" isTag="false" isHighlighted="false" value="-5346.687811701504" />
+                                                    <upperThreshold isValue="true" isTag="false" isHighlighted="false" value="112273.3660862715" />
                                                 </Second>
                                             </item>
                                         </selection>
@@ -643,6 +643,20 @@
                         <Property name="zoom" lod="1" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                         <Property name="zoomAdditive" lod="1" enabled="true" mouseAction="7" mouseButtons="4" keyCode="0" modifier="1" shareEvents="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outport">
+                            <Properties>
+                                <Property name="outport.renderSizeReceive" id="ref8">
+                                    <value x="769" y="521" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="PlotDataSource" name="PlotDataSource" id="ref2">
@@ -657,12 +671,25 @@
                         <Property name="inputFile" noPathSet="false" value="input/plotting/data_fmo.csv" />
                         <Property name="recalculate" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="PlotDataOutPort">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas" id="ref1">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="292" y="-51" />
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="44" y="119" width="769" height="521" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="44" y="119" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="769" y="521" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize">
@@ -671,7 +698,18 @@
                         <Property name="saveScreenshot" />
                         <Property name="screenshotFilename" noPathSet="false" value="output/canvas.jpg" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref7">
+                                    <value x="769" y="521" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="PlotDataMerge" name="PlotDataMerge" id="ref3">
@@ -690,6 +728,19 @@
                         <Property name="Max Column Width" value="0" />
                         <Property name="swap" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="PlotData.InPortFirst">
+                            <Properties />
+                        </Port>
+                        <Port name="PlotData.InPortSecond">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="PlotData.OutPort">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="PlotDataSource" name="PlotDataSource 2" id="ref6">
@@ -704,6 +755,12 @@
                         <Property name="inputFile" noPathSet="false" value="input/plotting/data_lineplot.csv" />
                         <Property name="recalculate" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="PlotDataOutPort">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="PlotDataMerge" name="PlotDataMerge 2" id="ref4">
@@ -722,6 +779,19 @@
                         <Property name="Max Column Width" value="0" />
                         <Property name="swap" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="PlotData.InPortFirst">
+                            <Properties />
+                        </Port>
+                        <Port name="PlotData.InPortSecond">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="PlotData.OutPort">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="PlotDataMerge" name="PlotDataMerge 3" id="ref5">
@@ -740,6 +810,19 @@
                         <Property name="Max Column Width" value="0" />
                         <Property name="swap" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="PlotData.InPortFirst">
+                            <Properties />
+                        </Port>
+                        <Port name="PlotData.InPortSecond">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="PlotData.OutPort">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -810,7 +893,13 @@
                 </Connection>
             </Connections>
             <CoProcessorConnections />
-            <PropertyLinks />
+            <PropertyLinks>
+                <PropertyLink>
+                    <SourceProperty ref="ref7" />
+                    <DestinationProperty ref="ref8" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+            </PropertyLinks>
         </ProcessorNetwork>
         <Animation />
     </Workspace>

@@ -38,4 +38,12 @@ PropertyWidget* OpenCLPropertyWidgetFactory::createWidget(Property* prop) const 
     return 0;
 }
 
+bool OpenCLPropertyWidgetFactory::lazyInstantiation(Property* prop) const {
+
+    if (dynamic_cast<OpenCLProperty*>(prop))
+        return false;
+
+    return true;
+}
+
 } // namespace voreen

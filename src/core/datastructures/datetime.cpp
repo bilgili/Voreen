@@ -231,6 +231,10 @@ void DateTime::deserialize(XmlDeserializer& s) {
     s.deserialize("millisecond", millisecond_);
 }
 
+DateTime DateTime::now() { 
+    return DateTime(time(0));    
+}
+
 void DateTime::checkValueRanges() const {
     if (year_ < 0 || year_ > 2100)
         LWARNING("year out of valid range [0;2100]: " << year_);
@@ -246,6 +250,102 @@ void DateTime::checkValueRanges() const {
         LWARNING("second out of valid range [0;59]: " << second_);
     if (millisecond_ < 0 || millisecond_ > 999)
         LWARNING("millisecond out of valid range [0;999]: " << millisecond_);
+}
+
+bool DateTime::operator==(const DateTime& dt) const {
+    if ((year_) != dt.getYear())
+        return false;
+    if ((month_) != dt.getMonth())
+        return false;
+    if ((day_) != dt.getDay())
+        return false;
+    if ((hour_) != dt.getHour())
+        return false;
+    if ((minute_) != dt.getMinute())
+        return false;
+    if ((second_) != dt.getSecond())
+        return false; 
+    if(millisecond_ != dt.getMillisecond())
+        return false;
+    return true;
+}
+
+bool DateTime::operator>(const DateTime& dt) const {
+    if (year_ > dt.getYear())
+        return true;
+    else if (year_ < dt.getYear())
+        return false;
+    
+    if (month_ > dt.getMonth())
+        return true;
+    else if (month_ < dt.getMonth())
+        return false;
+    
+    if (day_ > dt.getDay())
+        return true;
+    else if (day_ < dt.getDay())
+        return false;
+    
+    if (hour_ > dt.getHour())
+        return true;
+    else if (hour_ < dt.getHour())
+        return false;
+
+    if (minute_ > dt.getMinute())
+        return true;
+    else if (minute_ < dt.getMinute())
+        return false;
+    
+    if (second_ > dt.getSecond())
+        return true;
+    else if (second_ < dt.getSecond())
+        return false;
+
+    if (millisecond_ > dt.getMillisecond())
+        return true;
+    else if (millisecond_ < dt.getMillisecond())
+        return false;
+
+    return false;
+}
+    
+bool DateTime::operator<(const DateTime& dt) const {
+    if (year_ > dt.getYear())
+        return false;
+    else if (year_ < dt.getYear())
+        return true;
+    
+    if (month_ > dt.getMonth())
+        return false;
+    else if (month_ < dt.getMonth())
+        return true;
+    
+    if (day_ > dt.getDay())
+        return false;
+    else if (day_ < dt.getDay())
+        return true;
+    
+    if (hour_ > dt.getHour())
+        return false;
+    else if (hour_ < dt.getHour())
+        return true;
+
+    if (minute_ > dt.getMinute())
+        return false;
+    else if (minute_ < dt.getMinute())
+        return true;
+    
+    if (second_ > dt.getSecond())
+        return false;
+    else if (second_ < dt.getSecond())
+        return true;
+
+    if (millisecond_ > dt.getMillisecond())
+        return false;
+    else if (millisecond_ < dt.getMillisecond())
+        return true;
+
+    return false;
 }
 
 

@@ -199,7 +199,7 @@ void PickableObject::mousePress(tgt::MouseEvent* mouseEve, tgt::Camera*  sceneCa
     //deltaX = newScreenPosition_.x - oldScreenPosition_.x;
     //deltaY = newScreenPosition_.y - oldScreenPosition_.y;
 
-    tgt::mat4 projection_tgt = sceneCamera->getProjectionMatrix();
+    tgt::mat4 projection_tgt = sceneCamera->getProjectionMatrix(mouseEve->viewport());
     tgt::mat4 modelview_tgt = sceneCamera->getViewMatrix();
 
     for (int i = 0; i < 4; ++i) {
@@ -251,7 +251,7 @@ void PickableObject::mouseMove(tgt::MouseEvent* mouseEve, tgt::Camera* sceneCame
     deltaX = newScreenPosition_.x - oldScreenPosition_.x;
     deltaY = newScreenPosition_.y - oldScreenPosition_.y;
 
-    tgt::mat4 projection_tgt = sceneCamera->getProjectionMatrix();
+    tgt::mat4 projection_tgt = sceneCamera->getProjectionMatrix(mouseEve->viewport());
     tgt::mat4 modelview_tgt = sceneCamera->getViewMatrix();
 
     for (int i = 0; i < 4; ++i) {

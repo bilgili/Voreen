@@ -35,7 +35,7 @@ namespace voreen {
 SingleVolumeSlicer::SingleVolumeSlicer()
     : VolumeSlicer()
     , shaderProp_("slicing.shader", "Slicing shader", "sl_singlevolume.frag", "sl_singlevolume.vert")
-    , outport_(Port::OUTPORT, "image.output", false, Processor::INVALID_RESULT, GL_RGBA16F_ARB)
+    , outport_(Port::OUTPORT, "image.output", "Image Output", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER, GL_RGBA16F_ARB)
     , cameraHandler_("cameraHandler", "Camera Handler", &camera_)
 {
 
@@ -119,7 +119,7 @@ void SingleVolumeSlicer::process() {
 
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
-    tgt::loadMatrix(camera_.get().getProjectionMatrix());
+    tgt::loadMatrix(camera_.get().getProjectionMatrix(outport_.getSize()));
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();

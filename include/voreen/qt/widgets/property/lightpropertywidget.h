@@ -38,6 +38,7 @@ namespace voreen {
 class FloatVec4Property;
 class FloatVec4PropertyWidget;
 class LightWidget;
+class CameraProperty;
 
 class LightPropertyWidget : public QPropertyWidget {
 Q_OBJECT
@@ -50,7 +51,7 @@ protected:
     QCheckBox* followCam_;
     bool noUpdateFromProp_;
 
-    tgt::Camera getCamera();
+    CameraProperty* getCamera();
     void cameraUpdate();    // on property change of the cameraproperty this is invoked by calling
                             // a member action
     void updateFromProperty();

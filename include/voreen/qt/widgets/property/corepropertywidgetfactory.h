@@ -36,6 +36,7 @@ namespace voreen {
 class CorePropertyWidgetFactory : public PropertyWidgetFactory {
 public:
     virtual PropertyWidget* createWidget(Property*) const;
+    virtual bool lazyInstantiation(Property*) const;
 };
 
 } // namespace

@@ -31,9 +31,9 @@ const std::string VolumePicking::loggerCat_("voreen.base.VolumePicking");
 
 VolumePicking::VolumePicking()
     : RenderProcessor(),
-      inportFirstHit_(Port::INPORT, "inport.firsthit"),
-      inportVolume_(Port::INPORT, "inport.volume"),
-      outportPicked_(Port::OUTPORT, "outport.picked"),
+      inportFirstHit_(Port::INPORT, "inport.firsthit", "First-hit Image"),
+      inportVolume_(Port::INPORT, "inport.volume", "Volume Input"),
+      outportPicked_(Port::OUTPORT, "outport.picked", "Picked Points Geometry"),
       outCoordinateSystem_("outCoordinateSystem", "Output Coordinate System", INVALID_PARAMETERS),
       clearLast_("clearLast", "Clear Last"),
       clearAll_("clearAll", "Clear All"),

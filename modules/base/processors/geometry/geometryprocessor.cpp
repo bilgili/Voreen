@@ -43,11 +43,11 @@ GeometryProcessor::GeometryProcessor()
     , shaderPrg_(0)
     , renderGeometries_("renderGeometries", "Render Geometries", true)
     , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
-    , inport_(Port::INPORT, "image.input")
-    , outport_(Port::OUTPORT, "image.output")
+    , inport_(Port::INPORT, "image.input", "Image Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
     , tempPort_(Port::OUTPORT, "image.temp")
     , pickingPort_(Port::OUTPORT, "pickingTarget")
-    , cpPort_(Port::INPORT, "coprocessor.geometryrenderers", true)
+    , cpPort_(Port::INPORT, "coprocessor.geometryrenderers", "GeometryRenderers", true)
 {
     addProperty(renderGeometries_);
     addProperty(camera_);
@@ -57,6 +57,8 @@ GeometryProcessor::GeometryProcessor()
 
     addPort(inport_);
     addPort(outport_);
+    outport_.onSizeReceiveChange<GeometryProcessor>(this, &GeometryProcessor::passThroughSizeRequest);
+
     addPrivateRenderPort(tempPort_);
     addPrivateRenderPort(pickingPort_);
     addPort(cpPort_);
@@ -94,7 +96,7 @@ void GeometryProcessor::process() {
 
     // set modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
-    tgt::loadMatrix(camera_.get().getProjectionMatrix());
+    tgt::loadMatrix(camera_.get().getProjectionMatrix(outport_.getSize()));
     glMatrixMode(GL_MODELVIEW);
     tgt::loadMatrix(camera_.get().getViewMatrix());
     LGL_ERROR;
@@ -194,6 +196,10 @@ std::string GeometryProcessor::generateHeader() {
     std::string header = RenderProcessor::generateHeader();
     header += "#define MODE_ALPHA_COMPOSITING\n";
     return header;
+}
+
+void GeometryProcessor::passThroughSizeRequest() {
+    inport_.requestSize(outport_.getReceivedSize());
 }
 
 } // namespace voreen

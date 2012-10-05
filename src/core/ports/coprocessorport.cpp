@@ -27,9 +27,9 @@
 
 namespace voreen {
 
-CoProcessorPort::CoProcessorPort(PortDirection direction, const std::string& name, const bool allowMultipleConnections,
+CoProcessorPort::CoProcessorPort(PortDirection direction, const std::string& id, const std::string& guiName, const bool allowMultipleConnections,
                 Processor::InvalidationLevel invalidationLevel)
-    : Port(name, direction, allowMultipleConnections, invalidationLevel)
+    : Port(direction, id, guiName, allowMultipleConnections, invalidationLevel)
 {}
 
 std::vector<Processor*> CoProcessorPort::getConnectedProcessors() const {

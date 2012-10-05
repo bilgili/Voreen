@@ -43,10 +43,10 @@ const std::string MeshEntryExitPoints::loggerCat_("voreen.MeshEntryExitPoints");
 
 MeshEntryExitPoints::MeshEntryExitPoints()
     : RenderProcessor()
-    , entryPort_(Port::OUTPORT, "image.entrypoints")
-    , exitPort_(Port::OUTPORT, "image.exitpoints")
-    , inport_(Port::INPORT, "proxgeometry.geometry")
-    , tmpPort_(Port::OUTPORT, "image.tmp", false)
+    , entryPort_(Port::OUTPORT, "image.entrypoints", "Entry-points Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
+    , exitPort_(Port::OUTPORT, "image.exitpoints", "Exit-points Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
+    , inport_(Port::INPORT, "proxgeometry.geometry", "Proxy Geometry Input")
+    , tmpPort_(Port::OUTPORT, "image.tmp", "image.tmp", false)
     , supportCameraInsideVolume_("supportCameraInsideVolume", "Support camera in volume", true)
     , jitterEntryPoints_("jitterEntryPoints", "Jitter entry params", false)
     , useFloatRenderTargets_("useFloatRenderTargets", "Use float render targets", false)
@@ -155,7 +155,7 @@ void MeshEntryExitPoints::process() {
     // set modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
-    tgt::loadMatrix(camera_.get().getProjectionMatrix());
+    tgt::loadMatrix(camera_.get().getProjectionMatrix(entryPort_.isReady() ? entryPort_.getSize() : exitPort_.getSize()));
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
@@ -210,12 +210,13 @@ void MeshEntryExitPoints::process() {
             // clip proxy geometry against near-plane
             float nearPlaneDistToOrigin = tgt::dot(camera_.get().getPosition(), -camera_.get().getLook()) - camera_.get().getNearDist() - 0.0001f;
             MeshListGeometry closingFaces;
-            geometry_.clip(tgt::vec4(-camera_.get().getLook(), nearPlaneDistToOrigin), closingFaces);
+            double epsilon = static_cast<double>(tgt::length(geometry_.getBoundingBox().diagonal())) * 1e-6;
+            geometry_.clip(tgt::vec4(-camera_.get().getLook(), nearPlaneDistToOrigin), closingFaces, epsilon);
 
             // render closing face separately, if not empty
             if (!closingFaces.empty()) {
                 // project closing faces onto near-plane
-                tgt::mat4 trafoMatrix = camera_.get().getProjectionMatrix() * camera_.get().getViewMatrix();
+                tgt::mat4 trafoMatrix = camera_.get().getProjectionMatrix(entryPort_.getSize()) * camera_.get().getViewMatrix();
                 closingFaces.transform(trafoMatrix);
                 // set z-coord of closing face vertices to 0.0 in order to avoid near-plane clipping
                 tgt::mat4 zTrafo = tgt::mat4::createIdentity();

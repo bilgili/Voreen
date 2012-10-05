@@ -34,8 +34,8 @@ const std::string VolumeFormatConversion::loggerCat_("voreen.base.VolumeFormatCo
 
 VolumeFormatConversion::VolumeFormatConversion()
     : CachingVolumeProcessor(),
-    inport_(Port::INPORT, "volumehandle.input"),
-    outport_(Port::OUTPORT, "volumehandle.output", 0),
+    inport_(Port::INPORT, "volumehandle.input", "Volume Input"),
+    outport_(Port::OUTPORT, "volumehandle.output", "Volume Output",false),
     enableProcessing_("enabled", "Enable", false),
     targetFormat_("targetFormat", "Target Data Type"),
     numChannels_("numChannels", "Num Channels", 0, 0, 4)

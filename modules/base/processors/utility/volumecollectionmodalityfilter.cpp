@@ -31,8 +31,8 @@ const std::string VolumeCollectionModalityFilter::loggerCat_ = "VolumeCollection
 
 VolumeCollectionModalityFilter::VolumeCollectionModalityFilter()
     : Processor(),
-    inport_(Port::INPORT, "volumecollection"),
-    outport_(Port::OUTPORT, "volumecollection.filtered"),
+    inport_(Port::INPORT, "volumecollection", "VolumeCollection Input"),
+    outport_(Port::OUTPORT, "volumecollection.filtered", "VolumeCollection Output"),
     modalityProp_("modality", "modality: "),
     currentModality_(Modality::MODALITY_ANY),
     filteredCollection_()

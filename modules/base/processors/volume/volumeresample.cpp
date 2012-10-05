@@ -36,8 +36,8 @@ const std::string VolumeResample::loggerCat_("voreen.base.VolumeResample");
 
 VolumeResample::VolumeResample()
     : CachingVolumeProcessor()
-    , inport_(Port::INPORT, "volumehandle.input")
-    , outport_(Port::OUTPORT, "volumehandle.output", 0)
+    , inport_(Port::INPORT, "volumehandle.input", "Volume Input")
+    , outport_(Port::OUTPORT, "volumehandle.output", "Volume Output", false)
     , enableProcessingProp_("enableProcessing", "Enable")
     , allowUpsampling_("allowUpsampling", "Allow Upsampling", false)
     , keepVoxelRatio_("keepVoxelSizeRatio", "Keep Voxel Ratio", true)

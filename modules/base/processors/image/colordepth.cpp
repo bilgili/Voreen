@@ -39,8 +39,8 @@ ColorDepth::ColorDepth()
     , chromaDepthTex_(0)
     , colorMode_("mode", "Choose mode", INVALID_PROGRAM)
     , factor_("factor", "Factor", 1.0f, 0.0f, 10.0f)
-    , inport_(Port::INPORT, "image.inport")
-    , outport_(Port::OUTPORT, "image.outport")
+    , inport_(Port::INPORT, "image.inport", "Image Input")
+    , outport_(Port::OUTPORT, "image.outport", "Image Output")
 {
     colorMode_.addOption("light-dark-replace", "Light-dark (replace)", 0);
     colorMode_.addOption("light-dark-modulate", "Light-dark (modulate)", 1);

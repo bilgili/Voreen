@@ -27,7 +27,9 @@
 #define VRN_PORT_H
 
 #include "voreen/core/voreencoreapi.h"
+#include "voreen/core/properties/propertyowner.h"
 #include "voreen/core/processors/processor.h"
+#include "voreen/core/properties/boolproperty.h"
 
 #include "tgt/exception.h"
 
@@ -42,7 +44,7 @@ class PortCondition;
  * This class describes a port of a Processor. Processors are connected
  * by their ports.
  */
-class VRN_CORE_API Port {
+class VRN_CORE_API Port : public PropertyOwner {
 
     friend class PortCondition;
     friend class Processor;
@@ -58,20 +60,29 @@ public:
     /**
      * @brief
      *
-     * @param name The name of the port, must be unique per processor.
+     * @param id The id of the port, must be unique per processor.
+     * @param guiName The name of the port to be used in the user interface.
      * @param processor The processor this port belongs to.
      * @param direction Is this port an inport or outport?
      * @param allowMultipleConnections  Can this port handle multiple connections? (Outports always can)
      * @param invalidationLevel For inports: The Processor is invalidated with this invalidationlevel when the data on this port changes.
      * For outports: The Processor is invalidated with this invalidationlevel when this port is connected.
      */
-    Port(const std::string& name, PortDirection direction, bool allowMultipleConnections = false,
+    Port(PortDirection direction, const std::string& id, const std::string& guiName = "", bool allowMultipleConnections = false,
          Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT);
 
     /**
      * Destructor, disconnects all connected ports.
      */
     virtual ~Port();
+
+    /**
+     * Returns the name of this class as a string.
+     * Necessary due to the lack of code reflection in C++.
+     *
+     * This method is expected to be re-implemented by each concrete subclass.
+     */
+    virtual std::string getClassName() const { return "Port"; };
 
     /**
      * Adds a port condition for checking the validity of the assigned port data.
@@ -110,7 +121,14 @@ public:
      * If the port is an outport: invalidate all connected (in)ports.
      * If the port is an inport: invalidate processor with the given InvalidationLevel and set hasChanged=true.
      */
-    void invalidate();
+    virtual void invalidatePort();
+
+    /**
+     * Relays the passed invalidation level to the owning processor.
+     *
+     * @see PropertyOwner::invalidate
+     */
+    virtual void invalidate(int inv = 1);
 
     /**
      * Returns whether this port allows multiple connections or not.
@@ -177,9 +195,29 @@ public:
     bool hasChanged() const;
 
     /**
-     * Returns the name of the port, must be unique per processor.
+     * Returns the id of the port, must be unique per processor.
      */
-    std::string getName() const;
+    std::string getID() const;
+
+    /**
+     * Returns the port's id.
+     */
+    virtual std::string getName() const;
+
+    /**
+     * Returns the GUI name of the port.
+     */
+    std::string getGuiName() const;
+
+    /**
+     * Returns aktuell content of the port
+     */
+    virtual std::string getContentDescription() const;
+
+    /**
+     * Returns aktuell content of the port in html
+     */
+    virtual std::string getContentDescriptionHTML() const;
 
     /**
      * Returns the name of the port, prefixed by the name of its processor.
@@ -349,12 +387,15 @@ protected:
 
     virtual void setProcessor(Processor* p);
 
-    std::string name_;
+    std::string id_;
+    std::string guiName_;
     std::vector<Port*> connectedPorts_; ///< The ports connected to this one
     Processor* processor_;                ///< The processor this port belongs to
     const PortDirection direction_;       ///< Is this port an outport or not
     bool allowMultipleConnections_;       ///< Is this port allowed to have multiple connections?
     bool hasChanged_;
+
+    BoolProperty blockEvents_;          ///< if true, the port does not propagate events
 
     std::vector<PortCondition*> conditions_;
 
@@ -383,6 +424,13 @@ private:
 
     /// Description for display in GUI etc.
     std::string description_;
+};
+
+//help class to have a non virtual port class
+class LoopPort : public Port {
+public:
+    LoopPort(PortDirection direction, const std::string& name, const std::string& guiName = "") : Port(direction, name, guiName) {}
+    virtual std::string getClassName() const {return "LoopPort";}
 };
 
 }   // namespace voreen

@@ -344,6 +344,13 @@ public:
      */
     virtual PropertyWidget* createPropertyWidget(Property* property) const;
 
+
+    /**
+     * Checks whether or not the widget for this property has to be immediately created or not.
+     * For example, this is usually the case for all properties with an editor window.
+     */
+    bool lazyInstantiation(Property* property) const;
+
     /**
      * Factory method for timers.
      *
@@ -364,6 +371,15 @@ public:
      *  the null pointer.
      */
     virtual ProgressBar* createProgressDialog() const;
+
+    /**
+     * Factory method for LinkEvaluators.
+     *
+     * @note You have to override this function in a toolkit specific subclass
+     *  in order to actual create a timer. The standard implementation returns
+     *  the null pointer.
+     */
+    virtual LinkEvaluatorBase* createLinkEvaluator(const std::string& typeString) const;
 
     //
     // Paths

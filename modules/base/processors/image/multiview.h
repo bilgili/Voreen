@@ -48,10 +48,6 @@ public:
 
     virtual void invalidate(int inv = INVALID_RESULT);
 
-    virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
-    virtual void sizeOriginChanged(RenderPort* p);
-    bool testSizeOrigin(const RenderPort* /*p*/, void* /*so*/) const;
-
     virtual void onEvent(tgt::Event* e);
 
     virtual void serialize(XmlSerializer& s) const;

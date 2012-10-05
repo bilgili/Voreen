@@ -34,9 +34,9 @@ namespace voreen {
 RenderLoopInitiator::RenderLoopInitiator()
     : RenderProcessor(),
       shader_(0),
-      inport_(Port::INPORT, "image.inport"),
-      outport_(Port::OUTPORT, "image.outport"),
-      loopInport_(Port::INPORT, "loop.inport"),
+      inport_(Port::INPORT, "image.inport", "Image Input"),
+      outport_(Port::OUTPORT, "image.outport", "Image Output"),
+      loopInport_(Port::INPORT, "loop.inport", "Loop Inport"),
       numIterations_("numIterations", "Iterations", 3, 1, 100)
 {
     loopInport_.setLoopPort(true);

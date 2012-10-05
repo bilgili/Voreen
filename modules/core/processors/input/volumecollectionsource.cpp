@@ -41,7 +41,7 @@ const std::string VolumeCollectionSource::loggerCat_("voreen.core.VolumeCollecti
 
 VolumeCollectionSource::VolumeCollectionSource()
     : Processor(),
-      outport_(Port::OUTPORT, "volumecollection", 0),
+      outport_(Port::OUTPORT, "volumecollection", "VolumeCollection Output", false),
       volumeURLList_("volumeURLList", "Volume URL List", std::vector<std::string>())
 {
     addPort(outport_);

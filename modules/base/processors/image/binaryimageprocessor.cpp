@@ -33,9 +33,9 @@ namespace voreen {
 
 BinaryImageProcessor::BinaryImageProcessor()
     : ImageProcessor("image/binary")
-    , inport0_(Port::INPORT, "image.inport0")
-    , inport1_(Port::INPORT, "image.inport1")
-    , outport_(Port::OUTPORT, "image.outport", true)
+    , inport0_(Port::INPORT, "image.inport0", "Image0 Input")
+    , inport1_(Port::INPORT, "image.inport1", "Image1 Input")
+    , outport_(Port::OUTPORT, "image.outport", "Image Output", true)
 {
     addPort(inport0_);
     addPort(inport1_);

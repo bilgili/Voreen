@@ -207,16 +207,3 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/io/dcmtkmovescu.h
 )
    
-
-################################################################################
-# Qt module resources 
-################################################################################
-#SET(MOD_QT_MODULECLASS DcmtkModuleQt)
-
-SET(MOD_QT_SOURCES 
-    ${MOD_DIR}/qt/dcmtkdialog.cpp
-)
-
-SET(MOD_QT_HEADERS 
-    ${MOD_DIR}/qt/dcmtkdialog.h
-)

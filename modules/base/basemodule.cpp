@@ -75,7 +75,9 @@
 #include "processors/image/orientationoverlay.h"
 #include "processors/image/quadview.h"
 #include "processors/image/regionofinterest2d.h"
+#include "processors/image/splitter.h"
 #include "processors/image/textoverlay.h"
+#include "processors/image/tripleview.h"
 #include "processors/image/unsharpmasking.h"
 
 // proxy geometry
@@ -204,7 +206,9 @@ BaseModule::BaseModule(const std::string& modulePath) : VoreenModule(modulePath)
     registerProcessor(new OrientationOverlay());
     registerProcessor(new QuadView());
     registerProcessor(new RegionOfInterest2D());
+    registerProcessor(new Splitter());
     registerProcessor(new TextOverlay());
+    registerProcessor(new TripleView());
     registerProcessor(new UnaryImageProcessor());
     registerProcessor(new UnsharpMasking());
 

@@ -37,6 +37,7 @@
 #include <gdcm-2.2/gdcmFile.h>
 #include <gdcm-2.2/gdcmDirectory.h>
 #include <gdcm-2.2/gdcmSystem.h>
+#include <gdcm-2.2/gdcmRescaler.h>
 //#include <gdcm-2.2/gdcmIPPSorter.h> //currently not in use
 #else
 #include <gdcm-2.0/gdcmGlobal.h>
@@ -47,6 +48,7 @@
 #include <gdcm-2.0/gdcmFile.h>
 #include <gdcm-2.0/gdcmDirectory.h>
 #include <gdcm-2.0/gdcmSystem.h>
+#include <gdcm-2.0/gdcmRescaler.h>
 //#include <gdcm-2.0/gdcmIPPSorter.h> //currently not in use
 #endif
 
@@ -55,6 +57,7 @@
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/utils/stringutils.h"
 #include "voreen/core/datastructures/meta/primitivemetadata.h"
+#include "voreen/core/datastructures/meta/filelistmetadata.h"
 
 #include <algorithm>
 
@@ -72,6 +75,7 @@ GdcmVolumeReader::GdcmVolumeReader(ProgressBar* progress)
     : VolumeReader(progress)
 {
     extensions_.push_back("dcm");
+    extensions_.push_back("ima");
     filenames_.push_back("DICOMDIR");
     protocols_.push_back("dicom");
 
@@ -81,6 +85,7 @@ GdcmVolumeReader::GdcmVolumeReader(ProgressBar* progress)
 #endif
 
     dict_ = 0;
+    lastBufferMod_ = DateTime::now();
 }
 
 GdcmVolumeReader::~GdcmVolumeReader() {
@@ -192,6 +197,76 @@ bool GdcmVolumeReader::isDicomDir(const string &url) const {
     ms.SetFromFile(reader.GetFile());
 
     return (ms == gdcm::MediaStorage::MediaStorageDirectoryStorage);
+}
+
+void GdcmVolumeReader::setMetaDataFromDict(MetaDataContainer* container, const DicomDict* dict, const std::string& file, bool setAll) throw (tgt::FileException)
+{
+    
+    if ((!container) || (!dict))
+        return;
+
+    gdcm::Reader reader;
+    reader.SetFileName(file.c_str());
+    if ((!reader.Read()) || (!reader.GetFile().GetHeader().IsValid()))
+        throw tgt::FileException("Cannot extract meta data from file " + file, file);
+
+    gdcm::StringFilter sf;
+    sf.SetFile(reader.GetFile());
+
+    const vector<string> keys = dict->getKeywordVector();
+
+    vector<string>::const_iterator keywordIterator;
+
+    for (keywordIterator = keys.begin(); keywordIterator != keys.end(); ++keywordIterator) {
+        //get entry and check if it should be set as MetaData
+        DicomDictEntry entry = dict->getDictEntryByKeyword(*keywordIterator);
+        if (entry.isMetaData() || setAll) {
+            //get the value
+            string s = trim(sf.ToString(getTagFromDictEntry(entry)), " ");
+            if (!s.empty()) {
+                //if value is not empty: construct MetaData and add to MetaDataContainer
+                MetaDataBase* m = constructMetaData(entry, s);
+
+                if (container->hasMetaData(*keywordIterator))
+                    container->removeMetaData(*keywordIterator);
+                container->addMetaData(*keywordIterator, m);
+            }
+        }
+    }
+}
+
+std::string GdcmVolumeReader::getMetaDataFromFile(const std::string& filename, const DicomDict& dict, const std::string& keyword) const 
+    throw (tgt::FileException)
+{
+    std::map<string, MetaDataContainer>::iterator mapIterator;
+    mapIterator = fileInfoBuffer_.find(filename);
+   
+    //if the file is not already present in the file buffer: create a new entry and add the meta information from the DicomDict 
+    if (mapIterator == fileInfoBuffer_.end()) {
+        //put file and corresponding dict meta info into the buffer
+        pair<string, MetaDataContainer> newPair;
+        newPair.first = filename;
+        //MetaDataContainer c;
+        //newPair.second = c;
+        setMetaDataFromDict(&newPair.second, &dict, filename, true);
+        fileInfoBuffer_.insert(newPair);
+        mapIterator = fileInfoBuffer_.find(filename); 
+        //set the timestamp to the current time because the buffer has been modified
+        lastBufferMod_ = DateTime::now();
+    }
+    else if (!(mapIterator->second.hasMetaData(keyword))) {    
+        //if the filename is present, but does not have the right meta data: add the meta information from the DicomDict
+        setMetaDataFromDict(&mapIterator->second, &dict, filename, true);  
+        //set the timestamp to the current time because the buffer has been modified
+        lastBufferMod_ = DateTime::now();
+    }
+
+    //now the filename is present, the meta information is added and the iterator is set to the right position
+    //extract the meta data and return it
+    if (mapIterator->second.hasMetaData(keyword))
+        return mapIterator->second.getMetaData(keyword)->toString();
+    else
+        return "";
 }
 
 MetaDataBase* GdcmVolumeReader::constructMetaData(const DicomDictEntry &entry, const std::string &valueString) {
@@ -427,31 +502,7 @@ MetaDataBase* GdcmVolumeReader::constructMetaData(const DicomDictEntry &entry, c
 
 }
 
-void GdcmVolumeReader::setMetaDataFromDict(MetaDataContainer* container, const DicomDict* dict, gdcm::StringFilter* sf) {
-    if ((!container) || (!dict) || (!sf))
-        return;
 
-    const vector<string> keys = dict->getKeywordVector();
-
-    vector<string>::const_iterator keywordIterator;
-
-    for (keywordIterator = keys.begin(); keywordIterator != keys.end(); ++keywordIterator) {
-        //get entry and check if it should be set as MetaData
-        DicomDictEntry entry = dict->getDictEntryByKeyword(*keywordIterator);
-        if (entry.isMetaData()) {
-            //get the value
-            string s = sf->ToString(getTagFromDictEntry(entry));
-            if (!s.empty()) {
-                //if value is not empty: construct MetaData and add to MetaDataContainer
-                MetaDataBase* m = constructMetaData(entry, s);
-
-                if (container->hasMetaData(*keywordIterator))
-                    container->removeMetaData(*keywordIterator);
-                container->addMetaData(*keywordIterator, m);
-            }
-        }
-    }
-}
 
 MetaDataBase* GdcmVolumeReader::constructVolumeDateTime(const DicomDict* dict, gdcm::StringFilter* sf) const {
     if ((!dict) || (!sf))
@@ -805,17 +856,14 @@ vector<string> GdcmVolumeReader::getFilesInSeries(vector<string> filenames, stri
 
         //check SeriesInstanceUID of the file
         //if it fits: add this file to result
-        gdcm::Reader reader;
-        reader.SetFileName(fileIterator->c_str());
-        if (reader.Read()) {
-            if(reader.GetFile().GetHeader().IsValid()){
-                gdcm::StringFilter sf;
-                sf.SetFile(reader.GetFile());
-                string series = sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID")));
-                series = trim(series, " ");
-                if (series == seriesInstanceUID)
-                    result.push_back(*fileIterator);
-            }
+        try {
+            string series = getMetaDataFromFile(*fileIterator, *dict_, "SeriesInstanceUID");
+            if (series == seriesInstanceUID)
+                result.push_back(*fileIterator);
+        }
+        catch(tgt::FileException) {
+            //file is not a DICOM file... just ignore it
+            LINFO("Ignoring file " + (*fileIterator) + " because it is not a DICOM file...");
         }
     }
 
@@ -826,18 +874,17 @@ vector<string> GdcmVolumeReader::getFilesInSeries(vector<string> filenames, stri
 }
 
 vector<vector<string> > GdcmVolumeReader::subdivideSeriesFilesByCustomDict(vector<string> fileNames, CustomDicomDict customDict) const {
-    vector<vector<string> > groups;
-
+    
     //iterate over all files and for each file over all subdivisionTags to get all value combinations in the series for the given files
     vector<string> subdivisionKeywords = *(customDict.getSubdivisionKeywords());
 
-    //build set with different value combinations
-    std::set<string> valueCombinations;
+    //vector of value combinations and the corresponding files within this group
+    vector<pair<string,vector<string> > > groups;
 
     std::vector<string>::const_iterator fileIterator;
 
     if (getProgressBar())
-        getProgressBar()->setTitle("Finding Value Combinations of Subdivision Keywords...");
+        getProgressBar()->setTitle("Subdividing files by CustomDict...");
 
     int itemused = 1;
 
@@ -848,12 +895,6 @@ vector<vector<string> > GdcmVolumeReader::subdivideSeriesFilesByCustomDict(vecto
             getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float>(fileNames.size()));
             itemused++;
         }
-        //get the present file
-        gdcm::ImageReader imageReader;
-        imageReader.SetFileName(fileIterator->c_str());
-        imageReader.Read();
-        gdcm::StringFilter sf;
-        sf.SetFile(imageReader.GetFile());
 
         //iterate over keywords and concatenate one string out of the values of these keywords
         string s = "";
@@ -861,69 +902,49 @@ vector<vector<string> > GdcmVolumeReader::subdivideSeriesFilesByCustomDict(vecto
         std::vector<string>::iterator keywordIterator;
         for (keywordIterator = subdivisionKeywords.begin(); keywordIterator != subdivisionKeywords.end(); ++keywordIterator) {
             //get the value from the file
-            string t = sf.ToString(getTagFromDictEntry(customDict.getDict()->getDictEntryByKeyword(*keywordIterator)));
+            //string t = sf.ToString(getTagFromDictEntry(customDict.getDict()->getDictEntryByKeyword(*keywordIterator)));
+            string t = getMetaDataFromFile(*fileIterator, *customDict.getDict(), *keywordIterator);
             t = trim(t, " ");
 
             if (!t.empty())
                 s.append(t);
         }
 
-        //if it is not empty: add this value combination
-        if (!s.empty()) {
-            if (valueCombinations.insert(s).second) {
-                //LERROR(s);
+        //check if the value combination is already present.
+        //if so, insert the file into the corresponding vector.
+        //else insert a new pair with the value combination and the file
+        std::vector<pair<string, vector<string> > >::iterator combinationIterator;
+        
+        for (combinationIterator = groups.begin(); combinationIterator != groups.end(); ++combinationIterator) {
+            if (combinationIterator->first == s) {
+                combinationIterator->second.push_back(*fileIterator);
+                break;
             }
         }
+
+        if (combinationIterator == groups.end()) {
+            pair<string, vector<string> > newPair;
+            newPair.first = s;
+            newPair.second.push_back(*fileIterator);
+            groups.push_back(newPair);
+        }
+
     }
 
-    if (getProgressBar())
-        getProgressBar()->setTitle("Subdividing files into groups...");
-    itemused = 1;
+    //now copy the groups into a result vector
+    vector<vector<string> > resultVector;
 
-    //for each Value Combination of the SelectionTags: find files and put into groups
-    std::set<string>::iterator combinationIterator;
-
-    for (combinationIterator = valueCombinations.begin(); combinationIterator != valueCombinations.end(); ++combinationIterator){
-
-        if (getProgressBar()) {
-            getProgressBar()->setMessage("Finding files for Value Combinations...");
-            getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float>(valueCombinations.size()));
-            itemused++;
-        }
-
-        std::vector<string> combinationFilenames;
-
-        for (fileIterator = fileNames.begin(); fileIterator != fileNames.end(); ++fileIterator){
-            gdcm::ImageReader imageReader;
-            imageReader.SetFileName(fileIterator->c_str());
-            imageReader.Read();
-            gdcm::StringFilter sf;
-            sf.SetFile(imageReader.GetFile());
-
-            //get the value combination of the file and compare it
-            string s = "";
-            std::vector<string>::const_iterator keywordIterator;
-            for (keywordIterator = subdivisionKeywords.begin(); keywordIterator != subdivisionKeywords.end(); ++keywordIterator) {
-                string t = sf.ToString(getTagFromDictEntry(customDict.getDict()->getDictEntryByKeyword(*keywordIterator)));
-                t = trim(t, " ");
-
-                if (!t.empty())
-                    s += t;
-            }
-
-            if (s == (*combinationIterator))
-                combinationFilenames.push_back(*fileIterator);
-
-        }
-
-        //add this group
-        groups.push_back(combinationFilenames);
+    std::vector<pair<string, vector<string> > >::iterator combinationIterator;
+        
+    for (combinationIterator = groups.begin(); combinationIterator != groups.end(); ++combinationIterator) {
+        //LERROR("Found " + itos(combinationIterator->second.size()) + "files for this group!");
+        resultVector.push_back(combinationIterator->second);
     }
 
     if (getProgressBar())
         getProgressBar()->hide();
 
-    return groups;
+    return resultVector;
 }
 
 VolumeBase* GdcmVolumeReader::read(const VolumeURL& origin)
@@ -933,12 +954,25 @@ VolumeBase* GdcmVolumeReader::read(const VolumeURL& origin)
     if (collection->size() > 1) {
         throw tgt::FileException("Could not load Volume, found more than one Volume: "+ origin.getPath(), origin.getPath());
     }
-    else return collection->first();
+    else {
+        if (getProgressBar())
+            getProgressBar()->hide();
+        return collection->first();
+    }
 }
 
 VolumeCollection* GdcmVolumeReader::read(const string& url)
     throw (tgt::FileException, std::bad_alloc)
 {
+    //check if fileInfoBuffer_ should be cleared (is the case when last buffer modification was at least 10 minutes ago)
+    //get current time
+    DateTime current = DateTime::now();
+    double secondsSinceLastBufferMod = std::difftime(current.getTimestamp(),lastBufferMod_.getTimestamp());
+    if ((!fileInfoBuffer_.empty()) && (secondsSinceLastBufferMod >= 600.0)) {
+        LINFO("Clearing buffer (last modification was " + dtos(secondsSinceLastBufferMod / 60.0) + " minutes ago)");
+        fileInfoBuffer_.clear();
+        lastBufferMod_ = DateTime::now();
+    }
 
     //if Standard Dictionary is not yet loaded: try to load
     if (!dict_) {
@@ -952,7 +986,7 @@ VolumeCollection* GdcmVolumeReader::read(const string& url)
 #ifdef VRN_GDCM_VERSION_22
     //check if this is a network path
     if (url.substr(0,12) == "dicom-scp://") {
-        //get AE Title and Imcoming Port Number
+        //get AE Title and Incoming Port Number
         string aet = dynamic_cast<const GdcmModule*>(VoreenApplication::app()->getModule("gdcm"))->getAeTitle();
         int incomingPort = dynamic_cast<const GdcmModule*>(VoreenApplication::app()->getModule("gdcm"))->getIncomingPortNumber();
 
@@ -1079,9 +1113,13 @@ VolumeCollection* GdcmVolumeReader::read(const string& url)
         throw tgt::FileNotFoundException("GdcmVolumeReader: Unable to find ", fileName);
     }
 
-    if (collection->empty())
-        throw tgt::FileException("Found no volume to load! ("+origin.getPath()+")", origin.getPath());
-
+    if (collection->empty()) {
+       if (getProgressBar())
+            getProgressBar()->hide();
+       throw tgt::FileException("Found no volume to load! ("+origin.getPath()+")", origin.getPath()); 
+    }
+    if (getProgressBar())
+        getProgressBar()->hide();
     return collection;
 }
 
@@ -1101,8 +1139,6 @@ VolumeCollection* GdcmVolumeReader::selectAndLoadDicomFiles(const std::vector<st
         filter = true;
 
     vector<string> useFiles; //selected files to be used
-
-    gdcm::ImageReader reader;
 
     std::vector<std::string>::const_iterator i;
     int itemused = 1;
@@ -1131,13 +1167,12 @@ VolumeCollection* GdcmVolumeReader::selectAndLoadDicomFiles(const std::vector<st
                 iReader.Read();
 
                 //check if meta information is valid
-                if (!reader.GetFile().GetHeader().IsValid())
+                if (!iReader.GetFile().GetHeader().IsValid())
                     throw tgt::FileAccessException("GdcmVolumeReader: File Header not valid! ", (*i));
 
                 //get SeriesInstanceUID
-                gdcm::StringFilter sf = gdcm::StringFilter();
-                sf.SetFile(iReader.GetFile());
-                string seriesInstanceUID = sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID")));
+                string seriesInstanceUID = getMetaDataFromFile(*i, *dict_, "SeriesInstanceUID");
+
                 if (seriesInstanceUID.empty())
                     LERROR("File has no SeriesInstanceUID: " << (*i));
                 else {
@@ -1150,17 +1185,10 @@ VolumeCollection* GdcmVolumeReader::selectAndLoadDicomFiles(const std::vector<st
             }
             else {
                 //check if this file belongs to the given series
-                iReader.SetFileName((*i).c_str());
-                iReader.Read();
-                gdcm::StringFilter sf = gdcm::StringFilter();
-                sf.SetFile(iReader.GetFile());
-                string seriesInstanceUID = sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID")));
-                seriesInstanceUID = trim(seriesInstanceUID, " ");
+                string seriesInstanceUID = getMetaDataFromFile(*i, *dict_, "SeriesInstanceUID");
 
                 if (seriesInstanceUID == origin.getSearchParameter("SeriesInstanceUID"))
                     useFiles.push_back(*i);
-                /*else
-                    LINFO("Skipping file because of different SeriesInstanceUID: " + *i);*/
             }
         }
     }
@@ -1341,9 +1369,8 @@ VolumeCollection* GdcmVolumeReader::readDicomDir(const VolumeURL &origin)
 
         LINFO("Finished loading DICOMDIR.");
 
-        if (getProgressBar()) {
+        if (getProgressBar())
             getProgressBar()->hide();
-        }
 
         return volumeCollection;
 }
@@ -1361,11 +1388,6 @@ VolumeCollection* GdcmVolumeReader::subdivideAndLoadDicomFiles(const std::vector
 
     //first file is used as reference
     string referenceFile = *fileNames.begin();
-    gdcm::Reader reader;
-    reader.SetFileName(referenceFile.c_str());
-    reader.Read();
-    gdcm::StringFilter sf;
-    sf.SetFile(reader.GetFile());
 
     if (getProgressBar())
         getProgressBar()->setTitle("Looking for CustomDicomDict-Files.");
@@ -1389,7 +1411,7 @@ VolumeCollection* GdcmVolumeReader::subdivideAndLoadDicomFiles(const std::vector
         //iterate over all conditions and check if they apply for the given files
         vector<pair<string, vector<string> > >::const_iterator condIterator;
         for (condIterator = conditions->begin(); condIterator != conditions->end(); condIterator++) {
-            string value = sf.ToString(getTagFromDictEntry(dictIt->getDict()->getDictEntryByKeyword(condIterator->first)));
+            string value = getMetaDataFromFile(referenceFile, *dictIt->getDict(), condIterator->first);
             value = trim(value, " ");
             //iterate over possible values for the given tag
             fits = false;
@@ -1405,7 +1427,6 @@ VolumeCollection* GdcmVolumeReader::subdivideAndLoadDicomFiles(const std::vector
             //if no values are given, the attribute must be present in the file (=> no empty string)
             if (condIterator->second.empty() && !value.empty())
                 fits = true;
-
 
             if (!fits)
                 break;
@@ -1431,15 +1452,11 @@ VolumeCollection* GdcmVolumeReader::subdivideAndLoadDicomFiles(const std::vector
                 if (!groupIterator->empty()) {
 
                     bool ignore = false;
-                    gdcm::Reader im;
-                    im.SetFileName(groupIterator->begin()->c_str());
-                    im.Read();
-                    sf.SetFile(im.GetFile());
 
                     std::vector<string>::iterator keywordIterator;
                     for (keywordIterator = subdivisionKeywords.begin(); keywordIterator != subdivisionKeywords.end(); ++keywordIterator) {
                         //get the value from the first file of the group
-                        string t = sf.ToString(getTagFromDictEntry(customDict.getDictEntryByKeyword(*keywordIterator)));
+                        string t = getMetaDataFromFile(*groupIterator->begin(), customDict, *keywordIterator);
                         t = trim(t, " ");
 
                         //if this value does not fit to the one specified in the VolumeURL: do not use this group
@@ -1469,15 +1486,10 @@ VolumeCollection* GdcmVolumeReader::subdivideAndLoadDicomFiles(const std::vector
                         //SearchParameters to the Volume and its VolumeURL as specified in the CustomDicomDict used
                         VolumeURL o(vh->getOrigin());
 
-                        gdcm::Reader mReader;
-                        mReader.SetFileName(groupIterator->begin()->c_str());
-                        mReader.Read();
-                        sf.SetFile(mReader.GetFile());
-
                         //add SearchParameter values to VolumeURL for subdivisionKeywords
                         vector<string>::iterator keyIterator;
                         for (keyIterator = subdivisionKeywords.begin(); keyIterator != subdivisionKeywords.end(); ++keyIterator) {
-                            string value = sf.ToString(getTagFromDictEntry(customDict.getDictEntryByKeyword(*keyIterator)));
+                            string value = getMetaDataFromFile(*groupIterator->begin(), customDict, *keyIterator);
                             value = trim(value, " ");
                             if (!value.empty())
                                 o.addSearchParameter(*keyIterator, value);
@@ -1486,7 +1498,7 @@ VolumeCollection* GdcmVolumeReader::subdivideAndLoadDicomFiles(const std::vector
 
                         LINFO("Additional Meta Information in CustomDicomDict:");
                         //add all Tags that are found in the Dictionary of this CustomDicomDict to the MetaInformation of the Volume, if the attribute metaData is set to true and if the value is not empty
-                        setMetaDataFromDict(&(vh->getMetaDataContainer()), &customDict, &sf);
+                        setMetaDataFromDict(&(vh->getMetaDataContainer()), &customDict, *groupIterator->begin());
 
                         //print out Meta Information:
                         const vector<string> keys = customDict.getKeywordVector();
@@ -1514,6 +1526,9 @@ VolumeCollection* GdcmVolumeReader::subdivideAndLoadDicomFiles(const std::vector
         vh->setOrigin(origin);
         vc->add(vh);
     }
+
+    if (getProgressBar())
+        getProgressBar()->hide();
 
     return vc;
 }
@@ -1544,6 +1559,10 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
     info_.setRescaleType(sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("RescaleType"))));
 
     scalarType_ = reader.GetImage().GetPixelFormat().GetScalarType();
+
+    //for checks, if pixel data needs to be rescaled
+    bool slopeDiffers = false;
+    bool interceptDiffers = false;
 
     //get image related information
     //get image dimensions
@@ -1608,7 +1627,7 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
         if (!reader.Read()){
             if (getProgressBar())
                 getProgressBar()->hide();
-            throw tgt::FileAccessException("Could not read File which should not be readable!", (*it_files));
+            throw tgt::FileAccessException("Could not read File which should be readable!", (*it_files));
         }
 
         //check if meta information is valid -> should always be the case due to earlier checks
@@ -1696,8 +1715,6 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
 
         //check, if all images files are of dimension 2
         //also check if rescale intercept and slope are uniform and samples per pixel = 1 in all images
-        bool interceptDiffers = false;
-        bool slopeDiffers = false;
         int samplesPerPixel = 1;
         for (unsigned int i = 0; i < slices.size(); i++) {
             gdcm::ImageReader imR;
@@ -1717,10 +1734,14 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
             }
 
             //check if rescale slope and intercept are the same for alle images, otherwise: warning
-            if (info_.getIntercept() != static_cast<float>(imR.GetImage().GetIntercept()))
+            if (info_.getIntercept() != static_cast<float>(imR.GetImage().GetIntercept())) {
                 interceptDiffers = true;
-            if (info_.getSlope() != static_cast<float>(imR.GetImage().GetSlope()))
+                //LERROR("Intercept: " + ftos(static_cast<float>(imR.GetImage().GetIntercept())));
+            }
+            if (info_.getSlope() != static_cast<float>(imR.GetImage().GetSlope())) {
                 slopeDiffers = true;
+                //LERROR("Slope: " + ftos(static_cast<float>(imR.GetImage().GetSlope())));
+            }
 
             //check if samples per pixel are uniformly = 1
             if ((imR.GetImage().GetPixelFormat().GetSamplesPerPixel() != samplesPerPixel) && (imR.GetImage().GetPixelFormat().GetSamplesPerPixel() != 1)) {
@@ -1803,6 +1824,66 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
 
     LINFO("We have " << info_.getDz() << " slices. [" << info_.getDx() << "x" << info_.getDy() << "]");
     LINFO("Spacing: (" << info_.getXSpacing() << "; " << info_.getYSpacing() << "; " << info_.getZSpacing() << ")");
+    
+    //Determine scalar type of the data set if not already known (and if possible)
+    if ((scalarType_ == gdcm::PixelFormat::UNKNOWN) && (info_.getSamplesPerPixel() == 1)) {
+        if (info_.getPixelRepresentation()) { //signed
+            switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
+            case 8:
+                scalarType_ = gdcm::PixelFormat::INT8;
+                break;
+            case 9:
+            case 10:
+            case 11:
+            case 12:
+            case 13:
+            case 14:
+            case 15:
+            case 16:
+                scalarType_ = gdcm::PixelFormat::INT16;
+                break;
+            case 32:
+                scalarType_ = gdcm::PixelFormat::INT32;
+                break;
+            default:
+                break;
+            }
+        }
+        else {  //unsigned
+            switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
+            case 8:
+                scalarType_ = gdcm::PixelFormat::UINT8;
+                break;
+            case 9:
+            case 10:
+            case 11:
+            case 12:
+            case 13:
+            case 14:
+            case 15:
+            case 16:
+                scalarType_ = gdcm::PixelFormat::UINT16;
+                break;
+            case 32:
+                scalarType_ = gdcm::PixelFormat::UINT32;
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+    bool rwmDiffers = slopeDiffers || interceptDiffers;
+
+    if (rwmDiffers) {
+        if ((scalarType_ != gdcm::PixelFormat::UNKNOWN) && (info_.getSamplesPerPixel() == 1)) {
+            LWARNING("Rescaling of pixel data necessary due to different scaling");
+            //compute correct rescale slope and intercept values
+            computeCorrectRescaleValues(slices);
+        }
+        else 
+            LWARNING("Rescaling of pixel data not possible due to unknown data type. Result may be broken.");
+    }
 
     // Now read the actual slices from the files
     LINFO("Building volume...");
@@ -1820,7 +1901,7 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
         }
         i++;
 
-        int slicesize = loadSlice((*it_slices).first, posScalar,info_.getNumberOfFrames());
+        int slicesize = loadSlice((*it_slices).first, posScalar,info_.getNumberOfFrames(), rwmDiffers);
 
         if (slicesize == 0) {
             //obviously an error in loadSlice method
@@ -1851,10 +1932,9 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
 
             switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
             case 8:
-                /*dataset = new VolumeRAM_UInt8(reinterpret_cast<uint8_t*>(scalars_),
-                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));*/
                 dataset = new VolumeRAM_Int8(reinterpret_cast<int8_t*>(scalars_),
                                          tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+                scalarType_ = gdcm::PixelFormat::INT8;
                 break;
             case 9:
             case 10:
@@ -1864,24 +1944,24 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
             case 14:
             case 15:
             case 16:
-                /*dataset = new VolumeRAM_UInt16(reinterpret_cast<uint16_t*>(scalars_),
-                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));*/
                 dataset = new VolumeRAM_Int16(reinterpret_cast<int16_t*>(scalars_), tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+                scalarType_ = gdcm::PixelFormat::INT16;
                 break;
             case 24:
                 dataset = new VolumeRAM_3xUInt8(reinterpret_cast<tgt::col3*>(scalars_),
                                            tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
                 break;
             case 32:
-                /*dataset = new VolumeRAM_UInt32(reinterpret_cast<uint32_t*>(scalars_),
-                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));*/
                 dataset = new VolumeRAM_Int32(reinterpret_cast<int32_t*>(scalars_),
                                            tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+                scalarType_ = gdcm::PixelFormat::INT32;
                 break;
             default:
                 LERROR("Unsupported bit depth: " << info_.getBitsStored()*info_.getSamplesPerPixel());
                 delete[] scalars_;
                 scalars_ = 0;
+                if (getProgressBar())
+                    getProgressBar()->hide();
                 return 0;
             }
         }
@@ -1891,6 +1971,7 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
             case 8:
                 dataset = new VolumeRAM_UInt8(reinterpret_cast<uint8_t*>(scalars_),
                                            tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+                scalarType_ = gdcm::PixelFormat::UINT8;
                 break;
             case 9:
             case 10:
@@ -1902,6 +1983,7 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
             case 16:
                 dataset = new VolumeRAM_UInt16(reinterpret_cast<uint16_t*>(scalars_),
                                            tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+                scalarType_ = gdcm::PixelFormat::UINT16;
                 break;
             case 24:
                 dataset = new VolumeRAM_3xUInt8(reinterpret_cast<tgt::col3*>(scalars_),
@@ -1910,11 +1992,14 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
             case 32:
                 dataset = new VolumeRAM_UInt32(reinterpret_cast<uint32_t*>(scalars_),
                                            tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
+                scalarType_ = gdcm::PixelFormat::UINT32;
                 break;
             default:
                 LERROR("Unsupported bit depth: " << info_.getBitsStored()*info_.getSamplesPerPixel());
                 delete[] scalars_;
                 scalars_ = 0;
+                if (getProgressBar())
+                    getProgressBar()->hide();
                 return 0;
             }
         }
@@ -1961,11 +2046,11 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
              LERROR("Unsupported scalar type: " << yar.GetImage().GetPixelFormat().GetScalarTypeAsString());
              delete[] scalars_;
              scalars_ = 0;
+             if (getProgressBar())
+                 getProgressBar()->hide();
              return 0;
         }
     }
-
-
 
     LINFO("Building volume complete.");
 
@@ -2080,7 +2165,7 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
 
     LINFO("Setting Meta Information:");
     //add all Tags that are found in the Standard Dictionary to the MetaInformation of the Volume, if the attribute metaData is set to true and if the value is not empty
-    setMetaDataFromDict(&(vh->getMetaDataContainer()), dict_, &sf);
+    setMetaDataFromDict(&(vh->getMetaDataContainer()), dict_, slices[0].first);
 
     //Set VolumeDateTime, depending on the tags found in the file
     MetaDataBase* volumeDateTime = constructVolumeDateTime(dict_, &sf);
@@ -2097,10 +2182,69 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
         }
     }
 
+    //set file list meta data
+    vector<string> fileList;
+    std::vector<pair<string, double> >::iterator sliceIt; 
+    for (sliceIt = slices.begin(); sliceIt != slices.end(); ++sliceIt) {
+        fileList.push_back(sliceIt->first);
+    }
+    FileListMetaData* fileListMetaData = new FileListMetaData(fileList);
+    vh->getMetaDataContainer().addMetaData("FileList", fileListMetaData);
+
+    if (getProgressBar())
+        getProgressBar()->hide();
+
     return vh;
 }
 
-int GdcmVolumeReader::loadSlice(const std::string& fileName, size_t posScalar, int numberOfFrames){
+void GdcmVolumeReader::computeCorrectRescaleValues(std::vector<pair<string, double> > slices) {
+    //for every slice, it is assumed that the whole domain of the scalar type values is used
+    float rwmMin = std::numeric_limits<float>::max();
+    float rwmMax = std::numeric_limits<float>::min();
+
+    float dataTypeMin, dataTypeMax;
+    
+    //get max and min real world values
+    std::vector<pair<string, double> >::iterator it_slices = slices.begin();
+
+    int i = 0;
+    while (it_slices != slices.end()) {
+        if (getProgressBar()) {
+            getProgressBar()->setMessage("Calculating pixel rescaling...");
+            getProgressBar()->setProgress(static_cast<float>(i) / static_cast<float>(slices.size()));
+        }
+        i++;
+        
+        gdcm::ImageReader reader;
+        reader.SetFileName(it_slices->first.c_str());
+        reader.Read();
+        float slope = static_cast<float>(reader.GetImage().GetSlope());
+        float intercept = static_cast<float>(reader.GetImage().GetIntercept());
+
+        dataTypeMin = static_cast<float>(reader.GetImage().GetPixelFormat().GetMin());
+        dataTypeMax = static_cast<float>(reader.GetImage().GetPixelFormat().GetMax());
+        float sliceMin = dataTypeMin * slope + intercept;
+        float sliceMax = dataTypeMax * slope + intercept;
+
+        rwmMin = std::min(rwmMin, sliceMin);
+        rwmMax = std::max(rwmMax, sliceMax);
+
+        it_slices++;
+    }
+
+    //Calculate correct global slope and intercept values
+    float globalSlope = (rwmMax - rwmMin) / (dataTypeMax - dataTypeMin + 1);
+    float globalIntercept = rwmMin - dataTypeMin;
+
+    info_.setSlope(globalSlope);
+    info_.setIntercept(globalIntercept);
+
+    if (getProgressBar())
+        getProgressBar()->hide();
+}
+
+
+int GdcmVolumeReader::loadSlice(const std::string& fileName, size_t posScalar, int numberOfFrames, bool rwmDiffers){
 
     gdcm::ImageReader reader;
     reader.SetFileName(fileName.c_str());
@@ -2110,7 +2254,7 @@ int GdcmVolumeReader::loadSlice(const std::string& fileName, size_t posScalar, i
         return 0;
     }
 
-    unsigned long dataLength = (static_cast<unsigned long>(info_.getDx()) * static_cast<unsigned long>(info_.getDy()) * static_cast<unsigned long>(info_.getBytesPerVoxel()) * static_cast<unsigned long>(numberOfFrames));
+    size_t dataLength = (static_cast<size_t>(info_.getDx()) * static_cast<size_t>(info_.getDy()) * static_cast<size_t>(info_.getBytesPerVoxel()) * static_cast<size_t>(numberOfFrames));
 
     if (reader.GetImage().GetBufferLength() != dataLength){
         LERROR("Failed to read Pixel data from file " << fileName << " because of unexpected Buffer Length!");
@@ -2118,7 +2262,35 @@ int GdcmVolumeReader::loadSlice(const std::string& fileName, size_t posScalar, i
     }
 
     //get pixel data
-    reader.GetImage().GetBuffer(&scalars_[posScalar * info_.getBytesPerVoxel()]);
+    if (rwmDiffers && (scalarType_ != gdcm::PixelFormat::UNKNOWN) && (info_.getSamplesPerPixel() == 1)) {
+        //if rescale intercept and slope differ: recalculate the scalar values so that these fit the correct rescaling
+        float slope = static_cast<float>(reader.GetImage().GetSlope());
+        float intercept = static_cast<float>(reader.GetImage().GetIntercept());
+    
+        float nSlope = slope / info_.getSlope();
+        float nIntercept = intercept - info_.getIntercept();
+
+        //save the original buffer temporarily
+        char* sliceScalars = new char[dataLength];
+        reader.GetImage().GetBuffer(sliceScalars);
+
+        //rescale and write buffer
+        gdcm::Rescaler ir;
+        ir.SetSlope(static_cast<double>(nSlope));
+        ir.SetIntercept(static_cast<double>(nIntercept));
+        ir.SetPixelFormat(scalarType_);
+        ir.SetUseTargetPixelType(true);
+        ir.SetTargetPixelType(scalarType_);
+        ir.SetMinMaxForPixelType(static_cast<double>(gdcm::PixelFormat(scalarType_).GetMin()), static_cast<double>(gdcm::PixelFormat(scalarType_).GetMax()));
+        ir.Rescale(&scalars_[posScalar * info_.getBytesPerVoxel()], sliceScalars, dataLength);
+
+        //delete temporary data
+        delete[] sliceScalars;
+    }
+    else {
+        reader.GetImage().GetBuffer(&scalars_[posScalar * info_.getBytesPerVoxel()]);
+    }
+
 
     // Return number of voxels rendered
     return info_.getDx() * info_.getDy() * numberOfFrames;
@@ -2128,6 +2300,7 @@ int GdcmVolumeReader::loadSlice(const std::string& fileName, size_t posScalar, i
 std::vector<VolumeURL> GdcmVolumeReader::listVolumes(const std::string& url) const
     throw (tgt::FileException)
 {
+
     VolumeURL urlOrigin(url);
 
 #ifdef VRN_GDCM_VERSION_22 // network support
@@ -2157,6 +2330,8 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumes(const std::string& url) con
                 net.moveSeries(urlOrigin,path);
             }
             catch (VoreenException v) {
+                if (getProgressBar())
+                    getProgressBar()->hide();
                 throw tgt::FileException(v.what(),"");
             }
         }
@@ -2173,8 +2348,11 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumes(const std::string& url) con
             networkOrigins.insert(networkOrigins.end(),nOrigin);
         }
 
-        if (networkOrigins.empty())
+        if (networkOrigins.empty()) {
+            if (getProgressBar())
+                getProgressBar()->hide();
             throw tgt::FileException("Could not list Volumes in local directory. Remove local directory and try to load from server.", localOrigin.getPath());
+        }
         else
             return networkOrigins;
 
@@ -2186,6 +2364,8 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumes(const std::string& url) con
     if (urlOrigin.getSearchParameter("SeriesInstanceUID", false) != "") {
         vector<VolumeURL> result;
         result.push_back(urlOrigin);
+        if (getProgressBar())
+            getProgressBar()->hide();
         return result;
     }
 
@@ -2204,13 +2384,18 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumes(const std::string& url) con
         //select if it is a DICOMDIR or a single DICOM image
         if (isDicomDir(urlOrigin.getPath()))
             return listVolumesDicomDir(urlOrigin);
-        else if (isDicomFile(urlOrigin.getPath()))
-            return listVolumesSingleDicomImage(urlOrigin);
+        else if (isDicomFile(urlOrigin.getPath())) {
+            //return listVolumesSingleDicomImage(urlOrigin);
+            //work around for some data sets: scan whole directory
+            return listVolumesDirectory(tgt::FileSystem::dirName(urlOrigin.getPath()));
+        }
         else
             throw tgt::FileAccessException("Not a DICOM file!", urlOrigin.getPath());
     }
     else {
         //file is neither a directory nor a file
+        if (getProgressBar())
+            getProgressBar()->hide();
         throw tgt::FileException("File(s) could not be read: " + urlOrigin.getPath(), urlOrigin.getPath());
     }
 }
@@ -2302,13 +2487,7 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDirectory(const VolumeURL& o
 
             //get the SeriesInstanceUID of the DICOM file and compare it to the present one
             //if it does not match: next file
-            gdcm::Reader reader;
-            reader.SetFileName(fileIterator->c_str());
-            reader.Read();
-            gdcm::StringFilter stringFilter;
-            stringFilter.SetFile(reader.GetFile());
-
-            string fileSeries = stringFilter.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID")));
+            string fileSeries = getMetaDataFromFile(*fileIterator, *dict_, "SeriesInstanceUID");
             fileSeries = trim(fileSeries, " ");
 
             if (!((*seriesIterator) == fileSeries))
@@ -2325,12 +2504,6 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDirectory(const VolumeURL& o
             //check if a CustomDicomDict needs to be used
             vector<CustomDicomDict> customDicts = getCustomDicts();
 
-            gdcm::Reader reader;
-            reader.SetFileName(imageFile.c_str());
-            reader.Read();
-            gdcm::StringFilter stringFilter;
-            stringFilter.SetFile(reader.GetFile());
-
             vector<CustomDicomDict>::iterator dictIt;
 
             for (dictIt = customDicts.begin(); dictIt != customDicts.end(); dictIt++) {
@@ -2343,7 +2516,7 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDirectory(const VolumeURL& o
                 //iterate over all conditions and check if they apply for the given files
                 vector<pair<string, vector<string> > >::const_iterator condIterator;
                 for (condIterator = conditions->begin(); condIterator != conditions->end(); condIterator++) {
-                    string value = stringFilter.ToString(getTagFromDictEntry(dictIt->getDict()->getDictEntryByKeyword(condIterator->first)));
+                    string value = getMetaDataFromFile(imageFile, *dictIt->getDict(), condIterator->first);
                     value = trim(value, " ");
                     //iterate over possible values for the given tag
                     fits = false;
@@ -2379,32 +2552,24 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDirectory(const VolumeURL& o
                         if (!(groupIterator->empty())) {
                             VolumeURL o("dicom", origin.getPath());
                             o.addSearchParameter("SeriesInstanceUID", *seriesIterator);
-
-                            gdcm::Reader r;
-                            r.SetFileName(groupIterator->begin()->c_str());
-                            r.Read();
-                            gdcm::StringFilter filter;
-                            filter.SetFile(r.GetFile());
-
-                            o.addSearchParameter("PatientID", filter.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("PatientID"))));
-                            o.addSearchParameter("StudyInstanceUID", filter.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("StudyInstanceUID"))));
-
+                            o.addSearchParameter("PatientID", getMetaDataFromFile(*groupIterator->begin(), *dict_, "PatientID"));
+                            o.addSearchParameter("StudyInstanceUID", getMetaDataFromFile(*groupIterator->begin(), *dict_, "StudyInstanceUID"));        
                             //add SearchParameter values to VolumeURL for subdivisionKeywords
                             vector<string> subdivisionKeywords = *(dictIt->getSubdivisionKeywords());
                             const DicomDict customDict = *(dictIt->getDict());
 
                             vector<string>::iterator keyIterator;
                             for (keyIterator = subdivisionKeywords.begin(); keyIterator != subdivisionKeywords.end(); ++keyIterator) {
-                                string value = filter.ToString(getTagFromDictEntry(customDict.getDictEntryByKeyword(*keyIterator)));
+                                string value = getMetaDataFromFile(*groupIterator->begin(), customDict, *keyIterator);
                                 value = trim(value, " ");
 
                                 o.addSearchParameter(*keyIterator, value);
                             }
 
                             //now add Meta Information of StandardDictionary
-                            setMetaDataFromDict(&(o.getMetaDataContainer()), dict_, &filter);
+                            setMetaDataFromDict(&(o.getMetaDataContainer()), dict_, *groupIterator->begin());
                             //now add Meta Information of CustomDicomDict
-                            setMetaDataFromDict(&(o.getMetaDataContainer()), &customDict, &filter);
+                            setMetaDataFromDict(&(o.getMetaDataContainer()), &customDict, *groupIterator->begin());
 
                             result.push_back(o);
                         }
@@ -2419,11 +2584,13 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDirectory(const VolumeURL& o
             if (dictIt == customDicts.end()) {
                 //for now only the first file found is used
                 VolumeURL v("dicom", origin.getPath());
+
                 v.addSearchParameter("SeriesInstanceUID", *seriesIterator);
-                v.addSearchParameter("PatientID", stringFilter.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("PatientID"))));
-                v.addSearchParameter("StudyInstanceUID", stringFilter.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("StudyInstanceUID"))));
+                v.addSearchParameter("PatientID", getMetaDataFromFile(imageFile, *dict_, "PatientID")); 
+                v.addSearchParameter("StudyInstanceUID", getMetaDataFromFile(imageFile, *dict_, "StudyInstanceUID"));
+
                 //now add Meta Information of StandardDictionary
-                setMetaDataFromDict(&(v.getMetaDataContainer()), dict_, &stringFilter);
+                setMetaDataFromDict(&(v.getMetaDataContainer()), dict_, imageFile);
                 result.push_back(v);
             }
         }
@@ -2534,13 +2701,7 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDicomDir(const VolumeURL& or
 
             //get the SeriesInstanceUID of the DICOM file and compare it to the present one
             //if it does not match: next file
-            gdcm::Reader reader;
-            reader.SetFileName(fileIterator->c_str());
-            reader.Read();
-            gdcm::StringFilter stringFilter;
-            stringFilter.SetFile(reader.GetFile());
-
-            string fileSeries = stringFilter.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID")));
+            string fileSeries = getMetaDataFromFile(*fileIterator, *dict_, "SeriesInstanceUID");
             fileSeries = trim(fileSeries, " ");
 
             if (!((*seriesIterator) == fileSeries))
@@ -2556,12 +2717,6 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDicomDir(const VolumeURL& or
             //there is at least one file in this Series that can be used as a reference
             //check if a CustomDicomDict needs to be used
             vector<CustomDicomDict> customDicts = getCustomDicts();
-
-            gdcm::Reader reader;
-            reader.SetFileName(imageFile.c_str());
-            reader.Read();
-            gdcm::StringFilter stringFilter;
-            stringFilter.SetFile(reader.GetFile());
 
             if (getProgressBar())
                 getProgressBar()->setTitle("Looking for CustomDicomDict-Files.");
@@ -2585,7 +2740,7 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDicomDir(const VolumeURL& or
                 //iterate over all conditions and check if they apply for the given files
                 vector<pair<string, vector<string> > >::const_iterator condIterator;
                 for (condIterator = conditions->begin(); condIterator != conditions->end(); condIterator++) {
-                    string value = stringFilter.ToString(getTagFromDictEntry(dictIt->getDict()->getDictEntryByKeyword(condIterator->first)));
+                    string value = getMetaDataFromFile(imageFile, *dictIt->getDict(), condIterator->first);
                     value = trim(value, " ");
                     //iterate over possible values for the given tag
                     fits = false;
@@ -2623,28 +2778,22 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDicomDir(const VolumeURL& or
                             VolumeURL o("dicom", origin.getPath());
                             o.addSearchParameter("SeriesInstanceUID", *seriesIterator);
 
-                            gdcm::Reader r;
-                            r.SetFileName(groupIterator->begin()->c_str());
-                            r.Read();
-                            gdcm::StringFilter filter;
-                            filter.SetFile(r.GetFile());
-
                             //add SearchParameter values to VolumeURL for subdivisionKeywords
                             vector<string> subdivisionKeywords = *(dictIt->getSubdivisionKeywords());
                             const DicomDict customDict = *(dictIt->getDict());
 
                             vector<string>::iterator keyIterator;
                             for (keyIterator = subdivisionKeywords.begin(); keyIterator != subdivisionKeywords.end(); ++keyIterator) {
-                                string value = filter.ToString(getTagFromDictEntry(customDict.getDictEntryByKeyword(*keyIterator)));
+                                string value = getMetaDataFromFile(*groupIterator->begin(), customDict, *keyIterator);
                                 value = trim(value, " ");
 
                                 o.addSearchParameter(*keyIterator, value);
                             }
 
                             //now add Meta Information of StandardDictionary
-                            setMetaDataFromDict(&(o.getMetaDataContainer()), dict_, &filter);
+                            setMetaDataFromDict(&(o.getMetaDataContainer()), dict_, *groupIterator->begin());
                             //now add Meta Information of CustomDicomDict
-                            setMetaDataFromDict(&(o.getMetaDataContainer()), &customDict, &filter);
+                            setMetaDataFromDict(&(o.getMetaDataContainer()), &customDict, *groupIterator->begin());
 
                             result.push_back(o);
                         }
@@ -2660,7 +2809,7 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDicomDir(const VolumeURL& or
                 VolumeURL v("dicom", origin.getPath());
                 v.addSearchParameter("SeriesInstanceUID", *seriesIterator);
                 //now add Meta Information of StandardDictionary
-                setMetaDataFromDict(&(v.getMetaDataContainer()), dict_, &stringFilter);
+                setMetaDataFromDict(&(v.getMetaDataContainer()), dict_, imageFile);
                 result.push_back(v);
             }
         }
@@ -2677,22 +2826,13 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesSingleDicomImage(const Volum
 {
     //create new VolumeURL to be able to add protocol string and additional information
     VolumeURL newOrigin("dicom",origin.getPath());
-
-    gdcm::Reader reader;
-    reader.SetFileName(newOrigin.getPath().c_str());
-    if (!reader.Read())
-        throw tgt::FileAccessException("Couldn't read DICOM file!", newOrigin.getPath());
-
-    gdcm::StringFilter sf;
-    sf.SetFile(reader.GetFile());
-
     //get SeriesInstanceUID and add it to the VolumeURL
-    string s(sf.ToString(getTagFromDictEntry(dict_->getDictEntryByKeyword("SeriesInstanceUID"))));
+    string s = getMetaDataFromFile(newOrigin.getPath(), *dict_, "SeriesInstanceUID");
     s = trim(s, " ");
     newOrigin.addSearchParameter("SeriesInstanceUID", s);
 
     //now add Meta Information of StandardDictionary
-    setMetaDataFromDict(&(newOrigin.getMetaDataContainer()), dict_, &sf);
+    setMetaDataFromDict(&(newOrigin.getMetaDataContainer()), dict_, newOrigin.getPath());
 
     //Check, if there are CustomDicomDicts suitable for the given file
     vector<CustomDicomDict> customDicts = getCustomDicts();
@@ -2709,7 +2849,7 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesSingleDicomImage(const Volum
         //iterate over all conditions and check if they apply for the given file
         vector<pair<string, vector<string> > >::const_iterator condIterator;
         for (condIterator = conditions->begin(); condIterator != conditions->end(); condIterator++) {
-            string value = sf.ToString(getTagFromDictEntry(dictIt->getDict()->getDictEntryByKeyword(condIterator->first)));
+            string value = getMetaDataFromFile(newOrigin.getPath(),*dict_, condIterator->first);
             value = trim(value, " ");
             //iterate over possible values for the given tag
             fits = false;
@@ -2738,14 +2878,14 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesSingleDicomImage(const Volum
             //add SearchParameter values to VolumeURL for subdivisionKeywords
             vector<string>::iterator keyIterator;
             for (keyIterator = subdivisionKeywords.begin(); keyIterator != subdivisionKeywords.end(); ++keyIterator) {
-                string value = sf.ToString(getTagFromDictEntry(customDict->getDictEntryByKeyword(*keyIterator)));
+                string value = getMetaDataFromFile(newOrigin.getPath(), *dict_, *keyIterator);
                 value = trim(value, " ");
 
                 newOrigin.addSearchParameter(*keyIterator, value);
             }
 
             //now add Meta Information of CustomDicomDict
-            setMetaDataFromDict(&(newOrigin.getMetaDataContainer()), customDict, &sf);
+            setMetaDataFromDict(&(newOrigin.getMetaDataContainer()), customDict, newOrigin.getPath());
 
             break;
         }
@@ -2754,6 +2894,8 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesSingleDicomImage(const Volum
     //return a vector with this one VolumeURL
     vector<VolumeURL> v;
     v.push_back(newOrigin);
+    if (getProgressBar())
+        getProgressBar()->hide();
     return v;
 }
 

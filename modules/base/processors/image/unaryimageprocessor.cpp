@@ -34,8 +34,8 @@ namespace voreen {
 
 UnaryImageProcessor::UnaryImageProcessor()
     : ImageProcessorBypassable("image/unary")
-    , inport_(Port::INPORT, "image.inport")
-    , outport_(Port::OUTPORT, "image.outport", true)
+    , inport_(Port::INPORT, "image.inport", "Image Input")
+    , outport_(Port::OUTPORT, "image.outport", "Image Output", true)
 {
     addPort(inport_);
     addPort(outport_);

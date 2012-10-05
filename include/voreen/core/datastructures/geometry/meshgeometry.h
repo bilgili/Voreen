@@ -276,10 +276,10 @@ public:
      * @param closingMesh the clipping face generated for closing the clipped mesh
      * @param epsilon the accuracy for vertex geometry comparison
      */
-    void clip(const tgt::vec4& clipPlane, MeshGeometry& closingMesh, double epsilon = 1e-6);
+    void clip(const tgt::vec4& clipPlane, MeshGeometry& closingMesh, double epsilon = 1e-5);
 
     /// @overload
-    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-6);
+    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-5);
 
     /**
      * Returns true, if all faces of the passed MeshGeometry are equal to this one's.
@@ -287,7 +287,7 @@ public:
      * @param mesh the mesh to compare
      * @param epsilon maximum distance at which two vertices are to be considered equal
      */
-    bool equals(const MeshGeometry& mesh, double epsilon = 1e-6) const;
+    bool equals(const MeshGeometry& mesh, double epsilon = 1e-5) const;
 
     /**
      * Returns true, if the passed Geometry is a MeshGeometry
@@ -295,7 +295,7 @@ public:
      *
      * @see Geometry::equals
      */
-    virtual bool equals(const Geometry* geometry, double epsilon = 1e-6) const;
+    virtual bool equals(const Geometry* geometry, double epsilon = 1e-5) const;
 
     /**
      * Returns the axis-aligned bounding box of the union

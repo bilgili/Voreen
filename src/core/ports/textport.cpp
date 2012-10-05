@@ -31,19 +31,35 @@ namespace voreen {
 
 const std::string TextPort::loggerCat_("voreen.TextPort");
 
-TextPort::TextPort(PortDirection direction, const std::string& name,
+TextPort::TextPort(PortDirection direction, const std::string& name, const std::string& guiName,
                    bool allowMultipleConnections, Processor::InvalidationLevel invalidationLevel)
-    : Port(name, direction, allowMultipleConnections, invalidationLevel)
+    : Port(direction, name, guiName, allowMultipleConnections, invalidationLevel)
 {
 }
 
 TextPort::~TextPort() {
 }
 
+std::string TextPort::getContentDescription() const {
+    std::stringstream strstr;
+    strstr  << getGuiName() << std::endl 
+            << "Type: " << getClassName() << std::endl
+            << "Content: " << getData();
+    return strstr.str();
+}
+
+std::string TextPort::getContentDescriptionHTML() const {
+    std::stringstream strstr;
+    strstr  << "<center><font size=\"4\"><b>" << getGuiName() << "</b></font></center>"
+            << "Type: " << getClassName() << "<br>"
+            << "Content: " << getData();
+    return strstr.str();
+}
+
 void TextPort::setData(const std::string& data) {
     tgtAssert(isOutport(), "called setData on inport!");
     portData_ = data;
-    invalidate();
+    invalidatePort();
 }
 
 std::string TextPort::getData() const {

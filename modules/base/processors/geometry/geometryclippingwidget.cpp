@@ -31,7 +31,7 @@ const float GeometryClippingWidget::EPS(0.000001f);
 
 GeometryClippingWidget::GeometryClippingWidget()
     : GeometryRendererBase()
-    , inport_(Port::INPORT, "geometry")
+    , inport_(Port::INPORT, "geometry", "Geometry Input")
     , renderGeometry_("renderGeometry", "Render Geometry", true)
     , planeNormal_("planeNormal", "Plane Normal", tgt::vec3(0, 1, 0), tgt::vec3(-1), tgt::vec3(1))
     , planePosition_("planePosition", "Plane Position", 0.0f, -10.0f, 10.0f)

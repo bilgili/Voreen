@@ -75,10 +75,6 @@ protected:
     virtual void initialize() throw (tgt::Exception);
     virtual void deinitialize() throw (tgt::Exception);
 
-    virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
-    virtual void sizeOriginChanged(RenderPort* p);
-    virtual bool testSizeOrigin(const RenderPort* p, void* so) const;
-
     RenderPort inport_;
     RenderPort privatePort_;
     RenderPort outport_;

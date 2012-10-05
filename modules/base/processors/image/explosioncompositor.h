@@ -70,7 +70,7 @@ protected:
     RenderPort inport0_;
     RenderPort interalPort_;
     RenderPort outport_;
-    Port loopOutport_;
+    LoopPort loopOutport_;
 };
 
 

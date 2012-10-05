@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="11">
+        <ProcessorNetwork version="13">
             <MetaData>
                 <MetaItem name="Zoom" type="ZoomMetaData">
                     <transform.row0 x="0.77160185575485229" y="0" z="0" />
@@ -16,11 +16,17 @@
                     </MetaData>
                     <Properties>
                         <Property name="clearButton" />
-                        <Property name="imageFile" value="input/images/nucleon_large.png" />
+                        <Property name="imageFile" noPathSet="false" value="input/images/nucleon.png" />
                         <Property name="imageSize">
-                            <value x="1024" y="1024" />
+                            <value x="321" y="319" />
                         </Property>
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="image.out">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ImageSource" name="ImageSource 2" id="ref5">
@@ -29,26 +35,50 @@
                     </MetaData>
                     <Properties>
                         <Property name="clearButton" />
-                        <Property name="imageFile" value="input/images/walnut_background.png" />
+                        <Property name="imageFile" noPathSet="false" value="input/images/walnut_background.png" />
                         <Property name="imageSize">
                             <value x="512" y="512" />
                         </Property>
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="image.out">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas" id="ref6">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-309" y="-244" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="41" y="113" width="400" height="400" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="41" y="113" width="283" height="280" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="41" y="113" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="283" y="280" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" id="ref10">
-                            <value x="400" y="400" />
+                            <value x="283" y="280" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/disabled.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/disabled.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="283" y="280" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ImageOverlay" name="ImageOverlay disabled" id="ref1">
@@ -75,8 +105,22 @@
                         <Property name="overlayOpacity" value="1" />
                         <Property name="renderBorder" value="false" />
                         <Property name="renderOverlay" value="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
                         <Property name="usePixelCoordinates" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.in">
+                            <Properties />
+                        </Port>
+                        <Port name="image.overlay">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.out">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ImageOverlay" name="ImageOverlay abs full-opac" id="ref2">
@@ -89,13 +133,13 @@
                         </Property>
                         <Property name="borderWidth" value="1" />
                         <Property name="overlayBottomLeft">
-                            <value x="230" y="15" />
+                            <value x="180" y="10" />
                         </Property>
                         <Property name="overlayBottomLeftRelative">
                             <value x="0.05" y="0.05" />
                         </Property>
                         <Property name="overlayDimensions">
-                            <value x="150" y="150" />
+                            <value x="125" y="125" />
                         </Property>
                         <Property name="overlayDimensionsRelative">
                             <value x="0.25" y="0.25" />
@@ -103,23 +147,52 @@
                         <Property name="overlayOpacity" value="1" />
                         <Property name="renderBorder" value="false" />
                         <Property name="renderOverlay" value="true" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="usePixelCoordinates" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.in">
+                            <Properties />
+                        </Port>
+                        <Port name="image.overlay">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.out">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas 2" id="ref7">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-111" y="-244" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="56" y="351" width="400" height="400" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="39" y="440" width="283" height="280" />
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" id="ref11">
-                            <value x="400" y="400" />
+                            <value x="283" y="280" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/overlay-abs-fullopac.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/overlay-abs-fullopac.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="283" y="280" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ImageOverlay" name="ImageOverlay abs half-pac" id="ref3">
@@ -132,13 +205,13 @@
                         </Property>
                         <Property name="borderWidth" value="1" />
                         <Property name="overlayBottomLeft">
-                            <value x="230" y="15" />
+                            <value x="180" y="10" />
                         </Property>
                         <Property name="overlayBottomLeftRelative">
                             <value x="0.05" y="0.05" />
                         </Property>
                         <Property name="overlayDimensions">
-                            <value x="150" y="150" />
+                            <value x="125" y="125" />
                         </Property>
                         <Property name="overlayDimensionsRelative">
                             <value x="0.25" y="0.25" />
@@ -146,23 +219,52 @@
                         <Property name="overlayOpacity" value="0.64999998" />
                         <Property name="renderBorder" value="false" />
                         <Property name="renderOverlay" value="true" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="usePixelCoordinates" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.in">
+                            <Properties />
+                        </Port>
+                        <Port name="image.overlay">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.out">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas 3" id="ref8">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="100" y="-244" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="476" y="111" width="400" height="400" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="359" y="108" width="283" height="280" />
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" id="ref12">
-                            <value x="400" y="400" />
+                            <value x="283" y="280" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/overlay-abs-halfopac.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/overlay-abs-halfopac.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="283" y="280" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ImageOverlay" name="ImageOverlay rel half-opac" id="ref4">
@@ -189,23 +291,48 @@
                         <Property name="overlayOpacity" value="0.64999998" />
                         <Property name="renderBorder" value="false" />
                         <Property name="renderOverlay" value="true" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
                         <Property name="usePixelCoordinates" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.in">
+                            <Properties />
+                        </Port>
+                        <Port name="image.overlay">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.out">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas 4" id="ref9">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="305" y="-240" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="490" y="456" width="400" height="400" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="358" y="440" width="283" height="280" />
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" id="ref13">
-                            <value x="400" y="400" />
+                            <value x="283" y="280" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/overlay-rel-halfopac.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/overlay-rel-halfopac.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="283" y="280" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -340,9 +467,6 @@
                     <Evaluator type="LinkEvaluatorIVec2Id" />
                 </PropertyLink>
             </PropertyLinks>
-            <PropertyStateCollections />
-            <PropertyStateFileReferences />
-            <PropertyStateDirectoryReferences />
         </ProcessorNetwork>
         <Animation />
     </Workspace>

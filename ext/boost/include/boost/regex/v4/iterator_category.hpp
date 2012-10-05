@@ -17,6 +17,7 @@
   *                an integral constant expression.
   */
 
+
 #ifndef BOOST_REGEX_ITERATOR_CATEGORY_HPP
 #define BOOST_REGEX_ITERATOR_CATEGORY_HPP
 

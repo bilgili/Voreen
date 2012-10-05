@@ -29,6 +29,7 @@
 #include "voreen/core/processors/renderprocessor.h"
 #include "voreen/core/ports/allports.h"
 #include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
 #include "voreen/core/interaction/mwheelnumpropinteractionhandler.h"
 
 namespace voreen {
@@ -62,6 +63,7 @@ protected:
     RenderPort outport_;         ///< The render port the selected image is written to.
 
     IntProperty imageID_;        ///< id of the selected image
+    IntVec2Property imageSize_;  ///< Read-only property providing the dimensions of the output image.
     MWheelNumPropInteractionHandler<int> wheelHandler_; ///< used for cycling through images by mouse wheel
 
     tgt::Shader* shader_;        ///< Shader program used for rendering the selected image to the outport.

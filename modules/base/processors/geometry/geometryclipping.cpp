@@ -31,8 +31,8 @@ const std::string GeometryClipping::loggerCat_("voreen.base.GeometryClipping");
 
 GeometryClipping::GeometryClipping()
     : Processor()
-    , inport_(Port::INPORT, "geometry.geometry")
-    , outport_(Port::OUTPORT, "geometry.clippedgeometry")
+    , inport_(Port::INPORT, "geometry.geometry", "Geometry Input")
+    , outport_(Port::OUTPORT, "geometry.clippedgeometry", "Clipped Geometry Output")
     , enabled_("enabled", "Enabled", true)
     , invert_("invert_", "Invert", false)
     , normal_("planeNormal", "Plane Normal", tgt::vec3(0, 1, 0), tgt::vec3(-1), tgt::vec3(1))
@@ -68,7 +68,8 @@ void GeometryClipping::process() {
         plane *= -1.0f;
 
     Geometry* outputGeometry = inputGeometry->clone();
-    outputGeometry->clip(plane);
+    double epsilon = static_cast<double>(tgt::length(outputGeometry->getBoundingBox().diagonal())) * 1e-6;
+    outputGeometry->clip(plane, epsilon);
 
     outport_.setData(outputGeometry);
 }

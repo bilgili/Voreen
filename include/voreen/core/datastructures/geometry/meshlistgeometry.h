@@ -218,10 +218,10 @@ public:
      * @param closingFaces the clipping faces generated for closing the clipped meshes
      * @param epsilon the accuracy for vertex geometry comparison
      */
-    void clip(const tgt::vec4& clipPlane, MeshListGeometry& closingFaces, double epsilon = 1e-6);
+    void clip(const tgt::vec4& clipPlane, MeshListGeometry& closingFaces, double epsilon = 1e-5);
 
     /// @overload
-    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-6);
+    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-5);
 
     /**
      * Returns true, if all meshes of the passed MeshListGeometry are equal to this one's.
@@ -229,7 +229,7 @@ public:
      * @param meshList the mesh list to compare
      * @param epsilon maximum distance at which two vertices are to be considered equal
      */
-    bool equals(const MeshListGeometry& meshList, double epsilon = 1e-6) const;
+    bool equals(const MeshListGeometry& meshList, double epsilon = 1e-5) const;
 
     /**
      * Returns true, if the passed Geometry is a MeshListGeometry
@@ -237,7 +237,7 @@ public:
      *
      * @see Geometry::equals
      */
-    virtual bool equals(const Geometry* geometry, double epsilon = 1e-6) const;
+    virtual bool equals(const Geometry* geometry, double epsilon = 1e-5) const;
 
     virtual void serialize(XmlSerializer& s) const;
 

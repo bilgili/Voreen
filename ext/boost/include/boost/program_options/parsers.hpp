@@ -72,6 +72,7 @@ namespace boost { namespace program_options {
     /** Augments basic_parsed_options<wchar_t> with conversion from
         'parsed_options' */
 
+
     typedef function1<std::pair<std::string, std::string>, const std::string&> ext_parser;
 
     /** Command line parser.

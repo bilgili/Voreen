@@ -36,7 +36,7 @@ namespace voreen {
 template <typename T>
 class GenericCoProcessorPort : public CoProcessorPort  {
 public:
-    GenericCoProcessorPort(PortDirection direction, const std::string& name, bool allowMultipleConnections = false,
+    GenericCoProcessorPort(PortDirection direction, const std::string& id, const std::string& guiName = "", bool allowMultipleConnections = false,
                            Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT);
 
     std::vector<T*> getConnectedProcessors() const;
@@ -50,9 +50,9 @@ protected:
 // ---------------------------------------- implementation ----------------------------------------
 
 template <typename T>
-GenericCoProcessorPort<T>::GenericCoProcessorPort(PortDirection direction, const std::string& name, bool allowMultipleConnections,
+GenericCoProcessorPort<T>::GenericCoProcessorPort(PortDirection direction, const std::string& id, const std::string& guiName, bool allowMultipleConnections,
                            Processor::InvalidationLevel invalidationLevel)
-    : CoProcessorPort(direction, name, allowMultipleConnections, invalidationLevel)
+    : CoProcessorPort(direction, id, guiName, allowMultipleConnections, invalidationLevel)
 {
 }
 
@@ -63,7 +63,7 @@ void GenericCoProcessorPort<T>::setProcessor(Processor* p) {
         T* tp = dynamic_cast<T*>(p);
         tgtAssert(tp, "CoProcessor outport attached to processor of wrong type");
         if (!tp)
-            LERRORC("voreen.coprocessorport", "CoProcessor outport attached to processor of wrong type" << p->getName() << "|" << getName());
+            LERRORC("voreen.coprocessorport", "CoProcessor outport attached to processor of wrong type" << p->getName() << "|" << this->getID());
     }
 }
 

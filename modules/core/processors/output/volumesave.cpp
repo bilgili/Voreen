@@ -35,7 +35,7 @@ const std::string VolumeSave::loggerCat_("voreen.core.VolumeSave");
 
 VolumeSave::VolumeSave()
     : VolumeProcessor()
-    , inport_(Port::INPORT, "volumehandle.input", false)
+    , inport_(Port::INPORT, "volumehandle.input", "Volume Input", false)
     , filename_("outputFilename", "File", "Select file...", "",
             "Voreen Volume Data (*.vvd)", FileDialogProperty::SAVE_FILE)
     , saveButton_("save", "Save")

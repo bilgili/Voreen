@@ -30,8 +30,8 @@ namespace voreen {
 
 GeometryRenderer::GeometryRenderer()
     : GeometryRendererBase()
-    , inport_(Port::INPORT, "inport.geometry")
-    , texPort_(Port::INPORT, "inport.texture")
+    , inport_(Port::INPORT, "inport.geometry", "Geometry Input")
+    , texPort_(Port::INPORT, "inport.texture", "Texture Input")
     , polygonMode_("polygonMode", "Polygon Mode")
     , mapTexture_("mapTexture", "Map Texture", false)
     , textureMode_("textureMode", "Texture Mode")

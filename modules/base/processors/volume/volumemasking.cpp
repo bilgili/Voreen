@@ -35,12 +35,12 @@ namespace voreen {
 
 VolumeMasking::VolumeMasking()
     : CachingVolumeProcessor()
-    , inport_(Port::INPORT, "volumehandle.input")
-    , outport_(Port::OUTPORT, "volumehandle.output", 0)
+    , inport_(Port::INPORT, "volumehandle.input", "Volume Input")
+    , outport_(Port::OUTPORT, "volumehandle.output", "Volume Output", false)
     , enableProcessingProp_("enableProcessing", "Enable")
     , maskFunction_("maskFunction", "Masking function")
     , passedVoxelAction_("passedVoxelAction", "Passed voxels")
-    , continousUpdate_("continousUpdates", "Update continously", true, Processor::VALID)
+    , continousUpdate_("continousUpdates", "Update continuously", true, Processor::VALID)
     , updateButton_("update", "Update")
     , forceUpdate_(true)
 {

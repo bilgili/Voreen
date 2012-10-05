@@ -36,7 +36,7 @@ bool border(uint4 pos, uint4 dim) {
 // The function write_volumef and the type volume_t are defined in "mod_volumewrite.cl".
 // The argument "volume_t volume" initially contains only information (like dimension and datatype) about the volume which we want to write into.
 // The pointer to the actual data buffer has to be passed separately at the moment, but can (and should) be assigned to the volume_t by hand.
-__kernel void gradient(__global read_only image3d_t inputVolume, __global volume_t* volume, __global void* volData, int copyIntensityChannel) {
+__kernel void gradient( read_only image3d_t inputVolume, __global volume_t* volume, __global void* volData, int copyIntensityChannel) {
 
     // This is (apparently) currently the only way to have a pointer to GPU memory within a struct.
     volume->data_ = (intptr_t)volData;

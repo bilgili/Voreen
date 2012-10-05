@@ -231,12 +231,12 @@ void Processor::addPort(Port* port) {
             inports_.push_back(port);
     }
 
-    map<std::string, Port*>::const_iterator it = portMap_.find(port->getName());
+    map<std::string, Port*>::const_iterator it = portMap_.find(port->getID());
     if (it == portMap_.end())
-        portMap_.insert(std::make_pair(port->getName(), port));
+        portMap_.insert(std::make_pair(port->getID(), port));
     else {
-        LERROR("Port with name " << port->getName() << " has already been inserted!");
-        tgtAssert(false, std::string("Port with name " + port->getName() + " has already been inserted").c_str());
+        LERROR("Port with name " << port->getID() << " has already been inserted!");
+        tgtAssert(false, std::string("Port with name " + port->getID() + " has already been inserted").c_str());
     }
 }
 
@@ -248,7 +248,7 @@ void Processor::removePort(Port* port) {
     tgtAssert(port, "Null pointer passed");
 
     if (port->isInitialized()) {
-        LWARNING("removePort() Port '" << getName() << "." << port->getName() << "' "
+        LWARNING("removePort() Port '" << getName() << "." << port->getID() << "' "
             << "has not been deinitialized");
     }
 
@@ -267,12 +267,12 @@ void Processor::removePort(Port* port) {
             inports_.erase(std::find(inports_.begin(), inports_.end(), port));
     }
 
-    map<std::string, Port*>::iterator it = portMap_.find(port->getName());
+    map<std::string, Port*>::iterator it = portMap_.find(port->getID());
     if (it != portMap_.end())
         portMap_.erase(it);
     else {
-        LERROR("Port with name " << port->getName() << " was not found in port map!");
-        tgtAssert(false, std::string("Port with name " + port->getName() + " was not found in port map!").c_str());
+        LERROR("Port with name " << port->getID() << " was not found in port map!");
+        tgtAssert(false, std::string("Port with name " + port->getID() + " was not found in port map!").c_str());
     }
 }
 
@@ -376,7 +376,7 @@ void Processor::invalidate(int inv) {
         invalidationVisited_ = true;
 
         for (size_t i=0; i<coProcessorOutports_.size(); ++i)
-            coProcessorOutports_[i]->invalidate();
+            coProcessorOutports_[i]->invalidatePort();
 
         invalidationVisited_ = false;
 
@@ -471,17 +471,51 @@ void Processor::serialize(XmlSerializer& s) const {
     // serialize properties
     PropertyOwner::serialize(s);
 
-    // create temporary interaction handler map for deserialization
+
+    // ---
+    // the following entities are static resources (i.e. already existing at this point) 
+    // that should therefore not be dynamically created by the serializer 
+    //
+    const bool usePointerContentSerialization = s.getUsePointerContentSerialization();
+    s.setUsePointerContentSerialization(true);
+
+    // serialize inports using a temporary map
+    std::map<std::string, Port*> inportMap;
+    for (std::vector<Port*>::const_iterator it = inports_.begin(); it != inports_.end(); ++it)
+        inportMap[(*it)->getID()] = *it;
+    try {
+        s.serialize("Inports", inportMap, "Port", "name");
+    }
+    catch (SerializationException& e) {
+        LWARNING(e.what());
+    }
+
+    // serialize outports using a temporary map
+    std::map<std::string, Port*> outportMap;
+    for (std::vector<Port*>::const_iterator it = outports_.begin(); it != outports_.end(); ++it)
+        outportMap[(*it)->getID()] = *it;
+    try {
+        s.serialize("Outports", outportMap, "Port", "name");
+    }
+    catch (SerializationException& e) {
+        LWARNING(e.what());
+    }
+
+    // serialize interaction handlers using a temporary map
     map<string, InteractionHandler*> handlerMap;
     const std::vector<InteractionHandler*>& handlers = getInteractionHandlers();
     for (vector<InteractionHandler*>::const_iterator it = handlers.begin(); it != handlers.end(); ++it)
         handlerMap[(*it)->getID()] = *it;
+    try {
+        s.serialize("InteractionHandlers", handlerMap, "Handler", "name");
+    }
+    catch (SerializationException& e) {
+        LWARNING(e.what());
+    }
 
-    // serialize handlers
-    const bool usePointerContentSerialization = s.getUsePointerContentSerialization();
-    s.setUsePointerContentSerialization(true);
-    s.serialize("InteractionHandlers", handlerMap, "Handler", "name");
     s.setUsePointerContentSerialization(usePointerContentSerialization);
+    // --- static resources end ---
+
 }
 
 void Processor::deserialize(XmlDeserializer& s) {
@@ -494,23 +528,53 @@ void Processor::deserialize(XmlDeserializer& s) {
     // deserialize properties
     PropertyOwner::deserialize(s);
 
-    // create temporary interaction handler map for deserialization
+
+    // ---
+    // the following entities are static resources that should not be dynamically created by the serializer 
+    //
+    const bool usePointerContentSerialization = s.getUsePointerContentSerialization();
+    s.setUsePointerContentSerialization(true);
+
+    // deserialize inports using a temporary map
+    map<string, Port*> inportMap;
+    for (vector<Port*>::const_iterator it = inports_.begin(); it != inports_.end(); ++it)
+        inportMap[(*it)->getName()] = *it;
+    try {
+        s.deserialize("Inports", inportMap, "Port", "name");
+    }
+    catch (XmlSerializationNoSuchDataException& /*e*/){
+        // port key missing => just ignore
+        s.removeLastError();
+    }
+
+    // deserialize outports using a temporary map
+    map<string, Port*> outportMap;
+    for (vector<Port*>::const_iterator it = outports_.begin(); it != outports_.end(); ++it)
+        outportMap[(*it)->getName()] = *it;
+    try {
+        s.deserialize("Outports", outportMap, "Port", "name");
+    }
+    catch (XmlSerializationNoSuchDataException& /*e*/){
+        // port key missing => just ignore
+        s.removeLastError();
+    }
+
+    // deserialize interaction handlers using a temporary map
     map<string, InteractionHandler*> handlerMap;
     const std::vector<InteractionHandler*>& handlers = getInteractionHandlers();
     for (vector<InteractionHandler*>::const_iterator it = handlers.begin(); it != handlers.end(); ++it)
         handlerMap[(*it)->getID()] = *it;
-
-    // deserialize handlers
-    const bool usePointerContentSerialization = s.getUsePointerContentSerialization();
     try {
-        s.setUsePointerContentSerialization(true);
         s.deserialize("InteractionHandlers", handlerMap, "Handler", "name");
     }
     catch (XmlSerializationNoSuchDataException& /*e*/){
         // interaction handler key missing => just ignore
         s.removeLastError();
     }
+
     s.setUsePointerContentSerialization(usePointerContentSerialization);
+    // --- static resources end ---
+
 }
 
 MetaDataContainer& Processor::getMetaDataContainer() const {
@@ -646,7 +710,7 @@ void Processor::deregisterWidget() {
 void Processor::initializePort(Port* port) throw (tgt::Exception) {
     tgtAssert(port, "Null pointer passed");
     if (port->isInitialized()) {
-        LWARNING("initializePort() port '" << getName() << "." << port->getName()
+        LWARNING("initializePort() port '" << getName() << "." << port->getID()
             << "' already initialized");
         return;
     }
@@ -657,7 +721,7 @@ void Processor::initializePort(Port* port) throw (tgt::Exception) {
 void Processor::deinitializePort(Port* port) throw (tgt::Exception) {
     tgtAssert(port, "Null pointer passed");
     if (!port->isInitialized()) {
-        LWARNING("deinitializePort() port '" << getName() << "." << port->getName()
+        LWARNING("deinitializePort() port '" << getName() << "." << port->getID()
             << "' not initialized");
         return;
     }

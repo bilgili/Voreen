@@ -36,7 +36,7 @@ FlowStreamlinesTexture3D::FlowStreamlinesTexture3D()
     processedVolumeHandle_(0),
     voxelSamplingProp_("voxelSampling", "voxel sampling: ", 10, 1, 100000),
     volInport_(Port::INPORT, "volumehandle.input"),
-    volOutport_(Port::OUTPORT, "volumehandle.output", processedVolumeHandle_)
+    volOutport_(Port::OUTPORT, "volumehandle.output", "volumehandle.output", processedVolumeHandle_)
 {
 
     CallMemberAction<FlowStreamlinesTexture3D> cma(this, &FlowStreamlinesTexture3D::calculateStreamlines);

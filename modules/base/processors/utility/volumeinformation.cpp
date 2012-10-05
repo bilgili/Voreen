@@ -33,7 +33,7 @@ namespace voreen {
 
 VolumeInformation::VolumeInformation()
     : VolumeProcessor()
-    , volume_(Port::INPORT, "volume.inport", false, Processor::INVALID_RESULT)
+    , volume_(Port::INPORT, "volume.inport", "Volume Input", false, Processor::INVALID_RESULT)
     , computeButton_("compute", "Compute information")
     , computeContinuously_("computeContinuously", "Compute Continuously")
     , numVoxels_("numVoxels", "Num voxels", 0, 0, 1<<30)

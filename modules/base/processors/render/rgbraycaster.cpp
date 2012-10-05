@@ -36,10 +36,10 @@ namespace voreen {
 
 RGBRaycaster::RGBRaycaster()
     : VolumeRaycaster()
-    , volumePort_(Port::INPORT, "volumehandle.volumehandle")
-    , entryPort_(Port::INPORT, "image.entrypoints")
-    , exitPort_(Port::INPORT, "image.exitpoints")
-    , outport_(Port::OUTPORT, "image.output", true)
+    , volumePort_(Port::INPORT, "volumehandle.volumehandle", "Volume Input")
+    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
     , shaderProp_("raycast.prg", "Raycasting Shader", "rc_rgb.frag", "passthrough.vert")
     , transferFunc_("transferFunction", "Transfer function", Processor::INVALID_RESULT,
         TransFuncProperty::Editors(TransFuncProperty::INTENSITY))

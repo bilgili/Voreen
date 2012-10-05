@@ -27,14 +27,14 @@
 
 #include "processors/alignedsliceproxygeometry.h"
 #include "processors/fhptransformation.h"
-#include "processors/splitter.h"
 #include "processors/multislicerenderer.h"
+#include "processors/multisliceviewer.h"
 #include "processors/tabbedview.h"
 #include "processors/transfuncoverlay.h"
 #include "processors/sliceproxygeometry.h"
-#include "processors/tripleview.h"
 #include "processors/optimizedproxygeometry.h"
 #include "processors/interactiveregistrationwidget.h"
+#include "processors/registrationinitializer.h"
 
 namespace voreen {
 
@@ -46,13 +46,13 @@ StagingModule::StagingModule(const std::string& modulePath)
     registerProcessor(new AlignedSliceProxyGeometry());
     registerProcessor(new FhpTransformation());
     registerProcessor(new InteractiveRegistrationWidget());
-    registerProcessor(new Splitter());
     registerProcessor(new OptimizedProxyGeometry());
     registerProcessor(new MultiSliceRenderer());
+    registerProcessor(new MultiSliceViewer());
     registerProcessor(new SliceProxyGeometry());
     registerProcessor(new TabbedView());
     registerProcessor(new TransFuncOverlay());
-    registerProcessor(new TripleView());
+    registerProcessor(new RegistrationInitializer());
 
     addShaderPath(getModulePath("glsl"));
 }

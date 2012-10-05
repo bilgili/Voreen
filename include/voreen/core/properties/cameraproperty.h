@@ -75,15 +75,10 @@ public:
     void setFarDist(float dist);
     void setNearDist(float dist);
 
-    /**
-     * When set to true, the camera's projection matrix is adjusted automatically
-     * to viewport changes. This is especially necessary to
-     * reflect the viewport's aspect ratio.
-     */
-    void setAdjustProjectionToViewport(bool adjust);
-
-    /// \sa setAdjustProjectionToViewport
-    bool getAdjustProjectionToViewport() const;
+    bool setStereoEyeSeparation(float separation);
+    bool setStereoEyeMode(tgt::Camera::StereoEyeMode mode);
+    //bool stereoShift(tgt::vec3 shift);
+    void setStereoAxisMode(tgt::Camera::StereoAxisMode mode);
 
     /// Set the maximum absolute value that an element of the camera position vector can have
     void setMaxValue(float val);
@@ -98,13 +93,6 @@ public:
     void notifyChange();
 
     /**
-     * Notifies the CameraProperty that the viewport of the canvas it is (indirectly) associated with,
-     * has changed. This causes the camera's projection matrix to be updated,
-     * if the according constructor parameter has been set.
-     */
-    void viewportChanged(const tgt::ivec2& viewport);
-
-    /**
      * @see Property::serialize
      */
     virtual void serialize(XmlSerializer& s) const;
@@ -114,14 +102,12 @@ public:
      */
     virtual void deserialize(XmlDeserializer& s);
 
-    virtual void look();
-
+    virtual void look(tgt::ivec2 viewportSize);
     VoreenTrackball* getTrackball();
 
 private:
 
     VoreenTrackball* track_;
-    bool adjustProjectionToViewport_;
     float maxValue_;
 };
 

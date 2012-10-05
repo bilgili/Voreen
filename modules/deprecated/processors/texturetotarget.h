@@ -27,7 +27,7 @@
 #define VRN_TEXTURETOTARGET_H
 
 #include "voreen/core/processors/imageprocessor.h"
-
+#include "../ports/textureport.h"
 #include "tgt/textureunit.h"
 #include "tgt/texture.h"
 
@@ -38,9 +38,9 @@ public:
     TextureToTarget();
     Processor* create() const;
 
-    std::string getClassName() const { return "TextureToTarget"; }
-    std::string getCategory() const  { return "Utility"; }
-    CodeState getCodeState() const   { return CODE_STATE_STABLE;  }
+    std::string getClassName() const { return "TextureToTarget";   }
+    std::string getCategory() const  { return "Utility";           }
+    CodeState getCodeState() const   { return CODE_STATE_OBSOLETE; }
 
 protected:
     virtual void setDescriptions() {
@@ -49,7 +49,7 @@ protected:
 
     void process();
 
-    GenericPort<tgt::Texture> inport_;
+    TexturePort inport_;
     RenderPort outport_;
 };
 

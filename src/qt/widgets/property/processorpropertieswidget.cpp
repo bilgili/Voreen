@@ -29,8 +29,8 @@
 #include "voreen/core/voreenmodule.h"
 #include "voreen/core/interaction/interactionhandler.h"
 #include "voreen/core/processors/processor.h"
+#include "voreen/core/ports/port.h"
 #include "voreen/core/properties/volumeurlproperty.h"
-#include "voreen/core/properties/transfuncproperty.h"
 
 #include "voreen/qt/widgets/expandableheaderbutton.h"
 #include "voreen/qt/widgets/property/lightpropertywidget.h"
@@ -38,9 +38,9 @@
 #include "voreen/qt/widgets/property/propertyvectorwidget.h"
 #include "voreen/qt/widgets/property/qpropertywidget.h"
 #include "voreen/qt/widgets/property/grouppropertywidget.h"
-#include "voreen/qt/widgets/property/transfuncpropertywidget.h"
 #include "voreen/qt/widgets/property/volumeurllistpropertywidget.h"
 #include "voreen/qt/widgets/property/volumeurlpropertywidget.h"
+#include "voreen/core/ports/renderport.h" //for size properties
 
 #include <QVBoxLayout>
 #include <QGridLayout>
@@ -50,12 +50,14 @@ namespace voreen {
 ProcessorPropertiesWidget::ProcessorPropertiesWidget(QWidget* parent, const Processor* processor,
                                                      bool expanded, bool userExpandable)
     : QWidget(parent)
+    , ProcessorObserver()
     , propertyWidget_(0)
     , processor_(processor)
     , expanded_(expanded)
     , userExpandable_(userExpandable)
     , widgetInstantiationState_(NONE)
 {
+    tgtAssert(processor_, "null pointer passed");
 
     setObjectName("ProcessorTitleWidget");
     mainLayout_ = new QVBoxLayout(this);
@@ -74,20 +76,29 @@ ProcessorPropertiesWidget::ProcessorPropertiesWidget(QWidget* parent, const Proc
     header_->showLODControls();
     mainLayout_->addWidget(header_);
 
-    dynamic_cast<const Observable<ProcessorObserver>* >(processor_)->addObserver(dynamic_cast<ProcessorObserver*>(this));
+    static_cast<Observable<ProcessorObserver>*>(const_cast<Processor*>(processor_))->addObserver(this);
 }
 
 void ProcessorPropertiesWidget::setVisibilityOfGroups() {
-    for(std::map<std::string, GroupPropertyWidget*>::iterator it = propertyGroupsMap_.begin(); it != propertyGroupsMap_.end(); ++it)
-        if(processor_->isPropertyGroupVisible(it->first))
-            it->second->setVisible(true);
-        else
-            it->second->setVisible(false);
+    for(std::map<std::string, GroupPropertyWidget*>::iterator it = propertyGroupsMap_.begin(); it != propertyGroupsMap_.end(); ++it) {
+        std::string groupID = it->first;
+        GroupPropertyWidget* groupWidget = it->second;
+        tgtAssert(groupWidget, "null pointer in propertyGroupsMap_");
+        Property* property = groupWidget->getProperty();
+        tgtAssert(property, "group widget has no property");
+        PropertyOwner* owner = property->getOwner();
+        tgtAssert(owner, "property has no owner");
+        groupWidget->setVisible(owner->isPropertyGroupVisible(groupID));
+    }
 }
 
 void ProcessorPropertiesWidget::setLevelOfDetail(Property::LODSetting lod) {
 
-    std::vector<Property*> propertyList(processor_->getProperties());
+    std::vector<Property*> propertyList = processor_->getProperties();
+    for (size_t i=0; i<processor_->getPorts().size(); i++) {
+        std::vector<Property*> portProps = processor_->getPorts().at(i)->getProperties();
+        propertyList.insert(propertyList.end(), portProps.begin(), portProps.end());
+    }
 
     // update property widgets visibility and LOD controls
     for (size_t i = 0; i < propertyList.size(); ++i) {
@@ -161,7 +172,12 @@ void ProcessorPropertiesWidget::updateState() {
 
 void ProcessorPropertiesWidget::setLODHidden() {
 
-    std::vector<Property*> propertyList(processor_->getProperties());
+    std::vector<Property*> propertyList = processor_->getProperties();
+    for (size_t i=0; i<processor_->getPorts().size(); i++) {
+        std::vector<Property*> portProps = processor_->getPorts().at(i)->getProperties();
+        propertyList.insert(propertyList.end(), portProps.begin(), portProps.end());
+    }
+
     // update property widgets LOD level
     for (size_t i = 0; i < propertyList.size(); ++i) {
         std::set<PropertyWidget*> set = propertyList[i]->getPropertyWidgets(); // This set usually contains only one property
@@ -181,7 +197,11 @@ void ProcessorPropertiesWidget::setLODHidden() {
 
 void ProcessorPropertiesWidget::setLODVisible() {
 
-    std::vector<Property*> propertyList(processor_->getProperties());
+    std::vector<Property*> propertyList = processor_->getProperties();
+    for (size_t i=0; i<processor_->getPorts().size(); i++) {
+        std::vector<Property*> portProps = processor_->getPorts().at(i)->getProperties();
+        propertyList.insert(propertyList.end(), portProps.begin(), portProps.end());
+    }
 
     // update property widgets LOD level
     for (size_t i = 0; i < propertyList.size(); ++i) {
@@ -250,13 +270,18 @@ void ProcessorPropertiesWidget::instantiateWidgets() {
         gridLayout->setColumnStretch(1, 2);
         gridLayout->setEnabled(false);
         std::vector<Property*> propertyList = processor_->getProperties();
+        for (size_t i=0; i<processor_->getPorts().size(); i++) {
+            std::vector<Property*> portProps = processor_->getPorts().at(i)->getProperties();
+            propertyList.insert(propertyList.end(), portProps.begin(), portProps.end());
+        }
 
         // create widget for every property and put them into a vertical layout
         int rows = 0;
 
+        // create non-lazy widgets (such as widgets with editor windows)
         for (std::vector<Property*>::iterator iter = propertyList.begin(); iter != propertyList.end(); ++iter) {
             Property* prop = *iter;
-            if (dynamic_cast<TransFuncProperty*>(prop)) {
+            if (!VoreenApplication::app()->lazyInstantiation(prop)) {
                 PropertyWidget* propWidget = VoreenApplication::app()->createPropertyWidget(prop);
                 if (propWidget)
                     prop->addWidget(propWidget);
@@ -265,9 +290,30 @@ void ProcessorPropertiesWidget::instantiateWidgets() {
                 if (w != 0) {
                     widgets_.push_back(w);
                     connect(w, SIGNAL(modified()), this, SLOT(propertyModified()));
-                    CustomLabel* nameLabel = w->getNameLabel();
-                    gridLayout->addWidget(w, rows, 1, 1, 1);
-                    gridLayout->addWidget(nameLabel, rows, 0, 1, 1);
+                    connect(w,SIGNAL(visibilityChanged()),this,SLOT(setVisibilityOfGroups()));
+                    // we are dealing with a propertygroup
+                    if (prop->getGroupID() != "") {
+                        std::map<std::string, GroupPropertyWidget*>::iterator it = propertyGroupsMap_.find(prop->getGroupID());
+                        // the group does not exist
+                        if (it == propertyGroupsMap_.end()) {
+                            std::string guiName = prop->getOwner()->getPropertyGroupGuiName(prop->getGroupID());
+                            propertyGroupsMap_[prop->getGroupID()] = new GroupPropertyWidget(prop, false, guiName, this);
+                            //prop->getOwner()->setPropertyGroupWidget(prop->getGroupID(), propertyGroupsMap_[prop->getGroupID()]);
+                            // the group is not visible
+                            if(!prop->getOwner()->isPropertyGroupVisible(prop->getGroupID())) {
+                                propertyGroupsMap_[prop->getGroupID()]->setVisible(false);
+                            }
+                        }
+                        propertyGroupsMap_[prop->getGroupID()]->addWidget(w, w->getNameLabel(), QString::fromStdString(w->getPropertyGuiName()));
+                        w->getNameLabel()->setMinimumWidth(60);
+                        gridLayout->addWidget(propertyGroupsMap_[prop->getGroupID()], rows, 0, 1, 2);
+                        propertyGroupsMap_[prop->getGroupID()]->setVisible(prop->getOwner()->isPropertyGroupVisible(prop->getGroupID()));
+                    }
+                    else {
+                        CustomLabel* nameLabel = w->getNameLabel();
+                        gridLayout->addWidget(w, rows, 1, 1, 1);
+                        gridLayout->addWidget(nameLabel, rows, 0, 1, 1);
+                    }
                 }
             }
             ++rows;
@@ -277,17 +323,23 @@ void ProcessorPropertiesWidget::instantiateWidgets() {
         mainLayout_->addWidget(propertyWidget_);
         setUpdatesEnabled(true);
         updateState();
-        widgetInstantiationState_ = ONLY_TF;
+        widgetInstantiationState_ = ONLY_NONLAZY;
     }
-    else if(widgetInstantiationState_ == ONLY_TF) {
+    else if(widgetInstantiationState_ == ONLY_NONLAZY) {
+        // now, all remaining lazy instantiation widgets must be created
         QGridLayout* gridLayout = dynamic_cast<QGridLayout*>(propertyWidget_->layout());
         std::vector<Property*> propertyList = processor_->getProperties();
+        for (size_t i=0; i<processor_->getPorts().size(); i++) {
+            std::vector<Property*> portProps = processor_->getPorts().at(i)->getProperties();
+            propertyList.insert(propertyList.end(), portProps.begin(), portProps.end());
+        }
 
         // create widget for every property and put them into a vertical layout
         int rows = 0;
         for (std::vector<Property*>::iterator iter = propertyList.begin(); iter != propertyList.end(); ++iter) {
             Property* prop = *iter;
-            if (!dynamic_cast<TransFuncProperty*>(prop)) {
+            //if (dynamic_cast<RenderSizeOriginProperty*>(prop) || dynamic_cast<RenderSizeReceiveProperty*>(prop)) continue;
+            if (VoreenApplication::app()->lazyInstantiation(prop)) {
                 PropertyWidget* propWidget = VoreenApplication::app()->createPropertyWidget(prop);
                 if (propWidget)
                     prop->addWidget(propWidget);
@@ -374,9 +426,13 @@ void ProcessorPropertiesWidget::propertiesChanged(const PropertyOwner*) {
     }
 
     QGridLayout* gridLayout = dynamic_cast<QGridLayout*>(propertyWidget_->layout());
-    std::vector<Property*> properties = processor_->getProperties();
-    for (unsigned int i=0; i<properties.size(); i++) {
-        Property* prop = properties.at(i);
+    std::vector<Property*> propertyList = processor_->getProperties();
+    for (size_t i=0; i<processor_->getPorts().size(); i++) {
+        std::vector<Property*> portProps = processor_->getPorts().at(i)->getProperties();
+        propertyList.insert(propertyList.end(), portProps.begin(), portProps.end());
+    }
+    for (unsigned int i=0; i<propertyList.size(); i++) {
+        Property* prop = propertyList.at(i);
         const std::set<PropertyWidget*> propWidgets = prop->getPropertyWidgets();
         if (propWidgets.empty()) {
             PropertyWidget* propWidget = VoreenApplication::app()->createPropertyWidget(prop);

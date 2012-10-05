@@ -109,11 +109,11 @@ VolumeLabeling::VolumeLabeling()
     , valid_(false)
     , editMode_(false)
     , texturesGenerated_(false)
-    , idMapPort_(Port::INPORT, "image.idmap")
-    , volumePort_(Port::INPORT, "volumehandle.volumehandle")
+    , idMapPort_(Port::INPORT, "image.idmap", "ID Map Input")
+    , volumePort_(Port::INPORT, "volumehandle.volumehandle", "Volume Input")
     , pickedLabel_(0)
     , drag_(false)
-    , labelingPort_(Port::OUTPORT, "image.labeling", true)
+    , labelingPort_(Port::OUTPORT, "image.labeling", "Labeling Image Output", true)
     , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
     , currentVolumeHandle_(0)
 
@@ -1547,7 +1547,7 @@ void VolumeLabeling::renderLabels() {
                     // -> load projection and camera view matrix
                     if ( shape3D_.get() ) {
                         glMatrixMode(GL_PROJECTION);
-                        tgt::loadMatrix(camera_.get().getProjectionMatrix());
+                        tgt::loadMatrix(camera_.get().getProjectionMatrix(labelingPort_.getSize()));
                         glMatrixMode(GL_MODELVIEW);
                         tgt::loadMatrix(camera_.get().getViewMatrix());
                     }
@@ -3128,7 +3128,7 @@ void VolumeLabeling::readImage() {
     image_.firstHitPositions.setData(positionBuffer, image_.width, image_.height, 3);
     image_.firstHitPositions.setVolumeSize(currentVolumeHandle_->getCubeSize() / 2.f);
     image_.firstHitPositions.calcTransformationMatrix(camera_.get().getViewMatrix(),
-        camera_.get().getProjectionMatrix(),
+        camera_.get().getProjectionMatrix(labelingPort_.getSize()),
         ivec2(image_.width, image_.height));
 
     idMapPort_.getColorTexture()->destroy();

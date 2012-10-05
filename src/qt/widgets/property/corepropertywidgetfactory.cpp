@@ -43,6 +43,7 @@
 #include "voreen/core/properties/volumeurllistproperty.h"
 #include "voreen/core/properties/volumeurlproperty.h"
 #include "voreen/core/properties/voxeltypeproperty.h"
+#include "voreen/core/ports/renderport.h"
 
 #include "voreen/qt/widgets/property/boolpropertywidget.h"
 #include "voreen/qt/widgets/property/buttonpropertywidget.h"
@@ -128,6 +129,10 @@ PropertyWidget* CorePropertyWidgetFactory::createWidget(Property* prop) const {
 
     if (typeid(*prop) == typeid(IntVec2Property))
         return new IntVec2PropertyWidget(static_cast<IntVec2Property*>(prop), 0);
+    if (typeid(*prop) == typeid(RenderSizeOriginProperty))
+        return new IntVec2PropertyWidget(static_cast<IntVec2Property*>(prop), 0);
+    if (typeid(*prop) == typeid(RenderSizeReceiveProperty))
+        return new IntVec2PropertyWidget(static_cast<IntVec2Property*>(prop), 0);
 
     if (typeid(*prop) == typeid(IntVec3Property))
         return new IntVec3PropertyWidget(static_cast<IntVec3Property*>(prop), 0);
@@ -173,6 +178,23 @@ PropertyWidget* CorePropertyWidgetFactory::createWidget(Property* prop) const {
         return new VoxelTypePropertyWidget(static_cast<VoxelTypeProperty*>(prop), 0);
 
     return 0;
+}
+
+bool CorePropertyWidgetFactory::lazyInstantiation(Property* prop) const {
+
+    if (!prop)
+        return true;
+
+    if (typeid(*prop) == typeid(CameraProperty))
+        return false;
+
+    if (typeid(*prop) == typeid(ShaderProperty))
+        return false;
+
+    if (typeid(*prop) == typeid(TransFuncProperty))
+        return false;
+
+    return true;
 }
 
 } // namespace voreen

@@ -438,8 +438,14 @@ void CameraInteractionHandler::adjustCenterShift() {
 }
 
 void CameraInteractionHandler::resetTrackballCenter() {
-    cameraProp_->getTrackball()->getCamera()->setFocus(tgt::vec3(0.f));
-    cameraProp_->getTrackball()->setCenter(tgt::vec3(0.f));
+    tgt::Bounds bBox(tgt::vec3(0.f));
+    if (!currentSceneMesh_.empty())
+        bBox = currentSceneMesh_.getBoundingBox();
+    tgt::Camera cam = cameraProp_->get();
+    cam.setPosition(bBox.center() - cam.getFocalLength() * cam.getLook());
+    cam.setFocus(bBox.center());
+    cameraProp_->set(cam);
+    cameraProp_->getTrackball()->setCenter(bBox.center());
 }
 
 void CameraInteractionHandler::setVisible(bool state) {
@@ -462,42 +468,65 @@ void CameraInteractionHandler::adaptInteractionToScene(const MeshListGeometry& g
 
     currentSceneMesh_ = geometry;
 
+    bool adaptMaxValues = true;
     if(hmul(extentOld) != 0.f) {
         if(adjustCamera_.isSelected("never"))
-            return;
+            adaptMaxValues = false;
         else if(adjustCamera_.isSelected("bigsizechange")) {
             // resize only if the size of the scene has drastically changed
             float relSize = hmul(extentOld) / hmul(bounds.diagonal());
             if(relSize > 0.2f && relSize < 5.f)
-                return;
+                adaptMaxValues = false;
         }
     } else {
         // always adapt far distance if there was no previous scene geometry
         tgt::Camera cam = cameraProp_->get();
         float newMaxDist = 250.f * tgt::max(bounds.diagonal());
+        tbNavi_->setMaxDist(newMaxDist);
+        cameraProp_->setMaxValue(newMaxDist);
         cam.setFarDist(std::max(cam.getFarDist(), newMaxDist + tgt::max(bounds.diagonal())));
         cameraProp_->set(cam);
         return;
     }
 
-    LINFOC("voreen.CameraInteractionHandler", "Adapting camera handling to new scene size...");
-
     tgt::Camera cam = cameraProp_->get();
-    float oldRelCamDist = cam.getFocalLength() / tbNavi_->getMaxDist();
-    float maxSideLength = tgt::max(bounds.diagonal());
 
-    // The factor 250 is derived from an earlier constant maxDist of 500 and a constant maximum cubeSize element of 2
-    float newMaxDist = 250.f * maxSideLength;
-    float newAbsCamDist = oldRelCamDist * newMaxDist;
+    if(adaptMaxValues) {
+        LINFOC("voreen.CameraInteractionHandler", "Adapting camera handling to new scene size...");
+        float oldRelCamDist = cam.getFocalLength() / tbNavi_->getMaxDist();
+        float maxSideLength = tgt::max(bounds.diagonal());
 
-    tgt::vec3 newFocus = cam.getFocus() * (newAbsCamDist / cam.getFocalLength());
-    tgt::vec3 newPos   = cam.getPosition() * (newAbsCamDist / cam.getFocalLength());
+        // The factor 250 is derived from an earlier constant maxDist of 500 and a constant maximum cubeSize element of 2
+        float newMaxDist = 250.f * maxSideLength;
+        float newAbsCamDist = oldRelCamDist * newMaxDist;
 
-    tbNavi_->setMaxDist(newMaxDist);
-    cameraProp_->setMaxValue(newMaxDist);
-    cam.setFocus(newFocus);
-    cam.setPosition(newPos);
-    cam.setFarDist(std::max(cam.getFarDist(), newMaxDist + maxSideLength));
+        if(shiftTrackballCenter_.isSelected("shift")) {
+            tgt::vec3 newFocus = cam.getFocus() * (newAbsCamDist / cam.getFocalLength());
+            tgt::vec3 newPos   = cam.getPosition() * (newAbsCamDist / cam.getFocalLength());
+            cam.setFocus(newFocus);
+            cam.setPosition(newPos);
+        } else {
+            tgt::vec3 newFocus = geometry.getBoundingBox().center();
+            tgt::vec3 newPos   = geometry.getBoundingBox().center() - cam.getLook() * newAbsCamDist;
+            cam.setFocus(newFocus);
+            cam.setPosition(newPos);
+        }
+        tbNavi_->setMaxDist(newMaxDist);
+        cameraProp_->setMaxValue(newMaxDist);
+        cam.setFarDist(std::max(cam.getFarDist(), newMaxDist + maxSideLength));
+        adjustCenterShift();
+
+    }
+    //else if(!shiftTrackballCenter_.isSelected("shift")) {
+        //tgt::vec3 centerDiff = geometry.getBoundingBox().center() - cameraProp_->getTrackball()->getCenter();
+        //if(...) {
+            //adjustCenterShift();
+            //tgt::vec3 newFocus = geometry.getBoundingBox().center();
+            //tgt::vec3 newPos   = geometry.getBoundingBox().center() - cam.getLook() * cam.getFocalLength();
+            //cam.setFocus(newFocus);
+            //cam.setPosition(newPos);
+        //}
+    //}
     cameraProp_->set(cam);
 }
 

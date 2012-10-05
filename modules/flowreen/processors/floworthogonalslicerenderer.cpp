@@ -45,7 +45,7 @@ FlowOrthogonalSliceRenderer::FlowOrthogonalSliceRenderer()
     sliceNoZYProp_("sliceNoZYProp", "zy-slice number:", 1, 1, 100),
     camProp_("camera", "Camera", tgt::Camera(tgt::vec3(0.0f, 0.0f, 3.5f), tgt::vec3(0.0f, 0.0f, 0.0f), tgt::vec3(0.0f, 1.0f, 0.0f))),
     cameraHandler_(0),
-    cpInport_(Port::INPORT, "coprocessor.slicepositionsInput", false),
+    cpInport_(Port::INPORT, "coprocessor.slicepositionsInput", "coprocessor.slicepositionsInput", false),
     cpOutport_(Port::OUTPORT, "coprocessor.slicepositions")
 {
     CallMemberAction<FlowOrthogonalSliceRenderer> sliceChangeAction(this,
@@ -145,7 +145,7 @@ void FlowOrthogonalSliceRenderer::process() {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
 
-    camProp_.look();
+    camProp_.look(outport_.getSize());
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if (useXYSliceProp_.get() == true) {

@@ -83,6 +83,7 @@ int main(int argc, char* argv[]) {
 
     // initialize the network evaluator and retrieve the CanvasRenderer processor from the loaded network
     NetworkEvaluator* networkEvaluator = new NetworkEvaluator();
+    vapp.setNetworkEvaluator(networkEvaluator);
     ProcessorNetwork* network = workspace->getProcessorNetwork();
     std::vector<CanvasRenderer*> canvasRenderer = network->getProcessorsByType<CanvasRenderer>();
     if (canvasRenderer.empty()) {

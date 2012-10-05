@@ -33,6 +33,8 @@ namespace voreen {
 class OpenCLPropertyWidgetFactory : public PropertyWidgetFactory {
 public:
     virtual PropertyWidget* createWidget(Property*) const;
+
+    virtual bool lazyInstantiation(Property* prop) const;
 };
 
 } // namespace

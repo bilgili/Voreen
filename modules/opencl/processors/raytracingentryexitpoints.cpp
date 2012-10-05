@@ -48,9 +48,9 @@ RaytracingEntryExitPoints::RaytracingEntryExitPoints()
       context_(0),
       queue_(0),
       prog_(0),
-      entryPort_(Port::OUTPORT, "image.entrypoints"),
-      exitPort_(Port::OUTPORT, "image.exitpoints"),
-      inport_(Port::INPORT, "proxgeometry.geometry")
+      entryPort_(Port::OUTPORT, "image.entrypoints", "Entry-points Output"),
+      exitPort_(Port::OUTPORT, "image.exitpoints", "Exit-points Output"),
+      inport_(Port::INPORT, "proxgeometry.geometry", "Proxy-geometry Input")
 {
     addProperty(useFloatRenderTargets_);
     addProperty(camera_);

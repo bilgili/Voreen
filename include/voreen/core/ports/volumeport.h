@@ -29,6 +29,9 @@
 #include "voreen/core/ports/genericport.h"
 #include "voreen/core/datastructures/volume/volume.h"
 
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/optionproperty.h"
+
 namespace voreen {
 
 #ifdef DLL_TEMPLATE_INST
@@ -37,9 +40,14 @@ template class VRN_CORE_API GenericPort<VolumeBase>;
 
 class VRN_CORE_API VolumePort : public GenericPort<VolumeBase>, public VolumeHandleObserver {
 public:
-    VolumePort(PortDirection direction, const std::string& name,
+    VolumePort(PortDirection direction, const std::string& id, const std::string& guiName = "",
                bool allowMultipleConnections = false,
                Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT);
+
+    virtual std::string getClassName() const {return "VolumePort";}
+
+    virtual std::string getContentDescription() const;
+    virtual std::string getContentDescriptionHTML() const;
 
     /**
      * Assigns the passed volume handle to the port.
@@ -61,6 +69,44 @@ public:
      * Implementation of VolumeHandleObserver interface.
      */
     virtual void volumeChange(const VolumeBase* source);
+
+    /**
+     * Shows or hides the port's texture access properties in the user interface. 
+     *
+     * These properties (texFilterMode_, texClampMode_, texBorderIntensity_) determine how
+     * a processor accesses the volume data it receives via an inport. By default, 
+     * the texture access properties are hidden.
+     *
+     * @note Texture access properties can only be shown for inports.
+     */
+    void showTextureAccessProperties(bool show);
+    
+    /**
+     * Returns the port's texture filter mode property, which may be used 
+     * to determine how a processor accesses its volume input data.
+     * The property is only available for inports.
+     *
+     * @see showTextureAccessProperties
+     */
+    IntOptionProperty& getTextureFilterModeProperty();
+
+    /**
+     * Returns the port's texture clamp mode property, which may be used 
+     * to determine how a processor accesses its volume input data.
+     * The property is only available for inports.
+     *
+     * @see showTextureAccessProperties
+     */
+    GLEnumOptionProperty& getTextureClampModeProperty();
+
+    /**
+     * Returns the port's texture border intensity property, which may be used 
+     * to determine how a processor accesses its volume input data.
+     * The property is only available for inports.
+     *
+     * @see showTextureAccessProperties
+     */
+    FloatProperty& getTextureBorderIntensityProperty();
 
     /// This port type supports caching.
     virtual bool supportsCaching() const;
@@ -93,6 +139,11 @@ public:
         throw (VoreenException);
 
     virtual tgt::col3 getColorHint() const;
+
+protected:
+    IntOptionProperty texFilterMode_;         ///< texture filtering mode to use for volume access
+    GLEnumOptionProperty texClampMode_;       ///< texture clamp mode to use for the volume
+    FloatProperty texBorderIntensity_;        ///< clamp border intensity
 };
 
 } // namespace

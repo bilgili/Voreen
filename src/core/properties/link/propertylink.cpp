@@ -209,7 +209,7 @@ void PropertyLink::setLinkEvaluator(LinkEvaluatorBase* evaluator) {
     tgtAssert(evaluator, "Null pointer passed");
 
     if(evaluator_ && (evaluator_ != evaluator))
-        delete evaluator;
+        delete evaluator_;
 
     evaluator_ = evaluator;
 

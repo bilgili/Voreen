@@ -40,7 +40,7 @@ const std::string DoubleThreshold::loggerCat_("voreen.DoubleThreshold");
 DoubleThreshold::DoubleThreshold()
     : ITKProcessor(),
     inport_(Port::INPORT, "input"),
-    outport_(Port::OUTPORT, "output", 0),
+    outport_(Port::OUTPORT, "output"),
     threshold1_("threshold1", "Threshold 1", 0.0f, 0.0f, 65535.0f),
     threshold2_("threshold2", "Threshold 2", 20.0f, 0.0f, 65535.0f),
     threshold3_("threshold3", "Threshold 3", 200.0f, 0.0f, 65535.0f),

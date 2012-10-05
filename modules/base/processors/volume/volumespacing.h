@@ -43,8 +43,8 @@ public:
     virtual Processor* create() const;
 
     virtual std::string getCategory() const   { return "Volume Processing"; }
-    virtual std::string getClassName() const  { return "VolumeSpacing"; }
-    virtual CodeState getCodeState() const    { return CODE_STATE_TESTING; }
+    virtual std::string getClassName() const  { return "VolumeSpacing";     }
+    virtual CodeState getCodeState() const    { return CODE_STATE_STABLE;   }
 
 protected:
     virtual void setDescriptions() {

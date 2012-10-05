@@ -37,7 +37,7 @@ class LinkEvaluatorIdGeneric : public LinkEvaluatorBase {
 public:
     virtual void eval(Property* src, Property* dst) throw (VoreenException);
 
-    virtual std::string name() const { return "id"; }
+    virtual std::string getGuiName() const { return "Identity"; }
 
     virtual bool arePropertiesLinkable(const Property* p1, const Property* p2) const;
 };
@@ -62,7 +62,7 @@ class LinkEvaluatorIdGenericConversion : public LinkEvaluatorBase {
 public:
     virtual void eval(Property* src, Property* dst) throw (VoreenException);
 
-    virtual std::string name() const { return "id"; }
+    virtual std::string getGuiName() const { return "Identity (type conversion)"; }
 
     virtual bool arePropertiesLinkable(const Property* p1, const Property* p2) const;
 };
@@ -103,7 +103,7 @@ class LinkEvaluatorIdNormalizedGeneric : public LinkEvaluatorBase {
 public:
     virtual void eval(Property* src, Property* dst) throw (VoreenException);
 
-    virtual std::string name() const { return "id normalized"; }
+    virtual std::string getGuiName() const { return "Normalization"; }
 
     virtual bool arePropertiesLinkable(const Property* p1, const Property* p2) const;
 };
@@ -133,7 +133,7 @@ class LinkEvaluatorIdNormalizedGenericConversion : public LinkEvaluatorBase {
 public:
     virtual void eval(Property* src, Property* dst) throw (VoreenException);
 
-    virtual std::string name() const { return "id normalized"; }
+    virtual std::string getGuiName() const { return "Normalization (type conversion)"; }
 
     virtual bool arePropertiesLinkable(const Property* p1, const Property* p2) const;
 };

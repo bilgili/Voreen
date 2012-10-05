@@ -3,6 +3,7 @@
 ####################################################################################################
 
 # standard modules without external dependencies (enabled by default)
+OPTION(VRN_MODULE_ADVANCEDLIGHTING "Provides global illumination volume rendering"              ON )
 OPTION(VRN_MODULE_BASE          "Provides basic rendering and data processing functionality"    ON )
 OPTION(VRN_MODULE_CONNEXE       "Connected component analysis using the Connexe library"        ON )
 OPTION(VRN_MODULE_DYNAMICGLSL         
@@ -11,6 +12,7 @@ OPTION(VRN_MODULE_FLOWREEN      "Provides flow visualization techniques"        
 OPTION(VRN_MODULE_PLOTTING      "Provides plotting components"                                  ON )
 OPTION(VRN_MODULE_PVM           "Provides a volume reader for Stefan Roettger's PVM format"     ON )
 OPTION(VRN_MODULE_SEGY          "Provides a volume reader for the SEGY format"                  ON )
+OPTION(VRN_MODULE_STEREOSCOPY   "Provides stereo rendering"                                     ON )
 OPTION(VRN_MODULE_STAGING       "Experimental code almost ready for productive use"             ON )
 OPTION(VRN_MODULE_VOLUMELABELING "Provides interactive volume labeling"                         ON )
 

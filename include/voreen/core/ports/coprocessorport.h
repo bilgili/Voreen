@@ -32,9 +32,10 @@ namespace voreen {
 
 class VRN_CORE_API CoProcessorPort : public Port {
 public:
-    CoProcessorPort(PortDirection direction, const std::string& name, const bool allowMultipleConnections = false,
+    CoProcessorPort(PortDirection direction, const std::string& id, const std::string& guiName = "", bool allowMultipleConnections = false,
                     Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT);
-
+    virtual std::string getClassName() const { return "CoProcessorPort"; }
+    
     std::vector<Processor*> getConnectedProcessors() const;
 
     ///Get the first connected Processor

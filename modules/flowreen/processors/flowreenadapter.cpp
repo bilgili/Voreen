@@ -34,8 +34,8 @@ namespace voreen {
 FlowreenAdapter::FlowreenAdapter()
     : Processor(),
     processedVolumeHandle_(0),
-    volInport_(Port::INPORT, "volumehandle.input"),
-    volOutport_(Port::OUTPORT, "volumehandle.output", true)
+    volInport_(Port::INPORT, "volumehandle.input", "Volume Input"),
+    volOutport_(Port::OUTPORT, "volumehandle.output", "Volume Output", true)
 {
     addPort(volInport_);
     addPort(volOutport_);

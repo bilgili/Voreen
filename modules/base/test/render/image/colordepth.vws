@@ -1,8 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="11">
-            <MetaData />
+        <ProcessorNetwork version="13">
             <Processors>
                 <Processor type="SingleVolumeRaycaster" name="SingleVolumeRaycaster" id="ref0">
                     <MetaData>
@@ -10,7 +9,7 @@
                     </MetaData>
                     <Properties>
                         <Property name="applyLightAttenuation" value="false" />
-                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45.00000381" id="ref18">
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45.00000381" id="ref15">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="35" y="108" />
                             </MetaData>
@@ -50,14 +49,19 @@
                             <value x="0.37254903" y="0.37254903" z="0.37254903" w="1" />
                         </Property>
                         <Property name="materialShininess" value="60" />
+                        <Property name="raycast.prg" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="samplingRate" value="3" />
                         <Property name="shading" value="phong" />
                         <Property name="textureBorderIntensity" value="0" />
                         <Property name="textureClampMode_" value="clamp-to-edge" />
                         <Property name="textureFilterMode_" value="linear" />
-                        <Property name="transferFunction">
+                        <Property name="transferFunction" AlwaysFitDomain="false">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="695" y="250" width="571" height="274" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
                             <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
                                 <Keys>
@@ -72,21 +76,81 @@
                             </TransferFunction>
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeOrigin" id="ref23">
+                                    <value x="450" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeOrigin" id="ref25">
+                                    <value x="450" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="image.output.renderSizeReceive" id="ref22">
+                                    <value x="450" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.output1">
+                            <Properties>
+                                <Property name="image.output1.renderSizeReceive">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.output2">
+                            <Properties>
+                                <Property name="image.output2.renderSizeReceive">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas" id="ref9">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="597" y="350" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="21" y="111" width="450" height="400" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="129" y="120" width="450" height="400" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="129" y="120" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="450" y="400" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
-                        <Property name="canvasSize" id="ref20">
+                        <Property name="canvasSize" id="ref16">
                             <value x="450" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/disabled.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/disabled.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref21">
+                                    <value x="450" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSource" name="VolumeSource" id="ref6">
@@ -96,6 +160,12 @@
                     <Properties>
                         <Property name="volumeURL" url="input/aneurism.vvd?preferredReader=VvdVolumeReader" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="MeshEntryExitPoints" name="MeshEntryExitPoints" id="ref8">
@@ -103,7 +173,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="1048" y="-150" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45.00000381" id="ref19">
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="502" fovy="45.00000381" id="ref14">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="721" y="372" />
                             </MetaData>
@@ -117,6 +187,27 @@
                         <Property name="useCulling" value="true" />
                         <Property name="useFloatRenderTargets" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="proxgeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeReceive" id="ref24">
+                                    <value x="450" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeReceive" id="ref26">
+                                    <value x="450" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -152,6 +243,16 @@
                         <Property name="topClippingPlane" value="255" />
                         <Property name="useClipping" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ColorDepth" name="ColorDepth" id="ref1">
@@ -162,7 +263,18 @@
                         <Property name="enable" value="false" />
                         <Property name="factor" value="1" />
                         <Property name="mode" value="light-dark-replace" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ColorDepth" name="ColorDepth Lightdark repl" id="ref2">
@@ -173,22 +285,44 @@
                         <Property name="enable" value="true" />
                         <Property name="factor" value="0.80000001" />
                         <Property name="mode" value="light-dark-replace" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
-                <Processor type="Canvas" name="Canvas 2" id="ref14">
+                <Processor type="Canvas" name="Canvas 2" id="ref10">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="767" y="347" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="275" y="168" width="450" height="400" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="389" y="187" width="450" height="400" />
                     </MetaData>
                     <Properties>
-                        <Property name="canvasSize" id="ref21">
+                        <Property name="canvasSize" id="ref17">
                             <value x="450" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/lightdark-repl.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/lightdark-repl.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="450" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ColorDepth" name="ColorDepth Lightdark mod" id="ref3">
@@ -199,7 +333,18 @@
                         <Property name="enable" value="true" />
                         <Property name="factor" value="1.5" />
                         <Property name="mode" value="light-dark-modulate" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ColorDepth" name="ColorDepth chromadepth" id="ref4">
@@ -210,7 +355,18 @@
                         <Property name="enable" value="true" />
                         <Property name="factor" value="1.85000002" />
                         <Property name="mode" value="chromadepth" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ColorDepth" name="ColorDepth pseudo-chromadepth" id="ref5">
@@ -221,92 +377,96 @@
                         <Property name="enable" value="true" />
                         <Property name="factor" value="0.75" />
                         <Property name="mode" value="pseudo-chromadepth" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.inport">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.outport">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
-                <Processor type="SingleScale" name="SingleScale" id="ref10">
-                    <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="767" y="247" />
-                    </MetaData>
-                    <Properties>
-                        <Property name="distributeEvents" value="true" />
-                        <Property name="scaling" value="keep-ratio-all" />
-                    </Properties>
-                    <InteractionHandlers />
-                </Processor>
-                <Processor type="Canvas" name="Canvas 3" id="ref15">
+                <Processor type="Canvas" name="Canvas 3" id="ref11">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="978" y="348" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="439" y="267" width="450" height="400" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="577" y="319" width="450" height="400" />
                     </MetaData>
                     <Properties>
-                        <Property name="canvasSize" id="ref22">
+                        <Property name="canvasSize" id="ref18">
                             <value x="450" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/lightdark-mod.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/lightdark-mod.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="450" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
-                <Processor type="SingleScale" name="SingleScale 2" id="ref11">
-                    <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="973" y="244" />
-                    </MetaData>
-                    <Properties>
-                        <Property name="distributeEvents" value="true" />
-                        <Property name="scaling" value="keep-ratio-all" />
-                    </Properties>
-                    <InteractionHandlers />
-                </Processor>
-                <Processor type="Canvas" name="Canvas 4" id="ref16">
+                <Processor type="Canvas" name="Canvas 4" id="ref12">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="1178" y="348" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="38" y="484" width="450" height="400" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="159" y="441" width="450" height="400" />
                     </MetaData>
                     <Properties>
-                        <Property name="canvasSize" id="ref23">
+                        <Property name="canvasSize" id="ref19">
                             <value x="450" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/chromadepth.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/chromadepth.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="450" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
-                <Processor type="SingleScale" name="SingleScale 3" id="ref12">
-                    <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="1174" y="244" />
-                    </MetaData>
-                    <Properties>
-                        <Property name="distributeEvents" value="true" />
-                        <Property name="scaling" value="keep-ratio-all" />
-                    </Properties>
-                    <InteractionHandlers />
-                </Processor>
-                <Processor type="Canvas" name="Canvas 5" id="ref17">
+                <Processor type="Canvas" name="Canvas 5" id="ref13">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="1388" y="349" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="360" y="544" width="450" height="400" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="528" y="524" width="450" height="400" />
                     </MetaData>
                     <Properties>
-                        <Property name="canvasSize" id="ref24">
+                        <Property name="canvasSize" id="ref20">
                             <value x="450" y="400" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/pseudo-chromadepth.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/pseudo-chromadepth.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
-                    <InteractionHandlers />
-                </Processor>
-                <Processor type="SingleScale" name="SingleScale 4" id="ref13">
-                    <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="1384" y="248" />
-                    </MetaData>
-                    <Properties>
-                        <Property name="distributeEvents" value="true" />
-                        <Property name="scaling" value="keep-ratio-all" />
-                    </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="450" y="400" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -403,123 +563,103 @@
                     <Outport name="image.outport">
                         <Processor type="ColorDepth" ref="ref2" />
                     </Outport>
-                    <Inport name="image.inport">
-                        <Processor type="SingleScale" ref="ref10" />
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref10" />
                     </Inport>
                 </Connection>
                 <Connection>
                     <Outport name="image.outport">
                         <Processor type="ColorDepth" ref="ref3" />
                     </Outport>
-                    <Inport name="image.inport">
-                        <Processor type="SingleScale" ref="ref11" />
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref11" />
                     </Inport>
                 </Connection>
                 <Connection>
                     <Outport name="image.outport">
                         <Processor type="ColorDepth" ref="ref4" />
                     </Outport>
-                    <Inport name="image.inport">
-                        <Processor type="SingleScale" ref="ref12" />
+                    <Inport name="image.input">
+                        <Processor type="Canvas" ref="ref12" />
                     </Inport>
                 </Connection>
                 <Connection>
                     <Outport name="image.outport">
                         <Processor type="ColorDepth" ref="ref5" />
                     </Outport>
-                    <Inport name="image.inport">
-                        <Processor type="SingleScale" ref="ref13" />
-                    </Inport>
-                </Connection>
-                <Connection>
-                    <Outport name="image.outport">
-                        <Processor type="SingleScale" ref="ref10" />
-                    </Outport>
                     <Inport name="image.input">
-                        <Processor type="Canvas" ref="ref14" />
-                    </Inport>
-                </Connection>
-                <Connection>
-                    <Outport name="image.outport">
-                        <Processor type="SingleScale" ref="ref11" />
-                    </Outport>
-                    <Inport name="image.input">
-                        <Processor type="Canvas" ref="ref15" />
-                    </Inport>
-                </Connection>
-                <Connection>
-                    <Outport name="image.outport">
-                        <Processor type="SingleScale" ref="ref12" />
-                    </Outport>
-                    <Inport name="image.input">
-                        <Processor type="Canvas" ref="ref16" />
-                    </Inport>
-                </Connection>
-                <Connection>
-                    <Outport name="image.outport">
-                        <Processor type="SingleScale" ref="ref13" />
-                    </Outport>
-                    <Inport name="image.input">
-                        <Processor type="Canvas" ref="ref17" />
+                        <Processor type="Canvas" ref="ref13" />
                     </Inport>
                 </Connection>
             </Connections>
             <CoProcessorConnections />
             <PropertyLinks>
                 <PropertyLink>
-                    <SourceProperty type="CameraProperty" ref="ref18" />
-                    <DestinationProperty type="CameraProperty" ref="ref19" />
+                    <SourceProperty type="CameraProperty" ref="ref14" />
+                    <DestinationProperty type="CameraProperty" ref="ref15" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="CameraProperty" ref="ref19" />
-                    <DestinationProperty type="CameraProperty" ref="ref18" />
-                    <Evaluator type="LinkEvaluatorCameraId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="IntVec2Property" ref="ref20" />
-                    <DestinationProperty type="IntVec2Property" ref="ref21" />
+                    <SourceProperty type="IntVec2Property" ref="ref16" />
+                    <DestinationProperty type="IntVec2Property" ref="ref17" />
                     <Evaluator type="LinkEvaluatorIVec2Id" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="IntVec2Property" ref="ref21" />
+                    <SourceProperty type="IntVec2Property" ref="ref17" />
+                    <DestinationProperty type="IntVec2Property" ref="ref16" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref17" />
+                    <DestinationProperty type="IntVec2Property" ref="ref18" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref18" />
+                    <DestinationProperty type="IntVec2Property" ref="ref17" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref18" />
+                    <DestinationProperty type="IntVec2Property" ref="ref19" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref19" />
+                    <DestinationProperty type="IntVec2Property" ref="ref18" />
+                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntVec2Property" ref="ref19" />
                     <DestinationProperty type="IntVec2Property" ref="ref20" />
                     <Evaluator type="LinkEvaluatorIVec2Id" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="IntVec2Property" ref="ref21" />
-                    <DestinationProperty type="IntVec2Property" ref="ref22" />
+                    <SourceProperty type="IntVec2Property" ref="ref20" />
+                    <DestinationProperty type="IntVec2Property" ref="ref19" />
                     <Evaluator type="LinkEvaluatorIVec2Id" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="IntVec2Property" ref="ref22" />
-                    <DestinationProperty type="IntVec2Property" ref="ref21" />
-                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                    <SourceProperty ref="ref21" />
+                    <DestinationProperty ref="ref22" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="IntVec2Property" ref="ref22" />
-                    <DestinationProperty type="IntVec2Property" ref="ref23" />
-                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                    <SourceProperty type="CameraProperty" ref="ref15" />
+                    <DestinationProperty type="CameraProperty" ref="ref14" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="IntVec2Property" ref="ref23" />
-                    <DestinationProperty type="IntVec2Property" ref="ref22" />
-                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                    <SourceProperty ref="ref23" />
+                    <DestinationProperty ref="ref24" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="IntVec2Property" ref="ref23" />
-                    <DestinationProperty type="IntVec2Property" ref="ref24" />
-                    <Evaluator type="LinkEvaluatorIVec2Id" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="IntVec2Property" ref="ref24" />
-                    <DestinationProperty type="IntVec2Property" ref="ref23" />
-                    <Evaluator type="LinkEvaluatorIVec2Id" />
+                    <SourceProperty ref="ref25" />
+                    <DestinationProperty ref="ref26" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
                 </PropertyLink>
             </PropertyLinks>
-            <PropertyStateCollections />
-            <PropertyStateFileReferences />
-            <PropertyStateDirectoryReferences />
         </ProcessorNetwork>
         <Animation />
     </Workspace>

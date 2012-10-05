@@ -28,9 +28,9 @@
 
 namespace voreen {
 
-PlotPort::PlotPort(PortDirection direction, const std::string& name,
+PlotPort::PlotPort(PortDirection direction, const std::string& name, const std::string& guiName,
         bool allowMultipleConnections, Processor::InvalidationLevel invalidationLevel)
- : GenericPort<PlotBase>(direction, name, allowMultipleConnections, invalidationLevel)
+ : GenericPort<PlotBase>(direction, name, guiName, allowMultipleConnections, invalidationLevel)
 {
     if (isOutport())
         setData(0);
@@ -55,7 +55,7 @@ void PlotPort::setData(const PlotBase* handle, bool deletePrevious) {
     const PlotBase* tempVol = portData_;
     if (handle != 0 || portData_ != 0) {
         portData_ = handle;
-        invalidate();
+        invalidatePort();
     }
     else {
         portData_ = 0;

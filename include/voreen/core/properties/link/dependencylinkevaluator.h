@@ -30,12 +30,15 @@
 
 namespace voreen {
 
+/** 
+ *  @deprecated
+ */
 class VRN_CORE_API DependencyLinkEvaluator : public LinkEvaluatorBase {
 public:
     DependencyLinkEvaluator();
 
     virtual void eval(Property* src, Property* dest) throw (VoreenException);
-    std::string name() const;
+    std::string getGuiName() const;
 
     virtual void serialize(XmlSerializer&) const;
     virtual void deserialize(XmlDeserializer&);

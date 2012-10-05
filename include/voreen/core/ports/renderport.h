@@ -27,6 +27,10 @@
 #define VRN_RENDERPORT_H
 
 #include "voreen/core/ports/port.h"
+#include "voreen/core/properties/vectorproperty.h"
+#include "voreen/core/properties/callmemberaction.h"
+#include "voreen/core/properties/link/linkevaluatorbase.h"
+
 #include "tgt/textureunit.h"
 #include "tgt/tgt_gl.h"
 #include "tgt/gpucapabilities.h"
@@ -41,16 +45,76 @@ namespace voreen {
 
 class RenderTarget;
 
+/**
+ * Used by a render inport for requesting certain input dimensions of an predecessing render outport via a property link.
+ * Serves as source of a render size link, i.e., it is expected to be linked to a render outport's RenderSizeReceiveProperty.
+ */
+class VRN_CORE_API RenderSizeOriginProperty : public IntVec2Property {
+public:
+    RenderSizeOriginProperty();
+    RenderSizeOriginProperty(const std::string& id, const std::string& guiText, const tgt::ivec2& value = tgt::ivec2(128),
+        int invalidationLevel=1);
+    virtual ~RenderSizeOriginProperty(){};
+    virtual Property* create() const               { return new RenderSizeOriginProperty(); }
+    virtual std::string getClassName() const       { return "RenderSizeOriginProperty";     }
+    virtual std::string getTypeDescription() const { return "IntVector2";                   }
+};
+
+/**
+ * Used by a render outport for receiving its rendering dimensions via a property link from an render inport. 
+ * Serves as destination of a render size link, i.e., it is expected to be linked to a render inport's RenderSizeOriginProperty.
+ */
+class VRN_CORE_API RenderSizeReceiveProperty : public IntVec2Property {
+public:
+    RenderSizeReceiveProperty();
+    RenderSizeReceiveProperty(const std::string& id, const std::string& guiText, const tgt::ivec2& value = tgt::ivec2(128),
+        int invalidationLevel=1);
+    virtual ~RenderSizeReceiveProperty(){};
+    virtual Property* create() const               { return new RenderSizeReceiveProperty(); }
+    virtual std::string getClassName() const       { return "RenderSizeReceiveProperty";     }
+    virtual std::string getTypeDescription() const { return "IntVector2";                    }
+};
+
+/**
+ * Uni-directionally propagates a render size (tgt::ivec2) from a RenderSizeOriginProperty to a RenderSizeReceiveProperty.
+ */
+class VRN_CORE_API LinkEvaluatorRenderSize : public LinkEvaluatorBase {
+public:
+    virtual LinkEvaluatorBase* create() const { return new LinkEvaluatorRenderSize(); }
+    virtual std::string getClassName() const  { return "LinkEvaluatorRenderSize";     }
+    virtual std::string getGuiName() const    { return "Render Size";                 }
+
+    virtual bool arePropertiesLinkable(const Property* p1, const Property* p2) const;
+    virtual void eval(Property* src, Property* dst) throw (VoreenException);
+};
+    
+//-----------------------------------------------------------------------------
+
 class VRN_CORE_API RenderPort : public Port {
 
     friend class RenderProcessor;
     friend class NetworkEvaluator;
 
 public:
-    RenderPort(PortDirection direction, const std::string& name, bool allowMultipleConnections = false,
+    /**
+     * Determines a port's rendering size propagation behaviour.
+     */
+    enum RenderSizePropagation {
+        RENDERSIZE_DEFAULT,     ///< Port is neither a size origin nor does it receive an output size. 
+        RENDERSIZE_ORIGIN,      ///< Port requests an input size via a RenderSizeOriginProperty (inports only).
+        RENDERSIZE_RECEIVER     ///< Port receives its output dimensions via a RenderSizeReceiveProperty (outports only).
+    };
+
+    RenderPort(PortDirection direction, const std::string& id, const std::string& guiName = "", bool allowMultipleConnections = false,
                Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT,
-               GLint internalColorFormat=GL_RGBA16, GLint internalDepthFormat=GL_DEPTH_COMPONENT24);
+               RenderSizePropagation renderSizePropagation = RENDERSIZE_DEFAULT,
+               GLint internalColorFormat = GL_RGBA16, GLint internalDepthFormat = GL_DEPTH_COMPONENT24);
     virtual ~RenderPort();
+
+    virtual std::string getClassName() const { return "RenderPort"; }
+
+    virtual std::string getContentDescription() const;
+    virtual std::string getContentDescriptionHTML() const;
 
     /**
      * @brief Activates the outport's RenderTarget, so that all subsequent rendering operations
@@ -244,6 +308,48 @@ public:
     /// @overload
     void bindTextures(tgt::TextureUnit& colorUnit, tgt::TextureUnit& depthUnit);
 
+    /// Returns the rendering size propagation behaviour of the port.
+    RenderSizePropagation getRenderSizePropagation() const;
+
+    /** 
+     * Returns the port's size origin property, if it has one,
+     * or 0 otherwise.
+     */
+    RenderSizeOriginProperty* getSizeOriginProperty() const;
+    
+    /**
+     * Returns the port's size receiver property, if it has one,
+     * or 0 otherwise.
+     */
+    RenderSizeReceiveProperty* getSizeReceiveProperty() const;
+
+    /**
+     * Requests the passed input size by assigning it to the port's RenderSizeOriginProperty.
+     *
+     * @note Only allowed for an inport that is a RENDERSIZE_ORIGIN.
+     */
+    void requestSize(const tgt::ivec2& size);
+
+    /**
+     * Returns the output size the port has received via its RenderSizeReceiveProperty.
+     *
+     * @note Only allowed for an outport that is a RENDERSIZE_RECEIVER.
+     */
+    tgt::ivec2 getReceivedSize() const;
+
+    /**
+     * Registers a function that will be called when the value of the port's 
+     * RenderSizeReceiveProperty changes. 
+     *
+     * @note Only allowed for an outport that is a RENDERSIZE_RECEIVER.
+     *
+     * @param target The class whose member function is to be called.
+     * @param function Function pointer of the function to be called.
+     *
+     */
+    template<typename T>
+    void onSizeReceiveChange(T* target, void (T::*function)());
+
     /**
      * Writes the currently stored rendering to an image file.
      *
@@ -271,12 +377,6 @@ public:
      */
     template<typename T>
     tgt::Vector4<T>* readColorBuffer() throw (VoreenException);
-
-    // administrative stuff regarding RenderPort size origins.
-    void sizeOriginChanged(void* so);
-    void* getSizeOrigin() const;
-    virtual bool testConnectivity(const Port* inport) const;
-    bool doesSizeOriginConnectFailWithPort(Port* inport) const;
 
 protected:
     /**
@@ -332,7 +432,8 @@ private:
 
     bool validResult_;
     tgt::ivec2 size_; //neccessary for inports
-    void* sizeOrigin_;
+
+    RenderSizePropagation renderSizePropagation_;
 
     GLint internalColorFormat_;
     GLint internalDepthFormat_;
@@ -341,6 +442,21 @@ private:
 
     static const std::string loggerCat_; ///< category used in logging
 };
+
+template<typename T>
+void voreen::RenderPort::onSizeReceiveChange(T* target, void (T::*function)()) {
+    if (!isOutport()) {
+        LERROR("onSizeReceiveChange() may only be called on an outport: " << getQualifiedName());
+        return;
+    }
+    if (getRenderSizePropagation() != RENDERSIZE_RECEIVER) {
+        LERROR("onSizeReceiveChange() may only be called on an outport that is a port size receiver: " << getQualifiedName());
+        return;
+    }
+    
+    tgtAssert(getSizeReceiveProperty(), "port size receiver has no SizeReceiveProperty");
+    getSizeReceiveProperty()->onChange(CallMemberAction<T>(target, function)); 
+}
 
 template<typename T>
 tgt::Vector4<T>* voreen::RenderPort::readColorBuffer() throw (VoreenException) {

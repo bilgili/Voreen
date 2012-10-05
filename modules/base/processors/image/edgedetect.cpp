@@ -39,8 +39,8 @@ EdgeDetect::EdgeDetect()
       blendMode_("blendMode", "Blend mode", Processor::INVALID_PROGRAM),
       edgeStyle_("edgeStyle", "Edge style", Processor::INVALID_PROGRAM),
       edgeColor_("edgeColor", "Edge color", tgt::vec4(0.0f, 0.0f, 0.0f, 1.0f)),
-      inport_(Port::INPORT, "image.inport"),
-      outport_(Port::OUTPORT, "image.outport")
+      inport_(Port::INPORT, "image.inport", "Image Input"),
+      outport_(Port::OUTPORT, "image.outport", "Image Output")
 {
     edgeColor_.setViews(Property::COLOR);
     backgroundColor_.setViews(Property::COLOR);

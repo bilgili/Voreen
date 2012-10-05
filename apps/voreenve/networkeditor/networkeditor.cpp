@@ -23,270 +23,544 @@
  *                                                                                 *
  ***********************************************************************************/
 
+//super class
 #include "networkeditor.h"
-
-#include "aggregationgraphicsitem.h"
-#include "arrowheadselectiongraphicsitem.h"
-#include "connectionbundlehandle.h"
-#include "linkarrowgraphicsitem.h"
-#include "portarrowgraphicsitem.h"
-#include "portgraphicsitem.h"
-#include "processorgraphicsitem.h"
-#include "progressbargraphicsitem.h"
-#include "propertygraphicsitem.h"
-#include "propertylinkdialog.h"
-#include "textgraphicsitem.h"
-
-#include "voreen/core/voreenapplication.h"
-#include "voreen/core/datastructures/meta/aggregationmetadata.h"
-#include "voreen/core/datastructures/meta/primitivemetadata.h"
-#include "voreen/core/datastructures/meta/selectionmetadata.h"
-#include "voreen/core/datastructures/meta/zoommetadata.h"
+#include "networkeditor_settings.h"
+//general includes
 #include "voreen/core/network/networkevaluator.h"
+#include "voreen/core/network/processornetwork.h"
 #include "voreen/core/processors/processorfactory.h"
-#include "voreen/core/ports/port.h"
+
+//meta informations
+#include "voreen/core/datastructures/meta/selectionmetadata.h"
+#include "voreen/core/datastructures/meta/aggregationmetadata.h"
+
+//properties
 #include "voreen/core/properties/cameraproperty.h"
-#include "voreen/core/properties/propertyowner.h"
-#include "voreen/core/properties/link/dependencylinkevaluator.h"
-#include "voreen/core/properties/link/linkevaluatorfactory.h"
-#include "voreen/core/network/workspace.h"
-#include "voreen/core/io/serialization/xmlserializer.h"
-#include "voreen/core/io/serialization/xmldeserializer.h"
-#include "voreen/core/processors/processorfactory.h"
-#include "voreen/core/datastructures/transfunc/transfuncfactory.h"
-#include "voreen/core/datastructures/meta/positionmetadata.h"
+#include "voreen/core/properties/link/linkevaluatorid.h"
 
-#include "hastooltip.h"
+//dialogs
+#include "dialogs/propertylinkdialog.h"
 
-#include <QApplication>
+//styles
+#include "styles/nwestyle_base.h"
+#include "styles/nwestyle_classic.h"
+
+//graphic items
+    //core
+#include "graphicitems/core/processorgraphicsitem.h"
+#include "graphicitems/core/aggregationgraphicsitem.h"
+#include "graphicitems/core/portgraphicsitem.h"
+#include "graphicitems/core/propertygraphicsitem.h"
+    //connections
+#include "graphicitems/connections/portarrowgraphicsitem.h"
+#include "graphicitems/connections/propertylinkarrowgraphicsitem.h"
+#include "graphicitems/connections/portownerlinkarrowgraphicsitem.h"
+#include "graphicitems/connections/portsizelinkarrowgraphicsitem.h"
+    // utils
+#include "graphicitems/utils/widgettogglebuttongraphicsitem.h"
+
+#include "graphicitems/utils/progressbargraphicsitem.h"
+
+// editor buttons
+#include <QToolButton>
 #include <QBoxLayout>
 #include <QButtonGroup>
-#include <QClipboard>
-#include <QComboBox>
-#include <QDesktopServices>
-#include <QFileDialog>
 #include <QMessageBox>
-#include <QMouseEvent>
-#include <QPoint>
-#include <QTimer>
-#include <QToolButton>
-#include <QTransform>
-#include <QUrl>
+#include <QTextStream>
+#include <QComboBox>
 #include <QSpinBox>
+//events
+#include <QWheelEvent>
+#include <QScrollBar>
 
-#include <cmath>
-#include <iostream>
-
-namespace {
-    const QSize minimumSize = QSize(200, 200);
-    const qreal tooltiptimerRadius = 3.f;
-    const QSize layerButtonSize = QSize(30, 30);
-    const QSize autoLinkingSize = QSize(30, 30);
-    const QSize otherButtonSize = QSize(30, 30);
-    const int layerButtonSpacingX = 10;
-    const int layerButtonSpacingY = 10;
-    const int otherButtonSpacingX = 10;
-    const int otherButtonSpacingY = 10;
-    const QRectF sceneRectSpacing = QRect(-10, -10, 10, 10);
-    const qreal scaleFactorFactor = 0.9f;
-    const float minimalScaleFactor = 1.25f;
-    const qreal keyPressScaleFactor = pow(2.f, 0.35f);
-
-    tgt::Matrix3d QTransformToMat3(const QTransform& transform) {
-        return tgt::mat3(transform.m11(), transform.m12(), transform.m13(),
-                         transform.m21(), transform.m22(), transform.m23(),
-                         transform.m31(), transform.m32(), transform.m33());
-    }
-
-    QTransform Mat3ToQTransform(const tgt::Matrix3d& matrix) {
-        return QTransform(matrix.t00, matrix.t01, matrix.t02,
-                          matrix.t10, matrix.t11, matrix.t12,
-                          matrix.t20, matrix.t21, matrix.t22);
-    }
-}
+#include <QGraphicsTextItem>
+#include <QApplication>
+#include <QClipboard>
+#include <QMenu>
 
 namespace voreen {
 
-namespace {
-    bool isEqual(AggregationMetaData* metaData, AggregationGraphicsItem* graphicsItem) {
-        std::vector<Processor*> metaDataProcessors = metaData->getProcessors();
-        QList<Processor*> graphicsItemProcessors = graphicsItem->getProcessors();
-
-        foreach (Processor* metaDataProcessor, metaDataProcessors) {
-            int index = graphicsItemProcessors.indexOf(metaDataProcessor);
-            if (index == -1)
-                return false;
-        }
-
-        return true;
-    }
-
-    void disconnectPorts(PortGraphicsItem* outport, PortGraphicsItem* inport) {
-        tgtAssert(inport, "inport is null");
-        tgtAssert(outport->isOutport(), "disconnect called on inport");
-
-        inport->removeConnection(outport);
-        //// remove outport from inports connectedPorts
-        //const QList<PortGraphicsItem*>& connected = inport->getConnectedPorts();
-        //for (int i = 0; i < connected.size(); ++i) {
-        //    if (connected[i] == outport)
-        //        connected.erase(connected.begin() + i);
-        //}
-
-        outport->removeConnection(inport);
-        //// remove inport from outports connectedPorts
-        //connected = outport->getConnected();
-        //for (int i = 0; i < connected.size(); ++i) {
-        //    if (connected[i] == inport)
-        //        connected.erase(connected.begin() + i);
-        //}
-
-        // delete arrow
-        const QList<PortArrowGraphicsItem*>& arrowList = outport->getArrowList();
-        foreach (PortArrowGraphicsItem* arrow, arrowList) {
-            if (arrow->getDestinationItem() == inport) {
-                outport->removeArrow(arrow);
-                delete arrow;
-            }
-        }
-    }
-
-    bool clipboardHasValidContent() {
-        QClipboard* clipboard = QApplication::clipboard();
-        QString clip = clipboard->text();
-        std::stringstream stream(clip.toStdString());
-
-        XmlDeserializer d;
-        d.setUseAttributes(true);
-         try {
-            d.read(stream);
-        }
-        catch (SerializationException&) {
-            return false;
-        }
-
-        ProcessorNetwork* tmp = 0;
-        try {
-            d.deserialize("ProcessorNetwork", tmp);
-        }
-        catch (SerializationException& e){
-            LWARNINGC("voreen.NetworkEditor", "Error during deserialization of temporary network:" << e.what());
-            delete tmp;
-            return false;
-        }
-        delete tmp;
-        return true;
-    }
-
-} // namespace
-
-// Helper class for tooltip timer events
-class TooltipTimer : public QTimer {
-public:
-    TooltipTimer(QPoint p, qreal radius, QObject* parent = 0)
-        : QTimer(parent)
-        , p_(p)
-        , radius_(radius)
-        {}
-
-    qreal radius() {
-        return radius_;
-    }
-
-    void setRadius(qreal radius) {
-        radius_ = radius;
-    }
-
-    QPointF point() {
-        return p_;
-    }
-
-    void setPoint(QPoint p) {
-        p_ = p;
-    }
-
-    qreal distance(const QPoint & p) const {
-        return std::sqrt(pow(p_.x()-p.x(),2.)+pow(p_.y()-p.y(),2.));
-    }
-
-    /**
-     * This will stop the timer if p is farer away from the initialisation point than radius and returns true
-     * otherwise false
-     */
-    bool isDistant(const QPoint & p) {
-        if (distance(p) > radius_) {
-            stop();
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    /**
-     * This will restart the timer if p is farer away from the initialisation point than radius and set the point to p
-     */
-    void resetIfDistant(const QPoint & p, int msec) {
-        if (isDistant(p)) {
-            p_ = p;
-            start(msec);
-        }
-    }
-
-protected:
-    QPoint p_;
-    qreal radius_;
-};
-
-class LinkEvaluatorBase;
-
-const std::string NetworkEditor::loggerCat_("voreen.NetworkEditor");
+const std::string NetworkEditor::loggerCat_("voreenve.NetworkEditor");
 
 NetworkEditor::NetworkEditor(QWidget* parent, ProcessorNetwork* network, NetworkEvaluator* evaluator)
-    : QGraphicsView(parent)
+    : QGraphicsView(parent), ProcessorNetworkObserver()
+    //general members
     , processorNetwork_(network)
     , evaluator_(evaluator)
-    , selectedPortArrow_(0)
-    , selectedLinkArrow_(0)
-    , temporaryRenderPortImage_(0)
-    , needsScale_(false)
-    , networkEvaluatorIsLockedByButton_(false)
-    , activateTooltips_(true)
-    , activeTooltip_(0)
-    , layerButtonContainer_(0)
-    , dataflowLayerButton_(0)
-    , linkingLayerButton_(0)
-    , otherButtonContainer_(0)
-    , stopNetworkEvaluatorButton_(0)
+    //style, layer and cursor
     , currentLayer_(NetworkEditorLayerUndefined)
+    , currentCursorMode_(NetworkEditorCursorSelectMode)
+    , currentStyle_(new NWEStyle_Classic())
+    , currentToolTipMode_(true)
+    //editor buttons
+    , layerButtonContainer_(0), dataFlowLayerButton_(0), linkingLayerButton_(0)
+    , linkingLayerButtonContainer_(0), generalLinkingButton_(0), cameraLinkingButton_(0), portSizeLinkingButton_(0)
+    , generalLinkingLayerButtonContainer_(0), hideCameraLinksButton_(0), hidePortSizeLinksButton_(0), removeAllPropertyLinksButton_(0)    
+    , cameraLinkingLayerButtonContainer_(0), linkCamerasAutoButton_(0), linkCamerasButton_(0), removeAllCameraLinksButton_(0)
+    , portSizeLinkingLayerButtonContainer_(0), linkPortSizeAutoButton_(0), linkPortSizeButton_(0), removeAllPortSizeLinksButton_(0)
+    , stopButtonContainer_(0), stopNetworkEvaluatorButton_(0), networkEvaluatorIsLockedByButton_(false)
+    , navigationButtonContainer_(0), selectCursorButton_(0), moveCursorButton_(0), centerViewButton_(0)
+    //scale
+    , needsScale_(false)
+    //navigation
+    , translateScene_(false)
+    , translateSceneVector_(0.0,0.0)
+    , lastTranslateCenter_(0.0,0.0)
+    //drag&drop
+    , selectedPortArrow_(0)
 {
     tgtAssert(evaluator_ != 0, "passed null pointer");
-    //tgtAssert(getProcessorNetwork() != 0, "no network available");
+    tgtAssert(processorNetwork_ != 0, "no network available");
 
     setScene(new QGraphicsScene(this));
+    scene()->setSceneRect(sceneRectSpacing.x(), sceneRectSpacing.y(), sceneRectSpacing.width(), sceneRectSpacing.height());
+    scene()->setItemIndexMethod(QGraphicsScene::NoIndex);
+    //connect(scene(), SIGNAL(selectionChanged()), this, SLOT(selectionChangeSlot()));
 
-    translateScene_ = false;
-
-    setBackgroundBrush(QBrush(Qt::darkGray));
+    //paint settings
+    setBackgroundBrush(currentStyle_->NWEStyle_NWEBackgroundBrush);
     setCacheMode(CacheBackground);
     setRenderHint(QPainter::Antialiasing);
-    setTransformationAnchor(AnchorUnderMouse);
-    setResizeAnchor(AnchorViewCenter);
+    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    setResizeAnchor(QGraphicsView::AnchorViewCenter);
     setMouseTracking(true);
     setDragMode(QGraphicsView::RubberBandDrag);
     setMinimumSize(QSize(200, 200));
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    
+    //initilize buttons
+    initilizeEditorButtons();
 
+    //context menu
     createContextMenuActions();
-    createTimer();
-    createLayerButtons();
-    createOtherButtons();
-
-    connect(scene(), SIGNAL(selectionChanged()), this, SLOT(selectionChangeSlot()));
 }
 
-// ------------------------------------------------------------------------------------------------
-// initialization methods
-// ------------------------------------------------------------------------------------------------
+NetworkEditor::~NetworkEditor() {
+    delete currentStyle_;
+}
+//---------------------------------------------------------------------------------------------------------------
+//                  general members and functions                                                                
+//---------------------------------------------------------------------------------------------------------------
+ProcessorNetwork* NetworkEditor::getProcessorNetwork() const {
+    return processorNetwork_;
+}
+
+void NetworkEditor::setProcessorNetwork(ProcessorNetwork* network) {
+    //hideTooltip();
+
+    // a locked evaluator leads to a crash if a new network is loaded
+    evaluator_->unlock();
+    networkEvaluatorIsLockedByButton_ = false;
+    stopNetworkEvaluatorButton_->setIcon(QIcon(":/voreenve/icons/player-pause.png"));
+    stopNetworkEvaluatorButton_->setToolTip(tr("Stop the automatic evaluation of the network"));
+    stopNetworkEvaluatorButton_->setChecked(false);
+
+    if (processorNetwork_)
+        processorNetwork_->removeObserver(this);
+
+    resetScene();
+    //linkMap_.clear();
+
+    processorNetwork_ = network;
+
+    if (processorNetwork_)
+        processorNetwork_->addObserver(this);
+
+    generateGraphicsItems();
+
+    /*foreach (ProcessorGraphicsItem* processorItem, processorItemMap_.values())
+        processorItem->removeAllAggregationPrefixes();*/
+
+    /*foreach (AggregationGraphicsItem* aggregationItem, aggregationItems_)
+        aggregationItem->removeAllAggregationPrefixes();*/
+
+    if (getProcessorNetwork()) {
+        AggregationMetaDataContainer* aggregationMetaDataContainer = dynamic_cast<AggregationMetaDataContainer*>(getProcessorNetwork()->getMetaDataContainer().getMetaData("Aggregation"));
+        if (aggregationMetaDataContainer) {
+            std::vector<AggregationMetaData*> aggregations = aggregationMetaDataContainer->getAggregations();
+            aggregationMetaDataContainer->clearAggregations();
+
+            foreach (AggregationMetaData* metaData, aggregations)
+                createAggregationGraphicsItem(metaData);
+        }
+        //readBundlesFromMetaData();
+    }
+
+    resetMatrix();
+    resetTransform();
+
+    // do not scale immediately when we might be in visualization mode and this window might
+    // not have its final size yet
+    if (isVisible()) {
+        scaleView();
+        needsScale_ = false;
+    } else {
+        needsScale_ = true;
+    }
+
+    dataFlowLayerButton_->setChecked(true);
+    setLayer(NetworkEditorLayerDataFlow);
+
+    // set state of cam auto-linking button according to stored meta data, if present
+    BoolMetaData* autoMeta = 0;
+    if (processorNetwork_)
+        autoMeta = dynamic_cast<BoolMetaData*>(processorNetwork_->getMetaDataContainer().getMetaData("autoLinkCameras"));
+    if (autoMeta)
+        linkCamerasAutoButton_->setChecked(autoMeta->getValue());
+    else
+        linkCamerasAutoButton_->setChecked(true);
+    autoMeta = 0;
+    if (processorNetwork_)
+        autoMeta = dynamic_cast<BoolMetaData*>(processorNetwork_->getMetaDataContainer().getMetaData("autoLinkPortSize"));
+    if (autoMeta)
+        linkPortSizeAutoButton_->setChecked(autoMeta->getValue());
+    else
+        linkPortSizeAutoButton_->setChecked(true);
+
+    // camera auto linking
+    if (processorNetwork_ && linkCamerasAutoButton_->isChecked()) {
+        int numCreated = processorNetwork_->createPropertyLinksWithinSubNetwork<CameraProperty>(
+            processorNetwork_->getProcessors(), std::vector<std::string>(), new LinkEvaluatorCameraId());
+        if (numCreated)
+            LINFO("Created " << numCreated << " camera property links.");
+    }
+
+    // render size auto linking
+    if (processorNetwork_ && linkPortSizeAutoButton_->isChecked()) {
+        int numCreated = processorNetwork_->createRenderSizeLinksWithinSubNetwork(processorNetwork_->getProcessors(), false);
+        if (numCreated)
+            LINFO("Created " << numCreated << " render size links.");
+    }
+}
+
+void NetworkEditor::createContextMenuActions() {
+    copyAction_ = new QAction(QIcon(":/qt/icons/edit-copy.png"), tr("Copy Items"), this);
+    pasteAction_ = new QAction(QIcon(":/qt/icons/edit-paste.png"), tr("Paste Items"), this);
+    deleteAction_ = new QAction(QIcon(":/qt/icons/eraser.png"), tr("Delete Items"), this);
+    editLinkAction_ = new QAction(tr("Edit Link"), this);
+    deleteAllLinksAction_ = new QAction(QIcon(":/qt/icons/eraser.png"), tr("Delete All Property Links"), this);
+    deleteAllCameraLinksAction_ = new QAction(QIcon(":/qt/icons/eraser.png"), tr("Delete All Camera Links"), this);
+    deleteAllPortSizeLinksAction_ = new QAction(QIcon(":/qt/icons/eraser.png"), tr("Delete All Render Size Links"), this);
+    createAllCameraLinksAction_ = new QAction(tr("Create All Camera Links"), this);
+    createAllPortSizeLinksAction_ = new QAction(tr("Create All Render Size Links"), this);
+    deleteInnerLinksAction_ = new QAction(QIcon(":/qt/icons/eraser.png"), tr("Delete Inner Property Links"), this);
+    deleteInnerCameraLinksAction_ = new QAction(QIcon(":/qt/icons/eraser.png"), tr("Delete Inner Camera Links"), this);
+    deleteInnerPortSizeLinksAction_ = new QAction(QIcon(":/qt/icons/eraser.png"), tr("Delete Inner Render Size Links"), this);
+    createInnerCameraLinksAction_ = new QAction(tr("Create Inner Camera Links"), this);
+    createInnerPortSizeLinksAction_ = new QAction(tr("Create Inner Render Size Links"), this);
+    deletePortOwnerLinksAction_ = new QAction(QIcon(":/qt/icons/eraser.png"), tr("Delete Processor Property Links"), this);
+    deletePortOwnerCameraLinksAction_ = new QAction(QIcon(":/qt/icons/eraser.png"), tr("Delete Processor Camera Links"), this);
+    deletePortOwnerPortSizeLinksAction_ = new QAction(QIcon(":/qt/icons/eraser.png"), tr("Delete Processor Render Size Links"), this);
+    createPortOwnerCameraLinksAction_ = new QAction(tr("Create Processor Camera Links"), this);
+    createPortOwnerPortSizeLinksAction_ = new QAction(tr("Create Processor Render Size Links"), this);
+    aggregateAction_ = new QAction(QIcon(":/voreenve/icons/aggregate.png"), tr("Aggregate"), this);
+    deaggregateAction_ = new QAction(QIcon(":/voreenve/icons/deaggregate.png"), tr("Deaggregate"), this);  // this action will be added to the menus on demand
+    //bundleAction_ = new QAction(QIcon(":/voreenve/icons/aggregate.png"), tr("Bundle links"), this);
+    //unbundleAction_ = new QAction(QIcon(":/voreenve/icons/deaggregate.png"), tr("Unbundle links"), this);
+    //addHandleAction_ = new QAction(QIcon(":/qt/icons/edit_add.png"), tr("Add handle"), this);
+
+    connect(copyAction_, SIGNAL(triggered()), this, SLOT(copyActionSlot()));
+    connect(pasteAction_, SIGNAL(triggered()), this, SLOT(pasteActionSlot()));
+    connect(deleteAction_, SIGNAL(triggered()), this, SLOT(deleteActionSlot()));
+    connect(editLinkAction_, SIGNAL(triggered()), this, SLOT(editLinkActionSlot()));
+    connect(deleteAllLinksAction_, SIGNAL(triggered()), this, SLOT(deleteLinksActionSlot()));
+    connect(deleteAllCameraLinksAction_, SIGNAL(triggered()), this, SLOT(deleteCameraLinksActionSlot()));
+    connect(deleteAllPortSizeLinksAction_, SIGNAL(triggered()), this, SLOT(deletePortSizeLinksActionSlot()));
+    connect(createAllCameraLinksAction_, SIGNAL(triggered()), this, SLOT(createCameraLinksActionSlot()));
+    connect(createAllPortSizeLinksAction_, SIGNAL(triggered()), this, SLOT(createPortSizeLinksActionSlot()));
+    connect(deleteInnerLinksAction_, SIGNAL(triggered()), this, SLOT(deleteLinksActionSlot()));
+    connect(deleteInnerCameraLinksAction_, SIGNAL(triggered()), this, SLOT(deleteCameraLinksActionSlot()));
+    connect(deleteInnerPortSizeLinksAction_, SIGNAL(triggered()), this, SLOT(deletePortSizeLinksActionSlot()));
+    connect(createInnerCameraLinksAction_, SIGNAL(triggered()), this, SLOT(createCameraLinksActionSlot()));
+    connect(createInnerPortSizeLinksAction_, SIGNAL(triggered()), this, SLOT(createPortSizeLinksActionSlot()));
+    connect(deletePortOwnerLinksAction_, SIGNAL(triggered()), this, SLOT(deleteLinksActionSlot()));
+    connect(deletePortOwnerCameraLinksAction_, SIGNAL(triggered()), this, SLOT(deleteCameraLinksActionSlot()));
+    connect(deletePortOwnerPortSizeLinksAction_, SIGNAL(triggered()), this, SLOT(deletePortSizeLinksActionSlot()));
+    connect(createPortOwnerCameraLinksAction_, SIGNAL(triggered()), this, SLOT(createCameraLinksActionSlot()));
+    connect(createPortOwnerPortSizeLinksAction_, SIGNAL(triggered()), this, SLOT(createPortSizeLinksActionSlot()));
+    connect(aggregateAction_, SIGNAL(triggered()), this, SLOT(aggregateActionSlot()));
+    connect(deaggregateAction_, SIGNAL(triggered()), this, SLOT(deaggregateActionSlot()));
+    //connect(bundleAction_, SIGNAL(triggered()), this, SLOT(bundleLinksSlot()));
+    //connect(unbundleAction_, SIGNAL(triggered()), this, SLOT(unbundleLinksSlot()));
+    //connect(addHandleAction_, SIGNAL(triggered()), this, SLOT(addHandleSlot()));
+
+    copyAction_->setShortcut(Qt::CTRL + Qt::Key_C);
+    pasteAction_->setShortcut(Qt::CTRL + Qt::Key_V);
+    //replaceAction_
+    deleteAction_->setShortcut(Qt::Key_Delete);
+    //editLinkAction_
+    //aggregateAction_
+    //deaggregateAction_
+    //bundleAction_
+    //unbundleAction_
+    //addHandleAction_
+
+}
+
+//---------------------------------------------------------------------------------------------------------------
+//                  ProcessorNetworkObserver functions                                                           
+//---------------------------------------------------------------------------------------------------------------
+void NetworkEditor::networkChanged() {}
+
+void NetworkEditor::processorAdded(const Processor* processor) {
+    if (processorItemMap_.find(const_cast<Processor*>(processor)) == processorItemMap_.end()) {
+        ProcessorGraphicsItem* item = createProcessorGraphicsItem(const_cast<Processor*>(processor));
+        if (linkCamerasAutoButton_->isChecked())
+            linkCamerasOfProcessor(processor);
+    }
+}
+
+void NetworkEditor::processorRemoved(const Processor* processor) {
+    if (processorItemMap_.find(const_cast<Processor*>(processor)) != processorItemMap_.end()) {
+        Processor* nonConst = const_cast<Processor*>(processor);
+        ProcessorGraphicsItem* item = processorItemMap_.value(nonConst);
+        setUpdatesEnabled(false);
+        scene()->removeItem(item);
+        delete item;
+        setUpdatesEnabled(true);
+        processorItemMap_.remove(nonConst);
+    }
+}
+
+void NetworkEditor::propertyLinkAdded(const PropertyLink* link) {
+    createLinkArrowForPropertyLink(link);
+}
+
+void NetworkEditor::propertyLinkRemoved(const PropertyLink* link) {
+    PropertyGraphicsItem* srcProp = 0, *dstProp = 0;
+    PortOwnerGraphicsItem* srcPOItem = 0, *dstPOItem = 0;
+
+    //find src items
+    foreach(ProcessorGraphicsItem* item, processorItemMap_) {
+        if(item->getPropertyList()->getPropertyGraphicsItem(link->getSourceProperty())){
+            srcProp = item->getPropertyList()->getPropertyGraphicsItem(link->getSourceProperty());
+            srcPOItem = item;
+            break;
+        }
+        foreach(PortGraphicsItem* portItem, item->getPortGraphicsItems()){
+            if(portItem->getPropertyList()->getPropertyGraphicsItem(link->getSourceProperty())){
+                srcProp = portItem->getPropertyList()->getPropertyGraphicsItem(link->getSourceProperty());
+                srcPOItem = portItem->getPortOwner();
+                break;
+            }
+        }
+        if(srcProp)
+            break;
+    }
+
+    //find dst items
+    foreach(ProcessorGraphicsItem* item, processorItemMap_) {
+        if(item->getPropertyList()->getPropertyGraphicsItem(link->getDestinationProperty())){
+            dstProp = item->getPropertyList()->getPropertyGraphicsItem(link->getDestinationProperty());
+            dstPOItem = item;
+            break;
+        }
+        foreach(PortGraphicsItem* portItem, item->getPortGraphicsItems()){
+            if(portItem->getPropertyList()->getPropertyGraphicsItem(link->getDestinationProperty())){
+                dstProp = portItem->getPropertyList()->getPropertyGraphicsItem(link->getDestinationProperty());
+                dstPOItem = portItem->getPortOwner();
+                break;
+            }
+        }
+        if(dstProp)
+            break;
+    }
+
+    srcProp->removeGraphicalLink(dstProp);
+
+    //remove portsizelinkarrow if exists
+    if(((srcProp->getProperty()->getClassName() == "RenderSizeOriginProperty") || 
+        (srcProp->getProperty()->getClassName() == "RenderSizeReceiveProperty")) &&
+       ((dstProp->getProperty()->getClassName() == "RenderSizeOriginProperty") ||
+        (dstProp->getProperty()->getClassName() == "RenderSizeReceiveProperty")))
+        dynamic_cast<PortGraphicsItem*>(srcProp->getPropertyOwnerGraphicsItem())->removePortSizeLinkArrow(srcProp, dstProp);
+
+
+    //remove portownerlinkarrow if no longer needed
+    if(!srcPOItem->isPortOwnerLinkNeeded(dstPOItem))
+        srcPOItem->removeGraphicalLinkArrow(dstPOItem);
+    else if(currentLayer_ == NetworkEditorLayerCameraLinking) {//test if it is still visible in camera mode
+        if(!srcPOItem->isPortOwnerLinkNeeded(dstPOItem, currentLayer_)) {
+            foreach(PortOwnerLinkArrowGraphicsItem* arrow, srcPOItem->getPortOwnerLinkArrows())
+                if(arrow->getDestinationItem()->parent() == dstPOItem)
+                    arrow->setVisible(false);
+            foreach(PortOwnerLinkArrowGraphicsItem* arrow, dstPOItem->getPortOwnerLinkArrows())
+                if(arrow->getDestinationItem()->parent() == srcPOItem)
+                    arrow->setVisible(false);
+        }
+    }
+
+    srcPOItem->getPropertyList()->setVisible(srcPOItem->getPropertyList()->isVisible());
+    dstPOItem->getPropertyList()->setVisible(dstPOItem->getPropertyList()->isVisible());
+}
+
+void NetworkEditor::processorRenamed(const Processor* processor, const std::string& /*prevName*/) {
+    if (processorItemMap_.find(const_cast<Processor*>(processor)) != processorItemMap_.end()) {
+        Processor* nonConst = const_cast<Processor*>(processor);
+        ProcessorGraphicsItem* item = processorItemMap_.value(nonConst);
+    }
+}
+
+void NetworkEditor::portConnectionAdded(const Port* outport, const Port* inport) {
+    getPortGraphicsItem(outport)->addGraphicalConnection(getPortGraphicsItem(inport));
+
+    // render size linking
+    if (linkPortSizeAutoButton_->isChecked()) {
+        const RenderPort* renderOutport = dynamic_cast<const RenderPort*>(outport);
+        const RenderPort* renderInport = dynamic_cast<const RenderPort*>(inport);
+        if (renderOutport && renderInport) {
+            int numCreated = processorNetwork_->createRenderSizeLinksOverConnection(
+                const_cast<RenderPort*>(renderOutport), const_cast<RenderPort*>(renderInport), false);
+            if (numCreated)
+                LINFO("Created " << numCreated << " render size links.");
+        }
+    }
+}
+
+void NetworkEditor::portConnectionRemoved(const Port* outport, const Port* inport) {
+    getPortGraphicsItem(outport)->removeGraphicalConnection(getPortGraphicsItem(inport));
+
+    // render size linking
+    if (linkPortSizeAutoButton_->isChecked()) {
+        const RenderPort* renderOutport = dynamic_cast<const RenderPort*>(outport);
+        const RenderPort* renderInport = dynamic_cast<const RenderPort*>(inport);
+        if (renderOutport && renderInport) {
+            int numRemoved = processorNetwork_->removeRenderSizeLinksOverConnection(
+                const_cast<RenderPort*>(renderOutport), const_cast<RenderPort*>(renderInport));
+            if (numRemoved)
+                LINFO("Removed " << numRemoved << " render size links.");
+        }
+    }
+
+}
+
+//---------------------------------------------------------------------------------------------------------------
+//                  scene transformations                                                                        
+//---------------------------------------------------------------------------------------------------------------
+void NetworkEditor::scaleView() {
+    if (!getProcessorNetwork())
+        return;
+
+    QRectF visibleRect;
+    // scene()->itemsBoundingRect() will consider all invisible (i.e. properties) as well, so we have to to it by ourselves
+    foreach (QGraphicsItem* item, scene()->items()) {
+        if (item->isVisible()) {
+            QRectF iRect = item->mapRectToScene(item->boundingRect());
+            visibleRect = visibleRect.united(iRect);
+        }
+    }
+
+    //set scale
+    FloatMetaData* metaFactor = dynamic_cast<FloatMetaData*>(getProcessorNetwork()->getMetaDataContainer().getMetaData("ZoomFactor"));
+    if (metaFactor) {
+        QGraphicsView::scale(metaFactor->getValue(),metaFactor->getValue());
+    }
+    else {
+        qreal scaleFactor;
+        if (!visibleRect.isEmpty()) {
+            QSizeF vps = mapToScene(viewport()->rect()).boundingRect().size();
+            QSizeF vs = visibleRect.size();
+            scaleFactor = std::min(vps.width()/vs.width(), vps.height()/vs.height());
+            QGraphicsView::scale(scaleFactor-0.1,scaleFactor-0.1);
+        }
+    }
+
+    //set center
+    Vec2MetaData* metaCenter = dynamic_cast<Vec2MetaData*>(getProcessorNetwork()->getMetaDataContainer().getMetaData("ZoomCenter"));
+    if (metaCenter) {
+        centerOn(metaCenter->getValue().x, metaCenter->getValue().y);
+    }
+    else {
+        QPointF center;
+        // set center
+        if (visibleRect.isEmpty()) {
+            center = QPointF(0.0,0.0);
+        } else {
+            center = QPointF(visibleRect.x() + visibleRect.width() / 2.f, visibleRect.y() + visibleRect.height() / 2.f);
+        }
+        centerOn(center);
+        if (getProcessorNetwork()->getMetaDataContainer().hasMetaData("ZoomCenter")) {
+            MetaDataBase* base = getProcessorNetwork()->getMetaDataContainer().getMetaData("ZoomCenter");
+            Vec2MetaData* meta = dynamic_cast<Vec2MetaData*>(base);
+            meta->setValue(tgt::vec2(center.x(),center.y()));
+        } else {
+            getProcessorNetwork()->getMetaDataContainer().addMetaData("ZoomCenter", new Vec2MetaData(tgt::vec2(center.x(),center.y())));
+        }
+    }
+
+    invalidateScene(QRectF(), QGraphicsScene::ForegroundLayer);
+}
+
+void NetworkEditor::scale(qreal sx, qreal sy) {
+    tgtAssert(sx == sy, "no rectangular zoom performed");
+    QPolygonF sv = mapToScene(viewport()->rect());
+    QRectF vr;
+    foreach (QGraphicsItem* item, scene()->items()) {
+        if (item->isVisible()) {
+            QRectF iRect = item->mapRectToScene(item->boundingRect());
+            vr = vr.united(iRect);
+        }
+    }
+    //QRectF sr = scene()->itemsBoundingRect();
+    vr.setCoords(vr.left()-vr.width()/2.f,vr.top()-vr.height()/2.f,vr.right()-vr.width()/2.f,vr.bottom()-vr.height()/2.f);
+
+    if(sx < 1.f && sv.boundingRect().size().width() > 3*vr.size().width() && sv.boundingRect().size().height() > 3*vr.size().height())
+        return;
+
+    QGraphicsView::scale(sx, sy);
+
+    if (getProcessorNetwork()) {        
+        if (getProcessorNetwork()->getMetaDataContainer().hasMetaData("ZoomFactor")) {
+            MetaDataBase* base = getProcessorNetwork()->getMetaDataContainer().getMetaData("ZoomFactor");
+            FloatMetaData* meta = dynamic_cast<FloatMetaData*>(base);
+            meta->setValue(transform().m11());
+        } else {
+            getProcessorNetwork()->getMetaDataContainer().addMetaData("ZoomFactor", new FloatMetaData(transform().m11()));
+        }
+        QPointF center = mapToScene(viewport()->rect().center());
+        if (getProcessorNetwork()->getMetaDataContainer().hasMetaData("ZoomCenter")) {
+            MetaDataBase* base = getProcessorNetwork()->getMetaDataContainer().getMetaData("ZoomCenter");
+            Vec2MetaData* meta = dynamic_cast<Vec2MetaData*>(base);
+            meta->setValue(tgt::vec2(center.x(),center.y()));
+        } else {
+            getProcessorNetwork()->getMetaDataContainer().addMetaData("ZoomCenter", new Vec2MetaData(tgt::vec2(center.x(),center.y())));
+        }
+    }
+}
+
+void NetworkEditor::translate(qreal dx, qreal dy) {
+    QGraphicsView::translate(dx, dy);
+}
+
+QSize NetworkEditor::sizeHint() const {
+    return QSize(400, 600);
+}
+
+//---------------------------------------------------------------------------------------------------------------
+//                  create and handle graphicitems                                                               
+//---------------------------------------------------------------------------------------------------------------
+void NetworkEditor::resetScene() {
+    emit update();
+    foreach(ProcessorGraphicsItem* item, processorItemMap_) {
+        delete item;
+    }
+    processorItemMap_.clear();
+    aggregationItems_.clear();
+    //hideTooltip(); // prevent double-free
+
+    // deletion is necessary because the QGraphicsScene's sceneRect will consider all added items
+    setUpdatesEnabled(false);
+    scene()->blockSignals(true);
+    scene()->clear();
+    delete scene();
+    setScene(new QGraphicsScene(this));
+    scene()->setSceneRect(sceneRectSpacing.x(), sceneRectSpacing.y(), sceneRectSpacing.width(), sceneRectSpacing.height());
+    scene()->setItemIndexMethod(QGraphicsScene::NoIndex);
+    //connect(scene(), SIGNAL(selectionChanged()), this, SLOT(selectionChangeSlot()));
+    setUpdatesEnabled(true);
+}
 
 void NetworkEditor::generateGraphicsItems() {
     if (!getProcessorNetwork())
@@ -305,246 +579,656 @@ void NetworkEditor::generateGraphicsItems() {
             std::vector<const Port*> connectedPorts = port->getConnected();
 
             foreach (const Port* connectedPort, connectedPorts)
-                portConnectionAdded(port, connectedPort);
+                getPortGraphicsItem(port)->addGraphicalConnection(getPortGraphicsItem(connectedPort));
         }
     }
-
-    foreach (ProcessorGraphicsItem* procItem, processorItemMap_.values())
-        scene()->addItem(procItem);
 
     foreach (PropertyLink* link, getProcessorNetwork()->getPropertyLinks()) {
         createLinkArrowForPropertyLink(link);
     }
 }
 
-void NetworkEditor::createContextMenuActions() {
-    copyAction_ = new QAction(QIcon(":/qt/icons/edit-copy.png"), tr("Copy"), this);
-    pasteAction_ = new QAction(QIcon(":/qt/icons/edit-paste.png"), tr("Paste"), this);
-    replaceAction_ = new QAction(QIcon(":/qt/icons/edit-paste.png"), tr("Replace"), this);
-    deleteAction_ = new QAction(QIcon(":/qt/icons/eraser.png"), tr("Delete"), this);
-    deleteLinkAction_ = new QAction(QIcon(":/qt/icons/eraser.png"), tr("Delete"), this);
-    renameAction_ = new QAction(QIcon(":/qt/icons/rename.png"), tr("Rename"), this);
-    editLinkAction_ = new QAction(tr("Edit"), this);
-    aggregateAction_ = new QAction(QIcon(":/voreenve/icons/aggregate.png"), tr("Aggregate"), this);
-    deaggregateAction_ = new QAction(QIcon(":/voreenve/icons/deaggregate.png"), tr("Deaggregate"), this);  // this action will be added to the menus on demand
-    clearDependencyHistoryAction_ = new QAction(QIcon(":/voreenve/icons/clear_dependency.png"), tr("Clear dependency history"), this); // this action will be added to the menus on demand
-    saveRenderPortImageAction_ = new QAction(tr("Save RenderPort as Image"), this);
-    bundleAction_ = new QAction(QIcon(":/voreenve/icons/aggregate.png"), tr("Bundle links"), this);
-    unbundleAction_ = new QAction(QIcon(":/voreenve/icons/deaggregate.png"), tr("Unbundle links"), this);
-    addHandleAction_ = new QAction(QIcon(":/qt/icons/edit_add.png"), tr("Add handle"), this);
-
-    connect(copyAction_, SIGNAL(triggered()), this, SLOT(copyActionSlot()));
-    connect(pasteAction_, SIGNAL(triggered()), this, SLOT(pasteActionSlot()));
-    connect(replaceAction_, SIGNAL(triggered()), this, SLOT(replaceActionSlot()));
-    connect(deleteAction_, SIGNAL(triggered()), this, SLOT(deleteActionSlot()));
-    connect(renameAction_, SIGNAL(triggered()), this, SLOT(renameActionSlot()));
-    connect(deleteLinkAction_, SIGNAL(triggered()), this, SLOT(deletePropertyLinkSlot()));
-    connect(editLinkAction_, SIGNAL(triggered()), this, SLOT(editPropertyLinkSlot()));
-    connect(aggregateAction_, SIGNAL(triggered()), this, SLOT(aggregateActionSlot()));
-    connect(deaggregateAction_, SIGNAL(triggered()), this, SLOT(deaggregateActionSlot()));
-    connect(clearDependencyHistoryAction_, SIGNAL(triggered()), this, SLOT(clearDependencyHistory()));
-    connect(saveRenderPortImageAction_, SIGNAL(triggered()), this, SLOT(saveRenderPortImage()));
-    connect(bundleAction_, SIGNAL(triggered()), this, SLOT(bundleLinksSlot()));
-    connect(unbundleAction_, SIGNAL(triggered()), this, SLOT(unbundleLinksSlot()));
-    connect(addHandleAction_, SIGNAL(triggered()), this, SLOT(addHandleSlot()));
-}
-
-void NetworkEditor::createTimer() {
-    ttimer_ = new TooltipTimer(QPoint(), tooltiptimerRadius, this); // For even better Tooltip experience
-    ttimer_->setSingleShot(true);
-    connect(ttimer_, SIGNAL(timeout()), this, SLOT(showTooltip()));
-}
-
-void NetworkEditor::createLayerButtons() {
-    layerButtonContainer_ = new QWidget(this);
-    QBoxLayout* layerLayout = new QHBoxLayout(layerButtonContainer_);
-
-    dataflowLayerButton_ = new QToolButton;
-    dataflowLayerButton_->setIcon(QIcon(":/voreenve/icons/dataflow-mode.png"));
-    dataflowLayerButton_->setIconSize(layerButtonSize);
-    dataflowLayerButton_->setToolTip(tr("switch to data flow mode"));
-    dataflowLayerButton_->setCheckable(true);
-    dataflowLayerButton_->setShortcut(Qt::CTRL + Qt::Key_1);
-    connect(dataflowLayerButton_, SIGNAL(clicked()), this, SLOT(setLayerToDataflow()));
-    layerLayout->addWidget(dataflowLayerButton_);
-
-    linkingLayerButton_ = new QToolButton;
-    linkingLayerButton_->setIcon(QIcon(":/voreenve/icons/linking-mode.png"));
-    linkingLayerButton_->setIconSize(layerButtonSize);
-    linkingLayerButton_->setToolTip(tr("switch to linking mode"));
-    linkingLayerButton_->setCheckable(true);
-    linkingLayerButton_->setShortcut(Qt::CTRL + Qt::Key_2);
-    connect(linkingLayerButton_, SIGNAL(clicked()), this, SLOT(setLayerToLinking()));
-    layerLayout->addWidget(linkingLayerButton_);
-
-    autoLinkingContainer_ = new QWidget(this);
-    QBoxLayout* autoLinkingLayout = new QVBoxLayout(autoLinkingContainer_);
-
-    linkCamerasAutoButton_ = new QToolButton;
-    linkCamerasAutoButton_->setIcon(QIcon(":/voreenve/icons/linking-camera-auto.png"));
-    linkCamerasAutoButton_->setIconSize(autoLinkingSize);
-    linkCamerasAutoButton_->setToolTip(tr("Link cameras of processors when they are added to the network"));
-    linkCamerasAutoButton_->setCheckable(true);
-    linkCamerasAutoButton_->setChecked(true);
-    connect(linkCamerasAutoButton_, SIGNAL(clicked()), this, SLOT(linkCamerasAutoChanged()));
-    autoLinkingLayout->addWidget(linkCamerasAutoButton_);
-
-    linkCamerasButton_ = new QToolButton;
-    linkCamerasButton_->setIcon(QIcon(":/voreenve/icons/linking-camera.png"));
-    linkCamerasButton_->setIconSize(autoLinkingSize);
-    linkCamerasButton_->setToolTip(tr("Link all cameras in the network"));
-    connect(linkCamerasButton_, SIGNAL(clicked()), this, SLOT(linkCameras()));
-    autoLinkingLayout->addWidget(linkCamerasButton_);
-
-    removePropertyLinksButton_ = new QToolButton;
-    removePropertyLinksButton_->setIcon(QIcon(":/voreenve/icons/linking-remove.png"));
-    removePropertyLinksButton_->setIconSize(autoLinkingSize);
-    removePropertyLinksButton_->setToolTip(tr("Remove all property links from the network"));
-    connect(removePropertyLinksButton_, SIGNAL(clicked()), this, SLOT(removePropertyLinks()));
-    autoLinkingLayout->addWidget(removePropertyLinksButton_);
-
-    // add to button group, so only one can be checked at the same time
-    QButtonGroup* group = new QButtonGroup;
-    group->addButton(dataflowLayerButton_);
-    group->addButton(linkingLayerButton_);
-
-    layoutLayerButtons();
-}
-
-void NetworkEditor::createOtherButtons() {
-    otherButtonContainer_ = new QWidget(this);
-    QBoxLayout* otherLayout = new QHBoxLayout(otherButtonContainer_);
-
-    stopNetworkEvaluatorButton_ = new QToolButton;
-    stopNetworkEvaluatorButton_->setIcon(QIcon(":/voreenve/icons/player-pause.png"));
-    stopNetworkEvaluatorButton_->setIconSize(otherButtonSize);
-    stopNetworkEvaluatorButton_->setToolTip(tr("Stop the automatic evaluation of the network"));
-    connect(stopNetworkEvaluatorButton_, SIGNAL(clicked()), this, SLOT(toggleNetworkEvaluator()));
-    stopNetworkEvaluatorButton_->setCheckable(true);
-    otherLayout->addWidget(stopNetworkEvaluatorButton_);
-
-    layoutOtherButtons();
-}
-
-// ------------------------------------------------------------------------------------------------
-// other methods
-// ------------------------------------------------------------------------------------------------
-
-void NetworkEditor::layoutLayerButtons() {
-    int x = size().width() - layerButtonContainer_->size().width() - layerButtonSpacingX;
-    int y = layerButtonSpacingY;
-
-    layerButtonContainer_->move(x,y);
-
-    x += layerButtonContainer_->width() - autoLinkingContainer_->width();
-    y += static_cast<int>(layerButtonContainer_->height() * 0.85f);
-
-    autoLinkingContainer_->move(x,y);
-}
-
-void NetworkEditor::layoutOtherButtons() {
-    int x = size().width() - otherButtonContainer_->size().width() - otherButtonSpacingX;;
-    int y = size().height() - otherButtonContainer_->size().height() - otherButtonSpacingY;
-
-    otherButtonContainer_->move(x,y);
-}
 
 ProcessorGraphicsItem* NetworkEditor::createProcessorGraphicsItem(Processor* processor) {
     ProcessorGraphicsItem* result = new ProcessorGraphicsItem(processor, this);
     processorItemMap_[processor] = result;
-    result->setLayer(currentLayer_);
+    result->updateNWELayerAndCursor();
     result->loadMeta();
 
-    connect(result, SIGNAL(createLink(RootGraphicsItem*, RootGraphicsItem*)), this, SLOT(createLink(RootGraphicsItem*, RootGraphicsItem*)));
-    connect(result, SIGNAL(startedArrow()), this, SLOT(disableTooltips()));
-    connect(result, SIGNAL(endedArrow()), this, SLOT(enableTooltips()));
+    connect(result, SIGNAL(openPropertyLinkDialog(PortOwnerGraphicsItem*, PortOwnerGraphicsItem*)), this, SLOT(openPropertyLinkDialog(PortOwnerGraphicsItem*, PortOwnerGraphicsItem*)));
+    //connect(result, SIGNAL(startedArrow()), this, SLOT(disableTooltips()));
+    //connect(result, SIGNAL(endedArrow()), this, SLOT(enableTooltips()));
 
     return result;
 }
 
-void NetworkEditor::resetScene() {
-    emit update();
-    processorItemMap_.clear();
-    aggregationItems_.clear();
-    hideTooltip(); // prevent double-free
+bool isEqual(AggregationMetaData* metaData, AggregationGraphicsItem* graphicsItem) {
+    std::vector<Processor*> metaDataProcessors = metaData->getProcessors();
+    QList<Processor*> graphicsItemProcessors = graphicsItem->getProcessors();
 
-    // deletion is necessary because the QGraphicsScene's sceneRect will consider all added items
-    setUpdatesEnabled(false);
-    scene()->blockSignals(true);
-    delete scene();
-    setScene(new QGraphicsScene(this));
-    connect(scene(), SIGNAL(selectionChanged()), this, SLOT(selectionChangeSlot()));
-    setUpdatesEnabled(true);
-    processorItemMap_.clear();
-    aggregationItems_.clear();
+    foreach (Processor* metaDataProcessor, metaDataProcessors) {
+        int index = graphicsItemProcessors.indexOf(metaDataProcessor);
+        if (index == -1)
+            return false;
+    }
 
+    return true;
 }
 
-void NetworkEditor::setProcessorNetwork(ProcessorNetwork* network) {
-    hideTooltip();
+AggregationGraphicsItem* NetworkEditor::createAggregationGraphicsItem(AggregationMetaData* metaData) {
+    QList<Processor*> internalProcessors = stdVectorToQList(metaData->getProcessors());
+    QList<PortOwnerGraphicsItem*> internalGraphicsItems;
 
-    // a locked evaluator leads to a crash if a new network is loaded
-    evaluator_->unlock();
-    networkEvaluatorIsLockedByButton_ = false;
-    stopNetworkEvaluatorButton_->setIcon(QIcon(":/voreenve/icons/player-pause.png"));
-    stopNetworkEvaluatorButton_->setToolTip(tr("Stop the automatic evaluation of the network"));
-    stopNetworkEvaluatorButton_->setChecked(false);
+    foreach (Processor* processor, internalProcessors) {
+        ProcessorGraphicsItem* processorItem = getProcessorGraphicsItem(processor);
+        internalGraphicsItems.append(processorItem);
+        processorItem->hide();
+    }
 
-    if (processorNetwork_)
-        processorNetwork_->removeObserver(this);
+    foreach (AggregationMetaData* internalMetaData, metaData->getAggregations()) {
+        AggregationGraphicsItem* internalAggregation = createAggregationGraphicsItem(internalMetaData);
+        internalGraphicsItems.append(internalAggregation);
+    }
 
-    processorNetwork_ = network;
+    AggregationGraphicsItem* aggregation = createAggregationGraphicsItem(internalGraphicsItems);
+    aggregation->setPos(metaData->getPosition().first, metaData->getPosition().second);
+    std::string name = metaData->getName();
+    aggregation->setGuiName(QString::fromStdString(name));
+    aggregation->getNameLabel()->setPlainText(aggregation->getGuiName());
+    aggregation->getPropertyList()->updateParentLabel();
+    aggregation->layoutChildItems();
+    connect(aggregation, SIGNAL(openPropertyLinkDialog(PortOwnerGraphicsItem*, PortOwnerGraphicsItem*)), this, SLOT(openPropertyLinkDialog(PortOwnerGraphicsItem*, PortOwnerGraphicsItem*)));
+    //connect(aggregation, SIGNAL(startedArrow()), this, SLOT(disableTooltips()));
+    //connect(aggregation, SIGNAL(endedArrow()), this, SLOT(enableTooltips()));
 
-    if (processorNetwork_)
-        processorNetwork_->addObserver(this);
+    return aggregation;
+}
 
-    resetScene();
-    linkMap_.clear();
+AggregationGraphicsItem* NetworkEditor::createAggregationGraphicsItem(const QList<PortOwnerGraphicsItem*>& items){
 
-    generateGraphicsItems();
+    if (!getProcessorNetwork())
+        return 0;
 
-    foreach (ProcessorGraphicsItem* processorItem, processorItemMap_.values())
-        processorItem->removeAllAggregationPrefixes();
-
-    foreach (AggregationGraphicsItem* aggregationItem, aggregationItems_)
-        aggregationItem->removeAllAggregationPrefixes();
-
-    if (getProcessorNetwork()) {
-        AggregationMetaDataContainer* aggregationMetaDataContainer = dynamic_cast<AggregationMetaDataContainer*>(getProcessorNetwork()->getMetaDataContainer().getMetaData("Aggregation"));
-        if (aggregationMetaDataContainer) {
-            std::vector<AggregationMetaData*> aggregations = aggregationMetaDataContainer->getAggregations();
-            aggregationMetaDataContainer->clearAggregations();
-
-            foreach (AggregationMetaData* metaData, aggregations)
-                createAggregationGraphicsItem(metaData);
+    AggregationGraphicsItem* newAggregation = new AggregationGraphicsItem(items, this);
+    connect(newAggregation, SIGNAL(openPropertyLinkDialog(PortOwnerGraphicsItem*, PortOwnerGraphicsItem*)), this, SLOT(openPropertyLinkDialog(PortOwnerGraphicsItem*, PortOwnerGraphicsItem*)));
+    foreach(PortOwnerGraphicsItem* item, items){
+        switch (item->type()) {
+        case UserTypesProcessorGraphicsItem:
+            {
+                ProcessorGraphicsItem* processorItem = qgraphicsitem_cast<ProcessorGraphicsItem*>(item);
+                Processor* processor = processorItem->getProcessor();
+                tgtAssert(processor, "processor was null pointer");
+                delete processorItem->getProgressBar();
+                processor->setProgressBar(0);
+                break;
+            }
+        case UserTypesAggregationGraphicsItem:
+            {
+                AggregationGraphicsItem* aggregationItem = qgraphicsitem_cast<AggregationGraphicsItem*>(item);
+                aggregationItems_.removeOne(aggregationItem);
+                break;
+            }
+        default:
+            tgtAssert(false, "shouldn't get here");
         }
-        readBundlesFromMetaData();
+        item->setVisible(false);
     }
 
-    resetMatrix();
-    resetTransform();
+    newAggregation->layoutChildItems();
+    aggregationItems_.append(newAggregation);
+    scene()->clearSelection();
 
-    // do not scale immediately when we might be in visualization mode and this window might
-    // not have its final size yet
-    if (isVisible()) {
-        scaleView();
-        needsScale_ = false;
+    //set meta information
+    std::vector<Processor*> internalProcessors;
+    std::vector<AggregationGraphicsItem*> internalAggregations;
+    foreach (PortOwnerGraphicsItem* i, items) {
+        bool isProcessorItem = i->type() == UserTypesProcessorGraphicsItem;
+        bool isAggregationItem = i->type() == UserTypesAggregationGraphicsItem;
+
+        if (isProcessorItem)
+            internalProcessors.push_back(dynamic_cast<ProcessorGraphicsItem*>(i)->getProcessor());
+        else if (isAggregationItem)
+            internalAggregations.push_back(dynamic_cast<AggregationGraphicsItem*>(i));
+    }
+
+    MetaDataContainer& container = getProcessorNetwork()->getMetaDataContainer();
+    if (!container.hasMetaData("Aggregation")) {
+        MetaDataBase* metaData = new AggregationMetaDataContainer;
+        container.addMetaData("Aggregation", metaData);
+    }
+    AggregationMetaDataContainer* aggregationContainer = static_cast<AggregationMetaDataContainer*>(container.getMetaData("Aggregation"));
+
+    std::vector<AggregationMetaData*> allAggregations = aggregationContainer->getAggregations();
+
+    AggregationMetaData* metaData = new AggregationMetaData;
+    metaData->setProcessors(internalProcessors);
+    metaData->setName(newAggregation->getGuiName().toStdString());
+    metaData->setPosition(static_cast<int>(newAggregation->pos().x()), static_cast<int>(newAggregation->pos().y()));
+    newAggregation->setAggregationMetaData(metaData);
+
+    foreach (AggregationMetaData* metaDataAgg, allAggregations) {
+        foreach (AggregationGraphicsItem* graphicsItemAgg, internalAggregations) {
+            if (isEqual(metaDataAgg, graphicsItemAgg)) {
+                metaData->addAggregation(metaDataAgg);
+                aggregationContainer->removeAggregation(metaDataAgg);
+            }
+        }
+    }
+
+    aggregationContainer->addAggregation(metaData);
+
+    return newAggregation;
+}
+
+void NetworkEditor::createLinkArrowForPropertyLink(const PropertyLink* link) {
+    if (link == 0)
+        return;
+
+    PortOwnerGraphicsItem* srcPOItem = 0;
+    PropertyGraphicsItem* srcPropItem = 0;
+    //source prop belongs to processor
+    if (dynamic_cast<Processor*>(link->getSourceProperty()->getOwner())){
+        Processor* srcProc = static_cast<Processor*>(link->getSourceProperty()->getOwner());
+
+        if (processorItemMap_.contains(srcProc))
+            srcPOItem = processorItemMap_[srcProc];
+        else {
+           foreach (AggregationGraphicsItem* item, aggregationItems_) {
+                if (item->contains(dynamic_cast<PortOwnerGraphicsItem*>(srcProc))) {
+                    srcPOItem = item;
+                    break;
+                }
+            }
+        }
+        tgtAssert(srcPOItem, "source item was not found");
+
+        srcPropItem = srcPOItem->getPropertyList()->getPropertyGraphicsItem(link->getSourceProperty());
+    } 
+    //source prop belongs to port
+    else if (dynamic_cast<Port*>(link->getSourceProperty()->getOwner())){
+        Port* srcPort = static_cast<Port*>(link->getSourceProperty()->getOwner());
+
+        PropertyOwnerGraphicsItem* srcPortItem = 0;
+        srcPortItem = getPortGraphicsItem(srcPort);
+        tgtAssert(srcPortItem, "source item was not found");
+
+        srcPOItem = dynamic_cast<PortOwnerGraphicsItem*>(srcPortItem->parent());
+        srcPropItem = srcPortItem->getPropertyList()->getPropertyGraphicsItem(link->getSourceProperty());
+
     } else {
-        needsScale_ = true;
+        LWARNING("createLinkArrowForPropertyLink(): unknown link source property owner");
+        return;
+    }
+    tgtAssert(srcPropItem, "no src prop gi");
+
+    PortOwnerGraphicsItem* dstPOItem = 0;
+    PropertyGraphicsItem* dstPropItem = 0;
+    //destination prop belongs to processor
+    if (dynamic_cast<Processor*>(link->getDestinationProperty()->getOwner())){
+        Processor* dstProc = static_cast<Processor*>(link->getDestinationProperty()->getOwner());
+
+        if (processorItemMap_.contains(dstProc))
+            dstPOItem = processorItemMap_[dstProc];
+        else {
+           foreach (AggregationGraphicsItem* item, aggregationItems_) {
+                if (item->contains(dynamic_cast<PortOwnerGraphicsItem*>(dstProc))) {
+                    dstPOItem = item;
+                    break;
+                }
+            }
+        }
+        tgtAssert(dstPOItem, "destination item was not found");
+
+        dstPropItem = dstPOItem->getPropertyList()->getPropertyGraphicsItem(link->getDestinationProperty());
+    } 
+    //source prop belongs to port
+    else if (dynamic_cast<Port*>(link->getDestinationProperty()->getOwner())){
+        Port* dstPort = static_cast<Port*>(link->getDestinationProperty()->getOwner());
+
+        PropertyOwnerGraphicsItem* dstPortItem = 0;
+        dstPortItem = getPortGraphicsItem(dstPort);
+        tgtAssert(dstPortItem, "destination item was not found");
+
+        dstPOItem = dynamic_cast<PortOwnerGraphicsItem*>(dstPortItem->parent());
+        dstPropItem = dstPortItem->getPropertyList()->getPropertyGraphicsItem(link->getDestinationProperty());
+
+    } else {
+        LWARNING("createLinkArrowForPropertyLink(): unknown link destination property owner");
+        return;
+    }
+    tgtAssert(dstPropItem, "no dst prop gi");
+
+    srcPropItem->addGraphicalLink(dstPropItem);
+
+    //create portsizelinkarrow if needed
+    if(link->getLinkEvaluator()->getClassName() == "LinkEvaluatorRenderSize")
+        dynamic_cast<PortGraphicsItem*>(srcPropItem->getPropertyOwnerGraphicsItem())->addPortSizeLinkArrow(srcPropItem, dstPropItem);
+
+    //create portownerlinkarrow if needed
+    if(srcPOItem->isPortOwnerLinkNeeded(dstPOItem))
+        srcPOItem->addGraphicalLinkArrow(dstPOItem);
+    
+    if(currentLayer_ == NetworkEditorLayerCameraLinking) {//test if it is still visible in camera mode
+        if(srcPOItem->isPortOwnerLinkNeeded(dstPOItem, currentLayer_)) {
+            foreach(PortOwnerLinkArrowGraphicsItem* arrow, srcPOItem->getPortOwnerLinkArrows())
+                if(arrow->getDestinationItem()->parent() == dstPOItem)
+                    arrow->setVisible(true);
+            foreach(PortOwnerLinkArrowGraphicsItem* arrow, dstPOItem->getPortOwnerLinkArrows())
+                if(arrow->getDestinationItem()->parent() == srcPOItem)
+                    arrow->setVisible(true);
+        }
+    }
+}
+
+void NetworkEditor::removeItems(QList<QGraphicsItem*> items) {
+    //hideTooltip();
+
+    if (evaluator_->isLocked() && !networkEvaluatorIsLockedByButton_) {
+        QMessageBox::information(this, tr("Network Locked"), tr("Network is being evaluated, so no delete operation is allowed"));
+        return;
     }
 
-    dataflowLayerButton_->setChecked(true);
-    setLayer(NetworkEditorLayerDataflow);
+    // make sure the evaluator does not operate on a temporarily inconsistent network
+    evaluator_->lock();
 
-    // set state of cam auto-linking button according to stored meta data, if present
-    BoolMetaData* cameraLinkMeta = 0;
-    if (getProcessorNetwork()) {
-        cameraLinkMeta = dynamic_cast<BoolMetaData*>(getProcessorNetwork()->getMetaDataContainer().getMetaData("autoLinkCameras"));
+    // sort items by their type to not delete a port/arrow-item
+    // that has already been deleted indirectly with the guiitem
+    // so at first kick out the ports:
+    foreach (QGraphicsItem* item, items) {
+        switch (item->type()) {
+        case UserTypesPortGraphicsItem:
+        case QGraphicsTextItem::Type:
+        case UserTypesRenamableTextGraphicsItem:
+        case UserTypesPropertyGraphicsItem:
+            items.removeOne(item);
+        }
     }
-    if (cameraLinkMeta)
-        linkCamerasAutoButton_->setChecked(cameraLinkMeta->getValue());
+
+    switch(currentLayer_){
+    case NetworkEditorLayerDataFlow:
+        removeItemsInDataFlow(items);
+        break;
+    case NetworkEditorLayerGeneralLinking:
+        removeItemsInGeneralLinking(items);
+        break;
+    case NetworkEditorLayerCameraLinking:
+        removeItemsInCameraLinking(items);
+        break;
+    case NetworkEditorLayerPortSizeLinking:
+        removeItemsInPortSizeLinking(items);
+        break;
+    default:
+        tgtAssert(false,"shouldn't get here");
+        break;
+    }
+
+    resetCachedContent();
+    scene()->clearSelection();
+
+    // unlock evaluator (update is triggered automatically by network invalidations)
+    // only unlock, if the appropriate button is not checked
+    if (!networkEvaluatorIsLockedByButton_)
+        evaluator_->unlock();
+}
+
+
+void NetworkEditor::removeItemsInDataFlow(QList<QGraphicsItem*> items){ 
+    // next delete port arrows
+    foreach (QGraphicsItem* item, items) {
+        if (item->type() == UserTypesPortArrowGraphicsItem) {
+            PortArrowGraphicsItem* arrow = qgraphicsitem_cast<PortArrowGraphicsItem*>(item);
+            items.removeOne(item);
+            removePortArrowGraphicsItem(arrow);
+        }
+    }
+
+    // finally delete processor items
+    foreach (QGraphicsItem* item, items) {
+        if ((item->type() == UserTypesProcessorGraphicsItem) ) {//|| (item->type() == UserTypeAggregationGraphicsItem)) {
+            PortOwnerGraphicsItem* poItem = static_cast<PortOwnerGraphicsItem*>(item);
+            items.removeOne(item);
+            removePortOwnerGraphicsItem(poItem);
+        }
+    }
+}
+
+void NetworkEditor::removeItemsInGeneralLinking(QList<QGraphicsItem*> items){
+    foreach (QGraphicsItem* item, items) {
+        switch (item->type()) {
+        case UserTypesPortArrowGraphicsItem:
+        case UserTypesPortSizeLinkArrowGraphicsItem:
+            items.removeOne(item);
+        default:
+            break;
+        }
+    }
+
+    //delete property link arrows
+    QList<PropertyLinkArrowGraphicsItem*> linkList;
+    foreach (QGraphicsItem* item, items) {
+        if (item->type() == UserTypesPropertyLinkArrowGraphicsItem) {
+            linkList.append(qgraphicsitem_cast<PropertyLinkArrowGraphicsItem*>(item));
+            items.removeOne(item);
+        }
+    }
+    while(!linkList.empty()){
+        PropertyLinkArrowGraphicsItem* item = linkList.first();
+        linkList.removeOne(item);
+        //remove dual link if exists
+        foreach (PropertyLinkArrowGraphicsItem* dual, linkList) {
+            if(dual->getDestinationItem() == item->getSourceItem() && dual->getSourceItem() == item->getDestinationItem()) {
+                linkList.removeOne(dual);
+            } else
+            if(dual->getSourceItem() == item->getSourceItem() && dual->getDestinationItem() == item->getDestinationItem()) {
+                linkList.removeOne(dual);
+            }
+        }
+        removePropertyLinkArrowGraphicsItem(item);
+    }
+
+    //delete links between processors
+    QList<ProcessorGraphicsItem*> processorList;
+    foreach (QGraphicsItem* item, items) {
+        if (item->type() == UserTypesProcessorGraphicsItem) {
+            processorList.append(qgraphicsitem_cast<ProcessorGraphicsItem*>(item));
+            items.removeOne(item);
+        }
+    }
+    if(processorList.size() == 1){
+        foreach(PropertyGraphicsItem* prop, processorList.first()->getPropertyList()->getAllPropertyGraphicsItems()){
+            foreach(PropertyLinkArrowGraphicsItem* arrow, prop->getSourceLinkList())
+                removePropertyLinkArrowGraphicsItem(arrow);
+            foreach(PropertyLinkArrowGraphicsItem* arrow, prop->getDestinationLinkList())
+                removePropertyLinkArrowGraphicsItem(arrow);
+        }
+    } else {
+        foreach(ProcessorGraphicsItem* proc1, processorList){
+            foreach(ProcessorGraphicsItem* proc2, processorList){
+                foreach(PropertyGraphicsItem* prop1, proc1->getPropertyList()->getAllPropertyGraphicsItems()){
+                    foreach(PropertyLinkArrowGraphicsItem* arrow, prop1->getSourceLinkList()){
+                        foreach(PropertyGraphicsItem* prop2, proc2->getPropertyList()->getAllPropertyGraphicsItems()){
+                            if(arrow->getDestinationItem() == prop2){
+                                removePropertyLinkArrowGraphicsItem(arrow);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void NetworkEditor::removeItemsInCameraLinking(QList<QGraphicsItem*> items) {
+    foreach (QGraphicsItem* item, items) {
+        switch (item->type()) {
+        case UserTypesPortArrowGraphicsItem:
+        case UserTypesPortSizeLinkArrowGraphicsItem:
+            items.removeOne(item);
+        default:
+            break;
+        }
+    }
+
+    //delete property link arrows
+    QList<PropertyLinkArrowGraphicsItem*> linkList;
+    foreach (QGraphicsItem* item, items) {
+        if (item->type() == UserTypesPropertyLinkArrowGraphicsItem) {
+            linkList.append(qgraphicsitem_cast<PropertyLinkArrowGraphicsItem*>(item));
+            items.removeOne(item);
+        }
+    }
+    while(!linkList.empty()){
+        PropertyLinkArrowGraphicsItem* item = linkList.first();
+        linkList.removeOne(item);
+        //remove dual link if exists
+        foreach (PropertyLinkArrowGraphicsItem* dual, linkList) {
+            if(dual->getSourceItem() == item->getSourceItem() && dual->getDestinationItem() == item->getDestinationItem()) {
+                linkList.removeOne(dual);
+            } else
+            if(dual->getDestinationItem() == item->getSourceItem() && dual->getSourceItem() == item->getDestinationItem()) {
+                linkList.removeOne(dual);
+            }
+        }
+        removePropertyLinkArrowGraphicsItem(item);
+    }
+
+    //delete links between processors
+    QList<ProcessorGraphicsItem*> processorList;
+    foreach (QGraphicsItem* item, items) {
+        if (item->type() == UserTypesProcessorGraphicsItem) {
+            processorList.append(qgraphicsitem_cast<ProcessorGraphicsItem*>(item));
+            items.removeOne(item);
+        }
+    }
+    if(processorList.size() == 1){
+        foreach(PropertyGraphicsItem* prop, processorList.first()->getPropertyList()->getAllPropertyGraphicsItems()){
+            foreach(PropertyLinkArrowGraphicsItem* arrow, prop->getSourceLinkList())
+                if(arrow->getSourceItem()->getProperty()->getClassName() == "CameraProperty" &&
+                   arrow->getDestinationItem()->getProperty()->getClassName() == "CameraProperty")
+                    removePropertyLinkArrowGraphicsItem(arrow);
+            foreach(PropertyLinkArrowGraphicsItem* arrow, prop->getDestinationLinkList())
+                if(arrow->getSourceItem()->getProperty()->getClassName() == "CameraProperty" &&
+                   arrow->getDestinationItem()->getProperty()->getClassName() == "CameraProperty")
+                    removePropertyLinkArrowGraphicsItem(arrow);
+        }
+    } else {
+        foreach(ProcessorGraphicsItem* proc1, processorList){
+            foreach(ProcessorGraphicsItem* proc2, processorList){
+                foreach(PropertyGraphicsItem* prop1, proc1->getPropertyList()->getAllPropertyGraphicsItems()){
+                    if(prop1->getProperty()->getClassName() == "CameraProperty"){
+                        foreach(PropertyLinkArrowGraphicsItem* arrow, prop1->getSourceLinkList()){
+                            foreach(PropertyGraphicsItem* prop2, proc2->getPropertyList()->getAllPropertyGraphicsItems()){
+                                if(prop2->getProperty()->getClassName() == "CameraProperty" &&
+                                    arrow->getDestinationItem() == prop2){
+                                    removePropertyLinkArrowGraphicsItem(arrow);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void NetworkEditor::removeItemsInPortSizeLinking(QList<QGraphicsItem*> items) {
+    foreach (QGraphicsItem* item, items) {
+        switch (item->type()) {
+        case UserTypesPortArrowGraphicsItem:
+            items.removeOne(item);
+        default:
+            break;
+        }
+    }
+
+    //delete port size link arrows
+    foreach (QGraphicsItem* item, items) {
+        if (item->type() == UserTypesPortSizeLinkArrowGraphicsItem) {
+            PortSizeLinkArrowGraphicsItem* arrow = qgraphicsitem_cast<PortSizeLinkArrowGraphicsItem*>(item);
+            items.removeOne(item);
+            removePortSizeLinkArrowGraphicsItem(arrow);
+        }
+    }
+
+    //delete links between processors
+    QList<ProcessorGraphicsItem*> processorList;
+    foreach (QGraphicsItem* item, items) {
+        if (item->type() == UserTypesProcessorGraphicsItem) {
+            processorList.append(qgraphicsitem_cast<ProcessorGraphicsItem*>(item));
+            items.removeOne(item);
+        }
+    }
+    if(processorList.size() == 1){
+        foreach(PropertyGraphicsItem* prop, processorList.first()->getPropertyList()->getAllPropertyGraphicsItems()){
+            foreach(PropertyLinkArrowGraphicsItem* arrow, prop->getSourceLinkList())
+                if(arrow->getSourceItem()->getProperty()->getLink(arrow->getDestinationItem()->getProperty())
+                   ->getLinkEvaluator()->getClassName() == "LinkEvaluatorRenderSize")
+                   removePropertyLinkArrowGraphicsItem(arrow);
+            foreach(PropertyLinkArrowGraphicsItem* arrow, prop->getDestinationLinkList())
+                if(arrow->getSourceItem()->getProperty()->getLink(arrow->getDestinationItem()->getProperty())
+                   ->getLinkEvaluator()->getClassName() == "LinkEvaluatorRenderSize")
+                    removePropertyLinkArrowGraphicsItem(arrow);
+        }
+    } else {
+        foreach(ProcessorGraphicsItem* proc1, processorList){
+            foreach(ProcessorGraphicsItem* proc2, processorList){
+                foreach(PropertyGraphicsItem* prop1, proc1->getPropertyList()->getAllPropertyGraphicsItems()){
+                    if(prop1->getProperty()->getClassName() == "RenderSizeOriginProperty" ||
+                       prop1->getProperty()->getClassName() == "RenderSizeReceiveProperty"){
+                        foreach(PropertyLinkArrowGraphicsItem* arrow, prop1->getSourceLinkList()){
+                            foreach(PropertyGraphicsItem* prop2, proc2->getPropertyList()->getAllPropertyGraphicsItems()){
+                                if(arrow->getDestinationItem() == prop2 && 
+                                  (prop2->getProperty()->getClassName() == "RenderSizeOriginProperty" ||
+                                   prop2->getProperty()->getClassName() == "RenderSizeReceiveProperty")){
+                                    removePropertyLinkArrowGraphicsItem(arrow);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void NetworkEditor::removePortOwnerGraphicsItem(PortOwnerGraphicsItem* poItem) {
+    if (!getProcessorNetwork())
+        return;
+
+    int poItemType = poItem->type();
+    
+    if(poItemType == UserTypesProcessorGraphicsItem)
+        foreach (Processor* processor, poItem->getProcessors())
+            getProcessorNetwork()->removeProcessor(processor);
     else
-        linkCamerasAutoButton_->setChecked(true);
+    if (poItemType == UserTypesAggregationGraphicsItem) {
+        AggregationGraphicsItem* aggItem = static_cast<AggregationGraphicsItem*>(poItem);
+        //setUpdatesEnabled(false);
+        foreach (PortOwnerGraphicsItem* childItem, aggItem->getContainingItems())
+            delete childItem;
+        delete aggItem;
+        aggregationItems_.removeOne(aggItem);
+        //setUpdatesEnabled(true);
+        //scene()->clearSelection();
+    }
+}
+
+void NetworkEditor::removePortArrowGraphicsItem(PortArrowGraphicsItem* arrow) {
+    if (!getProcessorNetwork())
+        return;
+
+    if (arrow->getDestinationItem() != 0) {
+        getProcessorNetwork()->disconnectPorts(arrow->getSourceItem()->getPort(), arrow->getDestinationItem()->getPort());
+    }
+}
+
+void NetworkEditor::removePropertyLinkArrowGraphicsItem(PropertyLinkArrowGraphicsItem* arrow) {
+    if (!getProcessorNetwork())
+        return;
+
+    if (arrow->getDestinationItem() != 0) {
+        const Property* src = arrow->getSourceItem()->getProperty();
+        const Property* dst = arrow->getDestinationItem()->getProperty();
+        getProcessorNetwork()->removePropertyLink(src->getLink(dst));
+        //remove other link if exists
+        if(dst->getLink(src))
+            getProcessorNetwork()->removePropertyLink(dst->getLink(src));
+    }
+}
+
+void NetworkEditor::removePortSizeLinkArrowGraphicsItem(PortSizeLinkArrowGraphicsItem* arrow) {
+    if (!getProcessorNetwork())
+        return;
+
+    if (arrow->getDestinationItem()) {
+        const Property* src = arrow->getSourceItem()->getProperty();
+        const Property* dst = arrow->getDestinationItem()->getProperty();
+        getProcessorNetwork()->removePropertyLink(src->getLink(dst));
+        //remove other link if exists
+        if(dst->getLink(src))
+            getProcessorNetwork()->removePropertyLink(dst->getLink(src));
+    }
+}
+
+void NetworkEditor::removePortOwnerLinkArrowGraphicsItem(PortOwnerLinkArrowGraphicsItem* arrow) {
+    if (!getProcessorNetwork())
+        return;
+
+    if(arrow->getDestinationItem()) {
+        LERROR("Not Implemented Yet!!!!!");
+    }
+}
+
+
+ProcessorGraphicsItem* NetworkEditor::getProcessorGraphicsItem(const Processor* processor) const {
+    tgtAssert(processor, "null pointer passed");
+    return processorItemMap_.find(const_cast<Processor*>(processor)).value();
+}
+
+PortGraphicsItem* NetworkEditor::getPortGraphicsItem(const Port* port) const {
+    tgtAssert(port, "null pointer passed");
+
+    PortGraphicsItem* portItem = 0;
+    if (processorItemMap_.contains(port->getProcessor())) {
+        ProcessorGraphicsItem* outportProcItem = processorItemMap_[port->getProcessor()];
+        portItem = outportProcItem->getPortGraphicsItem(port);
+    }
+    else {
+        /*foreach (AggregationGraphicsItem* i, aggregationItems_) {
+            if (i->contains(port->getProcessor()))
+                portItem = i->getPortGraphicsItem(port);
+        }*/
+    }
+
+    tgtAssert(portItem, "no portgraphicsitem found");
+    return portItem;
+}
+
+PropertyGraphicsItem* NetworkEditor::getPropertyGraphicsItem(const Property* prop) const {
+    tgtAssert(prop, "null pointer passed");
+
+    PropertyGraphicsItem* propItem = 0;
+    foreach(ProcessorGraphicsItem* item, processorItemMap_) {
+        if(item->getPropertyList()->getPropertyGraphicsItem(prop))
+            return item->getPropertyList()->getPropertyGraphicsItem(prop);
+        foreach(PortGraphicsItem* portItem, item->getPortGraphicsItems()){
+            if(portItem->getPropertyList()->getPropertyGraphicsItem(prop))
+                return portItem->getPropertyList()->getPropertyGraphicsItem(prop);
+        }
+    }
+
+    tgtAssert(propItem, "no portgraphicsitem found");
+    return propItem;
+}
+
+void NetworkEditor::updateSelectedItems() {
+    if (!getProcessorNetwork())
+        return;
+
+    QList<QGraphicsItem*> selectedItems = scene()->selectedItems();
+
+    QList<Processor*> selectedProcessors;
+    foreach (QGraphicsItem* selectedItem, selectedItems) {
+        bool isPortOwner = (selectedItem->type() == UserTypesProcessorGraphicsItem) || (selectedItem->type() == UserTypesAggregationGraphicsItem);
+
+        if (isPortOwner) {
+            PortOwnerGraphicsItem* portOwnerItem = static_cast<PortOwnerGraphicsItem*>(selectedItem);
+            selectedProcessors += portOwnerItem->getProcessors();
+            portOwnerItem->saveMeta();
+        }
+    }
+
+    if (selectedProcessors.isEmpty())
+        getProcessorNetwork()->getMetaDataContainer().removeMetaData("ProcessorSelection");
+    else {
+        std::vector<Processor*> selectedProc = qListToStdVector(selectedProcessors);
+        getProcessorNetwork()->getMetaDataContainer().addMetaData("ProcessorSelection", new SelectionMetaData<Processor*>(selectedProc));
+    }
+
+    emit processorsSelected(selectedProcessors);
 }
 
 void NetworkEditor::selectPreviouslySelectedProcessors() {
@@ -558,13 +1242,13 @@ void NetworkEditor::selectPreviouslySelectedProcessors() {
             bool alreadyFound = false;
 
             // first search all the Aggregations if any Aggregation contains the processor
-            foreach (AggregationGraphicsItem* aggItem, aggregationItems_) {
+            /*foreach (AggregationGraphicsItem* aggItem, aggregationItems_) {
                 if (aggItem->contains(proc)) {
                     alreadyFound = true;
                     aggItem->setSelected(true);
                     break;
                 }
-            }
+            }*/
 
             if (alreadyFound)
                 continue;
@@ -581,151 +1265,926 @@ void NetworkEditor::selectPreviouslySelectedProcessors() {
     }
 }
 
-QList<ProcessorGraphicsItem*> NetworkEditor::selectedProcessorItems() const {
-    QList<ProcessorGraphicsItem*> result;
+QList<AggregationGraphicsItem*> NetworkEditor::getSelectedAggregationGraphicsItems() {
+    QList<AggregationGraphicsItem*> aggregations;
+    foreach(QGraphicsItem* item, scene()->selectedItems()) {
+        if(item->type() == UserTypesAggregationGraphicsItem )
+            aggregations.append(dynamic_cast<AggregationGraphicsItem*>(item));
+    }
+    return aggregations;
+}
 
-    foreach (QGraphicsItem* item, scene()->selectedItems()) {
-        ProcessorGraphicsItem* procItem = qgraphicsitem_cast<ProcessorGraphicsItem*>(item);
+QList<PortOwnerGraphicsItem*> NetworkEditor::getSelectedPortOwnerGraphicsItems() {
+    QList<PortOwnerGraphicsItem*> portOwners;
+    foreach(QGraphicsItem* item, scene()->selectedItems()) {
+        if(item->type() == UserTypesProcessorGraphicsItem ||
+           item->type() == UserTypesAggregationGraphicsItem )
+            portOwners.append(dynamic_cast<PortOwnerGraphicsItem*>(item));
+    }
+    return portOwners;
+}
 
+QList<ProcessorGraphicsItem*> NetworkEditor::getSelectedProcessorGraphicsItems() {
+    QList<ProcessorGraphicsItem*> processors;
+    foreach(QGraphicsItem* item, scene()->selectedItems()) {
+        if(item->type() == UserTypesProcessorGraphicsItem )
+            processors.append(dynamic_cast<ProcessorGraphicsItem*>(item));
+    }
+    return processors;
+}
+
+//---------------------------------------------------------------------------------------------------------------
+//                  style, layer and cursor management                                                           
+//---------------------------------------------------------------------------------------------------------------
+NetworkEditorLayer NetworkEditor::getCurrentLayer() const {
+    return currentLayer_;
+}
+
+NetworkEditorCursorMode NetworkEditor::getCurrentCursorMode() const {
+    return currentCursorMode_;
+}
+
+NWEStyle_Base* NetworkEditor::getCurrentStyle() const {
+    return currentStyle_;
+}
+
+bool NetworkEditor::getCurrentToolTipMode() const {
+    return currentToolTipMode_;
+}
+
+void NetworkEditor::setLayer(NetworkEditorLayer layer) {
+    if (layer == currentLayer_)
+        return;
+
+    switch(layer){
+    case NetworkEditorLayerDataFlow:
+        linkingLayerButtonContainer_->setVisible(false);
+        generalLinkingLayerButtonContainer_->setVisible(false);
+        cameraLinkingLayerButtonContainer_->setVisible(false);
+        portSizeLinkingLayerButtonContainer_->setVisible(false);
+        break;
+    case NetworkEditorLayerLinking:
+        if(generalLinkingButton_->isChecked())
+            setLayer(NetworkEditorLayerGeneralLinking);
+        else if(cameraLinkingButton_->isChecked())
+            setLayer(NetworkEditorLayerCameraLinking);
+        else if(portSizeLinkingButton_->isChecked())
+            setLayer(NetworkEditorLayerPortSizeLinking);
+        else
+            tgtAssert(false,"no button checked");
+        return;
+        break;
+    case NetworkEditorLayerGeneralLinking:
+        linkingLayerButtonContainer_->setVisible(true);
+        generalLinkingLayerButtonContainer_->setVisible(true);
+        cameraLinkingLayerButtonContainer_->setVisible(false);
+        portSizeLinkingLayerButtonContainer_->setVisible(false);
+        break;
+    case NetworkEditorLayerCameraLinking:
+        linkingLayerButtonContainer_->setVisible(true);
+        generalLinkingLayerButtonContainer_->setVisible(false);
+        cameraLinkingLayerButtonContainer_->setVisible(true);
+        portSizeLinkingLayerButtonContainer_->setVisible(false);
+        break;
+    case NetworkEditorLayerPortSizeLinking:
+        linkingLayerButtonContainer_->setVisible(true);
+        generalLinkingLayerButtonContainer_->setVisible(false);
+        cameraLinkingLayerButtonContainer_->setVisible(false);
+        portSizeLinkingLayerButtonContainer_->setVisible(true);
+        break;
+    default:
+        tgtAssert(false,"Unknown Layer");
+        break;
+    }
+
+    currentLayer_ = layer;
+
+    //set layer for each processor
+    foreach (ProcessorGraphicsItem* procItem, processorItemMap_.values()) {
         if (procItem)
-            result.append(procItem);
+            procItem->updateNWELayerAndCursor();
     }
 
-    return result;
+    //set layer for each aggregation
+    foreach (AggregationGraphicsItem* aggItem, aggregationItems_)
+        aggItem->updateNWELayerAndCursor();
+
+    resetCachedContent(); //needed?
 }
 
-ProcessorNetwork* NetworkEditor::getProcessorNetwork() {
-    return processorNetwork_;
+void NetworkEditor::setCursorMode(NetworkEditorCursorMode mode) {
+    if (currentCursorMode_ == mode)
+        return;
+
+    currentCursorMode_ = mode;
+
+    //set cursor mode for each processor
+    foreach (ProcessorGraphicsItem* procItem, processorItemMap_.values()) {
+        if (procItem)
+            procItem->updateNWELayerAndCursor();
+    }
+
+    switch(currentCursorMode_){
+    case NetworkEditorCursorSelectMode:
+        setCursor(Qt::ArrowCursor);
+        break;
+    case NetworkEditorCursorMoveMode:
+        setCursor(Qt::OpenHandCursor);
+        scene()->clearSelection();
+        emit processorsSelected(QList<Processor*>());
+        break;
+    default:
+        tgtAssert(false, "should not get here");
+        break;
+    }
 }
 
-void NetworkEditor::processorConnectionsChanged() {
-    // evaluator_->onNetworkChange();  // happens implicitly through network invalidations
+void NetworkEditor::setStyle(NWEStyle_Base* style) {
+    delete currentStyle_;
+    currentStyle_ = style;
+    NWEBaseGraphicsItem* base = 0;
+    foreach(QGraphicsItem* item,scene()->items()){
+        if(base = dynamic_cast<NWEBaseGraphicsItem*>(item))
+            base->resetPaintInitialization();
+    }
+    //set background color
+    setBackgroundBrush(currentStyle_->NWEStyle_NWEBackgroundBrush);
+    //set button background
+    QPalette pal = generalLinkingLayerButtonContainer_->palette();
+    pal.setColor(generalLinkingLayerButtonContainer_->backgroundRole(), currentStyle_->NWEStyle_NWEButtonBackgroundColor);
+    generalLinkingLayerButtonContainer_->setPalette(pal);
+    pal = cameraLinkingLayerButtonContainer_->palette();
+    pal.setColor(cameraLinkingLayerButtonContainer_->backgroundRole(), currentStyle_->NWEStyle_NWEButtonBackgroundColor);
+    cameraLinkingLayerButtonContainer_->setPalette(pal);
+    pal = portSizeLinkingLayerButtonContainer_->palette();
+    pal.setColor(portSizeLinkingLayerButtonContainer_->backgroundRole(), currentStyle_->NWEStyle_NWEButtonBackgroundColor);
+    portSizeLinkingLayerButtonContainer_->setPalette(pal);
+    pal = linkingLayerButtonContainer_->palette();
+    pal.setColor(linkingLayerButtonContainer_->backgroundRole(), currentStyle_->NWEStyle_NWEButtonBackgroundColor);
+    linkingLayerButtonContainer_->setPalette(pal);
+
+    update();
 }
 
-QSize NetworkEditor::sizeHint() const {
-    return QSize(400, 600);
+void NetworkEditor::setToolTipMode(bool mode) {
+    if(currentToolTipMode_ == mode) return;
+
+    currentToolTipMode_ = mode;
 }
 
-void NetworkEditor::updateSelectedItems() {
+void NetworkEditor::toggleToolTip() {
+    currentToolTipMode_ = !currentToolTipMode_;
+}
+
+//---------------------------------------------------------------------------------------------------------------
+//                  button management                                                                            
+//---------------------------------------------------------------------------------------------------------------
+void NetworkEditor::initilizeEditorButtons() {
+//general linking
+    generalLinkingLayerButtonContainer_ = new QWidget(this);
+    generalLinkingLayerButtonContainer_->setAutoFillBackground(true);
+    QPalette pal = generalLinkingLayerButtonContainer_->palette();
+    pal.setColor(generalLinkingLayerButtonContainer_->backgroundRole(), currentStyle_->NWEStyle_NWEButtonBackgroundColor);
+    generalLinkingLayerButtonContainer_->setPalette(pal);
+    QBoxLayout* generalLinkingLayerButtonLayout = new QHBoxLayout(generalLinkingLayerButtonContainer_);
+    generalLinkingLayerButtonLayout->setMargin(NWEButtonBackgroundMargin);
+    //create buttons
+    hideCameraLinksButton_ = new QToolButton;
+        hideCameraLinksButton_->setIcon(QIcon(":/voreenve/icons/hide-linking-camera.png"));
+        hideCameraLinksButton_->setIconSize(NWESub2ButtonSize);
+        hideCameraLinksButton_->setToolTip(tr("hides all camera links"));
+        hideCameraLinksButton_->setCheckable(true);
+        hideCameraLinksButton_->setChecked(true);
+        connect(hideCameraLinksButton_, SIGNAL(clicked()), this, SLOT(hideCameraLinks()));
+        generalLinkingLayerButtonLayout->addWidget(hideCameraLinksButton_);
+    hidePortSizeLinksButton_ = new QToolButton;
+        hidePortSizeLinksButton_->setIcon(QIcon(":/voreenve/icons/hide-linking-port.png"));
+        hidePortSizeLinksButton_->setIconSize(NWESub2ButtonSize);
+        hidePortSizeLinksButton_->setToolTip(tr("hides all port size links"));
+        hidePortSizeLinksButton_->setCheckable(true);
+        hidePortSizeLinksButton_->setChecked(true);
+        connect(hidePortSizeLinksButton_, SIGNAL(clicked()), this, SLOT(hidePortSizeLinks()));
+        generalLinkingLayerButtonLayout->addWidget(hidePortSizeLinksButton_);
+    removeAllPropertyLinksButton_ = new QToolButton;
+        removeAllPropertyLinksButton_->setIcon(QIcon(":/voreenve/icons/linking-remove.png"));
+        removeAllPropertyLinksButton_->setIconSize(NWESub2ButtonSize);
+        removeAllPropertyLinksButton_->setToolTip(tr("remove all property links from the network"));
+        connect(removeAllPropertyLinksButton_, SIGNAL(clicked()), this, SLOT(removeAllPropertyLinks()));
+        generalLinkingLayerButtonLayout->addWidget(removeAllPropertyLinksButton_);
+
+//camera linking
+    cameraLinkingLayerButtonContainer_ = new QWidget(this);
+    cameraLinkingLayerButtonContainer_->setAutoFillBackground(true);
+    pal = cameraLinkingLayerButtonContainer_->palette();
+    pal.setColor(cameraLinkingLayerButtonContainer_->backgroundRole(), currentStyle_->NWEStyle_NWEButtonBackgroundColor);
+    cameraLinkingLayerButtonContainer_->setPalette(pal);
+    QBoxLayout* cameraLinkingLayerButtonLayout = new QHBoxLayout(cameraLinkingLayerButtonContainer_);
+    cameraLinkingLayerButtonLayout->setMargin(NWEButtonBackgroundMargin);
+    //create buttons
+    linkCamerasAutoButton_ = new QToolButton;
+        linkCamerasAutoButton_->setIcon(QIcon(":/voreenve/icons/linking-camera-auto.png"));
+        linkCamerasAutoButton_->setIconSize(NWESub2ButtonSize);
+        linkCamerasAutoButton_->setToolTip(tr("link cameras of processors when they are added to the network"));
+        linkCamerasAutoButton_->setCheckable(true);
+        linkCamerasAutoButton_->setChecked(true);
+        connect(linkCamerasAutoButton_, SIGNAL(clicked()), this, SLOT(linkCamerasAutoChanged()));
+        cameraLinkingLayerButtonLayout->addWidget(linkCamerasAutoButton_);
+    linkCamerasButton_ = new QToolButton;
+        linkCamerasButton_->setIcon(QIcon(":/voreenve/icons/linking-camera.png"));
+        linkCamerasButton_->setIconSize(NWESub2ButtonSize);
+        linkCamerasButton_->setToolTip(tr("link all cameras in the network"));
+        connect(linkCamerasButton_, SIGNAL(clicked()), this, SLOT(linkCameras()));
+        cameraLinkingLayerButtonLayout->addWidget(linkCamerasButton_);
+    removeAllCameraLinksButton_ = new QToolButton;
+        removeAllCameraLinksButton_->setIcon(QIcon(":/voreenve/icons/linking-remove.png"));
+        removeAllCameraLinksButton_->setIconSize(NWESub2ButtonSize);
+        removeAllCameraLinksButton_->setToolTip(tr("remove all camera property links from the network"));
+        connect(removeAllCameraLinksButton_, SIGNAL(clicked()), this, SLOT(removeAllCameraLinks()));
+        cameraLinkingLayerButtonLayout->addWidget(removeAllCameraLinksButton_);
+
+//port size linking
+    portSizeLinkingLayerButtonContainer_ = new QWidget(this);
+    portSizeLinkingLayerButtonContainer_->setAutoFillBackground(true);
+    pal = portSizeLinkingLayerButtonContainer_->palette();
+    pal.setColor(portSizeLinkingLayerButtonContainer_->backgroundRole(), currentStyle_->NWEStyle_NWEButtonBackgroundColor);
+    portSizeLinkingLayerButtonContainer_->setPalette(pal);
+    QBoxLayout* portSizeLinkingLayerButtonLayout = new QHBoxLayout(portSizeLinkingLayerButtonContainer_);
+    portSizeLinkingLayerButtonLayout->setMargin(NWEButtonBackgroundMargin);
+    //create buttons
+    linkPortSizeAutoButton_ = new QToolButton;
+        linkPortSizeAutoButton_->setIcon(QIcon(":/voreenve/icons/linking-port-auto.png"));
+        linkPortSizeAutoButton_->setIconSize(NWESub2ButtonSize);
+        linkPortSizeAutoButton_->setToolTip(tr("link render port sizes of processors when they are added to the network"));
+        linkPortSizeAutoButton_->setCheckable(true);
+        linkPortSizeAutoButton_->setChecked(true);
+        connect(linkPortSizeAutoButton_, SIGNAL(clicked()), this, SLOT(linkPortSizeAutoChanged()));
+        portSizeLinkingLayerButtonLayout->addWidget(linkPortSizeAutoButton_);
+    linkPortSizeButton_ = new QToolButton;
+        linkPortSizeButton_->setIcon(QIcon(":/voreenve/icons/linking-port.png"));
+        linkPortSizeButton_->setIconSize(NWESub2ButtonSize);
+        linkPortSizeButton_->setToolTip(tr("link all cameras in the network"));
+        connect(linkPortSizeButton_, SIGNAL(clicked()), this, SLOT(linkPortSize()));
+        portSizeLinkingLayerButtonLayout->addWidget(linkPortSizeButton_);
+    removeAllPortSizeLinksButton_ = new QToolButton;
+        removeAllPortSizeLinksButton_->setIcon(QIcon(":/voreenve/icons/linking-remove.png"));
+        removeAllPortSizeLinksButton_->setIconSize(NWESub2ButtonSize);
+        removeAllPortSizeLinksButton_->setToolTip(tr("remove all port size property links from the network"));
+        connect(removeAllPortSizeLinksButton_, SIGNAL(clicked()), this, SLOT(removeAllPortSizeLinks()));
+        portSizeLinkingLayerButtonLayout->addWidget(removeAllPortSizeLinksButton_);
+
+//linking layers
+    linkingLayerButtonContainer_ = new QWidget(this);
+    linkingLayerButtonContainer_->setAutoFillBackground(true);
+    pal = linkingLayerButtonContainer_->palette();
+    pal.setColor(linkingLayerButtonContainer_->backgroundRole(), currentStyle_->NWEStyle_NWEButtonBackgroundColor);
+    linkingLayerButtonContainer_->setPalette(pal);
+    linkingLayerButtonContainer_->setMinimumSize(NWEButtonBackgroundMargin*2+NWEMainButtonSize.width(),1);
+
+    QBoxLayout* linkingLayerButtonLayout = new QVBoxLayout(linkingLayerButtonContainer_);
+    linkingLayerButtonLayout->setMargin(NWEButtonBackgroundMargin);
+    linkingLayerButtonLayout->addSpacing(NWEMainButtonSize.height()+NWEButtonBackgroundMargin+NWEMarginLayerToLinking);
+    //create buttons
+    generalLinkingButton_ = new QToolButton;
+        generalLinkingButton_->setIcon(QIcon(":/voreenve/icons/linking-general.png"));
+        generalLinkingButton_->setIconSize(NWESub1ButtonSize);
+        generalLinkingButton_->setToolTip(tr("shows all property links"));
+        generalLinkingButton_->setCheckable(true);
+        generalLinkingButton_->setChecked(true);
+        connect(generalLinkingButton_, SIGNAL(clicked()), this, SLOT(setLayerToGeneralLinking()));
+        linkingLayerButtonLayout->addWidget(generalLinkingButton_);
+    cameraLinkingButton_ = new QToolButton;
+        cameraLinkingButton_->setIcon(QIcon(":/voreenve/icons/linking-camera.png"));
+        cameraLinkingButton_->setIconSize(NWESub1ButtonSize);
+        cameraLinkingButton_->setToolTip(tr("shows all camera property links"));
+        cameraLinkingButton_->setCheckable(true);
+        connect(cameraLinkingButton_, SIGNAL(clicked()), this, SLOT(setLayerToCameraLinking()));
+        linkingLayerButtonLayout->addWidget(cameraLinkingButton_);
+    portSizeLinkingButton_ = new QToolButton;
+        portSizeLinkingButton_->setIcon(QIcon(":/voreenve/icons/linking-port.png"));
+        portSizeLinkingButton_->setIconSize(NWESub1ButtonSize);
+        portSizeLinkingButton_->setToolTip(tr("shows all port size property links"));
+        portSizeLinkingButton_->setCheckable(true);
+        connect(portSizeLinkingButton_, SIGNAL(clicked()), this, SLOT(setLayerToPortSizeLinking()));
+        linkingLayerButtonLayout->addWidget(portSizeLinkingButton_);
+    // add to button group, so only one can be checked at the same time
+    QButtonGroup* linkingLayerButtonGroup = new QButtonGroup(this);
+        linkingLayerButtonGroup->addButton(generalLinkingButton_);
+        linkingLayerButtonGroup->addButton(cameraLinkingButton_);
+        linkingLayerButtonGroup->addButton(portSizeLinkingButton_);
+
+//layer buttons
+    layerButtonContainer_ = new QWidget(this);
+    QBoxLayout* layerButtonLayout = new QHBoxLayout(layerButtonContainer_);
+    layerButtonLayout->setMargin(NWEButtonBackgroundMargin);
+    //create buttons
+    dataFlowLayerButton_ = new QToolButton;
+        dataFlowLayerButton_->setIcon(QIcon(":/voreenve/icons/dataflow-mode.png"));
+        dataFlowLayerButton_->setIconSize(NWEMainButtonSize);
+        dataFlowLayerButton_->setToolTip(tr("switch to data flow mode (ctrl+1)"));
+        dataFlowLayerButton_->setCheckable(true);
+        dataFlowLayerButton_->setShortcut(Qt::CTRL + Qt::Key_1);
+        connect(dataFlowLayerButton_, SIGNAL(clicked()), this, SLOT(setLayerToDataFlow()));
+        layerButtonLayout->addWidget(dataFlowLayerButton_);
+    linkingLayerButton_ = new QToolButton;
+        linkingLayerButton_->setIcon(QIcon(":/voreenve/icons/linking-mode.png"));
+        linkingLayerButton_->setIconSize(NWEMainButtonSize);
+        linkingLayerButton_->setToolTip(tr("switch to linking mode (ctrl+2)"));
+        linkingLayerButton_->setCheckable(true);
+        linkingLayerButton_->setShortcut(Qt::CTRL + Qt::Key_2);
+        connect(linkingLayerButton_, SIGNAL(clicked()), this, SLOT(setLayerToLinking()));
+        layerButtonLayout->addWidget(linkingLayerButton_);
+    // add to button group, so only one can be checked at the same time
+    QButtonGroup* layerButtonGroup = new QButtonGroup(this);
+        layerButtonGroup->addButton(dataFlowLayerButton_);
+        layerButtonGroup->addButton(linkingLayerButton_);
+
+//stop network button
+    stopButtonContainer_ = new QWidget(this);
+    QBoxLayout* stopButtonLayout = new QHBoxLayout(stopButtonContainer_);
+    stopButtonLayout->setMargin(NWEButtonBackgroundMargin);
+    stopNetworkEvaluatorButton_ = new QToolButton;
+    stopNetworkEvaluatorButton_->setIcon(QIcon(":/voreenve/icons/player-pause.png"));
+    stopNetworkEvaluatorButton_->setIconSize(NWEMainButtonSize);
+    stopNetworkEvaluatorButton_->setToolTip(tr("Stop the automatic evaluation of the network"));
+    connect(stopNetworkEvaluatorButton_, SIGNAL(clicked()), this, SLOT(toggleNetworkEvaluator()));
+    stopNetworkEvaluatorButton_->setCheckable(true);
+    stopButtonLayout->addWidget(stopNetworkEvaluatorButton_);
+
+//navigation
+    navigationButtonContainer_ = new QWidget(this);
+    QGridLayout* navigationButtonContainerLayout = new QGridLayout(navigationButtonContainer_);
+    navigationButtonContainerLayout->setMargin(NWEButtonBackgroundMargin);
+    //create buttons
+    selectCursorButton_ = new QToolButton;
+        selectCursorButton_->setIcon(QIcon(":/voreenve/icons/arrow.png"));
+        selectCursorButton_->setIconSize(NWEMainButtonSize);
+        selectCursorButton_->setToolTip(tr("use to select items"));
+        selectCursorButton_->setCheckable(true);
+        selectCursorButton_->setChecked(true);
+        connect(selectCursorButton_, SIGNAL(clicked()), this, SLOT(setCursorSelect()));
+        navigationButtonContainerLayout->addWidget(selectCursorButton_,0,0);
+    moveCursorButton_ = new QToolButton;
+        moveCursorButton_->setIcon(QIcon(":/voreenve/icons/hand.png"));
+        moveCursorButton_->setIconSize(NWEMainButtonSize);
+        moveCursorButton_->setToolTip(tr("use to navigate in scene (shift)"));
+        moveCursorButton_->setCheckable(true);
+        connect(moveCursorButton_, SIGNAL(clicked()), this, SLOT(setCursorMove()));
+        navigationButtonContainerLayout->addWidget(moveCursorButton_,0,1);
+
+    QButtonGroup* navigationButtonGroup = new QButtonGroup(this);
+        navigationButtonGroup->addButton(selectCursorButton_);
+        navigationButtonGroup->addButton(moveCursorButton_);
+
+    centerViewButton_ = new QToolButton;
+        centerViewButton_->setIcon(QIcon(":/voreenve/icons/center.png"));
+        centerViewButton_->setIconSize(NWEMainButtonSize);
+        centerViewButton_->setToolTip(tr("view the whole network"));
+        connect(centerViewButton_, SIGNAL(clicked()), this, SLOT(setViewCenter()));
+        navigationButtonContainerLayout->addWidget(centerViewButton_);
+
+    layoutEditorButtons();
+}
+
+void NetworkEditor::layoutEditorButtons() {
+//layer buttons
+    int x = size().width() - layerButtonContainer_->size().width() - NWEButtonBorderSpacingX;
+    int y = NWEButtonBorderSpacingY;
+    layerButtonContainer_->move(x,y);
+
+//linking buttons
+    x = size().width() - NWEMainButtonSize.width() - NWEButtonBorderSpacingX - NWEButtonBackgroundMargin*3;
+    linkingLayerButtonContainer_->move(x,y);
+
+//general linking buttons
+    x -= generalLinkingLayerButtonContainer_->width();
+    y += layerButtonContainer_->size().height() + NWEMarginLayerToLinking - NWEButtonBackgroundMargin*2;
+    generalLinkingLayerButtonContainer_->move(x,y);
+//camera linking buttons
+    y += generalLinkingLayerButtonContainer_->height() + linkingLayerButtonContainer_->layout()->contentsMargins().top();
+    cameraLinkingLayerButtonContainer_->move(x,y);
+//port size linking buttons
+    y += portSizeLinkingLayerButtonContainer_->height() + linkingLayerButtonContainer_->layout()->contentsMargins().top();
+    portSizeLinkingLayerButtonContainer_->move(x,y);
+
+//stop network button
+    x = size().width() - stopButtonContainer_->size().width() - NWEButtonBorderSpacingX;;
+    y = size().height() - stopButtonContainer_->size().height() - NWEButtonBorderSpacingY;
+    stopButtonContainer_->move(x,y);
+
+//navigation buttons
+    x = NWEButtonBorderSpacingX;
+    y = NWEButtonBorderSpacingY;
+    navigationButtonContainer_->move(x,y);
+}
+
+bool NetworkEditor::cameraLinksHidden() {
+    return hideCameraLinksButton_->isChecked();
+}
+
+bool NetworkEditor::portSizeLinksHidden() {
+    return hidePortSizeLinksButton_->isChecked();
+}
+
+void NetworkEditor::setLayerToDataFlow() {
+    setLayer(NetworkEditorLayerDataFlow);
+}
+
+void NetworkEditor::setLayerToLinking() {
+    setLayer(NetworkEditorLayerLinking);
+}
+
+void NetworkEditor::setLayerToGeneralLinking() {
+    setLayer(NetworkEditorLayerGeneralLinking);
+}
+
+void NetworkEditor::setLayerToCameraLinking() {
+    setLayer(NetworkEditorLayerCameraLinking);
+}
+
+void NetworkEditor::setLayerToPortSizeLinking() {
+    setLayer(NetworkEditorLayerPortSizeLinking);
+}
+
+void NetworkEditor::setCursorSelect() {
+    setCursorMode(NetworkEditorCursorSelectMode);
+}
+
+void NetworkEditor::setCursorMove() {
+    setCursorMode(NetworkEditorCursorMoveMode);
+}
+
+void NetworkEditor::hideCameraLinks() {
+    foreach(ProcessorGraphicsItem* processorItem, processorItemMap_) {
+        if(processorItem->getPropertyList()->getIsVisibleInEditor()){
+            processorItem->getPropertyList()->prepareGeometryChange();
+            if(cameraLinksHidden() && portSizeLinksHidden())
+                processorItem->getPropertyList()->setPropertyVisibleModifier(PropertyListGraphicsItem::HIDE_CAMERA_AND_SIZE_PROPERTIES);
+            else if(cameraLinksHidden())
+                processorItem->getPropertyList()->setPropertyVisibleModifier(PropertyListGraphicsItem::HIDE_CAMERA_PROPERTIES);
+            else if(portSizeLinksHidden())
+                processorItem->getPropertyList()->setPropertyVisibleModifier(PropertyListGraphicsItem::HIDE_SIZE_PROPERTIES);
+            else 
+                processorItem->getPropertyList()->setPropertyVisibleModifier(PropertyListGraphicsItem::HIDE_NO_PROPERTIES);
+            processorItem->getPropertyList()->setVisible(true);
+        }
+        foreach(PortOwnerLinkArrowGraphicsItem* arrow, processorItem->getPortOwnerLinkArrows())
+            arrow->setVisible(true);
+    }
+}
+
+void NetworkEditor::hidePortSizeLinks() {
+    foreach(ProcessorGraphicsItem* processorItem, processorItemMap_) {
+        if(processorItem->getPropertyList()->getIsVisibleInEditor()){
+            processorItem->getPropertyList()->prepareGeometryChange();
+            if(cameraLinksHidden() && portSizeLinksHidden())
+                processorItem->getPropertyList()->setPropertyVisibleModifier(PropertyListGraphicsItem::HIDE_CAMERA_AND_SIZE_PROPERTIES);
+            else if(cameraLinksHidden())
+                processorItem->getPropertyList()->setPropertyVisibleModifier(PropertyListGraphicsItem::HIDE_CAMERA_PROPERTIES);
+            else if(portSizeLinksHidden())
+                processorItem->getPropertyList()->setPropertyVisibleModifier(PropertyListGraphicsItem::HIDE_SIZE_PROPERTIES);
+            else 
+                processorItem->getPropertyList()->setPropertyVisibleModifier(PropertyListGraphicsItem::HIDE_NO_PROPERTIES);
+            processorItem->getPropertyList()->setVisible(true);
+        }
+        foreach(PortOwnerLinkArrowGraphicsItem* arrow, processorItem->getPortOwnerLinkArrows())
+            arrow->setVisible(true);
+    }
+}
+
+void NetworkEditor::removeAllPropertyLinks() {
+    if (!processorNetwork_)
+        return;
+
+    if (QMessageBox::question(this, tr("VoreenVE"), tr("Remove all property links from the current network?"), QMessageBox::Ok | QMessageBox::Cancel) == QMessageBox::Ok) {
+        int numLinks = processorNetwork_->removeAllPropertyLinks();
+        if (numLinks)
+            LINFO("Removed " << numLinks << " property links");
+    }
+}
+
+void NetworkEditor::linkCamerasAutoChanged() {
+    if (!processorNetwork_)
+        return;
+
+    tgtAssert(getProcessorNetwork(), "No processor network");
+    if (processorNetwork_->getMetaDataContainer().hasMetaData("autoLinkCameras")) {
+        MetaDataBase* base = processorNetwork_->getMetaDataContainer().getMetaData("autoLinkCameras");
+        BoolMetaData* meta = dynamic_cast<BoolMetaData*>(base);
+        if (!meta) {
+            LWARNING("Meta data object not of expected type 'BoolMetaData'");
+            return;
+        }
+        meta->setValue(linkCamerasAutoButton_->isChecked());
+    }
+    else {
+        BoolMetaData* meta = new BoolMetaData;
+        meta->setValue(linkCamerasAutoButton_->isChecked());
+        processorNetwork_->getMetaDataContainer().addMetaData("autoLinkCameras", meta);
+    }
+}
+
+void NetworkEditor::linkCameras() {
+    if (!processorNetwork_)
+        return;
+
+    if (QMessageBox::question(this, tr("VoreenVE"), tr("Link all cameras in the current network?"), QMessageBox::Ok | QMessageBox::Cancel) == QMessageBox::Ok) {
+        int numLinks = getProcessorNetwork()->createPropertyLinksWithinSubNetwork<CameraProperty>(
+            processorNetwork_->getProcessors(), std::vector<std::string>(), new LinkEvaluatorCameraId());
+        if (numLinks)
+            LINFO("Created " << numLinks << " camera property links");
+    }
+}
+
+void NetworkEditor::removeAllCameraLinks() {
+    if (!processorNetwork_)
+        return;
+
+    if (QMessageBox::question(this, tr("VoreenVE"), tr("Remove all camera links from the current network?"), QMessageBox::Ok | QMessageBox::Cancel) == QMessageBox::Ok) {
+        int numRemoved = processorNetwork_->removePropertyLinksFromSubNetwork<CameraProperty>(processorNetwork_->getProcessors());
+        if (numRemoved)
+            LINFO("Removed " << numRemoved << " camera property links");
+    }
+}
+
+void NetworkEditor::linkPortSizeAutoChanged() {
+    if (!processorNetwork_)
+        return;
+
+    tgtAssert(processorNetwork_, "No processor network");
+    if (processorNetwork_->getMetaDataContainer().hasMetaData("autoLinkPortSize")) {
+        MetaDataBase* base = getProcessorNetwork()->getMetaDataContainer().getMetaData("autoLinkPortSize");
+        BoolMetaData* meta = dynamic_cast<BoolMetaData*>(base);
+        if (!meta) {
+            LWARNING("Meta data object not of expected type 'BoolMetaData'");
+            return;
+        }
+        meta->setValue(linkCamerasAutoButton_->isChecked());
+    }
+    else {
+        BoolMetaData* meta = new BoolMetaData;
+        meta->setValue(linkPortSizeAutoButton_->isChecked());
+        getProcessorNetwork()->getMetaDataContainer().addMetaData("autoLinkPortSize", meta);
+    }
+}
+
+void NetworkEditor::linkPortSize() {
+    if (!processorNetwork_)
+        return;
+
+    if (QMessageBox::question(this, tr("VoreenVE"), tr("Create render size links for all RenderPorts in the current network?"), QMessageBox::Ok | QMessageBox::Cancel) == QMessageBox::Ok) {
+        int numCreated = processorNetwork_->createRenderSizeLinksWithinSubNetwork(processorNetwork_->getProcessors(), false);
+        if (numCreated)
+            LINFO("Created " << numCreated << " render size links.");
+    }
+}
+
+void NetworkEditor::removeAllPortSizeLinks() {
+    if (!processorNetwork_)
+        return;
+
+    if (QMessageBox::question(this, tr("VoreenVE"), tr("Remove all render size links from the current network?"), QMessageBox::Ok | QMessageBox::Cancel) == QMessageBox::Ok) {
+        int numRemoved = processorNetwork_->removeRenderSizeLinksFromSubNetwork(processorNetwork_->getProcessors());
+        if (numRemoved)
+            LINFO("Removed " << numRemoved << " render size links.");
+    }
+}
+
+void NetworkEditor::toggleNetworkEvaluator() {
+    if (networkEvaluatorIsLockedByButton_) {
+        evaluator_->unlock();
+        networkEvaluatorIsLockedByButton_ = false;
+        stopNetworkEvaluatorButton_->setIcon(QIcon(":/voreenve/icons/player-pause.png"));
+        stopNetworkEvaluatorButton_->setToolTip(tr("Stop the automatic evaluation of the network"));
+        evaluator_->process();
+    }
+    else {
+        evaluator_->lock();
+        stopNetworkEvaluatorButton_->setIcon(QIcon(":/voreenve/icons/player-start.png"));
+        stopNetworkEvaluatorButton_->setToolTip(tr("Start the automatic evaluation of the network"));
+        networkEvaluatorIsLockedByButton_ = true;
+    }
+}
+
+void NetworkEditor::setViewCenter() {
+    resetMatrix();
+    resetTransform();
+    if (!processorNetwork_){
+        centerOn(0.0,0.0);
+    } else {
+        getProcessorNetwork()->getMetaDataContainer().removeMetaData("ZoomFactor");
+        getProcessorNetwork()->getMetaDataContainer().removeMetaData("ZoomCenter");
+        scaleView();
+    }
+}
+
+void NetworkEditor::linkCamerasOfProcessor(const Processor* processor) {
+
     if (!getProcessorNetwork())
         return;
 
-    QList<QGraphicsItem*> selectedItems = scene()->selectedItems();
+    // get camera properties of processor to link
+    std::vector<CameraProperty*> camPropsProcessor = processor->getPropertiesByType<CameraProperty>();
+    if (camPropsProcessor.empty())
+        return;
 
-    QList<Processor*> selectedProcessors;
-    foreach (QGraphicsItem* selectedItem, selectedItems) {
-        bool isRootItem = (selectedItem->type() == ProcessorGraphicsItem::Type) || (selectedItem->type() == AggregationGraphicsItem::Type);
+    // get camera properties of network processors
+    std::vector<CameraProperty*> camPropsNetwork = getProcessorNetwork()->getPropertiesByType<CameraProperty>();
+    // remove processor's properties from network prop vector
+    for (size_t i=0; i<camPropsProcessor.size(); ++i) {
+        std::vector<CameraProperty*>::iterator iter = std::find(camPropsNetwork.begin(), camPropsNetwork.end(), camPropsProcessor[i]);
+        if (iter != camPropsNetwork.end())
+            camPropsNetwork.erase(iter);
+    }
 
-        if (isRootItem) {
-            RootGraphicsItem* rootItem = static_cast<RootGraphicsItem*>(selectedItem);
-            selectedProcessors += rootItem->getProcessors();
-            rootItem->saveMeta();
+    if (camPropsNetwork.empty())
+        return;
+
+    int numLinks = 0;
+    for (size_t i=0; i<camPropsProcessor.size(); ++i) {
+
+        // create link with first network camera property
+        if (!camPropsNetwork.front()->isLinkedWith(camPropsProcessor[i])) {
+            if (getProcessorNetwork()->createPropertyLink(camPropsNetwork.front(), camPropsProcessor[i]))
+                numLinks++;
+        }
+        if (!camPropsProcessor[i]->isLinkedWith(camPropsNetwork.front()))
+            if (getProcessorNetwork()->createPropertyLink(camPropsProcessor[i], camPropsNetwork.front()))
+                numLinks++;
+
+        if (camPropsNetwork.size() == 1)
+            continue;
+
+        // create link with last network camera property
+        if (!camPropsNetwork.back()->isLinkedWith(camPropsProcessor[i])) {
+            if (getProcessorNetwork()->createPropertyLink(camPropsNetwork.back(), camPropsProcessor[i]))
+                numLinks++;
+        }
+        if (!camPropsProcessor[i]->isLinkedWith(camPropsNetwork.back()))
+            if (getProcessorNetwork()->createPropertyLink(camPropsProcessor[i], camPropsNetwork.back()))
+                numLinks++;
+
+        // create link with all network camera properties,
+        // unless they are already (directly or indirectly) linked
+        for (size_t j=0; j<camPropsNetwork.size(); ++j) {
+            if (!camPropsNetwork[j]->isLinkedWith(camPropsProcessor[i], true)) {
+                if (getProcessorNetwork()->createPropertyLink(camPropsNetwork[j], camPropsProcessor[i]))
+                    numLinks++;
+            }
+            if (!camPropsProcessor[i]->isLinkedWith(camPropsNetwork[j], true))
+                if (getProcessorNetwork()->createPropertyLink(camPropsProcessor[i], camPropsNetwork[j]))
+                    numLinks++;
         }
     }
 
-    if (selectedProcessors.isEmpty())
-        getProcessorNetwork()->getMetaDataContainer().removeMetaData("ProcessorSelection");
-    else {
-        std::vector<Processor*> selectedProc = qListToStdVector(selectedProcessors);
-        getProcessorNetwork()->getMetaDataContainer().addMetaData("ProcessorSelection", new SelectionMetaData<Processor*>(selectedProc));
-    }
-
-    emit processorsSelected(selectedProcessors);
+    LINFO("Created " << numLinks << " camera property links");
 }
 
-void NetworkEditor::scaleView() {
+//---------------------------------------------------------------------------------------------------------------
+//                  events                                                                                       
+//---------------------------------------------------------------------------------------------------------------
+void NetworkEditor::resizeEvent(QResizeEvent* event) {
+    QGraphicsView::resizeEvent(event);
+
+    layoutEditorButtons();
+    if (isVisible() && needsScale_) {
+        scaleView();
+        needsScale_ = false;
+    }
+}
+
+void NetworkEditor::wheelEvent(QWheelEvent *event) {
+    float factor = pow(2.0, event->delta() / 360.0);
+    scale(factor, factor);
+}
+
+void NetworkEditor::mousePressEvent(QMouseEvent* event) {
+    // shift and left button activate translation of scene.
+    if (event->button() == Qt::LeftButton && (event->modifiers() == Qt::ShiftModifier || currentCursorMode_ == NetworkEditorCursorMoveMode)) {
+        translateScene_ = true;
+        translateSceneVector_ = mapToScene(event->pos());
+        lastTranslateCenter_ =  mapToScene(viewport()->rect().center());
+        setCursor(Qt::ClosedHandCursor);
+    }
+    else
+        if(!(event->button() & Qt::RightButton))
+            QGraphicsView::mousePressEvent(event);
+}
+
+void NetworkEditor::mouseMoveEvent(QMouseEvent* event) {
+    if (translateScene_) {
+        //set new center
+        translateSceneVector_ -= mapToScene(event->pos());
+        lastTranslateCenter_ += translateSceneVector_;
+        centerOn(lastTranslateCenter_);
+        translateSceneVector_ = mapToScene(event->pos());
+        //save new center
+        if (getProcessorNetwork()) {
+            if (getProcessorNetwork()->getMetaDataContainer().hasMetaData("ZoomCenter")) {
+                MetaDataBase* base = getProcessorNetwork()->getMetaDataContainer().getMetaData("ZoomCenter");
+                Vec2MetaData* meta = dynamic_cast<Vec2MetaData*>(base);
+                meta->setValue(tgt::vec2(lastTranslateCenter_.x(),lastTranslateCenter_.y()));
+            } else {
+                getProcessorNetwork()->getMetaDataContainer().addMetaData("ZoomCenter", new Vec2MetaData(tgt::vec2(lastTranslateCenter_.x(),lastTranslateCenter_.y())));
+            }
+        }
+        QGraphicsView::mouseMoveEvent(event); 
+    }
+    else {
+        QGraphicsView::mouseMoveEvent(event);
+    }
+}
+
+void NetworkEditor::mouseReleaseEvent(QMouseEvent* event) {
+    if (event->button() == Qt::LeftButton){
+        if(translateScene_){
+            if(currentCursorMode_ == NetworkEditorCursorMoveMode)
+                setCursor(Qt::OpenHandCursor);
+            else
+                setCursor(Qt::ArrowCursor);
+            translateScene_ = false;
+        } else {
+            QGraphicsView::mouseReleaseEvent(event);
+            if(!currentCursorMode_ == NetworkEditorCursorMoveMode){
+                updateSelectedItems();
+            }
+        }
+    } else {
+       QGraphicsView::mouseReleaseEvent(event);
+    }
+}
+
+void NetworkEditor::keyPressEvent(QKeyEvent* event) {
+    QGraphicsView::keyPressEvent(event);
+
+    if (!event->isAccepted() && (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace)) {
+        deleteActionSlot();
+    }
+    else if (!event->isAccepted() && (event->key() == Qt::Key_Plus)) {
+        float factor = keyPressScaleFactor;
+        scale(factor, factor);
+    }
+    else if (!event->isAccepted() && (event->key() == Qt::Key_Minus)) {
+        float factor = 1.f / keyPressScaleFactor;
+        scale(factor, factor);        
+    }
+    else if (!event->isAccepted() && (event->key() == Qt::Key_C) && (event->modifiers() & Qt::CTRL))
+        copyActionSlot();
+    else if (!event->isAccepted() && (event->key() == Qt::Key_V) && (event->modifiers() & Qt::CTRL)) {
+        rightClickPosition_ = mapToScene(mapFromGlobal(QCursor::pos()));
+        pasteActionSlot();
+    }
+    else if (!event->isAccepted() && (event->key() == Qt::Key_F2) && currentLayer_ == NetworkEditorLayerDataFlow) {
+        QList<QGraphicsItem*> items = scene()->selectedItems();
+        if (items.count() == 1) {
+            QGraphicsItem* item = items[0];
+            PortOwnerGraphicsItem* poItem = dynamic_cast<PortOwnerGraphicsItem*>(item);
+            if (poItem)
+                poItem->enterRenameMode();
+        }
+    }
+}
+
+void NetworkEditor::dragEnterEvent(QDragEnterEvent* event) {
+    if (event->mimeData()->hasText()) {
+            event->setDropAction(Qt::CopyAction);
+            event->accept();
+    }
+    else
+        event->ignore();
+}
+
+void NetworkEditor::dragMoveEvent(QDragMoveEvent* event) {
+    QGraphicsItem* item = itemAt(event->pos());
+
+    if (item && (item->type() == UserTypesPortArrowGraphicsItem)) {
+        PortArrowGraphicsItem* arrow = qgraphicsitem_cast<PortArrowGraphicsItem*>(item);
+        selectedPortArrow_ = arrow;
+        arrow->setSelected(true);
+    }
+    else {
+        if (selectedPortArrow_)
+            selectedPortArrow_->setSelected(false);
+        selectedPortArrow_ = 0;
+    }
+}
+
+void NetworkEditor::dragLeaveEvent(QDragLeaveEvent*) {}
+
+void NetworkEditor::dropEvent(QDropEvent* event) {
+
     if (!getProcessorNetwork())
         return;
 
-    QRectF sceneRect;
-    // scene()->itemsBoundingRect() will consider all invisible (i.e. properties) as well, so we have to to it by ourselves
-    foreach (QGraphicsItem* item, scene()->items()) {
-        if (item->isVisible()) {
-#if QT_VERSION >= 0x040500
-            QRectF iRect = item->mapRectToScene(item->boundingRect());
-#else
-            QRectF old = item->boundingRect();
-            QRectF iRect(item->mapToScene(old.topLeft()), item->mapToScene(old.bottomRight()));
-#endif
-            sceneRect = sceneRect.united(iRect);
+    if (evaluator_->isLocked() && !networkEvaluatorIsLockedByButton_) {
+        QMessageBox::information(this, tr("Network Locked"), tr("The network is being evaluated, so dropping processors is not allowed"));
+        return;
+    }
+
+    QGraphicsItem* lowerItem = itemAt(event->pos());
+    if (event->mimeData()->hasText()) {
+        event->setDropAction(Qt::CopyAction);
+        event->accept();
+
+        QString idString = event->mimeData()->text();
+
+        Processor* proc = ProcessorFactory::getInstance()->create(event->mimeData()->text().toStdString());
+        tgtAssert(proc, "processor creation failed");
+
+        std::string processorName = proc->getClassName();
+        tgtAssert(!processorName.empty(), "Processor class name is empty");
+
+        ProcessorGraphicsItem* item;
+        QPointF p;
+        if (lowerItem) {
+            switch (lowerItem->type()) {
+                case UserTypesPortGraphicsItem:
+                case QGraphicsTextItem::Type:
+                case UserTypesRenamableTextGraphicsItem:
+                case UserTypesPropertyListButtonGraphicsItem:
+                    lowerItem = lowerItem->parentItem();
+                case UserTypesProcessorGraphicsItem:
+                //case AggregationGraphicsItem::Type:
+                    {
+                        p = lowerItem->pos();
+                        if(ProcessorGraphicsItem* i = qgraphicsitem_cast<ProcessorGraphicsItem*>(lowerItem))
+                            getProcessorNetwork()->replaceProcessor(i->getProcessor(), proc);
+                        /*else if(AggregationGraphicsItem* i = qgraphicsitem_cast<AggregationGraphicsItem*>(lowerItem)) {
+                            QList<QGraphicsItem*> a;
+                            a.append(i);
+                            removeItems(a);
+                            getProcessorNetwork()->addProcessor(proc, processorName);
+                        }*/ else
+                            return;
+                        updateSelectedItems();
+                        break;
+                    }
+                case UserTypesPortArrowGraphicsItem:
+                    {
+                        PortGraphicsItem* srcItem = selectedPortArrow_->getSourceItem();
+                        PortGraphicsItem* dstItem = selectedPortArrow_->getDestinationItem();
+                        getProcessorNetwork()->addProcessorInConnection(srcItem->getPort(), dstItem->getPort(), proc);
+                        p = mapToScene(event->pos());
+                        selectedPortArrow_ = 0;
+                        break;
+                    }
+                default:
+                    tgtAssert(false, "should not get here");
+            }
         }
-    }
-
-    // set standard rect, if network is empty
-    if (sceneRect.isEmpty()) {
-        int viewportWidth = tgt::iround(width() * 0.9f);
-        int viewportHeight = tgt::iround(height() * 0.9f);
-        sceneRect.setCoords( -viewportWidth / 2, -viewportHeight / 2, viewportWidth / 2, viewportHeight / 2);
-    }
-
-    sceneRect.adjust(sceneRectSpacing.x(), sceneRectSpacing.y(), sceneRectSpacing.width(), sceneRectSpacing.height());
-    //scene()->setSceneRect(sceneRect);
-
-
-    ZoomMetaData* meta = dynamic_cast<ZoomMetaData*>(getProcessorNetwork()->getMetaDataContainer().getMetaData("Zoom"));
-    if (meta) {
-        setTransform(Mat3ToQTransform(meta->getTransform()));
+        else {
+            getProcessorNetwork()->addProcessor(proc, processorName);
+            p = mapToScene(event->pos());
+        }
+        tgtAssert(processorItemMap_.contains(proc), "processorItemMap didn't contain the processor");
+        item = processorItemMap_[proc];
+        tgtAssert(item, "no ProcessorGraphicsItem for proc");
+        item->setPos(p);
+        item->saveMeta();
+        //adjustLinkArrowGraphicsItems();
+        // make sure that the added processor is initialized
+        evaluator_->initializeNetwork();
     }
     else {
-        QPointF center = QPointF(sceneRect.x() + sceneRect.width() / 2.f, sceneRect.y() + sceneRect.height() / 2.f);
-        centerOn(center);
+        event->ignore();
+    }
+}
 
-        // calculate scale factors, take size of scroll bars into account
-        float widthRatio = static_cast<qreal>(width()) / sceneRect.width();
-        float heightRatio = static_cast<qreal>(height()) / sceneRect.height();
-        float scaleFactor = std::min(widthRatio, heightRatio);
+//---------------------------------------------------------------------------------------------------------------
+//                  action slots                                                                                 
+//---------------------------------------------------------------------------------------------------------------
+bool NetworkEditor::clipboardHasValidContent() {
+    QClipboard* clipboard = QApplication::clipboard();
+    QString clip = clipboard->text();
+    std::stringstream stream(clip.toStdString());
 
-        // create some space around the objects
-        scaleFactor = std::min(scaleFactor, minimalScaleFactor);
-        scaleFactor *= scaleFactorFactor;
-
-        scale(scaleFactor, scaleFactor);
+    XmlDeserializer d;
+    d.setUseAttributes(true);
+    try {
+        d.read(stream);
+    }
+    catch (SerializationException&) {
+        return false;
     }
 
-    invalidateScene(QRectF(), QGraphicsScene::ForegroundLayer);
-}
-
-void NetworkEditor::scale(qreal sx, qreal sy) {
-    if (getProcessorNetwork()) {
-        QTransform transformMatrix = transform();
-        if (transformMatrix.isIdentity())
-            getProcessorNetwork()->getMetaDataContainer().removeMetaData("Zoom");
-        else {
-            tgtAssert(sx == sy, "no rectangular zoom performed");
-            if (getProcessorNetwork()->getMetaDataContainer().hasMetaData("Zoom")) {
-                MetaDataBase* base = getProcessorNetwork()->getMetaDataContainer().getMetaData("Zoom");
-                ZoomMetaData* meta = dynamic_cast<ZoomMetaData*>(base);
-                meta->setTransform(QTransformToMat3(transformMatrix));
-            } else
-                getProcessorNetwork()->getMetaDataContainer().addMetaData("Zoom", new ZoomMetaData(QTransformToMat3(transformMatrix)));
-        }
+    ProcessorNetwork* tmp = 0;
+    try {
+        d.deserialize("ProcessorNetwork", tmp);
     }
-    QGraphicsView::scale(sx, sy);
-}
-
-void NetworkEditor::translate(qreal dx, qreal dy) {
-    if (getProcessorNetwork()) {
-        if (getProcessorNetwork()->getMetaDataContainer().hasMetaData("Zoom")) {
-            MetaDataBase* base = getProcessorNetwork()->getMetaDataContainer().getMetaData("Zoom");
-            ZoomMetaData* meta = dynamic_cast<ZoomMetaData*>(base);
-            meta->setTransform(QTransformToMat3(transform()));
-        }
-        else {
-            getProcessorNetwork()->getMetaDataContainer().addMetaData("Zoom", new ZoomMetaData(QTransformToMat3(transform())));
-        }
+    catch (SerializationException& e){
+        LWARNINGC("voreen.NetworkEditor", "Error during deserialization of temporary network:" << e.what());
+        delete tmp;
+        return false;
     }
-
-    QGraphicsView::translate(dx, dy);
+    delete tmp;
+    return true;
 }
 
-ProcessorGraphicsItem* NetworkEditor::getProcessorGraphicsItem(Processor* processor) {
-    tgtAssert(processorItemMap_.contains(processor), "processorItemMap didn't contain the processor");
-    return processorItemMap_[processor];
-}
+void NetworkEditor::deleteActionSlot() {
+    removeItems(scene()->selectedItems());
+    updateSelectedItems();
 
-// ------------------------------------------------------------------------------------------------
-// slots
-// ------------------------------------------------------------------------------------------------
+    emit processorsSelected(QList<Processor*>());
+}
 
 void NetworkEditor::copyActionSlot() {
     if (evaluator_->isLocked() && !networkEvaluatorIsLockedByButton_) {
@@ -742,20 +2201,20 @@ void NetworkEditor::copyActionSlot() {
 
     foreach (QGraphicsItem* item, scene()->selectedItems()) {
         switch (item->type()) {
-        case ProcessorGraphicsItem::Type:
+        case UserTypesProcessorGraphicsItem:
             {
                 ProcessorGraphicsItem* procItem = qgraphicsitem_cast<ProcessorGraphicsItem*>(item);
                 Processor* processor = procItem->getProcessor();
                 processors.push_back(processor);
                 break;
             }
-        case AggregationGraphicsItem::Type:
+        /*case AggregationGraphicsItem::Type:
             {
                 AggregationGraphicsItem* aggItem = qgraphicsitem_cast<AggregationGraphicsItem*>(item);
                 std::vector<Processor*> aggProcs = qListToStdVector(aggItem->getProcessors());
                 processors.insert(processors.end(), aggProcs.begin(), aggProcs.end());
                 break;
-            }
+            }*/
         }
     }
 
@@ -788,15 +2247,15 @@ void NetworkEditor::pasteActionSlot() {
 
     XmlDeserializer d;
     d.setUseAttributes(true);
-    d.read(stream);
 
     ProcessorNetwork* pasteNetwork; //= new ProcessorNetwork();
 
     try{
+        d.read(stream);
         d.deserialize("ProcessorNetwork", pasteNetwork);
     }
     catch (SerializationException& e){
-        LWARNING("Error during network deserialization: " << e.what());
+        LWARNING("Failed to deserialize network from clipboard: " << e.what());
         return;
     }
 
@@ -841,58 +2300,170 @@ void NetworkEditor::pasteActionSlot() {
     evaluator_->initializeNetwork();
 }
 
-void NetworkEditor::replaceActionSlot() {
+void NetworkEditor::openPropertyLinkDialog(PortOwnerGraphicsItem* src, PortOwnerGraphicsItem* dest) {
     if (!getProcessorNetwork())
         return;
 
     if (evaluator_->isLocked() && !networkEvaluatorIsLockedByButton_) {
-        QMessageBox::information(this, tr("Network Locked"), tr("The network is being evaluated, so replacing is not allowed"));
+        QMessageBox::information(this, tr("Network Locked"), tr("The network is being evaluated, so creating links is not allowed"));
         return;
     }
 
-    QList<ProcessorGraphicsItem*> selected = selectedProcessorItems();
-
-    tgtAssert(selected.size() != 0, "no ProcessorGraphicsItem was selected and this method should be appear only on single selection");
-    tgtAssert(selected.size() == 1, "multiple ProcessorGraphicsItem were selected and this method should be appear only on single selection");
-
-    //tgtAssert(clipboardProcessors_.size() == 1, "there were no or multiple items in the clipboard");
-
-    //QPointF oldPosition = selected[0]->pos();
-
-    QClipboard* clipboard = QApplication::clipboard();
-    QString clip = clipboard->text();
-    std::stringstream stream(clip.toStdString());
-
-    XmlDeserializer d;
-     try {
-        d.read(stream);
-        Processor* proc = 0;
-        d.deserialize("SingleProcessor", proc);
-        getProcessorNetwork()->replaceProcessor(selected[0]->getProcessor(), proc);
-        ProcessorGraphicsItem* p = processorItemMap_[proc];
-        connect(p, SIGNAL(createLink(RootGraphicsItem*, RootGraphicsItem*)), this, SLOT(createLink(RootGraphicsItem*, RootGraphicsItem*)));
-        p->loadMeta();
-        p->setPos(rightClickPosition_);
+    //switch all propertylists off
+    QList<ProcessorGraphicsItem*> list;
+    foreach(ProcessorGraphicsItem* item, processorItemMap_){
+        if(item != src && item != dest && item->getPropertyList()->getIsVisibleInEditor()){
+            list.append(item);
+            item->togglePropertyList();
+        }
     }
-    catch (SerializationException& e) {
-        QMessageBox::critical(this, tr("An error occured during replacement operation"), tr("No processor could be created from the text in the clipboard.\nError message: ") + QString::fromStdString(e.what()));
+
+    PropertyLinkDialog* dialog = new PropertyLinkDialog(this, src, dest);
+    dialog->exec(); //deletes dialog on return
+    
+    //switch lists back on
+    foreach(ProcessorGraphicsItem* item, list)
+        item->togglePropertyList();
+    
+    src->getPropertyList()->setIsVisibleInEditor(!src->getPropertyList()->getIsVisibleInEditor());
+    src->togglePropertyList();
+    if(src != dest){
+        dest->getPropertyList()->setIsVisibleInEditor(!dest->getPropertyList()->getIsVisibleInEditor());
+        dest->togglePropertyList();
     }
 }
 
-void NetworkEditor::deleteActionSlot() {
-    removeItems(scene()->selectedItems());
-    updateSelectedItems();
+void NetworkEditor::editLinkActionSlot() {
+    if (evaluator_->isLocked() && !networkEvaluatorIsLockedByButton_) {
+        QMessageBox::information(this, tr("Network Locked"), tr("The network is being evaluated, so editing links is not allowed"));
+        return;
+    }
 
-    emit processorsSelected(QList<Processor*>());
+    tgtAssert(scene()->selectedItems().size() == 1,"to many items for this slot");
+    tgtAssert(dynamic_cast<PropertyLinkArrowGraphicsItem*>(scene()->selectedItems().first()) ||
+              dynamic_cast<PortSizeLinkArrowGraphicsItem*>(scene()->selectedItems().first()),"wrong type of selected item");
+
+    PropertyLinkArrowGraphicsItem* plItem = 0;
+    PortSizeLinkArrowGraphicsItem* pslItem = 0;
+    if(plItem = dynamic_cast<PropertyLinkArrowGraphicsItem*>(scene()->selectedItems().first())){
+        PortOwnerGraphicsItem* src = 0, *dst = 0;
+        if(src = dynamic_cast<PortOwnerGraphicsItem*>(plItem->getSourceItem()->getPropertyOwnerGraphicsItem())) {}
+        else 
+            src = dynamic_cast<PortOwnerGraphicsItem*>(plItem->getSourceItem()->getPropertyOwnerGraphicsItem()->parent());
+        if(dst = dynamic_cast<PortOwnerGraphicsItem*>(plItem->getDestinationItem()->getPropertyOwnerGraphicsItem())) {}
+        else 
+            dst = dynamic_cast<PortOwnerGraphicsItem*>(plItem->getDestinationItem()->getPropertyOwnerGraphicsItem()->parent());
+        openPropertyLinkDialog(src,dst);
+    }
+    else if(pslItem = dynamic_cast<PortSizeLinkArrowGraphicsItem*>(scene()->selectedItems().first())) {
+        openPropertyLinkDialog(pslItem->getSourcePort()->getPortOwner(),pslItem->getDestinationPort()->getPortOwner());
+    }
 }
 
-void NetworkEditor::renameActionSlot() {
-    QList<QGraphicsItem*> selected = scene()->selectedItems();
-    if (selected.size() > 0) {
-        RootGraphicsItem* rootItem = qgraphicsitem_cast<RootGraphicsItem*>(selected[0]);
-        tgtAssert(rootItem, "no root item present and rename action triggered");
-        rootItem->enterRenameMode();
+void NetworkEditor::deleteLinksActionSlot() {
+    if(!processorNetwork_) return;
+    QList<ProcessorGraphicsItem*> processors = this->getSelectedProcessorGraphicsItems();
+
+    int number = 0;
+    if(processors.size() == 0) {//do it for all
+        removeAllPropertyLinks();
+    } 
+    else if(processors.size() == 1) {
+        number = processorNetwork_->removePropertyLinksFromProcessor(processors.first()->getProcessor());
+    } 
+    else {
+        std::vector<Processor*> vec;
+        foreach(ProcessorGraphicsItem* item, processors)
+            vec.push_back(item->getProcessor());
+        number = processorNetwork_->removePropertyLinksFromSubNetwork(vec);
     }
+
+    if (number)
+        LINFO("Removed " << number << " property links.");
+}
+
+void NetworkEditor::deleteCameraLinksActionSlot() {
+    if(!processorNetwork_) return;
+    QList<ProcessorGraphicsItem*> processors = this->getSelectedProcessorGraphicsItems();
+
+    int number = 0;
+    if (processors.size() == 0) //do it for all
+        removeAllCameraLinks();
+    else if(processors.size() == 1) {
+        number = processorNetwork_->removePropertyLinksFromProcessor<CameraProperty>(processors.first()->getProcessor());
+    } 
+    else {
+        std::vector<Processor*> vec;
+        foreach(ProcessorGraphicsItem* item, processors)
+            vec.push_back(item->getProcessor());
+       number = processorNetwork_->removePropertyLinksFromSubNetwork<CameraProperty>(vec);
+    }
+
+    if (number)
+        LINFO("Removed " << number << " camera property links.");
+}
+
+void NetworkEditor::deletePortSizeLinksActionSlot() {
+    if(!processorNetwork_) return;
+    QList<ProcessorGraphicsItem*> processors = this->getSelectedProcessorGraphicsItems();
+
+    int number = 0;
+    if (processors.size() == 0) //do it for all
+        removeAllPortSizeLinks();
+    else if (processors.size() == 1){
+        number = processorNetwork_->removeRenderSizeLinksFromProcessor(processors.first()->getProcessor());
+    } 
+    else {
+        std::vector<Processor*> vec;
+        foreach(ProcessorGraphicsItem* item, processors)
+            vec.push_back(item->getProcessor());
+        number = processorNetwork_->removeRenderSizeLinksFromSubNetwork(vec);
+    }
+
+    if (number)
+        LINFO("Removed " << number << " render size links.");
+}
+
+void NetworkEditor::createCameraLinksActionSlot() {
+    if(!processorNetwork_) return;
+    QList<ProcessorGraphicsItem*> processors = this->getSelectedProcessorGraphicsItems();
+
+    int number = 0;
+    if (processors.size() == 0) //do it for all
+        number = processorNetwork_->createPropertyLinksWithinSubNetwork<CameraProperty>(processorNetwork_->getProcessors(),std::vector<std::string>());
+    else if (processors.size() == 1) {
+        number = processorNetwork_->createPropertyLinksForProcessor<CameraProperty>(processors.first()->getProcessor());
+    } 
+    else {
+        std::vector<Processor*> vec;
+        foreach(ProcessorGraphicsItem* item, processors)
+            vec.push_back(item->getProcessor());
+        number = processorNetwork_->createPropertyLinksWithinSubNetwork<CameraProperty>(vec, std::vector<std::string>());
+    }
+
+    if (number)
+        LINFO("Created " << number << " camera property links.");
+}
+
+void NetworkEditor::createPortSizeLinksActionSlot() {
+    if(!processorNetwork_) return;
+    QList<ProcessorGraphicsItem*> processors = this->getSelectedProcessorGraphicsItems();
+
+    int number = 0;
+    if(processors.size() == 0)//do it for all
+        number = processorNetwork_->createRenderSizeLinksWithinSubNetwork(processorNetwork_->getProcessors());
+    else if (processors.size() == 1) {
+        number = processorNetwork_->createRenderSizeLinksForProcessor(processors.first()->getProcessor());
+    } 
+    else {
+        std::vector<Processor*> vec;
+        foreach(ProcessorGraphicsItem* item, processors)
+            vec.push_back(item->getProcessor());
+        number = processorNetwork_->createRenderSizeLinksWithinSubNetwork(vec);
+    }
+
+    if (number)
+        LINFO("Created " << number << " render size links.");
 }
 
 void NetworkEditor::aggregateActionSlot() {
@@ -901,9 +2472,15 @@ void NetworkEditor::aggregateActionSlot() {
         return;
     }
 
-    QList<RootGraphicsItem*> items = convertQList<QGraphicsItem*, RootGraphicsItem*>(scene()->selectedItems());
+    if (QMessageBox::warning(this, tr("Warning"), QString::fromStdString("<b>You are trying to aggregate network editor items. </b><br> <br>"\
+               "This feature has not been tested in this version. The use can cause nondeterministic behavior. <br><br> "\
+               "<b>Are you sure you still want to aggregate these items?</b>"), QMessageBox::Yes | QMessageBox::Cancel) == QMessageBox::Cancel) {
+                return;
+    }
 
-    aggregateItems(items);
+    QList<PortOwnerGraphicsItem*> items = getSelectedPortOwnerGraphicsItems();
+
+    createAggregationGraphicsItem(items);
 }
 
 void NetworkEditor::deaggregateActionSlot() {
@@ -912,10 +2489,389 @@ void NetworkEditor::deaggregateActionSlot() {
         return;
     }
 
-    QList<AggregationGraphicsItem*> items = convertQList<QGraphicsItem*, AggregationGraphicsItem*>(scene()->selectedItems());
+    if (QMessageBox::warning(this, tr("Warning"), QString::fromStdString("<b>You are trying to deaggregate network editor items. </b><br> <br>"\
+               "This feature has not been tested in this version. The use can cause nondeterministic behavior. <br><br> "\
+               "<b>Are you sure you still want to deaggregate these items?</b>"), QMessageBox::Yes | QMessageBox::Cancel) == QMessageBox::Cancel) {
+                return;
+    }
+
+    QList<AggregationGraphicsItem*> items = getSelectedAggregationGraphicsItems();
 
     deaggregateItems(items);
 }
+
+void NetworkEditor::deaggregateItems(const QList<AggregationGraphicsItem*>& items) {
+    
+    if (!getProcessorNetwork())
+        return;
+
+    foreach (AggregationGraphicsItem* aggregationItem, items) {
+        MetaDataContainer& container = getProcessorNetwork()->getMetaDataContainer();
+        tgtAssert(container.hasMetaData("Aggregation"), "MetaDataContainer didn't have \"Aggregation\"");
+        AggregationMetaDataContainer* aggregationContainer = static_cast<AggregationMetaDataContainer*>(container.getMetaData("Aggregation"));
+
+        std::vector<AggregationMetaData*> allAggregations = aggregationContainer->getAggregations();
+
+        foreach (AggregationMetaData* aggregationMetaData, allAggregations) {
+            if (isEqual(aggregationMetaData, aggregationItem)) {
+                foreach (AggregationMetaData* innerMetaData, aggregationMetaData->getAggregations())
+                    aggregationContainer->addAggregation(innerMetaData);
+                aggregationContainer->removeAggregation(aggregationMetaData);
+                break;
+            }
+        }
+
+        if (aggregationContainer->isEmpty())
+            container.removeMetaData("Aggregation");
+
+        //////////////////////////////////////////////
+
+        aggregationItems_.removeOne(aggregationItem);
+        QList<PortOwnerGraphicsItem*> childItems = aggregationItem->getContainingItems();
+
+        foreach (PortOwnerGraphicsItem* childItem, childItems) {
+           
+            switch (childItem->type()) {
+            case UserTypesProcessorGraphicsItem:
+                {
+                    ProcessorGraphicsItem* procItem = qgraphicsitem_cast<ProcessorGraphicsItem*>(childItem);
+                    Processor* processor = procItem->getProcessor();
+                    tgtAssert(processor, "cannot add null pointer to processor");
+                    //processor->setProgressBar(procItem->getProgressBar());
+                    break;
+                }
+            case UserTypesAggregationGraphicsItem:
+                {
+                     AggregationGraphicsItem* aggItem = qgraphicsitem_cast<AggregationGraphicsItem*>(childItem);
+                     aggregationItems_.append(aggItem);
+                     break;
+                }
+            default:
+                tgtAssert(false, "shouldn't get here");
+            }
+        }
+
+ 
+        foreach (PortOwnerGraphicsItem* childItem, childItems) {
+            childItem->layoutChildItems();
+        }
+
+        //scene()->removeItem(aggregationItem);
+        aggregationItems_.removeOne(aggregationItem);
+
+        setUpdatesEnabled(false);
+        aggregationItem->prepareDeaggregation();
+        delete aggregationItem;
+        setUpdatesEnabled(true);
+
+        scene()->clearSelection();
+    }
+}
+
+void NetworkEditor::contextMenuEvent(QContextMenuEvent* event) {
+    //create new menu
+    QMenu currentMenu;
+    event->accept();
+
+    //empty action
+    QAction* emptyAction = new QAction(QString("no action"),&currentMenu);
+    emptyAction->setEnabled(false);
+
+    QList<QGraphicsItem*> selectedItems = scene()->selectedItems();
+
+    //HACK to handle right click, while an arrow moved
+    if(selectedItems.size() == 1 && dynamic_cast<PortGraphicsItem*>(selectedItems.first())){
+        scene()->clearSelection(); //still needs improvement :(
+        selectedItems.clear();
+    }
+
+    QGraphicsItem* item = itemAt(event->pos());
+
+    //move to parent item
+    if (item) {
+        switch (item->type()) {
+        case UserTypesRenamableTextGraphicsItem:
+        case UserTypesPropertyListButtonGraphicsItem:
+            item = item->parentItem();
+        }
+    }
+
+    //action belonging to just one item
+    if((item && item->isSelected() && scene()->selectedItems().size() == 1) || 
+       (item && !item->isSelected() && item->acceptHoverEvents())) {
+        scene()->clearSelection();
+        selectedItems.clear();
+        item->setSelected(true);
+        selectedItems.append(item);
+
+        switch (item->type()) {
+        case UserTypesProcessorGraphicsItem: {
+        case UserTypesAggregationGraphicsItem:
+            dynamic_cast<NWEBaseGraphicsItem*>(item)->addActionsToContextMenu(&currentMenu);
+
+            currentMenu.addSeparator();
+            currentMenu.addAction(createPortOwnerCameraLinksAction_);
+            currentMenu.addAction(createPortOwnerPortSizeLinksAction_);
+            currentMenu.addAction(deletePortOwnerLinksAction_);
+            currentMenu.addAction(deletePortOwnerCameraLinksAction_);
+            currentMenu.addAction(deletePortOwnerPortSizeLinksAction_);
+
+            if(item->type() == UserTypesAggregationGraphicsItem) {
+                currentMenu.addSeparator();
+                currentMenu.addAction(deaggregateAction_);
+            }
+
+            currentMenu.addSeparator();
+            currentMenu.addAction(deleteAction_);
+            currentMenu.addAction(copyAction_);
+
+            PortOwnerGraphicsItem* poItem = dynamic_cast<PortOwnerGraphicsItem*>(item);
+            if(!poItem->getWidgetToggleButton().getWidgets().empty()) {
+                currentMenu.addSeparator();
+                poItem->getWidgetToggleButton().addActionsToContextMenu(&currentMenu);
+            }
+            
+            } break;
+        case UserTypesPortArrowGraphicsItem:
+            {
+            /*bool isPartOfBundle = false;
+            QList<PortArrowGraphicsItem*> items = convertQList<QGraphicsItem*, PortArrowGraphicsItem*>(selectedItems);
+            foreach(PortArrowGraphicsItem* arrow, items) {
+                if(arrow->isBundled()) {
+                    isPartOfBundle = true;
+                    break;
+                }
+            }
+            if(isPartOfBundle) {
+                currentMenu.addAction(unbundleAction_);
+                currentMenu.addAction(addHandleAction_);
+            }*/
+            currentMenu.addAction(deleteAction_);
+            break;
+            }
+        case UserTypesPropertyLinkArrowGraphicsItem:
+            {
+            currentMenu.addAction(deleteAction_);
+            currentMenu.addAction(editLinkAction_);
+            break;
+            }
+        case UserTypesPortSizeLinkArrowGraphicsItem:
+            {
+            currentMenu.addAction(deleteAction_);
+            currentMenu.addAction(editLinkAction_);
+            break;
+            }
+        case UserTypesWidgetToggleButtonGraphicsItem:
+            {
+            WidgetToggleButtonGraphicsItem* wtb = dynamic_cast<WidgetToggleButtonGraphicsItem*>(item);
+            if(!wtb->getWidgets().empty())
+                wtb->addActionsToContextMenu(&currentMenu);
+            break;
+            }
+        case UserTypesPortGraphicsItem:
+            {
+            qgraphicsitem_cast<PortGraphicsItem*>(item)->addActionsToContextMenu(&currentMenu);
+            if(currentMenu.actions().empty())
+                currentMenu.addAction(emptyAction);
+            break;
+            }
+        default:
+            return;
+        }
+    } else
+    //action with multiple items
+    if(item && item->isSelected()) {
+        QList<PortOwnerGraphicsItem*> list = getSelectedPortOwnerGraphicsItems();
+        if(!list.empty()){
+            if(list.size() == 1) {
+                currentMenu.addAction(createPortOwnerCameraLinksAction_);
+                currentMenu.addAction(createPortOwnerPortSizeLinksAction_);
+                currentMenu.addAction(deletePortOwnerLinksAction_);
+                currentMenu.addAction(deletePortOwnerCameraLinksAction_);
+                currentMenu.addAction(deletePortOwnerPortSizeLinksAction_);
+            } else 
+            if(list.size() > 1) {
+                currentMenu.addAction(createInnerCameraLinksAction_);
+                currentMenu.addAction(createInnerPortSizeLinksAction_);
+                currentMenu.addAction(deleteInnerLinksAction_);
+                currentMenu.addAction(deleteInnerCameraLinksAction_);
+                currentMenu.addAction(deleteInnerPortSizeLinksAction_);
+                currentMenu.addSeparator();
+                currentMenu.addAction(aggregateAction_);
+            }
+        }
+
+        if(!getSelectedAggregationGraphicsItems().empty()) {
+            currentMenu.addAction(deaggregateAction_);
+        }
+
+        currentMenu.addSeparator();
+        currentMenu.addAction(deleteAction_);
+        currentMenu.addAction(copyAction_);
+        
+    }
+    // no items have been hit
+    else {
+        scene()->clearSelection();
+        currentMenu.addAction(deleteAllLinksAction_);
+        currentMenu.addAction(deleteAllCameraLinksAction_);
+        currentMenu.addAction(deleteAllPortSizeLinksAction_);
+        currentMenu.addAction(createAllCameraLinksAction_);
+        currentMenu.addAction(createAllPortSizeLinksAction_);
+
+        if(clipboardHasValidContent()){
+            currentMenu.addSeparator();
+            rightClickPosition_ = mapToScene(mapFromGlobal(QCursor::pos()));
+            currentMenu.addAction(pasteAction_);
+        }
+    }
+    currentMenu.exec(event->globalPos());
+}
+
+
+
+
+
+
+
+/***********************************************************************************************
+ ***********************************************************************************************
+ ***                                                                                         ***
+ ***                              NetworkScreenshotPlugin                                    ***
+ ***                                                                                         ***
+ ***********************************************************************************************
+ ***********************************************************************************************/
+NetworkScreenshotPlugin::NetworkScreenshotPlugin(QWidget* parent, NetworkEditor* networkEditorWidget)
+    : ScreenshotPlugin(parent, 0)
+    , networkEditorWidget_(networkEditorWidget)
+{
+    setWindowTitle(tr("Network Screenshot"));
+    resolutions_.push_back("native");
+    sizeCombo_->insertItem(0,"native");
+    int index = sizeCombo_->findText("native");
+    if ( index != -1 ) { // -1 for not found
+        sizeCombo_->setCurrentIndex(index);
+    }
+}
+
+void NetworkScreenshotPlugin::saveScreenshot(const QString& filename) {
+    QRectF visibleRect;
+    foreach (QGraphicsItem* item, networkEditorWidget_->scene()->items()) {
+        if (item->isVisible()) {
+            QRectF iRect = item->mapRectToScene(item->boundingRect());
+            visibleRect = visibleRect.united(iRect);
+        }
+    }
+    saveScreenshot(filename, visibleRect.width(), visibleRect.height());
+}
+
+void NetworkScreenshotPlugin::sizeComboChanged(int index) {
+    spWidth_->blockSignals(true);
+    spHeight_->blockSignals(true);
+    ScreenshotPlugin::sizeComboChanged(index);
+    if(sizeCombo_->currentText().contains("native")) {
+
+        QRectF visibleRect;
+        foreach (QGraphicsItem* item, networkEditorWidget_->scene()->items()) {
+            if (item->isVisible()) {
+                QRectF iRect = item->mapRectToScene(item->boundingRect());
+                visibleRect = visibleRect.united(iRect);
+            }
+        }
+        spWidth_->setValue(visibleRect.width());
+        spHeight_->setValue(visibleRect.height());
+
+        spWidth_->setEnabled(false);
+        spHeight_->setEnabled(false);
+    }
+
+    spWidth_->blockSignals(false);
+    spHeight_->blockSignals(false);
+
+}
+
+void NetworkScreenshotPlugin::saveScreenshot(const QString& filename, int width, int height) {
+    if (!networkEditorWidget_)
+        return;
+
+    QRectF visibleRect;
+    foreach (QGraphicsItem* item, networkEditorWidget_->scene()->items()) {
+        if (item->isVisible()) {
+            QRectF iRect = item->mapRectToScene(item->boundingRect());
+            visibleRect = visibleRect.united(iRect);
+        }
+    }
+
+    QPixmap pixmap(width, height);
+    pixmap.fill(QColor(255, 255, 255, 0));
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::TextAntialiasing, true);
+
+    networkEditorWidget_->scene()->render(&painter,QRectF(),visibleRect);
+
+    pixmap.save(filename);
+}
+
+} // namespace voreen
+
+
+
+/*
+    /*
+
+    void disconnectPorts(PortGraphicsItem* outport, PortGraphicsItem* inport) {
+        tgtAssert(inport, "inport is null");
+        tgtAssert(outport->isOutport(), "disconnect called on inport");
+
+        inport->removeConnection(outport);
+        //// remove outport from inports connectedPorts
+        //const QList<PortGraphicsItem*>& connected = inport->getConnectedPorts();
+        //for (int i = 0; i < connected.size(); ++i) {
+        //    if (connected[i] == outport)
+        //        connected.erase(connected.begin() + i);
+        //}
+
+        outport->removeConnection(inport);
+        //// remove inport from outports connectedPorts
+        //connected = outport->getConnected();
+        //for (int i = 0; i < connected.size(); ++i) {
+        //    if (connected[i] == inport)
+        //        connected.erase(connected.begin() + i);
+        //}
+
+        // delete arrow
+        const QList<PortArrowGraphicsItem*>& arrowList = outport->getArrowList();
+        foreach (PortArrowGraphicsItem* arrow, arrowList) {
+            if (arrow->getDestinationItem() == inport) {
+                outport->removeArrow(arrow);
+                delete arrow;
+            }
+        }
+    }
+
+*/
+
+//} // namespace
+
+
+
+
+/*
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void NetworkEditor::bundleLinksSlot() {
     if (evaluator_->isLocked() && !networkEvaluatorIsLockedByButton_) {
@@ -993,1070 +2949,14 @@ void NetworkEditor::addHandleSlot() {
     scene()->update();
 }
 
-void NetworkEditor::toggleNetworkEvaluator() {
-    if (networkEvaluatorIsLockedByButton_) {
-        evaluator_->unlock();
-        networkEvaluatorIsLockedByButton_ = false;
-        stopNetworkEvaluatorButton_->setIcon(QIcon(":/voreenve/icons/player-pause.png"));
-        stopNetworkEvaluatorButton_->setToolTip(tr("Stop the automatic evaluation of the network"));
-        evaluator_->process();
-    }
-    else {
-        evaluator_->lock();
-        stopNetworkEvaluatorButton_->setIcon(QIcon(":/voreenve/icons/player-start.png"));
-        stopNetworkEvaluatorButton_->setToolTip(tr("Start the automatic evaluation of the network"));
-        networkEvaluatorIsLockedByButton_ = true;
-    }
-}
 
-void NetworkEditor::clearDependencyHistory() {
-    const ArrowLinkInformation& info = linkMap_[selectedLinkArrow_];
-    LinkEvaluatorBase* eval = info.first->getLinkEvaluator();
-    DependencyLinkEvaluator* depEva = dynamic_cast<DependencyLinkEvaluator*>(eval);
-    depEva->clearDependencyMap();
-}
 
-void NetworkEditor::saveRenderPortImage() {
-    QFileDialog filedialog(this);
-    filedialog.setWindowTitle(tr("Save Screenshot"));
-    filedialog.setDirectory(VoreenApplication::app()->getUserDataPath("screenshots").c_str());
-    filedialog.setDefaultSuffix(tr("png"));
-
-    QStringList filter;
-    filter << tr("PNG image (*.png)");
-    filter << tr("JPEG image (*.jpg)");
-    filter << tr("Windows Bitmap (*.bmp)");
-    filter << tr("TIFF image (*.tif)");
-    filedialog.setFilters(filter);
-    filedialog.setAcceptMode(QFileDialog::AcceptSave);
-
-    QList<QUrl> urls;
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getUserDataPath("screenshots").c_str());
-    urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
-    urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
-    filedialog.setSidebarUrls(urls);
-
-    struct tm* Tm;
-    time_t currentTime = time(NULL);
-    Tm = localtime(&currentTime);
-    std::stringstream timestamp;
-    timestamp << "screenshot " << (Tm->tm_year+1900) << "-" << (Tm->tm_mon+1) << "-" << Tm->tm_mday << "-" << Tm->tm_hour << "-" << Tm->tm_min << "-" << Tm->tm_sec;
-    timestamp << ".png";
-    filedialog.selectFile(tr(timestamp.str().c_str()));
-
-    QStringList fileList;
-    if (filedialog.exec())
-        fileList = filedialog.selectedFiles();
-    if (fileList.empty())
-        return;
-
-    QString file = fileList.at(0);
-
-    temporaryRenderPortImage_->save(file);
-}
-
-// ------------------------------------------------------------------------------------------------
-// event methods
-// ------------------------------------------------------------------------------------------------
-
-void NetworkEditor::mousePressEvent(QMouseEvent* event) {
-    if (event->button() == Qt::RightButton)
-        return;
-    // shift and left button activate translation of scene.
-    else if (event->button() == Qt::LeftButton && event->modifiers() == Qt::ShiftModifier) {
-        translateScene_ = true;
-        sceneTranslate_ = mapToScene(event->pos());
-    }
-    else
-        QGraphicsView::mousePressEvent(event);
-}
-
-void NetworkEditor::mouseMoveEvent(QMouseEvent* event) {
-    if (translateScene_) {
-        sceneTranslate_ -= mapToScene(event->pos());
-        translate(sceneTranslate_.x(), sceneTranslate_.y());
-        sceneTranslate_ = mapToScene(event->pos());
-    }
-    else {
-        // tooltip behavior
-        lastMousePosition_ = event->pos();
-        QGraphicsItem* item = itemAt(event->pos());
-        HasToolTip* tooltip = dynamic_cast<HasToolTip*>(item);
-        if (item && tooltip && activateTooltips_) {
-            //if (item->type() != PortGraphicsItem::Type) {
-            lastItemWithTooltip_ = tooltip;
-            ttimer_->resetIfDistant(event->pos(),500);
-            //}
-        }
-        else {
-             if (ttimer_->isDistant(event->pos()))
-                 hideTooltip();
-        }
-
-        QGraphicsView::mouseMoveEvent(event);
-    }
-}
-
-void NetworkEditor::mouseReleaseEvent(QMouseEvent* event) {
-    if (event->button() == Qt::LeftButton)
-        translateScene_ = false;
-
-    QGraphicsView::mouseReleaseEvent(event);
-
-    if (event->button() == Qt::LeftButton)
-        updateSelectedItems();
-}
-
-void NetworkEditor::wheelEvent(QWheelEvent *event) {
-    QPointF p = mapToScene(event->pos());
-    translate(-p.x(), -p.y());
-    float factor = pow(2.0, event->delta() / 360.0);
-    scale(factor, factor);
-    translate(p.x(), p.y());
-}
-
-void NetworkEditor::keyPressEvent(QKeyEvent* event) {
-    QGraphicsView::keyPressEvent(event);
-
-    if (!event->isAccepted() && (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace)) {
-        deleteActionSlot();
-    }
-    else if (!event->isAccepted() && (event->key() == Qt::Key_Plus)) {
-        QPointF p = mapToScene(QCursor::pos());
-        translate(-p.x(), -p.y());
-        float factor = keyPressScaleFactor;
-        scale(factor, factor);
-        translate(p.x(), p.y());
-    }
-    else if (!event->isAccepted() && (event->key() == Qt::Key_Minus)) {
-        QPointF p = mapToScene(QCursor::pos());
-        translate(-p.x(), -p.y());
-        float factor = 1.f / keyPressScaleFactor;
-        scale(factor, factor);
-        translate(p.x(), p.y());
-    }
-    else if (!event->isAccepted() && (event->key() == Qt::Key_C) && (event->modifiers() & Qt::CTRL))
-        copyActionSlot();
-    else if (!event->isAccepted() && (event->key() == Qt::Key_V) && (event->modifiers() & Qt::CTRL)) {
-        rightClickPosition_ = mapToScene(mapFromGlobal(QCursor::pos()));
-        pasteActionSlot();
-    }
-    else if (!event->isAccepted() && (event->key() == Qt::Key_F2)) {
-        QList<QGraphicsItem*> items = scene()->selectedItems();
-        if (items.count() == 1) {
-            QGraphicsItem* item = items[0];
-            RootGraphicsItem* rootItem = dynamic_cast<RootGraphicsItem*>(item);
-            if (rootItem)
-                rootItem->enterRenameMode();
-        }
-    }
-}
-
-void NetworkEditor::contextMenuEvent(QContextMenuEvent* event) {
-    QMenu currentMenu;
-    lastItemWithTooltip_ = 0;
-    event->accept();
-    rightClickPosition_ = mapToScene(event->pos());
-    QGraphicsItem* item = itemAt(event->pos());
-    if (item) {
-        QList<QGraphicsItem*> selectedItems = scene()->selectedItems();
-
-        switch (item->type()) {
-        case TextGraphicsItem::Type:
-        case OpenPropertyListButton::Type:
-            item = item->parentItem();
-        case ProcessorGraphicsItem::Type:
-        case AggregationGraphicsItem::Type:
-            {
-                if (!item->isSelected()) {
-                    scene()->clearSelection();
-                    selectedItems.clear();
-                    item->setSelected(true);
-                    selectedItems.append(item);
-                }
-
-                foreach (QGraphicsItem* i, selectedItems) {
-                    if ((i->type() != ProcessorGraphicsItem::Type) && (i->type() != AggregationGraphicsItem::Type))
-                        selectedItems.removeOne(i);
-                }
-                currentMenu.addAction(deleteAction_);
-                currentMenu.addAction(copyAction_);
-
-                if (selectedItems.size() > 1)
-                    currentMenu.addAction(aggregateAction_);
-                else
-                    currentMenu.addAction(renameAction_);
-
-                foreach (QGraphicsItem* selectedItem, selectedItems) {
-                    if (selectedItem->type() == AggregationGraphicsItem::Type) {
-                        currentMenu.addAction(deaggregateAction_);
-                        break;
-                    }
-                }
-
-                if ((item->type() == ProcessorGraphicsItem::Type) && (selectedItems.size() == 1) && clipboardHasValidContent())
-                    currentMenu.addAction(replaceAction_);
-
-                QList<QAction*> widgetActions;
-                if (selectedItems.size() == 1) {
-                    RootGraphicsItem* root = qgraphicsitem_cast<RootGraphicsItem*>(item);
-                    widgetActions = root->getProcessorWidgetContextMenuActions();
-                    currentMenu.addSeparator();
-                    currentMenu.addActions(widgetActions);
-                }
-
-                break;
-            }
-        case PortArrowGraphicsItem::Type:
-            {
-                bool isPartOfBundle = false;
-                QList<PortArrowGraphicsItem*> items = convertQList<QGraphicsItem*, PortArrowGraphicsItem*>(selectedItems);
-                foreach(PortArrowGraphicsItem* arrow, items) {
-                    if(arrow->isBundled()) {
-                        isPartOfBundle = true;
-                        break;
-                    }
-                }
-
-                if(isPartOfBundle) {
-                    currentMenu.addAction(unbundleAction_);
-                    currentMenu.addAction(addHandleAction_);
-                }
-                else if (selectedItems.size() > 1)
-                    currentMenu.addAction(bundleAction_);
-                break;
-            }
-        case LinkArrowGraphicsItem::Type:
-            {
-                selectedLinkArrow_ = qgraphicsitem_cast<LinkArrowGraphicsItem*>(item);
-                currentMenu.addAction(deleteLinkAction_);
-                currentMenu.addAction(editLinkAction_);
-
-                tgtAssert(linkMap_.contains(selectedLinkArrow_), "linkMap didn't contain the selected link");
-                const ArrowLinkInformation& info = linkMap_[selectedLinkArrow_];
-                if (dynamic_cast<DependencyLinkEvaluator*>(info.first->getLinkEvaluator())) {
-                    tgtAssert(info.second == 0, "a dependency link arrow shouldn't contain two PropertyLinks");
-                    currentMenu.addAction(clearDependencyHistoryAction_);
-                }
-                break;
-            }
-        case WidgetIndicatorButton::Type:
-            {
-                RootGraphicsItem* root = qgraphicsitem_cast<RootGraphicsItem*>(item->parentItem());
-                QList<QAction*> widgetActions = root->getProcessorWidgetContextMenuActions();
-                currentMenu.addActions(widgetActions);
-                break;
-            }
-        case PortGraphicsItem::Type:
-            {
-                PortGraphicsItem* portItem = qgraphicsitem_cast<PortGraphicsItem*>(item);
-                QImage* img = portItem->getRenderPortImage();
-                if (img) {
-                    temporaryRenderPortImage_ = img;
-                    currentMenu.addAction(saveRenderPortImageAction_);
-                }
-                break;
-            }
-        default:
-            return;
-        }
-
-        //if (!item->isSelected()) {
-        //    scene()->clearSelection();
-        //    item->setSelected(true);
-        //    selectedItems.append(item);
-        //}
-
-        //foreach (QGraphicsItem* selectedItem, selectedItems) {
-        //    if (selectedItem->type() == AggregationGraphicsItem::Type) {
-        //        currentMenu.addAction(deaggregateAction_);
-        //        break;
-        //    }
-        //}
-
-        //if ((item->type() == ProcessorGraphicsItem::Type) && (selectedItems.size() == 1))
-        //    currentMenu.addAction(replaceAction_);
-
-        //QList<QAction*> widgetActions;
-        //if ((item->type() == ProcessorGraphicsItem::Type) || (item->type() == RootGraphicsItem::Type)) {
-        //    RootGraphicsItem* root = qgraphicsitem_cast<RootGraphicsItem*>(item);
-        //    widgetActions = root->getProcessorWidgetContextMenuActions();
-        //    currentMenu.addSeparator();
-        //    currentMenu.addActions(widgetActions);
-        //}
-    }
-    else {
-        // mouse cursor is not over a guiitem -> deselect all selected items
-        bool arrowsSelected = false;
-        QList<QGraphicsItem*> selectedItems = scene()->selectedItems();
-        if(!selectedItems.isEmpty()) {
-            QList<PortArrowGraphicsItem*> items = convertQList<QGraphicsItem*, PortArrowGraphicsItem*>(selectedItems);
-            if(items.size() > 1)
-                arrowsSelected = true;
-            bool bundleSelected = false;
-            foreach(PortArrowGraphicsItem* arrow, items) {
-                if(arrow->isBundled()) {
-                    bundleSelected = true;
-                    break;
-                }
-            }
-
-            if(bundleSelected) {
-                currentMenu.addAction(unbundleAction_);
-                currentMenu.addAction(addHandleAction_);
-            }
-            else if(arrowsSelected)
-                currentMenu.addAction(bundleAction_);
-        }
-
-        if(!arrowsSelected)
-            scene()->clearSelection();
-
-        if (clipboardHasValidContent())
-            currentMenu.addAction(pasteAction_);
-    }
-    currentMenu.exec(event->globalPos());
-}
-
-void NetworkEditor::resizeEvent(QResizeEvent* event) {
-    QGraphicsView::resizeEvent(event);
-
-    layoutLayerButtons();
-    layoutOtherButtons();
-    if (isVisible() && needsScale_) {
-        scaleView();
-        needsScale_ = false;
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
-// drag and drop methods
-// ------------------------------------------------------------------------------------------------
-
-void NetworkEditor::dragEnterEvent(QDragEnterEvent* event) {
-    if (event->mimeData()->hasText()) {
-            event->setDropAction(Qt::CopyAction);
-            event->accept();
-    }
-    else
-        event->ignore();
-}
-
-void NetworkEditor::dragMoveEvent(QDragMoveEvent* event) {
-    QGraphicsItem* item = itemAt(event->pos());
-
-    if (item && (item->type() == PortArrowGraphicsItem::Type)) {
-        PortArrowGraphicsItem* arrow = qgraphicsitem_cast<PortArrowGraphicsItem*>(item);
-        selectedPortArrow_ = arrow;
-        arrow->setSelected(true);
-    }
-    else {
-        if (selectedPortArrow_)
-            selectedPortArrow_->setSelected(false);
-        selectedPortArrow_ = 0;
-    }
-}
-
-void NetworkEditor::dragLeaveEvent(QDragLeaveEvent*) {}
-
-void NetworkEditor::dropEvent(QDropEvent* event) {
-
-    if (!getProcessorNetwork())
-        return;
-
-    if (evaluator_->isLocked() && !networkEvaluatorIsLockedByButton_) {
-        QMessageBox::information(this, tr("Network Locked"), tr("The network is being evaluated, so dropping processors is not allowed"));
-        return;
-    }
-
-    QGraphicsItem* lowerItem = itemAt(event->pos());
-    if (event->mimeData()->hasText()) {
-        event->setDropAction(Qt::CopyAction);
-        event->accept();
-
-        QString idString = event->mimeData()->text();
-
-        Processor* proc = ProcessorFactory::getInstance()->create(event->mimeData()->text().toStdString());
-        tgtAssert(proc, "processor creation failed");
-
-        std::string processorName = proc->getClassName();
-        tgtAssert(!processorName.empty(), "Processor class name is empty");
-
-        ProcessorGraphicsItem* item;
-        QPointF p;
-        if (lowerItem) {
-            switch (lowerItem->type()) {
-                case PortGraphicsItem::Type:
-                case TextGraphicsItem::Type:
-                case OpenPropertyListButton::Type:
-                    lowerItem = lowerItem->parentItem();
-                case ProcessorGraphicsItem::Type:
-                case AggregationGraphicsItem::Type:
-                    {
-                        p = lowerItem->pos();
-                        if(ProcessorGraphicsItem* i = qgraphicsitem_cast<ProcessorGraphicsItem*>(lowerItem))
-                            getProcessorNetwork()->replaceProcessor(i->getProcessor(), proc);
-                        else if(AggregationGraphicsItem* i = qgraphicsitem_cast<AggregationGraphicsItem*>(lowerItem)) {
-                            QList<QGraphicsItem*> a;
-                            a.append(i);
-                            removeItems(a);
-                            getProcessorNetwork()->addProcessor(proc, processorName);
-                        } else
-                            return;
-                        updateSelectedItems();
-                        break;
-                    }
-                case ArrowHeadSelectionGraphicsItem::Type:
-                    lowerItem = lowerItem->parentItem();
-                case PortArrowGraphicsItem::Type:
-                    {
-                        PortArrowGraphicsItem* arrow = qgraphicsitem_cast<PortArrowGraphicsItem*>(lowerItem);
-                        PortGraphicsItem* srcItem = arrow->getSourceItem();
-                        PortGraphicsItem* dstItem = arrow->getDestinationItem();
-                        getProcessorNetwork()->addProcessorInConnection(srcItem->getPort(), dstItem->getPort(), proc);
-                        p = mapToScene(event->pos());
-                        selectedPortArrow_ = 0;
-                        break;
-                    }
-                default:
-                    tgtAssert(false, "should not get here");
-            }
-        }
-        else {
-            getProcessorNetwork()->addProcessor(proc, processorName);
-            p = mapToScene(event->pos());
-        }
-        tgtAssert(processorItemMap_.contains(proc), "processorItemMap didn't contain the processor");
-        item = processorItemMap_[proc];
-        tgtAssert(item, "no ProcessorGraphicsItem for proc");
-        item->setPos(p);
-        item->saveMeta();
-        adjustLinkArrowGraphicsItems();
-        // make sure that the added processor is initialized
-        evaluator_->initializeNetwork();
-    }
-    else {
-        event->ignore();
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
-// tooltip methods
-// ------------------------------------------------------------------------------------------------
-
-void NetworkEditor::showTooltip(const QPoint& pos, HasToolTip* toolTip) {
-    if (!activeTooltip_ && evaluator_ && !evaluator_->isLocked() && toolTip) {
-        activeTooltip_ = toolTip->tooltip();
-        if (activeTooltip_) {
-            activeTooltip_->setPos(mapToScene(pos));
-            activeTooltip_->setZValue(50); // above the rest
-            scene()->addItem(activeTooltip_);
-        }
-    }
-}
-
-void NetworkEditor::showTooltip() {
-    if (activateTooltips_)
-        showTooltip(lastMousePosition_, lastItemWithTooltip_);
-}
-
-void NetworkEditor::hideTooltip() {
-    ttimer_->stop();
-    delete activeTooltip_;
-    activeTooltip_ = 0;
-}
-
-void NetworkEditor::enableTooltips() {
-    activateTooltips_ = true;
-}
-
-void NetworkEditor::disableTooltips() {
-    activateTooltips_ = false;
-}
-
-void NetworkEditor::linkCamerasAutoChanged() {
-
-    if (!getProcessorNetwork())
-        return;
-
-    tgtAssert(getProcessorNetwork(), "No processor network");
-    if (getProcessorNetwork()->getMetaDataContainer().hasMetaData("autoLinkCameras")) {
-        MetaDataBase* base = getProcessorNetwork()->getMetaDataContainer().getMetaData("autoLinkCameras");
-        BoolMetaData* meta = dynamic_cast<BoolMetaData*>(base);
-        if (!meta) {
-            LWARNING("Meta data object not of expected type 'BoolMetaData'");
-            return;
-        }
-        meta->setValue(linkCamerasAutoButton_->isChecked());
-    }
-    else {
-        BoolMetaData* meta = new BoolMetaData;
-        meta->setValue(linkCamerasAutoButton_->isChecked());
-        getProcessorNetwork()->getMetaDataContainer().addMetaData("autoLinkCameras", meta);
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
-// modify graphic items
-// ------------------------------------------------------------------------------------------------
-
-void NetworkEditor::removeItems(QList<QGraphicsItem*> items) {
-    hideTooltip();
-
-    if (evaluator_->isLocked() && !networkEvaluatorIsLockedByButton_) {
-        QMessageBox::information(this, tr("Network Locked"), tr("Network is being evaluated, so no delete operation is allowed"));
-        return;
-    }
-
-    // make sure the evaluator does not operate on a temporarily inconsistent network
-    evaluator_->lock();
-
-    // sort items by their type to not delete a port/arrow-item
-    // that has already been deleted indirectly with the guiitem
-    // so at first kick out the ports:
-    foreach (QGraphicsItem* item, items) {
-        switch (item->type()) {
-        case PortGraphicsItem::Type:
-        case TextGraphicsItem::Type:
-        case PropertyGraphicsItem::Type:
-            items.removeOne(item);
-        }
-    }
-
-    // next delete arrows
-    foreach (QGraphicsItem* item, items) {
-        if (item->type() == PortArrowGraphicsItem::Type) {
-            PortArrowGraphicsItem* arrow = qgraphicsitem_cast<PortArrowGraphicsItem*>(item);
-            removeArrowItem(arrow);
-            items.removeOne(item);
-        }
-    }
-
-    foreach (QGraphicsItem* item, items) {
-        if (item->type() == LinkArrowGraphicsItem::Type) {
-            LinkArrowGraphicsItem* arrow = qgraphicsitem_cast<LinkArrowGraphicsItem*>(item);
-            items.removeOne(item);
-            removeArrowItem(arrow);
-        }
-    }
-
-    // finally delete processor items
-    foreach (QGraphicsItem* item, items) {
-        if ((item->type() == ProcessorGraphicsItem::Type) || (item->type() == AggregationGraphicsItem::Type)) {
-            RootGraphicsItem* rootItem = static_cast<RootGraphicsItem*>(item);
-            removeRootGraphicsItem(rootItem);
-            items.removeOne(item);
-        }
-    }
-
-    resetCachedContent();
-
-    // unlock evaluator (update is triggered automatically by network invalidations)
-    // only unlock, if the appropriate button is not checked
-    if (!networkEvaluatorIsLockedByButton_)
-        evaluator_->unlock();
-}
-
-void NetworkEditor::removeRootGraphicsItem(RootGraphicsItem* rootItem) {
-
-    if (!getProcessorNetwork())
-        return;
-
-    foreach (LinkArrowGraphicsItem* arrow, linkMap_.keys()) {
-        if ((arrow->getSourceItem()->getRootGraphicsItem() == rootItem) || (arrow->getDestinationItem()->getRootGraphicsItem() == rootItem))
-            removeArrowItem(arrow);
-    }
-
-    int rootItemType = rootItem->type();
-
-    foreach (Processor* processor, rootItem->getProcessors())
-        getProcessorNetwork()->removeProcessor(processor);
-
-    if (rootItemType == AggregationGraphicsItem::Type) {
-        AggregationGraphicsItem* aggItem = static_cast<AggregationGraphicsItem*>(rootItem);
-        setUpdatesEnabled(false);
-        foreach (RootGraphicsItem* childItem, aggItem->getRootGraphicsItems())
-            delete childItem;
-        delete aggItem;
-        aggregationItems_.removeOne(aggItem);
-        setUpdatesEnabled(true);
-        scene()->clearSelection();
-    }
-}
-
-void NetworkEditor::removeArrowItem(LinkArrowGraphicsItem* arrow) {
-    //if (!linkMap_.contains(arrow))
-    //    return;
-
-    if (!getProcessorNetwork())
-        return;
-
-    ArrowLinkInformation links = linkMap_[arrow];
-    linkMap_.remove(arrow);
-    getProcessorNetwork()->removePropertyLink(const_cast<PropertyLink*>(links.first));
-
-    if (links.second)
-        getProcessorNetwork()->removePropertyLink(const_cast<PropertyLink*>(links.second));
-
-
-    RootGraphicsItem* sourceItem = arrow->getSourceItem()->getRootGraphicsItem();
-    RootGraphicsItem* destinationItem = arrow->getDestinationItem()->getRootGraphicsItem();
-
-    if (!getProcessorNetwork()->isPropertyLinked(arrow->getSourceItem()->getProperty()))
-        sourceItem->removePropertyGraphicsItem(arrow->getSourceItem());
-
-    if (!getProcessorNetwork()->isPropertyLinked(arrow->getDestinationItem()->getProperty()))
-        destinationItem->removePropertyGraphicsItem(arrow->getDestinationItem());
-
-    delete arrow;
-}
-
-void NetworkEditor::removeArrowItem(PortArrowGraphicsItem* arrow) {
-
-    if (!getProcessorNetwork())
-        return;
-
-    if (arrow->getDestinationItem() != 0) {
-        getProcessorNetwork()->disconnectPorts(arrow->getSourceItem()->getPort(), arrow->getDestinationItem()->getPort());
-    }
-}
-
-void NetworkEditor::adjustLinkArrowGraphicsItems() {
-    foreach (LinkArrowGraphicsItem* arrow, linkMap_.keys())
-        arrow->setVisible(currentLayer_ == NetworkEditorLayerLinking);
-    selectionChangeSlot();
-    scene()->invalidate();
-}
-
-void NetworkEditor::selectionChangeSlot() {
-    QList<QGraphicsItem*> selectedItems = scene()->selectedItems();
-    foreach (QGraphicsItem* item, selectedItems) {
-        if(RootGraphicsItem* rg = qgraphicsitem_cast<RootGraphicsItem*>(item)) {
-            foreach (LinkArrowGraphicsItem* arrow, linkMap_.keys()) {
-                if(arrow->getSourceItem()->getRootGraphicsItem() == rg) {
-                    arrow->setSelected(true);
-                    //arrow->getDestinationItem()->getRootGraphicsItem()->setSelected(true);
-                    continue;
-                }
-                if(arrow->getDestinationItem()->getRootGraphicsItem() == rg) {
-                    arrow->setSelected(true);
-                    //arrow->getSourceItem()->getRootGraphicsItem()->setSelected(true);
-                }
-            }
-        }
-    }
-}
-
-// delete propertylink
-void NetworkEditor::deletePropertyLinkSlot() {
-    tgtAssert(selectedLinkArrow_, "stored pointer was 0");
-    removeArrowItem(selectedLinkArrow_);
-    selectedLinkArrow_ = 0;
-}
-
-// edit propertylink
-void NetworkEditor::editPropertyLinkSlot() {
-    if (evaluator_->isLocked() && !networkEvaluatorIsLockedByButton_) {
-        QMessageBox::information(this, tr("Network Locked"), tr("The network is being evaluated, so editing links is not allowed"));
-        return;
-    }
-
-    createLink(selectedLinkArrow_->getSourceItem()->getRootGraphicsItem(),selectedLinkArrow_->getDestinationItem()->getRootGraphicsItem());
-    /*PropertyLinkDialog::PropertyLinkDirection linkType;
-    if (linkMap_[selectedLinkArrow_].second)
-        linkType = PropertyLinkDialog::PropertyLinkDirectionBidirectional;
-    else
-        linkType = PropertyLinkDialog::PropertyLinkDirectionToRight;
-
-    PropertyLinkDialog* dialog = new PropertyLinkDialog(this, selectedLinkArrow_->getSourceItem(), selectedLinkArrow_->getDestinationItem(), linkMap_[selectedLinkArrow_].first, linkType);
-    connect(dialog, SIGNAL(createLink(const Property*, const Property*, LinkEvaluatorBase*)), this, SLOT(editPropertyLink(const Property*, const Property*, LinkEvaluatorBase*)));
-    connect(dialog, SIGNAL(removeLink(PropertyLink*)), this, SLOT(removePropertyLink(PropertyLink*)));
-    dialog->exec();*/
-}
-
-void NetworkEditor::editPropertyLink(const Property* sourceProp, const Property* destinationProp, LinkEvaluatorBase* linkEvaluator) {
-    // delete the old propertyLink
-    if (selectedLinkArrow_)
-        deletePropertyLinkSlot();
-
-    // create new the link (if existing)
-    if (sourceProp && destinationProp && linkEvaluator)
-        createNewLink(sourceProp, destinationProp, linkEvaluator);
-}
-
-void NetworkEditor::createLink(RootGraphicsItem* src, RootGraphicsItem* dest) {
-
-    if (!getProcessorNetwork())
-        return;
-
-    if (evaluator_->isLocked() && !networkEvaluatorIsLockedByButton_) {
-        QMessageBox::information(this, tr("Network Locked"), tr("The network is being evaluated, so creating links is not allowed"));
-        return;
-    }
-    // first find all existing links between those processors and pass them to the dialog
-    QList<PropertyLink*> links;
-    foreach (PropertyLink* link, getProcessorNetwork()->getPropertyLinks()) {
-        Property* srcProp = link->getSourceProperty();
-        Processor* srcProc = static_cast<Processor*>(srcProp->getOwner());
-        tgtAssert(srcProc, "owner was no processor");
-
-        Property* destProp = link->getDestinationProperty();
-        Processor* destProc = static_cast<Processor*>(destProp->getOwner());
-        tgtAssert(destProc, "owner was no processor");
-
-        QList<Processor*> sourceProcessors = src->getProcessors();
-        QList<Processor*> destinationProcessors = dest->getProcessors();
-
-        if ((sourceProcessors.contains(srcProc) && destinationProcessors.contains(destProc)) || (sourceProcessors.contains(destProc) && destinationProcessors.contains(srcProc)))
-            links.append(link);
-    }
-
-    PropertyLinkDialog* dialog = new PropertyLinkDialog(this, src, dest, links);
-    connect(dialog, SIGNAL(createLink(const Property*, const Property*, LinkEvaluatorBase*)), this, SLOT(createNewLink(const Property*, const Property*, LinkEvaluatorBase*)));
-    connect(dialog, SIGNAL(removeLink(PropertyLink*)), this, SLOT(removePropertyLink(PropertyLink*)));
-    dialog->exec();
-}
-
-void NetworkEditor::createNewLink(const Property* sourceProp, const Property* destinationProp, LinkEvaluatorBase* linkEvaluator) {
-
-    if (!getProcessorNetwork())
-        return;
-
-    if (sourceProp && destinationProp && linkEvaluator) {
-        if (!getProcessorNetwork()->containsLink(sourceProp, destinationProp, linkEvaluator)) {
-            // the callback from the observer will go to NetworkEditor::propertyLinkAdded which will cause the arrow to be created
-            PropertyLink* link = getProcessorNetwork()->createPropertyLink(const_cast<Property*>(sourceProp), const_cast<Property*>(destinationProp), linkEvaluator);
-
-            if (!link) {
-                QString text = tr("The link between \"%1\" and \"%2\" could not be created.\nMost likely the property types cannot be linked or a link already exists.\nSee Log for detailed information").arg(
-                    QString::fromStdString(sourceProp->getGuiName()), QString::fromStdString(destinationProp->getGuiName()));
-                QMessageBox::warning(this, tr("Error in link creation"), text);
-            }
-        }
-    }
-}
-
-void NetworkEditor::removePropertyLink(PropertyLink* propertyLink) {
-
-    if (!getProcessorNetwork())
-        return;
-
-    getProcessorNetwork()->removePropertyLink(propertyLink);
-}
-
-LinkArrowGraphicsItem* NetworkEditor::createLinkArrowForPropertyLink(const PropertyLink* link) {
-    if (link == 0)
-        return 0;
-
-    Processor* srcProc = static_cast<Processor*>(link->getSourceProperty()->getOwner());
-    tgtAssert(srcProc, "property owner was no processor");
-
-    RootGraphicsItem* srcItem = 0;
-    if (processorItemMap_.contains(srcProc))
-        srcItem = processorItemMap_[srcProc];
-    else {
-        foreach (AggregationGraphicsItem* item, aggregationItems_) {
-            if (item->contains(srcProc)) {
-                srcItem = item;
-                break;
-            }
-        }
-
-    }
-    tgtAssert(srcItem, "source item was not found");
-
-    PropertyGraphicsItem* sourceProp = srcItem->getPropertyGraphicsItem(link->getSourceProperty());
-
-    Processor* dstProc = static_cast<Processor*>(link->getDestinationProperty()->getOwner());
-    tgtAssert(dstProc, "property owner was no processor");
-
-    RootGraphicsItem* dstItem = 0;
-    if (processorItemMap_.contains(dstProc))
-        dstItem = processorItemMap_[dstProc];
-    else {
-        foreach (AggregationGraphicsItem* item, aggregationItems_) {
-            if (item->contains(dstProc)) {
-                dstItem = item;
-                break;
-            }
-        }
-    }
-    tgtAssert(dstItem, "destination item was not found");
-
-    PropertyGraphicsItem* destinationProp = dstItem->getPropertyGraphicsItem(link->getDestinationProperty());
-
-    // if there is a LinkArrowGraphicsItem which has the source and destination item reversed, we need to add the new link to that one
-    foreach (LinkArrowGraphicsItem* arrow, linkMap_.keys()) {
-        if ((arrow->getSourceItem() == destinationProp) && (arrow->getDestinationItem() == sourceProp)) {
-            if (!linkMap_[arrow].second) {
-                linkMap_[arrow].second = link;
-                arrow->showSourceArrowHead(true);
-                return arrow;
-            }
-            else
-                return 0;
-        }
-    }
-
-    LinkArrowGraphicsItem* result = new LinkArrowGraphicsItem(sourceProp, destinationProp);
-    std::string functionname = link->getLinkEvaluator()->name();
-    result->setToolTip(QString::fromStdString(functionname));
-
-    if (dynamic_cast<DependencyLinkEvaluator*>(link->getLinkEvaluator()))
-        result->setNormalColor(Qt::cyan);
-
-    ArrowLinkInformation l = std::make_pair(link, static_cast<const PropertyLink*>(0));
-    linkMap_.insert(result, l);
-
-    scene()->addItem(result);
-    if (currentLayer_ == NetworkEditorLayerLinking)
-        result->show();
-    else
-        result->hide();
-
-    return result;
-}
-
-void NetworkEditor::linkCameras() {
-
-    if (!getProcessorNetwork())
-        return;
-
-    if (QMessageBox::question(this, tr("VoreenVE"), tr("Link all cameras in the current network?"), QMessageBox::Ok | QMessageBox::Cancel) == QMessageBox::Ok) {
-        int numLinks = getProcessorNetwork()->linkProperties<CameraProperty>(std::vector<Processor*>(), std::vector<std::string>());
-
-        if (numLinks > 0)
-            LINFO("Created " << numLinks << " camera property links");
-    }
-}
-
-void NetworkEditor::linkCamerasOfProcessor(const Processor* processor) {
-
-    if (!getProcessorNetwork())
-        return;
-
-    // get camera properties of processor to link
-    std::vector<CameraProperty*> camPropsProcessor = processor->getPropertiesByType<CameraProperty>();
-    if (camPropsProcessor.empty())
-        return;
-
-    // get camera properties of network processors
-    std::vector<CameraProperty*> camPropsNetwork = getProcessorNetwork()->getPropertiesByType<CameraProperty>();
-    // remove processor's properties from network prop vector
-    for (size_t i=0; i<camPropsProcessor.size(); ++i) {
-        std::vector<CameraProperty*>::iterator iter = std::find(camPropsNetwork.begin(), camPropsNetwork.end(), camPropsProcessor[i]);
-        if (iter != camPropsNetwork.end())
-            camPropsNetwork.erase(iter);
-    }
-
-    if (camPropsNetwork.empty())
-        return;
-
-    int numLinks = 0;
-    for (size_t i=0; i<camPropsProcessor.size(); ++i) {
-
-        // create link with first network camera property
-        if (!camPropsNetwork.front()->isLinkedWith(camPropsProcessor[i])) {
-            if (getProcessorNetwork()->createPropertyLink(camPropsNetwork.front(), camPropsProcessor[i]))
-                numLinks++;
-        }
-        if (!camPropsProcessor[i]->isLinkedWith(camPropsNetwork.front()))
-            if (getProcessorNetwork()->createPropertyLink(camPropsProcessor[i], camPropsNetwork.front()))
-                numLinks++;
-
-        if (camPropsNetwork.size() == 1)
-            continue;
-
-        // create link with last network camera property
-        if (!camPropsNetwork.back()->isLinkedWith(camPropsProcessor[i])) {
-            if (getProcessorNetwork()->createPropertyLink(camPropsNetwork.back(), camPropsProcessor[i]))
-                numLinks++;
-        }
-        if (!camPropsProcessor[i]->isLinkedWith(camPropsNetwork.back()))
-            if (getProcessorNetwork()->createPropertyLink(camPropsProcessor[i], camPropsNetwork.back()))
-                numLinks++;
-
-        // create link with all network camera properties,
-        // unless they are already (directly or indirectly) linked
-        for (size_t j=0; j<camPropsNetwork.size(); ++j) {
-            if (!camPropsNetwork[j]->isLinkedWith(camPropsProcessor[i], true)) {
-                if (getProcessorNetwork()->createPropertyLink(camPropsNetwork[j], camPropsProcessor[i]))
-                    numLinks++;
-            }
-            if (!camPropsProcessor[i]->isLinkedWith(camPropsNetwork[j], true))
-                if (getProcessorNetwork()->createPropertyLink(camPropsProcessor[i], camPropsNetwork[j]))
-                    numLinks++;
-        }
-    }
-
-    LINFO("Created " << numLinks << " camera property links");
-}
-
-void NetworkEditor::removePropertyLinks() {
-
-    if (!getProcessorNetwork())
-        return;
-
-    if (QMessageBox::question(this, tr("VoreenVE"), tr("Remove all property links from the current network?"), QMessageBox::Ok | QMessageBox::Cancel) == QMessageBox::Ok) {
-        size_t numLinks = getProcessorNetwork()->getPropertyLinks().size();
-        if (numLinks > 0) {
-            getProcessorNetwork()->clearPropertyLinks();
-            LINFO("Removed " << numLinks << " property links");
-        }
-    }
-}
-
-
-// ------------------------------------------------------------------------------------------------
-// layer methods
-// ------------------------------------------------------------------------------------------------
-
-void NetworkEditor::setLayer(NetworkEditorLayer layer) {
-    if (layer == currentLayer_)
-        return;
-
-    currentLayer_ = layer;
-
-    foreach (ProcessorGraphicsItem* procItem, processorItemMap_.values()) {
-        if (procItem)
-            procItem->setLayer(layer);
-    }
-
-    foreach (AggregationGraphicsItem* aggItem, aggregationItems_)
-        aggItem->setLayer(layer);
-
-    if (layer == NetworkEditorLayerLinking) {
-        linkCamerasButton_->setVisible(true);
-        removePropertyLinksButton_->setVisible(true);
-        linkCamerasAutoButton_->setVisible(true);
-    }
-    else {
-        linkCamerasButton_->setVisible(false);
-        removePropertyLinksButton_->setVisible(false);
-        linkCamerasAutoButton_->setVisible(false);
-    }
-
-    adjustLinkArrowGraphicsItems();
-    resetCachedContent();
-}
-
-void NetworkEditor::setLayerToDataflow() {
-    setLayer(NetworkEditorLayerDataflow);
-}
-
-void NetworkEditor::setLayerToLinking() {
-    setLayer(NetworkEditorLayerLinking);
-}
-
-NetworkEditorLayer NetworkEditor::currentLayer() const {
-    return currentLayer_;
-}
-
-// ------------------------------------------------------------------------------------------------
-// networkobserver methods
-// ------------------------------------------------------------------------------------------------
-
-void NetworkEditor::networkChanged() {}
-
-void NetworkEditor::processorAdded(const Processor* processor) {
-    if (processorItemMap_.find(const_cast<Processor*>(processor)) == processorItemMap_.end()) {
-        ProcessorGraphicsItem* item = createProcessorGraphicsItem(const_cast<Processor*>(processor));
-        scene()->addItem(item);
-        if (linkCamerasAutoButton_->isChecked())
-            linkCamerasOfProcessor(processor);
-    }
-}
-
-void NetworkEditor::processorRemoved(const Processor* processor) {
-    if (processorItemMap_.find(const_cast<Processor*>(processor)) != processorItemMap_.end()) {
-        Processor* nonConst = const_cast<Processor*>(processor);
-        ProcessorGraphicsItem* item = processorItemMap_.value(nonConst);
-        setUpdatesEnabled(false);
-        //scene()->removeItem(item);
-        delete item;
-        setUpdatesEnabled(true);
-        processorItemMap_.remove(nonConst);
-    }
-}
-
-void NetworkEditor::propertyLinkAdded(const PropertyLink* link) {
-    createLinkArrowForPropertyLink(link);
-}
-
-void NetworkEditor::propertyLinkRemoved(const PropertyLink* link) {
-    foreach (LinkArrowGraphicsItem* arrow, linkMap_.keys()) {
-        ArrowLinkInformation& l = linkMap_[arrow];
-        if (l.first == link) {
-            if (l.second) {
-                l.first = l.second;
-                l.second = 0;
-                arrow->showDestinationArrowHead(false);
-            }
-            else
-                removeArrowItem(arrow);
-        }
-        else if (l.second == link) {
-            l.second = 0;
-            arrow->showDestinationArrowHead(false);
-        }
-    }
-}
-
-void NetworkEditor::processorRenamed(const Processor* processor, const std::string& /*prevName*/) {
-    if (processorItemMap_.find(const_cast<Processor*>(processor)) != processorItemMap_.end()) {
-        Processor* nonConst = const_cast<Processor*>(processor);
-        ProcessorGraphicsItem* item = processorItemMap_.value(nonConst);
-        item->setName(QString::fromStdString(processor->getName()));
-        //item->updateName();
-    }
-}
-
-void NetworkEditor::portConnectionAdded(const Port* outport, const Port* inport) {
-    PortGraphicsItem* outportPortItem = getPortGraphicsItem(outport);
-    PortGraphicsItem* inportPortItem = getPortGraphicsItem(inport);
-
-    PortArrowGraphicsItem* arrow = new PortArrowGraphicsItem(outportPortItem);
-    outportPortItem->addArrow(arrow);
-    outportPortItem->addConnection(inportPortItem);
-    inportPortItem->addConnection(outportPortItem);
-    outportPortItem->getArrowList().back()->setDestinationItem(inportPortItem);
-    scene()->addItem(arrow);
-}
-
-void NetworkEditor::portConnectionRemoved(const Port* outport, const Port* inport) {
-    PortGraphicsItem* outportPortItem = getPortGraphicsItem(outport);
-    PortGraphicsItem* inportPortItem = getPortGraphicsItem(inport);
-
-    removeConnectionFromBundles(outport, inport);
-    disconnectPorts(outportPortItem, inportPortItem);
-}
 
 // ------------------------------------------------------------------------------------------------
 // aggregation methods
 // ------------------------------------------------------------------------------------------------
 
-AggregationGraphicsItem* NetworkEditor::createAggregationGraphicsItem(AggregationMetaData* metaData) {
-    QList<Processor*> internalProcessors = stdVectorToQList(metaData->getProcessors());
-    QList<RootGraphicsItem*> internalGraphicsItems;
 
-    foreach (Processor* processor, internalProcessors) {
-        ProcessorGraphicsItem* processorItem = getProcessorGraphicsItem(processor);
-        internalGraphicsItems.append(processorItem);
-    }
-    foreach (AggregationMetaData* internalMetaData, metaData->getAggregations()) {
-        AggregationGraphicsItem* internalAggregation = createAggregationGraphicsItem(internalMetaData);
-        internalGraphicsItems.append(internalAggregation);
-    }
-
-    AggregationGraphicsItem* aggregation = aggregateItems(internalGraphicsItems);
-    aggregation->setPos(metaData->getPosition().first, metaData->getPosition().second);
-    std::string name = metaData->getName();
-    aggregation->setName(QString::fromStdString(name));
-
-    aggregation->nameChanged();
-
-    return aggregation;
-}
 
 void exchangePortsInConnection(PortGraphicsItem* originalPort, PortGraphicsItem* newPort, PortGraphicsItem* counterPort) {
     originalPort->removeConnection(counterPort);
@@ -2065,323 +2965,7 @@ void exchangePortsInConnection(PortGraphicsItem* originalPort, PortGraphicsItem*
     counterPort->addConnection(newPort);
 }
 
-AggregationGraphicsItem* NetworkEditor::aggregateItems(const QList<RootGraphicsItem*>& items) {
 
-    if (!getProcessorNetwork())
-        return 0;
-
-    AggregationGraphicsItem* newAggregation = new AggregationGraphicsItem(items, this);
-
-    foreach (LinkArrowGraphicsItem* arrow, linkMap_.keys()) {
-        bool containsSource = items.contains(arrow->getSourceItem()->getRootGraphicsItem());
-        bool containsDestination = items.contains(arrow->getDestinationItem()->getRootGraphicsItem());
-
-        if (containsSource && containsDestination) {
-            newAggregation->addInternalLinkArrow(arrow, linkMap_[arrow]);
-            linkMap_.remove(arrow);
-            arrow->hide();
-            scene()->removeItem(arrow);
-        }
-        else if (containsSource) {
-            PropertyGraphicsItem* newSourceItem = newAggregation->getPropertyGraphicsItem(arrow->getSourceItem()->getProperty());
-            arrow->setSourceItem(newSourceItem);
-        }
-        else if (containsDestination) {
-            PropertyGraphicsItem* newDestinationItem = newAggregation->getPropertyGraphicsItem(arrow->getDestinationItem()->getProperty());
-            arrow->setDestinationItem(newDestinationItem);
-        }
-    }
-
-    foreach (RootGraphicsItem* item, items) {
-        tgtAssert(item, "cannot aggregate null pointer to RootGraphicsItems");
-
-        const QString& aggregationName = newAggregation->getName();
-
-        //if (item->type() == ProcessorGraphicsItem::Type)
-            item->addAggregationPrefix(aggregationName);
-
-        foreach (PortGraphicsItem* itemPort, item->getPortGraphicsItems()) {
-            PortGraphicsItem* aggregationPort = newAggregation->getPortGraphicsItem(itemPort->getPort());
-            if (itemPort->isOutport()) {
-                foreach (PortArrowGraphicsItem* arrow, itemPort->getArrowList()) {
-                    bool arrowSourceItemInAggregation = newAggregation->contains(arrow->getSourceItem()->getParent());
-                    bool arrowDestinationItemInAggregation = newAggregation->contains(arrow->getDestinationItem()->getParent());
-                    bool correctPortItem = aggregationPort->getPort() == arrow->getSourceItem()->getPort();
-
-                    if (!arrowDestinationItemInAggregation && arrowSourceItemInAggregation && correctPortItem) {
-                        exchangePortsInConnection(itemPort, aggregationPort, arrow->getDestinationItem());
-                        arrow->setSourceItem(aggregationPort);
-                        aggregationPort->addArrow(arrow);
-                        itemPort->removeArrow(arrow);
-                    }
-                    else if (arrowDestinationItemInAggregation && arrowSourceItemInAggregation) {
-                        newAggregation->addInternalPortArrow(arrow);
-                        arrow->hide();
-                        if (arrow->scene()) // arrows will be deleted twice otherwise
-                            scene()->removeItem(arrow);
-                    }
-                }
-            } else {
-                foreach (PortGraphicsItem* connectedPort, itemPort->getConnectedPorts()) {
-                    foreach (PortArrowGraphicsItem* arrow, connectedPort->getArrowList()) {
-                        bool arrowSourceItemInAggregation = newAggregation->contains(arrow->getSourceItem()->getParent());
-                        bool arrowDestinationItemInAggregation = newAggregation->contains(arrow->getDestinationItem()->getParent());
-                        bool correctPortItem = aggregationPort->getPort() == arrow->getDestinationItem()->getPort();
-
-                        if (arrowDestinationItemInAggregation && !arrowSourceItemInAggregation && correctPortItem) {
-                            exchangePortsInConnection(itemPort, aggregationPort, arrow->getSourceItem());
-                            arrow->setDestinationItem(aggregationPort);
-                        }
-                        else if (arrowDestinationItemInAggregation && arrowSourceItemInAggregation) {
-                            newAggregation->addInternalPortArrow(arrow);
-                            arrow->hide();
-                            if (arrow->scene()) // arrows will be deleted twice otherwise
-                                scene()->removeItem(arrow);
-                        }
-                    }
-                }
-            }
-        }
-
-        switch (item->type()) {
-        case ProcessorGraphicsItem::Type:
-            {
-                ProcessorGraphicsItem* processorItem = qgraphicsitem_cast<ProcessorGraphicsItem*>(item);
-                Processor* processor = processorItem->getProcessor();
-                tgtAssert(processor, "processor was null pointer");
-                processor->setProgressBar(0);
-                processorItemMap_.remove(processor);
-                break;
-            }
-        case AggregationGraphicsItem::Type:
-            {
-                AggregationGraphicsItem* aggregationItem = qgraphicsitem_cast<AggregationGraphicsItem*>(item);
-                aggregationItems_.removeOne(aggregationItem);
-                break;
-            }
-        default:
-            tgtAssert(false, "shouldn't get here");
-        }
-
-        item->saveMeta();
-        item->hide();
-        scene()->removeItem(item);
-    }
-    newAggregation->layoutChildItems();
-    newAggregation->setLayer(currentLayer_);
-    adjustLinkArrowGraphicsItems();
-    newAggregation->setSelected(true);
-    connect(newAggregation, SIGNAL(createLink(RootGraphicsItem*, RootGraphicsItem*)), this, SLOT(createLink(RootGraphicsItem*, RootGraphicsItem*)));
-    connect(newAggregation, SIGNAL(startedArrow()), this, SLOT(disableTooltips()));
-    connect(newAggregation, SIGNAL(endedArrow()), this, SLOT(enableTooltips()));
-
-    aggregationItems_.append(newAggregation);
-    scene()->addItem(newAggregation);
-    scene()->clearSelection();
-
-    ///////////////////////
-
-    std::vector<Processor*> internalProcessors;
-    std::vector<AggregationGraphicsItem*> internalAggregations;
-    foreach (RootGraphicsItem* i, items) {
-        bool isProcessorItem = i->type() == ProcessorGraphicsItem::Type;
-        bool isAggregationItem = i->type() == AggregationGraphicsItem::Type;
-
-        if (isProcessorItem)
-            internalProcessors.push_back(dynamic_cast<ProcessorGraphicsItem*>(i)->getProcessor());
-        else if (isAggregationItem)
-            internalAggregations.push_back(dynamic_cast<AggregationGraphicsItem*>(i));
-    }
-
-    MetaDataContainer& container = getProcessorNetwork()->getMetaDataContainer();
-    if (!container.hasMetaData("Aggregation")) {
-        MetaDataBase* metaData = new AggregationMetaDataContainer;
-        container.addMetaData("Aggregation", metaData);
-    }
-    AggregationMetaDataContainer* aggregationContainer = static_cast<AggregationMetaDataContainer*>(container.getMetaData("Aggregation"));
-
-    std::vector<AggregationMetaData*> allAggregations = aggregationContainer->getAggregations();
-
-    AggregationMetaData* metaData = new AggregationMetaData;
-    metaData->setProcessors(internalProcessors);
-    metaData->setName(newAggregation->getName().toStdString());
-    metaData->setPosition(static_cast<int>(newAggregation->pos().x()), static_cast<int>(newAggregation->pos().y()));
-    newAggregation->setAggregationMetaData(metaData);
-
-    foreach (AggregationMetaData* metaDataAgg, allAggregations) {
-        foreach (AggregationGraphicsItem* graphicsItemAgg, internalAggregations) {
-            if (isEqual(metaDataAgg, graphicsItemAgg)) {
-                metaData->addAggregation(metaDataAgg);
-                aggregationContainer->removeAggregation(metaDataAgg);
-            }
-        }
-    }
-
-    aggregationContainer->addAggregation(metaData);
-
-    return newAggregation;
-}
-
-void NetworkEditor::deaggregateItems(const QList<AggregationGraphicsItem*>& aggregationItems) {
-
-    if (!getProcessorNetwork())
-        return;
-
-    foreach (AggregationGraphicsItem* aggregationItem, aggregationItems) {
-        MetaDataContainer& container = getProcessorNetwork()->getMetaDataContainer();
-        tgtAssert(container.hasMetaData("Aggregation"), "MetaDataContainer didn't have \"Aggregation\"");
-        AggregationMetaDataContainer* aggregationContainer = static_cast<AggregationMetaDataContainer*>(container.getMetaData("Aggregation"));
-
-        std::vector<AggregationMetaData*> allAggregations = aggregationContainer->getAggregations();
-
-        foreach (AggregationMetaData* aggregationMetaData, allAggregations) {
-            if (isEqual(aggregationMetaData, aggregationItem)) {
-                foreach (AggregationMetaData* innerMetaData, aggregationMetaData->getAggregations())
-                    aggregationContainer->addAggregation(innerMetaData);
-                aggregationContainer->removeAggregation(aggregationMetaData);
-                break;
-            }
-        }
-
-        if (aggregationContainer->isEmpty())
-            container.removeMetaData("Aggregation");
-
-        //////////////////////////////////////////////
-
-        aggregationItems_.removeOne(aggregationItem);
-        QList<RootGraphicsItem*> childItems = aggregationItem->getRootGraphicsItems();
-
-        foreach (RootGraphicsItem* childItem, childItems) {
-            //if (childItem->type() == ProcessorGraphicsItem::Type)
-                childItem->removeAggregationPrefix();
-
-            scene()->addItem(childItem);
-            childItem->show();
-            childItem->loadMeta();
-            childItem->setLayer(currentLayer_);
-
-            switch (childItem->type()) {
-            case ProcessorGraphicsItem::Type:
-                {
-                    ProcessorGraphicsItem* procItem = qgraphicsitem_cast<ProcessorGraphicsItem*>(childItem);
-                    Processor* processor = procItem->getProcessor();
-                    tgtAssert(processor, "cannot add null pointer to processor");
-                    processor->setProgressBar(procItem->getProgressBar());
-                    processorItemMap_.insert(processor, procItem);
-                    break;
-                }
-            case AggregationGraphicsItem::Type:
-                {
-                     AggregationGraphicsItem* aggItem = qgraphicsitem_cast<AggregationGraphicsItem*>(childItem);
-                     aggregationItems_.append(aggItem);
-                     break;
-                }
-            default:
-                tgtAssert(false, "shouldn't get here");
-            }
-        }
-
-        foreach (PortArrowGraphicsItem* arrow, aggregationItem->getInternalPortArrows()) {
-            arrow->show();
-            scene()->addItem(arrow);
-        }
-
-        QPair<LinkArrowGraphicsItem*, ArrowLinkInformation> arrowPair;
-        foreach (arrowPair, aggregationItem->getInternalLinkArrows()) {
-            if (currentLayer_ == NetworkEditorLayerLinking)
-                arrowPair.first->show();
-
-            linkMap_.insert(arrowPair.first, arrowPair.second);
-            scene()->addItem(arrowPair.first);
-        }
-
-        foreach (RootGraphicsItem* childItem, childItems) {
-            if (currentLayer_ == NetworkEditorLayerLinking)
-                childItem->togglePropertyList();
-        }
-
-        foreach (PortGraphicsItem* aggregationPortItem, aggregationItem->getPortGraphicsItems()) {
-            Port* p = aggregationPortItem->getPort();
-            PortGraphicsItem* otherPortItem = 0;
-
-            foreach (RootGraphicsItem* rootItem, processorItemMap_.values()) {
-                otherPortItem = rootItem->getPortGraphicsItem(p);
-
-                if (otherPortItem)
-                    break;
-            }
-
-            if (otherPortItem == 0) {
-                foreach (RootGraphicsItem* rootItem, aggregationItems_) {
-                    otherPortItem = rootItem->getPortGraphicsItem(p);
-
-                    if (otherPortItem)
-                        break;
-                }
-            }
-
-            tgtAssert(otherPortItem, "didn't find portgraphicsitem for port p");
-
-            if (aggregationPortItem->isOutport()) {
-                foreach (PortArrowGraphicsItem* arrow, aggregationPortItem->getArrowList()) {
-                    if (aggregationItem->getInternalPortArrows().contains(arrow))
-                        continue;
-
-                    exchangePortsInConnection(aggregationPortItem, otherPortItem, arrow->getDestinationItem());
-                    arrow->setSourceItem(otherPortItem);
-                    otherPortItem->addArrow(arrow);
-                    aggregationPortItem->removeArrow(arrow);
-                }
-
-            }
-            else {
-                foreach (PortGraphicsItem* connectedPortItem, aggregationPortItem->getConnectedPorts()) {
-                    foreach (PortArrowGraphicsItem* arrow, connectedPortItem->getArrowList()) {
-                        if (aggregationItem->getInternalPortArrows().contains(arrow))
-                            continue;
-
-                        if (arrow->getDestinationItem() == aggregationPortItem) {
-                            exchangePortsInConnection(aggregationPortItem, otherPortItem, connectedPortItem);
-                            arrow->setDestinationItem(otherPortItem);
-                        }
-                    }
-                }
-            }
-        }
-
-        foreach (LinkArrowGraphicsItem* arrow, linkMap_.keys()) {
-            if (arrow->getSourceItem()->getRootGraphicsItem() == aggregationItem) {
-                foreach (RootGraphicsItem* childItem, childItems) {
-                    if (childItem->hasProperty(arrow->getSourceItem()->getProperty())) {
-                        PropertyGraphicsItem* newSourceItem = childItem->getPropertyGraphicsItem(arrow->getSourceItem()->getProperty());
-                        arrow->setSourceItem(newSourceItem);
-                    }
-                }
-            }
-            else if (arrow->getDestinationItem()->getRootGraphicsItem() == aggregationItem) {
-                foreach (RootGraphicsItem* childItem, childItems) {
-                    if (childItem->hasProperty(arrow->getDestinationItem()->getProperty())) {
-                        PropertyGraphicsItem* newDestinationItem = childItem->getPropertyGraphicsItem(arrow->getDestinationItem()->getProperty());
-                        arrow->setDestinationItem(newDestinationItem);
-                    }
-                }
-            }
-        }
-
-        foreach (RootGraphicsItem* childItem, childItems) {
-            childItem->layoutChildItems();
-        }
-
-        scene()->removeItem(aggregationItem);
-        aggregationItems_.removeOne(aggregationItem);
-
-        setUpdatesEnabled(false);
-        delete aggregationItem;
-        setUpdatesEnabled(true);
-
-        scene()->clearSelection();
-    }
-}
 
 ConnectionBundle* NetworkEditor::bundleLinks(const QList<PortArrowGraphicsItem*>& items) {
 
@@ -2492,76 +3076,10 @@ void NetworkEditor::removeConnectionFromBundles(const Port* outport, const Port*
     }
 }
 
-PortGraphicsItem* NetworkEditor::getPortGraphicsItem(const Port* port) const {
-
-    tgtAssert(port, "null pointer passed");
-
-    PortGraphicsItem* portItem = 0;
-    if (processorItemMap_.contains(port->getProcessor())) {
-        ProcessorGraphicsItem* outportProcItem = processorItemMap_[port->getProcessor()];
-        portItem = outportProcItem->getPortGraphicsItem(port);
-    }
-    else {
-        foreach (AggregationGraphicsItem* i, aggregationItems_) {
-            if (i->contains(port->getProcessor()))
-                portItem = i->getPortGraphicsItem(port);
-        }
-    }
-
-    tgtAssert(portItem, "no portgraphicsitem found");
-    return portItem;
-}
-
-// ------------------------------------------------------------------------------------------------
-
-NetworkScreenshotPlugin::NetworkScreenshotPlugin(QWidget* parent, NetworkEditor* networkEditorWidget)
-    : ScreenshotPlugin(parent, 0)
-    , networkEditorWidget_(networkEditorWidget)
-{
-    setWindowTitle(tr("Network Screenshot"));
-    resolutions_.push_back("native");
-    sizeCombo_->addItem("native");
-}
-
-void NetworkScreenshotPlugin::saveScreenshot(const QString& filename) {
-    QGraphicsScene* scene = networkEditorWidget_->scene();
-    QRectF sceneRect = scene->sceneRect();
-
-    saveScreenshot(filename, sceneRect.width(), sceneRect.height());
-}
-
-void NetworkScreenshotPlugin::sizeComboChanged(int index) {
-    spWidth_->blockSignals(true);
-    spHeight_->blockSignals(true);
-    ScreenshotPlugin::sizeComboChanged(index);
-    if(sizeCombo_->currentText().contains("native")) {
-        spWidth_->setValue(networkEditorWidget_->sceneRect().width());
-        spHeight_->setValue(networkEditorWidget_->sceneRect().height());
-
-        spWidth_->setEnabled(false);
-        spHeight_->setEnabled(false);
-    }
-
-    spWidth_->blockSignals(false);
-    spHeight_->blockSignals(false);
-
-}
-
-void NetworkScreenshotPlugin::saveScreenshot(const QString& filename, int width, int height) {
-    if (!networkEditorWidget_)
-        return;
+*/
 
 
-    QPixmap pixmap(width, height);
-    pixmap.fill(QColor(255, 255, 255, 0));
 
-    QPainter painter(&pixmap);
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setRenderHint(QPainter::TextAntialiasing, true);
 
-    networkEditorWidget_->scene()->render(&painter);
 
-    pixmap.save(filename);
-}
 
-} // namespace voreen

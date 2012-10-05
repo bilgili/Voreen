@@ -128,7 +128,7 @@ void LightWidgetRenderer::moveSphere(tgt::MouseEvent* e) {
             deltaX = e->coord().x - startCoord_.x;
             deltaY = startCoord_.y - e->coord().y;
 
-            tgt::mat4 projection_tgt = camera_.getProjectionMatrix();
+            tgt::mat4 projection_tgt = camera_.getProjectionMatrix(idManager_->getRenderTarget()->getSize());
             tgt::mat4 modelview_tgt = camera_.getViewMatrix();
             for (int i = 0; i < 4; ++i) {
                 modelview[i+0]   = modelview_tgt[i].x;

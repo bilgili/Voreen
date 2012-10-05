@@ -164,6 +164,7 @@ namespace boost
     // boost::hash
     //
 
+
 #if !defined(BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
 
     template <class T> struct hash

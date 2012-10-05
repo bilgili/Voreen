@@ -61,6 +61,7 @@ operator<<( std::basic_ostream<CharT1,Tr>& os, basic_cstring<CharT2> const& str 
 
 //____________________________________________________________________________//
 
+
 } // namespace unit_test
 
 } // namespace boost

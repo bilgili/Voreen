@@ -236,13 +236,13 @@ void DynamicGLSLProcessor::setupPortGroup() {
         if (!portGroup_.containsPort(dynamic_cast<RenderPort*>(curPort)))
             portGroup_.addPort(dynamic_cast<RenderPort*>(curPort));
         if (isInitialized())
-            shader_->getShader()->bindFragDataLocation(static_cast<GLuint>(outportIDs_.size()-1), curPort->getName());
+            shader_->getShader()->bindFragDataLocation(static_cast<GLuint>(outportIDs_.size()-1), curPort->getID());
     }
     // remove obsolete ports from the port group
     std::vector<Port*> outports = getOutports();
     for (unsigned int i=0; i<outports.size(); i++) {
         Port* curPort = outports[i];
-        if (std::find(outportIDs_.begin(), outportIDs_.end(), curPort->getName()) == outportIDs_.end())
+        if (std::find(outportIDs_.begin(), outportIDs_.end(), curPort->getID()) == outportIDs_.end())
             portGroup_.removePort(dynamic_cast<RenderPort*>(curPort));
     }
 }
@@ -280,7 +280,7 @@ void DynamicGLSLProcessor::addNewInport(glslparser::GLSLVariableSymbol* symbol) 
                 }
                 case 2 : {
                     LINFO("Adding image inport '" + portName + "'");
-                    RenderPort* imgInport = new RenderPort(Port::INPORT, portName, false, Processor::INVALID_RESULT, getColorFormat(symbol));
+                    RenderPort* imgInport = new RenderPort(Port::INPORT, portName, portName, false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_DEFAULT, getColorFormat(symbol));
                     addPort(imgInport);
                     initializePort(imgInport);
                     break;
@@ -341,14 +341,14 @@ void DynamicGLSLProcessor::updateOutports(glslparser::GLSLVariableSymbol* symbol
                 Port* oldPort = getPort(portName);
                 if (oldPort->isInport()) {
                     removeOldPort(oldPort);
-                    RenderPort* outport = new RenderPort(RenderPort::OUTPORT, portName, false, Processor::INVALID_RESULT, getColorFormat(symbol));
+                    RenderPort* outport = new RenderPort(RenderPort::OUTPORT, portName, portName, false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_DEFAULT, getColorFormat(symbol));
                     addPort(outport);
                     initializePort(outport);
                 }
             }
             else {
                 LINFO("Adding outport '" + portName + "'");
-                RenderPort* outport = new RenderPort(RenderPort::OUTPORT, portName, false, Processor::INVALID_RESULT, getColorFormat(symbol));
+                RenderPort* outport = new RenderPort(RenderPort::OUTPORT, portName, portName, false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_DEFAULT, getColorFormat(symbol));
                 addPort(outport);
                 initializePort(outport);
             }
@@ -461,7 +461,7 @@ void DynamicGLSLProcessor::removeOldProperty(Property* property) {
 
 
 void DynamicGLSLProcessor::removeOldPort(Port* port) {
-    LINFO("Removing port '" + port->getName() + "'");
+    LINFO("Removing port '" + port->getID() + "'");
     deinitializePort(port);
     removePort(port);
 }
@@ -665,7 +665,7 @@ void DynamicGLSLProcessor::initializePortsAndProperties() {
         Port* curPort = inports[i];
         bool curPortInUse = false;
         for (unsigned int i=0; i<inportIDs_.size(); i++)
-            if (inportIDs_[i].name_ == curPort->getName())
+            if (inportIDs_[i].name_ == curPort->getID())
                 curPortInUse = true;
         if (!curPortInUse)
             removeOldPort(curPort);
@@ -674,7 +674,7 @@ void DynamicGLSLProcessor::initializePortsAndProperties() {
     std::vector<Port*> outports = getOutports();
     for (unsigned int i=0; i<outports.size(); i++) {
         Port* curPort = outports[i];
-        if (std::find(outportIDs_.begin(), outportIDs_.end(), curPort->getName()) == outportIDs_.end())
+        if (std::find(outportIDs_.begin(), outportIDs_.end(), curPort->getID()) == outportIDs_.end())
             removeOldPort(curPort);
     }
     // remove obsolete properties

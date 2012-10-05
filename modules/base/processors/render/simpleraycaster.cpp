@@ -35,17 +35,16 @@ namespace voreen {
 
 SimpleRaycaster::SimpleRaycaster()
     : VolumeRaycaster()
-    , volumePort_(Port::INPORT, "volumehandle.volumehandle")
-    , entryPort_(Port::INPORT, "image.entrypoints")
-    , exitPort_(Port::INPORT, "image.exitpoints")
-    , outport_(Port::OUTPORT, "image.output", true)
+    , volumePort_(Port::INPORT, "volumehandle.volumehandle", "Volume Input")
+    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
+    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
     , shader_("shader", "Shader", "rc_simple.frag", "passthrough.vert")
     , transferFunc_("transferFunction", "Transfer Function", Processor::INVALID_RESULT,
         TransFuncProperty::Editors(TransFuncProperty::INTENSITY | TransFuncProperty::INTENSITY_RAMP))
     , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
-    , texFilterMode_("textureFilterMode_", "Texture Filtering")
 {
-
+    volumePort_.showTextureAccessProperties(true);
     addPort(volumePort_);
     addPort(entryPort_);
     addPort(exitPort_);
@@ -56,12 +55,6 @@ SimpleRaycaster::SimpleRaycaster()
 
     // camera is required for depth value calculation
     addProperty(camera_);
-
-    // volume texture filtering
-    texFilterMode_.addOption("nearest", "Nearest",  GL_NEAREST);
-    texFilterMode_.addOption("linear",  "Linear",   GL_LINEAR);
-    texFilterMode_.selectByKey("linear");
-    addProperty(texFilterMode_);
 }
 
 Processor* SimpleRaycaster::create() const {
@@ -126,9 +119,9 @@ void SimpleRaycaster::process() {
         &volUnit,
         "volume_",
         "volumeStruct_",
-        GL_CLAMP_TO_EDGE,
-        tgt::vec4(0.f),
-        texFilterMode_.getValue())
+        volumePort_.getTextureClampModeProperty().getValue(),
+        tgt::vec4(volumePort_.getTextureBorderIntensityProperty().get()),
+        volumePort_.getTextureFilterModeProperty().getValue())
     );
     bindVolumes(shader, volumeTextures, &cam, lightPosition_.get());
 

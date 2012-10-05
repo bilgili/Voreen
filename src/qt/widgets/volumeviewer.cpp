@@ -40,10 +40,6 @@
 #include "voreen/qt/voreenapplicationqt.h"
 #include "voreen/qt/progressdialog.h"
 
-#ifdef _MSC_VER
-#include "tgt/gpucapabilitieswindows.h"
-#endif
-
 #include <set>
 
 #include <QCheckBox>

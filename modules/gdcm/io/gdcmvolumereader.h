@@ -173,21 +173,27 @@ private:
     virtual bool isDicomDir(const std::string &url) const;
 
     /**
-     * Helper method that -if present- removes single space at the end of a string.
-     *
-     * @param s the string that should be trimmed
+     * Returns meta data from a DICOM file, which is specified by a DicomDict and a keyword for the DictEntry.
+     * If the file and the corresponding tag are already found in the internal file info buffer, it is read from there.
+     * Else all meta information specified in the DicomDict for this file is put into the buffer first.
+     * If there is no such MetaData, an empty string is returned.
+     * If the file is not a valid DICOM file, a tgt::FileException is thrown. 
      */
-    /*static void trimString(std::string *s);*/
+    std::string getMetaDataFromFile(const std::string& filename, const DicomDict& dict, const std::string& keyword) const
+        throw (tgt::FileException);
 
     /**
      * Helper function that returns a Gdcm::Tag constructed by the information of the DicomDictEntry given.
      */
     static gdcm::Tag getTagFromDictEntry(const DicomDictEntry& entry);
-
+ 
     /**
-     * Sets the Meta Data specified by the DicomDict to the MetaDataContainer, using the given gdcm::StringFilter
+     * Extracts the meta data of the file to the MetaDataContainer.
+     * The DicomDict specifies, which meta data is extracted.
+     * If the file is not a valid DICOM file, a tgt::FileException is thrown
+     * If setAll is true, also dict entries which are not marked as meta data are set
      */
-    static void setMetaDataFromDict(MetaDataContainer* container, const DicomDict* dict, gdcm::StringFilter* sf);
+    static void setMetaDataFromDict(MetaDataContainer* container, const DicomDict* dict, const std::string& file, bool setAll = false) throw (tgt::FileException);
 
     /**
      * Helper method that returns all CustomDicomDicts in the directory <Gdcm-Module>/Dicts/CustomDicts
@@ -254,11 +260,22 @@ private:
      * @param fileName name of the file to be loaded
      * @param posScalar the position in the scalars_ array where this particular slice's pixel data should begin
      * @param numberOfFrames the number of frames for multiframe images (for non-multiframe images 1)
+     * @param rwmDiffers is only true, if rescale intercept and slope differ within the slices 
      *
      * @return returns the number of voxels rendered
      */
-    virtual int loadSlice(const std::string& fileName, size_t posScalar, int numberOfFrames = 1);
+    virtual int loadSlice(const std::string& fileName, size_t posScalar, int numberOfFrames = 1, bool rwmDiffers = false);
 
+    /**
+     * Helper method that finds the correct rescale slope and intercept values for a list of slices where these differ.
+     * The correct values are set to info_
+     *
+     * @param slices a vector of pairs of a filename and the distance from the origin position of the volume
+     */
+    void computeCorrectRescaleValues(std::vector<std::pair<std::string, double> > slices);
+
+
+    
     /**
      * Helper function that constructs the correct type of MetaData Object by knowing its type from a DictEntry and its value
      */
@@ -310,6 +327,9 @@ private:
     static const std::string loggerCat_;
 
     mutable DicomDict* dict_; ///< pointer to the Standard Dictionary (when loaded)
+
+    mutable std::map<std::string, MetaDataContainer> fileInfoBuffer_; ///< used to buffer information about files to reduce file I/Os, buffer is cleared when reading a new dataset and the buffer has not been modified for 10 minutes
+    mutable DateTime lastBufferMod_; ///< used as a heuristic to check when to clear the buffer
 };
 
 }

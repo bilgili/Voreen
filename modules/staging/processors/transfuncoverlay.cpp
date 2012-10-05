@@ -28,6 +28,7 @@
 #include "tgt/textureunit.h"
 
 #include "voreen/core/datastructures/transfunc/transfunc1dkeys.h"
+#include "voreen/core/datastructures/transfunc/preintegrationtable.h"
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
 
 #include <sstream>
@@ -38,11 +39,12 @@ namespace voreen {
 
 TransFuncOverlay::TransFuncOverlay()
     : ImageProcessor("image/compositor")
-    , imageInport_(Port::INPORT, "image.in")
-    , privatePort_(Port::OUTPORT, "private")
-    , outport_(Port::OUTPORT, "image.out")
+    , imageInport_(Port::INPORT, "image.in", "Image Inpput")
+    , privatePort_(Port::OUTPORT, "private","Privateport")
+    , outport_(Port::OUTPORT, "image.out", "Image Output")
     , fontProp_("voreen.fontprop", "Font:")
     , transferFunc_("transferFunction", "Transfer Function:")
+    , renderPreIntegrationTable_("renderPreIntegrationTable", "Render Pre-Integration Table", false)
     , renderOverlay_("renderOverlay", "Render Overlay", true)
     , usePixelCoordinates_("usePixelCoordinates", "Move/Resize Overlay by ")
     , overlayBottomLeft_("overlayBottomLeft", "Overlay Bottom Left", tgt::ivec2(10), tgt::ivec2(-4096), tgt::ivec2(4096))
@@ -57,8 +59,6 @@ TransFuncOverlay::TransFuncOverlay()
     , borderWidth_("borderWidth", "Border Width", 2.f, 0.1f, 10.f)
     , borderColor_("borderColor", "Border Color", tgt::Color(0.f, 0.f, 0.f, 1.f))
     , copyShader_(0)
-    , ppSizeX_(256)
-    , ppSizeY_(256)
 {
     borderColor_.setViews(Property::COLOR);
     fontColor_.setViews(Property::COLOR);
@@ -69,6 +69,7 @@ TransFuncOverlay::TransFuncOverlay()
     addProperty(fontProp_);
        fontProp_.setVisible(false);
     addProperty(transferFunc_);
+    addProperty(renderPreIntegrationTable_);
 
     addProperty(renderOverlay_);
     renderOverlay_.setGroupID("general");
@@ -110,7 +111,7 @@ TransFuncOverlay::TransFuncOverlay()
     setPropertyGroupGuiName("overlay settings","Overlay Settings");
 
     onChangeUsePixelCoordinates();
-    privatePort_.resize(ppSizeX_,ppSizeY_);
+    //privatePort_.resize(ppSizeX_,ppSizeY_);
 }
 
 Processor* TransFuncOverlay::create() const {
@@ -143,6 +144,7 @@ std::string TransFuncOverlay::generateHeader(const tgt::GpuCapabilities::GlVersi
 }
 
 void TransFuncOverlay::beforeProcess() {
+    ImageProcessor::beforeProcess();
     if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
         compile();
 }
@@ -169,7 +171,12 @@ void TransFuncOverlay::process() {
             glClearColor(fontColor_.get().r,fontColor_.get().g,fontColor_.get().b,0.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             //render the transfer function texture
-            tgt::Texture* tfTex = tfi->getTexture();
+            const tgt::Texture* tfTex = 0;
+            if(renderPreIntegrationTable_.get())
+                tfTex = tfi->getPreIntegrationTable(1.0f / (41.0f * 2.0f))->getTexture();
+            else
+                tfTex = tfi->getTexture();
+
             tgtAssert(tfTex, "No transfer function texture");
             tfTex->bind();
             glColor4f(1.f,1.f,1.f,1.f);
@@ -208,45 +215,58 @@ void TransFuncOverlay::process() {
                     glVertex2f(-0.8f,0.7f);
                 glEnd();
                 glColor4f(1.f,1.f,1.f,1.f);
-                glEnable(GL_TEXTURE_1D);
+
+                if(renderPreIntegrationTable_.get())
+                    glEnable(GL_TEXTURE_2D);
+                else
+                    glEnable(GL_TEXTURE_1D);
+                
                 glEnable(GL_BLEND);
                     glBlendColor(0.0f,0.0f,0.0f,overlayOpacity_.get());
                     glBlendFuncSeparate(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO,GL_CONSTANT_ALPHA);
                     glBegin(GL_QUADS);
+                    if(renderPreIntegrationTable_.get()) {
+                        glTexCoord2f(0.f, 0.f); glVertex2f(-0.8f,-0.9f);
+                        glTexCoord2f(1.f, 0.f); glVertex2f(-0.5f,-0.9f);
+                        glTexCoord2f(1.f, 1.f); glVertex2f(-0.5f,0.7f);
+                        glTexCoord2f(0.f, 1.f); glVertex2f(-0.8f,0.7f);
+                    }
+                    else {
                         glTexCoord1f(0.f); glVertex2f(-0.8f,-0.9f);
                         glTexCoord1f(0.f); glVertex2f(-0.5f,-0.9f);
                         glTexCoord1f(1.f); glVertex2f(-0.5f,0.7f);
                         glTexCoord1f(1.f); glVertex2f(-0.8f,0.7f);
+                    }
                     glEnd();
                 glDisable(GL_BLEND);
                 glDisable(GL_TEXTURE_1D);
             glEnable(GL_DEPTH_TEST);
             //render fonts
             glPushMatrix();
-                glTranslatef(-1,-1,0);
+                glTranslatef(-1.f,-1.f,0.f);
                 float scaleFactorX = 2.0f / (float)privatePort_.getSize().x;
                 float scaleFactorY = 2.0f / (float)privatePort_.getSize().y;
-                glScalef(scaleFactorX, scaleFactorY, 1);
+                glScalef(scaleFactorX, scaleFactorY, 1.f);
                 glColor4f(fontColor_.get().r,fontColor_.get().g,fontColor_.get().b,fontColor_.get().a*overlayOpacity_.get());
-                fontProp_.get()->setSize(ppSizeY_/12);
+                fontProp_.get()->setSize(privatePort_.getSize().y/12);
                 fontProp_.get()->setVerticalTextAlignment(tgt::Font::Middle);
                 fontProp_.get()->setFontType(tgt::Font::BitmapFont);
-                fontProp_.get()->setLineWidth(ppSizeX_*0.35f);
+                fontProp_.get()->setLineWidth(privatePort_.getSize().x*0.35f);
                 fontProp_.get()->setTextAlignment(tgt::Font::Center);
-                fontProp_.get()->render(tgt::vec3(0,ppSizeY_*0.925f,0), tfUnit_.get());
+                fontProp_.get()->render(tgt::vec3(0,privatePort_.getSize().y*0.925f,0), tfUnit_.get());
                 fontProp_.get()->setLineWidth((float)privatePort_.getSize().x);
                 fontProp_.get()->setTextAlignment(tgt::Font::Left);
                 std::stringstream strstr;
                 strstr << tfi->getDomain(0).x * scalingProp_.get();
-                fontProp_.get()->render(tgt::vec3(ppSizeX_*0.3f,ppSizeY_*0.05f,0), strstr.str());
+                fontProp_.get()->render(tgt::vec3(privatePort_.getSize().x*0.3f,privatePort_.getSize().y*0.05f,0), strstr.str());
                 strstr.clear();
                 strstr.str("");
                 strstr << (tfi->getDomain(0).x+((tfi->getDomain(0).y-tfi->getDomain(0).x)/2)) * scalingProp_.get();
-                fontProp_.get()->render(tgt::vec3(ppSizeX_*0.3f,ppSizeY_*0.45f,0), strstr.str());
+                fontProp_.get()->render(tgt::vec3(privatePort_.getSize().x*0.3f,privatePort_.getSize().y*0.45f,0), strstr.str());
                 strstr.clear();
                 strstr.str("");
                 strstr << tfi->getDomain(0).y * scalingProp_.get();
-                fontProp_.get()->render(tgt::vec3(ppSizeX_*0.3f,ppSizeY_*0.85f,0), strstr.str());
+                fontProp_.get()->render(tgt::vec3(privatePort_.getSize().x*0.3f,privatePort_.getSize().y*0.85f,0), strstr.str());
             glPopMatrix();
         glPopAttrib();
          // render border around overlay
@@ -353,58 +373,6 @@ void TransFuncOverlay::process() {
     outport_.deactivateTarget();
     TextureUnit::setZeroUnit();
     LGL_ERROR;
-}
-
-void TransFuncOverlay::sizeOriginChanged(RenderPort* p) {
-    if (!p->getSizeOrigin()) {
-        if (outport_.getSizeOrigin())
-            return;
-    }
-
-    imageInport_.sizeOriginChanged(p->getSizeOrigin());
-}
-
-void TransFuncOverlay::portResized(RenderPort* /*p*/, tgt::ivec2 newsize) {
-    // cycle prevention
-    if (portResizeVisited_)
-        return;
-
-    portResizeVisited_ = true;
-
-    // propagate to predecessing RenderProcessors
-    imageInport_.resize(newsize);
-
-    //distribute to outports
-    outport_.resize(newsize);
-
-    invalidate();
-
-    portResizeVisited_ = false;
-}
-
-bool TransFuncOverlay::testSizeOrigin(const RenderPort* p, void* so) const {
-    tgtAssert(p->isOutport(), "testSizeOrigin used with inport");
-
-    if (so) {
-        if (outport_.getSizeOrigin() && (outport_.getSizeOrigin() != so)) {
-            return false;
-        }
-    }
-
-    if (imageInport_.getSizeOrigin() && (imageInport_.getSizeOrigin() != so) ) {
-        return false;
-    }
-
-    const std::vector<const Port*>& connectedOutports = imageInport_.getConnected();
-    for (size_t j=0; j<connectedOutports.size(); ++j) {
-        const RenderPort* op = static_cast<const RenderPort*>(connectedOutports[j]);
-
-        if (!static_cast<RenderProcessor*>(op->getProcessor())->testSizeOrigin(op, so)) {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 void TransFuncOverlay::onChangeUsePixelCoordinates(){

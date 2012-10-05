@@ -1,27 +1,26 @@
-/***********************************************************************************
- *                                                                                 *
- * Voreen - The Volume Rendering Engine                                            *
- *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
- * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
- * For a list of authors please refer to the file "CREDITS.txt".                   *
- *                                                                                 *
- * This file is part of the Voreen software package. Voreen is free software:      *
- * you can redistribute it and/or modify it under the terms of the GNU General     *
- * Public License version 2 as published by the Free Software Foundation.          *
- *                                                                                 *
- * Voreen is distributed in the hope that it will be useful, but WITHOUT ANY       *
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR   *
- * A PARTICULAR PURPOSE. See the GNU General Public License for more details.      *
- *                                                                                 *
- * You should have received a copy of the GNU General Public License in the file   *
- * "LICENSE.txt" along with this file. If not, see <http://www.gnu.org/licenses/>. *
- *                                                                                 *
- * For non-commercial academic use see the license exception specified in the file *
- * "LICENSE-academic.txt". To get information about commercial licensing please    *
- * contact the authors.                                                            *
- *                                                                                 *
- ***********************************************************************************/
+/**********************************************************************
+ *                                                                    *
+ * tgt - Tiny Graphics Toolbox                                        *
+ *                                                                    *
+ * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Department of Computer Science, University of Muenster, Germany.   *
+ * <http://viscg.uni-muenster.de>                                     *
+ *                                                                    *
+ * This file is part of the tgt library. This library is free         *
+ * software; you can redistribute it and/or modify it under the terms *
+ * of the GNU Lesser General Public License version 2.1 as published  *
+ * by the Free Software Foundation.                                   *
+ *                                                                    *
+ * This library is distributed in the hope that it will be useful,    *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of     *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the       *
+ * GNU Lesser General Public License for more details.                *
+ *                                                                    *
+ * You should have received a copy of the GNU Lesser General Public   *
+ * License in the file "LICENSE.txt" along with this library.         *
+ * If not, see <http://www.gnu.org/licenses/>.                        *
+ *                                                                    *
+ **********************************************************************/
 
 #ifndef TGT_GPUCAPABILITIES_H
 #define TGT_GPUCAPABILITIES_H
@@ -31,6 +30,11 @@
 #include "tgt/singleton.h"
 #include "tgt/tgt_gl.h"
 #include "tgt/types.h"
+
+#ifdef TGT_WITH_WMI
+#include <wbemidl.h>
+#include <comdef.h>
+#endif
 
 namespace tgt {
 
@@ -165,15 +169,37 @@ public:
     };
 
     /**
+     * Holds several representations of a Windows file version.
+     *
+     * Windows file versions are usually represented as a string
+     * of the form d1.d2.d3.d4 where d1,d2,d3,d4 are 16-bit unsigned integers,
+     * e.g. 6.14.10.6389.
+     */
+    struct FileVersion {
+        int d1, d2, d3, d4;             ///< Parts d1,d2,d3,d4 of the file version, separated
+        std::string versionString;      ///< String representation of file version: 'd1.d2.d3.d4'
+        uint64_t version;               ///< Binary representation of file version: d1d2d3d4
+    };
+
+    /**
+     * Contains the graphics driver's version and date.
+     */
+    struct GraphicsDriverInformation {
+        FileVersion driverVersion;      ///< Version of driver dll (the dll is vendor specific)
+        std::string driverDate;         ///< Date of last modification of driver dll, format: YYYY-MM-DD
+    };
+
+
+    /**
      * Creates an object for the detection of graphics system properties. If detectCapabilities
      * is set to false, the capabilities of the graphics card aren't detected right away in the
-     * constructor. This way you can use GpuCapabilitiesWindows to detect the amount of memory
+     * constructor. This way you can use GpuCapabilities to detect the amount of memory
      * on the graphics card before initGL() is called. Otherwise GpuCapabilities tries to
      * detect GL values while initGL() isn't called yet and produces a crash.
      */
     GpuCapabilities(bool detectCaps = true);
 
-    virtual ~GpuCapabilities() {}
+    virtual ~GpuCapabilities();
 
     /**
      * Returns the OpenGL version implemented by the driver.
@@ -214,7 +240,7 @@ public:
      * @param extension the exact name string of the extension
      *      as found in http://www.opengl.org/registry/
      */
-    bool isExtensionSupported(std::string extension);
+    bool isExtensionSupported(std::string extension) const;
 
     /**
      * Returns the complete OpenGL version string
@@ -306,6 +332,14 @@ public:
     int retrieveAvailableTextureMemory() const;
 
     /**
+     * Queries the total texture memory in Kilobytes through the OpenGL API.
+     *
+     * @note Only supported for NVIDIA and ATI graphics boards.
+     *  On other platforms, -1 is returned.
+     */
+    virtual int retrieveTotalTextureMemory() const;
+
+    /**
      * Returns wether 3D textures are supported.
      * This is the case for OpenGL version 1.2
      * and later.
@@ -394,12 +428,26 @@ public:
     /**
      * Get the OS version.
      */
-    OSVersion getOSVersion();
+    OSVersion getOSVersion() const;
 
     /**
      * Get the OS version as string.
      */
     std::string getOSVersionString();
+
+#ifdef TGT_WITH_WMI
+    /**
+     * Returns information about the graphics driver on Windows,
+     * retrieved from the Windows Management Instrumentation (WMI).
+     */
+    GraphicsDriverInformation getGraphicsDriverInformation();
+
+    /// @see getGraphicsDriverInformation  
+    FileVersion getDriverVersion();
+
+    /// @see getGraphicsDriverInformation
+    std::string getDriverDate();
+#endif 
 
 protected:
     /**
@@ -415,6 +463,77 @@ protected:
      * are internally stored.
      */
     virtual void detectOS();
+
+#ifdef TGT_WITH_WMI
+
+    /**
+     * Has to be called before a \sa WMIquery() can be done.
+     *
+     * @return true, if WMI initialization succeeded
+     *
+     */
+    bool WMIinit();
+
+    /**
+     * Closes the WMI connection. Call this after finished wmi queries.
+     *
+     * @return true, if WMI deinitialization succeeded
+     *
+     * @warning function is only defined if TGT_WITH_WMI is set!
+     */
+    bool WMIdeinit();
+
+    /**
+     * Returns whether the WMI connection has been setup.
+     */
+    bool isWMIinited() const;
+
+    /**
+     * This function is used to query the Windows
+     * Management Instrumentation (WMI).
+     *
+     * @see http://msdn2.microsoft.com/en-us/library/aa394582(VS.85).aspx
+     *
+     * @return the query result as a pointer to a VARIANT type,
+     *         or NULL if the query was unsuccessful. The return value has to be freed
+     *         by the caller by \c VariantClear().
+     *
+     * @note Instead of calling this function directly, use \sa WMIqueryStr and \sa WMIqueryInt,
+     *       which return result values of a specific type.
+     */
+    VARIANT* WMIquery(std::string wmiclass, std::string attribute) const;
+
+    /**
+     * WMI query returning a string. \sa WMIquery.
+     */
+    std::string WMIqueryStr(std::string wmiclass, std::string attribute);
+
+    /**
+     * WMI query returning an int. \sa WMIquery.
+     */
+    int WMIqueryInt(std::string wmiclass, std::string attribute) const;
+
+#endif
+
+#ifdef WIN32
+    /**
+     * Detects the Windows file version of a file.
+     *
+     * @param filename complete path to the file
+     *
+     * @see FileVersion
+     */
+    FileVersion getFileVersion(const std::string& filename);
+
+    /**
+     * Detects the date of a file on Windows.
+     *
+     * @param filename complete path to the file
+     *
+     * @return file date as string in the form YYYY-MM-DD, e.g. 2007-12-15
+     */
+    std::string getFileDate(const std::string& filename);
+#endif
 
     static const std::string loggerCat_;
 
@@ -449,6 +568,13 @@ private:
     bool framebufferObjects_;
     int maxColorAttachments_;
     int maxGeometryShaderVertices_;
+
+#ifdef TGT_WITH_WMI
+    // WMI internals. Should not be touched outside the present WMI functions.
+    IWbemLocator* pIWbemLocator_;
+    IWbemServices* pWbemServices_;
+#endif
+
 };
 
 } // namespace tgt

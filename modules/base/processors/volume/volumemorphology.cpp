@@ -37,8 +37,8 @@ const std::string VolumeMorphology::loggerCat_("voreen.VolumeMorphology");
 
 VolumeMorphology::VolumeMorphology()
     : CachingVolumeProcessor()
-    , inport_(Port::INPORT, "volumehandle.input")
-    , outport_(Port::OUTPORT, "volumehandle.output", 0)
+    , inport_(Port::INPORT, "volumehandle.input", "Volume Input")
+    , outport_(Port::OUTPORT, "volumehandle.output", "Volume Output", false)
     , enableProcessing_("enableProcessing", "Enable")
     , morphologicOperator_("morphologicOperator", "Operator")
     , kernelSize_("kernelSize", "Kernel Size")

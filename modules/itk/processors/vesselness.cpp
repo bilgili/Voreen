@@ -49,8 +49,8 @@ const std::string Vesselness::loggerCat_("voreen.Vesselness");
 Vesselness::Vesselness()
     : ITKProcessor(),
     inport_(Port::INPORT, "input"),
-    outport_(Port::OUTPORT, "output", 0),
-    outportScale_(Port::OUTPORT, "outputScale", 0),
+    outport_(Port::OUTPORT, "output"),
+    outportScale_(Port::OUTPORT, "outputScale"),
     volumeFloat_(0),
     sigmaMin_("sigmaMin", "Sigma min", 0.5f, 0.0f, 10.0f),
     sigmaMax_("sigmaMax", "Sigma max", 4.0f, 0.0f, 50.0f),

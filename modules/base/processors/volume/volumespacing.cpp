@@ -35,8 +35,8 @@ const std::string VolumeSpacing::loggerCat_("voreen.base.VolumeSpacing");
 
 VolumeSpacing::VolumeSpacing()
     : VolumeProcessor(),
-    inport_(Port::INPORT, "volumehandle.input"),
-    outport_(Port::OUTPORT, "volumehandle.output", 0),
+    inport_(Port::INPORT, "volumehandle.input", "Volume Input"),
+    outport_(Port::OUTPORT, "volumehandle.output", "Volume Output", false),
     enableProcessing_("enabled", "Enable", false),
     mode_("mode", "Mode"),
     uniformSpacing_("uniformSpacing", "Uniform Spacing", false),

@@ -63,18 +63,16 @@ const std::string SliceRendererBase::loggerCat_("voreen.base.SliceRendererBase")
 
 SliceRendererBase::SliceRendererBase()
     : VolumeRenderer()
-    , outport_(Port::OUTPORT, "image.outport")
-    , inport_(Port::INPORT, "volumehandle.volumehandle")
-    , legendPort_(Port::OUTPORT,"legendPort")
+    , outport_(Port::OUTPORT, "image.outport", "Image Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
+    , inport_(Port::INPORT, "volumehandle.volumehandle", "Volume Input")
+    , legendPort_(Port::OUTPORT, "legendPort")
     , transferFunc_("transferFunction", "Transfer Function")
     , texMode_("textureMode", "Texture Mode", Processor::INVALID_PROGRAM)
-    , texFilterMode_("textureFilterMode", "Texture Filtering")
-    , texClampMode_("textureClampMode_", "Texture Clamp")
-    , texBorderIntensity_("textureBorderIntensity", "Texture Border Intensity", 0.f)
     , sliceShader_(0)
     , legendShader_(0)
 {
     inport_.addCondition(new PortConditionVolumeTypeGL());
+    inport_.showTextureAccessProperties(true);
     addPort(inport_);
     addPort(outport_);
     addPrivateRenderPort(legendPort_); //< used for drawing the legend
@@ -86,29 +84,7 @@ SliceRendererBase::SliceRendererBase()
     texMode_.addOption("3d-texture", "3D Texture", TEXTURE_3D);
     texMode_.selectByKey("3d-texture");
     addProperty(texMode_);
-
-    // texture filtering
-    texFilterMode_.addOption("nearest", "Nearest",  GL_NEAREST);
-    texFilterMode_.addOption("linear",  "Linear",   GL_LINEAR);
-    texFilterMode_.selectByKey("linear");
-    addProperty(texFilterMode_);
-
-    // volume texture clamping
-    texClampMode_.addOption("clamp",           "Clamp",             GL_CLAMP);
-    texClampMode_.addOption("clamp-to-edge",   "Clamp to Edge",     GL_CLAMP_TO_EDGE);
-    texClampMode_.addOption("clamp-to-border", "Clamp to Border",   GL_CLAMP_TO_BORDER);
-    texClampMode_.selectByKey("clamp-to-edge");
-    addProperty(texClampMode_);
-    addProperty(texBorderIntensity_);
-
-    // assign texture access properties to property group
-    texMode_.setGroupID("textureAccess");
-    texFilterMode_.setGroupID("textureAccess");
-    texClampMode_.setGroupID("textureAccess");
-    texBorderIntensity_.setGroupID("textureAccess");
-    setPropertyGroupGuiName("textureAccess", "Texture Access");
-
-    texClampMode_.onChange(CallMemberAction<SliceRendererBase>(this, &SliceRendererBase::adjustPropertyVisibilities));
+    texMode_.setGroupID(inport_.getID() + ".textureAccess");
 }
 
 void SliceRendererBase::initialize() throw (tgt::Exception) {
@@ -135,6 +111,8 @@ void SliceRendererBase::deinitialize() throw (tgt::Exception) {
 //
 
 void SliceRendererBase::beforeProcess() {
+    VolumeRenderer::beforeProcess();
+
     if (inport_.hasChanged())
         adjustPropertyVisibilities();
 
@@ -164,9 +142,9 @@ bool SliceRendererBase::setupVolumeShader(tgt::Shader* shader, const VolumeBase*
         volumeHandle,
         volUnit,
         "volume_","volumeStruct_",
-        texClampMode_.getValue(),
-        tgt::vec4(texBorderIntensity_.get()),
-        texFilterMode_.getValue())
+        inport_.getTextureClampModeProperty().getValue(),
+        tgt::vec4(inport_.getTextureBorderIntensityProperty().get()),
+        inport_.getTextureFilterModeProperty().getValue())
     );
     bool success = bindVolumes(shader, volumeTextures, camera, lightPosition);
     LGL_ERROR;
@@ -257,16 +235,16 @@ bool SliceRendererBase::bindSliceTexture(tgt::Shader* shader, const VolumeBase* 
     }
 
     // texture filtering
-    GLint filterMode = static_cast<GLint>(texFilterMode_.getValue());
+    GLint filterMode = static_cast<GLint>(inport_.getTextureFilterModeProperty().getValue());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filterMode);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filterMode);
     LGL_ERROR;
 
     // texture wrapping
-    GLint clampMode = static_cast<GLint>(texClampMode_.getValue());
+    GLint clampMode = static_cast<GLint>(inport_.getTextureClampModeProperty().getValue());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clampMode);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clampMode);
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, static_cast<tgt::Vector4<GLfloat> >(texBorderIntensity_.get()).elem);
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, static_cast<tgt::Vector4<GLfloat> >(inport_.getTextureBorderIntensityProperty().get()).elem);
     LGL_ERROR;
 
     // pass TextureParameters struct values to shader
@@ -311,7 +289,6 @@ void SliceRendererBase::deactivateShader() {
 }
 
 void SliceRendererBase::adjustPropertyVisibilities() {
-    texBorderIntensity_.setVisible(!texClampMode_.isSelected("clamp-to-edge"));
 }
 
 tgt::Texture* SliceRendererBase::generateAlignedSliceTexture(const VolumeBase* volumeHandle,

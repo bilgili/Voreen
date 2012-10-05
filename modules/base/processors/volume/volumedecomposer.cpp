@@ -36,8 +36,8 @@ const std::string VolumeDecomposer::loggerCat_("voreen.base.VolumeDecomposer");
 
 VolumeDecomposer::VolumeDecomposer()
     : RenderProcessor(),
-      inport_(Port::INPORT, "volume.in"),
-      outport_(Port::OUTPORT, "imagesequence.out"),
+      inport_(Port::INPORT, "volume.in", "Volume Input"),
+      outport_(Port::OUTPORT, "imagesequence.out", "ImageSequence Output"),
       startSlice_("startSlice", "Start Slice", 0, 0, 1000),
       endSlice_("endSlice", "End Slice", 1000, 0, 1000),
       sliceSequence_(0)
@@ -87,7 +87,7 @@ void VolumeDecomposer::process() {
     }
 
     outport_.setData(sliceSequence_, false);
-    outport_.invalidate();
+    outport_.invalidatePort();
 }
 
 void VolumeDecomposer::decomposeVolume() {

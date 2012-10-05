@@ -36,21 +36,31 @@ namespace voreen {
 
 const std::string Port::loggerCat_("voreen.Port");
 
-Port::Port(const std::string& name, PortDirection direction, bool allowMultipleConnections, Processor::InvalidationLevel invalidationLevel)
-    : name_(name)
+Port::Port(PortDirection direction, const std::string& id, const std::string& guiName, bool allowMultipleConnections, Processor::InvalidationLevel invalidationLevel)
+    : id_(id)
+    , guiName_(guiName)
     , connectedPorts_()
     , processor_(0)
     , direction_(direction)
     , allowMultipleConnections_(allowMultipleConnections)
     , hasChanged_(false)
+    , blockEvents_("blockEvents", "Block Events", false)
     , invalidationLevel_(invalidationLevel)
     , isLoopPort_(false)
     , numLoopIterations_(1)
     , currentLoopIteration_(0)
     , initialized_(false)
 {
-    if (isOutport())
+    if (guiName_ == "") 
+        guiName_ = id_;
+
+    if (isOutport()) {
         allowMultipleConnections_ = true;
+
+        addProperty(blockEvents_);
+        blockEvents_.setGroupID(id);
+        setPropertyGroupGuiName(id, (isInport() ? "Inport: " : "Outport: ") + guiName_);
+    }
 }
 
 Port::~Port() {
@@ -87,7 +97,7 @@ bool Port::connect(Port* inport) {
         connectedPorts_.push_back(inport);
         inport->connectedPorts_.push_back(this);
         getProcessor()->invalidate(invalidationLevel_);
-        inport->invalidate();
+        inport->invalidatePort();
         return true;
     }
     return false;
@@ -103,7 +113,7 @@ void Port::disconnect(Port* other) {
             other->disconnect(this);
             getProcessor()->invalidate(invalidationLevel_);
 
-            invalidate();
+            invalidatePort();
             return;
         }
     }
@@ -234,15 +244,20 @@ bool Port::isConnectedTo(const Port* port) const {
     return false;
 }
 
-void Port::invalidate() {
+void Port::invalidatePort() {
     hasChanged_ = true;
     if (isOutport()) {
         for (size_t i = 0; i <  connectedPorts_.size(); ++i)
-             connectedPorts_[i]->invalidate();
+             connectedPorts_[i]->invalidatePort();
     }
     else {
         getProcessor()->invalidate(invalidationLevel_);
     }
+}
+
+void Port::invalidate(int inv /*= 1*/) {
+    if (getProcessor())
+        getProcessor()->invalidate(inv);
 }
 
 bool Port::allowMultipleConnections() const {
@@ -261,15 +276,37 @@ bool Port::isInport() const {
     return direction_ == INPORT;
 }
 
+std::string Port::getID() const {
+    return id_;
+}
+
 std::string Port::getName() const {
-    return name_;
+    return getID();
+}
+
+std::string Port::getGuiName() const {
+    return guiName_;
+}
+
+std::string Port::getContentDescription() const {
+    std::stringstream strstr;
+    strstr << getGuiName() << std::endl << "Type: " << getClassName();
+    return strstr.str();
+}
+
+
+std::string Port::getContentDescriptionHTML() const {
+    std::stringstream strstr;
+    strstr << "<center><font><b>" << getGuiName() << "</b></font></center>"
+           << "Type: " << getClassName();
+    return strstr.str();
 }
 
 std::string Port::getQualifiedName() const {
     std::string id;
     if (getProcessor())
         id = getProcessor()->getName() + ".";
-    id += getName();
+    id += getID();
     return id;
 }
 
@@ -288,7 +325,7 @@ void Port::setValid() {
     hasChanged_ = false;
 
     if (isOutport()) {
-           LWARNINGC("voreen.port", "Called setValid() on outport!" << getName() );
+           LWARNINGC("voreen.port", "Called setValid() on outport!" << getID() );
     }
 }
 
@@ -313,7 +350,8 @@ void Port::loadData(const std::string& /*path*/) throw (VoreenException) {
 
 void Port::distributeEvent(tgt::Event* e) {
     if (isOutport()) {
-        getProcessor()->onEvent(e);
+        if (!blockEvents_.get())
+            getProcessor()->onEvent(e);
     } else {
         for (size_t i = 0; i < connectedPorts_.size(); ++i) {
             connectedPorts_[i]->distributeEvent(e);
@@ -344,7 +382,7 @@ void Port::initialize() throw (tgt::Exception) {
         std::string id;
         if (getProcessor())
             id = getProcessor()->getName() + ".";
-        id += getName();
+        id += getID();
         LWARNING("initialize(): '" << id << "' already initialized");
         return;
     }
@@ -391,5 +429,6 @@ void Port::setDescription(std::string desc) {
 tgt::col3 Port::getColorHint() const {
     return tgt::col3(0, 0, 0);
 }
+
 
 } // namespace voreen

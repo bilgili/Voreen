@@ -107,9 +107,9 @@ Background::Background()
                 FileDialogProperty::OPEN_FILE, Processor::INVALID_RESULT)
     , tile_("repeat", "Repeat Background", 1.0f, 0.f, 100.f)
     , modeProp_("backgroundModeAsString", "Type")
-    , inport_(Port::INPORT, "image.input")
-    , outport_(Port::OUTPORT, "image.output")
-    , privatePort_(Port::OUTPORT, "image.tmp", false)
+    , inport_(Port::INPORT, "image.input", "Image Input")
+    , outport_(Port::OUTPORT, "image.output", "Image Output")
+    , privatePort_(Port::OUTPORT, "image.tmp", "image.tmp", false)
     , textureInvalid_(true)
 {
     firstcolor_.setViews(Property::COLOR);

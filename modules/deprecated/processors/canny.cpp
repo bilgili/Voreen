@@ -37,8 +37,8 @@ Canny::Canny()
     , runThreshold_("runThreshold", "Run threshold", 0.5f, 0.0f, 10.0f)
     , edgeColor_("edgeColor", "Edge color", tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f))
     , inport_(Port::INPORT, "image.inport")
-    , outport_(Port::OUTPORT, "image.outport", true)
-    , privatePort_(Port::OUTPORT, "image.privateport", true)
+    , outport_(Port::OUTPORT, "image.outport", "image.outport", true)
+    , privatePort_(Port::OUTPORT, "image.privateport", "image.privateport", true)
 {
     addProperty(startThreshold_);
     addProperty(runThreshold_);

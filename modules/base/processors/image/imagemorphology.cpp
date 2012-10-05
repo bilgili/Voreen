@@ -33,8 +33,8 @@ namespace voreen {
 
 ImageMorphology::ImageMorphology()
     : ImageProcessorBypassable("image/imagemorphology"),
-      inport_(Port::INPORT, "image.inport"),
-      outport_(Port::OUTPORT, "image.outport"),
+      inport_(Port::INPORT, "image.inport", "Image Input"),
+      outport_(Port::OUTPORT, "image.outport", "Image Output"),
       kernelRadius_("kernelRadius", "Kernel Radius", 1, 1, 12),
       modeProp_("effectModeAsString", "Mode")
 {

@@ -74,9 +74,9 @@ PathlineRenderer3D::PathlineRenderer3D()
     previousTimestep_(0),
     slicePositions_(1, 1, 1),
     coInport_(Port::INPORT, "coprocessor.slicepositions"),
-    imgOutport_(Port::OUTPORT, "image.pathlines"),
-    inportContext_(Port::INPORT, "volumecollection.context"),
-    inportFlows_(Port::INPORT, "volumecollection.flow")
+    imgOutport_(Port::OUTPORT, "image.pathlines", "Pathlines Image Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER),
+    inportContext_(Port::INPORT, "volumecollection.context", "VolumeCollection Context"),
+    inportFlows_(Port::INPORT, "volumecollection.flow", "VolumeCollection Flow")
 {
     lineColorProp_.setViews(Property::COLOR);
     lineStyleProp_ = new OptionProperty<LineStyle>("lineStyleProp", "pathline style:");
@@ -236,7 +236,7 @@ void PathlineRenderer3D::process() {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
 
-    camProp_.look();
+    camProp_.look(imgOutport_.getSize());
 
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 

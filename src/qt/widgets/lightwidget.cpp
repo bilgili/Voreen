@@ -75,17 +75,19 @@ void LightWidget::paintEvent(QPaintEvent* /*event*/) {
     painter.setRenderHint(QPainter::Antialiasing);
     QRadialGradient radialGradient(QPointF(50, 50), radius_ * 2  , QPointF(lightPosition_.x(), lightPosition_.y()));
 
-    QColor highlight(static_cast<int>(distance_*3)+100,
-                     static_cast<int>(distance_*3)+100,
-                     static_cast<int>(distance_*3)+100);
+    float colDist = (distance_ / distanceSlider_->getMaxValue()) * 10.f;
+
+    QColor highlight(static_cast<int>(colDist*3)+100,
+                     static_cast<int>(colDist*3)+100,
+                     static_cast<int>(colDist*3)+100);
     if (!hemisphere_) {
         radialGradient.setColorAt(0.0, QColor(255,255,255));
-        radialGradient.setColorAt((distance_/30)+ 0.5, highlight);
+        radialGradient.setColorAt((colDist /30)+ 0.5, highlight);
         radialGradient.setColorAt(1.0, QColor(0,0,0));
     }
     else {
         radialGradient.setColorAt(0.0, QColor(0,0,0));
-        radialGradient.setColorAt((distance_/30) + 0.5, highlight);
+        radialGradient.setColorAt((colDist /30) + 0.5, highlight);
         radialGradient.setColorAt(1.0, QColor(255,255,255));
     }
 
@@ -101,6 +103,14 @@ void LightWidget::setHemisphere(bool hemibool) {
         hem = -1;
     emit(lightWidgetChanged(distance_ * tgt::vec4(offset_, hem * sqrt(std::max(0.f, 1.f - lengthSq(offset_))), 0.f)));
     update();
+}
+
+void LightWidget::setMinDist(double d) {
+    distanceSlider_->setMinValue(d);
+}
+
+void LightWidget::setMaxDist(double d) {
+    distanceSlider_->setMaxValue(d);
 }
 
 void LightWidget::mousePressEvent(QMouseEvent *event) {
@@ -138,7 +148,7 @@ void LightWidget::updateDistance(double distance) {
 void LightWidget::setLightPosition(const tgt::vec4& position) {
 
     hemisphere_ = position.z < 0.f ? true : false;
-    distance_ = std::max(1.f, std::min(10.f, length(position.xyz())));
+    distance_ = std::max((float)(distanceSlider_->getMinValue()), std::min((float)(distanceSlider_->getMaxValue()), length(position.xyz())));
 
     tgt::vec2 pos(0.f);
     offset_ = position.xy() / length(position.xyz());

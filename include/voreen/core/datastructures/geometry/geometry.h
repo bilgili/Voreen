@@ -84,7 +84,7 @@ public:
      * @param geometry Geometry object to compare to
      * @param epsilon maximum distance at which two vertices are to be considered equal
      */
-    virtual bool equals(const Geometry* geometry, double epsilon = 1e-6) const;
+    virtual bool equals(const Geometry* geometry, double epsilon = 1e-5) const;
 
     /**
      * Transforms the geometry by applying the given transformation matrix.
@@ -112,7 +112,7 @@ public:
      * @param clipPlane an arbitrary clipping plane
      * @param epsilon maximum distance at which two vertices are to be considered equal
      */
-    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-6);
+    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-5);
 
     /**
      * Renders the geometry.

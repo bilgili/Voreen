@@ -37,8 +37,8 @@ const std::string SegmentationValidation::loggerCat_("voreen.base.SegmentationVa
 
 SegmentationValidation::SegmentationValidation()
     : Processor()
-    , inportSegmentation_(Port::INPORT, "segmentation.in")
-    , inportReference_(Port::INPORT, "segmentation.reference")
+    , inportSegmentation_(Port::INPORT, "segmentation.in", "Segmentation Volume")
+    , inportReference_(Port::INPORT, "segmentation.reference", "Reference Volume")
     , computeButton_("computeButton", "Compute")
     , sizeSegmentation_("sizeSegmentation", "Size Segmentation |A|", 0, 0, INT_MAX)
     , sizeReference_("sizeReference", "Size Reference |B|", 0, 0, INT_MAX)

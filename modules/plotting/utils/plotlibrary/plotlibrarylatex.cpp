@@ -280,7 +280,8 @@ bool PlotLibraryLatex::setRenderStatus() {
             projectionsMatrix_ = plOrtho(left_,right_,bottom_,top_,near_,far_);
         }
         else {
-            projectionsMatrix_ = camera_.getProjectionMatrix();
+            float aspectRatio = 1.0f; //TODO?
+            projectionsMatrix_ = camera_.getProjectionMatrix(aspectRatio);
             camera_.updateFrustum();
             left_ = camera_.getFrustLeft();
             right_ = camera_.getFrustRight();

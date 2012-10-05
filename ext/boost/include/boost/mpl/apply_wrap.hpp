@@ -63,6 +63,7 @@ namespace boost { namespace mpl {
     BOOST_MPL_PP_ENUM(BOOST_PP_INC(n), param) \
     /**/
 
+
 #define BOOST_PP_ITERATION_PARAMS_1 \
     (3,(0, BOOST_MPL_LIMIT_METAFUNCTION_ARITY, <boost/mpl/apply_wrap.hpp>))
 #include BOOST_PP_ITERATE()

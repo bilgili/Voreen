@@ -100,17 +100,6 @@ private:
     TransFuncProperty transferFunc3_;       ///< transfer function to apply to volume 3
     TransFuncProperty transferFunc4_;       ///< transfer function to apply to volume 4
 
-    IntOptionProperty texFilterMode1_;      ///< filter mode for volume 1
-    IntOptionProperty texFilterMode2_;      ///< filter mode for volume 2
-    IntOptionProperty texFilterMode3_;      ///< filter mode for volume 3
-    IntOptionProperty texFilterMode4_;      ///< filter mode for volume 4
-
-    GLEnumOptionProperty texClampMode1_;    ///< clamp mode for volume 1
-    GLEnumOptionProperty texClampMode2_;    ///< clamp mode for volume 2
-    GLEnumOptionProperty texClampMode3_;    ///< clamp mode for volume 3
-    GLEnumOptionProperty texClampMode4_;    ///< clamp mode for volume 4
-    FloatProperty texBorderIntensity_;      ///< border intensity for all volumes
-
     CameraProperty camera_;                 ///< the camera used for lighting calculations
 
     StringOptionProperty compositingMode1_;   ///< What compositing mode should be applied for second outport

@@ -1,6 +1,44 @@
 Voreen Changelog
 ----------------
 
+2012-10-05: Voreen 4.1
+----------------------
+
+   * Features:
+     o Global volume illumination (see module 'advancedlighting')
+     o SingleVolumeRaycaster and CPURaycaster support pre-integrated classification
+     o OpenCL support on AMD/ATI (see module 'opencl')
+     o Convenient multi-modal slice rendering (see 'MultiSliceViewer' in staging module)
+     o Mutual information coregistration (see 'itk' module)
+   
+   * Framework/API Changes:
+     o Switched tgt sub-library to LGPL license (ext/tgt)
+     o Processor ports can have properties
+     o Render size linking: replaced implicit render size propagation by explicit 
+       linking of render size port properties (RenderSizeOrigin/RenderSizeReceiver)
+     o Outports can block event flow via property
+     o NetworkEditor overhaul: 
+       - separate property linking layers for camera and render size linking
+       - preview tooltips for volume ports, generally improved tooltip behaviour
+     o Camera does not save aspect ratio, but expects it as parameter in
+       getFrustum()/getProjection() calls 
+     o Added GUI names to Ports and LinkEvaluators
+     o Removed DependencyLinks
+     o Removed GPUCapabilitiesWindows, moved Windows WMI query code to GPUCapabilities
+     o Released testing applications
+     o Added Boost unit testing framework
+     
+   * Bug Fixes/Minor Changes:
+     o Geometry mesh clipping for large objects 
+     o GDCMVolumeReader correctly handles data sets with non-uniform windowing
+     o ImageSource/ImageSequenceSource put out empty textures on AMD/ATI
+     o Repaint/update issue in sample applications
+     o Improved camera-to-scene adaption for transformed volumes
+     o Added .ima as supported extension of DICOM readers
+     o Added link evaluator for linking the camera orientation only
+     o Extended DateTime class
+
+     
 2012-08-03: Voreen 4.0.1
 ------------------------
 

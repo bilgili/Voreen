@@ -547,7 +547,7 @@ The created proxy geometries of regular grid or manual grid mode can be redefine
     VolumePort inportVolume_;
 
     /// To be connected to the corresponding ExplosionCompositor's loop port.
-    Port loopInport_;
+    LoopPort loopInport_;
 
     /// Outport for the generated mesh proxy geometry.
     GeometryPort outportProxyGeometry_;

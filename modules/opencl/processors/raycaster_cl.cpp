@@ -52,11 +52,11 @@ const std::string RaycasterCL::loggerCat_("voreen.RaycasterCL");
 
 RaycasterCL::RaycasterCL()
     : VolumeRenderer(),
-      volumePort_(Port::INPORT, "volumehandle.volumehandle", false, VolumeRenderer::INVALID_PROGRAM),
-      entryPort_(Port::INPORT, "image.entrypoints"),
-      exitPort_(Port::INPORT, "image.exitpoints"),
+      volumePort_(Port::INPORT, "volumehandle.volumehandle", "Volume Input", false, VolumeRenderer::INVALID_PROGRAM),
+      entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN),
+      exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN),
       // TODO: depth formats like GL_DEPTH_COMPONENT24 are not supported by OpenCL, investigate. Depth values are not calculated for now. FL
-      outport_(Port::OUTPORT, "image.output", true, Processor::INVALID_PROGRAM),
+      outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER),
       samplingRate_("samplingRate", "Sampling Rate", 4.f, 0.01f, 20.0f),
       transferFunc_("transferFunction", "Transfer Function"),
       openclProp_("openclprog", "OpenCL Program", VoreenApplication::app()->getBasePath() + "/modules/opencl/cl/raycaster.cl"),
@@ -72,11 +72,15 @@ RaycasterCL::RaycasterCL()
     addPort(volumePort_);
     addPort(entryPort_);
     addPort(exitPort_);
+
+    outport_.onSizeReceiveChange<RaycasterCL>(this, &RaycasterCL::portResized);
     addPort(outport_);
 
     addProperty(samplingRate_);
+    transferFunc_.onChange(CallMemberAction<RaycasterCL>(this, &RaycasterCL::updateTF));
     addProperty(transferFunc_);
     addProperty(openclProp_);
+
 }
 
 RaycasterCL::~RaycasterCL() {
@@ -97,6 +101,9 @@ void RaycasterCL::initialize() throw (tgt::Exception) {
     opencl_ = OpenCLModule::getInstance()->getOpenCL();
     context_ = OpenCLModule::getInstance()->getCLContext();
     queue_ = OpenCLModule::getInstance()->getCLCommandQueue();
+
+    portResized();
+    updateTF();
 
     initialized_ = true;
 }
@@ -133,32 +140,34 @@ void RaycasterCL::beforeProcess() {
 
         delete volumeTex_;
         volumeTex_ = new ImageObject3D(context_, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, volumePort_.getData()->getRepresentation<VolumeRAM>());
+        transferFunc_.setVolumeHandle(volumePort_.getData());
     }
+
     LGL_ERROR;
 
     if (getInvalidationLevel() >= Processor::INVALID_RESULT) {
-        tgt::Texture* tfTex = transferFunc_.get()->getTexture();
-        delete tfData_;
-        ImageFormat imgf(CL_RGBA, CL_UNORM_INT8);
-        tfData_ = new ImageObject2D(context_, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, imgf, tfTex->getWidth(), 1, tfTex->getWidth() * tfTex->getBpp(), transferFunc_.get()->getPixelData());
-
-        delete entryTexCol_;
-        delete exitTexCol_;
-        delete outCol_;
-        //delete entryTexDepth_;
-        //delete exitTexDepth_;
-        //delete outDepth_;
-        entryTexCol_ = new SharedTexture(context_, CL_MEM_READ_ONLY, entryPort_.getColorTexture());
-        exitTexCol_  = new SharedTexture(context_, CL_MEM_READ_ONLY, exitPort_.getColorTexture());
-        outCol_      = new SharedTexture(context_, CL_MEM_WRITE_ONLY, outport_.getColorTexture());
-
-        //entryTexDepth_ = new SharedTexture(context_, CL_MEM_READ_ONLY, entryPort_.getDepthTexture());
-        //exitTexDepth_  = new SharedTexture(context_, CL_MEM_READ_ONLY, exitPort_.getDepthTexture());
-        //outDepth_      = new SharedTexture(context_, CL_MEM_READ_ONLY, outport_.getDepthTexture());
+        if(!entryTexCol_) {
+            entryTexCol_ = new SharedTexture(context_, CL_MEM_READ_ONLY, entryPort_.getColorTexture());
+            exitTexCol_  = new SharedTexture(context_, CL_MEM_READ_ONLY, exitPort_.getColorTexture());
+            outCol_      = new SharedTexture(context_, CL_MEM_WRITE_ONLY, outport_.getColorTexture());
+            //entryTexDepth_ = new SharedTexture(context_, CL_MEM_READ_ONLY, entryPort_.getDepthTexture());
+            //exitTexDepth_  = new SharedTexture(context_, CL_MEM_READ_ONLY, exitPort_.getDepthTexture());
+            //outDepth_      = new SharedTexture(context_, CL_MEM_READ_ONLY, outport_.getDepthTexture());
+        }
     }
 
-    transferFunc_.setVolumeHandle(volumePort_.getData());
 }
+
+void RaycasterCL::updateTF() {
+    if(!context_)
+        return;
+
+    tgt::Texture* tfTex = transferFunc_.get()->getTexture();
+    delete tfData_;
+    ImageFormat imgf(CL_RGBA, CL_UNORM_INT8);
+    tfData_ = new ImageObject2D(context_, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, imgf, tfTex->getWidth(), 1, tfTex->getWidth() * tfTex->getBpp(), transferFunc_.get()->getPixelData());
+}
+
 
 void RaycasterCL::process() {
 
@@ -175,10 +184,10 @@ void RaycasterCL::process() {
         LGL_ERROR;
         glFinish();
 
-        tgt::svec3 dims = tgt::svec3(entryPort_.getColorTexture()->getDimensions());
+        //tgt::svec3 dims = tgt::svec3(entryPort_.getColorTexture()->getDimensions());
+        tgt::svec3 dims = tgt::svec3(outport_.getColorTexture()->getDimensions());
 
         float samplingStepSize = 1.f / (tgt::min(volumePort_.getData()->getRepresentation<VolumeRAM>()->getDimensions()) * samplingRate_.get());
-
 
         kernel->setArg(0, volumeTex_);
         kernel->setArg(1, tfData_);
@@ -208,15 +217,6 @@ void RaycasterCL::process() {
         //queue_->enqueueReleaseGLObject(&exitTexDepth_);
         //queue_->enqueueReleaseGLObject(&outDepth_);
         queue_->finish();
-        //delete entryTexCol_;
-        //delete exitTexCol_;
-        //delete outCol_;
-        ////delete entryTexDepth_;
-        ////delete exitTexDepth_;
-        ////delete outDepth_;
-        //entryTexCol_ = 0;
-        //exitTexCol_  = 0;
-        //outCol_      = 0;
     }
     else {
         LERROR("Kernel 'raycast' not found");
@@ -235,12 +235,14 @@ bool RaycasterCL::isReady() const {
     return true;
 }
 
-void RaycasterCL::portResized(RenderPort* p, tgt::ivec2 newsize) {
+void RaycasterCL::portResized() {
     // it is important to delete the CL memory objects before deleting the associated OpenGL textures from the fbo
     delete entryTexCol_; entryTexCol_ = 0;
     delete exitTexCol_;  exitTexCol_  = 0;
     delete outCol_;      outCol_      = 0;
-    RenderProcessor::portResized(p, newsize);
+
+    entryPort_.requestSize(outport_.getReceivedSize());
+    exitPort_.requestSize(outport_.getReceivedSize());
 }
 
 } // namespace voreen

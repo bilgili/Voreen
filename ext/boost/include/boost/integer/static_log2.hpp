@@ -12,6 +12,7 @@
 //       See http://www.boost.org/libs/integer for documentation.
 // ------------------------------------------------------------------------- //
 
+
 #ifndef BOOST_INTEGER_STATIC_LOG2_HPP
 #define BOOST_INTEGER_STATIC_LOG2_HPP
 

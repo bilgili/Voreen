@@ -30,9 +30,9 @@
 namespace voreen {
 OptimizedProxyGeometry::OptimizedProxyGeometry()
     : Processor()
-    , inport_(Port::INPORT, "volumehandle.volumehandle")
-    , inportGradient_(Port::INPORT,"volumehandle.gradientvolumehandle")
-    , outport_(Port::OUTPORT, "proxygeometry.geometry")
+    , inport_(Port::INPORT, "volumehandle.volumehandle", "Volume Input")
+    , inportGradient_(Port::INPORT,"volumehandle.gradientvolumehandle", "Gradient Volume Input")
+    , outport_(Port::OUTPORT, "proxygeometry.geometry", "Proxy Geometry Output")
     , mode_("approachString","Approach")
     , transfunc_("transferFunction","Transfer Function")
     , resolution_("proxyGeometryResolution","Proxy Geometry Resolution",8,1,64)

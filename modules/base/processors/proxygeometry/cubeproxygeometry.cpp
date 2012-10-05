@@ -32,8 +32,8 @@ const std::string CubeProxyGeometry::loggerCat_("voreen.base.CubeProxyGeometry")
 
 CubeProxyGeometry::CubeProxyGeometry()
     : Processor()
-    , inport_(Port::INPORT, "volumehandle.volumehandle")
-    , outport_(Port::OUTPORT, "proxygeometry.geometry")
+    , inport_(Port::INPORT, "volumehandle.volumehandle", "Volume Input")
+    , outport_(Port::OUTPORT, "proxygeometry.geometry", "Proxy Geometry Output")
     , enableClipping_("useClipping", "Enable Clipping", true)
     , clipRight_("rightClippingPlane", "Right Clip Plane (x)", 0.f, 0.f, 1e5f)
     , clipLeft_("leftClippingPlane", "Left Clip Plane (x)", 1e5f, 0.f, 1e5f)
@@ -182,22 +182,15 @@ void CubeProxyGeometry::adjustClipPropertiesRanges() {
 
     tgt::ivec3 numSlices = inport_.getData()->getRepresentation<VolumeRAM>()->getDimensions();
 
-    // adapt clipping plane properties to volume dimensions
-    clipRight_.setMaxValue(numSlices.x-1.0f);
-    clipLeft_.setMaxValue(numSlices.x-1.0f);
-
-    clipFront_.setMaxValue(numSlices.y-1.0f);
-    clipBack_.setMaxValue(numSlices.y-1.0f);
-
-    clipBottom_.setMaxValue(numSlices.z-1.0f);
-    clipTop_.setMaxValue(numSlices.z-1.0f);
-
     // assign new clipping values while taking care that the right>left validation
     // does not alter the assigned values
     float scaleRight = tgt::clamp(clipRight_.get()/static_cast<float>(oldVolumeDimensions_.x-1), 0.f, 1.f);
     float scaleLeft =  tgt::clamp(clipLeft_.get()/static_cast<float>(oldVolumeDimensions_.x-1), 0.f, 1.f);
     float rightVal = scaleRight * (numSlices.x-1);
     float leftVal = scaleLeft * (numSlices.x-1);
+    // set new max values now (we cannot set them earlier as they might clip the previous values needed for the relative re-positioning to the new range)
+    clipRight_.setMaxValue(numSlices.x-1.0f);
+    clipLeft_.setMaxValue(numSlices.x-1.0f);
     clipLeft_.set(clipLeft_.getMaxValue());
     clipRight_.set(rightVal);
     clipLeft_.set(leftVal);
@@ -206,6 +199,8 @@ void CubeProxyGeometry::adjustClipPropertiesRanges() {
     float scaleBack =  tgt::clamp(clipBack_.get()/static_cast<float>(oldVolumeDimensions_.y-1), 0.f, 1.f);
     float frontVal = scaleFront * (numSlices.y-1);
     float backVal = scaleBack * (numSlices.y-1);
+    clipFront_.setMaxValue(numSlices.y-1.0f);
+    clipBack_.setMaxValue(numSlices.y-1.0f);
     clipBack_.set(clipBack_.getMaxValue());
     clipFront_.set(frontVal);
     clipBack_.set(backVal);
@@ -214,6 +209,8 @@ void CubeProxyGeometry::adjustClipPropertiesRanges() {
     float scaleTop =  tgt::clamp(clipTop_.get()/static_cast<float>(oldVolumeDimensions_.z-1), 0.f, 1.f);
     float bottomVal = scaleBottom * (numSlices.z-1);
     float topVal = scaleTop * (numSlices.z-1);
+    clipBottom_.setMaxValue(numSlices.z-1.0f);
+    clipTop_.setMaxValue(numSlices.z-1.0f);
     clipTop_.set(clipTop_.getMaxValue());
     clipBottom_.set(bottomVal);
     clipTop_.set(topVal);

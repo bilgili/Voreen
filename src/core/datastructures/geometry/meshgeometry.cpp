@@ -230,7 +230,7 @@ void MeshGeometry::clip(const vec4& clipPlane, MeshGeometry& closingMesh, double
         // Convert sorted edge list to sorted vertex list...
         VertexListType closingFaceVertices;
         for (size_t i = 0; i < edgeList.size(); ++i) {
-            bool reverseEdge = i != 0 && !closingFaceVertices.at(closingFaceVertices.size() - 1).equals(edgeList.at(i).first);
+            bool reverseEdge = i != 0 && !closingFaceVertices.at(closingFaceVertices.size() - 1).equals(edgeList.at(i).first, epsilon);
 
             VertexGeometry first = (reverseEdge ? edgeList.at(i).second : edgeList.at(i).first);
             VertexGeometry second = (reverseEdge ? edgeList.at(i).first : edgeList.at(i).second);

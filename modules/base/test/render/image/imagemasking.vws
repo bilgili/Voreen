@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="11">
+        <ProcessorNetwork version="13">
             <Processors>
                 <Processor type="ImageMasking" name="ImageMasking" id="ref0">
                     <MetaData>
@@ -12,7 +12,21 @@
                         <Property name="maskColor">
                             <value x="0" y="0" z="0" w="0" />
                         </Property>
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                        <Port name="image.mask">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ImageSource" name="Nucleon-Background" id="ref2">
@@ -21,11 +35,17 @@
                     </MetaData>
                     <Properties>
                         <Property name="clearButton" />
-                        <Property name="imageFile" value="input/images/nucleon_background.png" />
+                        <Property name="imageFile" noPathSet="false" value="input/images/nucleon_background.png" />
                         <Property name="imageSize">
                             <value x="321" y="319" />
                         </Property>
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="image.out">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ImageSource" name="Nucleon-Transparent" id="ref4">
@@ -34,26 +54,50 @@
                     </MetaData>
                     <Properties>
                         <Property name="clearButton" />
-                        <Property name="imageFile" value="input/images/nucleon.png" />
+                        <Property name="imageFile" noPathSet="false" value="input/images/nucleon.png" />
                         <Property name="imageSize">
                             <value x="321" y="319" />
                         </Property>
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="image.out">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas" id="ref1">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-578" y="21" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="313" y="99" width="300" height="300" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="313" y="99" width="321" height="319" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="313" y="99" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="321" y="319" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" id="ref6">
-                            <value x="300" y="300" />
+                            <value x="321" y="319" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/masked.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/masked.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="321" y="319" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="ImageMasking" name="ImageMasking disab" id="ref3">
@@ -65,22 +109,47 @@
                         <Property name="maskColor">
                             <value x="0" y="0" z="0" w="0" />
                         </Property>
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                        <Port name="image.mask">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Canvas" name="Canvas 2" id="ref5">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-417" y="20" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="315" y="447" width="300" height="300" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="313" y="458" width="321" height="319" />
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" id="ref7">
-                            <value x="300" y="300" />
+                            <value x="321" y="319" />
                         </Property>
                         <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" value="output/disabled.png" />
+                        <Property name="screenshotFilename" noPathSet="false" value="output/disabled.png" />
                         <Property name="showCursor" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin">
+                                    <value x="321" y="319" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -147,9 +216,6 @@
                     <Evaluator type="LinkEvaluatorIVec2Id" />
                 </PropertyLink>
             </PropertyLinks>
-            <PropertyStateCollections />
-            <PropertyStateFileReferences />
-            <PropertyStateDirectoryReferences />
         </ProcessorNetwork>
         <Animation />
     </Workspace>

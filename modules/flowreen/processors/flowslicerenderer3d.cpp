@@ -111,7 +111,7 @@ void FlowSliceRenderer3D::process() {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
 
-    camProp_.look();
+    camProp_.look(imgOutport_.getSize());
 
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 

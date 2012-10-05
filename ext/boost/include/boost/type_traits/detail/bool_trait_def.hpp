@@ -76,6 +76,7 @@ public:\
 BOOST_TT_AUX_TEMPLATE_ARITY_SPEC(1,trait) \
 /**/
 
+
 #define BOOST_TT_AUX_BOOL_TRAIT_DEF2(trait,T1,T2,C) \
 template< typename T1, typename T2 > struct trait \
     BOOST_TT_AUX_BOOL_C_BASE(C) \

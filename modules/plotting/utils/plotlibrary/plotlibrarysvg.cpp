@@ -375,7 +375,7 @@ bool PlotLibrarySvg::setRenderStatus() {
             projectionsMatrix_ = plOrtho(left_,right_,bottom_,top_,near_,far_);
         }
         else {
-            projectionsMatrix_ = camera_.getProjectionMatrix();
+            projectionsMatrix_ = camera_.getProjectionMatrix(1.0f); //TODO?
             camera_.updateFrustum();
             left_ = camera_.getFrustLeft();
             right_ = camera_.getFrustRight();

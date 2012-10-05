@@ -30,9 +30,9 @@ namespace voreen {
 Convolution::Convolution()
     : ImageProcessorBypassable("image/convolution"),
       filterSize_("filtersize", "Filter Size (NxN)", 7),
-      inport_(Port::INPORT, "inport"),
-      filterPort_(Port::INPORT, "filterport"),
-      outport_(Port::OUTPORT, "outport")
+      inport_(Port::INPORT, "inport", "Image Input"),
+      filterPort_(Port::INPORT, "filterport", "Filter Input"),
+      outport_(Port::OUTPORT, "outport", "Image Output")
 {
     // register properties and ports:
     addProperty(filterSize_);

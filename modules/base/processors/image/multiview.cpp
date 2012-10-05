@@ -33,18 +33,12 @@ MultiView::MultiView()
     , gridColor_("gridColor", "Grid color", tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f))
     , maximized_("maximized", "Maximized sub-view", 0, 0, 100000)
     , maximizeOnDoubleClick_("maximizeOnDoubleClick", "Maximize on double click", true)
-#ifdef _MSC_VER
-#pragma warning(disable:4355)  // passing 'this' is safe here
-#endif
     , maximizeEventProp_("mouseEvent.maximize", "Maximize Event", this, &MultiView::toggleMaximization,
         tgt::MouseEvent::MOUSE_BUTTON_LEFT, tgt::MouseEvent::DOUBLECLICK, tgt::MouseEvent::MODIFIER_NONE)
-#ifdef _MSC_VER
-#pragma warning(disable:4355)  // passing 'this' is safe here
-#endif
     , mouseMoveEventProp_("mouseEvent.move", "Move Event", this, &MultiView::mouseMove,
     tgt::MouseEvent::MOUSE_BUTTON_NONE, tgt::MouseEvent::MOTION | tgt::MouseEvent::CLICK | tgt::MouseEvent::ENTER_EXIT, tgt::MouseEvent::MODIFIER_NONE)
-    , outport_(Port::OUTPORT, "outport")
-    , inport_(Port::INPORT, "inport", true)
+    , outport_(Port::OUTPORT, "outport", "Image Output")
+    , inport_(Port::INPORT, "inport", "Image Input", true)
     , renderPorts_(std::vector<RenderPort*>())
     , gridResolution_(tgt::ivec2(0))
     , currentPort_(-1)
@@ -61,8 +55,6 @@ MultiView::MultiView()
 
     addPort(outport_);
     addPort(inport_);
-
-    inport_.sizeOriginChanged(this);
 }
 
 MultiView::~MultiView() {
@@ -252,12 +244,13 @@ void MultiView::initialize() throw (tgt::Exception) {
     RenderProcessor::initialize();
 }
 
-void MultiView::portResized(RenderPort* /*p*/, tgt::ivec2 newsize) {
+/* TODO: size linking adaptation
+void MultiView::portResized(RenderPort* p, tgt::ivec2 newsize) {
     outport_.resize(newsize);
 
     updateSizes();
     invalidate();
-}
+} */
 
 void MultiView::updateSizes() {
     if (outport_.getSize() == tgt::ivec2(0))
@@ -267,6 +260,7 @@ void MultiView::updateSizes() {
     if(renderPorts_.empty())
         return;
 
+    /* TODO: sizelinking adaptation
     if(maximized_.get() == 0) {
         tgt::ivec2 subsize = outport_.getSize() / gridResolution_;
         inport_.resize(subsize);
@@ -274,7 +268,7 @@ void MultiView::updateSizes() {
         // TODO:  inport->resize(...) would additionally do "size_ = newsize;", does that matter?
         RenderPort* rp = renderPorts_.at(maximized_.get() - 1);
         static_cast<RenderProcessor*>(rp->getProcessor())->portResized(rp, outport_.getSize());
-    }
+    } */
 }
 
 void MultiView::mouseMove(tgt::MouseEvent* e) {
@@ -325,22 +319,6 @@ void MultiView::mouseMove(tgt::MouseEvent* e) {
         if(rp && rp->isReady())
             rp->distributeEvent(e);
     }
-}
-
-void MultiView::sizeOriginChanged(RenderPort* /*p*/) {
-}
-
-bool MultiView::testSizeOrigin(const RenderPort* p, void* so) const {
-    if(p->getSizeOrigin() == so)
-        return true;
-
-    if(!so)
-        return true;
-
-    if(!p->getSizeOrigin())
-        return true;
-
-    return false;
 }
 
 void MultiView::invalidate(int inv) {

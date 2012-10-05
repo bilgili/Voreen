@@ -60,10 +60,10 @@ FlowSliceRenderer::FlowSliceRenderer()
     flow3DTexture_(0),
     rebuildTexture_(true),
     arrowList_(0),
-    volInport_(Port::INPORT, "volumehandle.volumehandle"),
-    imgOutport_(Port::OUTPORT, "image.outport"),
-    privatePort1_(Port::OUTPORT, "image.temp1", false),
-    privatePort2_(Port::OUTPORT, "image.temp2", false),
+    volInport_(Port::INPORT, "volumehandle.volumehandle", "Volume Input"),
+    imgOutport_(Port::OUTPORT, "image.outport", "Image Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER),
+    privatePort1_(Port::OUTPORT, "image.temp1", "image.temp1", false),
+    privatePort2_(Port::OUTPORT, "image.temp2", "image.temp2", false),
     portGroup_(true)
 {
     techniqueProp_ = new OptionProperty<RenderingTechnique>("visualizationMode", "technique:");

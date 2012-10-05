@@ -37,8 +37,8 @@ const std::string VolumeSelector::loggerCat_("voreen.core.VolumeSelector");
 VolumeSelector::VolumeSelector()
     : Processor(),
       volumeID_("volumeID", "Selected volume", 0, 0, 100),
-      inport_(Port::INPORT, "volumecollection", 0),
-      outport_(Port::OUTPORT, "volumehandle.volumehandle", 0)
+      inport_(Port::INPORT, "volumecollection", "VolumeCollection Input", false),
+      outport_(Port::OUTPORT, "volumehandle.volumehandle", "Volume Output", false)
 {
     addPort(inport_);
     addPort(outport_);

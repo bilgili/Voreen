@@ -115,10 +115,6 @@ private:
     FloatProperty gammaValue1_;
     FloatProperty gammaValue2_;
 
-    IntOptionProperty texFilterMode_;         ///< texture filtering mode to use for volume access
-    GLEnumOptionProperty texClampMode_;       ///< texture clamp mode to use for the volume
-    FloatProperty texBorderIntensity_;        ///< clamp border intensity
-
     static const std::string loggerCat_; ///< category used in logging
 };
 

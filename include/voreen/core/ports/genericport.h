@@ -44,7 +44,7 @@ namespace voreen {
 template<typename T>
 class GenericPort : public Port {
 public:
-    GenericPort(PortDirection direction, const std::string& name, bool allowMultipleConnections = false,
+    GenericPort(PortDirection direction, const std::string& id, const std::string& guiName = "", bool allowMultipleConnections = false,
                          Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT);
 
     virtual ~GenericPort();
@@ -91,25 +91,35 @@ class VRN_CORE_API VolumeCollectionPort : public GenericPort<VolumeCollection> {
 
 public:
 
-    VolumeCollectionPort(PortDirection direction, const std::string& name, bool allowMultipleConnections = false, Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT)
-    : GenericPort<VolumeCollection>(direction, name, allowMultipleConnections, invalidationLevel) {}
-
+    VolumeCollectionPort(PortDirection direction, const std::string& id, const std::string& guiName = "", bool allowMultipleConnections = false, Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT)
+    : GenericPort<VolumeCollection>(direction, id, guiName, allowMultipleConnections, invalidationLevel) {}
+    virtual std::string getClassName() const {return "VolumeCollectionPort";}
     virtual tgt::col3 getColorHint() const {
         return tgt::col3(255, 0, 255);
     }
 };
 
-typedef GenericPort<ImageSequence> ImageSequencePort;
 #ifdef DLL_TEMPLATE_INST
 template class VRN_CORE_API GenericPort<ImageSequence>;
 #endif
 
+class VRN_CORE_API ImageSequencePort : public GenericPort<ImageSequence> {
+
+public:
+
+    ImageSequencePort(PortDirection direction, const std::string& id, const std::string& guiName = "", bool allowMultipleConnections = false, Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT)
+    : GenericPort<ImageSequence>(direction, id, guiName, allowMultipleConnections, invalidationLevel) {}
+    
+    virtual std::string getClassName() const { return "ImageSequencePort"; }
+};
+
+
 // ---------------------------------------- implementation ----------------------------------------
 
 template <typename T>
-GenericPort<T>::GenericPort(PortDirection direction, const std::string& name, bool allowMultipleConnections,
+GenericPort<T>::GenericPort(PortDirection direction, const std::string& id, const std::string& guiName, bool allowMultipleConnections,
                      Processor::InvalidationLevel invalidationLevel)
-    : Port(name, direction, allowMultipleConnections, invalidationLevel)
+    : Port(direction, id, guiName, allowMultipleConnections, invalidationLevel)
     , portData_(0)
     , ownsData_(false)
 {}
@@ -131,7 +141,7 @@ void GenericPort<T>::setData(const T* data, bool takeOwnership) {
     portData_ = data;
     ownsData_ = takeOwnership;
 
-    invalidate();
+    invalidatePort();
 }
 
 template <typename T>

@@ -463,6 +463,7 @@ namespace boost {
 
 //  find head functor -----------------------------------------------//
 
+
             // find a head in the sequence ( functor )
             /*
                 This functor find a head of the specified range. For
@@ -499,6 +500,7 @@ namespace boost {
             };
 
 //  find tail functor -----------------------------------------------//
+
 
             // find a tail in the sequence ( functor )
             /*

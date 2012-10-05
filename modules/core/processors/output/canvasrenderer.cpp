@@ -53,7 +53,7 @@ CanvasRenderer::CanvasRenderer()
     , saveScreenshotButton_("saveScreenshot", "Save Screenshot")
     , canvas_(0)
     , shader_(0)
-    , inport_(Port::INPORT, "image.input")
+    , inport_(Port::INPORT, "image.input", "Image Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
     , errorTex_(0)
     , renderToImage_(false)
     , renderToImageFilename_("")
@@ -69,8 +69,6 @@ CanvasRenderer::CanvasRenderer()
     screenshotFilename_.setGroupID("screenshot");
     saveScreenshotButton_.setGroupID("screenshot");
     setPropertyGroupGuiName("screenshot", "Screenshot");
-
-    inport_.sizeOriginChanged(&inport_);
 
     canvasSize_.onChange(CallMemberAction<CanvasRenderer>(this, &CanvasRenderer::sizePropChanged));
     showCursor_.onChange(CallMemberAction<CanvasRenderer>(this, &CanvasRenderer::boolPropertyChanged));
@@ -96,7 +94,7 @@ void CanvasRenderer::process() {
         if (renderToImage_) {
             try {
                 renderInportToImage(renderToImageFilename_);
-                LINFO("Saved rendering " << inport_.getSize() << " to file: " << tgt::FileSystem::cleanupPath(renderToImageFilename_));
+                LINFO("Saved rendering with dimensions " << inport_.getSize() << " to file: " << tgt::FileSystem::cleanupPath(renderToImageFilename_));
             }
             catch (std::bad_alloc& /*e*/) {
                 LERROR("Exception in CanvasRenderer::renderInportToImage(): bad allocation (" << getName() << ")");
@@ -212,8 +210,8 @@ bool CanvasRenderer::isEndProcessor() const {
 void CanvasRenderer::canvasResized(tgt::ivec2 newsize) {
     if (canvas_) {
         canvas_->getGLFocus();
-        inport_.resize(newsize);
         canvasSize_.set(newsize);
+        inport_.requestSize(newsize);
     }
 }
 
@@ -244,7 +242,7 @@ void CanvasRenderer::setCanvas(tgt::GLCanvas* canvas) {
         if (eh) {
             eh->addListenerToFront(this);
         }
-        inport_.resize(canvas->getSize());
+        inport_.requestSize(canvas_->getSize());
     }
 
     invalidate();
@@ -283,7 +281,6 @@ bool CanvasRenderer::renderToImage(const std::string &filename) {
     canvas_->repaint();
 
     return (renderToImageError_.empty());
-
 }
 
 bool CanvasRenderer::renderToImage(const std::string &filename, tgt::ivec2 dimensions) {
@@ -302,13 +299,13 @@ bool CanvasRenderer::renderToImage(const std::string &filename, tgt::ivec2 dimen
     tgt::ivec2 oldDimensions = inport_.getSize();
     // resize texture container to desired image dimensions and propagate change
     canvas_->getGLFocus();
-    inport_.resize(dimensions);
+    inport_.requestSize(dimensions);
 
     // render with adjusted viewport size
     bool success = renderToImage(filename);
 
     // reset texture container dimensions from canvas size
-    inport_.resize(oldDimensions);
+    inport_.requestSize(oldDimensions);
 
     return success;
 }
@@ -374,7 +371,7 @@ void CanvasRenderer::resizeCanvas(tgt::ivec2 newsize) {
     if (newsize != inport_.getSize()) {
         canvas_->getGLFocus();
         glViewport(0, 0, static_cast<GLint>(newsize.x), static_cast<GLint>(newsize.y));
-        inport_.resize(newsize);
+        inport_.requestSize(newsize);
     }
 
     canvasSize_.set(newsize);
@@ -398,7 +395,7 @@ void CanvasRenderer::saveScreenshotClicked() {
 
     try {
         renderToImage(screenshotFilename_.get());
-        LINFO("Saved rendering with dimensions " << inport_.getSize() << " to file: " << screenshotFilename_.get());
+        //LINFO("Saved rendering with dimensions " << inport_.getSize() << " to file: " << screenshotFilename_.get());
     }
     catch (VoreenException& e) {
         LERROR("Failed to write screenshot to file '" << screenshotFilename_.get() << "': " << e.what());

@@ -29,9 +29,9 @@ namespace voreen {
 
 NonMinMaxSuppression::NonMinMaxSuppression()
     : ImageProcessorBypassable("image/nonminmax"),
-      inportImage_(Port::INPORT, "image.inport"),
-      inportSobel_(Port::INPORT, "image.sobel"),
-      outport_(Port::OUTPORT, "image.outport"),
+      inportImage_(Port::INPORT, "image.inport", "Image Input"),
+      inportSobel_(Port::INPORT, "image.sobel", "SobelImage Input"),
+      outport_(Port::OUTPORT, "image.outport", "Image Output"),
       mode_("mode", "Mode", Processor::INVALID_PROGRAM),
       isotropic_("isotropic", "Isotropic (ignore edges)", true, Processor::INVALID_PROGRAM),
       kernelRadius_("kernelRadius", "Kernel radius", tgt::ivec2(1))

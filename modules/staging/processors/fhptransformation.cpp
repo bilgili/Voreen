@@ -34,9 +34,9 @@ namespace voreen {
 FhpTransformation::FhpTransformation()
     : ImageProcessor("fhptransformation"),
       applyDatasetTransformationMatrix_("useDatasetTrafoMatrix", "Apply data set trafo matrix", true),
-      inport_(Port::INPORT, "inport"),
-      outport_(Port::OUTPORT, "outport", true, INVALID_RESULT, GL_RGBA16F_ARB),
-      volPort_(Port::INPORT, "volport")
+      inport_(Port::INPORT, "inport", "FHP Input"),
+      outport_(Port::OUTPORT, "outport", "FHP Transformed", true, INVALID_RESULT, RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB),
+      volPort_(Port::INPORT, "volport", "Volume Input")
 {
     addPort(inport_);
     addPort(outport_);

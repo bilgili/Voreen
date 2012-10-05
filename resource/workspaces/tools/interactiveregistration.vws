@@ -1,12 +1,17 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="" readonly="true">
-        <ProcessorNetwork version="12">
+        <ProcessorNetwork version="13">
             <MetaData>
+                <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
+                    <values>
+                        <item type="GeometryProcessor" ref="ref23" />
+                    </values>
+                </MetaItem>
                 <MetaItem name="Zoom" type="ZoomMetaData">
-                    <transform.row0 x="0.89291441440582275" y="0" z="0" />
-                    <transform.row1 x="0" y="0.89291441440582275" z="0" />
-                    <transform.row2 x="4609.08642578125" y="4112.69970703125" z="1" />
+                    <transform.row0 x="0.70870667695999146" y="0" z="0" />
+                    <transform.row1 x="0" y="0.70870667695999146" z="0" />
+                    <transform.row2 x="4938.4365234375" y="3656.15673828125" z="1" />
                 </MetaItem>
                 <MetaItem name="autoLinkCameras" type="BoolMetaData" value="false" />
             </MetaData>
@@ -14,7 +19,14 @@
                 <Processor type="Canvas" name="Canvas" id="ref20">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-465" y="700" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="86" y="121" width="720" height="597" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="1843" y="183" width="720" height="597" />
+                        <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
+                        <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
+                            <value x="1843" y="183" />
+                        </MetaItem>
+                        <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
+                            <value x="720" y="597" />
+                        </MetaItem>
                     </MetaData>
                     <Properties>
                         <Property name="canvasSize" lod="1">
@@ -23,7 +35,18 @@
                         <Property name="saveScreenshot" />
                         <Property name="screenshotFilename" noPathSet="false" value="" />
                         <Property name="showCursor" lod="1" value="true" />
+                        <Property name="showFullScreen" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref181">
+                                    <value x="720" y="597" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Background" name="Background" id="ref0">
@@ -40,9 +63,23 @@
                             <value x="0.39215699" y="0.39215699" z="0.39215699" w="1" />
                         </Property>
                         <Property name="repeat" lod="1" value="1" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="texture" lod="1" noPathSet="false" value="" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="MeshEntryExitPoints" name="MeshEntryExitPoints" id="ref2">
@@ -50,7 +87,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-808" y="-90" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="63373.49609375" fovy="45" id="ref42">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="63373.49609375" fovy="45" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref42">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="721" y="372" />
                             </MetaData>
@@ -64,6 +101,27 @@
                         <Property name="useCulling" lod="1" value="true" />
                         <Property name="useFloatRenderTargets" lod="1" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="proxgeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeReceive" id="ref188">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeReceive" id="ref190">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -101,6 +159,15 @@
                             <value x="10" y="10" z="10" />
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="geometry">
+                            <Properties />
+                        </Port>
+                        <Port name="volume">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="GeometryProcessor" name="GeometryProcessor" id="ref4">
@@ -108,7 +175,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-885" y="90" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="63373.49609375" fovy="45" id="ref43">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="63373.49609375" fovy="45" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref43">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -118,6 +185,24 @@
                         </Property>
                         <Property name="renderGeometries" lod="1" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref185">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="image.output.renderSizeReceive" id="ref184">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -146,6 +231,12 @@
                     <Properties>
                         <Property name="volumeURL" url="../../volumes/nucleon.vvd?preferredReader=VvdVolumeReader&amp;timeframe=0" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="BoundingBoxRenderer" name="BoundingBox Static" id="ref6">
@@ -164,6 +255,15 @@
                             <value x="10" y="10" z="10" />
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="geometry">
+                            <Properties />
+                        </Port>
+                        <Port name="volume">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="MultiVolumeProxyGeometry" name="MultiVolumeProxyGeometry" id="ref7">
@@ -171,6 +271,16 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-827" y="-186" />
                     </MetaData>
                     <Properties />
+                    <Inports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="MultiVolumeRaycaster" name="MultiVolumeRaycaster" id="ref3">
@@ -179,7 +289,7 @@
                     </MetaData>
                     <Properties>
                         <Property name="applyLightAttenuation" value="false" />
-                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="63373.49609375" fovy="45" id="ref44">
+                        <Property name="camera" adjustProjectionToViewport="true" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="63373.49609375" fovy="45" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref44">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -215,7 +325,11 @@
                             <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
                         </Property>
                         <Property name="materialShininess" value="60" />
-                        <Property name="raycast.prg" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="raycast.prg" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="samplingRate" value="2" />
                         <Property name="shading1" value="none" />
                         <Property name="shading2" value="none" />
@@ -309,6 +423,57 @@
                             </TransferFunction>
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeOrigin" id="ref187">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeOrigin" id="ref189">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="volume1">
+                            <Properties />
+                        </Port>
+                        <Port name="volume2">
+                            <Properties />
+                        </Port>
+                        <Port name="volume3">
+                            <Properties />
+                        </Port>
+                        <Port name="volume4">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="image.output.renderSizeReceive" id="ref186">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.output1">
+                            <Properties>
+                                <Property name="image.output1.renderSizeReceive">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.output2">
+                            <Properties>
+                                <Property name="image.output2.renderSizeReceive">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="QuadView" name="QuadView" id="ref1">
@@ -325,6 +490,45 @@
                         <Property name="mouseEvent.move" lod="1" enabled="true" mouseAction="103" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="showGrid" lod="1" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="inport1">
+                            <Properties>
+                                <Property name="inport1.renderSizeOrigin" id="ref183">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport2">
+                            <Properties>
+                                <Property name="inport2.renderSizeOrigin" id="ref191">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport3">
+                            <Properties>
+                                <Property name="inport3.renderSizeOrigin" id="ref195">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="inport4">
+                            <Properties>
+                                <Property name="inport4.renderSizeOrigin" id="ref199">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="outport">
+                            <Properties>
+                                <Property name="outport.renderSizeReceive" id="ref182">
+                                    <value x="720" y="597" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="MultiSliceRenderer" name="MultiSliceRenderer" id="ref8">
@@ -340,7 +544,7 @@
                         <Property name="blendingMode2" lod="1" value="decal" id="ref62" />
                         <Property name="blendingMode3" lod="1" value="maximumAlpha" id="ref60" />
                         <Property name="blendingMode4" lod="1" value="maximumAlpha" id="ref68" />
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref46">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref46">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -443,6 +647,28 @@
                             </TransferFunction>
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="image.entrypoints">
+                            <Properties />
+                        </Port>
+                        <Port name="volume1">
+                            <Properties />
+                        </Port>
+                        <Port name="volume2">
+                            <Properties />
+                        </Port>
+                        <Port name="volume3">
+                            <Properties />
+                        </Port>
+                        <Port name="volume4">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
@@ -466,7 +692,7 @@
                         <Property name="blendingMode2" lod="1" value="decal" id="ref63" />
                         <Property name="blendingMode3" lod="1" value="maximumAlpha" id="ref61" />
                         <Property name="blendingMode4" lod="1" value="maximumAlpha" id="ref69" />
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref48">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref48">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -569,6 +795,28 @@
                             </TransferFunction>
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="image.entrypoints">
+                            <Properties />
+                        </Port>
+                        <Port name="volume1">
+                            <Properties />
+                        </Port>
+                        <Port name="volume2">
+                            <Properties />
+                        </Port>
+                        <Port name="volume3">
+                            <Properties />
+                        </Port>
+                        <Port name="volume4">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
@@ -592,7 +840,7 @@
                         <Property name="blendingMode2" lod="1" value="decal" id="ref93" />
                         <Property name="blendingMode3" lod="1" value="maximumAlpha" id="ref94" />
                         <Property name="blendingMode4" lod="1" value="maximumAlpha" id="ref95" />
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref50">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref50">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -695,6 +943,28 @@
                             </TransferFunction>
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="image.entrypoints">
+                            <Properties />
+                        </Port>
+                        <Port name="volume1">
+                            <Properties />
+                        </Port>
+                        <Port name="volume2">
+                            <Properties />
+                        </Port>
+                        <Port name="volume3">
+                            <Properties />
+                        </Port>
+                        <Port name="volume4">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
@@ -711,7 +981,7 @@
                     </MetaData>
                     <Properties>
                         <Property name="alignCameraButton" lod="1" />
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref51">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref51">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -724,9 +994,26 @@
                             <value x="-0" y="-0" z="1" />
                         </Property>
                         <Property name="planeDist" lod="1" value="-0.39024383" id="ref154" />
+                        <Property name="restrictToMainVolume" value="false" />
                         <Property name="sliceAlignmentProp" value="xy-plane" />
                         <Property name="sliceIndex" value="12" id="ref130" />
                     </Properties>
+                    <Inports>
+                        <Port name="secondaryVolumes">
+                            <Properties />
+                        </Port>
+                        <Port name="volume">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="geometry">
+                            <Properties />
+                        </Port>
+                        <Port name="text">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="mouseWheelHandler">
                             <Properties>
@@ -741,7 +1028,7 @@
                     </MetaData>
                     <Properties>
                         <Property name="alignCameraButton" lod="1" />
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref52">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref52">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -754,9 +1041,26 @@
                             <value x="0" y="1" z="0" />
                         </Property>
                         <Property name="planeDist" lod="1" value="-0.09756088" id="ref161" />
+                        <Property name="restrictToMainVolume" value="false" />
                         <Property name="sliceAlignmentProp" value="xz-plane" />
                         <Property name="sliceIndex" value="18" id="ref124" />
                     </Properties>
+                    <Inports>
+                        <Port name="secondaryVolumes">
+                            <Properties />
+                        </Port>
+                        <Port name="volume">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="geometry">
+                            <Properties />
+                        </Port>
+                        <Port name="text">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="mouseWheelHandler">
                             <Properties>
@@ -771,7 +1075,7 @@
                     </MetaData>
                     <Properties>
                         <Property name="alignCameraButton" lod="1" />
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref53">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref53">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -784,9 +1088,26 @@
                             <value x="1" y="0" z="0" />
                         </Property>
                         <Property name="planeDist" lod="1" value="-0.04878038" id="ref165" />
+                        <Property name="restrictToMainVolume" value="false" />
                         <Property name="sliceAlignmentProp" value="yz-plane" />
                         <Property name="sliceIndex" value="19" id="ref126" />
                     </Properties>
+                    <Inports>
+                        <Port name="secondaryVolumes">
+                            <Properties />
+                        </Port>
+                        <Port name="volume">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="geometry">
+                            <Properties />
+                        </Port>
+                        <Port name="text">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="mouseWheelHandler">
                             <Properties>
@@ -800,7 +1121,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-316" y="-177" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref45">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref45">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -814,6 +1135,27 @@
                         <Property name="useCulling" lod="1" value="false" />
                         <Property name="useFloatRenderTargets" lod="1" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="proxgeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeReceive" id="ref194">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeReceive">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -840,7 +1182,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="192" y="-210" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref47">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref47">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -854,6 +1196,27 @@
                         <Property name="useCulling" lod="1" value="false" />
                         <Property name="useFloatRenderTargets" lod="1" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="proxgeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeReceive" id="ref198">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeReceive">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -880,7 +1243,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="689" y="-250" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref49">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref49">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -894,6 +1257,27 @@
                         <Property name="useCulling" lod="1" value="false" />
                         <Property name="useFloatRenderTargets" lod="1" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="proxgeometry.geometry">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.entrypoints">
+                            <Properties>
+                                <Property name="image.entrypoints.renderSizeReceive" id="ref202">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                        <Port name="image.exitpoints">
+                            <Properties>
+                                <Property name="image.exitpoints.renderSizeReceive">
+                                    <value x="128" y="128" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -931,9 +1315,35 @@
                         <Property name="layout3" lod="1" value="NW" />
                         <Property name="mouseEvent.EnterExit" lod="1" enabled="true" mouseAction="96" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="mouseEvent.move" lod="1" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="voreen.fontprop" lod="1" fontType="TextureFont" fontSize="15" fontName="VeraMono.ttf" textAlignment="Right" verticalTextAlignment="Top" lineWidth="350" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text0">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text1">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text2">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text3">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="TextOverlay" name="TextOverlay 3" id="ref27">
@@ -952,9 +1362,35 @@
                         <Property name="layout3" lod="1" value="NW" />
                         <Property name="mouseEvent.EnterExit" lod="1" enabled="true" mouseAction="96" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="mouseEvent.move" lod="1" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="voreen.fontprop" lod="1" fontType="TextureFont" fontSize="15" fontName="VeraMono.ttf" textAlignment="Right" verticalTextAlignment="Top" lineWidth="350" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text0">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text1">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text2">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text3">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="TextOverlay" name="TextOverlay 4" id="ref29">
@@ -973,9 +1409,35 @@
                         <Property name="layout3" lod="1" value="NW" />
                         <Property name="mouseEvent.EnterExit" lod="1" enabled="true" mouseAction="96" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                         <Property name="mouseEvent.move" lod="1" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="voreen.fontprop" lod="1" fontType="TextureFont" fontSize="15" fontName="VeraMono.ttf" textAlignment="Right" verticalTextAlignment="Top" lineWidth="350" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text0">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text1">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text2">
+                            <Properties />
+                        </Port>
+                        <Port name="text.text3">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Background" name="Background 2" id="ref33">
@@ -992,9 +1454,23 @@
                             <value x="0.2" y="0.2" z="0.2" w="1" />
                         </Property>
                         <Property name="repeat" lod="1" value="1" id="ref115" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="texture" lod="1" noPathSet="false" value="" id="ref111" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Background" name="Background 3" id="ref34">
@@ -1011,9 +1487,23 @@
                             <value x="0.2" y="0.2" z="0.2" w="1" />
                         </Property>
                         <Property name="repeat" lod="1" value="1" id="ref116" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="texture" lod="1" noPathSet="false" value="" id="ref112" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="Background" name="Background 4" id="ref35">
@@ -1030,9 +1520,23 @@
                             <value x="0.2" y="0.2" z="0.2" w="1" />
                         </Property>
                         <Property name="repeat" lod="1" value="1" id="ref122" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="texture" lod="1" noPathSet="false" value="" id="ref119" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="GeometryProcessor" name="GeometryProcessor 2" id="ref21">
@@ -1040,7 +1544,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-446" y="60" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref123">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref123">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -1050,6 +1554,24 @@
                         </Property>
                         <Property name="renderGeometries" lod="1" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref193">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="image.output.renderSizeReceive" id="ref192">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -1097,6 +1619,12 @@
                         </Property>
                         <Property name="zSliceIndex" lod="1" value="0" />
                     </Properties>
+                    <Inports>
+                        <Port name="volume">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="SlicePositionRenderer" name="SlicePositionRenderer 2" id="ref13">
@@ -1125,6 +1653,12 @@
                         </Property>
                         <Property name="zSliceIndex" lod="1" value="12" id="ref131" />
                     </Properties>
+                    <Inports>
+                        <Port name="volume">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="SlicePositionRenderer" name="SlicePositionRenderer 3" id="ref14">
@@ -1153,6 +1687,12 @@
                         </Property>
                         <Property name="zSliceIndex" lod="1" value="12" id="ref133" />
                     </Properties>
+                    <Inports>
+                        <Port name="volume">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="GeometryProcessor" name="GeometryProcessor 3" id="ref22">
@@ -1160,7 +1700,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="137" y="163" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref128">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref128">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -1170,6 +1710,24 @@
                         </Property>
                         <Property name="renderGeometries" lod="1" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref197">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="image.output.renderSizeReceive" id="ref196">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -1196,7 +1754,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="727" y="42" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref129">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref129">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -1206,6 +1764,24 @@
                         </Property>
                         <Property name="renderGeometries" lod="1" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="image.input">
+                            <Properties>
+                                <Property name="image.input.renderSizeOrigin" id="ref201">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties>
+                                <Property name="image.output.renderSizeReceive" id="ref200">
+                                    <value x="360" y="298" />
+                                </Property>
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
@@ -1236,12 +1812,38 @@
                         <Property name="numDigits1" lod="1" value="2" />
                         <Property name="numDigits2" lod="1" value="2" />
                         <Property name="numDigits3" lod="1" value="2" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="useVolume0" lod="1" value="true" />
                         <Property name="useVolume1" lod="1" value="true" />
                         <Property name="useVolume2" lod="1" value="false" />
                         <Property name="useVolume3" lod="1" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="fhp">
+                            <Properties />
+                        </Port>
+                        <Port name="volume.input0">
+                            <Properties />
+                        </Port>
+                        <Port name="volume.input1">
+                            <Properties />
+                        </Port>
+                        <Port name="volume.input2">
+                            <Properties />
+                        </Port>
+                        <Port name="volume.input3">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="IntensityMeasure" name="IntensityMeasure 2" id="ref16">
@@ -1253,12 +1855,38 @@
                         <Property name="numDigits1" lod="1" value="2" />
                         <Property name="numDigits2" lod="1" value="2" />
                         <Property name="numDigits3" lod="1" value="2" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="useVolume0" lod="1" value="true" />
                         <Property name="useVolume1" lod="1" value="true" />
                         <Property name="useVolume2" lod="1" value="false" />
                         <Property name="useVolume3" lod="1" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="fhp">
+                            <Properties />
+                        </Port>
+                        <Port name="volume.input0">
+                            <Properties />
+                        </Port>
+                        <Port name="volume.input1">
+                            <Properties />
+                        </Port>
+                        <Port name="volume.input2">
+                            <Properties />
+                        </Port>
+                        <Port name="volume.input3">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="IntensityMeasure" name="IntensityMeasure 3" id="ref17">
@@ -1270,12 +1898,38 @@
                         <Property name="numDigits1" lod="1" value="2" />
                         <Property name="numDigits2" lod="1" value="2" />
                         <Property name="numDigits3" lod="1" value="2" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="useVolume0" lod="1" value="true" />
                         <Property name="useVolume1" lod="1" value="true" />
                         <Property name="useVolume2" lod="1" value="false" />
                         <Property name="useVolume3" lod="1" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="fhp">
+                            <Properties />
+                        </Port>
+                        <Port name="volume.input0">
+                            <Properties />
+                        </Port>
+                        <Port name="volume.input1">
+                            <Properties />
+                        </Port>
+                        <Port name="volume.input2">
+                            <Properties />
+                        </Port>
+                        <Port name="volume.input3">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="DistanceMeasure" name="DistanceMeasure" id="ref30">
@@ -1283,7 +1937,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-429" y="178" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref147">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref147">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -1294,10 +1948,27 @@
                         <Property name="mouseEvent.measure" lod="1" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                         <Property name="numDigits" lod="1" value="2" id="ref141" />
                         <Property name="renderSpheres" lod="1" value="false" id="ref137" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="unit" lod="1" value="cm" id="ref135" />
                         <Property name="unitFactor" lod="1" value="10" id="ref139" />
                     </Properties>
+                    <Inports>
+                        <Port name="fhp">
+                            <Properties />
+                        </Port>
+                        <Port name="image">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="DistanceMeasure" name="DistanceMeasure 2" id="ref31">
@@ -1305,7 +1976,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="175" y="264" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref148">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref148">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -1316,10 +1987,27 @@
                         <Property name="mouseEvent.measure" lod="1" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                         <Property name="numDigits" lod="1" value="2" id="ref142" />
                         <Property name="renderSpheres" lod="1" value="false" id="ref138" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="unit" lod="1" value="cm" id="ref136" />
                         <Property name="unitFactor" lod="1" value="10" id="ref140" />
                     </Properties>
+                    <Inports>
+                        <Port name="fhp">
+                            <Properties />
+                        </Port>
+                        <Port name="image">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="DistanceMeasure" name="DistanceMeasure 3" id="ref32">
@@ -1327,7 +2015,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="750" y="158" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref149">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref149">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -1338,10 +2026,27 @@
                         <Property name="mouseEvent.measure" lod="1" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                         <Property name="numDigits" lod="1" value="2" id="ref145" />
                         <Property name="renderSpheres" lod="1" value="false" id="ref146" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false" />
+                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property name="unit" lod="1" value="cm" id="ref143" />
                         <Property name="unitFactor" lod="1" value="10" id="ref144" />
                     </Properties>
+                    <Inports>
+                        <Port name="fhp">
+                            <Properties />
+                        </Port>
+                        <Port name="image">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="image.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeTransformation" name="VolumeTransformation" id="ref39">
@@ -1359,6 +2064,16 @@
                         </Property>
                         <Property name="transformationMode" value="concatenate" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.input">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="volumehandle.output">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="InteractiveRegistrationWidget" name="InteractiveRegistrationWidget" id="ref36">
@@ -1366,7 +2081,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-506" y="271" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref156">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref156">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1685" y="43" />
                             </MetaData>
@@ -1398,6 +2113,22 @@
                             <value.row3 x="0" y="0" z="0" w="1" />
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="input">
+                            <Properties />
+                        </Port>
+                        <Port name="volume">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="output">
+                            <Properties />
+                        </Port>
+                        <Port name="text">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSource" name="VolumeSource Moving" id="ref41">
@@ -1407,6 +2138,12 @@
                     <Properties>
                         <Property name="volumeURL" url="../../volumes/walnut.vvd?preferredReader=VvdVolumeReader&amp;timeframe=0" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="InteractiveRegistrationWidget" name="InteractiveRegistrationWidget 2" id="ref38">
@@ -1414,7 +2151,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="637" y="314" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref166">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref166">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -1446,6 +2183,22 @@
                             <value.row3 x="0" y="0" z="0" w="1" />
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="input">
+                            <Properties />
+                        </Port>
+                        <Port name="volume">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="output">
+                            <Properties />
+                        </Port>
+                        <Port name="text">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="InteractiveRegistrationWidget" name="InteractiveRegistrationWidget 3" id="ref37">
@@ -1453,7 +2206,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="85" y="348" />
                     </MetaData>
                     <Properties>
-                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" id="ref157">
+                        <Property name="camera" lod="1" adjustProjectionToViewport="true" projectionMode="0" frustLeft="-1" frustRight="1" frustBottom="-1" frustTop="1" frustNear="0.01" frustFar="502" fovy="178.85411072" eyeMode="1" eyeSeparation="1" axisMode="0" id="ref157">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
@@ -1485,6 +2238,22 @@
                             <value.row3 x="0" y="0" z="0" w="1" />
                         </Property>
                     </Properties>
+                    <Inports>
+                        <Port name="input">
+                            <Properties />
+                        </Port>
+                        <Port name="volume">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="output">
+                            <Properties />
+                        </Port>
+                        <Port name="text">
+                            <Properties />
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -2136,18 +2905,8 @@
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
-                    <SourceProperty type="CameraProperty" ref="ref42" />
-                    <DestinationProperty type="CameraProperty" ref="ref44" />
-                    <Evaluator type="LinkEvaluatorCameraId" />
-                </PropertyLink>
-                <PropertyLink>
                     <SourceProperty type="CameraProperty" ref="ref44" />
                     <DestinationProperty type="CameraProperty" ref="ref42" />
-                    <Evaluator type="LinkEvaluatorCameraId" />
-                </PropertyLink>
-                <PropertyLink>
-                    <SourceProperty type="CameraProperty" ref="ref43" />
-                    <DestinationProperty type="CameraProperty" ref="ref44" />
                     <Evaluator type="LinkEvaluatorCameraId" />
                 </PropertyLink>
                 <PropertyLink>
@@ -3034,6 +3793,71 @@
                     <SourceProperty type="ButtonProperty" ref="ref180" />
                     <DestinationProperty type="ButtonProperty" ref="ref179" />
                     <Evaluator type="LinkEvaluatorButtonId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref181" />
+                    <DestinationProperty ref="ref182" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref183" />
+                    <DestinationProperty ref="ref184" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref43" />
+                    <DestinationProperty type="CameraProperty" ref="ref44" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref185" />
+                    <DestinationProperty ref="ref186" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="CameraProperty" ref="ref42" />
+                    <DestinationProperty type="CameraProperty" ref="ref44" />
+                    <Evaluator type="LinkEvaluatorCameraId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref187" />
+                    <DestinationProperty ref="ref188" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref189" />
+                    <DestinationProperty ref="ref190" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref191" />
+                    <DestinationProperty ref="ref192" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref193" />
+                    <DestinationProperty ref="ref194" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref195" />
+                    <DestinationProperty ref="ref196" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref197" />
+                    <DestinationProperty ref="ref198" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref199" />
+                    <DestinationProperty ref="ref200" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty ref="ref201" />
+                    <DestinationProperty ref="ref202" />
+                    <Evaluator type="LinkEvaluatorRenderSize" />
                 </PropertyLink>
             </PropertyLinks>
         </ProcessorNetwork>

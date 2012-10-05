@@ -126,5 +126,9 @@ bool GroupPropertyWidget::isAnyPropertyVisible(Property::LODSetting lod) {
     return false;
 }
 
+Property* GroupPropertyWidget::getProperty() const {
+    return prop_;
+}
+
 
 } // namespace

@@ -519,7 +519,7 @@ void NetworkEvaluator::defineRenderingOrder() {
     std::set<Processor*> predecessors = netGraph.getPredecessors(endProcessors);
 
     // sort generated subset topologically
-    renderingOrder_ = netGraph.sortTopological(predecessors);
+    renderingOrder_ = netGraph.sortTopologically(predecessors);
 
     // construct mapping from processors to their loop inports
     // (used for incrementing loop ports' iteration counter)

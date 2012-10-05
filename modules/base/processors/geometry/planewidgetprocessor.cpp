@@ -64,7 +64,7 @@ PlaneWidgetProcessor::PlaneWidgetProcessor()
     , innerColor_("innerColor", "Inner box color", tgt::vec4(0.0f, 0.0f, 0.0f, 1.0f))
     , lightPosition_("lightPosition", "Light source position", tgt::vec4(2.3f, 1.5f, 1.5f, 1.f),
         tgt::vec4(-10), tgt::vec4(10))
-    , inport_(Port::INPORT, "volume")
+    , inport_(Port::INPORT, "volume", "Volume Input")
 {
     innerColor_.setViews(Property::COLOR);
     xColor_.setViews(Property::COLOR);

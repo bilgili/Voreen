@@ -106,7 +106,7 @@ public:
     virtual void serialize(XmlSerializer& s) const;
     virtual void deserialize(XmlDeserializer& s);
 
-    virtual void portResized(RenderPort* p, tgt::ivec2 newsize);
+    virtual void portResized();
 
     OpenCLProperty* getOpenCLProperty() {
         return &openclProp_;

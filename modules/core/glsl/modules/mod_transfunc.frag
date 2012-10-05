@@ -80,3 +80,14 @@ vec4 applyTF(TransFuncParameters transfunc, sampler2D tex, vec4 intensityGradien
     #endif
 }
 
+//pre-integrated TF:
+vec4 applyTFpi(TransFuncParameters transfunc, sampler2D tex, float intensity, float prev) {
+    intensity = realWorldToTexture(transfunc, intensity);
+    prev = realWorldToTexture(transfunc, prev);
+    #if defined(GLSL_VERSION_130)
+        //return texture(tex, vec2(prev, intensity));
+        return texture(tex, vec2(intensity, prev));
+    #else
+        return texture2D(tex, vec2(intensity, prev));
+    #endif
+}

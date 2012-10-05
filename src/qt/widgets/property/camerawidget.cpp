@@ -199,10 +199,10 @@ void CameraWidget::createWidgets() {
     comboProjection_->addItem(tr("Perspective"));
     comboProjection_->addItem(tr("Frustum"));
 
-    leftProp_   = new FloatProperty("frust.left", "Left", -1.f, -10.f, 10.f);
-    rightProp_  = new FloatProperty("frust.right", "Right", 1.f, -10.f, 10.f);
-    bottomProp_ = new FloatProperty("frust.bottom", "Bottom", -1.f, -10.f, 10.f);
-    topProp_    = new FloatProperty("frust.top", "Top", 1.f, -10.f, 10.f);
+    leftProp_   = new FloatProperty("frust.left", "Left", -1.f, -1000.f, 1000.f);
+    rightProp_  = new FloatProperty("frust.right", "Right", 1.f, -1000.f, 1000.f);
+    bottomProp_ = new FloatProperty("frust.bottom", "Bottom", -1.f, -1000.f, 1000.f);
+    topProp_    = new FloatProperty("frust.top", "Top", 1.f, -1000.f, 1000.f);
     nearProp_   = new FloatProperty("frust.near", "Near", 0.1f, 0.0001f, 1.f);
     farProp_    = new FloatProperty("frust.far", "Far", 10.f, 0.0, maxDist_);
     fovyProp_   = new FloatProperty("frust.fovy", "Fov", 45.f, 5.f, 175.f);

@@ -117,7 +117,7 @@ bool PlotLibraryOpenGl::setRenderStatus() {
         if (orthographicCameraFlag_)
             glOrtho(-.9,.9,-.9,.9,-2,10);
         else
-            tgt::loadMatrix(camera_.getProjectionMatrix());
+            tgt::loadMatrix(camera_.getProjectionMatrix(windowSize_));
         GLdouble eqnLeft[4] = {1.0, 0.0, 0.0, -domain_[X_AXIS].getLeft()};
         GLdouble eqnRight[4] = {-1.0, 0.0, 0.0, domain_[X_AXIS].getRight()};
         GLdouble eqnBottom[4] = {0.0, 1.0, 0.0, -domain_[Y_AXIS].getLeft()};

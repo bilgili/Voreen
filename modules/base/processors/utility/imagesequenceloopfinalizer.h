@@ -38,6 +38,7 @@ namespace voreen {
  * All images of the input sequence are processed by the loop.
  */
 class ImageSequenceLoopFinalizer : public RenderProcessor {
+
 public:
     ImageSequenceLoopFinalizer();
     virtual Processor* create() const;
@@ -58,7 +59,7 @@ protected:
 
     RenderPort inport_;
     ImageSequencePort outport_;
-    Port loopOutport_;
+    LoopPort loopOutport_;
 
     IntOptionProperty textureFormat_;       ///< format of generated textures
 

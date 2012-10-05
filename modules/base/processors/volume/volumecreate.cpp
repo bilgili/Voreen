@@ -41,7 +41,7 @@ const std::string VolumeCreate::loggerCat_("voreen.VolumeCreate");
 
 VolumeCreate::VolumeCreate()
     : VolumeCreateBase()
-    , outport_(Port::OUTPORT, "volumehandle.output", 0)
+    , outport_(Port::OUTPORT, "volumehandle.output", "Volume Output", false)
     , currentSeed_(0)
     , operation_("operation", "Operation")
     , dimension_("dimension", "Dimension", 64, 2, 1024, Processor::VALID)

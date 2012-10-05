@@ -225,7 +225,7 @@ public:
      * @param clipPlane the arbitrary clipping plane
      * @param epsilon the accuracy for vertex geometry comparison
      */
-    void clip(const tgt::vec4& clipPlane, double epsilon = 1e-6);
+    void clip(const tgt::vec4& clipPlane, double epsilon = 1e-5);
 
     /**
      * Returns true, if all vertices of the passed FaceGeometry are equal to this one's.
@@ -233,7 +233,7 @@ public:
      * @param face the face to compare
      * @param epsilon maximum distance at which two vertices are to be considered equal
      */
-    bool equals(const FaceGeometry& face, double epsilon = 1e-6) const;
+    bool equals(const FaceGeometry& face, double epsilon = 1e-5) const;
 
     /**
      * Returns the axis-aligned bounding box enclosing all vertices of the face.
