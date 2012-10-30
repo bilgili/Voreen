@@ -7,30 +7,37 @@ MESSAGE(STATUS "Voreen Home: ${VRN_HOME}")
 # detect compiler and architecture
 IF(${CMAKE_GENERATOR} STREQUAL "Visual Studio 9 2008")
     SET(VRN_MSVC2008 TRUE)
+    SET(VRN_MSVC TRUE)
     SET(VRN_WIN32 TRUE)
     MESSAGE(STATUS "Visual Studio 2008 build (32 Bit)")
 ELSEIF(${CMAKE_GENERATOR} STREQUAL "Visual Studio 9 2008 Win64")
     SET(VRN_MSVC2008 TRUE)
+    SET(VRN_MSVC TRUE)
     SET(VRN_WIN64 TRUE)
     MESSAGE(STATUS "Visual Studio 2008 Build (64 Bit)")
 ELSEIF(${CMAKE_GENERATOR} STREQUAL "Visual Studio 10")
     SET(VRN_MSVC2010 TRUE)
+    SET(VRN_MSVC TRUE)
     SET(VRN_WIN32 TRUE)
     MESSAGE(STATUS "Visual Studio 2010 Build (32 Bit)")
 ELSEIF(${CMAKE_GENERATOR} STREQUAL "Visual Studio 10 Win64")
     SET(VRN_MSVC2010 TRUE)
+    SET(VRN_MSVC TRUE)
     SET(VRN_WIN64 TRUE)
     MESSAGE(STATUS "Visual Studio 2010 Build (64 Bit)")
 ELSEIF(${CMAKE_GENERATOR} STREQUAL "Visual Studio 11")
     SET(VRN_MSVC11 TRUE)
+    SET(VRN_MSVC TRUE)
     SET(VRN_WIN32 TRUE)
     MESSAGE("Visual Studio 11 Build (32 Bit) (not actively supported)")
 ELSEIF(${CMAKE_GENERATOR} STREQUAL "Visual Studio 11 Win64")
     SET(VRN_MSVC11 TRUE)
+    SET(VRN_MSVC TRUE)
     SET(VRN_WIN64 TRUE)
     MESSAGE("Visual Studio 11 Build (64 Bit) (not actively supported)")
 ELSEIF(${CMAKE_GENERATOR} MATCHES "NMake") 
     SET(VRN_NMAKE TRUE)
+    SET(VRN_MSVC TRUE)
     IF(CMAKE_CL_64)
         SET(VRN_WIN64 TRUE)
         MESSAGE(STATUS "NMake 64 Bit Build")
@@ -85,7 +92,7 @@ ELSE()
 ENDIF()
 
 # platform-dependent configuration
-IF(WIN32)
+IF(VRN_MSVC)
     LIST(APPEND VRN_DEFINITIONS -DNOMINMAX -D_CRT_SECURE_NO_DEPRECATE)
 
     # Disable warnings for Microsoft compiler:
@@ -146,7 +153,7 @@ IF(WIN32)
         SET(VRN_ADD_INSTALL_TARGET TRUE)
 
         MESSAGE("* Adding Visual Studio redist libraries to install target")
-        IF(NOT MSVC10)
+        IF(NOT VRN_MSVC10)
             MESSAGE(WARNING "Deploying redist libraries only supported for Visual Studio 2010")
         ELSE()
             GET_FILENAME_COMPONENT(VS_DIR [HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\VisualStudio\\10.0\\Setup\\VS;ProductDir] REALPATH CACHE)
@@ -170,10 +177,15 @@ IF(WIN32)
     ENDIF()
 
 ELSEIF(UNIX)
+
     LIST(APPEND VRN_DEFINITIONS "-DUNIX")  
     LIST(APPEND VRN_DEFINITIONS "-D__STDC_CONSTANT_MACROS")  
-ENDIF(WIN32)
 
+ELSEIF(VRN_MINGW)
+    # nothing to do
+ENDIF()
+
+# macosx
 IF(APPLE)
     FIND_LIBRARY(COREFOUNDATION_LIBRARY CoreFoundation )
     LIST(APPEND VRN_EXTERNAL_LIBRARIES ${COREFOUNDATION_LIBRARY})
@@ -184,7 +196,7 @@ LIST(APPEND VRN_DEFINITIONS "-DTIXML_USE_STL")
 
 # tgt configuration
 LIST(APPEND VRN_DEFINITIONS "-DTGT_WITHOUT_DEFINES") # don't use tgt's build system
-IF(WIN32)
+IF(VRN_MSVC)
     SET(TGT_WITH_WMI TRUE)  #< enable Windows Management Instrumentation for hardware detection
 ENDIF()
 IF(VRN_DEBUG)

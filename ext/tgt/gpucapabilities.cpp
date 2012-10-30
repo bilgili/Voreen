@@ -30,7 +30,9 @@
     #include <windows.h>
     #include <WinBase.h>
     #include <tchar.h>
-    #include <strsafe.h>
+    #ifdef _MSC_VER
+        #include <strsafe.h>
+    #endif
 #else // WIN32 -> must be POSIX
     #include <sys/utsname.h> // for uname
 #endif // WIN32
@@ -1169,6 +1171,8 @@ GpuCapabilities::FileVersion GpuCapabilities::getFileVersion(const std::string& 
 }
 
 std::string GpuCapabilities::getFileDate(const std::string& pFilename) {
+    
+#ifdef _MSC_VER
     std::string filename = pFilename;
     LDEBUG("Retrieving file date (last write date) of system file '" << filename << "' ...");
 
@@ -1229,7 +1233,13 @@ std::string GpuCapabilities::getFileDate(const std::string& pFilename) {
 
     LDEBUG("Reading file date successful.");
 
-    return result;
+    return result; 
+
+#else
+    LWARNING("File date retrieval only supported for MSVC");
+    return "";
+#endif
+
 }
 
 #endif // WIN32
