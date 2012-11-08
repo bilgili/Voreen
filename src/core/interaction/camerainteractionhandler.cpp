@@ -462,8 +462,10 @@ void CameraInteractionHandler::adaptInteractionToScene(const MeshListGeometry& g
     tgt::Bounds bounds = geometry.getBoundingBox();
 
     tgt::vec3 extentOld = tgt::vec3(0.f);
+    tgt::vec3 centerOld = tgt::vec3(0.f);
     if (!currentSceneMesh_.empty()) {
         extentOld = currentSceneMesh_.getBoundingBox().diagonal();
+        centerOld = currentSceneMesh_.getBoundingBox().center();
     }
 
     currentSceneMesh_ = geometry;
@@ -486,6 +488,7 @@ void CameraInteractionHandler::adaptInteractionToScene(const MeshListGeometry& g
         cameraProp_->setMaxValue(newMaxDist);
         cam.setFarDist(std::max(cam.getFarDist(), newMaxDist + tgt::max(bounds.diagonal())));
         cameraProp_->set(cam);
+        cameraProp_->getTrackball()->setCenter(currentSceneMesh_.getBoundingBox().center());
         return;
     }
 
@@ -514,19 +517,13 @@ void CameraInteractionHandler::adaptInteractionToScene(const MeshListGeometry& g
         tbNavi_->setMaxDist(newMaxDist);
         cameraProp_->setMaxValue(newMaxDist);
         cam.setFarDist(std::max(cam.getFarDist(), newMaxDist + maxSideLength));
-        adjustCenterShift();
-
     }
-    //else if(!shiftTrackballCenter_.isSelected("shift")) {
-        //tgt::vec3 centerDiff = geometry.getBoundingBox().center() - cameraProp_->getTrackball()->getCenter();
-        //if(...) {
-            //adjustCenterShift();
-            //tgt::vec3 newFocus = geometry.getBoundingBox().center();
-            //tgt::vec3 newPos   = geometry.getBoundingBox().center() - cam.getLook() * cam.getFocalLength();
-            //cam.setFocus(newFocus);
-            //cam.setPosition(newPos);
-        //}
-    //}
+
+    if(centerOld != currentSceneMesh_.getBoundingBox().center()) {
+        // if the bounding box has shifted, reset the trackball center to the box center
+        cameraProp_->getTrackball()->setCenter(currentSceneMesh_.getBoundingBox().center());
+    }
+
     cameraProp_->set(cam);
 }
 
