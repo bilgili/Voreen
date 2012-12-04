@@ -128,6 +128,10 @@ string findAppBundleResourcesPath() {
 
 #endif
 
+} // namespace anonymous
+
+namespace tgt {
+
 /// istream operator for converting string to LogLevel (used by CommandLineParser)
 std::istream& operator>>(std::istream& in, tgt::LogLevel& level) {
     std::string token;
@@ -167,7 +171,7 @@ std::string loglevelToString(tgt::LogLevel level) {
         return "unknown";
 }
 
-} // namespace anonymous
+} // namespace tgt
 
 namespace voreen {
 

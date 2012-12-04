@@ -77,7 +77,11 @@ IF (WIN32)
     ENDIF()
 
 ELSE(WIN32)
-    FIND_PACKAGE(Boost 1.40.0 REQUIRED date_time prg_exec_monitor program_options regex thread unit_test_framework)
+    IF(APPLE)
+        FIND_PACKAGE(Boost 1.40.0 REQUIRED date_time prg_exec_monitor program_options regex thread unit_test_framework system)
+    ELSE(APPLE)
+        FIND_PACKAGE(Boost 1.40.0 REQUIRED date_time prg_exec_monitor program_options regex thread unit_test_framework)
+    ENDIF(APPLE)
 ENDIF(WIN32)
 
 MARK_AS_ADVANCED(Boost_DIR Boost_INCLUDE_DIRS)
