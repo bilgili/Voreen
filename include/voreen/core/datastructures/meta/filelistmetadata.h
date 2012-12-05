@@ -41,16 +41,15 @@ public:
     virtual std::string getClassName() const { return "FileListMetaData"; }
     virtual Serializable* create() const { return new FileListMetaData(); }
 
-    //virtual std::string toString() const;
-};
-
-inline std::ostream& operator <<(std::ostream& s, const std::vector<std::string> vec) {
-    std::vector<std::string>::const_iterator i;
-    for (i = vec.begin(); i != vec.end(); ++i) {
-        s << std::endl << *i;
+    virtual std::string toString() const {
+        std::vector<std::string>::const_iterator i;
+        std::stringstream s;
+        for (i = getValue().begin(); i != getValue().end(); ++i) {
+            s << std::endl << *i;
+        }
+        return s.str();
     }
-    return s;
-}
+};
 
 } // namespace
 

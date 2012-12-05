@@ -42,7 +42,7 @@ public:
     PrimitiveMetaDataBase() {}
     PrimitiveMetaDataBase(T value);
 
-    virtual std::string toString() const;
+    virtual std::string toString() const = 0;
     virtual std::string toString(const std::string& /*component*/) const;
 
     /**
@@ -659,13 +659,6 @@ void PrimitiveMetaDataBase<T>::setValue(T value) {
 template <typename T>
 T PrimitiveMetaDataBase<T>::getValue() const {
     return value_;
-}
-
-template<typename T>
-std::string PrimitiveMetaDataBase<T>::toString() const {
-    std::stringstream s;
-    s << value_;
-    return s.str();
 }
 
 template<typename T>
