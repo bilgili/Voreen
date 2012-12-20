@@ -71,6 +71,13 @@ class OpenCL {
 public:
     OpenCL();
     const std::vector<Platform>& getPlatforms() const { return platforms_; }
+
+    /**
+     * Selects the platform that matches the passed vendor. If no matching
+     * platform is found, the first of the available platforms is returned.
+     */
+    Platform getPlatformByVendor(tgt::GpuCapabilities::GpuVendor vendor) const;
+    
     ///Needs CL extension, doesn´t link
     static Device getCurrentDeviceForGlContext();
     ///Needs CL extension, doesn´t link
@@ -132,9 +139,11 @@ public:
         static const ClVersion VRN_CL_VERSION_1_0;
     };
 
+    Platform();
     Platform(cl_platform_id id);
     ~Platform();
 
+    cl_platform_id getID() const { return id_; }
     const std::vector<Device>& getDevices() const { return devices_; }
     Profile getProfile() const { return profile_; }
     std::string getName() const { return name_; }
@@ -190,6 +199,7 @@ public:
     }
 
     std::string getName() const { return name_; }
+    cl_device_type getType() const { return getInfo<cl_device_type>(CL_DEVICE_TYPE); }
     std::string getExtensionString() const { return extensionString_; }
     const std::set<std::string>& getExtensions() const { return extensions_; }
     bool isExtensionSupported(std::string ext) const;

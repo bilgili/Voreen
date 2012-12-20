@@ -37,12 +37,14 @@
 namespace voreen {
 
 OpenCLModule* OpenCLModule::instance_ = 0;
+const std::string OpenCLModule::loggerCat_ = "voreen.OpenCLModule";
 
 OpenCLModule::OpenCLModule(const std::string& modulePath)
     : VoreenModule(modulePath)
     , opencl_(0)
     , context_(0)
     , queue_(0)
+    //, platform_(0)
     //, device_(0)
     , glSharing_(true)
 {
@@ -71,52 +73,99 @@ void OpenCLModule::initCL() throw (VoreenException) {
     if (opencl_)
         return;
 
+    if (glSharing_ && !tgt::Singleton<tgt::GpuCapabilities>::isInited()) {
+        LWARNING("No OpenGL context available: disabling OpenGL sharing");
+        glSharing_ = false;
+    }
+
     opencl_ = new cl::OpenCL();
 
+    // select platform
     const std::vector<cl::Platform>&  platforms = opencl_->getPlatforms();
-    if (platforms.empty()) {
-        LERRORC("voreen.OpenCLModule", "Found no OpenCL platforms!");
+    if (opencl_->getPlatforms().empty()) {
+        LERROR("Found no OpenCL platforms!");
         throw VoreenException("Found no OpenCL platforms");
     }
+    else if (opencl_->getPlatforms().size() == 1) {
+        platform_ = opencl_->getPlatforms().front();
+    }
+    else {
+        // multiple platforms available
+        if (tgt::Singleton<tgt::GpuCapabilities>::isInited())
+            platform_ = opencl_->getPlatformByVendor(GpuCaps.getVendor());
+        else
+            platform_ = platforms.front();
+        LINFO("Selected platform: " << platform_.getName());
+    }
 
-    const std::vector<cl::Device>& devices = platforms[0].getDevices();
+    // select device
+    const std::vector<cl::Device>& devices = platform_.getDevices();
     if (devices.empty()) {
-        LERRORC("voreen.OpenCLModule", "Found no devices in platform!");
+        LERROR("Found no devices in platform!");
         throw VoreenException("Found no devices in platform");
     }
-    device_ = devices[0];
+    else if (devices.size() == 1){
+        device_ = devices.front();
+        LINFO("Selected device: " << device_.getName());
+    }
+    else {
+        // multiple devices available => select GPU device
+        bool found = false;
+        for (size_t i=0; i<devices.size() && !found; i++) {
+            if (devices.at(i).getType() == CL_DEVICE_TYPE_GPU) {
+                device_ = devices.at(i);
+                found = true;
+            }
+        }
+
+        if (found) {
+            LINFO("Selected GPU device: " << device_.getName());
+        }
+        else {
+            device_ = devices.front();
+            LWARNING("No GPU device found! Using: " << device_.getName());
+        }
+    }
+
+    // create context and command queue
     if (glSharing_) {
-        LINFO("Using OpenGL sharing");
+        LINFO("OpenGL sharing: enabled");
         context_ = new cl::Context(cl::Context::generateGlSharingProperties(), device_);
     }
     else {
-        LINFO("No OpenGL sharing");
+        LINFO("OpenGL sharing: disabled");
         context_ = new cl::Context(device_);
     }
-    queue_ = new cl::CommandQueue(context_, device_);
+    queue_ = new cl::CommandQueue(context_, device_); 
 }
 
 cl::OpenCL* OpenCLModule::getOpenCL() const {
     if (!opencl_)
-        LERRORC("voreen.OpenCLModule", "No OpenCL wrapper. Call initCL first!");
+        LERROR("No OpenCL wrapper. Call initCL first!");
     return opencl_;
 }
 
 cl::Context* OpenCLModule::getCLContext() const {
     if (!context_)
-        LERRORC("voreen.OpenCLModule", "No OpenCL context. Call initCL first!");
+        LERROR("No OpenCL context. Call initCL first!");
      return context_;
 }
 
 cl::CommandQueue* OpenCLModule::getCLCommandQueue() const {
     if (!queue_)
-        LERRORC("voreen.OpenCLModule", "No OpenCL queue. Call initCL first!");
+        LERROR("No OpenCL queue. Call initCL first!");
     return queue_;
+}
+
+cl::Platform& OpenCLModule::getCLPlatform() {
+    if (!opencl_)
+        LERROR("No OpenCL platform. Call initCL first!");
+    return platform_;
 }
 
 cl::Device& OpenCLModule::getCLDevice() {
     if (device_.getId() == 0)
-        LERRORC("voreen.OpenCLModule", "No OpenCL device. Call initCL first!");
+        LERROR("No OpenCL device. Call initCL first!");
     return device_;
 }
 
@@ -142,7 +191,7 @@ cl::Program* OpenCLModule::loadProgram(const std::string& path) throw (VoreenExc
         throw VoreenException("OpenCLModule: no OpenCL wrapper. Call initCL first!");
 
     std::string kernelFile = VoreenApplication::app()->getModulePath("opencl") + "/cl/voreenblas.cl";
-    LINFOC("voreen.OpenCLModule", "Loading program " << path);
+    LINFO("Loading program " << path);
     cl::Program* prog = new cl::Program(getCLContext());
     if (!prog->loadSource(kernelFile)) {
         delete prog;

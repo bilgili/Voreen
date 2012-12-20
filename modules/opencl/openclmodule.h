@@ -84,6 +84,13 @@ public:
     cl::CommandQueue* getCLCommandQueue() const;
 
     /**
+     * Returns the OpenCL platform.
+     *
+     * @note initCL() must be called first!
+     */
+    cl::Platform& getCLPlatform();
+
+    /**
      * Returns the OpenCL device.
      *
      * @note initCL() must be called first!
@@ -126,11 +133,14 @@ private:
     cl::OpenCL* opencl_;
     cl::Context* context_;
     cl::CommandQueue* queue_;
+    cl::Platform platform_;
     cl::Device device_;
 
     bool glSharing_;    ///< Determines whether OpenGL sharing is enabled
 
     static OpenCLModule* instance_;
+
+    static const std::string loggerCat_;
 };
 
 } // namespace

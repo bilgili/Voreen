@@ -70,6 +70,40 @@ OpenCL::OpenCL() {
     delete[] platforms;
 }
 
+cl::Platform OpenCL::getPlatformByVendor(tgt::GpuCapabilities::GpuVendor vendor) const {
+    if (platforms_.empty()) {
+        LWARNING("No OpenCL platforms found");
+        return Platform(0);
+    }
+    else if (platforms_.size() == 1) {
+        return platforms_.front();
+    }
+    else { // more than one platform available
+        if (vendor == tgt::GpuCapabilities::GPU_VENDOR_NVIDIA) {
+            for (size_t i=0; i<platforms_.size(); i++) {
+                if (toLower(platforms_.at(i).getVendor()).find("nvidia") != std::string::npos)
+                    return platforms_.at(i);
+            }
+        }
+        else if (tgt::GpuCapabilities::GPU_VENDOR_ATI) {
+            for (size_t i=0; i<platforms_.size(); i++) {
+                if ((toLower(platforms_.at(i).getVendor()).find("amd") != std::string::npos) ||
+                    (toLower(platforms_.at(i).getVendor()).find("ati") != std::string::npos)    )
+                    return platforms_.at(i);
+            }
+        }
+        else if (tgt::GpuCapabilities::GPU_VENDOR_UNKNOWN) {
+            for (size_t i=0; i<platforms_.size(); i++) {
+                if (toLower(platforms_.at(i).getVendor()).find("intel") != std::string::npos)
+                    return platforms_.at(i);
+            }
+        }
+
+        // no matching platform found
+        return platforms_.front();
+    }
+}
+
 Device OpenCL::getCurrentDeviceForGlContext() {
     //cl_device_id dev;
 
@@ -98,26 +132,35 @@ Device OpenCL::getCurrentDeviceForGlContext() {
 std::vector<Device> OpenCL::getDevicesForGlContext() {
     std::vector<Device> devices;
 
-    //std::vector<ContextProperty> properties = Context::generateGlSharingProperties();
-    //int numProps = (properties.size() * 2)+1;
-    //cl_context_properties* props = new cl_context_properties[numProps];
-    //for(size_t i=0; i<properties.size(); ++i) {
-        //props[i*2] = properties[i].name_;
-        //props[(i*2)+1] = properties[i].value_;
-    //}
-    //props[numProps-1] = 0;     //terminate list
+    /*std::vector<ContextProperty> properties = Context::generateGlSharingProperties();
+    int numProps = (properties.size() * 2)+1;
+    cl_context_properties* props = new cl_context_properties[numProps];
+    for(size_t i=0; i<properties.size(); ++i) {
+        props[i*2] = properties[i].name_;
+        props[(i*2)+1] = properties[i].value_;
+    }
+    props[numProps-1] = 0;     //terminate list
 
-    //size_t retSize;
-    //LCL_ERROR(clGetGLContextInfoKHR(props, CL_DEVICES_FOR_GL_CONTEXT_KHR, 0, 0, &retSize));
-    //int numDevs = retSize/sizeof(cl_device_id);
-    //cl_device_id* devs = new cl_device_id[numDevs];
-    //LCL_ERROR(clGetGLContextInfoKHR(props, CL_DEVICES_FOR_GL_CONTEXT_KHR, retSize, devs, 0));
-    //delete props;
-    //for(int i=0; i<numDevs; ++i) {
-        //if(devs[i])
-            //devices.push_back(new Device(devs[i]));
-    //}
-    //delete devs;
+    typedef CL_API_ENTRY cl_int (CL_API_CALL *clGetGLContextInfoKHR_fn)(
+        const cl_context_properties*,
+        cl_gl_context_info,
+        size_t,
+        void*,
+        size_t*);
+    clGetGLContextInfoKHR_fn fn = (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddress("clGetGLContextInfoKHR");
+
+    size_t retSize;
+    LCL_ERROR(fn(props, CL_DEVICES_FOR_GL_CONTEXT_KHR, 0, 0, &retSize));
+    int numDevs = retSize/sizeof(cl_device_id);
+    cl_device_id* devs = new cl_device_id[numDevs];
+    LCL_ERROR(fn(props, CL_DEVICES_FOR_GL_CONTEXT_KHR, retSize, devs, 0));
+    delete props; 
+    for (int i=0; i<numDevs; ++i) {
+        if(devs[i])
+            devices.push_back(Device(devs[i]));
+    }
+    delete devs; */
+
     return devices;
 }
 
@@ -198,6 +241,10 @@ Platform::Platform(cl_platform_id id) : id_(id), profile_(UNKNOWN) {
     }
 
     delete[] devices;
+}
+
+Platform::Platform() {
+    id_ = 0;
 }
 
 Platform::~Platform() {
