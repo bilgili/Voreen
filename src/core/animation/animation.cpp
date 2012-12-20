@@ -27,7 +27,6 @@
 #include "voreen/core/animation/animatedprocessor.h"
 #include "voreen/core/animation/propertytimeline.h"
 #include "voreen/core/animation/undoableanimation.h"
-#include "voreen/core/processors/processorfactory.h"
 #include "voreen/core/properties/shaderproperty.h"
 #include "voreen/core/animation/serializationfactories.h"
 #include "voreen/core/animation/interpolationfunctionfactory.h"
@@ -38,6 +37,8 @@
 namespace voreen {
 
 const std::string Animation::loggerCat_("voreen.Animation");
+
+std::vector<SerializableFactory*> Animation::factories_;
 
 Animation::Animation() {}
 
@@ -339,30 +340,36 @@ void Animation::deserialize(XmlDeserializer& s) {
 }
 
 std::vector<SerializableFactory*> Animation::getSerializerFactories() {
-    std::vector<SerializableFactory*> result;
+    if (factories_.empty()) {
+        factories_.push_back(new PropertyTimelineFactory());
+        factories_.push_back(new TemplatePropertyTimelineStateFactory());
+        factories_.push_back(new KeyValueFactory());
 
-    result.push_back(new PropertyTimelineFactory());
-    result.push_back(new TemplatePropertyTimelineStateFactory());
-    result.push_back(new KeyValueFactory());
+        factories_.push_back(new InterpolationFunctionFactory<int>());
+        factories_.push_back(new InterpolationFunctionFactory<float>());
+        factories_.push_back(new InterpolationFunctionFactory<bool>());
+        factories_.push_back(new InterpolationFunctionFactory<tgt::ivec2>());
+        factories_.push_back(new InterpolationFunctionFactory<tgt::ivec3>());
+        factories_.push_back(new InterpolationFunctionFactory<tgt::ivec4>());
+        factories_.push_back(new InterpolationFunctionFactory<tgt::vec2>());
+        factories_.push_back(new InterpolationFunctionFactory<tgt::vec3>());
+        factories_.push_back(new InterpolationFunctionFactory<tgt::vec4>());
+        factories_.push_back(new InterpolationFunctionFactory<tgt::mat2>());
+        factories_.push_back(new InterpolationFunctionFactory<tgt::mat3>());
+        factories_.push_back(new InterpolationFunctionFactory<tgt::mat4>());
+        factories_.push_back(new InterpolationFunctionFactory<tgt::Camera>());
+        factories_.push_back(new InterpolationFunctionFactory<ShaderSource>());
+        factories_.push_back(new InterpolationFunctionFactory<std::string>());
+        factories_.push_back(new InterpolationFunctionFactory<TransFunc*>());
+    }
 
-    result.push_back(new InterpolationFunctionFactory<int>());
-    result.push_back(new InterpolationFunctionFactory<float>());
-    result.push_back(new InterpolationFunctionFactory<bool>());
-    result.push_back(new InterpolationFunctionFactory<tgt::ivec2>());
-    result.push_back(new InterpolationFunctionFactory<tgt::ivec3>());
-    result.push_back(new InterpolationFunctionFactory<tgt::ivec4>());
-    result.push_back(new InterpolationFunctionFactory<tgt::vec2>());
-    result.push_back(new InterpolationFunctionFactory<tgt::vec3>());
-    result.push_back(new InterpolationFunctionFactory<tgt::vec4>());
-    result.push_back(new InterpolationFunctionFactory<tgt::mat2>());
-    result.push_back(new InterpolationFunctionFactory<tgt::mat3>());
-    result.push_back(new InterpolationFunctionFactory<tgt::mat4>());
-    result.push_back(new InterpolationFunctionFactory<tgt::Camera>());
-    result.push_back(new InterpolationFunctionFactory<ShaderSource>());
-    result.push_back(new InterpolationFunctionFactory<std::string>());
-    result.push_back(new InterpolationFunctionFactory<TransFunc*>());
+    return factories_;
+}
 
-    return result;
+void Animation::deleteSerializerFactories() {
+    for (size_t i=0; i<factories_.size(); i++)
+        delete factories_.at(i);
+    factories_.clear();
 }
 
 } // namespace voreen

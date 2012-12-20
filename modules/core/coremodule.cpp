@@ -185,7 +185,7 @@ CoreModule::CoreModule(const std::string& modulePath)
     registerSerializerFactory(new VolumeDerivedDataFactory());
     std::vector<SerializableFactory*> animationFactories = Animation::getSerializerFactories();
     for (size_t i=0; i<animationFactories.size(); i++)
-        registerSerializerFactory(animationFactories.at(i));
+        VoreenApplication::app()->registerSerializerFactory(animationFactories.at(i));
 
     registerLinkEvaluatorFactory(new CoreLinkEvaluatorFactory());
 
@@ -238,6 +238,10 @@ CoreModule::CoreModule(const std::string& modulePath)
 
     INST_SCALAR_TYPES(VolumeOperatorCalcError, VolumeOperatorCalcErrorGeneric)
     INST_VECTOR_TYPES(VolumeOperatorCalcError, VolumeOperatorCalcErrorGeneric)
+}
+
+CoreModule::~CoreModule() {
+    Animation::deleteSerializerFactories();
 }
 
 } // namespace

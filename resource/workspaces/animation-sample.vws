@@ -1166,7 +1166,7 @@
                                 </values>
                             </timeline>
                         </Property>
-                        <Property type="TemplatePropertyTimeline_Camera" activeOnRendering="true" propertyId="camera" duration="20">
+                        <Property type="TemplatePropertyTimeline_Camera" activeOnRendering="true" propertyId="camera" duration="20" tlchanged="true">
                             <propertyOwner type="SingleVolumeRaycaster" ref="ref3" />
                             <timeline type="CameraPropertyTimelineState">
                                 <values>
@@ -1500,7 +1500,7 @@
                                 </values>
                             </timeline>
                         </Property>
-                        <Property type="TemplatePropertyTimeline_Camera" activeOnRendering="true" propertyId="camera" duration="20">
+                        <Property type="TemplatePropertyTimeline_Camera" activeOnRendering="true" propertyId="camera" duration="20" tlchanged="true">
                             <propertyOwner type="MeshEntryExitPoints" ref="ref8" />
                             <timeline type="CameraPropertyTimelineState">
                                 <values>

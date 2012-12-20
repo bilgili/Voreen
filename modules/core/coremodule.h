@@ -42,6 +42,7 @@ class CoreModule : public VoreenModule {
 
 public:
     CoreModule(const std::string& modulePath);
+    ~CoreModule(); ///< deletes the Animation's serializer factories
 
     virtual std::string getDescription() const { return "Provides the most basic components necessary for every network."; }
 protected:

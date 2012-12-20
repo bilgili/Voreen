@@ -183,6 +183,8 @@ private:
      */
     static std::vector<SerializableFactory*> getSerializerFactories();
 
+    static void deleteSerializerFactories();
+
     /**
      * Pointer to the corresponding rendernetwork.
      */
@@ -225,6 +227,7 @@ private:
      */
     bool isRendering_;
 
+    static std::vector<SerializableFactory*> factories_;
 
 };
 
