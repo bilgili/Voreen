@@ -1030,10 +1030,12 @@ void VoreenApplication::initApplicationSettings() {
 }
 
 void VoreenApplication::loadApplicationSettings() {
-    std::string filename = getUserDataPath("voreensettings.xml");
-
-    if (!deserializeSettings(this, filename))
-        LWARNING("Failed to deserialize application settings");
+    std::string filename = toLower(getUserDataPath(binaryName_ + "_settings.xml"));
+    if (!deserializeSettings(this, filename)) {
+        // try old voreensettings.xml
+        if (!deserializeSettings(this, getUserDataPath("voreensettings.xml")))
+            LWARNING("Failed to deserialize application settings");
+    }
 
     const std::vector<VoreenModule*>& modules = getModules();
     for(size_t i=0; i<modules.size(); i++) {
@@ -1044,7 +1046,7 @@ void VoreenApplication::loadApplicationSettings() {
 }
 
 void VoreenApplication::saveApplicationSettings() {
-    std::string filename = getUserDataPath("voreensettings.xml");
+    std::string filename = toLower(getUserDataPath(binaryName_ + "_settings.xml"));
 
     if(!serializeSettings(this, filename))
         LWARNING("Failed to save application settings");
