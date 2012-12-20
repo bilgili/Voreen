@@ -1,6 +1,21 @@
 Voreen Changelog
 ----------------
 
+2012-12-20: Voreen 4.1.1
+------------------------
+
+   * Bug Fixes:
+     o Compatibility with Clang compiler on Mac
+     o Compile fixes for GCC on Ubuntu 12.10
+     o MinGW compile fixes (still linking issues with some external libraries)     
+     o Trackball center adjustment when switching data sets
+     o Selection of OpenCL GPU device when multiple platforms/devices are present
+     o Camera animation in animation-sample.vws workspace
+     o Memory leak in animation framework
+     o Application settings are stored in a separate file for each application,
+       preventing settings loss when switching between Voreen applications.
+
+
 2012-10-05: Voreen 4.1
 ----------------------
 
