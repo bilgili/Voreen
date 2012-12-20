@@ -299,8 +299,8 @@ struct Vector3 {
     /// Init y and z with vec2, x with _x
     Vector3(T _x, const Vector2<T>& v) {
         elem[0] = _x;
-        elem[1] = v.elem[1];
-        elem[2] = v.elem[2];
+        elem[1] = v.elem[0];
+        elem[2] = v.elem[1];
     }
 
     /// Init with another Vector of another type
@@ -437,7 +437,7 @@ struct Vector4 {
         elem[3] = w_;
     }
     /// Init x with _x and y, z and w with v
-    Vector4(T x_, const Vector2<T>& v) {
+    Vector4(T x_, const Vector3<T>& v) {
         elem[0] = x_;
         elem[1] = v.elem[0];
         elem[2] = v.elem[1];
