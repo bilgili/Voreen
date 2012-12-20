@@ -47,7 +47,7 @@ ELSE (WIN32)
     FIND_LIBRARY(
         GLEW_LIBRARY
         NAMES GLEW glew
-        PATHS ${GLEW_DIR}/lib /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib /sw/lib /opt/local/lib
+        PATHS ${GLEW_DIR}/lib /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib /sw/lib /opt/local/lib /usr/lib/x86_64-linux-gnu
         DOC "The GLEW library"
     )
 ENDIF (WIN32)

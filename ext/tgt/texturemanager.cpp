@@ -176,7 +176,7 @@ Texture* TextureManager::loadFromMemory(Texture* t, Texture::Filter filter, bool
             break;
         default:
             LERROR(static_cast<int>(t->bpp_) << " bits per pixel...error!");
-            return false;
+            return 0;
     }
 
     if (createOGLTex) {
