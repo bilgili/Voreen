@@ -690,6 +690,10 @@ typedef Matrix2f        mat2;
 typedef Matrix3f        mat3;
 typedef Matrix4f        mat4;
 
+typedef Matrix2f        dmat2;
+typedef Matrix3f        dmat3;
+typedef Matrix4f        dmat4;
+
 #ifdef DLL_TEMPLATE_INST
 template struct TGT_API Matrix2<float>;
 template struct TGT_API Matrix3<float>;

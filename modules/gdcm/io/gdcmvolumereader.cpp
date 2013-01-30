@@ -1603,7 +1603,7 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
 
     //calculate slice normal
     tgt::dvec3 sliceNormal = tgt::cross(xOrientationPatient,yOrientationPatient);
-
+    
     info_.setSliceNormal(sliceNormal);
 
     //Read ImagePositionPatient from all files and calculate distance along slice normal
@@ -1707,8 +1707,7 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
     else
         info_.setNumberOfFrames(1);
 
-    //Determine in which direction the slices are arranged and sort by position
-    //Furthermore the Z spacing is determined
+    //sort slices by their distance from the origin, calculate Z spacing and do some additional checks
     if (slices.size() > 1) {
         //sort slices by distance from origin
         std::sort(slices.begin(), slices.end(), slices_cmp_dist);
@@ -2054,17 +2053,16 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
 
     LINFO("Building volume complete.");
 
-    //build: Volumen -> Volume
+    //build: VolumeRAM -> Volume
     Volume* vh = new Volume(dataset, tgt::vec3(static_cast<float>(info_.getXSpacing()),static_cast<float>(info_.getYSpacing()),static_cast<float>(info_.getZSpacing())), tgt::vec3(0.f));
 
-    //get offset and set to Volume
+    //get volume origin in world coordinates: 
     tgt::vec3 os(static_cast<float>(info_.getOffset().x), static_cast<float>(info_.getOffset().y), static_cast<float>(info_.getOffset().z));
-    vh->setOffset(os);
 
-    //construct PhysicalToWorld-Matrix for correct orientation of Volume
-    tgt::Matrix4<double> ptw(tgt::dvec4(info_.getXOrientationPatient(), 0), tgt::dvec4(info_.getYOrientationPatient(), 0), tgt::dvec4(info_.getSliceNormal(), 0), tgt::dvec4(0,0,0,1));
+    //construct PhysicalToWorld-Matrix for correct positioning of Volume
+    tgt::dmat4 ptw(tgt::dvec4(info_.getXOrientationPatient(), os.x), tgt::dvec4(info_.getYOrientationPatient(), os.y), tgt::dvec4(info_.getSliceNormal(), os.z), tgt::dvec4(0,0,0,1));
     vh->setPhysicalToWorldMatrix(ptw);
-
+    
     //set Modality and VolumeURL
     vh->setModality(Modality(info_.getModality()));
     vh->setOrigin(origin);
