@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -27,7 +27,7 @@
 #define VRN_AGGREGATIONFUNCTION_H
 
 #include "plotbase.h"
-#include "voreen/core/io/serialization/serialization.h"
+#include "voreen/core/voreenobject.h"
 
 namespace voreen {
 
@@ -37,7 +37,7 @@ namespace voreen {
  * Subclasses have to override virtual evaluate function which applies the aggregation function
  * to a bunch of given plot_t.
  */
-class VRN_CORE_API AggregationFunction : public AbstractSerializable {
+class VRN_CORE_API AggregationFunction : public VoreenSerializableObject {
 friend class AggregationFunctionFactory;
 public:
 
@@ -81,6 +81,9 @@ public:
 class VRN_CORE_API AggregationFunctionCountHistogram : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionCountHistogram";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionCountHistogram(); }
+
     /// Destructor
     virtual ~AggregationFunctionCountHistogram() {};
 
@@ -107,6 +110,9 @@ public:
 class VRN_CORE_API AggregationFunctionCount : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionCount";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionCount(); }
+
     /// Destructor
     virtual ~AggregationFunctionCount() {};
 
@@ -133,6 +139,9 @@ public:
 class VRN_CORE_API AggregationFunctionMinHistogram : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionMinHistogram";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionMinHistogram(); }
+
     /// Destructor
     virtual ~AggregationFunctionMinHistogram() {};
 
@@ -159,6 +168,9 @@ public:
 class VRN_CORE_API AggregationFunctionMin : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionMin";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionMin(); }
+
     /// Destructor
     virtual ~AggregationFunctionMin() {};
 
@@ -185,6 +197,9 @@ public:
 class VRN_CORE_API AggregationFunctionMaxHistogram : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionMaxHistogram";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionMaxHistogram(); }
+
     /// Destructor
     virtual ~AggregationFunctionMaxHistogram() {};
 
@@ -211,6 +226,9 @@ public:
 class VRN_CORE_API AggregationFunctionMax : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionMax";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionMax(); }
+
     /// Destructor
     virtual ~AggregationFunctionMax() {};
 
@@ -237,6 +255,9 @@ public:
 class VRN_CORE_API AggregationFunctionSumHistogram : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionSumHistogram";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionSumHistogram(); }
+
     /// Destructor
     virtual ~AggregationFunctionSumHistogram() {};
 
@@ -263,6 +284,9 @@ public:
 class VRN_CORE_API AggregationFunctionSum : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionSum";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionSum(); }
+
     /// Destructor
     virtual ~AggregationFunctionSum() {};
 
@@ -289,6 +313,9 @@ public:
 class VRN_CORE_API AggregationFunctionAverage : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionAverage";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionAverage(); }
+
     /// Destructor
     virtual ~AggregationFunctionAverage() {};
 
@@ -314,6 +341,9 @@ public:
 class VRN_CORE_API AggregationFunctionGeometricAverage : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionGeometricAverage";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionGeometricAverage(); }
+
     /// Destructor
     virtual ~AggregationFunctionGeometricAverage() {};
 
@@ -339,6 +369,9 @@ public:
 class VRN_CORE_API AggregationFunctionHarmonicAverage : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionHarmonicAverage";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionHarmonicAverage(); }
+
     /// Destructor
     virtual ~AggregationFunctionHarmonicAverage() {};
 
@@ -365,6 +398,9 @@ public:
 class VRN_CORE_API AggregationFunctionMedian : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionMedian";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionMedian(); }
+
     /// Destructor
     virtual ~AggregationFunctionMedian() {};
 
@@ -391,6 +427,9 @@ public:
 class VRN_CORE_API AggregationFunctionMedianHistogram : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionMedianHistogram";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionMedianHistogram(); }
+
     /// Destructor
     virtual ~AggregationFunctionMedianHistogram() {};
 
@@ -417,6 +456,9 @@ public:
 class VRN_CORE_API AggregationFunctionStandardDeviation : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionStandardDeviation";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionStandardDeviation(); }
+
     /// Destructor
     virtual ~AggregationFunctionStandardDeviation() {};
 
@@ -443,6 +485,9 @@ public:
 class VRN_CORE_API AggregationFunctionVariance : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionVariance";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionVariance(); }
+
     /// Destructor
     virtual ~AggregationFunctionVariance() {};
 
@@ -469,6 +514,9 @@ public:
 class VRN_CORE_API AggregationFunctionMode : public AggregationFunction {
 friend class AggregationFunctionFactory;
 public:
+    virtual std::string getClassName() const    { return "AggregationFunctionMode";     }
+    virtual AggregationFunction* create() const { return new AggregationFunctionMode(); }
+
     /// Destructor
     virtual ~AggregationFunctionMode() {};
 

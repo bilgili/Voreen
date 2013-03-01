@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,8 +33,8 @@ namespace voreen {
 
 const std::string ImageProcessorBypassable::loggerCat_("voreen.ImageProcessorBypassable");
 
-ImageProcessorBypassable::ImageProcessorBypassable(const std::string& shaderFilename)
-    : ImageProcessor(shaderFilename),
+ImageProcessorBypassable::ImageProcessorBypassable(const std::string& shaderFilename, bool enableCoarsenessAdaptation)
+    : ImageProcessor(shaderFilename, enableCoarsenessAdaptation),
       enableSwitch_("enable", "Enable", true),
       bypassProgram_(0)
 {

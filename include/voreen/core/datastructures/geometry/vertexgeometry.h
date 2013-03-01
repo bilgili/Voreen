@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,12 +36,9 @@ namespace voreen {
 /**
  * Represents a vertex geometry containing vertex coordinates, texture coordinates and vertex color.
  *
- * @attention Each function which possibly change the vertex geometry sets the @c hasChanged flag
- *            to @c true, even if nothing has changed at all.
- *
  * @see FaceGeometry
  */
-class VRN_CORE_API VertexGeometry : public Geometry {
+class VRN_CORE_API VertexGeometry : public VoreenSerializableObject {
 public:
     /**
      * Instantiates a vertex geometry with the given vertex coordinates, texture coordinates
@@ -68,7 +65,7 @@ public:
     VertexGeometry(
         const tgt::vec3& coords, const tgt::vec3& texcoords, const tgt::vec4& color, const tgt::vec3& normal);
 
-    virtual Geometry* create() const;
+    virtual VertexGeometry* create() const; //TODO: needed?
 
     virtual std::string getClassName() const { return "VertexGeometry"; }
 
@@ -165,7 +162,7 @@ public:
      *
      * @returns distance between vertex geometry and given plane
      */
-    double getDistanceToPlane(const tgt::vec4& plane, double epsilon = 1e-5) const;
+    double getDistanceToPlane(const tgt::plane& plane, double epsilon = 1e-5) const;
 
     /**
      * Returns the distance between this and the given vertex geometry.
@@ -238,13 +235,6 @@ public:
     static VertexGeometry interpolate(const VertexGeometry& vertex1, const VertexGeometry& vertex2, double t);
 
     /**
-     * Transforms the vertex geometry using the given transformation matrix.
-     *
-     * @param transformation the transformation matrix
-     */
-    virtual void transform(const tgt::mat4& transformation);
-
-    /**
      * Clips the vertex against the specified clipping plane.
      * If the getDistanceToPlane returns a positive value, the vertex is clipped away.
      * In this case, its coordinates are set to tgt::vec3(NaN).
@@ -255,24 +245,9 @@ public:
      * @param clipPlane an arbitrary clipping plane
      * @param epsilon the accuracy for vertex geometry comparison
      */
-    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-5);
+    virtual void clip(const tgt::plane& clipPlane, double epsilon = 1e-5);
 
-    /**
-     * Returns true, if the spatial coordinates, texture coordinates,
-     * color value, and normal of the passed vertex are equal to this one's.
-     *
-     * @param vertex the vertex to compare
-     * @param epsilon maximum distance at which two vertices are to be considered equal
-     */
-    bool equals(const VertexGeometry& vertex, double epsilon = 1e-5) const;
-
-    /**
-     * Returns true, if the passed Geometry is a VertexGeometry and its spatial coordinates,
-     * texture coordinates, color value, and normal are equal to this one's.
-     *
-     * @see Geometry::equals
-     */
-    virtual bool equals(const Geometry* geometry, double epsilon = 1e-5) const;
+    bool equals(const VertexGeometry& vertex, double epsilon = 1e-6) const;
 
     /**
      * Returns a bounding box of zero volume enclosing the vertex.

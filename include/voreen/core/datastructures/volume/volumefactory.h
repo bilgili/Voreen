@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -35,7 +35,8 @@ namespace voreen {
 
 class VRN_CORE_API VolumeGeneratorBase {
 public:
-    virtual std::string getType() const = 0;
+    virtual std::string getFormat() const = 0;
+    virtual std::string getBaseType() const = 0;
     virtual VolumeRAM* create(tgt::svec3 dimensions) const = 0;
     virtual bool isType(const VolumeRAM* v) const = 0;
     virtual int getNumChannels() const = 0;
@@ -47,38 +48,48 @@ public:
     VolumeFactory();
     ~VolumeFactory();
 
-    std::string getType(const VolumeRAM* v) const {
+    std::string getFormat(const VolumeRAM* v) const {
         for (size_t i = 0; i < generators_.size(); ++i) {
             if (generators_[i]->isType(v))
-                return generators_[i]->getType();
+                return generators_[i]->getFormat();
         }
         return "";
     }
 
-    VolumeRAM* create(const std::string& type, tgt::svec3 dimensions) const {
+    VolumeRAM* create(const std::string& format, tgt::svec3 dimensions) const {
         for (size_t i = 0; i < generators_.size(); ++i) {
-            if (generators_[i]->getType() == type)
+            if (generators_[i]->getFormat() == format)
                 return generators_[i]->create(dimensions);
         }
-        LERROR("Failed to create volume of type '" << type << "'");
+        LERROR("Failed to create volume of format '" << format << "'");
         return 0;
     }
 
-    int getNumChannels(const std::string& type) const {
+    /// Returns the base-format for a format
+    std::string getBaseType(const std::string& format) const {
         for (size_t i = 0; i < generators_.size(); ++i) {
-            if (generators_[i]->getType() == type)
+            if (generators_[i]->getFormat() == format)
+                return generators_[i]->getBaseType();
+        }
+        LERROR("Failed to determine base-type of format '" << format << "'");
+        return "";
+    }
+
+    int getNumChannels(const std::string& format) const {
+        for (size_t i = 0; i < generators_.size(); ++i) {
+            if (generators_[i]->getFormat() == format)
                 return generators_[i]->getNumChannels();
         }
-        LERROR("Failed to get number of channels for '" << type << "'");
+        LERROR("Failed to get number of channels for '" << format << "'");
         return 0;
     }
 
-    int getBytesPerVoxel(const std::string& type) const {
+    int getBytesPerVoxel(const std::string& format) const {
         for (size_t i = 0; i < generators_.size(); ++i) {
-            if (generators_[i]->getType() == type)
+            if (generators_[i]->getFormat() == format)
                 return generators_[i]->getBytesPerVoxel();
         }
-        LERROR("Failed to get bytes per voxel for '" << type << "'");
+        LERROR("Failed to get bytes per voxel for '" << format << "'");
         return 0;
     }
 
@@ -91,7 +102,8 @@ private:
 template<class T>
 class VRN_CORE_API VolumeGeneratorGeneric : public VolumeGeneratorBase {
 public:
-    virtual std::string getType() const = 0;
+    virtual std::string getFormat() const = 0;
+    virtual std::string getBaseType() const = 0;
 
     virtual VolumeRAM* create(tgt::svec3 dimensions) const {
         return new VolumeAtomic<T>(dimensions);
@@ -118,42 +130,50 @@ public:
 
 class VRN_CORE_API VolumeGeneratorUInt8 : public VolumeGeneratorGeneric<uint8_t> {
 public:
-    std::string getType() const { return "uint8"; }
+    std::string getFormat() const { return "uint8"; }
+    std::string getBaseType() const { return getFormat(); }
 };
 
 class VRN_CORE_API VolumeGeneratorInt8 : public VolumeGeneratorGeneric<int8_t> {
 public:
-    std::string getType() const { return "int8"; }
+    std::string getFormat() const { return "int8"; }
+    std::string getBaseType() const { return getFormat(); }
 };
 
 class VRN_CORE_API VolumeGeneratorUInt16 : public VolumeGeneratorGeneric<uint16_t> {
 public:
-    std::string getType() const { return "uint16"; }
+    std::string getFormat() const { return "uint16"; }
+    std::string getBaseType() const { return getFormat(); }
 };
 
 class VRN_CORE_API VolumeGeneratorInt16 : public VolumeGeneratorGeneric<int16_t> {
 public:
-    std::string getType() const { return "int16"; }
+    std::string getFormat() const { return "int16"; }
+    std::string getBaseType() const { return getFormat(); }
 };
 
 class VRN_CORE_API VolumeGeneratorUInt32 : public VolumeGeneratorGeneric<uint32_t> {
 public:
-    std::string getType() const { return "uint32"; }
+    std::string getFormat() const { return "uint32"; }
+    std::string getBaseType() const { return getFormat(); }
 };
 
 class VRN_CORE_API VolumeGeneratorInt32 : public VolumeGeneratorGeneric<int32_t> {
 public:
-    std::string getType() const { return "int32"; }
+    std::string getFormat() const { return "int32"; }
+    std::string getBaseType() const { return getFormat(); }
 };
 
 class VRN_CORE_API VolumeGeneratorFloat : public VolumeGeneratorGeneric<float> {
 public:
-    std::string getType() const { return "float"; }
+    std::string getFormat() const { return "float"; }
+    std::string getBaseType() const { return getFormat(); }
 };
 
 class VRN_CORE_API VolumeGeneratorDouble : public VolumeGeneratorGeneric<double> {
 public:
-    std::string getType() const { return "double"; }
+    std::string getFormat() const { return "double"; }
+    std::string getBaseType() const { return getFormat(); }
 };
 
 //--------------------------------------------------------------------------------
@@ -161,32 +181,38 @@ public:
 
 class VRN_CORE_API VolumeGenerator2xFloat : public VolumeGeneratorGeneric<tgt::Vector2<float> > {
 public:
-    std::string getType() const { return "Vector2(float)"; }
+    std::string getFormat() const { return "Vector2(float)"; }
+    std::string getBaseType() const { return "float"; }
 };
 
 class VRN_CORE_API VolumeGenerator2xDouble : public VolumeGeneratorGeneric<tgt::Vector2<double> > {
 public:
-    std::string getType() const { return "Vector2(double)"; }
+    std::string getFormat() const { return "Vector2(double)"; }
+    std::string getBaseType() const { return "double"; }
 };
 
 class VRN_CORE_API VolumeGenerator2xUInt8 : public VolumeGeneratorGeneric<tgt::Vector2<uint8_t> > {
 public:
-    std::string getType() const { return "Vector2(uint8)"; }
+    std::string getFormat() const { return "Vector2(uint8)"; }
+    std::string getBaseType() const { return "uint8"; }
 };
 
 class VRN_CORE_API VolumeGenerator2xInt8 : public VolumeGeneratorGeneric<tgt::Vector2<int8_t> > {
 public:
-    std::string getType() const { return "Vector2(int8)"; }
+    std::string getFormat() const { return "Vector2(int8)"; }
+    std::string getBaseType() const { return "int8"; }
 };
 
 class VRN_CORE_API VolumeGenerator2xUInt16 : public VolumeGeneratorGeneric<tgt::Vector2<uint16_t> > {
 public:
-    std::string getType() const { return "Vector2(uint16)"; }
+    std::string getFormat() const { return "Vector2(uint16)"; }
+    std::string getBaseType() const { return "uint16"; }
 };
 
 class VRN_CORE_API VolumeGenerator2xInt16 : public VolumeGeneratorGeneric<tgt::Vector2<int16_t> > {
 public:
-    std::string getType() const { return "Vector2(int16)"; }
+    std::string getFormat() const { return "Vector2(int16)"; }
+    std::string getBaseType() const { return "int16"; }
 };
 
 //--------------------------------------------------------------------------------
@@ -194,32 +220,38 @@ public:
 
 class VRN_CORE_API VolumeGenerator3xFloat : public VolumeGeneratorGeneric<tgt::Vector3<float> > {
 public:
-    std::string getType() const { return "Vector3(float)"; }
+    std::string getFormat() const { return "Vector3(float)"; }
+    std::string getBaseType() const { return "float"; }
 };
 
 class VRN_CORE_API VolumeGenerator3xDouble : public VolumeGeneratorGeneric<tgt::Vector3<double> > {
 public:
-    std::string getType() const { return "Vector3(double)"; }
+    std::string getFormat() const { return "Vector3(double)"; }
+    std::string getBaseType() const { return "double"; }
 };
 
 class VRN_CORE_API VolumeGenerator3xUInt8 : public VolumeGeneratorGeneric<tgt::Vector3<uint8_t> > {
 public:
-    std::string getType() const { return "Vector3(uint8)"; }
+    std::string getFormat() const { return "Vector3(uint8)"; }
+    std::string getBaseType() const { return "uint8"; }
 };
 
 class VRN_CORE_API VolumeGenerator3xInt8 : public VolumeGeneratorGeneric<tgt::Vector3<int8_t> > {
 public:
-    std::string getType() const { return "Vector3(int8)"; }
+    std::string getFormat() const { return "Vector3(int8)"; }
+    std::string getBaseType() const { return "int8"; }
 };
 
 class VRN_CORE_API VolumeGenerator3xUInt16 : public VolumeGeneratorGeneric<tgt::Vector3<uint16_t> > {
 public:
-    std::string getType() const { return "Vector3(uint16)"; }
+    std::string getFormat() const { return "Vector3(uint16)"; }
+    std::string getBaseType() const { return "uint16"; }
 };
 
 class VRN_CORE_API VolumeGenerator3xInt16 : public VolumeGeneratorGeneric<tgt::Vector3<int16_t> > {
 public:
-    std::string getType() const { return "Vector3(int16)"; }
+    std::string getFormat() const { return "Vector3(int16)"; }
+    std::string getBaseType() const { return "int16"; }
 };
 
 //--------------------------------------------------------------------------------
@@ -227,32 +259,38 @@ public:
 
 class VRN_CORE_API VolumeGenerator4xFloat : public VolumeGeneratorGeneric<tgt::Vector4<float> > {
 public:
-    std::string getType() const { return "Vector4(float)"; }
+    std::string getFormat() const { return "Vector4(float)"; }
+    std::string getBaseType() const { return "float"; }
 };
 
 class VRN_CORE_API VolumeGenerator4xDouble : public VolumeGeneratorGeneric<tgt::Vector4<double> > {
 public:
-    std::string getType() const { return "Vector4(double)"; }
+    std::string getFormat() const { return "Vector4(double)"; }
+    std::string getBaseType() const { return "double"; }
 };
 
 class VRN_CORE_API VolumeGenerator4xUInt8 : public VolumeGeneratorGeneric<tgt::Vector4<uint8_t> > {
 public:
-    std::string getType() const { return "Vector4(uint8)"; }
+    std::string getFormat() const { return "Vector4(uint8)"; }
+    std::string getBaseType() const { return "uint8"; }
 };
 
 class VRN_CORE_API VolumeGenerator4xInt8 : public VolumeGeneratorGeneric<tgt::Vector4<int8_t> > {
 public:
-    std::string getType() const { return "Vector4(int8)"; }
+    std::string getFormat() const { return "Vector4(int8)"; }
+    std::string getBaseType() const { return "int8"; }
 };
 
 class VRN_CORE_API VolumeGenerator4xUInt16 : public VolumeGeneratorGeneric<tgt::Vector4<uint16_t> > {
 public:
-    std::string getType() const { return "Vector4(uint16)"; }
+    std::string getFormat() const { return "Vector4(uint16)"; }
+    std::string getBaseType() const { return "uint16"; }
 };
 
 class VRN_CORE_API VolumeGenerator4xInt16 : public VolumeGeneratorGeneric<tgt::Vector4<int16_t> > {
 public:
-    std::string getType() const { return "Vector4(int16)"; }
+    std::string getFormat() const { return "Vector4(int16)"; }
+    std::string getBaseType() const { return "int16"; }
 };
 
 //--------------------------------------------------------------------------------
@@ -260,22 +298,26 @@ public:
 
 class VRN_CORE_API VolumeGeneratorMat3Float : public VolumeGeneratorGeneric<tgt::Matrix3<float> > {
 public:
-    std::string getType() const { return "Matrix3(float)"; }
+    std::string getFormat() const { return "Matrix3(float)"; }
+    std::string getBaseType() const { return "float"; }
 };
 
 class VRN_CORE_API VolumeGeneratorMat3Double : public VolumeGeneratorGeneric<tgt::Matrix3<double> > {
 public:
-    std::string getType() const { return "Matrix3(double)"; }
+    std::string getFormat() const { return "Matrix3(double)"; }
+    std::string getBaseType() const { return "double"; }
 };
 
 class VRN_CORE_API VolumeGeneratorMat4Float : public VolumeGeneratorGeneric<tgt::Matrix4<float> > {
 public:
-    std::string getType() const { return "Matrix4(float)"; }
+    std::string getFormat() const { return "Matrix4(float)"; }
+    std::string getBaseType() const { return "float"; }
 };
 
 class VRN_CORE_API VolumeGeneratorMat4Double : public VolumeGeneratorGeneric<tgt::Matrix4<double> > {
 public:
-    std::string getType() const { return "Matrix4(double)"; }
+    std::string getFormat() const { return "Matrix4(double)"; }
+    std::string getBaseType() const { return "double"; }
 };
 
 //--------------------------------------------------------------------------------
@@ -283,9 +325,11 @@ public:
 
 class VRN_CORE_API VolumeGeneratorTensor2Float : public VolumeGeneratorGeneric<Tensor2<float> > {
 public:
-    std::string getType() const { return "Tensor2(float)"; }
+    std::string getFormat() const { return "Tensor2(float)"; }
+    std::string getBaseType() const { return "float"; }
 };
 
 } // namespace voreen
 
 #endif // VRN_VOLUMEFACTORY_H
+

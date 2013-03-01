@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,7 +36,6 @@
 #include <QMenu>
 #include <QCheckBox>
 #include <QToolButton>
-#include <QPushButton>
 #include <QGroupBox>
 
 #include <fstream>
@@ -95,6 +94,10 @@ public slots:
     void fovChange(double v);
     void ratioChange(double v);
     void resetCameraProjection();
+
+    void resetCamFocus();
+    void adjustCameraToScene(bool b);
+    void shiftTrackballCenter(int i);
 
     virtual void createWidgets();
     virtual void createConnections();
@@ -188,6 +191,15 @@ private:
 
     FloatProperty* fovyProp_;
     FloatProperty* ratioProp_;
+
+    // trackball: move around world origin, scene center or shifted center?
+    QComboBox* shiftTrackballCenter_;
+
+    // if the scene changes in size, adapt camera?
+    QCheckBox* adjustCameraToScene_;
+
+    // trackball: reset camera focus after shifting
+    QPushButton* resetCamFocusToTrackballCenter_;
 
     float dist_;
     bool rotateX_;

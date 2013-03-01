@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -44,19 +44,20 @@ namespace voreen {
 DeprecatedModule::DeprecatedModule(const std::string& modulePath)
     : VoreenModule(modulePath)
 {
-    setName("Deprecated");
+    setID("Deprecated");
+    setGuiName("Deprecated");
 
     addShaderPath(getModulePath("glsl"));
 
-    registerProcessor(new ButtonOverlayProcessor());
-    registerProcessor(new TextSeriesSource());
-    registerProcessor(new VolumeSeriesSource());
-    registerProcessor(new RawTextureSource());
-    registerProcessor(new RawTextureSave());
-    registerProcessor(new TargetToTexture);
-    registerProcessor(new TextureToTarget());
-    registerProcessor(new VolumeNormalization());
-    registerProcessor(new Canny());
+    registerSerializableType(new ButtonOverlayProcessor());
+    registerSerializableType(new TextSeriesSource());
+    registerSerializableType(new VolumeSeriesSource());
+    registerSerializableType(new RawTextureSource());
+    registerSerializableType(new RawTextureSave());
+    registerSerializableType(new TargetToTexture);
+    registerSerializableType(new TextureToTarget());
+    registerSerializableType(new VolumeNormalization());
+    registerSerializableType(new Canny());
 
     registerVolumeReader(new PhilipsUSVolumeReader());
 

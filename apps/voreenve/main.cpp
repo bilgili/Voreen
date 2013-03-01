@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -91,10 +91,11 @@ int main(int argc, char** argv) {
         LWARNING("Property not found: showSplashScreen");
     else
         showSplash = static_cast<BoolProperty*>(vapp.getProperty("showSplashScreen"))->get();
-    VoreenSplashScreen splash;
+    VoreenSplashScreen* splash = 0;
     if (showSplash) {
-        splash.showMessage("Creating application...");
-        splash.show();
+        splash = new VoreenSplashScreen();
+        splash->showMessage("Creating application...",0.15);
+        splash->show();
         qApp->processEvents();
     }
 
@@ -116,23 +117,24 @@ int main(int argc, char** argv) {
 
     // create and show mainwindow
     if (showSplash)
-        splash.showMessage("Creating main window...");
+        splash->showMessage("Creating main window...",0.30);
     VoreenMainWindow mainWindow(workspaceFilename, resetSettings);
     vapp.setMainWindow(&mainWindow);
     mainWindow.show();
 
     // initialize mainwindow (also calls VoreenApplication::initializeGL())
     if (showSplash)
-        mainWindow.initialize(&splash);
+        mainWindow.initialize(splash);
     else
         mainWindow.initialize();
 
     vapp.restoreOverrideCursor();
 
     // hide splash
-    if (showSplash)
-        splash.showMessage("Initialization complete.");
-
+    if (showSplash){
+        splash->showMessage("Initialization complete.",1);
+        delete splash;
+    }
     // run Python script
 #ifdef VRN_MODULE_PYTHON
     if (!scriptFilename.empty()) {

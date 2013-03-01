@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -29,11 +29,11 @@ namespace voreen {
 
 BoolStartInterpolationFunction::BoolStartInterpolationFunction() {}
 
-std::string BoolStartInterpolationFunction::getMode() const {
+std::string BoolStartInterpolationFunction::getGuiName() const {
     return "focus on startvalue";
 }
 
-std::string BoolStartInterpolationFunction::getIdentifier() const {
+std::string BoolStartInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -43,17 +43,17 @@ bool BoolStartInterpolationFunction::interpolate(bool startvalue, bool endvalue,
     else
         return endvalue;
 }
-InterpolationFunction<bool>* BoolStartInterpolationFunction::clone() const {
+InterpolationFunction<bool>* BoolStartInterpolationFunction::create() const {
     return new BoolStartInterpolationFunction();
 }
 
 BoolEndInterpolationFunction::BoolEndInterpolationFunction() {}
 
-std::string BoolEndInterpolationFunction::getMode() const {
+std::string BoolEndInterpolationFunction::getGuiName() const {
     return "focus on endvalue";
 }
 
-std::string BoolEndInterpolationFunction::getIdentifier() const {
+std::string BoolEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -63,17 +63,17 @@ bool BoolEndInterpolationFunction::interpolate(bool startvalue, bool endvalue, f
     else
         return startvalue;
 }
-InterpolationFunction<bool>* BoolEndInterpolationFunction::clone() const {
+InterpolationFunction<bool>* BoolEndInterpolationFunction::create() const {
     return new BoolEndInterpolationFunction();
 }
 
 BoolStartEndInterpolationFunction::BoolStartEndInterpolationFunction() {}
 
-std::string BoolStartEndInterpolationFunction::getMode() const {
+std::string BoolStartEndInterpolationFunction::getGuiName() const {
     return "bisection";
 }
 
-std::string BoolStartEndInterpolationFunction::getIdentifier() const {
+std::string BoolStartEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -84,7 +84,7 @@ bool BoolStartEndInterpolationFunction::interpolate(bool startvalue, bool endval
         return endvalue;
 }
 
-InterpolationFunction<bool>* BoolStartEndInterpolationFunction::clone() const {
+InterpolationFunction<bool>* BoolStartEndInterpolationFunction::create() const {
     return new BoolStartEndInterpolationFunction();
 }
 

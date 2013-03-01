@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -35,914 +35,993 @@ namespace voreen {
 template class VRN_CORE_API InterpolationFunction<TransFunc*>;
 #endif
 
+/// Base class for transfer function interpolation, provides commonly used methods.
+class VRN_CORE_API TransFuncInterpolationFunctionBase : public InterpolationFunction<TransFunc*> {
+protected:
+    static GLubyte* convertTextureToRGBA(tgt::ivec3 dim, GLubyte* textur, GLuint inputformat);
+    static GLubyte* changeTextureDimension(tgt::ivec3 in_dim, tgt::ivec3 out_dim, GLubyte* indata);
+};
+
+/// Default interpolation
+class VRN_CORE_API TransFuncInterpolationFunction : public TransFuncInterpolationFunctionBase {
+public:
+    TransFuncInterpolationFunction();
+    virtual std::string getClassName() const { return "TransFuncInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
+    TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
+
+    std::string getGuiName() const;
+    std::string getCategory() const;
+};
+
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions. Interpolation: focus on startvalue.
+ * This class offers an interpolation function for transfer functions. Interpolation: focus on startvalue.
  */
-class VRN_CORE_API TransFuncStartInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncStartInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncStartInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncStartInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions. Interpolation: focus on endvalue.
+ * This class offers an interpolation function for transfer functions. Interpolation: focus on endvalue.
  */
-class VRN_CORE_API TransFuncEndInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncEndInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncEndInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncEndInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions. Interpolation: bisection.
+ * This class offers an interpolation function for transfer functions. Interpolation: bisection.
  */
-class VRN_CORE_API TransFuncStartEndInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncStartEndInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncStartEndInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncStartEndInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys
  * the functions will be interpolated linearly (keywise).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
-
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated quadratically (keywise, easing in).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseQuadInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseQuadInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseQuadInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseQuadInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated quadratically (keywise, easing out).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseQuadOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseQuadOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseQuadOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseQuadOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated quadratically (keywise, easing in, then easing out).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseQuadInOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseQuadInOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseQuadInOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseQuadInOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated quadratically (keywise, easing out, then easing in).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseQuadOutInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseQuadOutInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseQuadOutInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseQuadOutInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated cubicularly (keywise, easing in).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseCubicInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseCubicInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseCubicInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseCubicInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated cubicularly (keywise, easing out).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseCubicOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseCubicOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseCubicOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseCubicOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated cubicularly (keywise, easing in, then easing out).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseCubicInOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseCubicInOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseCubicInOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseCubicInOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated cubicularly (keywise, easing out, then easing in).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseCubicOutInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseCubicOutInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseCubicOutInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseCubicOutInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated quartetically (keywise, easing in).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseQuartInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseQuartInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseQuartInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseQuartInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated quartetically (keywise, easing out).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseQuartOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseQuartOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseQuartOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseQuartOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated quartetically (keywise, easing in, then easing out).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseQuartInOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseQuartInOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseQuartInOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseQuartInOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated quartetically (keywise, easing out, then easing in).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseQuartOutInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseQuartOutInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseQuartOutInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseQuartOutInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated quintically (keywise, easing in).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseQuintInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseQuintInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseQuintInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseQuintInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated quintically (keywise, easing out).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseQuintOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseQuintOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseQuintOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseQuintOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated quintically (keywise, easing in, then easing out).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseQuintInOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseQuintInOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseQuintInOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseQuintInOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated quintically (keywise, easing out, then easing in).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseQuintOutInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseQuintOutInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseQuintOutInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseQuintOutInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated sineousidally (keywise, easing in).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseSineInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseSineInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseSineInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseSineInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated sineousidally (keywise, easing out).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseSineOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseSineOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseSineOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseSineOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated sineousidally (keywise, easing in, then easing out).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseSineInOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseSineInOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseSineInOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseSineInOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated sineousidally (keywise, easing out, then easing in).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseSineOutInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseSineOutInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseSineOutInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseSineOutInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated exponentially (keywise, easing in).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseExponentInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseExponentInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseExponentInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseExponentInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated exponentially (keywise, easing out).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseExponentOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseExponentOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseExponentOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseExponentOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated exponentially (keywise, easing in, then easing out).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseExponentInOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseExponentInOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseExponentInOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseExponentInOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated exponentially (keywise, easing out, then easing in).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseExponentOutInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseExponentOutInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseExponentOutInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseExponentOutInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated circularly (keywise, easing in).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseCircInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseCircInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseCircInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseCircInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated circularly (keywise, easing out).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseCircOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseCircOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseCircOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseCircOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated circularly (keywise, easing in, then easing out).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseCircInOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseCircInOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseCircInOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseCircInOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * If the startfunction and the endfunction are both 1D-functions with the same number of keys,
  * the functions will be interpolated circularly (keywise, easing out, then easing in).
  * If not this functions falls back to a default function like TransFuncStartInterpolationFunction.
  */
-class VRN_CORE_API TransFuncKeyWiseCircOutInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncKeyWiseCircOutInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncKeyWiseCircOutInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncKeyWiseCircOutInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated linearly.
  */
-class VRN_CORE_API TransFuncTextureLinearInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureLinearInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureLinearInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureLinearInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated quadratically (easing-in).
  */
-class VRN_CORE_API TransFuncTextureQuadInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureQuadInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureQuadInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureQuadInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated quadratically (easing-out).
  */
-class VRN_CORE_API TransFuncTextureQuadOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureQuadOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureQuadOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureQuadOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated quadratically (easing-in, then easing-out).
  */
-class VRN_CORE_API TransFuncTextureQuadInOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureQuadInOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureQuadInOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureQuadInOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated quadratically (easing-out, then easing-in).
  */
-class VRN_CORE_API TransFuncTextureQuadOutInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureQuadOutInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureQuadOutInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureQuadOutInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated cubicularly (easing-in).
  */
-class VRN_CORE_API TransFuncTextureCubicInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureCubicInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureCubicInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureCubicInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated cubicularly (easing-out).
  */
-class VRN_CORE_API TransFuncTextureCubicOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureCubicOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureCubicOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureCubicOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated cubicularly (easing-in, then easing-out).
  */
-class VRN_CORE_API TransFuncTextureCubicInOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureCubicInOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureCubicInOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureCubicInOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated cubicularly (easing-out, then easing-in).
  */
-class VRN_CORE_API TransFuncTextureCubicOutInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureCubicOutInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureCubicOutInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureCubicOutInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated quartetically (easing-in).
  */
-class VRN_CORE_API TransFuncTextureQuartInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureQuartInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureQuartInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureQuartInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated quartetically (easing-out).
  */
-class VRN_CORE_API TransFuncTextureQuartOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureQuartOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureQuartOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureQuartOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated quartetically (easing-in, then easing-out).
  */
-class VRN_CORE_API TransFuncTextureQuartInOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureQuartInOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureQuartInOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureQuartInOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated quartetically (easing-out, then easing-in).
  */
-class VRN_CORE_API TransFuncTextureQuartOutInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureQuartOutInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureQuartOutInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureQuartOutInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated quintically (easing-in).
  */
-class VRN_CORE_API TransFuncTextureQuintInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureQuintInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureQuintInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureQuintInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated quintically (easing-out).
  */
-class VRN_CORE_API TransFuncTextureQuintOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureQuintOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureQuintOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureQuintOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated quintically (easing-in, then easing-out).
  */
-class VRN_CORE_API TransFuncTextureQuintInOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureQuintInOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureQuintInOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureQuintInOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated quintically (easing-out, then easing-in).
  */
-class VRN_CORE_API TransFuncTextureQuintOutInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureQuintOutInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureQuintOutInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureQuintOutInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated sineousidally (easing-in).
  */
-class VRN_CORE_API TransFuncTextureSineInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureSineInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureSineInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureSineInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated sineousidally (easing-out).
  */
-class VRN_CORE_API TransFuncTextureSineOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureSineOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureSineOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureSineOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated sineousidally (easing-in, then easing-out).
  */
-class VRN_CORE_API TransFuncTextureSineInOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureSineInOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureSineInOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureSineInOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated sineousidally (easing-out, then easing-in).
  */
-class VRN_CORE_API TransFuncTextureSineOutInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureSineOutInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureSineOutInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureSineOutInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated exponentially (easing-in).
  */
-class VRN_CORE_API TransFuncTextureExponentInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureExponentInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureExponentInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureExponentInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated exponentially (easing-out).
  */
-class VRN_CORE_API TransFuncTextureExponentOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureExponentOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureExponentOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureExponentOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated exponentially (easing-in, then easing-out).
  */
-class VRN_CORE_API TransFuncTextureExponentInOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureExponentInOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureExponentInOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureExponentInOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated exponentially (easing-out, then easing-in).
  */
-class VRN_CORE_API TransFuncTextureExponentOutInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureExponentOutInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureExponentOutInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureExponentOutInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated circularly (easing-in).
  */
-class VRN_CORE_API TransFuncTextureCircInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureCircInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureCircInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureCircInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated circularly (easing-out).
  */
-class VRN_CORE_API TransFuncTextureCircOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureCircOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureCircOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureCircOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated circularly (easing-in, then easing-out).
  */
-class VRN_CORE_API TransFuncTextureCircInOutInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureCircInOutInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureCircInOutInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureCircInOutInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for transfer functions.
+ * This class offers an interpolation function for transfer functions.
  * The two textures of the transferfunctions are interpolated circularly (easing-out, then easing-in).
  */
-class VRN_CORE_API TransFuncTextureCircOutInInterpolationFunction : public InterpolationFunction<TransFunc*> {
+class VRN_CORE_API TransFuncTextureCircOutInInterpolationFunction : public TransFuncInterpolationFunctionBase {
 public:
     TransFuncTextureCircOutInInterpolationFunction();
-    InterpolationFunction<TransFunc*>* clone() const;
+    virtual std::string getClassName() const { return "TransFuncTextureCircOutInInterpolationFunction"; }
+    InterpolationFunction<TransFunc*>* create() const;
     TransFunc* interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 } // namespace voreen

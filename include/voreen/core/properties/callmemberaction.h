@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,7 +30,7 @@
 
 namespace voreen {
 
-#define ON_PROPERTY_CHANGE(PROPERTY,PROCESSOR,FUNCTION) PROPERTY.onChange(CallMemberAction<PROCESSOR>(this, &PROCESSOR::FUNCTION));
+#define ON_PROPERTY_CHANGE(PROPERTY,PROPERTYOWNER,FUNCTION) PROPERTY.onChange(CallMemberAction<PROPERTYOWNER>(this, &PROPERTYOWNER::FUNCTION));
 
 /**
  * This Action can call a member function of an Object with signature void mem()

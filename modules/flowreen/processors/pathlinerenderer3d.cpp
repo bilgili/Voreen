@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -27,7 +27,7 @@
 
 #include "voreen/core/interaction/camerainteractionhandler.h"
 #include "floworthogonalslicerenderer.h"
-#include "voreen/core/datastructures/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumelist.h"
 #include "modules/flowreen/utils/flowmath.h"
 #include "modules/flowreen/datastructures/volumeoperatorintensitymask.h"
 
@@ -529,7 +529,7 @@ void PathlineRenderer3D::initPathlinesSliceGrid(const size_t spacing)
 }
 
 void PathlineRenderer3D::adjustTimestepProperty() {
-    const VolumeCollection* collection = inportFlows_.getData();
+    const VolumeList* collection = inportFlows_.getData();
     if (flows_.empty() == false) {
         float stepping = integrationStepProp_.get();
         float maxTimestep = static_cast<float>(flows_.size()) - stepping;

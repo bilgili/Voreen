@@ -5,12 +5,10 @@ INCLUDE(../../cmake/commonconf.cmake)
 MESSAGE(STATUS "Configuring VoreenTool Application")
 
 SET(VRN_VOREENTOOL_SOURCES
-    networkconfigurator.cpp
     voreentool.cpp
 )
 
 SET(VRN_VOREENTOOL_HEADERS
-    networkconfigurator.h
 )
 
 # find Qt library

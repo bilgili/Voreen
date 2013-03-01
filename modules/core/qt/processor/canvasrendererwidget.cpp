@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -45,7 +45,7 @@ CanvasRendererWidget::CanvasRendererWidget(QWidget* parent, CanvasRenderer* canv
 {
     tgtAssert(canvasRenderer, "No CanvasRenderer");
 
-    setWindowTitle(QString::fromStdString(canvasRenderer->getName()));
+    setWindowTitle(QString::fromStdString(canvasRenderer->getGuiName()));
     resize(256, 256);
 }
 
@@ -73,7 +73,7 @@ void CanvasRendererWidget::initialize() {
         LERRORC("voreen.qt.CanvasRendererWidget", "VoreenApplication not instantiated");
         throw new VoreenException("VoreenApplication not instantiated");
     }
-    NetworkEvaluator* evaluator = VoreenApplication::app()->getNetworkEvaluator();
+    NetworkEvaluator* evaluator = VoreenApplication::app()->getNetworkEvaluator(processor_);
     if (!evaluator) {
         LERRORC("voreen.qt.CanvasRendererWidget", "No evaluator assigned to VoreenApplication");
         throw new VoreenException("No evaluator assigned to VoreenApplication");

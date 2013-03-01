@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -231,8 +231,8 @@ void DateTime::deserialize(XmlDeserializer& s) {
     s.deserialize("millisecond", millisecond_);
 }
 
-DateTime DateTime::now() { 
-    return DateTime(time(0));    
+DateTime DateTime::now() {
+    return DateTime(time(0));
 }
 
 void DateTime::checkValueRanges() const {
@@ -264,7 +264,7 @@ bool DateTime::operator==(const DateTime& dt) const {
     if ((minute_) != dt.getMinute())
         return false;
     if ((second_) != dt.getSecond())
-        return false; 
+        return false;
     if(millisecond_ != dt.getMillisecond())
         return false;
     return true;
@@ -275,17 +275,17 @@ bool DateTime::operator>(const DateTime& dt) const {
         return true;
     else if (year_ < dt.getYear())
         return false;
-    
+
     if (month_ > dt.getMonth())
         return true;
     else if (month_ < dt.getMonth())
         return false;
-    
+
     if (day_ > dt.getDay())
         return true;
     else if (day_ < dt.getDay())
         return false;
-    
+
     if (hour_ > dt.getHour())
         return true;
     else if (hour_ < dt.getHour())
@@ -295,7 +295,7 @@ bool DateTime::operator>(const DateTime& dt) const {
         return true;
     else if (minute_ < dt.getMinute())
         return false;
-    
+
     if (second_ > dt.getSecond())
         return true;
     else if (second_ < dt.getSecond())
@@ -308,23 +308,23 @@ bool DateTime::operator>(const DateTime& dt) const {
 
     return false;
 }
-    
+
 bool DateTime::operator<(const DateTime& dt) const {
     if (year_ > dt.getYear())
         return false;
     else if (year_ < dt.getYear())
         return true;
-    
+
     if (month_ > dt.getMonth())
         return false;
     else if (month_ < dt.getMonth())
         return true;
-    
+
     if (day_ > dt.getDay())
         return false;
     else if (day_ < dt.getDay())
         return true;
-    
+
     if (hour_ > dt.getHour())
         return false;
     else if (hour_ < dt.getHour())
@@ -334,7 +334,7 @@ bool DateTime::operator<(const DateTime& dt) const {
         return false;
     else if (minute_ < dt.getMinute())
         return true;
-    
+
     if (second_ > dt.getSecond())
         return false;
     else if (second_ < dt.getSecond())
@@ -348,5 +348,8 @@ bool DateTime::operator<(const DateTime& dt) const {
     return false;
 }
 
+double DateTime::diffSeconds(const DateTime& dt) const {
+    return std::difftime(dt.getTimestamp(), getTimestamp());
+}
 
 } // namespace

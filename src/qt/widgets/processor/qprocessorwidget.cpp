@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -41,7 +41,7 @@ QProcessorWidget::QProcessorWidget(Processor* processor, QWidget* parent)
     , ProcessorWidget(processor)
 {
     tgtAssert(processor, "No processor");
-    setWindowTitle(QString::fromStdString(processor->getName()));
+    setWindowTitle(QString::fromStdString(processor->getID()));
     QWidget::setVisible(false);
 }
 
@@ -109,7 +109,7 @@ tgt::ivec2 QProcessorWidget::getPosition() const {
 }
 
 void QProcessorWidget::processorNameChanged() {
-    setWindowTitle(QString::fromStdString(processor_->getName()));
+    setWindowTitle(QString::fromStdString(processor_->getGuiName()));
 }
 
 void QProcessorWidget::moveEvent(QMoveEvent* eve) {

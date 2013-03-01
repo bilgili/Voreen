@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,7 +26,7 @@
 #ifndef VRN_METADATABASE_H
 #define VRN_METADATABASE_H
 
-#include "voreen/core/io/serialization/abstractserializable.h"
+#include "voreen/core/voreenobject.h"
 
 namespace voreen {
 
@@ -39,10 +39,8 @@ namespace voreen {
  *
  * @see VoreenModule::registerSerializerFactory, MetaDataFactory
  */
-class VRN_CORE_API MetaDataBase : public AbstractSerializable {
+class VRN_CORE_API MetaDataBase : public VoreenSerializableObject {
 public:
-    virtual std::string getClassName() const = 0;
-    virtual Serializable* create() const = 0;
     virtual MetaDataBase* clone() const = 0;
     virtual std::string toString() const = 0;
     virtual std::string toString(const std::string& /*component*/) const = 0;

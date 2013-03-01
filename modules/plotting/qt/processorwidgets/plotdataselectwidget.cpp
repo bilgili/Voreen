@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -55,7 +55,7 @@ PlotDataSelectWidget::PlotDataSelectWidget(QWidget* parent, PlotDataSelect* plot
     function_ = FunctionLibrary::NONE;
     tgtAssert(plotDataSelect, "No PlotDataSelect processor");
     proxyModel_ = new PlotDataExtendedTableModel(NULL, std::vector<std::pair<int,std::string> >(0), this);
-    setWindowTitle(QString::fromStdString(plotDataSelect->getName()));
+    setWindowTitle(QString::fromStdString(plotDataSelect->getGuiName()));
     contextMenuTable_ = new QMenu(this);
     beforeMenu_ = new QMenu(tr("Insert Before",0),this);
     afterMenu_ = new QMenu(tr("Insert After",0),this);

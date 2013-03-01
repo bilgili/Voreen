@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -132,9 +132,9 @@ public:
     const Graph& getGraph() const;
     Graph& getGraph();
 
-    virtual MeshListGeometry* generateMesh() const;
-    virtual MeshListGeometry* generateMesh(tgt::plane pl) const;
-    virtual MeshListGeometry* generateRasterMesh(const tgt::plane& pl, Grid g) const;
+    virtual Geometry* generateMesh() const;
+    virtual Geometry* generateMesh(tgt::plane pl) const;
+    virtual Geometry* generateRasterMesh(const tgt::plane& pl, Grid g) const;
     virtual tgt::Bounds getBoundingBox() const;
 
     virtual std::vector<const ControlPoint*> getControlPoints() const;

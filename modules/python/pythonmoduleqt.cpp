@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,7 +33,8 @@ PythonModuleQt::PythonModuleQt(const std::string& modulePath)
     : VoreenModuleQt(modulePath)
     , pythonQt_(0)
 {
-    setName("Python (Qt)");
+    setID("Python (Qt)");
+    setGuiName("Python (Qt)");
 }
 
 void PythonModuleQt::initialize() throw (tgt::Exception) {

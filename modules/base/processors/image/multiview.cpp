@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -109,7 +109,7 @@ void MultiView::establishConnectionOrder() {
     std::vector<RenderPort*> tmpPorts(renderPorts_.size(), 0);
     for(size_t i = 0; i < procNameOrder_.size(); i++) {
         for(size_t j = 0; j < renderPorts_.size(); j++) {
-            if(procNameOrder_.at(i) == renderPorts_.at(j)->getProcessor()->getName() && portNameOrder_.at(i) == renderPorts_.at(j)->getName()) {
+            if(procNameOrder_.at(i) == renderPorts_.at(j)->getProcessor()->getID() && portNameOrder_.at(i) == renderPorts_.at(j)->getID()) {
                 tmpPorts[i] = renderPorts_.at(j);
                 break;
             }
@@ -386,8 +386,8 @@ void MultiView::serialize(XmlSerializer& s) const {
     std::vector<std::string> procNames;
     std::vector<std::string> portNames;
     for(size_t i = 0; i < renderPorts_.size(); i++) {
-        portNames.push_back(renderPorts_.at(i)->getName());
-        procNames.push_back(renderPorts_.at(i)->getProcessor()->getName());
+        portNames.push_back(renderPorts_.at(i)->getID());
+        procNames.push_back(renderPorts_.at(i)->getProcessor()->getID());
     }
 
     s.serialize("PortNames", portNames, "PortName");

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -88,6 +88,9 @@ public:
 
     virtual ~CameraInteractionHandler();
 
+    virtual std::string getClassName() const   { return "CameraInteractionHandler";     }
+    virtual InteractionHandler* create() const { return new CameraInteractionHandler(); }
+
     /**
      * Determines the the navigation metaphor to be used
      * for interpreting the user input.
@@ -110,11 +113,9 @@ public:
     void adjustCenterShift();
 
     /**
-     * After shifting, reset the center of the trackball to 0.
+     * After shifting, reset the camera focus to the center of the trackball.
      */
-    void resetTrackballCenter();
-
-    void adaptInteractionToScene(const MeshListGeometry& geometry);
+    void resetCameraFocusToTrackballCenter();
 
 private:
 
@@ -142,15 +143,6 @@ private:
     // trackball <-> first-person navigation
     OptionProperty<NavigationMetaphor> navigationMetaphor_;
 
-    // trackball: move around world origin, scene center or shifted center?
-    StringOptionProperty shiftTrackballCenter_;
-
-    // if the scene changes in size, adapt camera?
-    StringOptionProperty adjustCamera_;
-
-    // trackball: reset center after shifting
-    ButtonProperty resetTrackballCenter_;
-
     // trackball properties
     EventProperty<CameraInteractionHandler>* rotateEvent_;
     EventProperty<CameraInteractionHandler>* zoomEvent_;
@@ -175,9 +167,6 @@ private:
 
     // Stores if a mousebutton (LEFT, MIDDLE, RIGHT) has been pressed but not released yet.
     std::bitset<3> pressedMouseButtons_;
-
-    // Stores the current entry-exit point mesh of the scene (if present) to adapt interaction to the scene size
-    MeshListGeometry currentSceneMesh_;
 };
 
 } // namespace

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,7 +26,7 @@
 #ifndef VRN_PROPERTY_H
 #define VRN_PROPERTY_H
 
-#include "voreen/core/voreencoreapi.h"
+#include "voreen/core/voreenobject.h"
 #include "voreen/core/properties/link/propertylink.h"
 #include "voreen/core/io/serialization/serialization.h"
 #include "voreen/core/processors/processor.h"
@@ -52,7 +52,7 @@ class ProcessorNetwork;
  *
  * @see TemplateProperty
  */
-class VRN_CORE_API Property : public AbstractSerializable {
+class VRN_CORE_API Property : public VoreenSerializableObject {
 
     friend class PropertyLink;
     friend class PropertyVector;
@@ -100,19 +100,6 @@ public:
     virtual ~Property();
 
     /**
-     * Virtual constructor: supposed to return an instance of the concrete Property class.
-     */
-    virtual Property* create() const = 0;
-
-    /**
-     * Returns the name of this class as a string.
-     * Necessary due to the lack of code reflection in C++.
-     *
-     * This method is expected to be re-implemented by each concrete subclass.
-     */
-    virtual std::string getClassName() const = 0;
-
-    /**
      * Resets the property to its default value.
      *
      * This method is expected to be re-implemented by each concrete subclass.
@@ -124,11 +111,6 @@ public:
      * usually corresponding to the type of the stored value.
      */
     virtual std::string getTypeDescription() const;
-
-    /**
-     * Returns the identifier of the property.
-     */
-    std::string getID() const;
 
     /**
      * Returns the InvalidationLevel of this property.
@@ -149,17 +131,6 @@ public:
      * @see PropertyOwner::getName
      */
     std::string getFullyQualifiedID() const;
-
-    /**
-     * Assigns the string that is to be shown
-     * in the user interface.
-     */
-    void setGuiName(const std::string& guiName);
-
-    /**
-     * Returns the property's gui name.
-     */
-    std::string getGuiName() const;
 
     /**
      * Specifies how the property should be represented
@@ -330,7 +301,7 @@ public:
     bool isLinkableWith(const Property* dst) const;
 
     /**
-     * Returns the gui name and id of all link evaluators available between this and 
+     * Returns the gui name and id of all link evaluators available between this and
      * the destination property.
      *
      * @param dst the destination property whose link state is to be checked
@@ -400,9 +371,6 @@ public:
      * @param invalidationLevel Use this InvalidationLevel to invalidate
      */
     void invalidateOwner(int invalidationLevel);
-
-    std::string id_;
-    std::string guiName_;
 
     PropertyOwner* owner_;
     int invalidationLevel_;

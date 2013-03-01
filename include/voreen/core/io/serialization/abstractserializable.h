@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -23,8 +23,8 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#ifndef VRN_IABSTRACTSERIALIZABLE_H
-#define VRN_IABSTRACTSERIALIZABLE_H
+#ifndef VRN_ABSTRACTSERIALIZABLE_H
+#define VRN_ABSTRACTSERIALIZABLE_H
 
 #include "voreen/core/io/serialization/serializable.h"
 
@@ -45,4 +45,4 @@ class VRN_CORE_API AbstractSerializable : public Serializable {
 
 } // namespace
 
-#endif // VRN_IABSTRACTSERIALIZABLE_H
+#endif // VRN_ABSTRACTSERIALIZABLE_H

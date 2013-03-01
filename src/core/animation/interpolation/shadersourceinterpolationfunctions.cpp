@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -29,11 +29,11 @@ namespace voreen {
 
 ShaderSourceStartInterpolationFunction::ShaderSourceStartInterpolationFunction() {}
 
-std::string ShaderSourceStartInterpolationFunction::getMode() const {
+std::string ShaderSourceStartInterpolationFunction::getGuiName() const {
     return "focus on startvalue";
 }
 
-std::string ShaderSourceStartInterpolationFunction::getIdentifier() const {
+std::string ShaderSourceStartInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -44,17 +44,17 @@ ShaderSource ShaderSourceStartInterpolationFunction::interpolate(ShaderSource st
         return endvalue;
 }
 
-InterpolationFunction<ShaderSource>* ShaderSourceStartInterpolationFunction::clone() const {
+InterpolationFunction<ShaderSource>* ShaderSourceStartInterpolationFunction::create() const {
     return new ShaderSourceStartInterpolationFunction();
 }
 
 ShaderSourceEndInterpolationFunction::ShaderSourceEndInterpolationFunction() {}
 
-std::string ShaderSourceEndInterpolationFunction::getMode() const {
+std::string ShaderSourceEndInterpolationFunction::getGuiName() const {
     return "focus on endvalue";
 }
 
-std::string ShaderSourceEndInterpolationFunction::getIdentifier() const {
+std::string ShaderSourceEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -65,17 +65,17 @@ ShaderSource ShaderSourceEndInterpolationFunction::interpolate(ShaderSource star
         return startvalue;
 }
 
-InterpolationFunction<ShaderSource>* ShaderSourceEndInterpolationFunction::clone() const {
+InterpolationFunction<ShaderSource>* ShaderSourceEndInterpolationFunction::create() const {
     return new ShaderSourceEndInterpolationFunction();
 }
 
 ShaderSourceStartEndInterpolationFunction::ShaderSourceStartEndInterpolationFunction() {}
 
-std::string ShaderSourceStartEndInterpolationFunction::getMode() const {
+std::string ShaderSourceStartEndInterpolationFunction::getGuiName() const {
     return "bisection";
 }
 
-std::string ShaderSourceStartEndInterpolationFunction::getIdentifier() const {
+std::string ShaderSourceStartEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -86,7 +86,7 @@ ShaderSource ShaderSourceStartEndInterpolationFunction::interpolate(ShaderSource
         return endvalue;
 }
 
-InterpolationFunction<ShaderSource>* ShaderSourceStartEndInterpolationFunction::clone() const {
+InterpolationFunction<ShaderSource>* ShaderSourceStartEndInterpolationFunction::create() const {
     return new ShaderSourceStartEndInterpolationFunction();
 }
 

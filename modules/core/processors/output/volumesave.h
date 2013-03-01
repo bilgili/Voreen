@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -32,6 +32,7 @@
 #include "voreen/core/properties/filedialogproperty.h"
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/buttonproperty.h"
+#include "voreen/core/properties/volumeinfoproperty.h"
 
 namespace voreen {
 
@@ -39,7 +40,7 @@ class Volume;
 class VolumeSerializer;
 class VolumeSerializerPopulator;
 
-class VolumeSave : public VolumeProcessor {
+class VRN_CORE_API VolumeSave : public VolumeProcessor {
 public:
     VolumeSave();
     virtual ~VolumeSave();
@@ -60,6 +61,7 @@ protected:
     virtual void process();
     virtual void initialize() throw (tgt::Exception);
     virtual void deinitialize() throw (tgt::Exception);
+    virtual void invalidate(int inv = 1);
 
 private:
     std::vector<std::string> constructFilters() const;
@@ -68,7 +70,11 @@ private:
 
     FileDialogProperty filename_;
     ButtonProperty saveButton_;
+    BoolProperty saveOnPathChange_;
     BoolProperty continousSave_;
+    VolumeInfoProperty volumeInfo_;
+
+    bool saveVolume_;
 
     VolumeSerializerPopulator* volSerializerPopulator_;
 

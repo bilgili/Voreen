@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -48,18 +48,11 @@ void GeometryBoundingBox::process() {
     vec3 urb(-FLT_MAX);
 
     const Geometry* geom = inport_.getData();
-    const MeshListGeometry* meshGeom = dynamic_cast<const MeshListGeometry*>(geom);
 
-    if (meshGeom) {
-        meshGeom->getBoundingBox(llf, urb);
-        const MeshGeometry& mesh = MeshGeometry::createCube(llf, urb);
+    tgt::Bounds b = geom->getBoundingBox();
+    const MeshGeometry& mesh = MeshGeometry::createCube(b.getLLF(), b.getURB());
 
-        outport_.setData(new MeshGeometry(mesh));
-    }
-    else {
-        LERRORC("GeometryBoundingBox", "Only MeshListGeometries are supported in this processor");
-    }
-
+    outport_.setData(new MeshGeometry(mesh));
 }
 
 } // namespace

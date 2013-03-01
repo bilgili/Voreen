@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -24,6 +24,7 @@
  ***********************************************************************************/
 
 #include "alignedsliceproxygeometry.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 
 #include "tgt/glmath.h"
 
@@ -116,13 +117,10 @@ void AlignedSliceProxyGeometry::update() {
     if(!volh)
         return;
 
-    FaceGeometry slice = getSliceGeometry(volh, sliceAlignment_.getValue(), floatSliceIndex_.get(), true, restrictToMainVolume_.get() ? std::vector<const VolumeBase*>() : secondaryVolumePort_.getAllData());
-
-    MeshGeometry mesh;
-    mesh.addFace(slice);
+    TriangleMeshGeometryVec3* slice = getSliceGeometry(volh, sliceAlignment_.getValue(), floatSliceIndex_.get(), true, restrictToMainVolume_.get() ? std::vector<const VolumeBase*>() : secondaryVolumePort_.getAllData());
 
     //calculate plane equation:
-    tgt::plane p(slice.getVertex(0).getCoords(), slice.getVertex(1).getCoords(), slice.getVertex(2).getCoords());
+    tgt::plane p(slice->getTriangle(0).v_[0].pos_, slice->getTriangle(0).v_[1].pos_, slice->getTriangle(0).v_[2].pos_);
 
     tgt::vec3 test(1.0f);
     tgt::vec4 planeVec = p.toVec4();
@@ -131,9 +129,7 @@ void AlignedSliceProxyGeometry::update() {
     plane_.set(planeVec.xyz());
     planeDist_.set(-planeVec.w);
 
-    MeshListGeometry* geometry = new MeshListGeometry();
-    geometry->addMesh(mesh);
-    geomPort_.setData(geometry);
+    geomPort_.setData(slice);
 }
 
 void AlignedSliceProxyGeometry::updateSliceProperties() {
@@ -206,7 +202,8 @@ void AlignedSliceProxyGeometry::alignCamera() {
 
     //setup frustum:
     float size = std::max(length(strafeDir), length(upDir));
-    tgt::Frustum f(-size, +size, -size, +size, 0.01f, 5.0f);
+    float farDist = length(mainDir) * 3.0f;
+    tgt::Frustum f(-size, +size, -size, +size, 0.01f, farDist);
 
     tgt::Camera cam(pos, center, up);
     cam.setProjectionMode(tgt::Camera::ORTHOGRAPHIC);

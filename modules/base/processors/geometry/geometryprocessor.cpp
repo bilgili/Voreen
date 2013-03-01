@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -65,10 +65,6 @@ GeometryProcessor::GeometryProcessor()
 }
 
 GeometryProcessor::~GeometryProcessor() {
-
-    if (shaderPrg_)
-        ShdrMgr.dispose(shaderPrg_);
-
     delete cameraHandler_;
 }
 
@@ -80,6 +76,14 @@ void GeometryProcessor::initialize() throw (tgt::Exception) {
 
     shaderPrg_ = ShdrMgr.loadSeparate("passthrough.vert", "image/compositor.frag",
         generateHeader(), false);
+}
+
+void GeometryProcessor::deinitialize() throw (tgt::Exception) {
+    if (shaderPrg_)
+        ShdrMgr.dispose(shaderPrg_);
+    shaderPrg_ = 0;
+
+    RenderProcessor::deinitialize();
 }
 
 Processor* GeometryProcessor::create() const {
@@ -137,7 +141,7 @@ void GeometryProcessor::process() {
     //
     // render picking objects
     //
-    idManager_.activateTarget(getName());
+    idManager_.activateTarget(getID());
     idManager_.clearTarget();
     if (renderGeometries_.get()) {
         for (size_t i=0; i<portData.size(); i++) {

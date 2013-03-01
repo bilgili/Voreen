@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,42 +36,45 @@ template class VRN_CORE_API InterpolationFunction<ShaderSource>;
 #endif
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ShaderSources. Interpolation: focus on startvalue.
+ * This class offers an interpolation function for ShaderSources. Interpolation: focus on startvalue.
  */
 class VRN_CORE_API ShaderSourceStartInterpolationFunction : public InterpolationFunction<ShaderSource> {
 public:
     ShaderSourceStartInterpolationFunction();
-    InterpolationFunction<ShaderSource>* clone() const;
+    virtual std::string getClassName() const { return "ShaderSourceStartInterpolationFunction"; }
+    InterpolationFunction<ShaderSource>* create() const;
     ShaderSource interpolate(ShaderSource startvalue, ShaderSource endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ShaderSources. Interpolation: focus on endvalue.
+ * This class offers an interpolation function for ShaderSources. Interpolation: focus on endvalue.
  */
 class VRN_CORE_API ShaderSourceEndInterpolationFunction : public InterpolationFunction<ShaderSource> {
 public:
     ShaderSourceEndInterpolationFunction();
-    InterpolationFunction<ShaderSource>* clone() const;
+    virtual std::string getClassName() const { return "ShaderSourceEndInterpolationFunction"; }
+    InterpolationFunction<ShaderSource>* create() const;
     ShaderSource interpolate(ShaderSource startvalue, ShaderSource endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ShaderSources. Interpolation: bisection.
+ * This class offers an interpolation function for ShaderSources. Interpolation: bisection.
  */
 class VRN_CORE_API ShaderSourceStartEndInterpolationFunction : public InterpolationFunction<ShaderSource> {
 public:
     ShaderSourceStartEndInterpolationFunction();
-    InterpolationFunction<ShaderSource>* clone() const;
+    virtual std::string getClassName() const { return "ShaderSourceStartEndInterpolationFunction"; }
+    InterpolationFunction<ShaderSource>* create() const;
     ShaderSource interpolate(ShaderSource startvalue, ShaderSource endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 } // namespace voreen

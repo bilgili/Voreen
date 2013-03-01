@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,11 +26,13 @@
 #ifndef VRN_HASHING_H
 #define VRN_HASHING_H
 
+#include "voreen/core/voreencoreapi.h"
+
 #include <string>
 
 namespace voreen {
 
-class VoreenHash {
+class VRN_CORE_API VoreenHash {
 public:
     /// Compute md5 hash.
     static std::string getHash(const void* data, size_t size);

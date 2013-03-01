@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -41,7 +41,7 @@ DynamicGLSLWidget::DynamicGLSLWidget(QWidget* parent, DynamicGLSLProcessor* glsl
 {
     tgtAssert(glslProcessor, "No DynamicGLSLProcessor processor");
 
-    setWindowTitle(QString::fromStdString(glslProcessor->getName()));
+    setWindowTitle(QString::fromStdString(glslProcessor->getGuiName()));
     resize(800, 480);
 }
 

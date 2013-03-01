@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -23,8 +23,10 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#ifndef DICOMINFO_H
-#define DICOMINFO_H
+#ifndef VRN_DICOMINFO_H
+#define VRN_DICOMINFO_H
+
+#include "voreen/core/voreencoreapi.h"
 
 // include this before any GDCM header in order to make sure that C99 types are defined
 #include "tgt/types.h"
@@ -37,7 +39,7 @@
  * It contains basic Meta Information like StudyInstanceUID, SeriesInstanceUID, Patient's Name, Modality, etc.
  * as well as Volume-related information such as information about spacing.
  */
-class DicomInfo
+class VRN_CORE_API DicomInfo
 {
 public:
     DicomInfo();

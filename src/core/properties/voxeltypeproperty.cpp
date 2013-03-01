@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,7 +36,7 @@ const std::string VoxelTypeProperty::loggerCat_("voreen.VoxelTypeProperty");
 VoxelTypeProperty::VoxelTypeProperty(const std::string& id, const std::string& guiText,
                     int invalidationLevel)
     : TemplateProperty<void*>(id, guiText, 0, invalidationLevel)
-    , volumeHandle_(0)
+    , volume_(0)
     , intVal_(0)
     , floatVal_(0.f)
     , minIntVal_(0)
@@ -47,7 +47,7 @@ VoxelTypeProperty::VoxelTypeProperty(const std::string& id, const std::string& g
 
 VoxelTypeProperty::VoxelTypeProperty()
     : TemplateProperty<void*>("", "", 0, Processor::INVALID_RESULT)
-    , volumeHandle_(0)
+    , volume_(0)
     , intVal_(0)
     , floatVal_(0.f)
     , minIntVal_(0)
@@ -60,12 +60,20 @@ Property* VoxelTypeProperty::create() const {
     return new VoxelTypeProperty();
 }
 
-std::string VoxelTypeProperty::getName() const {
-    return getID();
+std::string VoxelTypeProperty::getGuiName() const {
+    return Property::getGuiName();
+}
+
+std::string VoxelTypeProperty::getID() const {
+    return Property::getID();
+}
+
+void VoxelTypeProperty::setGuiName(const std::string& guiname) {
+    Property::setGuiName(guiname);
 }
 
 void VoxelTypeProperty::setVolume(const VolumeBase* volumeHandle, bool updateRange) {
-    volumeHandle_ = volumeHandle;
+    volume_ = volumeHandle;
     if (updateRange)
         updateMinMaxRange();
 
@@ -73,14 +81,14 @@ void VoxelTypeProperty::setVolume(const VolumeBase* volumeHandle, bool updateRan
 }
 
 const VolumeBase* VoxelTypeProperty::getVolume() const {
-    return volumeHandle_;
+    return volume_;
 }
 
 void VoxelTypeProperty::updateMinMaxRange() {
-    if (!volumeHandle_)
+    if (!volume_)
         return;
 
-    const VolumeRAM* volume = volumeHandle_->getRepresentation<VolumeRAM>();
+    const VolumeRAM* volume = volume_->getRepresentation<VolumeRAM>();
     tgtAssert(volume, "no CPU representation");
 
     // single-channel integer volume

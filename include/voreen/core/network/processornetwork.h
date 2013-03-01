@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -255,13 +255,13 @@ public:
     PropertyLink* createPropertyLink(Property* src, Property* dest, LinkEvaluatorBase* linkEvaluator = 0);
 
     /**
-     * Creates incoming and outgoing links from properties of the passed processor 
+     * Creates incoming and outgoing links from properties of the passed processor
      * to all other properties in the network. Property pairs that are already linked
      * are ignored.
      *
      * @tparam T Type of properties to consider, including subtypes.
      * @param processor Processor whose properties are to be linked.
-     * @param evaluator Evaluator to use for creating the links. Is deleted by the function. 
+     * @param evaluator Evaluator to use for creating the links. Is deleted by the function.
      *        If the null pointer is passed, the first compatible evaluator will be used.
      * @return The number of created property links.
      */
@@ -387,7 +387,7 @@ public:
 
     /**
      * Creates a render size link from \p source to \p destination, which must both be
-     * either a render size origin or a render size receiver. 
+     * either a render size origin or a render size receiver.
      * Usually, a size link exists between a render size origin inport and a render size receiving outport.
      * A render size link from a size receiver to a size origin is not possible.
      *
@@ -418,7 +418,7 @@ public:
     PropertyLink* getRenderSizeLink(RenderPort& source, RenderPort& destination);
 
     /**
-     * Creates render size links between the passed processors' RenderPorts 
+     * Creates render size links between the passed processors' RenderPorts
      * according to the current network topology.
      *
      * @param processors The subnetwork to consider
@@ -429,8 +429,8 @@ public:
     int createRenderSizeLinksWithinSubNetwork(const std::vector<Processor*>& processors, bool replaceExisting = false);
 
     /**
-     * Creates render size links that span the port connection from \p outport, 
-     * which must be an outport, to \p inport, which must be an inport. 
+     * Creates render size links that span the port connection from \p outport,
+     * which must be an outport, to \p inport, which must be an inport.
      *
      * @param replaceExisting if true, existing render size links are replaced
      *
@@ -441,7 +441,7 @@ public:
     /**
      * Creates render size links from/to the passed processor's RenderPorts,
      * by considering the network topology.
-     * 
+     *
      * @param replaceExisting if true, existing render size links are replaced
      *
      * @return The number of created render size links.
@@ -457,7 +457,7 @@ public:
 
     /**
      * Removes all render size links that span the port connection from \p outport,
-     * which must be an outport, to \p inport, which must be an inport. 
+     * which must be an outport, to \p inport, which must be an inport.
      *
      * @note A actual connection between the passed ports does not necessarily have to exist.
      *
@@ -466,10 +466,10 @@ public:
     int removeRenderSizeLinksOverConnection(RenderPort* outport, RenderPort* inport);
 
     /**
-     * Removes all incoming and outgoing render size links from/to the 
+     * Removes all incoming and outgoing render size links from/to the
      * passed processor's RenderPorts.
      *
-     * @return The number of removed render size links. 
+     * @return The number of removed render size links.
      */
     int removeRenderSizeLinksFromProcessor(Processor* processor);
 
@@ -594,7 +594,7 @@ private:
 
     /// Returns a map from render inports to the render outports they are linked with, within the passed sub network.
     std::map<RenderPort*, std::vector<RenderPort*> > getRenderSizeReceiverToOriginsMap(const std::vector<Processor*> subNetwork) const;
-    
+
     /// Calls networkChanged() on the registered observers.
     void notifyNetworkChanged() const;
 
@@ -679,7 +679,7 @@ int ProcessorNetwork::createPropertyLinksWithinSubNetwork(const std::vector<Proc
     for (size_t i=0; i<linkProcessors.size(); ++i) {
         Processor* curProcessor = linkProcessors[i];
         if (!contains(curProcessor)) {
-            LWARNING("Processor is not part of the network: " << curProcessor->getName());
+            LWARNING("Processor is not part of the network: " << curProcessor->getID());
             continue;
         }
 
@@ -723,10 +723,10 @@ int ProcessorNetwork::createPropertyLinksForProcessor(Processor* processor, Link
             if (procProperty == networkProperty)
                 continue;
             if (!procProperty->isLinkedWith(networkProperty))
-                if (createPropertyLink(procProperty, networkProperty, evaluator ? evaluator->create() : 0))
+                if (createPropertyLink(procProperty, networkProperty, evaluator ? dynamic_cast<LinkEvaluatorBase*>(evaluator->create()) : 0))
                     numCreated++;
             if (!networkProperty->isLinkedWith(procProperty))
-                if (createPropertyLink(networkProperty, procProperty, evaluator ? evaluator->create() : 0))
+                if (createPropertyLink(networkProperty, procProperty, evaluator ? dynamic_cast<LinkEvaluatorBase*>(evaluator->create()) : 0))
                     numCreated++;
         }
     }
@@ -763,7 +763,7 @@ int ProcessorNetwork::removePropertyLinksFromSubNetwork(const std::vector<Proces
     for (size_t i=0; i<linkProcessors.size(); ++i) {
         Processor* curProcessor = linkProcessors[i];
         if (!contains(curProcessor)) {
-            LWARNING("Processor is not part of the network: " << curProcessor->getName());
+            LWARNING("Processor is not part of the network: " << curProcessor->getID());
             continue;
         }
 

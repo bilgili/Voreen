@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -46,10 +46,10 @@ int PropertyTimelineView::currentFrame_ = 0;
 
 
 PropertyTimelineView::PropertyTimelineView(QGraphicsScene* qgs, QWidget* parent)
-        : QGraphicsView(qgs, parent)
-        , scene_(qgs)
-        , currentFrameChange_(false)
-        {
+    : QGraphicsView(qgs, parent)
+    , scene_(qgs)
+    , currentFrameChange_(false)
+{
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setDragMode(QGraphicsView::ScrollHandDrag);
     setAlignment(Qt::AlignLeft);
@@ -59,16 +59,27 @@ PropertyTimelineView::PropertyTimelineView(QGraphicsScene* qgs, QWidget* parent)
 void PropertyTimelineView::contextMenuEvent(QContextMenuEvent* e) {
     QMenu* addFrameMenu = new QMenu(this);
     addFrameMenu->setStyleSheet("background:white");
+
     QAction addFrameAction(tr("Add key frame"), this);
     QAction snapshotAction(tr("Take snapshot"), this);
+    QAction clearTimelineAction(tr("Clear timeline"), this);
+    QAction removeTimelineAction(tr("Remove timeline"), this);
+
     addFrameMenu->addAction(&addFrameAction);
     addFrameMenu->addAction(&snapshotAction);
+    addFrameMenu->addSeparator();
+    addFrameMenu->addAction(&clearTimelineAction);
+    addFrameMenu->addAction(&removeTimelineAction);
+
     QAction* action = addFrameMenu->exec(mapToGlobal(e->pos()));
     if(action == &addFrameAction)
         emit addKeyframe(mapToScene(e->pos()));
     else if(action == &snapshotAction)
         emit snapshot(static_cast<int>(mapToScene(e->pos()).x()), true);
-
+    else if(action == &clearTimelineAction)
+        emit clearTimeline();
+    else if(action == &removeTimelineAction)
+        emit removeTimeline();
 }
 
 void PropertyTimelineView::mousePressEvent(QMouseEvent* event) {

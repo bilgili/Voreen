@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -23,8 +23,8 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#ifndef CUSTOMDICOMDICT_H
-#define CUSTOMDICOMDICT_H
+#ifndef VRN_CUSTOMDICOMDICT_H
+#define VRN_CUSTOMDICOMDICT_H
 
 #include "dicomdict.h"
 
@@ -38,7 +38,7 @@ namespace voreen {
  * The DicomDict of a CustomDicomDict necessarily has to contain ALL of the Keywords used in this CustomDicomDict, even if they are part of the Standard Dictionary!
  * (Although they may contain more Keywords for additional information)
  */
-class CustomDicomDict : public Serializable
+class VRN_CORE_API CustomDicomDict : public Serializable
 {
 public:
     CustomDicomDict();

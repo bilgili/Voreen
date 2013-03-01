@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -67,11 +67,10 @@ public:
 
 protected:
     virtual void initialize() throw (tgt::Exception);
+    virtual void deinitialize() throw (tgt::Exception);
 
     /**
-     * Defines ray-casting macros to be used in the shader.
-     * The volume handle parameter has only to be passed
-     * for bricked rendering.
+     * Defines ray-casting macros to be used in the raycasting shader.
      *
      * @see VolumeRenderer::generateHeader
      */
@@ -83,7 +82,7 @@ protected:
      *
      * @see VolumeRenderer::setGlobalShaderParameters
      */
-    virtual void setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera* camera = 0);
+    virtual void setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera* camera = 0, tgt::ivec2 screenDim = tgt::ivec2(-1));
 
     /**
      * Binds volume textures (inherited from VolumeRenderer) and sets the sampling step size
@@ -95,12 +94,13 @@ protected:
     virtual bool bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct> &volumes,
         const tgt::Camera* camera = 0, const tgt::vec4& lightPosition = tgt::vec4(0.f));
 
-    /// TODO: doc
-    virtual void adjustRenderOutportSizes();
+    /**
+     * Copies over the content of the srcPort to the destPort,
+     * thereby implicitly rescaling the image to the dest dimensions.
+     * To be used by subclasses for implementing coarseness (i.e., rendering with reduced dimensions in interaction mode).
+     */
+    void rescaleRendering(RenderPort& srcPort, RenderPort& destPort);
 
-    /// TODO: doc
-    virtual void updateInputSizeRequests();
-    
     /// Calculate sampling step size for a given volume using the current sampling rate
     float getSamplingStepSize(const VolumeBase* vol);
 
@@ -118,14 +118,9 @@ protected:
     FloatProperty interactionQuality_;
     BoolProperty useInterpolationCoarseness_;
 
-    tgt::ivec2 size_;                                  ///< The size expected by the processors connected to the outports. ()
-    bool switchToInteractionMode_;                     ///< Needed to switch to/from interactionmode.
+    tgt::Shader* rescaleShader_;                       ///< Shader used by the rescaleRendering() method
 
     static const std::string loggerCat_; ///< category used in logging
-
-private:
-    /// Initializes and adds the ray-casters properties. Called by the constructor.
-    void initProperties();
 };
 
 } // namespace voreen

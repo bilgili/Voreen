@@ -44,15 +44,15 @@ SET(VRN_CUSTOM_MODULEDIR        ${VRN_HOME}/custommodules
 ####################################################################################################
 OPTION(VRN_SHARED_LIBS          "Build shared libraries?"                                       ON )
 OPTION(VRN_PRECOMPILED_HEADER   "Use pre-compiled headers?"                                     ON )
-OPTION(VRN_DEBUG                "Activate debug code?"                                          ON )
 OPTION(VRN_ADD_INSTALL_TARGET   "Add install target for creating a binary distribution?"        OFF)
-MARK_AS_ADVANCED(VRN_ADD_INSTALL_TARGET)
 
 IF(WIN32)
     OPTION(VRN_GROUP_SOURCE_FILES   "Group source files by sub directory?"                      ON )
     OPTION(VRN_COPY_EXTERNAL_DLLS   "Copy external DLLs to bin directory?"                      ON )
     OPTION(VRN_INCREMENTAL_LINKING  "Enable incremental linking in Visual Studio debug builds?" ON )
     OPTION(VRN_GENERATE_MANIFEST    "Generate manifest in Visual Studio debug builds?"          OFF)
+    OPTION(VRN_DISABLE_ZERO_CHECK   
+        "Do not generate ZERO_CHECK target (might cause unnecessary PCH re-compilations)"       ON )
 
     OPTION(VRN_WINDOWS_DEPLOYMENT   "Settings/install target for Windows deployment archive"    OFF)
     MARK_AS_ADVANCED(VRN_WINDOWS_DEPLOYMENT)

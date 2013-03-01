@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,7 +36,7 @@ namespace voreen {
 const std::string Geometry::loggerCat_("voreen.Geometry");
 
 Geometry::Geometry()
-    : changed_(true)
+    : transformationMatrix_(tgt::mat4::identity)
 {}
 
 Geometry* Geometry::clone() const {
@@ -67,11 +67,25 @@ bool Geometry::equals(const Geometry* geometry, double /*epsilon = 1e-6*/) const
     return (getHash() == geometry->getHash());
 }
 
-void Geometry::transform(const tgt::mat4& /*transformation*/) {
-    LWARNING("transform() not implemented");
+void Geometry::transform(const tgt::mat4& m) {
+    transformationMatrix_ =  m * transformationMatrix_;
 }
 
-void Geometry::clip(const tgt::vec4& /*clipPlane*/, double /*epsilon = 1e-6*/) {
+tgt::mat4 Geometry::getTransformationMatrix() const {
+    return transformationMatrix_;
+}
+
+tgt::mat4 Geometry::getInvertedTransformationMatrix() const {
+    tgt::mat4 mInv = tgt::mat4::identity;
+    transformationMatrix_.invert(mInv);
+    return mInv;
+}
+
+void Geometry::setTransformationMatrix(const tgt::mat4& m) {
+    transformationMatrix_ = m;
+}
+
+void Geometry::clip(const tgt::plane& /*clipPlane*/, double /*epsilon = 1e-6*/) {
     LWARNING("clip() not implemented");
 }
 
@@ -79,7 +93,7 @@ void Geometry::render() const {
     LWARNING("render() not implemented");
 }
 
-tgt::Bounds Geometry::getBoundingBox() const {
+tgt::Bounds Geometry::getBoundingBox(bool /*transformed*/) const {
     LWARNING("getBoundingBox() not implemented");
     return tgt::Bounds();
 }
@@ -94,18 +108,12 @@ std::string Geometry::getHash() const {
     return VoreenHash::getHash(stream.str());
 }
 
-bool Geometry::hasChanged() const {
-    return changed_;
+void Geometry::serialize(XmlSerializer& s) const {
+    s.serialize("transformationMatrix", transformationMatrix_);
 }
 
-void Geometry::setHasChanged(bool changed) {
-    changed_ = changed;
-}
-
-void Geometry::serialize(XmlSerializer& /*s*/) const {
-}
-
-void Geometry::deserialize(XmlDeserializer& /*s*/) {
+void Geometry::deserialize(XmlDeserializer& s) {
+    s.optionalDeserialize("transformationMatrix", transformationMatrix_, tgt::mat4::identity);
 }
 
 } // namespace

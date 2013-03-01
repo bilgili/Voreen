@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,13 +36,6 @@ namespace voreen {
 /**
  * Represents a mesh geometry containing a list of mesh geometries.
  *
- * @attention Each function which possibly change the face geometry sets the @c hasChanged flag
- *            to @c true, even if nothing has changed at all.
- *
- * @attention If the mesh list geometry is changed by using the @c operator[]
- *            or the @c getMesh function then @c setHasChanged(true)
- *            has to be called manually.
- *
  * @par
  * Here is a short example of using the @c FaceGeometry:
  * @code
@@ -59,7 +52,7 @@ namespace voreen {
  * @see FaceGeometry
  * @see VertexGeometry
  */
-class MeshListGeometry : public Geometry {
+class VRN_CORE_API MeshListGeometry : public Geometry {
 public:
     /**
      * Type of the mesh geometry list.
@@ -134,10 +127,6 @@ public:
     /**
      * Returns a the mesh geometry at the given @c index.
      *
-     * @attention If the mesh list geometry is changed by using the @c operator[]
-     *            or the @c getMesh function then @c setHasChanged(true)
-     *            has to be called manually.
-     *
      * @param index the mesh geometry index
      *
      * @returns the mesh geometry at the given @c index
@@ -180,10 +169,6 @@ public:
     /**
      * Returns the mesh geometry at the given @c index.
      *
-     * @attention If the mesh list geometry is changed by using the @c operator[]
-     *            or the @c getMesh function then @c setHasChanged(true)
-     *            has to be called manually.
-     *
      * @param index the mesh geometry index
      *
      * @returns the mesh geometry at the given @c index
@@ -195,19 +180,12 @@ public:
      * Returns the axis-aligned bounding box of the union
      * of the bounding boxes of the contained meshes.
      */
-    virtual tgt::Bounds getBoundingBox() const;
+    virtual tgt::Bounds getBoundingBox(bool transformed = true) const;
 
     /**
      * @see Geometry::render
      */
     virtual void render() const;
-
-    /**
-     * Transforms the mesh list geometry using the given transformation matrix.
-     *
-     * @param transformation the transformation matrix
-     */
-    virtual void transform(const tgt::mat4& transformation);
 
     /**
      * Calls the @c clip function of each contained mesh geometry.
@@ -218,10 +196,10 @@ public:
      * @param closingFaces the clipping faces generated for closing the clipped meshes
      * @param epsilon the accuracy for vertex geometry comparison
      */
-    void clip(const tgt::vec4& clipPlane, MeshListGeometry& closingFaces, double epsilon = 1e-5);
+    void clip(const tgt::plane& clipPlane, MeshListGeometry& closingFaces, double epsilon = 1e-5);
 
     /// @overload
-    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-5);
+    virtual void clip(const tgt::plane& clipPlane, double epsilon = 1e-5);
 
     /**
      * Returns true, if all meshes of the passed MeshListGeometry are equal to this one's.

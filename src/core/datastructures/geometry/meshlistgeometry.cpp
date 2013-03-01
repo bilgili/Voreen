@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -24,6 +24,9 @@
  ***********************************************************************************/
 
 #include "voreen/core/datastructures/geometry/meshlistgeometry.h"
+
+#include "tgt/glmath.h"
+
 #include "voreen/core/io/serialization/xmlserializer.h"
 #include "voreen/core/io/serialization/xmldeserializer.h"
 
@@ -103,58 +106,43 @@ const MeshGeometry& MeshListGeometry::operator[](size_t index) const {
     return meshes_[index];
 }
 
-tgt::Bounds MeshListGeometry::getBoundingBox() const {
+tgt::Bounds MeshListGeometry::getBoundingBox(bool transformed) const {
     tgt::Bounds bounds;
     for (size_t i=0; i<meshes_.size(); i++)
-        bounds.addVolume(meshes_[i].getBoundingBox());
-    return bounds;
-}
+        bounds.addVolume(meshes_[i].getBoundingBox(transformed));
 
-/*
-void MeshListGeometry::getBoundingBox(tgt::vec3& llf, tgt::vec3& urb) const {
-    llf = tgt::vec3(FLT_MAX);
-    urb = tgt::vec3(-FLT_MAX);
-    for (size_t i = 0; i < getMeshCount(); ++i) {
-        const MeshGeometry& mesh = getMesh(i);
-        for (size_t j = 0; j < mesh.getFaceCount(); ++j) {
-            const FaceGeometry& face = mesh.getFace(j);
-            for (size_t k = 0; k < face.getVertexCount(); ++k) {
-                const VertexGeometry& vertex = face.getVertex(k);
-                const tgt::vec3& coords = vertex.getCoords();
-
-                llf.x = std::min(llf.x, coords.x);
-                urb.x = std::max(urb.x, coords.x);
-                llf.y = std::min(llf.y, coords.y);
-                urb.y = std::max(urb.y, coords.y);
-                llf.z = std::min(llf.z, coords.z);
-                urb.z = std::max(urb.z, coords.z);
-            }
-        }
-    }
+    if(transformed)
+        return bounds.transform(getTransformationMatrix());
+    else
+        return bounds;
 }
-*/
 
 void MeshListGeometry::render() const {
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    tgt::multMatrix(getTransformationMatrix());
+
     for (const_iterator it = begin(); it != end(); ++it)
         it->render();
+
+    glPopMatrix();
 }
 
-void MeshListGeometry::transform(const tgt::mat4& transformation) {
-    for (iterator it = begin(); it != end(); ++it)
-        it->transform(transformation);
-}
+void MeshListGeometry::clip(const tgt::plane& clipPlane, MeshListGeometry& closingFaces, double epsilon) {
+    tgt::plane pl = clipPlane.transform(getInvertedTransformationMatrix());
 
-void MeshListGeometry::clip(const tgt::vec4& clipPlane, MeshListGeometry& closingFaces, double epsilon) {
     tgtAssert(epsilon >= 0.0, "negative epsilon");
     for (iterator it = begin(); it != end(); ++it) {
         MeshGeometry closingFace;
-        it->clip(clipPlane, closingFace, epsilon);
+        it->clip(pl, closingFace, epsilon);
         if (!closingFace.empty())
             closingFaces.addMesh(closingFace);
     }
+
+    closingFaces.setTransformationMatrix(getTransformationMatrix());
 }
 
-void MeshListGeometry::clip(const tgt::vec4& clipPlane, double epsilon) {
+void MeshListGeometry::clip(const tgt::plane& clipPlane, double epsilon) {
     MeshListGeometry dummy;
     clip(clipPlane, dummy, epsilon);
 }
@@ -179,11 +167,12 @@ bool MeshListGeometry::equals(const Geometry* geometry, double epsilon /*= 1e-6*
 
 void MeshListGeometry::serialize(XmlSerializer& s) const {
     s.serialize("meshes", meshes_);
+    Geometry::serialize(s);
 }
 
 void MeshListGeometry::deserialize(XmlDeserializer& s) {
     s.deserialize("meshes", meshes_);
-    setHasChanged(true);
+    Geometry::deserialize(s);
 }
 
 } // namespace

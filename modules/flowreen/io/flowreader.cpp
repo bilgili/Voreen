@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -42,7 +42,7 @@ FlowReader::FlowReader(ProgressBar* const progress)
     extensions_.push_back("flow");
 }
 
-VolumeCollection* FlowReader::read(const std::string& url)
+VolumeList* FlowReader::read(const std::string& url)
     throw(tgt::FileException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -118,7 +118,7 @@ VolumeCollection* FlowReader::read(const std::string& url)
 
     volumeSeries->addVolumeHandle(volumeHandle); */
 
-    VolumeCollection* collection = new VolumeCollection();
+    VolumeList* collection = new VolumeList();
     Volume* volumeHandle = new Volume(volume, tgt::vec3(1.0f), tgt::vec3(0.0f));//FIXME: spacing?
     oldVolumePosition(volumeHandle);
     volumeHandle->setModality(Modality::MODALITY_FLOW);

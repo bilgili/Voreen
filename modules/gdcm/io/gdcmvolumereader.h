@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -67,7 +67,7 @@ public:
     virtual std::string getFormatDescription() const { return "DICOM format, using GDCMv2 library"; }
 
     /**
-     * Reads the DICOM file (or files in a given directory or DICOMDIR) and returns a VolumeCollection constructed of it.
+     * Reads the DICOM file (or files in a given directory or DICOMDIR) and returns a VolumeList constructed of it.
      *
      * @param url Specifies the Dicom dataset. This can be:
      * <ul>
@@ -83,9 +83,9 @@ public:
      * </ul>
      * Additional information in the form of a VolumeURL-url may be included in the url and is considered
      *
-     * @return a VolumeCollection* constructed of the given data
+     * @return a VolumeList* constructed of the given data
      */
-    virtual VolumeCollection* read(const std::string& url)
+    virtual VolumeList* read(const std::string& url)
         throw (tgt::FileException, std::bad_alloc);
 
     /**
@@ -177,7 +177,7 @@ private:
      * If the file and the corresponding tag are already found in the internal file info buffer, it is read from there.
      * Else all meta information specified in the DicomDict for this file is put into the buffer first.
      * If there is no such MetaData, an empty string is returned.
-     * If the file is not a valid DICOM file, a tgt::FileException is thrown. 
+     * If the file is not a valid DICOM file, a tgt::FileException is thrown.
      */
     std::string getMetaDataFromFile(const std::string& filename, const DicomDict& dict, const std::string& keyword) const
         throw (tgt::FileException);
@@ -186,7 +186,7 @@ private:
      * Helper function that returns a Gdcm::Tag constructed by the information of the DicomDictEntry given.
      */
     static gdcm::Tag getTagFromDictEntry(const DicomDictEntry& entry);
- 
+
     /**
      * Extracts the meta data of the file to the MetaDataContainer.
      * The DicomDict specifies, which meta data is extracted.
@@ -213,7 +213,7 @@ private:
      *
      * @param origin VolumeURL for the file to be loaded (eventually containing additional Search tags)
      */
-    virtual VolumeCollection* readDicomDir(const VolumeURL &origin)
+    virtual VolumeList* readDicomDir(const VolumeURL &origin)
                         throw (tgt::FileException, std::bad_alloc);
 
     /**
@@ -227,7 +227,7 @@ private:
      *
      * @return a collection of Volumes constructed out of the given files
      */
-    virtual VolumeCollection* selectAndLoadDicomFiles(const std::vector<std::string> &fileNames, const VolumeURL &origin)
+    virtual VolumeList* selectAndLoadDicomFiles(const std::vector<std::string> &fileNames, const VolumeURL &origin)
                                 throw (tgt::FileException, std::bad_alloc);
 
     /**
@@ -239,7 +239,7 @@ private:
      *
      * @return a collection of Volumes constructed out of the given files
      */
-    virtual VolumeCollection* subdivideAndLoadDicomFiles(const std::vector<std::string> &fileNames, const VolumeURL &origin)
+    virtual VolumeList* subdivideAndLoadDicomFiles(const std::vector<std::string> &fileNames, const VolumeURL &origin)
                               throw (tgt::FileException, std::bad_alloc);
 
     /**
@@ -260,7 +260,7 @@ private:
      * @param fileName name of the file to be loaded
      * @param posScalar the position in the scalars_ array where this particular slice's pixel data should begin
      * @param numberOfFrames the number of frames for multiframe images (for non-multiframe images 1)
-     * @param rwmDiffers is only true, if rescale intercept and slope differ within the slices 
+     * @param rwmDiffers is only true, if rescale intercept and slope differ within the slices
      *
      * @return returns the number of voxels rendered
      */
@@ -275,7 +275,7 @@ private:
     void computeCorrectRescaleValues(std::vector<std::pair<std::string, double> > slices);
 
 
-    
+
     /**
      * Helper function that constructs the correct type of MetaData Object by knowing its type from a DictEntry and its value
      */

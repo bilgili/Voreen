@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -29,9 +29,9 @@ namespace voreen {
 
 FloatMat2Property::FloatMat2Property(const std::string& id, const std::string& guiText,
                                      const tgt::mat2& value, const tgt::mat2& minimum,
-                                     const tgt::mat2& maximum, int invalidationLevel)
+                                     const tgt::mat2& maximum, int invalidationLevel, NumericProperty<tgt::mat2>::BoundaryUpdatePolicy bup)
     : NumericProperty<tgt::mat2>(id, guiText, value, minimum, maximum, tgt::mat2(0.1f),
-        invalidationLevel)
+        invalidationLevel, bup)
 {}
 
 FloatMat2Property::FloatMat2Property()
@@ -47,9 +47,9 @@ Property* FloatMat2Property::create() const {
 
 FloatMat3Property::FloatMat3Property( const std::string& id, const std::string& guiText,
                                      const tgt::mat3& value, const tgt::mat3& minimum,
-                                     const tgt::mat3& maximum, int invalidationLevel)
+                                     const tgt::mat3& maximum, int invalidationLevel, NumericProperty<tgt::mat3>::BoundaryUpdatePolicy bup)
     : NumericProperty<tgt::mat3>(id, guiText, value, minimum, maximum, tgt::mat3(0.1f),
-        invalidationLevel)
+        invalidationLevel, bup)
 {}
 
 FloatMat3Property::FloatMat3Property()
@@ -65,9 +65,9 @@ Property* FloatMat3Property::create() const {
 
 FloatMat4Property::FloatMat4Property(const std::string& id, const std::string& guiText,
                                      const tgt::mat4& value, const tgt::mat4& minimum,
-                                     const tgt::mat4& maximum, int invalidationLevel)
+                                     const tgt::mat4& maximum, int invalidationLevel, NumericProperty<tgt::mat4>::BoundaryUpdatePolicy bup)
     : NumericProperty<tgt::mat4>(id, guiText, value, minimum, maximum, tgt::mat4(0.1f),
-        invalidationLevel)
+        invalidationLevel, bup)
 {}
 
 FloatMat4Property::FloatMat4Property()

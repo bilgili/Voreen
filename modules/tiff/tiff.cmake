@@ -57,9 +57,11 @@ SET(MOD_CORE_MODULECLASS TiffModule)
 
 SET(MOD_CORE_SOURCES 
     ${MOD_DIR}/io/tiffvolumereader.cpp
+    ${MOD_DIR}/io/ometiffvolumereader.cpp
 )
 
 SET(MOD_CORE_HEADERS 
     ${MOD_DIR}/io/tiffvolumereader.h
+    ${MOD_DIR}/io/ometiffvolumereader.h
 )
    

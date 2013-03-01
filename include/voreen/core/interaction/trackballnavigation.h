@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -45,7 +45,7 @@ class CameraProperty;
 /**
  * A class that makes it possible to use a trackball-metaphor to rotate, zoom, shift, roll a dataset.
  */
-class TrackballNavigation : public tgt::EventListener {
+class VRN_CORE_API TrackballNavigation : public tgt::EventListener {
 public:
 
     enum Mode {
@@ -58,24 +58,16 @@ public:
     /**
      * The Constructor.
      *
-     * @param camera the camera that is to be modified by the navigation
+     * @param camera the camera property that is to be modified by the navigation
      * @param minDist the minimum allowed orthogonal distance to the center of the trackball
      * @param maxDist the maximum allowed orthogonal distance to the center of the trackball
      */
-    TrackballNavigation(CameraProperty* camera, Mode mode = ROTATE_MODE, float minDist = 0.01f, float maxDist = 500.f);
+    TrackballNavigation(CameraProperty* cameraProperty, Mode mode = ROTATE_MODE, float minDist = 0.01f);
     virtual ~TrackballNavigation();
 
     void setMode(Mode mode);
 
     Mode getMode() const;
-
-    void setMaxDist(float m) {
-        maxDistance_ = m;
-    }
-
-    float getMaxDist() const {
-        return maxDistance_;
-    }
 
     bool isTracking() {
         return tracking_;
@@ -244,7 +236,8 @@ protected:
     /// Projective parameters (frustum) are not touched.
     virtual void resetTrackball();
 
-    VoreenTrackball* trackball_;                 ///< The trackball that is modified when navigating
+    CameraProperty* cameraProperty_;     ///< Camera property that is modified
+    VoreenTrackball* trackball_;        ///< The trackball that is modified when navigating
 
     Mode mode_;     ///< current trackball mode: rotate, zoom, shift, roll
 
@@ -253,7 +246,7 @@ protected:
     tgt::vec2 lastMousePosition_;
 
     float minDistance_;     ///< minimal allowed orthogonal distance to center of trackball
-    float maxDistance_;     ///< maximal allowed orthogonal distance to center of trackball
+    //float maxDistance_;     ///< maximal allowed orthogonal distance to center of trackball (now retrieved from camera property)
 
     int wheelCounter_; ///< Counts how many time-ticks have passed since the mouse-wheel was used.
     int spinCounter_;  ///< Counts how many time-ticks have passed since the trackball was spun.

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,7 +26,7 @@
 #include "voreen/core/properties/volumeurlproperty.h"
 
 #include "voreen/core/datastructures/volume/volume.h"
-#include "voreen/core/datastructures/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumelist.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/progressbar.h"
@@ -41,14 +41,14 @@ const std::string VolumeURLProperty::loggerCat_("voreen.VolumeURLProperty");
 VolumeURLProperty::VolumeURLProperty(const std::string& id, const std::string& guiText,
                     const std::string& url, int invalidationLevel)
     : StringProperty(id, guiText, url, invalidationLevel)
-    , volumeHandle_(0)
+    , volume_(0)
     , volumeOwner_(false)
     , progressBar_(0)
 {}
 
 VolumeURLProperty::VolumeURLProperty()
     : StringProperty("", "", "", Processor::INVALID_RESULT)
-    , volumeHandle_(0)
+    , volume_(0)
     , volumeOwner_(false)
     , progressBar_(0)
 {}
@@ -58,11 +58,15 @@ Property* VolumeURLProperty::create() const {
 }
 
 void VolumeURLProperty::deinitialize() throw (tgt::Exception) {
+    std::string curURL = get();
     setVolume(0); //< also deletes the volume, if property is owner
     delete progressBar_;
     progressBar_ = 0;
 
     StringProperty::deinitialize();
+
+    // restore URL (has been cleared by setVolume(0)
+    set(curURL);
 }
 
 void VolumeURLProperty::set(const std::string& url) {
@@ -81,17 +85,17 @@ std::string VolumeURLProperty::getURL() const {
 
 void VolumeURLProperty::setVolume(VolumeBase* handle, bool owner) {
 
-    if (handle != volumeHandle_)
+    if (handle != volume_)
         clear();
 
-    volumeHandle_ = handle;
+    volume_ = handle;
     volumeOwner_ = owner;
 
     set(handle ? handle->getOrigin().getURL() : "");
 }
 
 VolumeBase* VolumeURLProperty::getVolume() const {
-    return volumeHandle_;
+    return volume_;
 }
 
 void VolumeURLProperty::loadVolume() throw (tgt::FileException, std::bad_alloc){
@@ -108,11 +112,11 @@ void VolumeURLProperty::loadVolume() throw (tgt::FileException, std::bad_alloc){
         progressBar->setMessage("Loading volume ...");
     }
     VolumeSerializerPopulator serializerPopulator(progressBar);
-    VolumeCollection* volumeCollection = serializerPopulator.getVolumeSerializer()->read(url);
+    VolumeList* volumeList = serializerPopulator.getVolumeSerializer()->read(url);
 
-    if (volumeCollection && !volumeCollection->empty()) {
+    if (volumeList && !volumeList->empty()) {
 
-        VolumeBase* handle = volumeCollection->first();
+        VolumeBase* handle = volumeList->first();
         tgtAssert(handle, "No handle");
 
         setVolume(static_cast<Volume*>(handle));
@@ -121,13 +125,13 @@ void VolumeURLProperty::loadVolume() throw (tgt::FileException, std::bad_alloc){
         volumeOwner_ = true;
     }
 
-    delete volumeCollection;
+    delete volumeList;
 }
 
 void VolumeURLProperty::clear() {
     if (volumeOwner_)
-        delete volumeHandle_;
-    volumeHandle_ = 0;
+        delete volume_;
+    volume_ = 0;
     volumeOwner_ = false;
 
     StringProperty::set("");

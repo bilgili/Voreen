@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -404,7 +404,7 @@ VolumeBase* AnalyzeVolumeReader::read(const VolumeURL& origin)
     if (! tmp.empty())
         volumeId = stoi(tmp);
 
-    VolumeCollection* collection = read(origin.getPath(), volumeId);
+    VolumeList* collection = read(origin.getPath(), volumeId);
 
     if (collection && collection->size() == 1) {
         result = collection->first();
@@ -424,13 +424,13 @@ VolumeBase* AnalyzeVolumeReader::read(const VolumeURL& origin)
     return result;
 }
 
-VolumeCollection* AnalyzeVolumeReader::read(const std::string &url)
+VolumeList* AnalyzeVolumeReader::read(const std::string &url)
     throw (tgt::FileException, std::bad_alloc)
 {
     return read(url, -1);
 }
 
-VolumeCollection* AnalyzeVolumeReader::read(const std::string &url, int volId)
+VolumeList* AnalyzeVolumeReader::read(const std::string &url, int volId)
     throw (tgt::FileException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -477,7 +477,7 @@ VolumeCollection* AnalyzeVolumeReader::read(const std::string &url, int volId)
     return 0;
 }
 
-VolumeCollection* AnalyzeVolumeReader::readNifti(const std::string &fileName, bool standalone, int volId)
+VolumeList* AnalyzeVolumeReader::readNifti(const std::string &fileName, bool standalone, int volId)
     throw (tgt::FileException, std::bad_alloc)
 {
     LINFO("Loading nifti file " << fileName);
@@ -711,7 +711,7 @@ VolumeCollection* AnalyzeVolumeReader::readNifti(const std::string &fileName, bo
     // Nifti transformations give us the center of the first voxel, we translate to correct:
     pToW = pToW * mat4::createTranslation(-spacing * 0.5f);
 
-    VolumeCollection* vc = new VolumeCollection();
+    VolumeList* vc = new VolumeList();
     size_t volSize = hmul(tgt::svec3(dimensions)) * (header.bitpix / 8);
 
     int start = 0;
@@ -744,7 +744,7 @@ VolumeCollection* AnalyzeVolumeReader::readNifti(const std::string &fileName, bo
     return vc;
 }
 
-VolumeCollection* AnalyzeVolumeReader::readAnalyze(const std::string &fileName, int volId)
+VolumeList* AnalyzeVolumeReader::readAnalyze(const std::string &fileName, int volId)
     throw (tgt::FileException, std::bad_alloc)
 {
     LINFO("Loading analyze file " << fileName);
@@ -850,7 +850,7 @@ VolumeCollection* AnalyzeVolumeReader::readAnalyze(const std::string &fileName, 
     // Nifti transformations give us the center of the first voxel, we translate to correct:
     mat4 pToW = mat4::createTranslation(-spacing * 0.5f);
 
-    VolumeCollection* vc = new VolumeCollection();
+    VolumeList* vc = new VolumeList();
     size_t volSize = hmul(tgt::svec3(dimensions)) * (dimension.bitpix / 8);
     for(int i=start; i<stop; i++) {
         VolumeRepresentation* volume = new VolumeDisk(getRelatedImgFileName(fileName), voreenVoxelType, dimensions, i * volSize, bigEndian);

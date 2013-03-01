@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -123,7 +123,7 @@ VevoVolumeReader::VevoVolumeReader()
     extensions_.push_back("rdm");
 }
 
-VolumeCollection* VevoVolumeReader::read(const string &fname)
+VolumeList* VevoVolumeReader::read(const string &fname)
     throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     tgt::ivec3 dimensions(0);
@@ -155,12 +155,12 @@ VolumeCollection* VevoVolumeReader::read(const string &fname)
         volDS_ = new VolumeRAM_UInt8(tgt::vec3(8));
     }
 
-    VolumeCollection* volumeCollection = new VolumeCollection();
+    VolumeList* volumeList = new VolumeList();
     Volume* volumeHandle = new Volume(volDS_, spacing, tgt::vec3(0.0f));
     oldVolumePosition(volumeHandle);
-    volumeCollection->add(volumeHandle);
+    volumeList->add(volumeHandle);
 
-    return volumeCollection;
+    return volumeList;
 }
 
 std::vector<string> VevoVolumeReader::splitLine(string s, const char *ch) {

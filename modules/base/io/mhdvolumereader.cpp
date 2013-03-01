@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -115,7 +115,7 @@ MhdVolumeReader::MhdVolumeReader(ProgressBar* progress)
     extensions_.push_back("mhd");
 }
 
-VolumeCollection* MhdVolumeReader::read(const std::string &url)
+VolumeList* MhdVolumeReader::read(const std::string &url)
     throw (tgt::FileException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -248,7 +248,7 @@ VolumeCollection* MhdVolumeReader::read(const std::string &url)
     Volume* vh = new Volume(volume, spacing, offset);
     vh->setOrigin(origin);
 
-    VolumeCollection* vc = new VolumeCollection();
+    VolumeList* vc = new VolumeList();
     vc->add(vh);
 
     return vc;

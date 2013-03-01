@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -81,7 +81,7 @@ private:
     VolumeRaycaster* rc_;
     TransFuncProperty* tf_;
 
-    const VolumeBase* currentVolumeHandle_;
+    const VolumeBase* currentVolume_;
 
     std::vector<Property*> props_;
     StringOptionProperty* bleedModeProp_;
@@ -114,7 +114,7 @@ public:
     : InteractionHandler("light-interaction", "Light Interaction")
     ,sh_(sh)
     {
-        lightNavi_ = new TrackballNavigation(cam, TrackballNavigation::ROTATE_MODE, 0.05f, 15.f);
+        lightNavi_ = new TrackballNavigation(cam, TrackballNavigation::ROTATE_MODE, 0.05f);
 
         // event properties trackball
         rotateEvent_ = new EventProperty<LightInteractionHandler>("light-interaction.rotate", "Light Interaction Rotate", this,
@@ -128,6 +128,9 @@ public:
     virtual ~LightInteractionHandler() {
         delete lightNavi_;
     }
+
+    virtual std::string getClassName() const   { return "LightInteractionHandler"; }
+    virtual InteractionHandler* create() const { return 0; }
 
     void rotateEvent(tgt::MouseEvent* e) {
         // propagate event to trackball navigation

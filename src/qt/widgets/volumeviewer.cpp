@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -173,7 +173,7 @@ void VolumeViewer::setNetworkEvaluator(NetworkEvaluator* evaluator) {
     update();
 }
 
-void VolumeViewer::volumeHandleDelete(const VolumeBase* /*source*/) {
+void VolumeViewer::volumeDelete(const VolumeBase* /*source*/) {
     // force update even with auto-update disabled,
     // since we do not want to store invalid handle pointers
     if (isVisible()) {
@@ -396,7 +396,7 @@ void VolumeViewer::exportVolumes() {
     while (it != allItems.end()) {
         int itemIndex = volumeInfos_->indexOfTopLevelItem((*it));
         tgtAssert(itemIndex < (int)volumeHandles_.size(), "invalid item index");
-        tgtAssert(volumeHandles_.at(itemIndex), "volume handle null pointer");
+        tgtAssert(volumeHandles_.at(itemIndex), "volume null pointer");
         volumeIOHelper_.showFileSaveDialog(volumeHandles_.at(itemIndex));
         it++;
     }

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,15 +26,19 @@
 #include "tiffmodule.h"
 
 #include "io/tiffvolumereader.h"
+#include "io/ometiffvolumereader.h"
 
 namespace voreen {
 
 TiffModule::TiffModule(const std::string& modulePath)
     : VoreenModule(modulePath)
 {
-    setName("TIFF");
+    setID("TIFF");
+    setGuiName("TIFF");
 
     registerVolumeReader(new TiffVolumeReader());
+    registerVolumeReader(new OMETiffVolumeReader());
+
 }
 
 } // namespace

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -105,7 +105,7 @@ void DynamicCLProcessor::initialize() throw (tgt::Exception) {
     buildProgram();
     portResized();
 
-    initialized_ = true;
+    processorState_ = PROCESSOR_STATE_NOT_READY;
 }
 
 void DynamicCLProcessor::deinitialize() throw (tgt::Exception) {
@@ -553,7 +553,7 @@ void DynamicCLProcessor::process() {
             VolumeWriteBuffer* vwb = curVolBuffers_.at(i);
             if(vwb)
                 vwb->readBackData(queue_);
-                //queue_->enqueueRead(vwb->dataBuffer_, vwb->volume_->getData(), true);
+                //queue_->enqueueReadBuffer(vwb->dataBuffer_, vwb->volume_->getData(), true);
         }
 
         for(size_t i = 0; i < curSharedTexs_.size(); i++) {

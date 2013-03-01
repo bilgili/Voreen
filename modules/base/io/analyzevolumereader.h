@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,7 +30,7 @@
 
 namespace voreen {
 
-class AnalyzeVolumeReader : public VolumeReader {
+class VRN_CORE_API AnalyzeVolumeReader : public VolumeReader {
 public:
     AnalyzeVolumeReader(ProgressBar* progress = 0);
     virtual VolumeReader* create(ProgressBar* progress = 0) const;
@@ -43,22 +43,22 @@ public:
     virtual VolumeBase* read(const VolumeURL& origin)
         throw (tgt::FileException, std::bad_alloc);
 
-    virtual VolumeCollection* read(const std::string& url)
+    virtual VolumeList* read(const std::string& url)
         throw (tgt::FileException, std::bad_alloc);
 
     std::vector<VolumeURL> listVolumes(const std::string& url) const
         throw (tgt::FileException);
 
 private:
-    VolumeCollection* read(const std::string& url, int volId)
+    VolumeList* read(const std::string& url, int volId)
         throw (tgt::FileException, std::bad_alloc);
 
     ///@param volId -1: read all, else: read volume volId
-    virtual VolumeCollection* readAnalyze(const std::string& fileName, int volId)
+    virtual VolumeList* readAnalyze(const std::string& fileName, int volId)
         throw (tgt::FileException, std::bad_alloc);
 
     ///@param volId -1: read all, else: read volume volId
-    virtual VolumeCollection* readNifti(const std::string& fileName, bool standalone, int volId)
+    virtual VolumeList* readNifti(const std::string& fileName, bool standalone, int volId)
         throw (tgt::FileException, std::bad_alloc);
 
     static const std::string loggerCat_;

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,20 +36,21 @@
 
 namespace voreen {
 
-class BarPlot : public PlotProcessor {
+class VRN_CORE_API BarPlot : public PlotProcessor {
 
 public:
     BarPlot();
 
-    virtual Processor* create() const { return new BarPlot(); }
-    virtual std::string getClassName() const { return "BarPlot"; }
-    virtual CodeState getCodeState() const { return Processor::CODE_STATE_TESTING; }
+    virtual Processor* create() const;
 
-private:
+    virtual std::string getClassName() const { return "BarPlot"; }
+    virtual CodeState getCodeState() const   { return Processor::CODE_STATE_STABLE; }
+
+protected:
+
     virtual void setDescriptions() {
         setDescription("This processor is able to plot bars. These bars can be grouped, merged or stacked.");
     }
-
 
     // inherited methods
     virtual void render();

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -35,419 +35,451 @@ template class VRN_CORE_API InterpolationFunction<tgt::ivec3>;
 #endif
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3-values. Interpolation: focus on startvalue.
+ * This class offers an interpolation function for ivec3-values. Interpolation: focus on startvalue.
  */
 class VRN_CORE_API IVec3StartInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3StartInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3StartInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3-values. Interpolation: focus on endvalue.
+ * This class offers an interpolation function for ivec3-values. Interpolation: focus on endvalue.
  */
 class VRN_CORE_API IVec3EndInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3EndInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3EndInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3-values. Interpolation: bisection.
+ * This class offers an interpolation function for ivec3-values. Interpolation: bisection.
  */
 class VRN_CORE_API IVec3StartEndInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3StartEndInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3StartEndInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: linear.
+ * This class offers an interpolation function for ivec3. Interpolation: linear.
  */
 class VRN_CORE_API IVec3LinearInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3LinearInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3LinearInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: quadratic (easing in).
+ * This class offers an interpolation function for ivec3. Interpolation: quadratic (easing in).
  */
 class VRN_CORE_API IVec3InQuadInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3InQuadInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3InQuadInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: cubicular (easing in).
+ * This class offers an interpolation function for ivec3. Interpolation: cubicular (easing in).
  */
 class VRN_CORE_API IVec3InCubicInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3InCubicInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3InCubicInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: quartetic (easing in).
+ * This class offers an interpolation function for ivec3. Interpolation: quartetic (easing in).
  */
 class VRN_CORE_API IVec3InQuartInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3InQuartInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3InQuartInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: quintic (easing in).
+ * This class offers an interpolation function for ivec3. Interpolation: quintic (easing in).
  */
 class VRN_CORE_API IVec3InQuintInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3InQuintInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3InQuintInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: sineousidal (easing in).
+ * This class offers an interpolation function for ivec3. Interpolation: sineousidal (easing in).
  */
 class VRN_CORE_API IVec3InSineInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3InSineInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3InSineInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: exponential (easing in).
+ * This class offers an interpolation function for ivec3. Interpolation: exponential (easing in).
  */
 class VRN_CORE_API IVec3InExponentInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3InExponentInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3InExponentInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: circular (easing in).
+ * This class offers an interpolation function for ivec3. Interpolation: circular (easing in).
  */
 class VRN_CORE_API IVec3InCircInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3InCircInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3InCircInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: quadratic (easing out).
+ * This class offers an interpolation function for ivec3. Interpolation: quadratic (easing out).
  */
 class VRN_CORE_API IVec3OutQuadInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3OutQuadInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3OutQuadInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: cubicular (easing out).
+ * This class offers an interpolation function for ivec3. Interpolation: cubicular (easing out).
  */
 class VRN_CORE_API IVec3OutCubicInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3OutCubicInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3OutCubicInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: quartetic (easing out).
+ * This class offers an interpolation function for ivec3. Interpolation: quartetic (easing out).
  */
 class VRN_CORE_API IVec3OutQuartInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3OutQuartInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3OutQuartInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: quintic (easing out).
+ * This class offers an interpolation function for ivec3. Interpolation: quintic (easing out).
  */
 class VRN_CORE_API IVec3OutQuintInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3OutQuintInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3OutQuintInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: sineousidal (easing out).
+ * This class offers an interpolation function for ivec3. Interpolation: sineousidal (easing out).
  */
 class VRN_CORE_API IVec3OutSineInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3OutSineInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3OutSineInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: exponential (easing out).
+ * This class offers an interpolation function for ivec3. Interpolation: exponential (easing out).
  */
 class VRN_CORE_API IVec3OutExponentInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3OutExponentInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3OutExponentInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: circular (easing out).
+ * This class offers an interpolation function for ivec3. Interpolation: circular (easing out).
  */
 class VRN_CORE_API IVec3OutCircInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3OutCircInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3OutCircInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: quadratic (easing in, then easing out).
+ * This class offers an interpolation function for ivec3. Interpolation: quadratic (easing in, then easing out).
  */
 class VRN_CORE_API IVec3InOutQuadInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3InOutQuadInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3InOutQuadInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: cubicular (easing in, then easing out).
+ * This class offers an interpolation function for ivec3. Interpolation: cubicular (easing in, then easing out).
  */
 class VRN_CORE_API IVec3InOutCubicInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3InOutCubicInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3InOutCubicInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: quartetic (easing in, then easing out).
+ * This class offers an interpolation function for ivec3. Interpolation: quartetic (easing in, then easing out).
  */
 class VRN_CORE_API IVec3InOutQuartInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3InOutQuartInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3InOutQuartInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: quintic (easing in, then easing out).
+ * This class offers an interpolation function for ivec3. Interpolation: quintic (easing in, then easing out).
  */
 class VRN_CORE_API IVec3InOutQuintInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3InOutQuintInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3InOutQuintInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: sineousidal (easing in, then easing out).
+ * This class offers an interpolation function for ivec3. Interpolation: sineousidal (easing in, then easing out).
  */
 class VRN_CORE_API IVec3InOutSineInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3InOutSineInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3InOutSineInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: exponential (easing in, then easing out).
+ * This class offers an interpolation function for ivec3. Interpolation: exponential (easing in, then easing out).
  */
 class VRN_CORE_API IVec3InOutExponentInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3InOutExponentInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3InOutExponentInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: circular (easing in, then easing out).
+ * This class offers an interpolation function for ivec3. Interpolation: circular (easing in, then easing out).
  */
 class VRN_CORE_API IVec3InOutCircInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3InOutCircInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3InOutCircInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: quadratic (easing out, then easing in).
+ * This class offers an interpolation function for ivec3. Interpolation: quadratic (easing out, then easing in).
  */
 class VRN_CORE_API IVec3OutInQuadInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3OutInQuadInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3OutInQuadInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: cubicular (easing out, then easing in).
+ * This class offers an interpolation function for ivec3. Interpolation: cubicular (easing out, then easing in).
  */
 class VRN_CORE_API IVec3OutInCubicInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3OutInCubicInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3OutInCubicInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: quartetic (easing out, then easing in).
+ * This class offers an interpolation function for ivec3. Interpolation: quartetic (easing out, then easing in).
  */
 class VRN_CORE_API IVec3OutInQuartInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3OutInQuartInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3OutInQuartInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: quintic (easing out, then easing in).
+ * This class offers an interpolation function for ivec3. Interpolation: quintic (easing out, then easing in).
  */
 class VRN_CORE_API IVec3OutInQuintInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3OutInQuintInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3OutInQuintInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: sineousidal (easing out, then easing in).
+ * This class offers an interpolation function for ivec3. Interpolation: sineousidal (easing out, then easing in).
  */
 class VRN_CORE_API IVec3OutInSineInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3OutInSineInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3OutInSineInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: exponential (easing out, then easing in).
+ * This class offers an interpolation function for ivec3. Interpolation: exponential (easing out, then easing in).
  */
 class VRN_CORE_API IVec3OutInExponentInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3OutInExponentInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3OutInExponentInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for ivec3. Interpolation: circular (easing out, then easing in).
+ * This class offers an interpolation function for ivec3. Interpolation: circular (easing out, then easing in).
  */
 class VRN_CORE_API IVec3OutInCircInterpolationFunction : public InterpolationFunction<tgt::ivec3> {
 public:
     IVec3OutInCircInterpolationFunction();
-    InterpolationFunction<tgt::ivec3>* clone() const;
+    virtual std::string getClassName() const { return "IVec3OutInCircInterpolationFunction"; }
+    InterpolationFunction<tgt::ivec3>* create() const;
     tgt::ivec3 interpolate(tgt::ivec3 startvalue, tgt::ivec3 endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 } // namespace voreen

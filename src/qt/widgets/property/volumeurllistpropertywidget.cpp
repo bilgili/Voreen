@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -23,7 +23,7 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#include "voreen/core/datastructures/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumelist.h"
 #include "voreen/core/properties/volumeurllistproperty.h"
 
 #include "voreen/qt/widgets/volumeviewhelper.h"
@@ -43,13 +43,13 @@ namespace {
 
 namespace voreen {
 
-const std::string VolumeURLListPropertyWidget::loggerCat_("voreenqt.VolumeCollectionPropertyWidget");
+const std::string VolumeURLListPropertyWidget::loggerCat_("voreenqt.VolumeURLListPropertyWidget");
 
-VolumeURLListPropertyWidget::VolumeURLListPropertyWidget(VolumeURLListProperty* volumeCollectionProp, QWidget* parent) :
-        QPropertyWidget(volumeCollectionProp, parent, false),
+VolumeURLListPropertyWidget::VolumeURLListPropertyWidget(VolumeURLListProperty* volumeListProp, QWidget* parent) :
+        QPropertyWidget(volumeListProp, parent, false),
         volumeIOHelper_(parent, VolumeIOHelper::MULTI_FILE)
 {
-    urlListProperty_ = volumeCollectionProp;
+    urlListProperty_ = volumeListProp;
     tgtAssert(urlListProperty_, "No volume collection property");
 
     setFocusPolicy(Qt::StrongFocus);
@@ -101,7 +101,7 @@ void VolumeURLListPropertyWidget::updateFromProperty() {
     if (!volumeTreeWidget_->updatesEnabled())
         return;
 
-    VolumeCollection* collection = urlListProperty_->getVolumes(false);
+    VolumeList* collection = urlListProperty_->getVolumes(false);
     tgtAssert(collection, "null pointer returned");
 
     volumeTreeWidget_->clear();
@@ -117,11 +117,12 @@ void VolumeURLListPropertyWidget::updateFromProperty() {
             + "\n"
             + VolumeViewHelper::getVolumePath(handle));
         qtwi->setText(0, info);
-        qtwi->setIcon(0, QIcon(VolumeViewHelper::generateBorderedPreview(handle, 27, 0)));
+        if(urlListProperty_->getPreviewsVisible())
+            qtwi->setIcon(0, QIcon(VolumeViewHelper::generateBorderedPreview(handle, 27, 0)));
         qtwi->setSizeHint(0,QSize(27,27));
         qtwi->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsSelectable | Qt::ItemIsEnabled);
 
-        // set tree widget to checked, if the corresponding volume handle is contained by the property's collection
+        // set tree widget to checked, if the corresponding volume is contained by the property's collection
         bool selected = urlListProperty_->isSelected(url) ? Qt::Checked : Qt::Unchecked;
         qtwi->setCheckState(0, selected ? Qt::Checked : Qt::Unchecked);
         if (selected)
@@ -144,7 +145,7 @@ void VolumeURLListPropertyWidget::updateSelection() {
     if (!prop_)
         return;
 
-    VolumeCollection* collection = urlListProperty_->getVolumes(false);
+    VolumeList* collection = urlListProperty_->getVolumes(false);
     tgtAssert(collection, "null pointer returned");
 
     volumeTreeWidget_->setUpdatesEnabled(false);

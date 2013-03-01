@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -83,7 +83,7 @@ PropertySelectionDialog::PropertySelectionDialog(QList<Property*>& resultList, c
 
     foreach (Processor* processor, network->getProcessors()) {
         if (processor->getProperties().size() > 0) {
-            QTreeWidgetItem* processorItem = new QTreeWidgetItem(stringListFromStdString(processor->getName()));
+            QTreeWidgetItem* processorItem = new QTreeWidgetItem(stringListFromStdString(processor->getGuiName()));
             processorItem->setData(0, Qt::UserRole, processorToVariant(processor));
             foreach (Property* property, processor->getProperties()) {
                 QTreeWidgetItem* propertyItem = new QTreeWidgetItem(processorItem, stringListFromStdString(property->getGuiName()));

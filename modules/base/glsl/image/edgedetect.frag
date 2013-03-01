@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,9 +33,11 @@ uniform TextureParameters texParams_;
 uniform vec4 edgeColor_;
 uniform vec4 backgroundColor_;
 uniform float edgeThreshold_;
+uniform float edgeOffsetLength_;
 uniform bool showImage_;
 uniform int blendMode_;
 uniform int edgeStyle_;
+uniform int colorChannel_;
 
 
 /***
@@ -63,27 +65,51 @@ vec2 edgeDetectionDepth(in vec2 fragCoord, in float delta) {
 }
 
 /***
+ * Performs an image based edge detection based on a color channel.
+ * To determine the edges, a Sobel filter is applied.
+ *
+ * @fragCoord - screen coordinates of the current fragment
+ * @delta     - specifies the distance to the neighboor texels to be fetched,
+ *              1.0 defines a one pixel distance
+ ***/
+vec2 edgeDetectionColor(in vec2 fragCoord, in float delta, in int channel) {
+    float N = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2(0.0,-delta))[colorChannel_];
+    float NE = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2(delta,-delta))[colorChannel_];
+    float E = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2(delta, 0.0))[colorChannel_];
+    float SE = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2(delta, delta))[colorChannel_];
+    float S = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2(0.0, delta))[colorChannel_];
+    float SW = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2(-delta, delta))[colorChannel_];
+    float W = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2(-delta, 0.0))[colorChannel_];
+    float NW = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2(-delta,-delta))[colorChannel_];
+
+    vec2 gradient;
+    gradient.x = +1.0*NW + 2.0*W + 1.0*SW - 1.0*NE - 2.0*E - 1.0*SE;
+    gradient.y = +1.0*NW + 2.0*N + 1.0*NE - 1.0*SW - 2.0*S - 1.0*SE;
+    return gradient;
+}
+
+/***
  * Draws a one pixel thick halo around the objects.
  *
  * @fragCoord - screen coordinates of the current fragment
  ***/
-vec2 silhouetteDetectionColor(in vec2 fragCoord) {
+vec2 silhouetteDetectionColor(in vec2 fragCoord, in float delta) {
     vec2 result = vec2(0.0);
     vec3 C = textureLookup2Dscreen(colorTex_, texParams_, fragCoord).rgb;
     if (C != backgroundColor_.rgb) {
-        vec3 E = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2(1.0,0.0)).rgb;
-        vec3 S = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2(0.0,-1.0)).rgb;
-        vec3 W = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2(-1.0,0.0)).rgb;
-        vec3 N = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2(0.0,1.0)).rgb;
+        vec3 E = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+ delta * vec2(1.0,0.0)).rgb;
+        vec3 S = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+ delta * vec2(0.0,-1.0)).rgb;
+        vec3 W = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+ delta * vec2(-1.0,0.0)).rgb;
+        vec3 N = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+ delta * vec2(0.0,1.0)).rgb;
 
         if (E == backgroundColor_.rgb || S == backgroundColor_.rgb ||
             W == backgroundColor_.rgb || N == backgroundColor_.rgb) {
             result = vec2(1.0);
         } else {
-            vec3 SE = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2( 1.0,-1.0)).rgb;
-            vec3 SW = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2(-1.0,-1.0)).rgb;
-            vec3 NW = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2(-1.0, 1.0)).rgb;
-            vec3 NE = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+vec2( 1.0, 1.0)).rgb;
+            vec3 SE = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+ delta * vec2( 1.0,-1.0)).rgb;
+            vec3 SW = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+ delta * vec2(-1.0,-1.0)).rgb;
+            vec3 NW = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+ delta * vec2(-1.0, 1.0)).rgb;
+            vec3 NE = textureLookup2Dscreen(colorTex_, texParams_, fragCoord+ delta * vec2( 1.0, 1.0)).rgb;
             if (SE == backgroundColor_.rgb || SW == backgroundColor_.rgb ||
                 NW == backgroundColor_.rgb || NE == backgroundColor_.rgb) {
                 result = vec2(1.0);
@@ -109,13 +135,16 @@ void main() {
     vec2 gradient;
     if (edgeStyle_ == 0) {
         // contour edges
-        gradient = edgeDetectionDepth(fragCoord, 1.0);
+        gradient = edgeDetectionDepth(fragCoord, edgeOffsetLength_);
     } else if (edgeStyle_ == 1) {
         // silhouette edges
-        gradient = silhouetteDetectionColor(fragCoord);
+        gradient = silhouetteDetectionColor(fragCoord, edgeOffsetLength_);
     } else if (edgeStyle_ == 2) {
         // contour edges where edge thickness decreases with increasing depth
         gradient = edgeDetectionDepth(fragCoord, (1.0-depthNorm)*2.0);
+    } else if (edgeStyle_ == 3) {
+        // contour edges from color
+        gradient = edgeDetectionColor(fragCoord, edgeOffsetLength_, colorChannel_);
     }
 
     float edgeThickness = length(gradient);

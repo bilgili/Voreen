@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -76,7 +76,7 @@ void PlotPredicateDialog::createWidgets() {
 
     // fill combobox
     int i = 1;
-    std::string typeString = (predicate_ != 0) ? PlotPredicateFactory::getInstance()->getTypeString(typeid(*predicate_)) : "";
+    std::string typeString = (predicate_ != 0) ? PlotPredicateFactory::getInstance()->getSerializableTypeString(typeid(*predicate_)) : "";
     cbPredicates_->addItem(tr("No Predicate"), QVariant(tr("")));
     cbPredicates_->setCurrentIndex(0);
     for (std::vector<std::string>::const_iterator it = typeStrings.begin(); it != typeStrings.end(); ++it, ++i) {
@@ -154,7 +154,7 @@ void PlotPredicateDialog::choiceChange(int /*index*/) {
     PlotPredicate* copy = predicate_;
 
     // a dynamic_cast to 0 is also OK here as it says 'no predicate selected'
-    predicate_ = dynamic_cast<PlotPredicate*>(PlotPredicateFactory::getInstance()->createType(cbPredicates_->currentText().toStdString()));
+    predicate_ = dynamic_cast<PlotPredicate*>(PlotPredicateFactory::getInstance()->createSerializableType(cbPredicates_->currentText().toStdString()));
 
     if (predicate_ != 0) {
         int newThresholdCount = predicate_->getNumberOfThresholdValues();

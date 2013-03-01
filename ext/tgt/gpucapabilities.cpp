@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -41,7 +41,7 @@
 
 using std::string;
 using std::stringstream;
- 
+
 //-----------------------------------------------------------------------------
 
 namespace { // anonymous helper functions
@@ -358,7 +358,7 @@ void GpuCapabilities::logCapabilities(bool extensionsString, bool osString) {
         LINFO("Total Graphics Memory Size:        " << retrieveTotalTextureMemory()/1024 << " MB");
     else
         LINFO("Total Graphics Memory Size:        No Information");
-    
+
     if(retrieveAvailableTextureMemory() != -1)
         LINFO("Available Graphics Memory Size:    " << retrieveAvailableTextureMemory()/1024 << " MB");
     else
@@ -1171,7 +1171,7 @@ GpuCapabilities::FileVersion GpuCapabilities::getFileVersion(const std::string& 
 }
 
 std::string GpuCapabilities::getFileDate(const std::string& pFilename) {
-    
+
 #ifdef _MSC_VER
     std::string filename = pFilename;
     LDEBUG("Retrieving file date (last write date) of system file '" << filename << "' ...");
@@ -1233,7 +1233,7 @@ std::string GpuCapabilities::getFileDate(const std::string& pFilename) {
 
     LDEBUG("Reading file date successful.");
 
-    return result; 
+    return result;
 
 #else
     LWARNING("File date retrieval only supported for MSVC");

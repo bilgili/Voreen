@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -25,6 +25,7 @@
 
 #include "multisliceviewer.h"
 #include "voreen/core/utils/glsl.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 
 #include "tgt/glmath.h"
 #include "tgt/textureunit.h"
@@ -158,10 +159,10 @@ MultiSliceViewer::MultiSliceViewer()
     , texMode4_("textureMode4", "Texture Mode 4", Processor::INVALID_PROGRAM)
     , samplingRate_("samplingRate", "Sampling Rate", 2.0f, 1.0f, 20.0f)
     , cacheSize_("cacheSize", "# Cached 2D Textures", 20, 1, 1000)
-    , inport1_(Port::INPORT, "volume1")
-    , inport2_(Port::INPORT, "volume2")
-    , inport3_(Port::INPORT, "volume3")
-    , inport4_(Port::INPORT, "volume4")
+    , inport1_(Port::INPORT, "volume1", "Volume 1", false, Processor::INVALID_PROGRAM)
+    , inport2_(Port::INPORT, "volume2", "Volume 2", false, Processor::INVALID_PROGRAM)
+    , inport3_(Port::INPORT, "volume3", "Volume 3", false, Processor::INVALID_PROGRAM)
+    , inport4_(Port::INPORT, "volume4", "Volume 4", false, Processor::INVALID_PROGRAM)
     , geomPort_(Port::OUTPORT, "geometry")
     , textPort_(Port::OUTPORT, "text")
     , outport_(Port::OUTPORT, "output", "Rendering", true, INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
@@ -377,15 +378,12 @@ void MultiSliceViewer::process() {
     const VolumeBase* volh = getMainInport()->getData();
 
     // Calculate geometry:
-    FaceGeometry slice = getSliceGeometry(volh, sliceAlignment_.getValue(), (float)sliceIndex_.get(), true, restrictToMainVolume_.get() ? std::vector<const VolumeBase*>() : getSecondaryVolumes());
-    MeshGeometry mesh;
-    mesh.addFace(slice);
-    MeshListGeometry* meshListGeometry = new MeshListGeometry();
-    meshListGeometry->addMesh(mesh);
-    geomPort_.setData(meshListGeometry);
+    TriangleMeshGeometryVec3* slice = getSliceGeometry(volh, sliceAlignment_.getValue(), (float)sliceIndex_.get(), true, restrictToMainVolume_.get() ? std::vector<const VolumeBase*>() : getSecondaryVolumes());
+    geomPort_.setData(slice);
 
     //calculate plane equation:
-    tgt::plane p(slice.getVertex(0).getCoords(), slice.getVertex(1).getCoords(), slice.getVertex(2).getCoords());
+    tgt::mat4 m = slice->getTransformationMatrix();
+    tgt::plane p(m * slice->getTriangle(0).v_[0].pos_, m * slice->getTriangle(0).v_[1].pos_, m * slice->getTriangle(0).v_[2].pos_);
 
     tgt::vec3 test(1.0f);
     tgt::vec4 planeVec = p.toVec4();
@@ -416,9 +414,13 @@ void MultiSliceViewer::process() {
     // activate shader program
     eepShader_->activate();
     setGlobalShaderParameters(eepShader_, &cam);
+    eepShader_->setUniform("useTextureCoordinates_", false);
+    mat4 viewToWorldMatrix = mat4::identity;
+    cam.getViewMatrix().invert(viewToWorldMatrix);
+    eepShader_->setUniform("inverseViewMatrix_", viewToWorldMatrix);
     LGL_ERROR;
 
-    meshListGeometry->render();
+    slice->render();
     LGL_ERROR;
 
     entryPort_.deactivateTarget();

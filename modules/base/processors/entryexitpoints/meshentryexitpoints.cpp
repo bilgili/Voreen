@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -47,16 +47,26 @@ MeshEntryExitPoints::MeshEntryExitPoints()
     , exitPort_(Port::OUTPORT, "image.exitpoints", "Exit-points Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
     , inport_(Port::INPORT, "proxgeometry.geometry", "Proxy Geometry Input")
     , tmpPort_(Port::OUTPORT, "image.tmp", "image.tmp", false)
-    , supportCameraInsideVolume_("supportCameraInsideVolume", "Support camera in volume", true)
+    , outputCoordinateSystem_("outputCoordinateSystem", "Output coordinate system")
+    , cameraInsideVolumeTechnique_("cameraInsideVolumeTechnique", "Camera inside volume technique")
     , jitterEntryPoints_("jitterEntryPoints", "Jitter entry params", false)
-    , useFloatRenderTargets_("useFloatRenderTargets", "Use float render targets", false)
     , useCulling_("useCulling", "Use culling", true)
     , jitterStepLength_("jitterStepLength", "Jitter step length", 0.005f, 0.0005f, 0.025f)
     , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
     , shaderProgram_(0)
     , shaderProgramJitter_(0)
+    , shaderProgramInsideVolume_(0)
 {
-    addProperty(supportCameraInsideVolume_);
+    outputCoordinateSystem_.addOption("texture", "Texture Coordinates");
+    outputCoordinateSystem_.addOption("world", "World Coordinates");
+    outputCoordinateSystem_.select("texture");
+    addProperty(outputCoordinateSystem_);
+
+    cameraInsideVolumeTechnique_.addOption("none", "None");
+    cameraInsideVolumeTechnique_.addOption("cpu", "CPU (slow)");
+    cameraInsideVolumeTechnique_.addOption("gpu", "GPU");
+    cameraInsideVolumeTechnique_.select("gpu");
+    addProperty(cameraInsideVolumeTechnique_);
 
     // jittering
     addProperty(jitterEntryPoints_);
@@ -65,7 +75,6 @@ MeshEntryExitPoints::MeshEntryExitPoints()
     jitterStepLength_.setStepping(0.001f);
     jitterStepLength_.setNumDecimals(3);
     addProperty(jitterStepLength_);
-    addProperty(useFloatRenderTargets_);
     addProperty(useCulling_);
 
     addProperty(camera_);
@@ -73,7 +82,9 @@ MeshEntryExitPoints::MeshEntryExitPoints()
     cameraHandler_ = new CameraInteractionHandler("cameraHandler", "Camera", &camera_);
     addInteractionHandler(cameraHandler_);
 
+    entryPort_.setDeinitializeOnDisconnect(false);
     addPort(entryPort_);
+    exitPort_.setDeinitializeOnDisconnect(false);
     addPort(exitPort_);
     addPort(inport_);
     addPrivateRenderPort(&tmpPort_);
@@ -91,9 +102,8 @@ void MeshEntryExitPoints::initialize() throw (tgt::Exception) {
     RenderProcessor::initialize();
 
     shaderProgram_ = ShdrMgr.load("eep_simple", generateHeader(), false);
-
-    shaderProgramJitter_ = ShdrMgr.loadSeparate("passthrough.vert", "eep_jitter.frag",
-                                                 generateHeader(), false);
+    shaderProgramJitter_ = ShdrMgr.loadSeparate("passthrough.vert", "eep_jitter.frag", generateHeader(), false);
+    shaderProgramInsideVolume_ = ShdrMgr.loadSeparate("passthrough.vert", "eep_insidevolume.frag", generateHeader(), false);
 }
 
 void MeshEntryExitPoints::deinitialize() throw (tgt::Exception) {
@@ -102,6 +112,9 @@ void MeshEntryExitPoints::deinitialize() throw (tgt::Exception) {
 
     ShdrMgr.dispose(shaderProgramJitter_);
     shaderProgramJitter_ = 0;
+
+    ShdrMgr.dispose(shaderProgramInsideVolume_);
+    shaderProgramInsideVolume_ = 0;
 
     RenderProcessor::deinitialize();
 }
@@ -116,7 +129,7 @@ void MeshEntryExitPoints::beforeProcess() {
 
     RenderPort& refPort = (entryPort_.isReady() ? entryPort_ : exitPort_);
 
-    if (useFloatRenderTargets_.get()) {
+    if(outputCoordinateSystem_.isSelected("world")) {
         if (refPort.getRenderTarget()->getColorTexture()->getDataType() != GL_FLOAT) {
             entryPort_.changeFormat(GL_RGBA16F_ARB);
             exitPort_.changeFormat(GL_RGBA16F_ARB);
@@ -132,25 +145,61 @@ void MeshEntryExitPoints::beforeProcess() {
     }
 }
 
-void MeshEntryExitPoints::process() {
-    // retrieve input geometry
-    const MeshListGeometry* meshListGeometry = dynamic_cast<const MeshListGeometry*>(inport_.getData());
-    const MeshGeometry* meshGeometry = dynamic_cast<const MeshGeometry*>(inport_.getData());
-    if (meshListGeometry) {
-        geometry_ = *meshListGeometry;
-    }
-    else if (meshGeometry) {
-        geometry_.clear();
-        geometry_.addMesh(*meshGeometry);
-    }
-    else {
-        LERROR("Geometry of type MeshListGeometry/MeshGeometry expected.");
-        return;
-    }
+void MeshEntryExitPoints::renderGeometry(const Geometry* geometry, RenderPort& outport, GLenum depthFunc, float clearDepth, GLenum cullFace) {
+    // activate shader program
+    shaderProgram_->activate();
+    if(outputCoordinateSystem_.isSelected("texture"))
+        shaderProgram_->setUniform("useTextureCoordinates_", true);
+    else
+        shaderProgram_->setUniform("useTextureCoordinates_", false);
 
-    // A new volume was loaded
-    if(inport_.hasChanged())
-        cameraHandler_->adaptInteractionToScene(geometry_);
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(shaderProgram_, &cam);
+    LGL_ERROR;
+
+    // enable culling
+    if(useCulling_.get())
+        glEnable(GL_CULL_FACE);
+
+    outport.activateTarget();
+    glClearDepth(clearDepth);
+    glDepthFunc(depthFunc);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glCullFace(cullFace);
+
+    geometry->render();
+    LGL_ERROR;
+
+    outport.deactivateTarget();
+
+    // deactivate shader program
+    shaderProgram_->deactivate();
+
+    glDepthFunc(GL_LESS);
+    glDisable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glClearDepth(1.0f);
+    LGL_ERROR;
+}
+
+void MeshEntryExitPoints::process() {
+    const Geometry* input = inport_.getData();
+    bool deleteInput = false;
+
+    if (cameraInsideVolumeTechnique_.isSelected("cpu") ) {
+        tgt::Bounds b = input->getBoundingBox();
+
+        // clip proxy geometry against near-plane
+        float nearPlaneDistToOrigin = tgt::dot(camera_.get().getPosition(), -camera_.get().getLook()) - camera_.get().getNearDist()/* - 0.001f*/;
+        double epsilon = static_cast<double>(tgt::length(input->getBoundingBox().diagonal())) * 1e-6;
+
+        if(b.intersects(tgt::plane(-camera_.get().getLook(), nearPlaneDistToOrigin))) {
+            Geometry* copy = input->clone();
+            copy->clip(tgt::plane(-camera_.get().getLook(), -nearPlaneDistToOrigin), epsilon);
+            deleteInput = true;
+            input = copy;
+        }
+    }
 
     // set modelview and projection matrices
     glMatrixMode(GL_PROJECTION);
@@ -161,109 +210,67 @@ void MeshEntryExitPoints::process() {
     glPushMatrix();
     tgt::loadMatrix(camera_.get().getViewMatrix());
 
-    // enable culling
-    if(useCulling_.get())
-        glEnable(GL_CULL_FACE);
-
-    // activate shader program
-    shaderProgram_->activate();
-    tgt::Camera cam = camera_.get();
-    setGlobalShaderParameters(shaderProgram_, &cam);
-    LGL_ERROR;
-
-    //
-    // render back texture
-    //
-    if (exitPort_.isReady()) {
-        exitPort_.activateTarget();
-        glClearDepth(0.0f);
-        glDepthFunc(GL_GREATER);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glCullFace(GL_FRONT);
-
-        geometry_.render();
-        LGL_ERROR;
-        exitPort_.deactivateTarget();
-        glDepthFunc(GL_LESS);
-        glClearDepth(1.0f);
-        LGL_ERROR;
-    }
-
-    //
-    // render front texture
-    //
-    // use temporary target if necessary
-    if (entryPort_.isReady()) {
-        if (!jitterEntryPoints_.get())
-            entryPort_.activateTarget();
-        else
-            tmpPort_.activateTarget();
-        LGL_ERROR;
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glCullFace(GL_BACK);
-
-        geometry_.render();
-        LGL_ERROR;
-
-        if (supportCameraInsideVolume_.get()) {
-            // clip proxy geometry against near-plane
-            float nearPlaneDistToOrigin = tgt::dot(camera_.get().getPosition(), -camera_.get().getLook()) - camera_.get().getNearDist() - 0.0001f;
-            MeshListGeometry closingFaces;
-            double epsilon = static_cast<double>(tgt::length(geometry_.getBoundingBox().diagonal())) * 1e-6;
-            geometry_.clip(tgt::vec4(-camera_.get().getLook(), nearPlaneDistToOrigin), closingFaces, epsilon);
-
-            // render closing face separately, if not empty
-            if (!closingFaces.empty()) {
-                // project closing faces onto near-plane
-                tgt::mat4 trafoMatrix = camera_.get().getProjectionMatrix(entryPort_.getSize()) * camera_.get().getViewMatrix();
-                closingFaces.transform(trafoMatrix);
-                // set z-coord of closing face vertices to 0.0 in order to avoid near-plane clipping
-                tgt::mat4 zTrafo = tgt::mat4::createIdentity();
-                zTrafo[2][2] = 0.f;
-                closingFaces.transform(zTrafo);
-
-                //render closing faces with identity transformations
-                glMatrixMode(GL_PROJECTION);
-                glLoadIdentity();
-                glMatrixMode(GL_MODELVIEW);
-                glLoadIdentity();
-                closingFaces.render();
-                LGL_ERROR;
-            }
+    if (cameraInsideVolumeTechnique_.isSelected("gpu")) {
+        if (jitterEntryPoints_.get()) {
+            renderGeometry(input, exitPort_, GL_LESS, 1.0f, GL_BACK); // render first front face
+            renderGeometry(input, entryPort_, GL_LESS, 1.0f, GL_FRONT); // render first back face
+            fillEntryPoints(entryPort_, exitPort_, tmpPort_, input);
         }
+        else {
+            renderGeometry(input, tmpPort_, GL_LESS, 1.0f, GL_BACK); // render first front face
+            renderGeometry(input, exitPort_, GL_LESS, 1.0f, GL_FRONT); // render first back face
+            fillEntryPoints(exitPort_, tmpPort_, entryPort_, input);
+        }
+    }
+    else {
+        // render front texture, use temporary target if necessary
+        if (entryPort_.isReady()) {
+            if (cameraInsideVolumeTechnique_.isSelected("cpu"))
+                glEnable(GL_DEPTH_CLAMP);
 
-        if (!jitterEntryPoints_.get())
-            entryPort_.deactivateTarget();
-        else
-            tmpPort_.deactivateTarget();
+            if (!jitterEntryPoints_.get())
+                renderGeometry(input, entryPort_, GL_LESS, 1.0f, GL_BACK);
+            else
+                renderGeometry(input, tmpPort_, GL_LESS, 1.0f, GL_BACK);
+
+            glDisable(GL_DEPTH_CLAMP);
+            LGL_ERROR;
+        }
     }
 
-    // deactivate shader program
-    shaderProgram_->deactivate();
+    // render back texture
+    if (exitPort_.isReady())
+        renderGeometry(input, exitPort_, GL_GREATER, 0.0f, GL_FRONT);
+
+    if (entryPort_.isReady()) {
+        // jittering of entry points
+        if (jitterEntryPoints_.get())
+            jitterEntryPoints(tmpPort_, exitPort_, entryPort_);
+    }
 
     // restore OpenGL state
-    glCullFace(GL_BACK);
-    glDisable(GL_CULL_FACE);
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
     LGL_ERROR;
 
-    if (entryPort_.isReady()) {
-        // jittering of entry points
-        if (jitterEntryPoints_.get())
-            jitterEntryPoints();
-
-        entryPort_.deactivateTarget();
-    }
-
     TextureUnit::setZeroUnit();
     LGL_ERROR;
+
+    if(deleteInput)
+        delete input;
 }
 
-void MeshEntryExitPoints::jitterEntryPoints() {
+void MeshEntryExitPoints::jitterEntryPoints(RenderPort& entryPort, RenderPort& exitPort, RenderPort& outport) {
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
     shaderProgramJitter_->activate();
     tgt::Camera cam = camera_.get();
     setGlobalShaderParameters(shaderProgramJitter_, &cam);
@@ -272,31 +279,133 @@ void MeshEntryExitPoints::jitterEntryPoints() {
     TextureUnit entryUnit, entryDepthUnit, exitUnit;
 
     // bind entry points texture and depth texture (have been rendered to temporary port)
-    tmpPort_.bindColorTexture(entryUnit.getEnum());
+    entryPort.bindColorTexture(entryUnit.getEnum());
     shaderProgramJitter_->setUniform("entryPoints_", entryUnit.getUnitNumber());
 
-    tmpPort_.bindDepthTexture(entryDepthUnit.getEnum());
+    entryPort.bindDepthTexture(entryDepthUnit.getEnum());
     shaderProgramJitter_->setUniform("entryPointsDepth_", entryDepthUnit.getUnitNumber());
-    tmpPort_.setTextureParameters(shaderProgramJitter_, "entryParameters_");
+    entryPort.setTextureParameters(shaderProgramJitter_, "entryParameters_");
 
     // bind exit points texture
-    exitPort_.bindColorTexture(exitUnit.getEnum());
+    exitPort.bindColorTexture(exitUnit.getEnum());
     shaderProgramJitter_->setUniform("exitPoints_", exitUnit.getUnitNumber());
-    exitPort_.setTextureParameters(shaderProgramJitter_, "exitParameters_");
+    exitPort.setTextureParameters(shaderProgramJitter_, "exitParameters_");
 
     shaderProgramJitter_->setUniform("stepLength_", jitterStepLength_.get());
 
-    entryPort_.activateTarget("jitteredEntryParams");
+    outport.activateTarget("jitteredEntryParams");
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // render screen aligned quad
     renderQuad();
 
     shaderProgramJitter_->deactivate();
+    outport.deactivateTarget();
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    LGL_ERROR;
+}
+
+void MeshEntryExitPoints::fillEntryPoints(RenderPort& firstBackPort, RenderPort& firstFrontPort, RenderPort& outport, const Geometry* geometry) {
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    shaderProgramInsideVolume_->activate();
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(shaderProgramInsideVolume_, &cam);
+
+    // bind texture
+    TextureUnit firstFrontUnit, firstFrontDepthUnit, firstBackUnit, firstBackDepthUnit;
+
+    // bind firstFront points texture and depth texture
+    firstFrontPort.bindColorTexture(firstFrontUnit.getEnum());
+    shaderProgramInsideVolume_->setUniform("firstFront_", firstFrontUnit.getUnitNumber());
+    firstFrontPort.bindDepthTexture(firstFrontDepthUnit.getEnum());
+    shaderProgramInsideVolume_->setUniform("firstFrontDepth_", firstFrontDepthUnit.getUnitNumber());
+    firstFrontPort.setTextureParameters(shaderProgramInsideVolume_, "firstFrontParameters_");
+
+    // bind firstBack points texture
+    firstBackPort.bindColorTexture(firstBackUnit.getEnum());
+    shaderProgramInsideVolume_->setUniform("firstBack_", firstBackUnit.getUnitNumber());
+    firstBackPort.bindDepthTexture(firstBackDepthUnit.getEnum());
+    //shaderProgramInsideVolume_->setUniform("firstBackDepth_", firstBackDepthUnit.getUnitNumber());
+    firstBackPort.setTextureParameters(shaderProgramInsideVolume_, "firstBackParameters_");
+
+    shaderProgramInsideVolume_->setUniform("near_", camera_.get().getNearDist());
+    shaderProgramInsideVolume_->setUniform("far_", camera_.get().getFarDist());
+
+    tgt::Bounds bounds = geometry->getBoundingBox(outputCoordinateSystem_.isSelected("world"));
+    shaderProgramInsideVolume_->setUniform("llf_", bounds.getLLF());
+    shaderProgramInsideVolume_->setUniform("urb_", bounds.getURB());
+
+    if(outputCoordinateSystem_.isSelected("texture")) {
+        shaderProgramInsideVolume_->setUniform("useTextureCoordinates_", true);
+        mat4 worldToTextureMatrix;
+        geometry->getTransformationMatrix().invert(worldToTextureMatrix);
+        shaderProgramInsideVolume_->setUniform("worldToTexture_", worldToTextureMatrix);
+        // TODO: does not work for GeometrySequences, which are not to be expected when using texture coordinates (=> single volume raycasting)
+    }
+    else {
+        shaderProgramInsideVolume_->setUniform("useTextureCoordinates_", false);
+    }
+
+    outport.activateTarget("fillEntryParams");
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // render screen aligned quad
+    renderQuad();
+
+    shaderProgramInsideVolume_->deactivate();
+    outport.deactivateTarget();
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    LGL_ERROR;
 }
 
 void MeshEntryExitPoints::onJitterEntryPointsChanged() {
     jitterStepLength_.setVisible(jitterEntryPoints_.get());
+}
+
+void MeshEntryExitPoints::adjustRenderOutportSizes() {
+    tgt::ivec2 size = tgt::ivec2(-1);
+
+    RenderSizeReceiveProperty* entrySizeProp = entryPort_.getSizeReceiveProperty();
+    RenderSizeReceiveProperty* exitSizeProp = exitPort_.getSizeReceiveProperty();
+
+    if(entrySizeProp->get() == exitSizeProp->get()) {
+        size = entrySizeProp->get();
+    }
+    else {
+        if(entryPort_.isConnected() && exitPort_.isConnected()) {
+            size = entrySizeProp->get();
+            LWARNING("Requested size for entry- and exit-point ports differ! Using size of entry-port");
+            //TODO: Check for inbound links
+        }
+        else if(entryPort_.isConnected())
+            size = entrySizeProp->get();
+        else if(exitPort_.isConnected())
+            size = exitSizeProp->get();
+        else {
+            //size = entrySizeProp->get();
+        }
+    }
+
+    if(size != tgt::ivec2(-1)) {
+        entryPort_.resize(size);
+        exitPort_.resize(size);
+        tmpPort_.resize(size);
+    }
 }
 
 } // namespace voreen

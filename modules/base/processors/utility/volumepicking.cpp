@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -139,7 +139,7 @@ PointListGeometryVec3* VolumePicking::getTransformedPositions() const {
 
     // voxel coordinates
     if (outCoordinateSystem_.isSelected("voxel")) {
-        tgt::vec3 volDims = tgt::vec3(inportVolume_.getData()->getRepresentation<VolumeRAM>()->getDimensions() - tgt::svec3(1));
+        tgt::vec3 volDims = tgt::vec3(inportVolume_.getData()->getDimensions() - tgt::svec3(1));
         for (size_t i=0; i<transformedPoints.size(); i++)
             transformedPoints[i] *= volDims;
     }

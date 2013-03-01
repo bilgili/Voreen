@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,7 +26,7 @@
 #include "voreen/core/ports/volumeport.h"
 
 #include "voreen/core/datastructures/volume/volumeram.h"
-#include "voreen/core/datastructures/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumelist.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
@@ -38,7 +38,7 @@ namespace voreen {
 VolumePort::VolumePort(PortDirection direction, const std::string& id, const std::string& guiName,
       bool allowMultipleConnections, Processor::InvalidationLevel invalidationLevel)
     : GenericPort<VolumeBase>(direction, id, guiName, allowMultipleConnections, invalidationLevel),
-      VolumeHandleObserver(),
+      VolumeObserver(),
       texFilterMode_("textureFilterMode_", "Texture Filtering"),
       texClampMode_("textureClampMode_", "Texture Clamp"),
       texBorderIntensity_("textureBorderIntensity", "Texture Border Intensity", 0.f)
@@ -71,7 +71,7 @@ VolumePort::VolumePort(PortDirection direction, const std::string& id, const std
 
 std::string VolumePort::getContentDescription() const {
     std::stringstream strstr;
-    strstr  << getGuiName() << std::endl 
+    strstr  << getGuiName() << std::endl
             << "Type: " << getClassName() << std::endl;
 
     if (getData() && getData()->getRepresentation<VolumeRAM>()) {
@@ -122,7 +122,7 @@ std::string VolumePort::getContentDescription() const {
 
     strstr << "Data Type: " << type << std::endl
                    << "Dimension: " << h->getDimensions()[0] << " x " << h->getDimensions()[1] << " x " << h->getDimensions()[2]  << std::endl
-                   << "Spacing: "   << h->getSpacing()[0] << " x " << h->getSpacing()[1] << " x " << h->getSpacing()[2]    << std::endl
+                   << "Spacing: "   << h->getSpacing()[0] << " x " << h->getSpacing()[1] << " x " << h->getSpacing()[2] << " mm" << std::endl
                    << "Bits Per Voxel: " << v->getBitsAllocated() << std::endl
                    << "Num Voxels: "<< v->getNumVoxels() << std::endl
                    << "Memory Size: ";
@@ -137,7 +137,7 @@ std::string VolumePort::getContentDescription() const {
             }
             else {
                 strstr << bytes << " bytes";
-            }            
+            }
     }
     return strstr.str();
 }
@@ -146,7 +146,7 @@ std::string VolumePort::getContentDescriptionHTML() const {
     std::stringstream strstr;
     strstr  << "<center><font><b>" << getGuiName() << "</b></font></center>"
             << "Type: " << getClassName() << "<br>";
-                
+
     if (getData() && getData()->getRepresentation<VolumeRAM>()) {
             const VolumeBase* h = getData();
             const VolumeRAM* v = getData()->getRepresentation<VolumeRAM>();
@@ -195,7 +195,7 @@ std::string VolumePort::getContentDescriptionHTML() const {
 
     strstr << "Data Type: " << type << "<br>"
                    << "Dimension: " << h->getDimensions()[0] << " x " << h->getDimensions()[1] << " x " << h->getDimensions()[2]  << "<br>"
-                   << "Spacing: "   << h->getSpacing()[0] << " x " << h->getSpacing()[1] << " x " << h->getSpacing()[2]    << "<br>"
+                   << "Spacing: "   << h->getSpacing()[0] << " x " << h->getSpacing()[1] << " x " << h->getSpacing()[2] << " mm"  << "<br>"
                    << "Bits Per Voxel: " << v->getBitsAllocated() << "<br>"
                    << "Num Voxels: "<< v->getNumVoxels() << "<br>"
                    << "Memory Size: ";
@@ -210,7 +210,7 @@ std::string VolumePort::getContentDescriptionHTML() const {
             }
             else {
                 strstr << bytes << " bytes";
-            }            
+            }
     }
     return strstr.str();
 }
@@ -219,7 +219,7 @@ bool VolumePort::isReady() const {
     if (isOutport())
         return isConnected();
     else
-        return (hasData() && getData()->getRepresentation<VolumeRAM>() && checkConditions());
+        return (hasData() && /*getData()->getRepresentation<VolumeRAM>() &&*/ checkConditions());
 }
 
 void VolumePort::setData(const VolumeBase* handle, bool takeOwnership) {
@@ -238,7 +238,7 @@ void VolumePort::setData(const VolumeBase* handle, bool takeOwnership) {
     invalidatePort();
 }
 
-void VolumePort::volumeHandleDelete(const VolumeBase* source) {
+void VolumePort::volumeDelete(const VolumeBase* source) {
     if (getData() == source) {
         portData_ = 0; // we dont want to trigger automatic delete due to ownership
         invalidatePort();
@@ -325,12 +325,12 @@ void VolumePort::loadData(const std::string& path) throw (VoreenException) {
     VolumeSerializerPopulator serializerPop;
     const VolumeSerializer* serializer = serializerPop.getVolumeSerializer();
     try {
-        VolumeCollection* volumeCollection = serializer->read(filename);
-        tgtAssert(!volumeCollection->empty(), "empty collection");
-        VolumeBase* dataset = volumeCollection->first();
+        VolumeList* volumeList = serializer->read(filename);
+        tgtAssert(!volumeList->empty(), "empty collection");
+        VolumeBase* dataset = volumeList->first();
         setData(dataset, true);
         //we do not need the collection, just the volume:
-        delete volumeCollection;
+        delete volumeList;
     }
     catch (VoreenException) {
         throw;

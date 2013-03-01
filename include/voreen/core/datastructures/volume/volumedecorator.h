@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,7 +36,7 @@
 namespace voreen {
 
 ///Basic decorator:
-class VolumeDecoratorIdentity : public VolumeBase, public VolumeHandleObserver {
+class VRN_CORE_API VolumeDecoratorIdentity : public VolumeBase, public VolumeObserver {
 public:
     VolumeDecoratorIdentity(const VolumeBase* vhb);
     ~VolumeDecoratorIdentity() {}
@@ -73,8 +73,8 @@ public:
         return base_->getModality();
     }
 
-    //VolumeHandleObserver implementation:
-    virtual void volumeHandleDelete(const VolumeBase* /*source*/) {
+    //VolumeObserver implementation:
+    virtual void volumeDelete(const VolumeBase* /*source*/) {
         // not ideal, but the best we can do here:
         base_ = 0;
         notifyDelete();
@@ -91,7 +91,7 @@ protected:
 //-------------------------------------------------------------------------------------------------
 
 /// Decorates a Volume, replacing a metadata item.
-class VolumeDecoratorReplace : public VolumeDecoratorIdentity {
+class VRN_CORE_API VolumeDecoratorReplace : public VolumeDecoratorIdentity {
 public:
     /**
      * Decorates a volumehandle, replacing a metadata item.
@@ -118,7 +118,7 @@ protected:
 //-------------------------------------------------------------------------------------------------
 
 /// Decorates a Volume, replacing its physical-to-world transformation matrix.
-class VolumeDecoratorReplaceTransformation : public VolumeDecoratorReplace {
+class VRN_CORE_API VolumeDecoratorReplaceTransformation : public VolumeDecoratorReplace {
 public:
     VolumeDecoratorReplaceTransformation(const VolumeBase* vhb, tgt::mat4 matrix) :
       VolumeDecoratorReplace(vhb, "Transformation", new Mat4MetaData(matrix)) {}
@@ -127,7 +127,7 @@ public:
 //-------------------------------------------------------------------------------------------------
 
 /// Decorates a Volume, replacing its voxel spacing.
-class VolumeDecoratorReplaceSpacing : public VolumeDecoratorReplace {
+class VRN_CORE_API VolumeDecoratorReplaceSpacing : public VolumeDecoratorReplace {
 public:
     VolumeDecoratorReplaceSpacing(const VolumeBase* vhb, tgt::vec3 spacing) :
       VolumeDecoratorReplace(vhb, "Spacing", new Vec3MetaData(spacing)) {}
@@ -136,7 +136,7 @@ public:
 //-------------------------------------------------------------------------------------------------
 
 /// Decorates a Volume, replacing its offset in physical coordinates.
-class VolumeDecoratorReplaceOffset : public VolumeDecoratorReplace {
+class VRN_CORE_API VolumeDecoratorReplaceOffset : public VolumeDecoratorReplace {
 public:
     VolumeDecoratorReplaceOffset(const VolumeBase* vhb, tgt::vec3 offset) :
       VolumeDecoratorReplace(vhb, "Offset", new Vec3MetaData(offset)) {}
@@ -145,7 +145,7 @@ public:
 //-------------------------------------------------------------------------------------------------
 
 /// Decorates a Volume, replacing its real-world mapping.
-class VolumeDecoratorReplaceRealWorldMapping : public VolumeDecoratorReplace {
+class VRN_CORE_API VolumeDecoratorReplaceRealWorldMapping : public VolumeDecoratorReplace {
 public:
     VolumeDecoratorReplaceRealWorldMapping(const VolumeBase* vhb, RealWorldMapping rwm) :
       VolumeDecoratorReplace(vhb, "RealWorldMapping", new RealWorldMappingMetaData(rwm)) {}
@@ -154,7 +154,7 @@ public:
 //-------------------------------------------------------------------------------------------------
 
 /// Decorates a Volume, replacing its timestep.
-class VolumeDecoratorReplaceTimestep : public VolumeDecoratorReplace {
+class VRN_CORE_API VolumeDecoratorReplaceTimestep : public VolumeDecoratorReplace {
 public:
     VolumeDecoratorReplaceTimestep(const VolumeBase* vhb, float timestep) :
       VolumeDecoratorReplace(vhb, "Timestep", new FloatMetaData(timestep)) {}

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -474,7 +474,7 @@ VolumeBase* BrukerVolumeReader::read(const VolumeURL& origin)
     if (! tmp.empty())
         volumeId = stoi(tmp);
 
-    VolumeCollection* collection = read(origin.getPath(), volumeId);
+    VolumeList* collection = read(origin.getPath(), volumeId);
 
     if (collection && collection->size() == 1) {
         result = collection->first();
@@ -489,7 +489,7 @@ VolumeBase* BrukerVolumeReader::read(const VolumeURL& origin)
     return result;
 }
 
-VolumeCollection* BrukerVolumeReader::read(const std::string &url)
+VolumeList* BrukerVolumeReader::read(const std::string &url)
     throw (tgt::FileException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -501,7 +501,7 @@ VolumeCollection* BrukerVolumeReader::read(const std::string &url)
     return read(url, volumeId);
 }
 
-VolumeCollection* BrukerVolumeReader::read(const std::string &url, int volumeId)
+VolumeList* BrukerVolumeReader::read(const std::string &url, int volumeId)
     throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -815,7 +815,7 @@ VolumeCollection* BrukerVolumeReader::read(const std::string &url, int volumeId)
         }
 
 
-        VolumeCollection* toReturn = new VolumeCollection();
+        VolumeList* toReturn = new VolumeList();
         for (int frame = start; frame < end; ++frame) {
             VolumeRAM* vol = 0;
 

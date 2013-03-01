@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,7 +33,7 @@
 
 namespace voreen {
 
-    /**
+/**
  * Interface for implementations of the Basic Linear Algebra Subprograms (BLAS).
  *
  * Level 1 and 2 operations in single precision as well as
@@ -41,7 +41,7 @@ namespace voreen {
  *
  * @see VoreenBlasCPU, a basic CPU implementation.
  */
-class VoreenBlas {
+class VRN_CORE_API VoreenBlas {
 
 public:
 

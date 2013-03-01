@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -25,7 +25,6 @@
 
 #include "voreen/core/datastructures/transfunc/transfunc2dprimitives.h"
 #include "voreen/core/datastructures/transfunc/transfuncprimitive.h"
-#include "voreen/core/datastructures/transfunc/transfuncfactory.h"
 
 #include "tgt/glmath.h"
 #include "tgt/gpucapabilities.h"
@@ -57,9 +56,11 @@ TransFunc2DPrimitives::TransFunc2DPrimitives(int width, int height)
 }
 
 TransFunc2DPrimitives::~TransFunc2DPrimitives() {
-    delete fbo_;
-    fbo_ = 0;
-    LGL_ERROR;
+    if (fbo_) {
+        delete fbo_;
+        fbo_ = 0;
+        LGL_ERROR;
+    }
 
     std::vector<TransFuncPrimitive*>::iterator it;
     while (!primitives_.empty()) {

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -38,19 +38,19 @@ namespace voreen {
 template class VRN_CORE_API GenericPort<VolumeBase>;
 #endif
 
-class VRN_CORE_API VolumePort : public GenericPort<VolumeBase>, public VolumeHandleObserver {
+class VRN_CORE_API VolumePort : public GenericPort<VolumeBase>, public VolumeObserver {
 public:
     VolumePort(PortDirection direction, const std::string& id, const std::string& guiName = "",
                bool allowMultipleConnections = false,
                Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT);
 
+    virtual Port* create(PortDirection direction, const std::string& id, const std::string& guiName = "") const {return new VolumePort(direction,id,guiName);}
     virtual std::string getClassName() const {return "VolumePort";}
-
     virtual std::string getContentDescription() const;
     virtual std::string getContentDescriptionHTML() const;
 
     /**
-     * Assigns the passed volume handle to the port.
+     * Assigns the passed volume to the port.
      */
     void setData(const VolumeBase* handle, bool takeOwnership = true);
 
@@ -61,28 +61,28 @@ public:
      virtual bool isReady() const;
 
     /**
-     * Implementation of VolumeHandleObserver interface.
+     * Implementation of VolumeObserver interface.
      */
-    virtual void volumeHandleDelete(const VolumeBase* source);
+    virtual void volumeDelete(const VolumeBase* source);
 
     /**
-     * Implementation of VolumeHandleObserver interface.
+     * Implementation of VolumeObserver interface.
      */
     virtual void volumeChange(const VolumeBase* source);
 
     /**
-     * Shows or hides the port's texture access properties in the user interface. 
+     * Shows or hides the port's texture access properties in the user interface.
      *
      * These properties (texFilterMode_, texClampMode_, texBorderIntensity_) determine how
-     * a processor accesses the volume data it receives via an inport. By default, 
+     * a processor accesses the volume data it receives via an inport. By default,
      * the texture access properties are hidden.
      *
      * @note Texture access properties can only be shown for inports.
      */
     void showTextureAccessProperties(bool show);
-    
+
     /**
-     * Returns the port's texture filter mode property, which may be used 
+     * Returns the port's texture filter mode property, which may be used
      * to determine how a processor accesses its volume input data.
      * The property is only available for inports.
      *
@@ -91,7 +91,7 @@ public:
     IntOptionProperty& getTextureFilterModeProperty();
 
     /**
-     * Returns the port's texture clamp mode property, which may be used 
+     * Returns the port's texture clamp mode property, which may be used
      * to determine how a processor accesses its volume input data.
      * The property is only available for inports.
      *
@@ -100,7 +100,7 @@ public:
     GLEnumOptionProperty& getTextureClampModeProperty();
 
     /**
-     * Returns the port's texture border intensity property, which may be used 
+     * Returns the port's texture border intensity property, which may be used
      * to determine how a processor accesses its volume input data.
      * The property is only available for inports.
      *

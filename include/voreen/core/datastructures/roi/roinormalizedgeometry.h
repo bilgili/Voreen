@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -40,8 +40,8 @@ public:
     tgt::mat4 getPhysicalToNormalizedMatrix() const;
     tgt::mat4 getNormalizedToPhysicalMatrix() const;
 
-    virtual MeshListGeometry* generateMesh() const;
-    virtual MeshListGeometry* generateMesh(tgt::plane pl) const;
+    virtual Geometry* generateMesh() const;
+    virtual Geometry* generateMesh(tgt::plane pl) const;
 
     virtual tgt::Bounds getBoundingBox() const;
 
@@ -61,16 +61,16 @@ public:
 
     tgt::vec3 getLLF() const { return center_.get() - dimensions_.get() * 0.5f; }
     tgt::vec3 getURB() const { return center_.get() + dimensions_.get() * 0.5f; }
-    FaceGeometry getPlanePolygon(tgt::plane pl) const;
+    TriangleMeshGeometrySimple* getPlanePolygon(tgt::plane pl) const;
 
     // Methods to implement:
     virtual bool inROINormalized(tgt::vec3 p) const = 0;
-    virtual MeshListGeometry* generateNormalizedMesh() const = 0;
+    virtual Geometry* generateNormalizedMesh() const = 0;
     /**
      * Creates a (intersection) mesh in the given plane, usually for display in slice renderings.
      * @param pl Plane in normalized coordinates.
      */
-    virtual MeshListGeometry* generateNormalizedMesh(tgt::plane pl) const = 0;
+    virtual Geometry* generateNormalizedMesh(tgt::plane pl) const = 0;
 private:
     FloatVec3Property center_;
     FloatVec3Property dimensions_;

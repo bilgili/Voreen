@@ -15,7 +15,55 @@ SET(VRN_QT_SOURCES
     versionqt.cpp 
     voreenapplicationqt.cpp
     voreenmoduleqt.cpp
+
+    ## network editor ##
+
+    #editor
+    networkeditor/aggregationeditor.cpp
+    networkeditor/networkeditor.cpp
     
+    #dialogs
+    networkeditor/dialogs/propertylinkdialog.cpp
+    
+    #utils
+    networkeditor/dialogs/utils/splitgraphicsview.cpp
+
+    #style
+    networkeditor/styles/nwestyle_classic.cpp
+    networkeditor/styles/nwestyle_classic_print.cpp
+
+    #gi
+    networkeditor/graphicitems/nwebasegraphicsitem.cpp
+
+    #core
+    networkeditor/graphicitems/core/aggregationgraphicsitem.cpp
+    networkeditor/graphicitems/core/portgraphicsitem.cpp
+    networkeditor/graphicitems/core/portownergraphicsitem.cpp
+    networkeditor/graphicitems/core/processorgraphicsitem.cpp
+    networkeditor/graphicitems/core/propertygraphicsitem.cpp
+    networkeditor/graphicitems/core/propertylistgraphicsitem.cpp    
+    networkeditor/graphicitems/core/propertyownergraphicsitem.cpp
+
+    #connections
+    networkeditor/graphicitems/connections/connectionbasegraphicsitem.cpp
+    networkeditor/graphicitems/connections/portownerlinkarrowgraphicsitem.cpp
+    networkeditor/graphicitems/connections/propertylinkarrowgraphicsitem.cpp
+    networkeditor/graphicitems/connections/portarrowgraphicsitem.cpp
+    networkeditor/graphicitems/connections/portsizelinkarrowgraphicsitem.cpp
+
+    #tooltips
+    networkeditor/graphicitems/tooltips/tooltipbasegraphicsitem.cpp
+    networkeditor/graphicitems/tooltips/tooltipprocessorgraphicsitem.cpp
+    networkeditor/graphicitems/tooltips/tooltipportgraphicsitem.cpp
+
+    #utils
+    networkeditor/graphicitems/utils/renamabletextgraphicsitem.cpp
+    networkeditor/graphicitems/utils/progressbargraphicsitem.cpp
+    networkeditor/graphicitems/utils/widgettogglebuttongraphicsitem.cpp
+    networkeditor/graphicitems/utils/propertylistbuttongraphicsitem.cpp
+    
+    ## widgets ##
+
     widgets/choicelistcombobox.cpp
     widgets/clickablelabel.cpp
     widgets/codeedit.cpp
@@ -95,6 +143,7 @@ SET(VRN_QT_SOURCES
     widgets/property/transfuncpropertywidget.cpp
     widgets/property/vecpropertywidget.cpp
     widgets/property/voxeltypepropertywidget.cpp
+    widgets/property/volumeinfopropertywidget.cpp
     widgets/property/volumeurlpropertywidget.cpp
     widgets/property/volumeurllistpropertywidget.cpp
     
@@ -104,10 +153,10 @@ SET(VRN_QT_SOURCES
     widgets/transfunc/histogrampainter.cpp
     widgets/transfunc/transfunceditor.cpp
     widgets/transfunc/transfunc1dkeyseditor.cpp
-	widgets/transfunc/transfunc1dkeyspainter.cpp
+    widgets/transfunc/transfunc1dkeyspainter.cpp
     widgets/transfunc/transfunc1drampeditor.cpp
-	widgets/transfunc/transfunc2dprimitiveseditor.cpp
-	widgets/transfunc/transfunc2dprimitivespainter.cpp
+    widgets/transfunc/transfunc2dprimitiveseditor.cpp
+    widgets/transfunc/transfunc2dprimitivespainter.cpp
     widgets/transfunc/transfuncmappingcanvas.cpp
     widgets/transfunc/transfuncmappingcanvasramp.cpp
     widgets/transfunc/transfuncplugin.cpp
@@ -121,6 +170,43 @@ SET(VRN_QT_HEADERS
     ../../include/voreen/qt/aboutbox.h
     ../../include/voreen/qt/helpbrowser.h
     
+    ## network editor ##
+
+    #networkeditor
+    ../../include/voreen/qt/networkeditor/aggregationeditor.h
+    ../../include/voreen/qt/networkeditor/networkeditor.h
+    
+    #dialogs
+    ../../include/voreen/qt/networkeditor/dialogs/propertylinkdialog.h
+    
+    #utils
+    ../../include/voreen/qt/networkeditor/dialogs/utils/splitgraphicsview.h
+
+    #gi
+    ../../include/voreen/qt/networkeditor/graphicitems/nwebasegraphicsitem.h
+
+    #core
+    ../../include/voreen/qt/networkeditor/graphicitems/core/aggregationgraphicsitem.h
+    ../../include/voreen/qt/networkeditor/graphicitems/core/portgraphicsitem.h
+    ../../include/voreen/qt/networkeditor/graphicitems/core/portownergraphicsitem.h
+    ../../include/voreen/qt/networkeditor/graphicitems/core/processorgraphicsitem.h
+    ../../include/voreen/qt/networkeditor/graphicitems/core/propertygraphicsitem.h
+    ../../include/voreen/qt/networkeditor/graphicitems/core/propertylistgraphicsitem.h
+    ../../include/voreen/qt/networkeditor/graphicitems/core/propertyownergraphicsitem.h
+
+    #connections
+    ../../include/voreen/qt/networkeditor/graphicitems/connections/propertylinkarrowgraphicsitem.h
+    
+    #tooltips
+    ../../include/voreen/qt/networkeditor/graphicitems/tooltips/tooltipbasegraphicsitem.h
+
+    #utils
+    ../../include/voreen/qt/networkeditor/graphicitems/utils/renamabletextgraphicsitem.h
+    ../../include/voreen/qt/networkeditor/graphicitems/utils/propertylistbuttongraphicsitem.h
+    ../../include/voreen/qt/networkeditor/graphicitems/utils/widgettogglebuttongraphicsitem.h
+    
+    ## widgets ##
+
     ../../include/voreen/qt/widgets/clickablelabel.h
     ../../include/voreen/qt/widgets/codeedit.h
     ../../include/voreen/qt/widgets/consoleplugin.h
@@ -191,6 +277,7 @@ SET(VRN_QT_HEADERS
     ../../include/voreen/qt/widgets/property/grouppropertywidget.h
     ../../include/voreen/qt/widgets/property/transfuncpropertywidget.h
     ../../include/voreen/qt/widgets/property/voxeltypepropertywidget.h
+    ../../include/voreen/qt/widgets/property/volumeinfopropertywidget.h
     ../../include/voreen/qt/widgets/property/volumeurllistpropertywidget.h
     ../../include/voreen/qt/widgets/property/volumeurlpropertywidget.h
     
@@ -216,6 +303,31 @@ SET(VRN_QT_HEADERS_NONMOC
     ../../include/voreen/qt/progressdialog.h
     ../../include/voreen/qt/versionqt.h
     
+    ## network editor ##
+
+    #connections
+    ../../include/voreen/qt/networkeditor/graphicitems/connections/connectionbasegraphicsitem.h
+    ../../include/voreen/qt/networkeditor/graphicitems/connections/portownerlinkarrowgraphicsitem.h
+    ../../include/voreen/qt/networkeditor/graphicitems/connections/portarrowgraphicsitem.h
+    ../../include/voreen/qt/networkeditor/graphicitems/connections/portsizelinkarrowgraphicsitem.h 
+    
+    #tooltips
+    ../../include/voreen/qt/networkeditor/graphicitems/tooltips/tooltipportgraphicsitem.h
+    ../../include/voreen/qt/networkeditor/graphicitems/tooltips/tooltipprocessorgraphicsitem.h    
+    
+    #settings
+    ../../include/voreen/qt/networkeditor/editor_settings.h
+
+    #utils
+    ../../include/voreen/qt/networkeditor/graphicitems/utils/progressbargraphicsitem.h
+    
+    #style
+    ../../include/voreen/qt/networkeditor/styles/nwestyle_base.h
+    ../../include/voreen/qt/networkeditor/styles/nwestyle_classic.h
+    ../../include/voreen/qt/networkeditor/styles/nwestyle_classic_print.h
+
+    ## widgets ##
+    
     ../../include/voreen/qt/widgets/choicelistcombobox.h
     ../../include/voreen/qt/widgets/glslhighlighter.h
     ../../include/voreen/qt/widgets/syntaxhighlighter.h
@@ -240,9 +352,13 @@ LIST(APPEND VRN_QT_HEADERS ${VRN_MODULE_QT_HEADERS})
 LIST(APPEND VRN_QT_HEADERS_NONMOC ${VRN_MODULE_QT_HEADERS_NONMOC})
 
 # find Qt library
-FIND_PACKAGE(Qt4 ${VRN_REQUIRED_QT_VERSION} REQUIRED QtCore QtGui QtOpenGL)
+SET(VRN_QT_COMPONENTS QtCore QtGui QtOpenGL QtSvg)
+IF(QT_USE_QTNETWORK)
+    LIST(APPEND VRN_QT_COMPONENTS QtNetwork)
+ENDIF()
+FIND_PACKAGE(Qt4 ${VRN_REQUIRED_QT_VERSION} REQUIRED ${VRN_QT_COMPONENTS})
 IF(WIN32)
-    FIND_PACKAGE(Qt4DLLsVRN COMPONENTS QtCore QtGui QtOpenGL)
+    FIND_PACKAGE(Qt4DLLsVRN COMPONENTS ${VRN_QT_COMPONENTS})
     IF(QT_DLLS_FOUND)
         SET(VRN_EXTERNAL_DEBUG_DLLS   ${VRN_EXTERNAL_DEBUG_DLLS}   ${QT_DEBUG_DLLS}   PARENT_SCOPE)
         SET(VRN_EXTERNAL_RELEASE_DLLS ${VRN_EXTERNAL_RELEASE_DLLS} ${QT_RELEASE_DLLS} PARENT_SCOPE)
@@ -296,7 +412,7 @@ QT4_WRAP_CPP(VRN_QT_MOC_SOURCES ${VRN_QT_HEADERS})
 LIST(APPEND VRN_QT_SOURCES ${VRN_QT_MOC_SOURCES})
 
 # Qt ui and resources
-QT4_WRAP_UI(VRN_QT_FORMS_HEADERS aboutbox.ui)
+QT4_WRAP_UI(VRN_QT_FORMS_HEADERS aboutbox.ui ${VRN_MODULE_QT_FORMS_HEADERS})
 QT4_ADD_RESOURCES(VRN_QT_RESOURCES_RCC vrn_qt.qrc)
 
 # add msvc pch

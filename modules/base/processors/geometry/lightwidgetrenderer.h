@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -37,7 +37,7 @@ namespace voreen {
  * Draws a yellow sphere that indicates the position of the light source and can be moved.
  * Use linking to connect this widget to a light position of another processor.
  */
-class LightWidgetRenderer : public GeometryRendererBase {
+class VRN_CORE_API LightWidgetRenderer : public GeometryRendererBase {
 public:
     LightWidgetRenderer();
     ~LightWidgetRenderer();

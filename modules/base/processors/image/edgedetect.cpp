@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -32,13 +32,15 @@ using tgt::TextureUnit;
 namespace voreen {
 
 EdgeDetect::EdgeDetect()
-    : ImageProcessorBypassable("image/edgedetect"),
+    : ImageProcessorBypassable("image/edgedetect", true),
       edgeThreshold_("edgeThreshold", "Edge threshold", 0.04f, 0.001f, 1.f),
       backgroundColor_("backgroundColor", "Background color", tgt::Color(0.0f, 0.0f, 0.0f, 0.0f)),
       showImage_("showImage", "Show image", true),
       blendMode_("blendMode", "Blend mode", Processor::INVALID_PROGRAM),
       edgeStyle_("edgeStyle", "Edge style", Processor::INVALID_PROGRAM),
+      colorChannel_("edgeColorChannel", "Use channel..."),
       edgeColor_("edgeColor", "Edge color", tgt::vec4(0.0f, 0.0f, 0.0f, 1.0f)),
+      edgeThickness_("edgeThickness", "Edge Thickness in Pixels", 1.f, 0.2f, 10.f),
       inport_(Port::INPORT, "image.inport", "Image Input"),
       outport_(Port::OUTPORT, "image.outport", "Image Output")
 {
@@ -51,11 +53,22 @@ EdgeDetect::EdgeDetect()
     blendMode_.addOption("pseudo-chromadepth", "Pseudo chromadepth", 1);
     blendMode_.addOption("blend", "Blend", 2);
     blendMode_.addOption("gradient output", "Gradient output", 3);
-    edgeStyle_.addOption("contour", "Contour", 0);
+
+    edgeStyle_.addOption("contour", "Contour (depth-based)", 0);
     edgeStyle_.addOption("silhouette", "Silhouette", 1);
     edgeStyle_.addOption("contour-depth-based", "Contour (depth-based thickness)", 2);
+    edgeStyle_.addOption("color-based", "Contour (color-based)", 3);
+
+    colorChannel_.addOption("R", "R", 0);
+    colorChannel_.addOption("G", "G", 1);
+    colorChannel_.addOption("B", "B", 2);
+    colorChannel_.addOption("A", "A", 3);
+    colorChannel_.setVisible(false);
+
     addProperty(edgeStyle_);
+    addProperty(colorChannel_);
     addProperty(edgeThreshold_);
+    addProperty(edgeThickness_);
     addProperty(blendMode_);
     addProperty(edgeColor_);
     addProperty(backgroundColor_);
@@ -63,6 +76,8 @@ EdgeDetect::EdgeDetect()
 
     addPort(inport_);
     addPort(outport_);
+
+    edgeStyle_.onChange(CallMemberAction<EdgeDetect>(this, &EdgeDetect::adjustPropVisibility));
 }
 
 EdgeDetect::~EdgeDetect() {}
@@ -103,11 +118,24 @@ void EdgeDetect::process() {
     program_->setUniform("blendMode_", blendMode_.getValue());
     program_->setUniform("edgeStyle_", edgeStyle_.getValue());
 
+    float edgeThickness = edgeThickness_.get();
+    if(interactionMode() && interactionAdapt_.get())
+        edgeThickness = std::max(0.2f, edgeThickness / interactionFactor_.get());
+    program_->setUniform("edgeOffsetLength_", edgeThickness);
+
+    if(edgeStyle_.isSelected("color-based"))
+        program_->setUniform("colorChannel_", colorChannel_.getValue());
+
     renderQuad();
 
     program_->deactivate();
     outport_.deactivateTarget();
     LGL_ERROR;
+}
+
+void EdgeDetect::adjustPropVisibility() {
+    bool useColor = edgeStyle_.isSelected("color-based");
+    colorChannel_.setVisible(useColor);
 }
 
 } // voreen namespace

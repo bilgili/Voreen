@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -40,6 +40,7 @@ LightPropertyWidget::LightPropertyWidget(FloatVec4Property* prop, QWidget* paren
     : QPropertyWidget(prop, parent)
     , property_(prop)
     , noUpdateFromProp_(false)
+    , curCenter_(tgt::vec3(0.f))
 {
     light_ = new LightWidget(this);
     followCam_ = new QCheckBox(tr("Follow Camera"), this);
@@ -56,8 +57,9 @@ LightPropertyWidget::LightPropertyWidget(FloatVec4Property* prop, QWidget* paren
     CameraProperty* camProp = getCamera();
     if(camProp) {
         camProp->onChange(CallMemberAction<LightPropertyWidget>(this, &LightPropertyWidget::cameraUpdate));
-        light_->setLightPosition(camProp->get().getViewMatrix().getRotationalPart() * property_->get());
-        cameraUpdate();
+        curCenter_ = camProp->getTrackball().getCenter();
+        light_->setMaxDist(camProp->getMaxValue() / 50.f);
+        light_->setLightPosition(camProp->get().getViewMatrix().getRotationalPart() * (property_->get() - tgt::vec4(curCenter_, 0.f)));
     }
 
     addVisibilityControls();
@@ -91,7 +93,7 @@ void LightPropertyWidget::changeWidgetLight(tgt::vec4 lightPos) {
     const tgt::Camera& camera = camProp->get();
 
     //hackish, but we don't want an additional updateFromProperty of the lightwidget which caused the call of this function in the first place and which is already updated FL
-    property_->set(camera.getViewMatrixInverse().getRotationalPart() * lightPos);
+    property_->set(camera.getViewMatrixInverse().getRotationalPart() * lightPos + tgt::vec4(camProp->getTrackball().getCenter(), 0.f));
     noUpdateFromProp_ = false;
 }
 
@@ -101,35 +103,38 @@ void LightPropertyWidget::cameraUpdate() {
         return;
 
     float maxVal = camProp->getMaxValue() / 50.f;
-    if(maxVal != property_->getMaxValue().x) {
-        float oldRelDist = length(property_->get().xyz()) / property_->getMaxValue().x;
+    tgt::vec3 newCenter = camProp->getTrackball().getCenter();
+
+    if(fabs(maxVal - light_->getMaxDist()) > 1.f || newCenter != curCenter_) {
+        float oldRelDist = length(property_->get().xyz() - curCenter_) / light_->getMaxDist();
+        tgt::vec3 oldPos = property_->get().xyz();
         light_->setMinDist(maxVal * 0.1f);
         light_->setMaxDist(maxVal);
-        property_->setMinValue(tgt::vec4(-maxVal));
-        property_->setMaxValue(tgt::vec4(maxVal));
-        property_->set(property_->get() * oldRelDist);
+        property_->set(tgt::vec4(normalize(oldPos - curCenter_), 0.f) * oldRelDist * maxVal + tgt::vec4(newCenter, 0.f));
+        curCenter_ = newCenter;
     }
 
     const tgt::Camera& camera = camProp->get();
     if (followCam_->isChecked()) {
         noUpdateFromProp_ = true;
-        property_->set(camera.getViewMatrixInverse().getRotationalPart() * light_->getLightPosition());
+        property_->set(camera.getViewMatrixInverse().getRotationalPart() * light_->getLightPosition() + tgt::vec4(curCenter_, 0.f));
         noUpdateFromProp_ = false;
     }
     else
-        light_->setLightPosition(camera.getViewMatrix().getRotationalPart() * property_->get());
+        light_->setLightPosition(camera.getViewMatrix().getRotationalPart() * (property_->get() - tgt::vec4(curCenter_, 0.f)));
 }
 
 void LightPropertyWidget::updateFromProperty() {
     if (noUpdateFromProp_)
         return;
-    else
-        light_->setLightPosition(property_->get());
+    if(!getCamera())
+        return;
+
+    light_->setLightPosition(getCamera()->get().getViewMatrix().getRotationalPart() * (property_->get() - tgt::vec4(getCamera()->getTrackball().getCenter(), 0.f)));
 }
 
 void LightPropertyWidget::updateMetaData() const {
-    BoolMetaData* follow = new BoolMetaData();
-    follow->setValue(followCam_->isChecked());
+    BoolMetaData* follow = new BoolMetaData(followCam_->isChecked());
     property_->getMetaDataContainer().addMetaData("FollowCamera", follow);
 }
 

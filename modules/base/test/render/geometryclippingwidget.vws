@@ -359,7 +359,7 @@
                         <Property name="planeNormal" id="ref15">
                             <value x="0.4030017" y="0.89706969" z="0.18126141" />
                         </Property>
-                        <Property name="planePosition" value="0.02139887" id="ref13" />
+                        <Property name="planePosition" value="-0.01563443" minValue="-1.77535" maxValue="1.77535" id="ref13" />
                     </Properties>
                     <Inports>
                         <Port name="geometry.geometry">
@@ -398,7 +398,7 @@
                         <Property name="planeNormal" id="ref16">
                             <value x="0.4030017" y="0.89706969" z="0.18126141" />
                         </Property>
-                        <Property name="planePosition" value="0.02139887" id="ref14" />
+                        <Property name="planePosition" value="-0.01563443" id="ref14" />
                         <Property name="renderGeometry" value="true" />
                     </Properties>
                     <Inports>

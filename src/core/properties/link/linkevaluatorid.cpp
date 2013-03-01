@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -37,6 +37,7 @@
 namespace voreen {
 
 void LinkEvaluatorCameraId::eval(Property* src, Property* dst) throw (VoreenException) {
+
     CameraProperty* dstCast = static_cast<CameraProperty*>(dst);
     CameraProperty* srcCast = static_cast<CameraProperty*>(src);
 
@@ -50,12 +51,17 @@ void LinkEvaluatorCameraId::eval(Property* src, Property* dst) throw (VoreenExce
     cam.setProjectionMode(srcCam.getProjectionMode());
     cam.setStereoEyeMode(srcCam.getStereoEyeMode(), false);
     cam.setStereoEyeSeparation(srcCam.getStereoEyeSeparation(), false);
-    cam.setStereoAxisMode(srcCam.getStereoAxisMode());
+    cam.setStereoAxisMode(srcCam.getStereoAxisMode(), false);
 
+    // TODO setting max value is now only important for distance slider in cam widget, no real need to update this?
+    //dstCast->setMaxValue(srcCast->getMaxValue());
+    dstCast->setAdaptOnChange(srcCast->getAdaptOnChange());
+    dstCast->setTrackballCenterBehaviour(srcCast->getTrackballCenterBehaviour());
+    dstCast->getTrackball().setCenter(srcCast->getTrackball().getCenter());
+    dstCast->setSceneBounds(srcCast->getSceneBounds());
+
+    // order is important: only now set cam and cause further link execution
     dstCast->set(cam);
-    dstCast->getTrackball()->setMoveCenter(srcCast->getTrackball()->getMoveCenter());
-    dstCast->getTrackball()->setCenter(srcCast->getTrackball()->getCenter());
-    dstCast->setMaxValue(srcCast->getMaxValue());
 }
 
 bool LinkEvaluatorCameraId::arePropertiesLinkable(const Property* p1, const Property* p2) const {

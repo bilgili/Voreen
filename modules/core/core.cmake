@@ -10,7 +10,7 @@ SET(MOD_CORE_SOURCES
     ${MOD_DIR}/processors/input/imagesequencesource.cpp
     ${MOD_DIR}/processors/input/imagesource.cpp
     ${MOD_DIR}/processors/input/textsource.cpp
-    ${MOD_DIR}/processors/input/volumecollectionsource.cpp
+    ${MOD_DIR}/processors/input/volumelistsource.cpp
     ${MOD_DIR}/processors/input/volumeselector.cpp
     ${MOD_DIR}/processors/input/volumesource.cpp
     
@@ -18,7 +18,7 @@ SET(MOD_CORE_SOURCES
     ${MOD_DIR}/processors/output/geometrysave.cpp
     ${MOD_DIR}/processors/output/imagesequencesave.cpp
     ${MOD_DIR}/processors/output/textsave.cpp
-    ${MOD_DIR}/processors/output/volumecollectionsave.cpp
+    ${MOD_DIR}/processors/output/volumelistsave.cpp
     ${MOD_DIR}/processors/output/volumesave.cpp
 
     ${MOD_DIR}/io/datvolumereader.cpp
@@ -35,7 +35,7 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/processors/input/imagesequencesource.h
     ${MOD_DIR}/processors/input/imagesource.h
     ${MOD_DIR}/processors/input/textsource.h
-    ${MOD_DIR}/processors/input/volumecollectionsource.h
+    ${MOD_DIR}/processors/input/volumelistsource.h
     ${MOD_DIR}/processors/input/volumeselector.h
     ${MOD_DIR}/processors/input/volumesource.h
     
@@ -43,7 +43,7 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/processors/output/geometrysave.h
     ${MOD_DIR}/processors/output/imagesequencesave.h
     ${MOD_DIR}/processors/output/textsave.h
-    ${MOD_DIR}/processors/output/volumecollectionsave.h
+    ${MOD_DIR}/processors/output/volumelistsave.h
     ${MOD_DIR}/processors/output/volumesave.h
 
     ${MOD_DIR}/io/datvolumereader.h

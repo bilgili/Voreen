@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -32,7 +32,7 @@ namespace voreen {
 
 class Volume;
 
-struct QuadHidacHeader {
+struct VRN_CORE_API QuadHidacHeader {
     std::string title;
     int subsets;
     int ntf;
@@ -65,7 +65,7 @@ struct QuadHidacHeader {
 /**
  * Reads a volume dataset from a file produced by the quadHIDAC small-animal PET.
  */
-class QuadHidacVolumeReader : public VolumeReader {
+class VRN_CORE_API QuadHidacVolumeReader : public VolumeReader {
 public:
     QuadHidacVolumeReader(ProgressBar* progress = 0);
     virtual VolumeReader* create(ProgressBar* progress = 0) const;
@@ -76,7 +76,7 @@ public:
     QuadHidacHeader readHeader(const std::string& filename) const
         throw (tgt::FileException);
 
-    virtual VolumeCollection* read(const std::string& url)
+    virtual VolumeList* read(const std::string& url)
         throw (tgt::FileException, std::bad_alloc);
 
     ///Passes the origin's URL to read(url).

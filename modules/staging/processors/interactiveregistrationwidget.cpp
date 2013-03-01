@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -98,7 +98,7 @@ void InteractiveRegistrationWidget::initialize() throw (tgt::Exception) {
             RenderProcessor::generateHeader(), false);
         copyShader_->deactivate();
     } catch(tgt::Exception) {
-        initialized_ = false;
+        processorState_ = PROCESSOR_STATE_NOT_INITIALIZED;
         throw VoreenException("Failed to load shader: passthrough.vert/copyimage.frag");
     }
 }
@@ -368,7 +368,7 @@ void InteractiveRegistrationWidget::centerPoint() {
     tgt::plane p(normalize(plane_.get()), planeDist_.get());
 
     float t;
-    if(p.intersect(l, t)) 
+    if(p.intersect(l, t))
         point_.set(l.getFromParam(t));
 }
 

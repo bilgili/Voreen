@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -374,8 +374,8 @@ void TransFunc2DPrimitivesEditor::updateFromProperty() {
         return;
 
     const VolumeBase* newHandle = property_->getVolumeHandle();
-    if (newHandle != volumeHandle_) {
-        volumeHandle_ = newHandle;
+    if (newHandle != volume_) {
+        volume_ = newHandle;
         volumeChanged();
     }
 
@@ -397,14 +397,14 @@ void TransFunc2DPrimitivesEditor::volumeChanged() {
     histogramBrightness_->setValue(100);
     histogramBrightness_->blockSignals(false);
 
-    if (volumeHandle_ && volumeHandle_->getRepresentation<VolumeRAM>()) {
-        int bits = volumeHandle_->getRepresentation<VolumeRAM>()->getBitsAllocated() / volumeHandle_->getRepresentation<VolumeRAM>()->getNumChannels();
+    if (volume_ && volume_->getRepresentation<VolumeRAM>()) {
+        int bits = volume_->getRepresentation<VolumeRAM>()->getBitsAllocated() / volume_->getRepresentation<VolumeRAM>()->getNumChannels();
         maximumIntensity_ = static_cast<int>(pow(2.f, static_cast<float>(bits)))-1;
     }
 
     // propagate volume to painter where the histogram is calculated
-    if (volumeHandle_)
-        painter_->volumeChanged(volumeHandle_);
+    if (volume_)
+        painter_->volumeChanged(volume_);
     else
         painter_->volumeChanged(0);
 }

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -28,7 +28,6 @@
 #endif
 
 #include "voreen/core/voreenapplication.h"
-#include "voreen/core/processors/processorfactory.h"
 #include "voreen/core/network/processornetwork.h"
 #include "voreen/core/voreenmodule.h"
 
@@ -48,8 +47,6 @@ int main(int argc, char** argv) {
     VoreenApplication app("descriptiontest", "descriptiontest", "", argc, argv, VoreenApplication::APP_ALL);
     app.initialize();
     LogMgr.getConsoleLog()->enableColors(false);
-
-    ProcessorFactory* pf = ProcessorFactory::getInstance();
 
     std::stringstream tmpOut;
     std::string loggerCat_ = "descriptiontest";
@@ -86,18 +83,15 @@ int main(int argc, char** argv) {
     size_t skipped = 0;
     size_t numFailed = 0;
     //const ProcessorFactory::KnownClassesVector& knownClasses =  pf->getKnownClasses();
-    const std::vector<Processor*>& knownClasses = pf->getRegisteredProcessors();
+    const std::vector<const Processor*>& knownClasses = VoreenApplication::app()->getSerializableTypes<Processor>();
 
     for(size_t i=0; i<knownClasses.size(); ++i) {
         string classname = knownClasses[i]->getClassName();
         string processorModule = knownClasses[i]->getModuleName();
+        std::string description = knownClasses[i]->getDescription();
 
         const VoreenModule* module = VoreenApplication::app()->getModule(processorModule);
-        std::string description = "";
-        if (module) {
-            description += module->getDocumentationDescription(classname);
-        }
-        else {
+        if (!module) {
             LERROR("Found no module " << processorModule << " for processor " << classname);
             return EXIT_FAILURE;
         }

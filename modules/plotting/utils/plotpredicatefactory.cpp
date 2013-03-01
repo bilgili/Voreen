@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -71,7 +71,7 @@ std::vector<std::string> PlotPredicateFactory::getAllTypeStrings(PredicateClasse
     return toReturn;
 }
 
-const std::string PlotPredicateFactory::getTypeString(const std::type_info& type) const {
+std::string PlotPredicateFactory::getSerializableTypeString(const std::type_info& type) const {
     if (type == typeid(PlotPredicateLess))
         return "PlotPredicateLess";
     else if (type == typeid(PlotPredicateEqual))
@@ -100,7 +100,7 @@ const std::string PlotPredicateFactory::getTypeString(const std::type_info& type
         return "";
 }
 
-Serializable* PlotPredicateFactory::createType(const std::string& typeString) {
+Serializable* PlotPredicateFactory::createSerializableType(const std::string& typeString) const {
     if (typeString == "PlotPredicateLess")
         return new PlotPredicateLess();
     else if (typeString == "PlotPredicateEqual")

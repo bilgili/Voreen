@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -207,6 +207,16 @@ inline int clamp(int f, int min, int max) {
 }
 
 /*
+    logarithm
+ */
+inline int ilog2(int i) {
+    if (i <= 0)
+        return 0;
+    else
+        return tgt::iround(log((double)i) / log(2.0));
+}
+
+/*
     floating point checks
  */
 
@@ -238,6 +248,35 @@ inline bool isFiniteNumber(float f) {
 /// Returns false, if \p d is NaN or infinity.
 inline bool isFiniteNumber(double d) {
     return (d <= DBL_MAX && d >= -DBL_MAX);
+}
+
+/*
+    power-of-two
+ */
+
+/// Returns the nearest power of two (excluding 1), which may be smaller than \p i
+inline int nearestPowerOfTwo(int i) {
+    if (i <= 2)
+        return 2;
+    else {
+        double log2 = log(static_cast<double>(i)) / log(2.0);
+        return static_cast<int>(pow(2.0, tgt::round(log2 + 0.5)));
+    }
+}
+
+/// Returns the next larger power of two (excluding 1).
+inline int nextLargerPowerOfTwo(int i) {
+    if (i <= 2)
+        return 2;
+    else {
+        double log2 = log(static_cast<double>(i)) / log(2.0);
+        return static_cast<int>(pow(2.0, ceil(log2)));
+    }
+}
+
+/// Determines whether \p i is a power of two.
+inline bool isPowerOfTwo(int i) {
+    return (nextLargerPowerOfTwo(i) == i);
 }
 
 } // namespace tgt

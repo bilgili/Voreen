@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -40,6 +40,8 @@ public:
     ROIPort(PortDirection direction, const std::string& name, const std::string& guiName = "",
                  bool allowMultipleConnections = false,
                  Processor::InvalidationLevel invalidationLevel = Processor::INVALID_PROGRAM);
+
+    virtual Port* create(PortDirection direction, const std::string& id, const std::string& guiName = "") const {return new ROIPort(direction,id,guiName);}
     virtual std::string getClassName() const {return "ROIPort";}
 };
 

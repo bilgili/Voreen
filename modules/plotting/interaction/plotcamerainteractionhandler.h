@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -37,7 +37,7 @@ class CameraProperty;
  * In opposite to the TrackballNavigation,
  * this class provides rather rigid rotations appropriate for plots.
  */
-class PlotCameraInteractionHandler : public InteractionHandler {
+class VRN_CORE_API PlotCameraInteractionHandler : public InteractionHandler {
 
 public:
 
@@ -54,6 +54,9 @@ public:
      */
     PlotCameraInteractionHandler(const std::string& id, const std::string& guiText, CameraProperty* cameraProp,
         bool sharing = false, bool enabled = true);
+
+    virtual std::string getClassName() const   { return "PlotCameraInteractionHandler";     }
+    virtual InteractionHandler* create() const { return new PlotCameraInteractionHandler(); }
 
 private:
 

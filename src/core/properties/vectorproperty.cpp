@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -29,9 +29,8 @@ namespace voreen {
 
 FloatVec2Property::FloatVec2Property(const std::string& id, const std::string& guiText,
                              const tgt::vec2& value, const tgt::vec2& minValue,
-                             const tgt::vec2& maxValue, int invalidationLevel)
-    : NumericProperty<tgt::vec2>(id, guiText, value, minValue, maxValue, tgt::vec2(0.01f),
-        invalidationLevel)
+                             const tgt::vec2& maxValue, int invalidationLevel, NumericProperty<tgt::vec2>::BoundaryUpdatePolicy bup)
+    : NumericProperty<tgt::vec2>(id, guiText, value, minValue, maxValue, tgt::vec2(0.01f), invalidationLevel, bup)
 {}
 
 FloatVec2Property::FloatVec2Property()
@@ -47,9 +46,8 @@ Property* FloatVec2Property::create() const {
 
 FloatVec3Property::FloatVec3Property(const std::string& id, const std::string& guiText,
                              const tgt::vec3& value, const tgt::vec3& minValue,
-                             const tgt::vec3& maxValue, int invalidationLevel)
-    : NumericProperty<tgt::vec3>(id, guiText, value, minValue, maxValue, tgt::vec3(0.01f),
-        invalidationLevel)
+                             const tgt::vec3& maxValue, int invalidationLevel, NumericProperty<tgt::vec3>::BoundaryUpdatePolicy bup)
+    : NumericProperty<tgt::vec3>(id, guiText, value, minValue, maxValue, tgt::vec3(0.01f), invalidationLevel, bup)
 {}
 
 FloatVec3Property::FloatVec3Property()
@@ -65,9 +63,8 @@ Property* FloatVec3Property::create() const {
 
 FloatVec4Property::FloatVec4Property(const std::string& id, const std::string& guiText,
                              const tgt::vec4& value, const tgt::vec4& minValue,
-                             const tgt::vec4& maxValue, int invalidationLevel)
-    : NumericProperty<tgt::vec4>(id, guiText, value, minValue, maxValue, tgt::vec4(0.01f),
-        invalidationLevel)
+                             const tgt::vec4& maxValue, int invalidationLevel, NumericProperty<tgt::vec4>::BoundaryUpdatePolicy bup)
+    : NumericProperty<tgt::vec4>(id, guiText, value, minValue, maxValue, tgt::vec4(0.01f), invalidationLevel, bup)
 {}
 
 FloatVec4Property::FloatVec4Property()
@@ -83,9 +80,8 @@ Property* FloatVec4Property::create() const {
 
 IntVec2Property::IntVec2Property(const std::string& id, const std::string& guiText,
                          const tgt::ivec2& value, const tgt::ivec2& minValue,
-                         const tgt::ivec2& maxValue, int invalidationLevel)
-    : NumericProperty<tgt::ivec2>(id, guiText, value, minValue, maxValue, tgt::ivec2(1),
-            invalidationLevel)
+                         const tgt::ivec2& maxValue, int invalidationLevel, NumericProperty<tgt::ivec2>::BoundaryUpdatePolicy bup)
+    : NumericProperty<tgt::ivec2>(id, guiText, value, minValue, maxValue, tgt::ivec2(1), invalidationLevel, bup)
 {}
 
 IntVec2Property::IntVec2Property()
@@ -101,9 +97,8 @@ Property* IntVec2Property::create() const {
 
 IntVec3Property::IntVec3Property(const std::string& id, const std::string& guiText,
                          const tgt::ivec3& value, const tgt::ivec3& minValue,
-                         const tgt::ivec3& maxValue, int invalidationLevel)
-    : NumericProperty<tgt::ivec3>(id, guiText, value, minValue, maxValue, tgt::ivec3(1),
-        invalidationLevel)
+                         const tgt::ivec3& maxValue, int invalidationLevel, NumericProperty<tgt::ivec3>::BoundaryUpdatePolicy bup)
+    : NumericProperty<tgt::ivec3>(id, guiText, value, minValue, maxValue, tgt::ivec3(1), invalidationLevel, bup)
 {}
 
 IntVec3Property::IntVec3Property()
@@ -119,9 +114,8 @@ Property* IntVec3Property::create() const {
 
 IntVec4Property::IntVec4Property(const std::string& id, const std::string& guiText,
                          const tgt::ivec4& value, const tgt::ivec4& minValue,
-                         const tgt::ivec4& maxValue, int invalidationLevel)
-    : NumericProperty<tgt::ivec4>(id, guiText, value, minValue, maxValue, tgt::ivec4(1),
-        invalidationLevel)
+                         const tgt::ivec4& maxValue, int invalidationLevel, NumericProperty<tgt::ivec4>::BoundaryUpdatePolicy bup)
+    : NumericProperty<tgt::ivec4>(id, guiText, value, minValue, maxValue, tgt::ivec4(1), invalidationLevel, bup)
 {}
 
 IntVec4Property::IntVec4Property()

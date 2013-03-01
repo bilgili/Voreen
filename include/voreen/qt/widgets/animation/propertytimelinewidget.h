@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -69,10 +69,8 @@ public:
     /// This is the implementation of the virtual function of the timelineobserver in the core section
     virtual void timelineChanged() {}
 
-     /**
-     * @see PropertyOwner
-     */
-     std::string getName() const;
+     virtual std::string getClassName() const { return "PropertyTimelineWidget"; }
+     virtual VoreenModule* create() const { return 0; }
 
 public slots:
     void setFps(int);
@@ -95,7 +93,7 @@ protected:
     QPropertyWidget* propertyWidget_;
 
     PropertyTimeline* propertyTimeline_;
-    const std::string name_;
+
     int duration_;
     int fps_;
     QGraphicsPixmapItem* inInterpolationSelector_;
@@ -138,6 +136,8 @@ protected:
     * We are in need of this because Q_OBJECTS can't be templated, but we need signal/slots
     */
     virtual void updateTemplateKeyframePosition(float, KeyframeGraphicsItem*) {}
+
+    virtual void shiftTemplateKeyframePosition(float, KeyframeGraphicsItem*) {}
 
     /**
     * Delegate out interpolationfunction changes to the corresponding function in the templated class
@@ -205,21 +205,22 @@ protected:
     void showFrameHUD(bool);
 
     QGraphicsTextItem* currentFrameCounter_;
-
-
 protected slots:
 
     /// Adds a Keyframe at given point in Animation Core
     KeyframeGraphicsItem* addKeyframeCore(QPointF);
-   /// Adds a Keyframe at given point in propertyTimelineScene
+    /// Adds a Keyframe at given point in propertyTimelineScene
     KeyframeGraphicsItem* addKeyframeScene(PropertyKeyValueBase*);
+
+    void clearTimeline();
+    void removeTimeline();
 
     /// Sets the current Frame
     void setCurrentFrame(int);
     ///Invoken when an item is clicked
     void itemClicked(KeyframeGraphicsItem*);
     ///Invoken when an item is released
-    void itemReleased(KeyframeGraphicsItem*);
+    void itemReleased(KeyframeGraphicsItem*, bool shift);
     /// Item is moving
     void itemMoving(KeyframeGraphicsItem* kfgi);
 
@@ -244,7 +245,8 @@ signals:
     void renderAt(float);
     void viewResizeSignal(int);
     void keyframeAdded();
-
+    void keyframeChanged();
+    void removeTimeline(Property* prop);
 };
 
 } // namespace voreen

@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -224,12 +224,19 @@ struct Vector2 {
     }
 
     static Vector2<T> zero;
+    static Vector2<T> one;
+    static Vector2<T> two;
 };
 
 /// init statics
 template<class T>
 Vector2<T> Vector2<T>::zero = Vector2<T>(T(0), T(0));
 
+template<class T>
+Vector2<T> Vector2<T>::one = Vector2<T>(T(1), T(1));
+
+template<class T>
+Vector2<T> Vector2<T>::two = Vector2<T>(T(2), T(2));
 
 /**
     This is a 3-dimensional Vector class similar to vec3 of GLSL.
@@ -339,11 +346,19 @@ struct Vector3 {
     statics
 */
     static Vector3<T> zero;
+    static Vector3<T> one;
+    static Vector3<T> two;
 };
 
 /// init statics
 template<class T>
 Vector3<T> Vector3<T>::zero = Vector3<T>(T(0), T(0), T(0));
+
+template<class T>
+Vector3<T> Vector3<T>::one = Vector3<T>(T(1), T(1), T(1));
+
+template<class T>
+Vector3<T> Vector3<T>::two = Vector3<T>(T(2), T(2), T(2));
 
 /**
     This is a 4-dimensional Vector class similar to vec4 of GLSL.
@@ -510,7 +525,9 @@ struct Vector4 {
     //static Vector4<float> brown;
     //static Vector4<float> yellow;
 
-    //static Vector4<T> zero;
+    static Vector4<T> zero;
+    static Vector4<T> one;
+    static Vector4<T> two;
 };
 
 
@@ -524,8 +541,9 @@ struct Vector4 {
 //template<class T> Vector4<float> Vector4<T>::brown (0.6f, 0.4f, 0.f, 1.f);
 
 /// init statics
-//template<class T>
-//Vector4<T> Vector4<T>::zero = Vector4<T>(T(0), T(0), T(0), T(0));
+template<class T> Vector4<T> Vector4<T>::zero = Vector4<T>(T(0), T(0), T(0), T(0));
+template<class T> Vector4<T> Vector4<T>::one = Vector4<T>(T(1), T(1), T(1), T(1));
+template<class T> Vector4<T> Vector4<T>::two = Vector4<T>(T(2), T(2), T(2), T(2));
 
 /*
     typedefs for easy usage
@@ -745,12 +763,12 @@ template<class T> inline TGT_BASE_TYPE<T> normalize(const TGT_BASE_TYPE<T>& v) {
 
 #define TGT_VEC_DISTANCE \
 template<class T> inline T distance(const TGT_BASE_TYPE<T>& v1, const TGT_BASE_TYPE<T>& v2) { \
-    return length(v2 - v1); \
+    return static_cast<T>(length(v2 - v1)); \
 }
 
 #define TGT_VEC_DISTANCE_SQ \
 template<class T> inline T distanceSq(const TGT_BASE_TYPE<T>& v1, const TGT_BASE_TYPE<T>& v2) { \
-    return lengthSq(v2 - v1); \
+    return static_cast<T>(lengthSq(v2 - v1)); \
 }
 
 #define TGT_VEC_UNARY_MINUS \

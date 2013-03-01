@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,7 +26,6 @@
 #include "voreen/core/network/networkconverter.h"
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/properties/property.h"
-#include "voreen/core/processors/processorfactory.h"
 #include "voreen/core/utils/stringutils.h"
 
 #include "tinyxml/tinyxml.h"
@@ -328,6 +327,89 @@ void NetworkConverter11to12::convertVolumeContainer(TiXmlElement* workspaceNode)
 void NetworkConverter12to13::convert(TiXmlElement* elem) {
     changePropertyName(elem, "UnaryImageProcessor", "shader", "shader.program");
     changePropertyName(elem, "BinaryImageProcessor", "shader", "shader.program");
+}
+
+//----------------------------------------------------------------------------
+
+void NetworkConverter13to14::convert(TiXmlElement* elem) {
+    if(TiXmlElement* processorsNode = elem->FirstChildElement("Processors")) {
+        for (TiXmlElement* procNode = processorsNode->FirstChildElement("Processor")
+            ; procNode != 0
+            ; procNode = procNode->NextSiblingElement("Processor"))
+        {
+            //add mapKey to processor->properties->property
+            if(TiXmlElement* propertiesNode = procNode->FirstChildElement("Properties")) {
+                for (TiXmlElement* propNode = propertiesNode->FirstChildElement("Property")
+                     ; propNode != 0
+                     ; propNode = propNode->NextSiblingElement("Property"))
+                {
+                    const std::string* name = propNode->Attribute(std::string("name"));
+                    if (name)
+                        propNode->SetAttribute("mapKey", name->c_str());
+                }
+            }
+            //add mapKey to processor->inports->port->properties->property
+            if(TiXmlElement* inportsNode = procNode->FirstChildElement("Inports")) {
+                for (TiXmlElement* portNode = inportsNode->FirstChildElement("Port")
+                    ; portNode != 0
+                    ; portNode = portNode->NextSiblingElement("Port"))
+                {
+                    if(TiXmlElement* propertiesNode = portNode->FirstChildElement("Properties")) {
+                        for (TiXmlElement* propNode = propertiesNode->FirstChildElement("Property")
+                            ; propNode != 0
+                            ; propNode = propNode->NextSiblingElement("Property"))
+                        {
+                            const std::string* name = propNode->Attribute(std::string("name"));
+                            if (name)
+                                propNode->SetAttribute("mapKey", name->c_str());
+                        }
+                    }
+                }
+            }
+            //add mapKey to processor->outports->port->properties-<property
+            if(TiXmlElement* outportsNode = procNode->FirstChildElement("Outports")) {
+                for (TiXmlElement* portNode = outportsNode->FirstChildElement("Port")
+                    ; portNode != 0
+                    ; portNode = portNode->NextSiblingElement("Port"))
+                {
+                    if(TiXmlElement* propertiesNode = portNode->FirstChildElement("Properties")) {
+                        for (TiXmlElement* propNode = propertiesNode->FirstChildElement("Property")
+                            ; propNode != 0
+                            ; propNode = propNode->NextSiblingElement("Property"))
+                        {
+                            const std::string* name = propNode->Attribute(std::string("name"));
+                            if (name)
+                                propNode->SetAttribute("mapKey", name->c_str());
+                        }
+                    }
+                }
+            }
+            //add mapKey to processor->interactionhandlers->handler->properties->property
+            if(TiXmlElement* interactionNode = procNode->FirstChildElement("InteractionHandlers")) {
+                for (TiXmlElement* handlerNode = interactionNode->FirstChildElement("Handler")
+                    ; handlerNode != 0
+                    ; handlerNode = handlerNode->NextSiblingElement("Handler"))
+                {
+                    if(TiXmlElement* propertiesNode = handlerNode->FirstChildElement("Properties")) {
+                        for (TiXmlElement* propNode = propertiesNode->FirstChildElement("Property")
+                            ; propNode != 0
+                            ; propNode = propNode->NextSiblingElement("Property"))
+                        {
+                            const std::string* name = propNode->Attribute(std::string("name"));
+                            if (name)
+                                propNode->SetAttribute("mapKey", name->c_str());
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void NetworkConverter14to15::convert(TiXmlElement* elem) {
+    changeProcessorType(elem, "VolumeCollectionSource",         "VolumeListSource");
+    changeProcessorType(elem, "VolumeCollectionSave",           "VolumeListSave");
+    changeProcessorType(elem, "VolumeCollectionModalityFilter", "VolumeListModalityFilter");
 }
 
 } // namespace

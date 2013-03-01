@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -660,14 +660,14 @@ std::set<gdcm::Tag> DicomNetworkConnector::getRelevantTagsFromCustomDicts() cons
         //iterate over these keywords and add the corresponding tag to the map
         std::vector<std::string>::const_iterator subIterator;
         for (subIterator = subdivisionKeywords->begin(); subIterator != subdivisionKeywords->end(); ++subIterator) {
-            keywordMap.insert(std::make_pair<std::string, gdcm::Tag>(*subIterator,getTagFromDictEntry(dictIterator->getDict()->getDictEntryByKeyword(*subIterator))));
+            keywordMap.insert(std::make_pair(*subIterator,getTagFromDictEntry(dictIterator->getDict()->getDictEntryByKeyword(*subIterator))));
         }
 
         //get the conditions and add the keyword/tag combinations
         const std::vector<std::pair<std::string, std::vector<std::string> > >* conditions = dictIterator->getConditions();
         std::vector<std::pair<std::string, std::vector<std::string> > >::const_iterator condIter;
         for (condIter = conditions->begin(); condIter != conditions->end(); ++condIter) {
-            keywordMap.insert(std::make_pair<std::string, gdcm::Tag>(condIter->first,getTagFromDictEntry(dictIterator->getDict()->getDictEntryByKeyword(condIter->first))));
+            keywordMap.insert(std::make_pair(condIter->first,getTagFromDictEntry(dictIterator->getDict()->getDictEntryByKeyword(condIter->first))));
         }
     }
 

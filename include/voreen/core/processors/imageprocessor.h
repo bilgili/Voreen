@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,8 +26,11 @@
 #ifndef VRN_IMAGEPROCESSOR_H
 #define VRN_IMAGEPROCESSOR_H
 
-#include "voreen/core/processors/renderprocessor.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/shaderproperty.h"
+
+#include "voreen/core/processors/renderprocessor.h"
 
 namespace voreen {
 
@@ -44,7 +47,7 @@ public:
      *
      * @param shaderFilename The filename of the shader that will be used.
      */
-    ImageProcessor(const std::string& shaderFilename = "");
+    ImageProcessor(const std::string& shaderFilename = "", bool enableCoarsenessAdaptation = false);
     virtual ~ImageProcessor();
 
     virtual std::string getCategory() const  { return "Image Processing"; }
@@ -61,6 +64,9 @@ protected:
     virtual tgt::vec2 computeDepthRange(RenderPort* port);
 
     ShaderProperty shaderProp_;
+    BoolProperty interactionAdapt_;
+    IntProperty interactionFactor_;
+
     tgt::Shader* program_;
     std::string shaderFilename_;
 

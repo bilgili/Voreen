@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -53,7 +53,7 @@ MetaDataBase* ZoomMetaData::clone() const {
     return new ZoomMetaData(transform_);
 }
 
-Serializable* ZoomMetaData::create() const {
+MetaDataBase* ZoomMetaData::create() const {
     return new ZoomMetaData();
 }
 

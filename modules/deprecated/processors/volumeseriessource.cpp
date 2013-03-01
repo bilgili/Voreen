@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -40,7 +40,7 @@ const std::string VolumeSeriesSource::loggerCat_("voreen.deprecated.VolumeSeries
 
 VolumeSeriesSource::VolumeSeriesSource()
     : Processor()
-    , volumeHandle_(0)
+    , volume_(0)
     , filename_("seriesfile", "Volume Series File", "Select Volume Series File",
                 VoreenApplication::app()->getUserDataPath("volumes"), "Volume Series Files (*.sdat)",
                 FileDialogProperty::OPEN_FILE, Processor::INVALID_RESULT)
@@ -59,7 +59,7 @@ VolumeSeriesSource::VolumeSeriesSource()
 }
 
 VolumeSeriesSource::~VolumeSeriesSource() {
-    delete volumeHandle_;
+    delete volume_;
 }
 
 Processor* VolumeSeriesSource::create() const {
@@ -68,23 +68,23 @@ Processor* VolumeSeriesSource::create() const {
 
 void VolumeSeriesSource::process() {
     if (needUpload_) {
-        if(volumeHandle_)
-            volumeHandle_->makeRepresentationExclusive<VolumeRAM>();
+        if(volume_)
+            volume_->makeRepresentationExclusive<VolumeRAM>();
         needUpload_ = false;
     }
 }
 
 void VolumeSeriesSource::initialize() throw (tgt::Exception) {
     Processor::initialize();
-    outport_.setData(volumeHandle_, false);
+    outport_.setData(volume_, false);
     loadStep();
 }
 
 void VolumeSeriesSource::loadStep() {
-    if(!volumeHandle_)
+    if(!volume_)
         return;
 
-    VolumeRAM* v = volumeHandle_->getWritableRepresentation<VolumeRAM>();
+    VolumeRAM* v = volume_->getWritableRepresentation<VolumeRAM>();
     if (!v)
         return;
 
@@ -138,9 +138,9 @@ void VolumeSeriesSource::loadStep() {
 }
 
 void VolumeSeriesSource::openSeries() {
-    if(volumeHandle_)
-        delete volumeHandle_;
-    volumeHandle_ = 0;
+    if(volume_)
+        delete volume_;
+    volume_ = 0;
 
     try {
         TextFileReader reader(filename_.get());
@@ -223,8 +223,8 @@ void VolumeSeriesSource::openSeries() {
             return;
         }
 
-        volumeHandle_ = new Volume(vol, sliceThickness, tgt::vec3(0.0f));
-        oldVolumePosition(volumeHandle_);
+        volume_ = new Volume(vol, sliceThickness, tgt::vec3(0.0f));
+        oldVolumePosition(volume_);
 
         if (step_.get() >= static_cast<int>(files_.size()))
             step_.set(0);
@@ -238,7 +238,7 @@ void VolumeSeriesSource::openSeries() {
     }
 
     loadStep();
-    outport_.setData(volumeHandle_, false);
+    outport_.setData(volume_, false);
 }
 
 } // namespace

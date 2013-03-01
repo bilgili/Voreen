@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -144,7 +144,7 @@ void InputMappingDialog::addProcessorToLayout(const Processor* processor) {
         return;
 
     // create event property widgets for processor
-    QString title = QString::fromStdString(processor->getName());
+    QString title = QString::fromStdString(processor->getID());
 
     QGroupBox* processorBox = new QGroupBox(title);
     QVBoxLayout* boxLayout = new QVBoxLayout();

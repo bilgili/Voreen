@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -56,6 +56,9 @@ public:
         tgt::Event::Modifier modifier = tgt::Event::MODIFIER_NONE, bool sharing = false, bool enabled = true);
 
     virtual ~MWheelNumPropInteractionHandler() {}
+
+    virtual std::string getClassName() const   { return "MWheelNumPropInteractionHandler";     }
+    virtual InteractionHandler* create() const { return new MWheelNumPropInteractionHandler(); }
 
 private:
     virtual void onEvent(tgt::Event* e);

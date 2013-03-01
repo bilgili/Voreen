@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -168,7 +168,7 @@ void VolumeGradientCL::process() {
         kernel->setArg(3, copyIntensityChannel_.get() ? 1 : 0);
 
         queue_->enqueue(kernel, inputVolume->getDimensions());
-        queue_->enqueueRead(volBuffer.dataBuffer_, outputVolume->getData(), true);
+        queue_->enqueueReadBuffer(volBuffer.dataBuffer_, outputVolume->getData(), true);
 
         queue_->finish();
     }

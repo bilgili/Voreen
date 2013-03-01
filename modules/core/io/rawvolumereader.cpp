@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -77,7 +77,7 @@ void RawVolumeReader::setReadHints(const ReadHints& hints) {
     hints_ = hints;
 }
 
-VolumeCollection* RawVolumeReader::read(const std::string &url)
+VolumeList* RawVolumeReader::read(const std::string &url)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -96,7 +96,7 @@ Volume* RawVolumeReader::read(const VolumeURL& origin)
 
     // load volume
     Volume* handle = 0;
-    VolumeCollection* collection = read(filename);
+    VolumeList* collection = read(filename);
     if (!collection->empty())
         handle = static_cast<Volume*>(collection->first());
 
@@ -106,7 +106,7 @@ Volume* RawVolumeReader::read(const VolumeURL& origin)
     return handle;
 }
 
-VolumeCollection* RawVolumeReader::readSlices(const std::string &url, size_t firstSlice, size_t lastSlice )
+VolumeList* RawVolumeReader::readSlices(const std::string &url, size_t firstSlice, size_t lastSlice )
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -493,16 +493,16 @@ VolumeCollection* RawVolumeReader::readSlices(const std::string &url, size_t fir
 
     volumeHandle->setOrigin(VolumeURL("raw", fileName, encodeReadHintsIntoSearchString(hints_)));
 
-    VolumeCollection* volumeCollection = new VolumeCollection();
-    volumeCollection->add(volumeHandle);
+    VolumeList* volumeList = new VolumeList();
+    volumeList->add(volumeHandle);
 
     if (getProgressBar())
         getProgressBar()->hide();
 
-    return volumeCollection;
+    return volumeList;
 }
 
-VolumeCollection* RawVolumeReader::readBrick(const std::string &url, tgt::ivec3 brickStartPos,int brickSize)
+VolumeList* RawVolumeReader::readBrick(const std::string &url, tgt::ivec3 brickStartPos,int brickSize)
     throw(tgt::FileException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -623,7 +623,7 @@ VolumeCollection* RawVolumeReader::readBrick(const std::string &url, tgt::ivec3 
 
     fclose(fin);
 
-    VolumeCollection* volumeCollection = new VolumeCollection();
+    VolumeList* volumeList = new VolumeList();
     Volume* volumeHandle = new Volume(volume, h.spacing_, vec3(0.0f), h.transformation_);
     volumeHandle->setModality(h.modality_);
 
@@ -642,9 +642,9 @@ VolumeCollection* RawVolumeReader::readBrick(const std::string &url, tgt::ivec3 
     searchStream << "spacing_z=" << h.spacing_.z << "&";
     volumeHandle->setOrigin(VolumeURL("raw", fileName, searchStream.str()));
 
-    volumeCollection->add(volumeHandle);
+    volumeList->add(volumeHandle);
 
-    return volumeCollection;
+    return volumeList;
 }
 
 Volume* RawVolumeReader::readSliceStack(const std::vector<std::string>& sliceFiles)
@@ -658,7 +658,7 @@ Volume* RawVolumeReader::readSliceStack(const std::vector<std::string>& sliceFil
     std::vector<VolumeRAM*> volumes;
     for (size_t i=0; i<sliceFiles.size(); i++) {
         try {
-            VolumeCollection* collection = read(sliceFiles[i]);
+            VolumeList* collection = read(sliceFiles[i]);
             if (!collection->empty() && collection->first()->getRepresentation<VolumeRAM>()) {
                 volumes.push_back(static_cast<Volume*>(collection->first())->getWritableRepresentation<VolumeRAM>());
             }

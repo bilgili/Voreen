@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -23,8 +23,8 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#ifndef VRN_IISERIALIZABLEFACTORY_H
-#define VRN_IISERIALIZABLEFACTORY_H
+#ifndef VRN_SERIALIZABLEFACTORY_H
+#define VRN_SERIALIZABLEFACTORY_H
 
 #include "voreen/core/voreencoreapi.h"
 #include <typeinfo>
@@ -33,7 +33,7 @@
 
 namespace voreen {
 
-class Serializable;
+class VRN_CORE_API Serializable;
 
 /**
  * The @c SerializableFactory is an interface for realizing classes which are supposed to
@@ -52,7 +52,7 @@ class Serializable;
  *
  * class Factory : public SerializableFactory {
  * public:
- *     virtual const std::string getTypeString(const type_info& type) const {
+ *     virtual const std::string getSerializableTypeString(const type_info& type) const {
  *         if (type == typeid(Parent))
  *             return "Parent";
  *         else if (type == typeid(Child))
@@ -61,7 +61,7 @@ class Serializable;
  *             return "";
  *     }
  *
- *     virtual Serializable* createType(const std::string& typeString) {
+ *     virtual Serializable* createSerializableType(const std::string& typeString) {
  *         if (typeString == "Parent")
  *             return new Parent();
  *         else if (typeString == "Child")
@@ -97,18 +97,18 @@ public:
      * @returns either the string corresponding with the given @c type_info object,
      *          or an empty string if the type is not supported by this factory.
      */
-    virtual const std::string getTypeString(const std::type_info& type) const = 0;
+    virtual std::string getSerializableTypeString(const std::type_info& type) const = 0;
 
     /**
-     * Returns a new instance of an object corresponding with the given @c typeString.
+     * Returns a new instance of an serializable object corresponding with the given @c typeString.
      *
      * @param typeString the type string
      *
      * @returns either the new instance or @c 0 if the type string is not supported by this factory.
      */
-    virtual Serializable* createType(const std::string& typeString) = 0;
+    virtual Serializable* createSerializableType(const std::string& typeString) const = 0;
 };
 
 } // namespace
 
-#endif // VRN_IISERIALIZABLEFACTORY_H
+#endif // VRN_SERIALIZABLEFACTORY_H

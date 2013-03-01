@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -64,7 +64,7 @@ PropertyOwnerWidget::PropertyOwnerWidget(QWidget* parent, PropertyOwner* owner, 
 
     setUpdatesEnabled(false);
 
-    header_ = new ExpandableHeaderButton(title != "" ? title.c_str() : owner_->getName().c_str(), this,
+    header_ = new ExpandableHeaderButton(title != "" ? title.c_str() : owner_->getGuiName().c_str(), this,
             expanded_, userExpandable_);
     connect(header_, SIGNAL(toggled(bool)), this, SLOT(updateState()));
     connect(header_, SIGNAL(toggled(bool)), this, SLOT(widgetInstantiation()));
@@ -218,7 +218,7 @@ void PropertyOwnerWidget::setUserExpandable(bool expandable) {
 }
 
 void PropertyOwnerWidget::updateHeaderTitle() {
-    header_->updateNameLabel(owner_->getName());
+    header_->updateNameLabel(owner_->getGuiName());
 }
 
 void PropertyOwnerWidget::propertyModified() {

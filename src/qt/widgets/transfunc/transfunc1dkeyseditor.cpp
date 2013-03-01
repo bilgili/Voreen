@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -379,7 +379,7 @@ void TransFunc1DKeysEditor::resetTransferFunction() {
 void TransFunc1DKeysEditor::fitDomainToData() {
     property_->fitDomainToData();
 
-    if(volumeHandle_) {
+    if(volume_) {
         updateMappingSpin(true);
         updateThresholdSpin(false);
         updateTransferFunction();
@@ -485,6 +485,9 @@ void TransFunc1DKeysEditor::loadTransferFunction() {
 //      update mapping
 //----------------------------------------------------------------------------------------------
 void TransFunc1DKeysEditor::updateMappingSpin(bool fromTF){
+   if (!transferFuncIntensity_)
+       return;
+
    lowerMappingSpin_->blockSignals(true);
    upperMappingSpin_->blockSignals(true);
 
@@ -544,7 +547,7 @@ void TransFunc1DKeysEditor::lowerMappingChanged(double value) {
 }
 
  void TransFunc1DKeysEditor::upperMappingChanged(double value) {
-           if (!transferFuncIntensity_)
+    if (!transferFuncIntensity_)
         return;
 
     //increment value of upper mapping spin when it equals value of lower mapping spin
@@ -560,6 +563,9 @@ void TransFunc1DKeysEditor::lowerMappingChanged(double value) {
 //      update threshold
 //----------------------------------------------------------------------------------------------
 void TransFunc1DKeysEditor::updateThresholdSpin(bool fromTF){
+    if (!transferFuncIntensity_)
+        return;
+
    lowerThresholdSpin_->blockSignals(true);
    upperThresholdSpin_->blockSignals(true);
 
@@ -637,6 +643,9 @@ void TransFunc1DKeysEditor::lowerThresholdSpinChanged(double value) {
 }
 
 void TransFunc1DKeysEditor::upperThresholdSpinChanged(double value) {
+    if (!transferFuncIntensity_)
+        return;
+
     //increment value of lower spin when it equals value of upper spin
     if (value < lowerThresholdSpin_->value()) {
         lowerThresholdSpin_->blockSignals(true);
@@ -672,12 +681,12 @@ void TransFunc1DKeysEditor::applyThreshold() {
 void TransFunc1DKeysEditor::checkDomainVersusData() {
     bool warnLower = false;
     bool warnUpper = false;
-    if (transferFuncIntensity_ && volumeHandle_ && volumeHandle_->getRepresentation<VolumeRAM>()) {
+    if (transferFuncIntensity_ && volume_ && volume_->getRepresentation<VolumeRAM>()) {
         //calculate Min/Max values:
-        float min = volumeHandle_->getDerivedData<VolumeMinMax>()->getMinNormalized();
-        float max = volumeHandle_->getDerivedData<VolumeMinMax>()->getMaxNormalized();
+        float min = volume_->getDerivedData<VolumeMinMax>()->getMinNormalized();
+        float max = volume_->getDerivedData<VolumeMinMax>()->getMaxNormalized();
 
-        RealWorldMapping rwm = volumeHandle_->getRealWorldMapping();
+        RealWorldMapping rwm = volume_->getRealWorldMapping();
         min = rwm.normalizedToRealWorld(min);
         max = rwm.normalizedToRealWorld(max);
 
@@ -737,8 +746,8 @@ void TransFunc1DKeysEditor::updateFromProperty() {
 
     // check whether the volume associated with the TransFuncProperty has changed
     const VolumeBase* newHandle = property_->getVolumeHandle();
-    if (newHandle != volumeHandle_) {
-        volumeHandle_ = newHandle;
+    if (newHandle != volume_) {
+        volume_ = newHandle;
         volumeChanged();
     }
 
@@ -767,13 +776,13 @@ void TransFunc1DKeysEditor::updateFromProperty() {
 }
 
 void TransFunc1DKeysEditor::volumeChanged() {
-    if (volumeHandle_ && volumeHandle_->getRepresentation<VolumeRAM>()) {
+    if (volume_ && volume_->getRepresentation<VolumeRAM>()) {
 
         //calculate Min/Max values:
-        float min = volumeHandle_->getDerivedData<VolumeMinMax>()->getMinNormalized();
-        float max = volumeHandle_->getDerivedData<VolumeMinMax>()->getMaxNormalized();
+        float min = volume_->getDerivedData<VolumeMinMax>()->getMinNormalized();
+        float max = volume_->getDerivedData<VolumeMinMax>()->getMaxNormalized();
 
-        RealWorldMapping rwm = volumeHandle_->getRealWorldMapping();
+        RealWorldMapping rwm = volume_->getRealWorldMapping();
         min = rwm.normalizedToRealWorld(min);
         max = rwm.normalizedToRealWorld(max);
         //std::string unit = rwm.getUnit();
@@ -792,7 +801,9 @@ void TransFunc1DKeysEditor::volumeChanged() {
         }
         setTFValues_ = true;
         // propagate new volume to transfuncMappingCanvas
-        transCanvas_->volumeChanged(volumeHandle_);
+        transCanvas_->volumeChanged(volume_);
+    } else {
+        transCanvas_->volumeChanged(0);
     }
 
     checkDomainVersusData();

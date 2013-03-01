@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,6 +26,8 @@
 #ifndef VRN_SMARTLABEL_H
 #define VRN_SMARTLABEL_H
 
+#include "voreen/core/voreencoreapi.h"
+
 #include "tgt/logmanager.h"
 #include "tgt/vector.h"
 #include "tgt/font.h"
@@ -40,7 +42,7 @@ namespace voreen {
  * A smart label is nothing more than a string to be rendered associated with position,
  * alignment, font size and color.
  **/
-class SmartLabel {
+class VRN_CORE_API SmartLabel {
 public:
     /// enum for label alignment
     enum Alignment {
@@ -80,7 +82,7 @@ public:
  *
  * All given positions are in viewport coordinates.
  **/
-class SmartLabelGroupBase {
+class VRN_CORE_API SmartLabelGroupBase {
 public:
     /**
      * \brief   initializes a SmartLabelGroup
@@ -181,7 +183,7 @@ protected:
 //
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-class SmartLabelGroupBaseOpenGl : public SmartLabelGroupBase {
+class VRN_CORE_API SmartLabelGroupBaseOpenGl : public SmartLabelGroupBase {
 public:
     /**
      * \brief   initializes a SmartLabelGroup
@@ -240,7 +242,7 @@ protected:
  *
  * On overlapping the upper label will be moved vertically until they do not intersect anymore.
  **/
-class SmartLabelGroupOpenGlVerticalMoving : public SmartLabelGroupBaseOpenGl {
+class VRN_CORE_API SmartLabelGroupOpenGlVerticalMoving : public SmartLabelGroupBaseOpenGl {
 public:
     SmartLabelGroupOpenGlVerticalMoving(tgt::Font* font, float padding, tgt::Bounds bounds);
 
@@ -256,7 +258,7 @@ public:
 * If any of the labels overlap the labels will be positioned in altering y positions (e.g. up,
 * down, up, down) equally spaced out within given bounding box.
 **/
-class SmartLabelGroupOpenGlHorizontalMoving : public SmartLabelGroupBaseOpenGl {
+class VRN_CORE_API SmartLabelGroupOpenGlHorizontalMoving : public SmartLabelGroupBaseOpenGl {
 public:
     SmartLabelGroupOpenGlHorizontalMoving(tgt::Font* font, float padding, tgt::Bounds bounds);
 
@@ -271,7 +273,7 @@ public:
 *
 * If any of the labels overlap this class will not care.
 **/
-class SmartLabelGroupOpenGlNoLayout : public SmartLabelGroupBaseOpenGl {
+class VRN_CORE_API SmartLabelGroupOpenGlNoLayout : public SmartLabelGroupBaseOpenGl {
 public:
     /**
      * \brief Constructor
@@ -292,7 +294,7 @@ public:
 *
 * If any of the labels overlap this class will not care.
 **/
-class SmartLabelGroupOpenGlNoLayoutWithBackground : public SmartLabelGroupBaseOpenGl {
+class VRN_CORE_API SmartLabelGroupOpenGlNoLayoutWithBackground : public SmartLabelGroupBaseOpenGl {
 public:
     /**
      * \brief Constructor
@@ -321,7 +323,7 @@ protected:
 //
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-class SmartLabelGroupBaseSvg : public SmartLabelGroupBase {
+class VRN_CORE_API SmartLabelGroupBaseSvg : public SmartLabelGroupBase {
 public:
     /**
      * \brief   initializes a SmartLabelGroup
@@ -380,7 +382,7 @@ protected:
 
 };
 
-class SmartLabelGroupSvgVerticalMoving : public SmartLabelGroupBaseSvg {
+class VRN_CORE_API SmartLabelGroupSvgVerticalMoving : public SmartLabelGroupBaseSvg {
 public:
     SmartLabelGroupSvgVerticalMoving(tgt::Font* font, float padding, tgt::Bounds bounds);
 
@@ -390,7 +392,7 @@ public:
 
 };
 
-class SmartLabelGroupSvgHorizontalMoving : public SmartLabelGroupBaseSvg {
+class VRN_CORE_API SmartLabelGroupSvgHorizontalMoving : public SmartLabelGroupBaseSvg {
 public:
     SmartLabelGroupSvgHorizontalMoving(tgt::Font* font, float padding, tgt::Bounds bounds);
 
@@ -400,7 +402,7 @@ public:
 
 };
 
-class SmartLabelGroupSvgNoLayout : public SmartLabelGroupBaseSvg {
+class VRN_CORE_API SmartLabelGroupSvgNoLayout : public SmartLabelGroupBaseSvg {
 public:
     /**
      * \brief Constructor
@@ -417,7 +419,7 @@ public:
 
 
 
-class SmartLabelGroupSvgNoLayoutWithBackground : public SmartLabelGroupBaseSvg {
+class VRN_CORE_API SmartLabelGroupSvgNoLayoutWithBackground : public SmartLabelGroupBaseSvg {
 public:
     /**
      * \brief Constructor
@@ -454,7 +456,7 @@ protected:
 //
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-class SmartLabelGroupBaseLatex : public SmartLabelGroupBase {
+class VRN_CORE_API SmartLabelGroupBaseLatex : public SmartLabelGroupBase {
 public:
     /**
      * \brief   initializes a SmartLabelGroup

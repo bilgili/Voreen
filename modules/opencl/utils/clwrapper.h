@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -67,7 +67,7 @@ void CL_API_CALL contextCallback(const char *errinfo, const void* private_info, 
 
 //---------------------------------------------------------
 
-class OpenCL {
+class VRN_CORE_API OpenCL {
 public:
     OpenCL();
     const std::vector<Platform>& getPlatforms() const { return platforms_; }
@@ -77,7 +77,7 @@ public:
      * platform is found, the first of the available platforms is returned.
      */
     Platform getPlatformByVendor(tgt::GpuCapabilities::GpuVendor vendor) const;
-    
+
     ///Needs CL extension, doesn´t link
     static Device getCurrentDeviceForGlContext();
     ///Needs CL extension, doesn´t link
@@ -94,7 +94,7 @@ protected:
 
 //---------------------------------------------------------
 
-class Platform {
+class VRN_CORE_API Platform {
 public:
     enum Profile {
         FULL_PROFILE = 0,
@@ -160,6 +160,9 @@ public:
         LCL_ERROR(clGetDeviceInfo(id_, info, sizeof(ret), &ret, 0));
         return ret;
     }
+
+    void logInfos() const;
+
 protected:
 
     cl_platform_id id_;
@@ -184,7 +187,7 @@ std::string Platform::getInfo(cl_platform_info info) const;
 
 //---------------------------------------------------------
 
-class Device {
+class VRN_CORE_API Device {
 public:
     Device();
     Device(cl_device_id id);
@@ -197,6 +200,8 @@ public:
         LCL_ERROR(clGetDeviceInfo(id_, info, sizeof(ret), &ret, 0));
         return ret;
     }
+
+    void logInfos() const;
 
     std::string getName() const { return name_; }
     cl_device_type getType() const { return getInfo<cl_device_type>(CL_DEVICE_TYPE); }
@@ -211,6 +216,7 @@ protected:
     std::string name_;
     std::string extensionString_;
     std::set<std::string> extensions_;
+    bool imageSupport_;
     tgt::ivec2 maxImageSize2D_;
     tgt::ivec3 maxImageSize3D_;
 
@@ -223,13 +229,13 @@ std::string Device::getInfo(cl_device_info info) const;
 
 //---------------------------------------------------------
 
-struct ContextProperty {
+struct VRN_CORE_API ContextProperty {
     cl_context_properties name_;
     cl_context_properties value_;
     ContextProperty(cl_context_properties name, cl_context_properties value) : name_(name), value_(value) {}
 };
 
-class Context {
+class VRN_CORE_API Context {
 public:
     Context(const Device& device);
     Context(const std::vector<ContextProperty>& properties, const Device& device);
@@ -268,7 +274,7 @@ std::string Context::getInfo(cl_context_info info) const;
 
 //---------------------------------------------------------
 
-class Event {
+class VRN_CORE_API Event {
 public:
     Event(cl_event id) : id_(id) {
         //if(id_)
@@ -346,7 +352,7 @@ protected:
 
 //---------------------------------------------------------
 
-class CommandQueue {
+class VRN_CORE_API CommandQueue {
 public:
     CommandQueue(const Context* context, const Device& device, cl_command_queue_properties properties = 0);
     ~CommandQueue();
@@ -367,8 +373,12 @@ public:
     //TODO: add method with offsets
     //TODO: wrap clEnqueueNativeKernel
 
-    Event enqueueRead(const Buffer* buffer, void* data, bool blocking = true);
-    Event enqueueWrite(const Buffer* buffer, void* data, bool blocking = true);
+    Event enqueueReadBuffer(const Buffer* buffer, void* data, bool blocking = true);
+    Event enqueueReadBuffer(const Buffer* buffer, size_t byteOffset, size_t numBytes, void* data, bool blocking = true);
+
+    Event enqueueWriteBuffer(const Buffer* buffer, void* data, bool blocking = true);
+    Event enqueueWriteBuffer(const Buffer* buffer, size_t byteOffset, size_t numBytes, void* data, bool blocking = true);
+
     //FIND: k_nguyen add enqueueCopyImage
     Event enqueueCopyBuffer(const Buffer &src, const Buffer &dst, size_t src_offset, size_t dst_offset, size_t size);
 
@@ -528,7 +538,7 @@ std::string Program::getInfo(cl_program_info info) const;
 
 //---------------------------------------------------------
 
-class MemoryObject {
+class VRN_CORE_API MemoryObject {
 public:
     MemoryObject();
     virtual ~MemoryObject();
@@ -540,7 +550,7 @@ protected:
 
 //---------------------------------------------------------
 
-class Buffer : public MemoryObject {
+class VRN_CORE_API Buffer : public MemoryObject {
 public:
     ///flags: CL_MEM_READ_WRITE CL_MEM_WRITE_ONLY CL_MEM_READ_ONLY CL_MEM_USE_HOST_PTR CL_MEM_ALLOC_HOST_PTR CL_MEM_COPY_HOST_PTR
     //Buffer(const Context& context, cl_mem_flags flags, size_t size, void* hostPtr = 0);
@@ -555,7 +565,7 @@ protected:
 
 //---------------------------------------------------------
 
-class SharedTexture : public MemoryObject {
+class VRN_CORE_API SharedTexture : public MemoryObject {
 public:
     ///flags: CL_MEM_READ_WRITE CL_MEM_WRITE_ONLY CL_MEM_READ_ONLY CL_MEM_USE_HOST_PTR CL_MEM_ALLOC_HOST_PTR CL_MEM_COPY_HOST_PTR
     SharedTexture(const Context* context, cl_mem_flags flags, tgt::Texture* tex);
@@ -570,13 +580,13 @@ protected:
 
 
 //---------------------------------------------------------
-struct ImageFormat : public cl_image_format {
+struct VRN_CORE_API ImageFormat : public cl_image_format {
     ImageFormat(cl_channel_order order, cl_channel_type type);
 };
 
 
 //---------------------------------------------------------
-class ImageObject2D : public MemoryObject {
+class VRN_CORE_API ImageObject2D : public MemoryObject {
 public:
     ///flags: CL_MEM_READ_WRITE CL_MEM_WRITE_ONLY CL_MEM_READ_ONLY CL_MEM_USE_HOST_PTR CL_MEM_ALLOC_HOST_PTR CL_MEM_COPY_HOST_PTR
     ImageObject2D(const Context *context, cl_mem_flags flags, tgt::Texture *tex);
@@ -592,7 +602,7 @@ public:
 
 //---------------------------------------------------------
 
-class ImageObject3D : public MemoryObject {
+class VRN_CORE_API ImageObject3D : public MemoryObject {
 public:
     ///flags: CL_MEM_READ_WRITE CL_MEM_WRITE_ONLY CL_MEM_READ_ONLY CL_MEM_USE_HOST_PTR CL_MEM_ALLOC_HOST_PTR CL_MEM_COPY_HOST_PTR
     ImageObject3D(const Context* context, cl_mem_flags flags, const VolumeRAM* vol);
@@ -601,7 +611,7 @@ public:
 
 //---------------------------------------------------------
 
-class Sampler {
+class VRN_CORE_API Sampler {
 public:
     /**
      * @param context Must be a valid OpenCL context.
@@ -636,7 +646,7 @@ protected:
 
 //---------------------------------------------------------
 
-class Kernel {
+class VRN_CORE_API Kernel {
 public:
     Kernel(cl_kernel id);
     ~Kernel();
@@ -740,7 +750,7 @@ std::string Kernel::getWorkGroupInfo(cl_kernel_work_group_info info, const Devic
 
 //-----------------------------------------------------------------------------------------------
 
-struct VolumeWriteBufferCL {
+struct VRN_CORE_API VolumeWriteBufferCL {
     tgt::Vector4<cl_uint> dimensions_;
     cl_uchar numChannels_;
     cl_uchar numBitsPerChannel_;
@@ -749,7 +759,7 @@ struct VolumeWriteBufferCL {
     intptr_t data_;
 };
 
-struct VolumeWriteBuffer {
+struct VRN_CORE_API VolumeWriteBuffer {
 
     VolumeWriteBuffer(const Context* context, VolumeRAM* vol);
 
@@ -769,7 +779,7 @@ struct VolumeWriteBuffer {
     }
 
     void readBackData(CommandQueue* q) {
-        q->enqueueRead(dataBuffer_, volume_->getData(), true);
+        q->enqueueReadBuffer(dataBuffer_, volume_->getData(), true);
     }
 
     Buffer* infoBuffer_;

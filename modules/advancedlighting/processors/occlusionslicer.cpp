@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,10 +36,10 @@ namespace voreen {
 OcclusionSlicer::OcclusionSlicer()
     : VolumeSlicer()
     , shaderProp_("slicing.shader", "Slicing shader", "sl_occlusion.frag", "sl_singlevolume.vert")
-    , occlusionbuffer0_(Port::OUTPORT, "image.occlusionbuffer0", "OcclusionBuffer0 Output", false, Processor::INVALID_RESULT, 
+    , occlusionbuffer0_(Port::OUTPORT, "image.occlusionbuffer0", "OcclusionBuffer0 Output", false, Processor::INVALID_RESULT,
         //RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB)
         RenderPort::RENDERSIZE_DEFAULT)
-    , occlusionbuffer1_(Port::OUTPORT, "image.occlusionbuffer1", "OcclusionBuffer1 Output", false, Processor::INVALID_RESULT, 
+    , occlusionbuffer1_(Port::OUTPORT, "image.occlusionbuffer1", "OcclusionBuffer1 Output", false, Processor::INVALID_RESULT,
         /*RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB)*/
         RenderPort::RENDERSIZE_DEFAULT)
     , outport_(Port::OUTPORT, "image.eyebuffer", "EyeBuffer Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
@@ -66,10 +66,10 @@ void OcclusionSlicer::initialize() throw (tgt::Exception) {
 
     if (!shaderProp_.hasValidShader()){
         LERROR("Failed to load shader!");
-        initialized_ = false;
+        processorState_ = PROCESSOR_STATE_NOT_INITIALIZED;
         throw VoreenException(getClassName() + ": Failed to load shaders!");
     }
-    initialized_ = true;
+    processorState_ = PROCESSOR_STATE_NOT_READY;
 }
 
 void OcclusionSlicer::compile() {

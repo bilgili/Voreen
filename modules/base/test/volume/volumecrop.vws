@@ -1,48 +1,157 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="11">
+        <ProcessorNetwork version="14">
+            <MetaData>
+                <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
+                    <values>
+                        <item type="VolumeCrop" ref="ref3" />
+                    </values>
+                </MetaItem>
+                <MetaItem name="ZoomCenter" type="Vec2MetaData">
+                    <value x="-450.29907227" y="-270.4526062" />
+                </MetaItem>
+                <MetaItem name="ZoomFactor" type="FloatMetaData" value="2.19631815" />
+            </MetaData>
             <Processors>
                 <Processor type="VolumeSource" name="VolumeSource" id="ref0">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-477" y="-391" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-545" y="-386" />
                     </MetaData>
                     <Properties>
-                        <Property name="volumeURL" url="input/walnut_medium.vvd?preferredReader=VvdVolumeReader&amp;preferredReader=VvdVolumeReader" />
+                        <Property mapKey="volumeInfo" name="volumeInfo" />
+                        <Property mapKey="volumeURL" name="volumeURL" url="input/walnut_medium.vvd?preferredReader=VvdVolumeReader" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle" direction="0" portID="volumehandle.volumehandle" guiName="Volume Output" allowMultipleConnections="true" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
-                <Processor type="VolumeCrop" name="VolumeCrop" id="ref1">
+                <Processor type="VolumeCrop" name="VolumeCropDisk" id="ref1">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-471" y="-295" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-551" y="-293" />
                     </MetaData>
                     <Properties>
-                        <Property name="backClippingPlane" value="82" />
-                        <Property name="bottomClippingPlane" value="21" />
-                        <Property name="button" />
-                        <Property name="clearCache" />
-                        <Property name="continuousCropping" value="true" />
-                        <Property name="croppedDimensions">
-                            <value x="74" y="70" z="79" />
+                        <Property mapKey="backClippingPlane" name="backClippingPlane" value="90" />
+                        <Property mapKey="bottomClippingPlane" name="bottomClippingPlane" value="2" />
+                        <Property mapKey="button" name="button" />
+                        <Property mapKey="clearCache" name="clearCache" />
+                        <Property mapKey="continuousCropping" name="continuousCropping" value="true" />
+                        <Property mapKey="croppedDimensions" name="croppedDimensions">
+                            <value x="86" y="83" z="109" />
                         </Property>
-                        <Property name="croppedSize" value="0" />
-                        <Property name="frontClippingPlane" value="13" />
-                        <Property name="leftClippingPlane" value="100" />
-                        <Property name="rightClippingPlane" value="27" />
-                        <Property name="topClippingPlane" value="99" />
-                        <Property name="useCaching" value="true" />
+                        <Property mapKey="croppedSize" name="croppedSize" value="1" />
+                        <Property mapKey="frontClippingPlane" name="frontClippingPlane" value="8" />
+                        <Property mapKey="leftClippingPlane" name="leftClippingPlane" value="105" />
+                        <Property mapKey="rightClippingPlane" name="rightClippingPlane" value="20" />
+                        <Property mapKey="topClippingPlane" name="topClippingPlane" value="110" />
+                        <Property mapKey="useCaching" name="useCaching" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.input" direction="1" portID="volumehandle.input" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="volumehandle.output" direction="0" portID="volumehandle.output" guiName="Volume Output" allowMultipleConnections="true" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSave" name="VolumeSave" id="ref2">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-471" y="-195" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-539" y="-203" />
                     </MetaData>
                     <Properties>
-                        <Property name="continousSave" value="false" />
-                        <Property name="outputFilename" value="output/walnut-cropped.vvd" />
-                        <Property name="save" />
+                        <Property mapKey="continousSave" name="continousSave" value="false" />
+                        <Property mapKey="outputFilename" name="outputFilename" noPathSet="false" value="output/walnut-cropped-disk.vvd" />
+                        <Property mapKey="save" name="save" />
+                        <Property mapKey="saveOnPathChange" name="saveOnPathChange" value="true" />
+                        <Property mapKey="volumeInfo" name="volumeInfo" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.input" direction="1" portID="volumehandle.input" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSave" name="VolumeSave 2" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-396" y="-205" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="continousSave" name="continousSave" value="false" />
+                        <Property mapKey="outputFilename" name="outputFilename" noPathSet="false" value="output/walnut-cropped-ram.vvd" />
+                        <Property mapKey="save" name="save" />
+                        <Property mapKey="saveOnPathChange" name="saveOnPathChange" value="true" />
+                        <Property mapKey="volumeInfo" name="volumeInfo" />
+                    </Properties>
+                    <Inports>
+                        <Port name="volumehandle.input" direction="1" portID="volumehandle.input" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeCrop" name="VolumeCropRAM" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-404" y="-290" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="backClippingPlane" name="backClippingPlane" value="74" />
+                        <Property mapKey="bottomClippingPlane" name="bottomClippingPlane" value="19" />
+                        <Property mapKey="button" name="button" />
+                        <Property mapKey="clearCache" name="clearCache" />
+                        <Property mapKey="continuousCropping" name="continuousCropping" value="true" />
+                        <Property mapKey="croppedDimensions" name="croppedDimensions">
+                            <value x="74" y="70" z="79" />
+                        </Property>
+                        <Property mapKey="croppedSize" name="croppedSize" value="0" />
+                        <Property mapKey="frontClippingPlane" name="frontClippingPlane" value="5" />
+                        <Property mapKey="leftClippingPlane" name="leftClippingPlane" value="80" />
+                        <Property mapKey="rightClippingPlane" name="rightClippingPlane" value="7" />
+                        <Property mapKey="topClippingPlane" name="topClippingPlane" value="97" />
+                        <Property mapKey="useCaching" name="useCaching" value="true" />
+                    </Properties>
+                    <Inports>
+                        <Port name="volumehandle.input" direction="1" portID="volumehandle.input" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="volumehandle.output" direction="0" portID="volumehandle.output" guiName="Volume Output" allowMultipleConnections="true" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -63,12 +172,25 @@
                         <Processor type="VolumeSave" ref="ref2" />
                     </Inport>
                 </Connection>
+                <Connection>
+                    <Outport name="volumehandle.output">
+                        <Processor type="VolumeCrop" ref="ref1" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeCrop" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.output">
+                        <Processor type="VolumeCrop" ref="ref3" />
+                    </Outport>
+                    <Inport name="volumehandle.input">
+                        <Processor type="VolumeSave" ref="ref4" />
+                    </Inport>
+                </Connection>
             </Connections>
             <CoProcessorConnections />
             <PropertyLinks />
-            <PropertyStateCollections />
-            <PropertyStateFileReferences />
-            <PropertyStateDirectoryReferences />
         </ProcessorNetwork>
         <Animation />
     </Workspace>

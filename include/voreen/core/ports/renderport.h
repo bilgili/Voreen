@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -35,6 +35,7 @@
 #include "tgt/tgt_gl.h"
 #include "tgt/gpucapabilities.h"
 #include "tgt/texture.h"
+#include "tgt/vector.h"
 
 namespace tgt {
     class FramebufferObject;
@@ -61,7 +62,7 @@ public:
 };
 
 /**
- * Used by a render outport for receiving its rendering dimensions via a property link from an render inport. 
+ * Used by a render outport for receiving its rendering dimensions via a property link from an render inport.
  * Serves as destination of a render size link, i.e., it is expected to be linked to a render inport's RenderSizeOriginProperty.
  */
 class VRN_CORE_API RenderSizeReceiveProperty : public IntVec2Property {
@@ -87,12 +88,13 @@ public:
     virtual bool arePropertiesLinkable(const Property* p1, const Property* p2) const;
     virtual void eval(Property* src, Property* dst) throw (VoreenException);
 };
-    
+
 //-----------------------------------------------------------------------------
 
 class VRN_CORE_API RenderPort : public Port {
 
     friend class RenderProcessor;
+    friend class Aggregation;
     friend class NetworkEvaluator;
 
 public:
@@ -100,7 +102,10 @@ public:
      * Determines a port's rendering size propagation behaviour.
      */
     enum RenderSizePropagation {
-        RENDERSIZE_DEFAULT,     ///< Port is neither a size origin nor does it receive an output size. 
+        RENDERSIZE_DEFAULT,     ///< Port is neither a size origin nor does it receive an output size.
+                                ///  If the port is an outport, then its rendering size is automatically set to the processor's input dimensions.
+        RENDERSIZE_STATIC,      ///< Port is neither a size origin nor does it receive an output size,
+                                ///  and its rendering dimensions are also not propagated from the processor's inports.
         RENDERSIZE_ORIGIN,      ///< Port requests an input size via a RenderSizeOriginProperty (inports only).
         RENDERSIZE_RECEIVER     ///< Port receives its output dimensions via a RenderSizeReceiveProperty (outports only).
     };
@@ -112,9 +117,13 @@ public:
     virtual ~RenderPort();
 
     virtual std::string getClassName() const { return "RenderPort"; }
-
+    virtual Port* create(PortDirection direction, const std::string& id, const std::string& guiName = "") const {return new RenderPort(direction,id,guiName);}
     virtual std::string getContentDescription() const;
     virtual std::string getContentDescriptionHTML() const;
+
+    virtual void forwardData() const;
+    virtual void addForwardPort(Port* port);
+    virtual bool removeForwardPort(Port* port);
 
     /**
      * @brief Activates the outport's RenderTarget, so that all subsequent rendering operations
@@ -276,14 +285,14 @@ public:
     void bindColorTexture();
 
     /**
-     * Bind the color texture of this port's RenderTarget to a specific texture unit.
+     * Bind the color texture of this port's RenderTarget to a specific texture unit, using the specified filter settings.
      *
      * @param texUnit The texture unit to activate before binding.
      */
-    void bindColorTexture(GLint texUnit);
+    void bindColorTexture(GLint texUnit, GLint filterMode = GL_LINEAR, GLint wrapMode = GL_CLAMP_TO_EDGE, tgt::vec4 borderColor = tgt::vec4(0.f));
 
     /// @overload
-    void bindColorTexture(tgt::TextureUnit& texUnit);
+    void bindColorTexture(tgt::TextureUnit& texUnit, GLint filterMode = GL_LINEAR, GLint wrapMode = GL_CLAMP_TO_EDGE, tgt::vec4 borderColor = tgt::vec4(0.f));
 
     /**
      * Bind the depth texture of this port's RenderTarget to the currently active texture unit.
@@ -291,32 +300,32 @@ public:
     void bindDepthTexture();
 
     /**
-     * Bind the depth texture of this port's RenderTarget to a specific texture unit.
+     * Bind the depth texture of this port's RenderTarget to a specific texture unit, using the specified filter settings.
      *
      * @param texUnit The texture unit to activate before binding.
      */
-    void bindDepthTexture(GLint texUnit);
+    void bindDepthTexture(GLint texUnit, GLint filterMode = GL_LINEAR, GLint wrapMode = GL_CLAMP_TO_EDGE, tgt::vec4 borderColor = tgt::vec4(0.f));
 
     /// @overload
-    void bindDepthTexture(tgt::TextureUnit& texUnit);
+    void bindDepthTexture(tgt::TextureUnit& texUnit, GLint filterMode = GL_LINEAR, GLint wrapMode = GL_CLAMP_TO_EDGE, tgt::vec4 borderColor = tgt::vec4(0.f));
 
     /**
-     * Convenience function, calling bindColorTexture(colorUnit) and bindDepthTexture(depthUnit).
+     * Convenience function, calling bindColorTexture(colorUnit) and bindDepthTexture(depthUnit), passing the specified filter settings.
      */
-    void bindTextures(GLint colorUnit, GLint depthUnit);
+    void bindTextures(GLint colorUnit, GLint depthUnit, GLint filterMode = GL_LINEAR, GLint wrapMode = GL_CLAMP_TO_EDGE, tgt::vec4 borderColor = tgt::vec4(0.f));
 
     /// @overload
-    void bindTextures(tgt::TextureUnit& colorUnit, tgt::TextureUnit& depthUnit);
+    void bindTextures(tgt::TextureUnit& colorUnit, tgt::TextureUnit& depthUnit, GLint filterMode = GL_LINEAR, GLint wrapMode = GL_CLAMP_TO_EDGE, tgt::vec4 borderColor = tgt::vec4(0.f));
 
     /// Returns the rendering size propagation behaviour of the port.
     RenderSizePropagation getRenderSizePropagation() const;
 
-    /** 
+    /**
      * Returns the port's size origin property, if it has one,
      * or 0 otherwise.
      */
     RenderSizeOriginProperty* getSizeOriginProperty() const;
-    
+
     /**
      * Returns the port's size receiver property, if it has one,
      * or 0 otherwise.
@@ -338,8 +347,8 @@ public:
     tgt::ivec2 getReceivedSize() const;
 
     /**
-     * Registers a function that will be called when the value of the port's 
-     * RenderSizeReceiveProperty changes. 
+     * Registers a function that will be called when the value of the port's
+     * RenderSizeReceiveProperty changes.
      *
      * @note Only allowed for an outport that is a RENDERSIZE_RECEIVER.
      *
@@ -378,13 +387,17 @@ public:
     template<typename T>
     tgt::Vector4<T>* readColorBuffer() throw (VoreenException);
 
+    /// @see getDeinitializeOnDisconnect
+    void setDeinitializeOnDisconnect(bool deinitializeOnDisconnect);
+    /// Deinitialize (delete) the rendertarget stored in this port upon disconnect? This is used to conserve GPU memory, default is true.
+    bool getDeinitializeOnDisconnect() const;
+
 protected:
     /**
-     * Assigns the passed RenderTarget to this RenderPort.
-     *
-     * Is called by the NetworkEvaluator.
+     * Assigns the passed RenderTarget to this RenderPort
+     * and sets the shared render target flag.
      */
-    virtual void setRenderTarget(RenderTarget* renderTarget);
+    virtual void setSharedRenderTarget(RenderTarget* renderTarget);
 
     /**
      * Initializes the RenderTarget, if the port is an outport.
@@ -439,6 +452,7 @@ private:
     GLint internalDepthFormat_;
 
     bool renderTargetSharing_;
+    bool deinitializeOnDisconnect_;
 
     static const std::string loggerCat_; ///< category used in logging
 };
@@ -453,9 +467,9 @@ void voreen::RenderPort::onSizeReceiveChange(T* target, void (T::*function)()) {
         LERROR("onSizeReceiveChange() may only be called on an outport that is a port size receiver: " << getQualifiedName());
         return;
     }
-    
+
     tgtAssert(getSizeReceiveProperty(), "port size receiver has no SizeReceiveProperty");
-    getSizeReceiveProperty()->onChange(CallMemberAction<T>(target, function)); 
+    getSizeReceiveProperty()->onChange(CallMemberAction<T>(target, function));
 }
 
 template<typename T>

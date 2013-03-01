@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -39,6 +39,9 @@ public:
     GenericCoProcessorPort(PortDirection direction, const std::string& id, const std::string& guiName = "", bool allowMultipleConnections = false,
                            Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT);
 
+    virtual Port* create(PortDirection direction, const std::string& id, const std::string& guiName = "") const;
+    virtual std::string getClassName() const;
+
     std::vector<T*> getConnectedProcessors() const;
 
     ///Get the first connected Processor
@@ -56,6 +59,17 @@ GenericCoProcessorPort<T>::GenericCoProcessorPort(PortDirection direction, const
 {
 }
 
+
+template <typename T>
+Port* GenericCoProcessorPort<T>::create(PortDirection direction, const std::string& id, const std::string& guiName) const{
+    return new GenericCoProcessorPort<T>(direction,id,guiName);
+}
+
+template <typename T>
+std::string GenericCoProcessorPort<T>::getClassName() const{
+    return "GenericCoProcessorPort";
+}
+
 template <typename T>
 void GenericCoProcessorPort<T>::setProcessor(Processor* p) {
     Port::setProcessor(p);
@@ -63,7 +77,7 @@ void GenericCoProcessorPort<T>::setProcessor(Processor* p) {
         T* tp = dynamic_cast<T*>(p);
         tgtAssert(tp, "CoProcessor outport attached to processor of wrong type");
         if (!tp)
-            LERRORC("voreen.coprocessorport", "CoProcessor outport attached to processor of wrong type" << p->getName() << "|" << this->getID());
+            LERRORC("voreen.coprocessorport", "CoProcessor outport attached to processor of wrong type" << p->getID() << "|" << this->getID());
     }
 }
 

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -140,7 +140,7 @@ class VevoVolumeReader : public VolumeReader {
 public:
     VevoVolumeReader();
 
-    virtual VolumeCollection* read(const std::string &fileName)
+    virtual VolumeList* read(const std::string &fileName)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
     struct VevoInfoFile* readCSVFile(const std::string& fname);

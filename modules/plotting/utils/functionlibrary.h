@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -37,7 +37,7 @@ class PlotExpression;
     /**
     * \brief this class provides  amount of function to fit Points to a function and solving linear systems.
     **/
-class FunctionLibrary {
+class VRN_CORE_API FunctionLibrary {
 public:
 
     /**

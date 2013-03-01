@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,7 +36,8 @@ std::vector<std::string> DevILModule::writeExtensions_;
 DevILModule::DevILModule(const std::string& modulePath)
     : VoreenModule(modulePath)
 {
-    setName("DevIL");
+    setID("DevIL");
+    setGuiName("DevIL");
 
     readExtensions_.push_back("png");
     readExtensions_.push_back("jpg");

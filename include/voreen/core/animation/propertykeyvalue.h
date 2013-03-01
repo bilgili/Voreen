@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -42,7 +42,7 @@ template <class T> class TemplatePropertyTimelineState;
 /**
  * Non-templated base class for generic PropertyKeyValues.
  */
-class VRN_CORE_API PropertyKeyValueBase : public AbstractSerializable {
+class VRN_CORE_API PropertyKeyValueBase : public Serializable {
 public:
     PropertyKeyValueBase() {}
     virtual float getTime() const = 0;
@@ -115,8 +115,6 @@ public:
 protected:
     friend class TemplatePropertyTimelineState<T>;
     friend class TransFuncPropertyTimelineState;
-    friend class CameraPropertyTimelineState;
-    friend class ShaderSourcePropertyTimelineState;
     friend class XmlDeserializer;
 
     /**
@@ -221,12 +219,6 @@ const voreen::InterpolationFunction<T>* PropertyKeyValue<T>::getForegoingInterpo
 
 template <>
 PropertyKeyValue<TransFunc*>* PropertyKeyValue<TransFunc*>::clone() const;
-
-template <>
-PropertyKeyValue<tgt::Camera>* PropertyKeyValue<tgt::Camera>::clone() const;
-
-template <>
-PropertyKeyValue<ShaderSource>* PropertyKeyValue<ShaderSource>::clone() const;
 
 template <class T>
 PropertyKeyValue<T>* PropertyKeyValue<T>::clone() const {

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,7 +36,7 @@ GeometryClipping::GeometryClipping()
     , enabled_("enabled", "Enabled", true)
     , invert_("invert_", "Invert", false)
     , normal_("planeNormal", "Plane Normal", tgt::vec3(0, 1, 0), tgt::vec3(-1), tgt::vec3(1))
-    , position_("planePosition", "Plane Position", 0.0f, -10.0f, 10.0f)
+    , position_("planePosition", "Plane Distance", 0.0f, -FLT_MAX, FLT_MAX, Processor::INVALID_RESULT, NumericProperty<float>::DYNAMIC)
 {
     addPort(inport_);
     addPort(outport_);
@@ -63,12 +63,17 @@ void GeometryClipping::process() {
         return;
     }
 
-    tgt::vec4 plane = tgt::vec4(tgt::normalize(normal_.get()), position_.get());
+    tgt::vec3 n = normal_.get();
+    float d = position_.get();
+
     if (invert_.get())
-        plane *= -1.0f;
+        n *= -1.0f;
+
+    tgt::plane plane = tgt::plane(n, d);
 
     Geometry* outputGeometry = inputGeometry->clone();
-    double epsilon = static_cast<double>(tgt::length(outputGeometry->getBoundingBox().diagonal())) * 1e-6;
+    double epsilon = static_cast<double>(tgt::length(outputGeometry->getBoundingBox(false).diagonal())) * 1e-6;
+    epsilon = std::max(0.0, epsilon);
     outputGeometry->clip(plane, epsilon);
 
     outport_.setData(outputGeometry);

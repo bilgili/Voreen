@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -28,7 +28,7 @@
 
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/processors/imageprocessor.h"
-
+#include "voreen/core/ports/loopport.h"
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/floatproperty.h"
 
@@ -39,7 +39,7 @@ namespace voreen {
  *
  * @see ExplosionProxyGeometry
  */
-class ExplosionCompositor : public ImageProcessor {
+class VRN_CORE_API ExplosionCompositor : public ImageProcessor {
 
 public:
     ExplosionCompositor();

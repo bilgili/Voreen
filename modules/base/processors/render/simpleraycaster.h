@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -37,7 +37,7 @@ namespace voreen {
 /**
  * Performs a simple single pass raycasting without lighting, which can be modified through a shader property.
  */
-class SimpleRaycaster : public VolumeRaycaster {
+class VRN_CORE_API SimpleRaycaster : public VolumeRaycaster {
 public:
     SimpleRaycaster();
     virtual Processor* create() const;
@@ -63,7 +63,9 @@ private:
     VolumePort volumePort_;
     RenderPort entryPort_;
     RenderPort exitPort_;
+
     RenderPort outport_;
+    RenderPort internalRenderPort_;   ///< used for coarseness (rendering with reduced resolution in interaction mode).
 
     ShaderProperty shader_;           ///< the property that stores the used shader
     TransFuncProperty transferFunc_;  ///< the property that controls the transfer function

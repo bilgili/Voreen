@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -30,6 +30,7 @@
 
 #include "tgt/assert.h"
 #include "tgt/vector.h"
+#include "tgt/matrix.h"
 #include "tgt/line.h"
 
 namespace tgt {
@@ -63,18 +64,30 @@ struct Plane {
     Plane() {}
 
     /// init with unit normal [a, b, c] and distance _d <br>
-    /// BEWARE: It is your job to ensure that [a, b, c] is a unit vector and that d <= 0
+    /// BEWARE: It is your job to ensure that [a, b, c] is a unit vector
     Plane(T a, T b, T c, T _d)
         : n(a, b, c)
         , d(_d)
-    {}
+    {
+        // correct sign of d
+        //if (d > T(0)) {
+            n = -n;
+            d = -d;
+        //}
+    }
 
     /// creates a plane with a unit length normal and a distance <br>
-    /// BEWARE: It is your job to ensure that [a, b, c] is a unit vector and that d <= 0
+    /// BEWARE: It is your job to ensure that [a, b, c] is a unit vector
     Plane(const Vector3<T>& _n, T _d)
         : n(_n)
         , d(_d)
-    {}
+    {
+        // correct sign of d
+        //if (d > T(0)) {
+            n = -n;
+            d = -d;
+        //}
+    }
 
     /**
      * Creates a plane defined by three points.
@@ -84,10 +97,10 @@ struct Plane {
         d = -dot(v1, n);
 
         // correct sign of d
-        if (d > T(0)) {
+        //if (d > T(0)) {
             n = -n;
             d = -d;
-        }
+        //}
     }
 
     /// creates a plane with one from another type
@@ -151,6 +164,8 @@ struct Plane {
     static void createCubeVertices(const Vector3<T>& llf, const Vector3<T>& urb, Vector3<T> cubeVertices[8]);
 
     static void createCubePlanes(const Vector3<T> cv[8], Plane<T> cubePlanes[6]);
+
+    Plane<T> transform(tgt::mat4 m) const;
 
     /**
      * Creates planes in the aabPlanes array from a axis aligned box given via llf and urb. The normal points to inside.
@@ -340,6 +355,18 @@ void Plane<T>::createCubePlanes(const Vector3<T> cv[8], Plane<T> cubePlanes[6]) 
     cubePlanes[3] = Plane<T>( cv[6], cv[2], cv[1] );// right
     cubePlanes[4] = Plane<T>( cv[5], cv[1], cv[0] );// bottom
     cubePlanes[5] = Plane<T>( cv[7], cv[3], cv[2] );// top
+}
+
+template<class T>
+Plane<T> Plane<T>::transform(tgt::mat4 m) const {
+    tgt::mat4 mInv;
+    m.invert(mInv);
+    tgt::mat4 mInvTr = transpose(mInv);
+    vec4 tr = mInvTr * toVec4();
+    float l = length(tr.xyz());
+    tr /= l;
+
+    return Plane<T>(tr.xyz(), tr.w);
 }
 
 template<class T>

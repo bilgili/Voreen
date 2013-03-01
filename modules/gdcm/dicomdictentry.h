@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -23,8 +23,8 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#ifndef DICOMDICTENTRY_H
-#define DICOMDICTENTRY_H
+#ifndef VRN_DICOMDICTENTRY_H
+#define VRN_DICOMDICTENTRY_H
 
 // include this before any GDCM header in order to make sure that C99 types are defined
 #include "tgt/types.h"
@@ -43,7 +43,7 @@ namespace voreen {
  * Includes information about Group Number, Element Number, Keyword, Name, Value Representation and Value Multiplicity of the entry
  * as well as an attribute to represent if this Entry is essentially required for the Dictionary
  */
-class DicomDictEntry: public Serializable
+class VRN_CORE_API DicomDictEntry : public Serializable
 {
 public:
     DicomDictEntry();

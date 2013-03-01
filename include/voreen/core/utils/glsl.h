@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -28,6 +28,7 @@
 
 #include "voreen/core/datastructures/volume/volume.h"
 #include "voreen/core/datastructures/volume/volumeslicehelper.h"
+#include "voreen/core/properties/optionproperty.h"
 #include "tgt/shadermanager.h"
 #include "tgt/camera.h"
 #include "tgt/textureunit.h"
@@ -41,6 +42,14 @@ bool bindVolumeTexture(const VolumeBase* vh, const tgt::TextureUnit* texUnit, GL
 void setUniform(tgt::Shader* shader, const std::string& imageUniform, const std::string& structUniform, const Slice* sl, const tgt::TextureUnit* texUnit);
 
 std::string generateStandardShaderHeader(const tgt::GpuCapabilities::GlVersion* version = 0);
+
+// Helper functions for shading mode:
+
+/// Fill a given property with available shading modes
+void fillShadingModesProperty(StringOptionProperty& shadeMode);
+
+/// Generate a shader define based on the chosen shading mode
+std::string getShaderDefine(std::string shadeMode, std::string functionName, std::string n = "n", std::string pos = "pos", std::string lPos = "lPos", std::string cPos = "cPos", std::string ka = "ka", std::string kd = "kd", std::string ks = "ks");
 
 }  // namespace voreen
 

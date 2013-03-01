@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -66,6 +66,7 @@
 #include "tgt/vector.h"
 #include "tgt/assert.h"
 
+#include "voreen/core/voreenobject.h"
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/voreencoreapi.h"
 #include "voreen/core/io/serialization/serialization.h"

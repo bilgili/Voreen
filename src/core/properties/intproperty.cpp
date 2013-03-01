@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -29,9 +29,9 @@ namespace voreen {
 
 IntProperty::IntProperty(const std::string& id, const std::string& guiText,
                     int value, int minValue, int maxValue,
-                    int invalidationLevel)
+                    int invalidationLevel, NumericProperty<int>::BoundaryUpdatePolicy bup)
     : NumericProperty<int>(id, guiText, value, minValue, maxValue, 1,
-                            invalidationLevel)
+                            invalidationLevel, bup)
 {}
 
 IntProperty::IntProperty()

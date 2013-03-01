@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -46,17 +46,18 @@ namespace voreen {
 FlowreenModule::FlowreenModule(const std::string& modulePath)
     : VoreenModule(modulePath)
 {
-    setName("Flowreen");
+    setID("Flowreen");
+    setGuiName("Flowreen");
 
     // processors
-    registerProcessor(new FlowMagnitudes3D());
-    registerProcessor(new FlowOrthogonalSliceRenderer());
-    registerProcessor(new FlowSliceRenderer2D());
-    registerProcessor(new FlowSliceRenderer3D());
-    registerProcessor(new FlowStreamlinesTexture3D());
-    registerProcessor(new FlowreenAdapter());
-    registerProcessor(new PathlineRenderer3D());
-    registerProcessor(new StreamlineRenderer3D());
+    registerSerializableType(new FlowMagnitudes3D());
+    registerSerializableType(new FlowOrthogonalSliceRenderer());
+    registerSerializableType(new FlowSliceRenderer2D());
+    registerSerializableType(new FlowSliceRenderer3D());
+    registerSerializableType(new FlowStreamlinesTexture3D());
+    registerSerializableType(new FlowreenAdapter());
+    registerSerializableType(new PathlineRenderer3D());
+    registerSerializableType(new StreamlineRenderer3D());
 
     // I/O
     registerVolumeReader(new FlowReader());

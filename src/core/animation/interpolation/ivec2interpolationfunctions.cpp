@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,11 +30,11 @@ namespace voreen {
 
 IVec2StartInterpolationFunction::IVec2StartInterpolationFunction() {}
 
-std::string IVec2StartInterpolationFunction::getMode() const {
+std::string IVec2StartInterpolationFunction::getGuiName() const {
     return "focus on startvalue";
 }
 
-std::string IVec2StartInterpolationFunction::getIdentifier() const {
+std::string IVec2StartInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -44,17 +44,17 @@ tgt::ivec2 IVec2StartInterpolationFunction::interpolate(tgt::ivec2 startvalue, t
     else
         return endvalue;
 }
-InterpolationFunction<tgt::ivec2>* IVec2StartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2StartInterpolationFunction::create() const {
     return new IVec2StartInterpolationFunction();
 }
 
 IVec2EndInterpolationFunction::IVec2EndInterpolationFunction() {}
 
-std::string IVec2EndInterpolationFunction::getMode() const {
+std::string IVec2EndInterpolationFunction::getGuiName() const {
     return "focus on endvalue";
 }
 
-std::string IVec2EndInterpolationFunction::getIdentifier() const {
+std::string IVec2EndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -65,17 +65,17 @@ tgt::ivec2 IVec2EndInterpolationFunction::interpolate(tgt::ivec2 startvalue, tgt
         return startvalue;
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2EndInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2EndInterpolationFunction::create() const {
     return new IVec2EndInterpolationFunction();
 }
 
 IVec2StartEndInterpolationFunction::IVec2StartEndInterpolationFunction() {}
 
-std::string IVec2StartEndInterpolationFunction::getMode() const {
+std::string IVec2StartEndInterpolationFunction::getGuiName() const {
     return "bisection";
 }
 
-std::string IVec2StartEndInterpolationFunction::getIdentifier() const {
+std::string IVec2StartEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -86,17 +86,17 @@ tgt::ivec2 IVec2StartEndInterpolationFunction::interpolate(tgt::ivec2 startvalue
         return endvalue;
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2StartEndInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2StartEndInterpolationFunction::create() const {
     return new IVec2StartEndInterpolationFunction();
 }
 
 IVec2LinearInterpolationFunction::IVec2LinearInterpolationFunction() {}
 
-std::string IVec2LinearInterpolationFunction::getMode() const {
+std::string IVec2LinearInterpolationFunction::getGuiName() const {
     return "linear interpolation";
 }
 
-std::string IVec2LinearInterpolationFunction::getIdentifier() const {
+std::string IVec2LinearInterpolationFunction::getCategory() const {
     return "linear";
 }
 
@@ -106,17 +106,17 @@ tgt::ivec2 IVec2LinearInterpolationFunction::interpolate(tgt::ivec2 startvalue, 
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2LinearInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2LinearInterpolationFunction::create() const {
     return new IVec2LinearInterpolationFunction();
 }
 
 IVec2InQuadInterpolationFunction::IVec2InQuadInterpolationFunction() {}
 
-std::string IVec2InQuadInterpolationFunction::getMode() const {
+std::string IVec2InQuadInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string IVec2InQuadInterpolationFunction::getIdentifier() const {
+std::string IVec2InQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -126,17 +126,17 @@ tgt::ivec2 IVec2InQuadInterpolationFunction::interpolate(tgt::ivec2 startvalue, 
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2InQuadInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2InQuadInterpolationFunction::create() const {
     return new IVec2InQuadInterpolationFunction();
 }
 
 IVec2InCubicInterpolationFunction::IVec2InCubicInterpolationFunction() {}
 
-std::string IVec2InCubicInterpolationFunction::getMode() const {
+std::string IVec2InCubicInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string IVec2InCubicInterpolationFunction::getIdentifier() const {
+std::string IVec2InCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -146,17 +146,17 @@ tgt::ivec2 IVec2InCubicInterpolationFunction::interpolate(tgt::ivec2 startvalue,
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2InCubicInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2InCubicInterpolationFunction::create() const {
     return new IVec2InCubicInterpolationFunction();
 }
 
 IVec2InQuartInterpolationFunction::IVec2InQuartInterpolationFunction() {}
 
-std::string IVec2InQuartInterpolationFunction::getMode() const {
+std::string IVec2InQuartInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string IVec2InQuartInterpolationFunction::getIdentifier() const {
+std::string IVec2InQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -166,17 +166,17 @@ tgt::ivec2 IVec2InQuartInterpolationFunction::interpolate(tgt::ivec2 startvalue,
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2InQuartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2InQuartInterpolationFunction::create() const {
     return new IVec2InQuartInterpolationFunction();
 }
 
 IVec2InQuintInterpolationFunction::IVec2InQuintInterpolationFunction() {}
 
-std::string IVec2InQuintInterpolationFunction::getMode() const {
+std::string IVec2InQuintInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string IVec2InQuintInterpolationFunction::getIdentifier() const {
+std::string IVec2InQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -186,17 +186,17 @@ tgt::ivec2 IVec2InQuintInterpolationFunction::interpolate(tgt::ivec2 startvalue,
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2InQuintInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2InQuintInterpolationFunction::create() const {
     return new IVec2InQuintInterpolationFunction();
 }
 
 IVec2InSineInterpolationFunction::IVec2InSineInterpolationFunction() {}
 
-std::string IVec2InSineInterpolationFunction::getMode() const {
+std::string IVec2InSineInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string IVec2InSineInterpolationFunction::getIdentifier() const {
+std::string IVec2InSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -206,17 +206,17 @@ tgt::ivec2 IVec2InSineInterpolationFunction::interpolate(tgt::ivec2 startvalue, 
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2InSineInterpolationFunction::clone() const{
+InterpolationFunction<tgt::ivec2>* IVec2InSineInterpolationFunction::create() const{
     return new IVec2InSineInterpolationFunction();
 }
 
 IVec2InExponentInterpolationFunction::IVec2InExponentInterpolationFunction() {}
 
-std::string IVec2InExponentInterpolationFunction::getMode() const {
+std::string IVec2InExponentInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string IVec2InExponentInterpolationFunction::getIdentifier() const {
+std::string IVec2InExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -226,17 +226,17 @@ tgt::ivec2 IVec2InExponentInterpolationFunction::interpolate(tgt::ivec2 startval
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2InExponentInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2InExponentInterpolationFunction::create() const {
     return new IVec2InExponentInterpolationFunction();
 }
 
 IVec2InCircInterpolationFunction::IVec2InCircInterpolationFunction() {}
 
-std::string IVec2InCircInterpolationFunction::getMode() const {
+std::string IVec2InCircInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string IVec2InCircInterpolationFunction::getIdentifier() const {
+std::string IVec2InCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -246,17 +246,17 @@ tgt::ivec2 IVec2InCircInterpolationFunction::interpolate(tgt::ivec2 startvalue, 
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2InCircInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2InCircInterpolationFunction::create() const {
     return new IVec2InCircInterpolationFunction();
 }
 
 IVec2OutQuadInterpolationFunction::IVec2OutQuadInterpolationFunction() {}
 
-std::string IVec2OutQuadInterpolationFunction::getMode() const {
+std::string IVec2OutQuadInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string IVec2OutQuadInterpolationFunction::getIdentifier() const {
+std::string IVec2OutQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -266,17 +266,17 @@ tgt::ivec2 IVec2OutQuadInterpolationFunction::interpolate(tgt::ivec2 startvalue,
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2OutQuadInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2OutQuadInterpolationFunction::create() const {
     return new IVec2OutQuadInterpolationFunction();
 }
 
 IVec2OutCubicInterpolationFunction::IVec2OutCubicInterpolationFunction() {}
 
-std::string IVec2OutCubicInterpolationFunction::getMode() const {
+std::string IVec2OutCubicInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string IVec2OutCubicInterpolationFunction::getIdentifier() const {
+std::string IVec2OutCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -286,17 +286,17 @@ tgt::ivec2 IVec2OutCubicInterpolationFunction::interpolate(tgt::ivec2 startvalue
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2OutCubicInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2OutCubicInterpolationFunction::create() const {
     return new IVec2OutCubicInterpolationFunction();
 }
 
 IVec2OutQuartInterpolationFunction::IVec2OutQuartInterpolationFunction() {}
 
-std::string IVec2OutQuartInterpolationFunction::getMode() const {
+std::string IVec2OutQuartInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string IVec2OutQuartInterpolationFunction::getIdentifier() const {
+std::string IVec2OutQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -306,17 +306,17 @@ tgt::ivec2 IVec2OutQuartInterpolationFunction::interpolate(tgt::ivec2 startvalue
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2OutQuartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2OutQuartInterpolationFunction::create() const {
     return new IVec2OutQuartInterpolationFunction();
 }
 
 IVec2OutQuintInterpolationFunction::IVec2OutQuintInterpolationFunction() {}
 
-std::string IVec2OutQuintInterpolationFunction::getMode() const {
+std::string IVec2OutQuintInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string IVec2OutQuintInterpolationFunction::getIdentifier() const {
+std::string IVec2OutQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -326,17 +326,17 @@ tgt::ivec2 IVec2OutQuintInterpolationFunction::interpolate(tgt::ivec2 startvalue
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2OutQuintInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2OutQuintInterpolationFunction::create() const {
     return new IVec2OutQuintInterpolationFunction();
 }
 
 IVec2OutSineInterpolationFunction::IVec2OutSineInterpolationFunction() {}
 
-std::string IVec2OutSineInterpolationFunction::getMode() const {
+std::string IVec2OutSineInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string IVec2OutSineInterpolationFunction::getIdentifier() const {
+std::string IVec2OutSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -346,17 +346,17 @@ tgt::ivec2 IVec2OutSineInterpolationFunction::interpolate(tgt::ivec2 startvalue,
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2OutSineInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2OutSineInterpolationFunction::create() const {
     return new IVec2OutSineInterpolationFunction();
 }
 
 IVec2OutExponentInterpolationFunction::IVec2OutExponentInterpolationFunction() {}
 
-std::string IVec2OutExponentInterpolationFunction::getMode() const {
+std::string IVec2OutExponentInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string IVec2OutExponentInterpolationFunction::getIdentifier() const {
+std::string IVec2OutExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -366,17 +366,17 @@ tgt::ivec2 IVec2OutExponentInterpolationFunction::interpolate(tgt::ivec2 startva
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2OutExponentInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2OutExponentInterpolationFunction::create() const {
     return new IVec2OutExponentInterpolationFunction();
 }
 
 IVec2OutCircInterpolationFunction::IVec2OutCircInterpolationFunction() {}
 
-std::string IVec2OutCircInterpolationFunction::getMode() const {
+std::string IVec2OutCircInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string IVec2OutCircInterpolationFunction::getIdentifier() const {
+std::string IVec2OutCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -386,17 +386,17 @@ tgt::ivec2 IVec2OutCircInterpolationFunction::interpolate(tgt::ivec2 startvalue,
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2OutCircInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2OutCircInterpolationFunction::create() const {
     return new IVec2OutCircInterpolationFunction();
 }
 
 IVec2InOutQuadInterpolationFunction::IVec2InOutQuadInterpolationFunction() {}
 
-std::string IVec2InOutQuadInterpolationFunction::getMode() const {
+std::string IVec2InOutQuadInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string IVec2InOutQuadInterpolationFunction::getIdentifier() const {
+std::string IVec2InOutQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -406,17 +406,17 @@ tgt::ivec2 IVec2InOutQuadInterpolationFunction::interpolate(tgt::ivec2 startvalu
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2InOutQuadInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2InOutQuadInterpolationFunction::create() const {
     return new IVec2InOutQuadInterpolationFunction();
 }
 
 IVec2InOutCubicInterpolationFunction::IVec2InOutCubicInterpolationFunction() {}
 
-std::string IVec2InOutCubicInterpolationFunction::getMode() const {
+std::string IVec2InOutCubicInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string IVec2InOutCubicInterpolationFunction::getIdentifier() const {
+std::string IVec2InOutCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -426,17 +426,17 @@ tgt::ivec2 IVec2InOutCubicInterpolationFunction::interpolate(tgt::ivec2 startval
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2InOutCubicInterpolationFunction::clone() const{
+InterpolationFunction<tgt::ivec2>* IVec2InOutCubicInterpolationFunction::create() const{
     return new IVec2InOutCubicInterpolationFunction();
 }
 
 IVec2InOutQuartInterpolationFunction::IVec2InOutQuartInterpolationFunction() {}
 
-std::string IVec2InOutQuartInterpolationFunction::getMode() const {
+std::string IVec2InOutQuartInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string IVec2InOutQuartInterpolationFunction::getIdentifier() const {
+std::string IVec2InOutQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -446,17 +446,17 @@ tgt::ivec2 IVec2InOutQuartInterpolationFunction::interpolate(tgt::ivec2 startval
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2InOutQuartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2InOutQuartInterpolationFunction::create() const {
     return new IVec2InOutQuartInterpolationFunction();
 }
 
 IVec2InOutQuintInterpolationFunction::IVec2InOutQuintInterpolationFunction() {}
 
-std::string IVec2InOutQuintInterpolationFunction::getMode() const {
+std::string IVec2InOutQuintInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string IVec2InOutQuintInterpolationFunction::getIdentifier() const {
+std::string IVec2InOutQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -466,17 +466,17 @@ tgt::ivec2 IVec2InOutQuintInterpolationFunction::interpolate(tgt::ivec2 startval
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2InOutQuintInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2InOutQuintInterpolationFunction::create() const {
     return new IVec2InOutQuintInterpolationFunction();
 }
 
 IVec2InOutSineInterpolationFunction::IVec2InOutSineInterpolationFunction() {}
 
-std::string IVec2InOutSineInterpolationFunction::getMode() const {
+std::string IVec2InOutSineInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string IVec2InOutSineInterpolationFunction::getIdentifier() const {
+std::string IVec2InOutSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -486,17 +486,17 @@ tgt::ivec2 IVec2InOutSineInterpolationFunction::interpolate(tgt::ivec2 startvalu
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2InOutSineInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2InOutSineInterpolationFunction::create() const {
     return new IVec2InOutSineInterpolationFunction();
 }
 
 IVec2InOutExponentInterpolationFunction::IVec2InOutExponentInterpolationFunction() {}
 
-std::string IVec2InOutExponentInterpolationFunction::getMode() const {
+std::string IVec2InOutExponentInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string IVec2InOutExponentInterpolationFunction::getIdentifier() const {
+std::string IVec2InOutExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -506,17 +506,17 @@ tgt::ivec2 IVec2InOutExponentInterpolationFunction::interpolate(tgt::ivec2 start
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2InOutExponentInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2InOutExponentInterpolationFunction::create() const {
     return new IVec2InOutExponentInterpolationFunction();
 }
 
 IVec2InOutCircInterpolationFunction::IVec2InOutCircInterpolationFunction() {}
 
-std::string IVec2InOutCircInterpolationFunction::getMode() const {
+std::string IVec2InOutCircInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string IVec2InOutCircInterpolationFunction::getIdentifier() const {
+std::string IVec2InOutCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -526,17 +526,17 @@ tgt::ivec2 IVec2InOutCircInterpolationFunction::interpolate(tgt::ivec2 startvalu
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2InOutCircInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2InOutCircInterpolationFunction::create() const {
     return new IVec2InOutCircInterpolationFunction();
 }
 
 IVec2OutInQuadInterpolationFunction::IVec2OutInQuadInterpolationFunction() {}
 
-std::string IVec2OutInQuadInterpolationFunction::getMode() const {
+std::string IVec2OutInQuadInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string IVec2OutInQuadInterpolationFunction::getIdentifier() const {
+std::string IVec2OutInQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -546,17 +546,17 @@ tgt::ivec2 IVec2OutInQuadInterpolationFunction::interpolate(tgt::ivec2 startvalu
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2OutInQuadInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2OutInQuadInterpolationFunction::create() const {
     return new IVec2OutInQuadInterpolationFunction();
 }
 
 IVec2OutInCubicInterpolationFunction::IVec2OutInCubicInterpolationFunction() {}
 
-std::string IVec2OutInCubicInterpolationFunction::getMode() const {
+std::string IVec2OutInCubicInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string IVec2OutInCubicInterpolationFunction::getIdentifier() const {
+std::string IVec2OutInCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -566,17 +566,17 @@ tgt::ivec2 IVec2OutInCubicInterpolationFunction::interpolate(tgt::ivec2 startval
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2OutInCubicInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2OutInCubicInterpolationFunction::create() const {
     return new IVec2OutInCubicInterpolationFunction();
 }
 
 IVec2OutInQuartInterpolationFunction::IVec2OutInQuartInterpolationFunction() {}
 
-std::string IVec2OutInQuartInterpolationFunction::getMode() const {
+std::string IVec2OutInQuartInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string IVec2OutInQuartInterpolationFunction::getIdentifier() const {
+std::string IVec2OutInQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -586,17 +586,17 @@ tgt::ivec2 IVec2OutInQuartInterpolationFunction::interpolate(tgt::ivec2 startval
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2OutInQuartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2OutInQuartInterpolationFunction::create() const {
     return new IVec2OutInQuartInterpolationFunction();
 }
 
 IVec2OutInQuintInterpolationFunction::IVec2OutInQuintInterpolationFunction() {}
 
-std::string IVec2OutInQuintInterpolationFunction::getMode() const {
+std::string IVec2OutInQuintInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string IVec2OutInQuintInterpolationFunction::getIdentifier() const {
+std::string IVec2OutInQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -606,17 +606,17 @@ tgt::ivec2 IVec2OutInQuintInterpolationFunction::interpolate(tgt::ivec2 startval
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2OutInQuintInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2OutInQuintInterpolationFunction::create() const {
     return new IVec2OutInQuintInterpolationFunction();
 }
 
 IVec2OutInSineInterpolationFunction::IVec2OutInSineInterpolationFunction() {}
 
-std::string IVec2OutInSineInterpolationFunction::getMode() const {
+std::string IVec2OutInSineInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string IVec2OutInSineInterpolationFunction::getIdentifier() const {
+std::string IVec2OutInSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -626,17 +626,17 @@ tgt::ivec2 IVec2OutInSineInterpolationFunction::interpolate(tgt::ivec2 startvalu
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2OutInSineInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2OutInSineInterpolationFunction::create() const {
     return new IVec2OutInSineInterpolationFunction();
 }
 
 IVec2OutInExponentInterpolationFunction::IVec2OutInExponentInterpolationFunction() {}
 
-std::string IVec2OutInExponentInterpolationFunction::getMode() const {
+std::string IVec2OutInExponentInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string IVec2OutInExponentInterpolationFunction::getIdentifier() const {
+std::string IVec2OutInExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -646,17 +646,17 @@ tgt::ivec2 IVec2OutInExponentInterpolationFunction::interpolate(tgt::ivec2 start
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2OutInExponentInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2OutInExponentInterpolationFunction::create() const {
     return new IVec2OutInExponentInterpolationFunction();
 }
 
 IVec2OutInCircInterpolationFunction::IVec2OutInCircInterpolationFunction() {}
 
-std::string IVec2OutInCircInterpolationFunction::getMode() const {
+std::string IVec2OutInCircInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string IVec2OutInCircInterpolationFunction::getIdentifier() const {
+std::string IVec2OutInCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -666,7 +666,7 @@ tgt::ivec2 IVec2OutInCircInterpolationFunction::interpolate(tgt::ivec2 startvalu
     return tgt::ivec2(compX, compY);
 }
 
-InterpolationFunction<tgt::ivec2>* IVec2OutInCircInterpolationFunction::clone() const {
+InterpolationFunction<tgt::ivec2>* IVec2OutInCircInterpolationFunction::create() const {
     return new IVec2OutInCircInterpolationFunction();
 }
 

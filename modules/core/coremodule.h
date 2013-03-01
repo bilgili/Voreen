@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -38,7 +38,7 @@ namespace voreen {
  * It has been introduced to handle runtime resources of the core and
  * the modules in a consistent manner.
  */
-class CoreModule : public VoreenModule {
+class VRN_CORE_API CoreModule : public VoreenModule {
 
 public:
     CoreModule(const std::string& modulePath);

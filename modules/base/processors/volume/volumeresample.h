@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -39,7 +39,7 @@ class Volume;
  * Resizes the input volume to the specified dimensions
  * by using a selectable filtering mode.
  */
-class VolumeResample : public CachingVolumeProcessor {
+class VRN_CORE_API VolumeResample : public CachingVolumeProcessor {
 public:
     VolumeResample();
     virtual Processor* create() const;

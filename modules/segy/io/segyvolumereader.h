@@ -50,13 +50,13 @@ public:
     virtual std::string getClassName() const   { return "SEGYVolumeReader"; }
     virtual std::string getFormatDescription() const { return "SEGY seismic data"; }
 
-    virtual VolumeCollection* read(const std::string& fileName)
+    virtual VolumeList* read(const std::string& fileName)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
-    virtual VolumeCollection* readSlices(const std::string& fileName, size_t firstSlice=0, size_t lastSlice=0)
+    virtual VolumeList* readSlices(const std::string& fileName, size_t firstSlice=0, size_t lastSlice=0)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
-    virtual VolumeCollection* readBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
+    virtual VolumeList* readBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
         throw(tgt::FileException, std::bad_alloc);
 
 

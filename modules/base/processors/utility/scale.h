@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -44,8 +44,6 @@ public:
     virtual std::string getClassName() const { return "ScaleProcessor"; }
     virtual bool isUtility() const { return true; }
 
-    virtual Processor* create() const = 0;
-
     void process() = 0;
 
 protected:
@@ -64,7 +62,7 @@ public:
 
     virtual std::string getCategory() const { return "Utility"; }
     virtual std::string getClassName() const { return "SingleScale"; }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; } ///2.0
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
     virtual Processor* create() const {return new SingleScale();}
 
 protected:

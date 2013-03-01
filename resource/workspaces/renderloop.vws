@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="" readonly="true">
-        <ProcessorNetwork version="13">
+        <ProcessorNetwork version="15">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -28,18 +28,18 @@
                         </MetaItem>
                     </MetaData>
                     <Properties>
-                        <Property name="canvasSize" id="ref6">
+                        <Property mapKey="canvasSize" name="canvasSize" id="ref6">
                             <value x="321" y="319" />
                         </Property>
-                        <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" noPathSet="true" value="" />
-                        <Property name="showCursor" value="true" />
-                        <Property name="showFullScreen" value="false" />
+                        <Property mapKey="saveScreenshot" name="saveScreenshot" />
+                        <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="true" value="" />
+                        <Property mapKey="showCursor" name="showCursor" value="true" />
+                        <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
                     <Inports>
-                        <Port name="image.input">
+                        <Port name="image.input" direction="1" portID="image.input" guiName="Image Input" allowMultipleConnections="false" invalidationLevel="1">
                             <Properties>
-                                <Property name="image.input.renderSizeOrigin">
+                                <Property mapKey="image.input.renderSizeOrigin" name="image.input.renderSizeOrigin">
                                     <value x="321" y="319" />
                                 </Property>
                             </Properties>
@@ -54,20 +54,20 @@
                         <MetaItem name="Processor_GI" type="PositionMetaData" x="-437" y="-30" />
                     </MetaData>
                     <Properties>
-                        <Property name="numIterations" value="5" />
+                        <Property mapKey="numIterations" name="numIterations" value="5" />
                     </Properties>
                     <Inports>
-                        <Port name="image.inport">
+                        <Port name="image.inport" direction="1" portID="image.inport" guiName="Image Input" allowMultipleConnections="false" invalidationLevel="1">
                             <Properties />
                         </Port>
-                        <Port name="loop.inport">
+                        <Port name="loop.inport" direction="1" portID="loop.inport" guiName="Loop Inport" allowMultipleConnections="false" invalidationLevel="1">
                             <Properties />
                         </Port>
                     </Inports>
                     <Outports>
-                        <Port name="image.outport">
+                        <Port name="image.outport" direction="0" portID="image.outport" guiName="Image Output" allowMultipleConnections="true" invalidationLevel="1">
                             <Properties>
-                                <Property name="blockEvents" value="false" />
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
                             </Properties>
                         </Port>
                     </Outports>
@@ -80,19 +80,19 @@
                     </MetaData>
                     <Properties />
                     <Inports>
-                        <Port name="image.inport">
+                        <Port name="image.inport" direction="1" portID="image.inport" guiName="Image Input" allowMultipleConnections="false" invalidationLevel="1">
                             <Properties />
                         </Port>
                     </Inports>
                     <Outports>
-                        <Port name="image.outport">
+                        <Port name="image.outport" direction="0" portID="image.outport" guiName="Image Output" allowMultipleConnections="true" invalidationLevel="1">
                             <Properties>
-                                <Property name="blockEvents" value="false" />
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
                             </Properties>
                         </Port>
-                        <Port name="loop.outport">
+                        <Port name="loop.outport" direction="0" portID="loop.outport" guiName="Loop Outport" allowMultipleConnections="true" invalidationLevel="1">
                             <Properties>
-                                <Property name="blockEvents" value="false" />
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
                             </Properties>
                         </Port>
                     </Outports>
@@ -104,28 +104,30 @@
                         <MetaItem name="Processor_GI" type="PositionMetaData" x="-419" y="66" />
                     </MetaData>
                     <Properties>
-                        <Property name="blurAlpha" value="true" />
-                        <Property name="blurBlue" value="true" />
-                        <Property name="blurDepth" value="true" />
-                        <Property name="blurGreen" value="true" />
-                        <Property name="blurRed" value="true" />
-                        <Property name="enable" value="true" />
-                        <Property name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                        <Property mapKey="blurAlpha" name="blurAlpha" value="true" />
+                        <Property mapKey="blurBlue" name="blurBlue" value="true" />
+                        <Property mapKey="blurDepth" name="blurDepth" value="true" />
+                        <Property mapKey="blurGreen" name="blurGreen" value="true" />
+                        <Property mapKey="blurRed" name="blurRed" value="true" />
+                        <Property mapKey="enable" name="enable" value="true" />
+                        <Property mapKey="iamode.adapt" name="iamode.adapt" value="false" />
+                        <Property mapKey="iamode.factor" name="iamode.factor" value="1" />
+                        <Property mapKey="shader.program" name="shader.program" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
                         </Property>
-                        <Property name="sigma" value="2" />
+                        <Property mapKey="sigma" name="sigma" value="2" />
                     </Properties>
                     <Inports>
-                        <Port name="image.inport">
+                        <Port name="image.inport" direction="1" portID="image.inport" guiName="Image Input" allowMultipleConnections="false" invalidationLevel="1">
                             <Properties />
                         </Port>
                     </Inports>
                     <Outports>
-                        <Port name="image.outport">
+                        <Port name="image.outport" direction="0" portID="image.outport" guiName="Image Output" allowMultipleConnections="true" invalidationLevel="1">
                             <Properties>
-                                <Property name="blockEvents" value="false" />
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
                             </Properties>
                         </Port>
                     </Outports>
@@ -137,17 +139,17 @@
                         <MetaItem name="Processor_GI" type="PositionMetaData" x="-443" y="-135" />
                     </MetaData>
                     <Properties>
-                        <Property name="clearButton" />
-                        <Property name="imageFile" noPathSet="false" value="../textures/nucleon.png" />
-                        <Property name="imageSize" id="ref5">
+                        <Property mapKey="clearButton" name="clearButton" />
+                        <Property mapKey="imageFile" name="imageFile" noPathSet="false" value="../textures/nucleon.png" />
+                        <Property mapKey="imageSize" name="imageSize" id="ref5">
                             <value x="321" y="319" />
                         </Property>
                     </Properties>
                     <Inports />
                     <Outports>
-                        <Port name="image.out">
+                        <Port name="image.out" direction="0" portID="image.out" guiName="Image Output" allowMultipleConnections="true" invalidationLevel="1">
                             <Properties>
-                                <Property name="blockEvents" value="false" />
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
                             </Properties>
                         </Port>
                     </Outports>

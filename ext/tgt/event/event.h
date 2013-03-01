@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -27,8 +27,9 @@
 
 #include "tgt/types.h"
 
-namespace tgt {
 
+
+namespace tgt {
 /**
  *  The base class for all events. Provides the accepted/ignore mechanism.
  */
@@ -43,7 +44,7 @@ public:
         NUM             = 0x0010,
         CAPS            = 0x0020,
         MODE            = 0x0040,
-        RESERVED        = 0x8000,
+        RESERVED        = 0x8000
     };
 
     /*
@@ -63,8 +64,9 @@ public:
         ZOOMEVENT             = 0x0400,
         SIZINGEVENT           = 0x0800,
         TRANSLATIONEVENT      = 0x1000,
+        TWOFINGEREVENT        = 0x2000,
 
-        ALLEVENTTYPES = MOUSEPRESSEVENT | MOUSERELEASEEVENT | MOUSEMOVEEVENT | MOUSEDOUBLECLICKEVENT | MOUSEENTEREVENT | MOUSEEXITEVENT | WHEELEVENT | TIMEREVENT | KEYEVENT | ROTATIONEVENT | ZOOMEVENT | SIZINGEVENT | TRANSLATIONEVENT
+        ALLEVENTTYPES = MOUSEPRESSEVENT | MOUSERELEASEEVENT | MOUSEMOVEEVENT | MOUSEDOUBLECLICKEVENT | MOUSEENTEREVENT | MOUSEEXITEVENT | WHEELEVENT | TIMEREVENT | KEYEVENT | ROTATIONEVENT | ZOOMEVENT | SIZINGEVENT | TRANSLATIONEVENT | TWOFINGEREVENT
     };
 
 

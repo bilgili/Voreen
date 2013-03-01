@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,7 +33,7 @@ using tgt::TextureUnit;
 namespace voreen {
 
 Gaussian::Gaussian()
-    : ImageProcessorBypassable("image/gaussian"),
+    : ImageProcessorBypassable("image/gaussian", true),
       sigma_("sigma", "Sigma", 2.0f, 0.1f, 10.0f),
       blurRed_("blurRed", "Red channel", true),
       blurGreen_("blurGreen", "Green channel", true),
@@ -69,6 +69,8 @@ void Gaussian::process() {
     float gaussKernel[26];
     float sigma = sigma_.get();
     int kernelRadius = static_cast<int>(sigma*2.5f);
+    if(interactionMode() && interactionAdapt_.get())
+        kernelRadius = std::max(1, (int)(kernelRadius * (1.f / interactionFactor_.get())));
     tgtAssert(kernelRadius >= 0 && kernelRadius <= 25, std::string("invalid kernel radius: " + itos(kernelRadius)).c_str());
 
     for (int i=0; i<=kernelRadius; i++)

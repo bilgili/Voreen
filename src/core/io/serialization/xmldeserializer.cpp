@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,6 +26,7 @@
 #include "voreen/core/io/serialization/xmldeserializer.h"
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/voreenmodule.h"
+#include "voreen/core/animation/animation.h"
 
 namespace voreen {
 
@@ -35,15 +36,13 @@ XmlDeserializer::XmlDeserializer(std::string documentPath)
     : XmlSerializerBase()
     , documentPath_(documentPath)
 {
-    // retrieve serialization factories from modules
+    // register application (as proxy for modules)
     if (VoreenApplication::app()) {
-        const std::vector<VoreenModule*> modules = VoreenApplication::app()->getModules();
-        for (size_t i=0; i<modules.size(); i++)
-            registerFactories(modules.at(i)->getSerializerFactories());
+        registerFactory(VoreenApplication::app());
         registerFactories(VoreenApplication::app()->getSerializerFactories());
     }
     else {
-        LWARNING("Unable to retrieve factories from modules: VoreenApplication not instantiated");
+        LWARNING("VoreenApplication not instantiated");
     }
 }
 
@@ -410,14 +409,19 @@ void XmlDeserializer::freePointer(void* pointer) {
             it->second = 0;
 }
 
-void XmlDeserializer::deserializeBinaryBlob(const std::string& key, unsigned char*& inputBuffer)
+void XmlDeserializer::deserializeBinaryBlob(const std::string& key, unsigned char* inputBuffer, size_t reservedMemory)
     throw (SerializationException)
 {
     std::string tmp;
     deserialize(key, tmp);
     std::vector<unsigned char> dataVec = base64Decode(tmp);
-    inputBuffer = new unsigned char[dataVec.size()];
-    std::copy(inputBuffer, inputBuffer + dataVec.size(), dataVec.begin());
+
+    if(dataVec.size() != reservedMemory)
+        raise(XmlSerializationFormatException("XML node with key '" + key + "' contains a binary blob for which unsufficient memory has been reserved."));
+    else {
+        //std::copy(inputBuffer, inputBuffer + dataVec.size(), dataVec.begin()); //doesn't work
+        memcpy(inputBuffer, &dataVec[0], reservedMemory);
+    }
 }
 
 void XmlDeserializer::deserializeBinaryBlob(const std::string& key, std::vector<unsigned char>& buffer)

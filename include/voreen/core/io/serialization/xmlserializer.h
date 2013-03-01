@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -142,6 +142,15 @@ public:
      */
     void serializeBinaryBlob(const std::string& key, const unsigned char* data, size_t length)
         throw (SerializationException);
+
+    /// Binary serialize a std::vector of objects.
+    template <class T>
+    void serializeBinaryBlob(const std::string& key, const std::vector<T>& data)
+        throw (SerializationException)
+    {
+        serialize(key+".numItems", data.size());
+        serializeBinaryBlob(key+".data", reinterpret_cast<const unsigned char*>(&data[0]), sizeof(T) * data.size());
+    }
 
     /**
      * Serialize the given binary @c data vector as a base64 encoded string.

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -42,7 +42,7 @@ namespace voreen {
 VoxelTypePropertyWidget::VoxelTypePropertyWidget(VoxelTypeProperty* prop, QWidget* parent, bool addVisibilityControl)
     : QPropertyWidget(prop, parent)
     , property_(prop)
-    , volumeHandle_(0)
+    , volume_(0)
     , widget_(new QWidget(this))
 {
     tgtAssert(property_, "no property");
@@ -89,7 +89,7 @@ void VoxelTypePropertyWidget::mousePressEvent(QMouseEvent* event) {
 }
 
 void VoxelTypePropertyWidget::setVolume(const VolumeBase* volumeHandle) {
-    volumeHandle_ = volumeHandle;
+    volume_ = volumeHandle;
     updateWidgetFromProperty();
 }
 
@@ -121,11 +121,11 @@ void VoxelTypePropertyWidget::updateWidgetFromProperty() {
     for (size_t i=0; i<floatWidgets_.size(); i++)
         floatWidgets_.at(i)->setVisible(false);
 
-    if (!volumeHandle_)
+    if (!volume_)
         return;
 
     tgtAssert(widget_->layout(), "widget has no layout");
-    const VolumeRAM* volume = volumeHandle_->getRepresentation<VolumeRAM>();
+    const VolumeRAM* volume = volume_->getRepresentation<VolumeRAM>();
     if (dynamic_cast<const VolumeRAM_UInt8*>(volume) || dynamic_cast<const VolumeRAM_Int8*>(volume) ||
         dynamic_cast<const VolumeRAM_UInt16*>(volume) || dynamic_cast<const VolumeRAM_Int16*>(volume) ||
         dynamic_cast<const VolumeRAM_UInt32*>(volume) || dynamic_cast<const VolumeRAM_Int32*>(volume) ) {
@@ -198,7 +198,7 @@ void VoxelTypePropertyWidget::updateWidgetFromProperty() {
 }
 
 void VoxelTypePropertyWidget::updatePropertyFromWidget() const {
-    const VolumeRAM* volume = volumeHandle_->getRepresentation<VolumeRAM>();
+    const VolumeRAM* volume = volume_->getRepresentation<VolumeRAM>();
     if (dynamic_cast<const VolumeRAM_UInt8*>(volume) || dynamic_cast<const VolumeRAM_Int8*>(volume) ||
             dynamic_cast<const VolumeRAM_UInt16*>(volume) || dynamic_cast<const VolumeRAM_Int16*>(volume) ||
             dynamic_cast<const VolumeRAM_UInt32*>(volume) || dynamic_cast<const VolumeRAM_Int32*>(volume) ) {

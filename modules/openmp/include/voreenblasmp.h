@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -34,7 +34,7 @@ namespace voreen {
 /**
  * OpenMP implementation of the Basic Linear Algebra Subprograms (BLAS).
  */
-class VoreenBlasMP : public VoreenBlas {
+class VRN_CORE_API VoreenBlasMP : public VoreenBlas {
 
 public:
     virtual void sAXPY(size_t vecSize, const float* vecx, const float* vecy, float alpha, float* result) const;

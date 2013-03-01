@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -35,7 +35,7 @@ namespace voreen {
 /**
  * This is a reader for the .rawvox files exported by 3D coat (3d-coat.com).
  */
-class RawVoxVolumeReader : public VolumeReader {
+class VRN_CORE_API RawVoxVolumeReader : public VolumeReader {
 public:
     RawVoxVolumeReader() {
          extensions_.push_back("rawvox");
@@ -46,7 +46,7 @@ public:
     virtual std::string getClassName() const   { return "RawVoxVolumeReader"; }
     virtual std::string getFormatDescription() const { return "3D coat .rawvox"; }
 
-    virtual VolumeCollection* read(const std::string& url)
+    virtual VolumeList* read(const std::string& url)
         throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
 private:

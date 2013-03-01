@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -34,11 +34,10 @@
 namespace voreen {
 
 FaceGeometry::FaceGeometry()
-    : Geometry()
-    , normalIsSet_(false)
+    : normalIsSet_(false)
 {}
 
-Geometry* FaceGeometry::create() const {
+FaceGeometry* FaceGeometry::create() const {
     return new FaceGeometry();
 }
 
@@ -52,8 +51,6 @@ bool FaceGeometry::empty() const {
 
 void FaceGeometry::addVertex(const VertexGeometry& vertex) {
     vertices_.push_back(vertex);
-
-    setHasChanged(true);
 }
 
 const VertexGeometry& FaceGeometry::getVertex(size_t index) const {
@@ -68,15 +65,11 @@ VertexGeometry& FaceGeometry::getVertex(size_t index) {
 void FaceGeometry::setFaceNormal(const tgt::vec3& normal) {
     normalIsSet_ = true;
     normal_ = normal;
-
-    setHasChanged(true);
 }
 
 void FaceGeometry::clear() {
     vertices_.clear();
     normalIsSet_ = false;
-
-    setHasChanged(true);
 }
 
 FaceGeometry::iterator FaceGeometry::begin() {
@@ -100,6 +93,10 @@ VertexGeometry& FaceGeometry::operator[](size_t index) {
 }
 
 void FaceGeometry::render() const {
+    //glMatrixMode(GL_MODELVIEW);
+    //glPushMatrix();
+    //tgt::multMatrix(getTransformationMatrix());
+
     if(getVertexCount() >= 3) {
         glBegin(GL_POLYGON);
         for (const_iterator it = begin(); it != end(); it++) {
@@ -128,16 +125,11 @@ void FaceGeometry::render() const {
         }
         glEnd();
     }
+
+    //glPopMatrix();
 }
 
-void FaceGeometry::transform(const tgt::mat4& transformation) {
-    for (iterator it = begin(); it != end(); ++it)
-        it->transform(transformation);
-
-    setHasChanged(true);
-}
-
-void FaceGeometry::clip(const tgt::vec4& clipPlane, double epsilon) {
+void FaceGeometry::clip(const tgt::plane& clipPlane, double epsilon) {
     tgtAssert(epsilon >= 0.0, "negative epsilon");
     if (vertices_.size() < 2)
         return;
@@ -188,8 +180,6 @@ void FaceGeometry::clip(const tgt::vec4& clipPlane, double epsilon) {
 
     // Remove unclipped face vertices from the vertex list...
     vertices_.erase(vertices_.begin(), vertices_.begin() + vertexCount);
-
-    setHasChanged(true);
 }
 
 bool FaceGeometry::equals(const FaceGeometry& face, double epsilon /*= 1e-6*/) const {
@@ -200,14 +190,6 @@ bool FaceGeometry::equals(const FaceGeometry& face, double epsilon /*= 1e-6*/) c
             return false;
     }
     return true;
-}
-
-bool FaceGeometry::equals(const Geometry* geometry, double epsilon /*= 1e-6*/) const {
-    const FaceGeometry* faceGeometry = dynamic_cast<const FaceGeometry*>(geometry);
-    if (!faceGeometry)
-        return false;
-    else
-        return equals(*faceGeometry, epsilon);
 }
 
 tgt::Bounds FaceGeometry::getBoundingBox() const {
@@ -233,7 +215,6 @@ void FaceGeometry::deserialize(XmlDeserializer& s) {
         s.removeLastError();
         normalIsSet_ = false;
     }
-    setHasChanged(true);
 }
 
 bool FaceGeometry::operator==(const FaceGeometry& rhs) const {

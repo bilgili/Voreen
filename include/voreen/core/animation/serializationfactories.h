@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -27,51 +27,23 @@
 #define VRN_SERIALIZATIONFACTORIES_H
 
 #include "voreen/core/io/serialization/serialization.h"
+#include "voreen/core/io/serialization/resourcefactory.h"
+#include "voreen/core/animation/propertytimeline.h"
 
 namespace voreen {
 
 template <class T> class InterpolationFunction;
 
-class PropertyTimelineFactory : public SerializableFactory {
+class VRN_CORE_API PropertyTimelineFactory : public ResourceFactory<PropertyTimeline> {
 public:
-    /**
-     * @see SerializableFactory::getTypeString
-     */
-    virtual const std::string getTypeString(const std::type_info& type) const;
+    PropertyTimelineFactory();
 
-    /**
-     * @see SerializableFactory::createType
-     */
-    virtual Serializable* createType(const std::string& typeString);
+    PropertyTimeline* createTimeline(Property* p) const;
+    bool canPropertyBeAnimated(const Property* p) const;
 
     static PropertyTimelineFactory* getInstance();
-
 private:
     static PropertyTimelineFactory* instance_;
-};
-
-class KeyValueFactory : public SerializableFactory {
-public:
-    virtual const std::string getTypeString(const std::type_info& type) const;
-
-    virtual Serializable* createType(const std::string& typeString);
-
-    static KeyValueFactory* getInstance();
-
-private:
-    static KeyValueFactory* instance_;
-};
-
-class TemplatePropertyTimelineStateFactory : public SerializableFactory {
-public:
-    virtual const std::string getTypeString(const std::type_info& type) const;
-
-    virtual Serializable* createType(const std::string& typeString);
-
-    static TemplatePropertyTimelineStateFactory* getInstance();
-
-private:
-    static TemplatePropertyTimelineStateFactory* instance_;
 };
 
 } // namespace voreen

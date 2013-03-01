@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -32,17 +32,23 @@ using tgt::TextureUnit;
 namespace voreen {
 
 ImageMorphology::ImageMorphology()
-    : ImageProcessorBypassable("image/imagemorphology"),
+    : ImageProcessorBypassable("image/imagemorphology", true),
       inport_(Port::INPORT, "image.inport", "Image Input"),
       outport_(Port::OUTPORT, "image.outport", "Image Output"),
-      kernelRadius_("kernelRadius", "Kernel Radius", 1, 1, 12),
-      modeProp_("effectModeAsString", "Mode")
+      kernelRadius_("kernelRadius", "Kernel Radius", 1, 1, 50),
+      modeProp_("effectModeAsString", "Mode"),
+      shapeProp_("shapeModeAsString", "Shape")
 {
     modeProp_.addOption("dilation", "Dilation");
     modeProp_.addOption("erosion", "Erosion");
     modeProp_.select("dilation");
 
+    shapeProp_.addOption("square", "Square");
+    shapeProp_.addOption("sphere", "Sphere");
+    shapeProp_.select("square");
+
     addProperty(modeProp_);
+    addProperty(shapeProp_);
     addProperty(kernelRadius_);
 
     addPort(inport_);
@@ -82,8 +88,21 @@ void ImageMorphology::process() {
 
     program_->setUniform("mode_", mode);
 
+    //get shape and pass it to shader
+    int shape;
+
+    if (shapeProp_.isSelected("square"))
+        shape = 0;
+    else
+        shape = 1;
+
+    program_->setUniform("shape_", shape);
+
     //get Kernel Radius and pass it to the shader
-    program_->setUniform("kernelRadius_", kernelRadius_.get());
+    int kernelRadius = kernelRadius_.get();
+    if(interactionMode() && interactionAdapt_.get())
+        kernelRadius = std::max(1, (int)(kernelRadius * (1.f / interactionFactor_.get())));
+    program_->setUniform("kernelRadius_", kernelRadius);
 
     inport_.setTextureParameters(program_, "textureParameters_");
 

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -31,7 +31,7 @@
 
 namespace voreen {
 
-class VolumeCreateBase : public VolumeProcessor {
+class VRN_CORE_API VolumeCreateBase : public VolumeProcessor {
 protected:
     void fillPlane(VolumeRAM_UInt8* vds, tgt::vec3 center, tgt::vec3 normal, uint8_t value);
     void fillCircle(VolumeRAM_UInt8* vds, tgt::vec3 center, float radius, uint8_t value);

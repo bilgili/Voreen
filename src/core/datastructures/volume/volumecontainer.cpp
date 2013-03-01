@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -34,7 +34,7 @@ namespace voreen {
 const std::string VolumeContainer::loggerCat_ = "voreen.VolumeContainer";
 
 VolumeContainer::VolumeContainer() :
-    VolumeCollection()
+    VolumeList()
 {}
 
 VolumeContainer::~VolumeContainer() {
@@ -42,29 +42,29 @@ VolumeContainer::~VolumeContainer() {
 }
 
 void VolumeContainer::add(VolumeBase* volumeHandle) {
-    VolumeCollection::add(volumeHandle);
+    VolumeList::add(volumeHandle);
 }
 
-void VolumeContainer::add(const VolumeCollection* volumeCollection) {
-    VolumeCollection::add(volumeCollection);
+void VolumeContainer::add(const VolumeList* volumeList) {
+    VolumeList::add(volumeList);
 }
 
 void VolumeContainer::remove(const VolumeBase* handle) {
     if (contains(handle)) {
-        VolumeCollection::remove(handle); // also notifies the observers
+        VolumeList::remove(handle); // also notifies the observers
         delete handle;
     }
 }
 
-void VolumeContainer::remove(const VolumeCollection* volumeCollection) {
-    tgtAssert(volumeCollection, "Unexpected null pointer");
+void VolumeContainer::remove(const VolumeList* volumeList) {
+    tgtAssert(volumeList, "Unexpected null pointer");
 
     // the passed parameter might be object itself,
-    // therefore we have to copy over the volume handles to a
+    // therefore we have to copy over the volumes to a
     // temporary vector
     std::vector<VolumeBase*> deleteList;
-    for (size_t i=0; i<volumeCollection->size(); ++i) {
-        deleteList.push_back(volumeCollection->at(i));
+    for (size_t i=0; i<volumeList->size(); ++i) {
+        deleteList.push_back(volumeList->at(i));
     }
 
     for (size_t i=0; i<deleteList.size(); ++i) {
@@ -78,11 +78,11 @@ void VolumeContainer::clear() {
 }
 
 void VolumeContainer::release(const VolumeBase* handle) {
-    VolumeCollection::remove(handle);
+    VolumeList::remove(handle);
 }
 
 void VolumeContainer::releaseAll() {
-    VolumeCollection::clear();
+    VolumeList::clear();
 }
 
 } // namespace

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -64,7 +64,7 @@ ObjectModel:    I
 GridType:       EQUIDISTANT
  \endverbatim
  */
-class DatVolumeReader : public VolumeReader {
+class VRN_CORE_API DatVolumeReader : public VolumeReader {
 public:
     DatVolumeReader(ProgressBar* progress = 0);
     virtual VolumeReader* create(ProgressBar* progress = 0) const;
@@ -93,7 +93,7 @@ public:
      *
      * \see VolumeReader::read
      **/
-    virtual VolumeCollection* read(const std::string& url)
+    virtual VolumeList* read(const std::string& url)
         throw (tgt::FileException, std::bad_alloc);
 
     /**
@@ -102,7 +102,7 @@ public:
      * \param   url         url to load volume from
      * \param   timeframe   time frame to select from volume, if -1 all time frames will be selected
      **/
-    virtual VolumeCollection* read(const std::string& url, int timeframe)
+    virtual VolumeList* read(const std::string& url, int timeframe)
         throw (tgt::FileException, std::bad_alloc);
 
     /**
@@ -113,25 +113,25 @@ public:
      * \param   lastSlice   last slice to load, if 0 all slices from volume will be loaded
      * \param   timeframe   time frame to select from volume, if -1 all time frames will be selected
      **/
-    virtual VolumeCollection* readSlices(const std::string& url, size_t firstSlice = 0, size_t lastSlice = 0, int timeframe = -1)
+    virtual VolumeList* readSlices(const std::string& url, size_t firstSlice = 0, size_t lastSlice = 0, int timeframe = -1)
         throw (tgt::FileException, std::bad_alloc);
 
-    virtual VolumeCollection* readBrick(const std::string& url, tgt::ivec3 brickStartPos, int brickSize)
+    virtual VolumeList* readBrick(const std::string& url, tgt::ivec3 brickStartPos, int brickSize)
         throw(tgt::FileException, std::bad_alloc);
 
 private:
     static const std::string loggerCat_;
 
-    VolumeCollection* readVolumeFile(const std::string& fileName, const tgt::ivec3& dims,size_t firstSlice, size_t lastSlice)
+    VolumeList* readVolumeFile(const std::string& fileName, const tgt::ivec3& dims,size_t firstSlice, size_t lastSlice)
         throw (tgt::FileException, std::bad_alloc);
 
-    VolumeCollection* readVolumeFileBrick(const std::string& fileName,const tgt::ivec3& dims, tgt::ivec3 brickStartPos,
+    VolumeList* readVolumeFileBrick(const std::string& fileName,const tgt::ivec3& dims, tgt::ivec3 brickStartPos,
         int brickSize) throw (tgt::FileException, std::bad_alloc);
 
-    VolumeCollection* readMetaFile(const std::string& fileName,size_t firstSlice, size_t lastSlice, int timeframe = -1)
+    VolumeList* readMetaFile(const std::string& fileName,size_t firstSlice, size_t lastSlice, int timeframe = -1)
         throw (tgt::FileException, std::bad_alloc);
 
-    VolumeCollection* readMetaFileBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
+    VolumeList* readMetaFileBrick(const std::string& fileName, tgt::ivec3 brickStartPos, int brickSize)
         throw (tgt::FileException, std::bad_alloc);
 };
 

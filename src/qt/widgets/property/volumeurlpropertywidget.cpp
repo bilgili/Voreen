@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -79,8 +79,8 @@ VolumeURLPropertyWidget::VolumeURLPropertyWidget(VolumeURLProperty* volumeHandle
 {
 
     if (!volumeHandleProp) {
-        tgtAssert(false, "No volume handle property");
-        LERROR("No volume handle property");
+        tgtAssert(false, "No volume property");
+        LERROR("No volume property");
         return;
     }
     QVBoxLayout* mainLayout = new QVBoxLayout();
@@ -88,13 +88,6 @@ VolumeURLPropertyWidget::VolumeURLPropertyWidget(VolumeURLProperty* volumeHandle
     mainLayout->setContentsMargins(0, 2, 0, 0);
 
     layout_->addLayout(mainLayout);
-
-    QHBoxLayout* previewLayout = new QHBoxLayout();
-    previewLayout->setContentsMargins(2, 0, 2, 2);
-    QGridLayout* infoLayout = new QGridLayout();
-    infoLayout->setContentsMargins(2, 0, 2, 2);
-
-    previewLabel_ = new QLabel(this);
 
     //loadButton_ = new QToolButton(tr("Load Volume..."));
     loadButton_ = new QToolButton();
@@ -116,27 +109,6 @@ VolumeURLPropertyWidget::VolumeURLPropertyWidget(VolumeURLProperty* volumeHandle
 
     clearButton_ = new QPushButton(tr("Clear Volume"));
 
-    dimensionLabelCaption_ = new CustomLabel(this);
-    spacingLabelCaption_ = new CustomLabel(this);
-    memSizeLabelCaption_ = new CustomLabel(this);
-
-    dimensionLabelCaption_->setText(" Dimensions");
-    spacingLabelCaption_->setText(" Spacing");
-    memSizeLabelCaption_->setText(" MemSize");
-
-    volumeNameLabel_ = new CustomLabel(this);
-    pathLabel_ = new CustomLabel(this);
-    dimensionLabel_ = new CustomLabel(this);
-    spacingLabel_ = new CustomLabel(this);
-    memSizeLabel_ = new CustomLabel(this);
-
-    volumeNameLabel_->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    volumeNameLabel_->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-    pathLabel_->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    dimensionLabel_->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    spacingLabel_->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    memSizeLabel_->setTextInteractionFlags(Qt::TextSelectableByMouse);
-
     QHBoxLayout* volumeLayout = new QHBoxLayout();
     volumeLayout->setContentsMargins(0, 0, 4, 0);
     volumeLayout->setSpacing(4);
@@ -149,30 +121,6 @@ VolumeURLPropertyWidget::VolumeURLPropertyWidget(VolumeURLProperty* volumeHandle
     clearButton_->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
     //clearButton_->setMinimumWidth(105);
     mainLayout->addLayout(volumeLayout);
-
-    previewLayout->addWidget(previewLabel_);
-    previewLayout->addLayout(infoLayout);
-    infoLayout->addWidget(pathLabel_, 0, 0, 1, 2, 0);
-    infoLayout->addWidget(dimensionLabelCaption_, 1, 0);
-    infoLayout->addWidget(spacingLabelCaption_, 2, 0);
-    infoLayout->addWidget(memSizeLabelCaption_, 3, 0);
-
-    infoLayout->addWidget(dimensionLabel_, 1, 1);
-    infoLayout->addWidget(spacingLabel_, 2, 1);
-    infoLayout->addWidget(memSizeLabel_, 3, 1);
-
-    previewLayout->addStretch();
-
-    QHBoxLayout* separatorLayout = new QHBoxLayout();
-    QFrame* frame = new QFrame();
-    frame->setFrameShape(QFrame::HLine);
-    separatorLayout->addWidget(frame);
-    separatorLayout->addWidget(volumeNameLabel_);
-    frame = new QFrame();
-    frame->setFrameShape(QFrame::HLine);
-    separatorLayout->addWidget(frame);
-    mainLayout->addLayout(separatorLayout);
-    mainLayout->addLayout(previewLayout);
 
     connect(loadButton_, SIGNAL(clicked()),
         &volumeIOHelper_, SLOT(showFileOpenDialog()));
@@ -202,7 +150,7 @@ VolumeBase* VolumeURLPropertyWidget::getVolume() const {
 
     VolumeURLProperty* handleProp = dynamic_cast<VolumeURLProperty*>(prop_);
     if (!handleProp) {
-        LWARNING("No volume handle property");
+        LWARNING("No volume property");
         return 0;
     }
 
@@ -213,63 +161,9 @@ void VolumeURLPropertyWidget::updateFromProperty() {
     VolumeBase* handle = getVolume();
     if (handle) {
         clearButton_->setEnabled(true);
-
-        dimensionLabel_->show();
-        pathLabel_->show();
-        spacingLabel_->show();
-        memSizeLabel_->show();
-        previewLabel_->show();
-        dimensionLabelCaption_->show();
-        spacingLabelCaption_->show();
-        memSizeLabelCaption_->show();
-
-        std::string name = VolumeViewHelper::getStrippedVolumeName(handle);
-        std::string path = VolumeViewHelper::getVolumePath(handle);
-        if(name.size() > 30) {
-            volumeNameLabel_->setToolTip(QString::fromStdString(name));
-            int end = static_cast<int>(name.size());
-            std::string startString;
-            std::string endString;
-            for(size_t i = 0; i < 14; i++){
-                 startString += name.at(i);
-                 endString += name.at(end-14+i);
-            }
-            name = startString+"..."+endString;
-        }
-        if (path.size() > 30) {
-            pathLabel_->setToolTip(QString::fromStdString(path));
-            int end = static_cast<int>(path.size());
-            std::string startString;
-            std::string endString;
-            for(size_t i = 0; i < 14; i++){
-                 startString += path.at(i);
-                 endString += path.at(end-14+i);
-            }
-            path = startString+"..."+endString;
-        }
-
-        volumeNameLabel_->setText(QString::fromStdString(" " + name + " ("+ VolumeViewHelper::getVolumeType(static_cast<VolumeBase*>(handle)->getRepresentation<VolumeRAM>())+") "));
-        pathLabel_->setText(QString::fromStdString(" "+path));
-        dimensionLabel_->setText(QString::fromStdString(VolumeViewHelper::getVolumeDimension(handle)));
-        spacingLabel_->setText(QString::fromStdString(VolumeViewHelper::getVolumeSpacing(handle)));
-        memSizeLabel_->setText(QString::fromStdString(VolumeViewHelper::getVolumeMemorySize(static_cast<VolumeBase*>(handle)->getRepresentation<VolumeRAM>())));
-        previewLabel_->setPixmap(VolumeViewHelper::generateBorderedPreview(handle, 70, 0));
-
     }
     else {
         clearButton_->setEnabled(false);
-        volumeNameLabel_->setText(tr(" no volume"));
-        volumeNameLabel_->adjustSize();
-
-        pathLabel_->hide();
-        previewLabel_->setPixmap(QPixmap());
-        dimensionLabel_->hide();
-        spacingLabel_->hide();
-        memSizeLabel_->hide();
-        previewLabel_->hide();
-        dimensionLabelCaption_->hide();
-        spacingLabelCaption_->hide();
-        memSizeLabelCaption_->hide();
     }
 }
 
@@ -288,8 +182,8 @@ void VolumeURLPropertyWidget::volumeLoaded(const VolumeBase* handle) {
 
     VolumeURLProperty* handleProp = dynamic_cast<VolumeURLProperty*>(prop_);
     if (!handleProp) {
-        tgtAssert(false, "No volume handle property");
-        LERROR("No volume handle property");
+        tgtAssert(false, "No volume property");
+        LERROR("No volume property");
         return;
     }
 
@@ -299,8 +193,8 @@ void VolumeURLPropertyWidget::volumeLoaded(const VolumeBase* handle) {
 void VolumeURLPropertyWidget::clearVolume() {
     VolumeURLProperty* handleProp = dynamic_cast<VolumeURLProperty*>(prop_);
     if (!handleProp) {
-        tgtAssert(false, "No volume handle property");
-        LERROR("No volume handle property");
+        tgtAssert(false, "No volume property");
+        LERROR("No volume property");
         return;
     }
 

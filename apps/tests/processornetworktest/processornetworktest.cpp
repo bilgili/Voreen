@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -88,11 +88,24 @@ bool portsSizeLinked(RenderPort& outport, RenderPort& inport) {
     return portsSizeLinked(&outport, &inport);
 }
 
+class BasicPort : public Port {
+public:
+    BasicPort(PortDirection direction, const std::string& id, const std::string& guiName = "", bool allowMultipleConnections = false,
+                Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT)
+        : Port(direction, id, guiName, allowMultipleConnections, invalidationLevel)
+    {}
+
+
+    Port* create(PortDirection direction, const std::string& id, const std::string& guiName = "") const{return new BasicPort(direction,id,guiName);}
+    std::string getClassName() const { return "BasicPort";}
+    void forwardData() const {};
+};
+
 //
 // Processor Mocks
 //
 
-/** 
+/**
  * Default behaviour of MockProcessor:
  * - is invalid
  * - is ready
@@ -100,7 +113,7 @@ bool portsSizeLinked(RenderPort& outport, RenderPort& inport) {
  */
 class MockProcessor : public RenderProcessor {
 public:
-    MockProcessor() 
+    MockProcessor()
         : RenderProcessor()
     {
         invalidate();
@@ -125,7 +138,7 @@ public:
 
 /// Processor with active (size receiver) and passive render outport
 class StartProcessor : public MockProcessor {
-public: 
+public:
     StartProcessor() :
         MockProcessor(),
         outportActive_(Port::OUTPORT, "outportActive", "outportActive", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER),
@@ -143,7 +156,7 @@ public:
 
 /// Processor with two render inports and two render outports, one active/one passive each
 class MiddleProcessor : public MockProcessor {
-public: 
+public:
     MiddleProcessor() :
         MockProcessor(),
         inportActive_(Port::INPORT, "inportActive", "inportActive", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN),
@@ -176,13 +189,13 @@ public:
     RenderPort outportActive2_;
     RenderPort outportPassive_;
 
-    Port inportNonRender_;
-    Port outportNonRender_;
+    BasicPort inportNonRender_;
+    BasicPort outportNonRender_;
 };
 
 /// Processor with two render inports (one active, one passive), marked as end processor
 class EndProcessor : public MockProcessor {
-public: 
+public:
     EndProcessor() :
         MockProcessor(),
         inportActive_(Port::INPORT, "inportActive", "inportActive", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN),
@@ -200,7 +213,7 @@ public:
 
 /// Processor with two normal render inports, two loop inports, two render outports, one active/passive each
 class LoopInitiator : public MockProcessor {
-public: 
+public:
     LoopInitiator() :
         MockProcessor(),
         inportActive_(Port::INPORT, "inportActive", "inportActive", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN),
@@ -224,7 +237,7 @@ public:
 
     RenderPort inportActive_;
     RenderPort inportPassive_;
-    
+
     RenderPort loopInportActive_;
     RenderPort loopInportPassive_;
 
@@ -234,7 +247,7 @@ public:
 
 /// Processor with two render inports, two normal render outports, two render loop outports, one active/passive each
 class LoopFinalizer : public MockProcessor {
-public: 
+public:
     LoopFinalizer() :
       MockProcessor(),
           inportActive_(Port::INPORT, "inportActive", "inportActive", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN),
@@ -275,7 +288,7 @@ public:
 struct GlobalFixture {
     GlobalFixture() {
         tgt::Singleton<tgt::LogManager>::init();
-        new VoreenApplication("networkevaluatortest", "networkevaluatortest", "NetworkEvaluatorTest", 
+        new VoreenApplication("networkevaluatortest", "networkevaluatortest", "NetworkEvaluatorTest",
             0, 0, VoreenApplication::APP_NONE);
         //VoreenApplication::app()->initialize();
     }
@@ -314,10 +327,10 @@ struct TestFixture {
         loopInitiator = new LoopInitiator();
         loopInitiator2 = new LoopInitiator();
         loopFinalizer = new LoopFinalizer();
-        loopFinalizer2 = new LoopFinalizer(); 
+        loopFinalizer2 = new LoopFinalizer();
 
         network = new ProcessorNetwork();
- 
+
         network->addProcessor(startProcessor, "StartProcessor");
         network->addProcessor(startProcessor2, "StartProcessor2");
         network->addProcessor(middleProcessor, "MiddleProcessor");
@@ -359,7 +372,7 @@ BOOST_FIXTURE_TEST_SUITE(SizeLinkingTests, TestFixture)
 /****************************************************************************************/
 
 // Network = (StartProcessor)
-BOOST_AUTO_TEST_CASE(singleProcessor) 
+BOOST_AUTO_TEST_CASE(singleProcessor)
 {
     vector<Processor*> processors;
     processors.push_back(startProcessor);
@@ -372,7 +385,7 @@ BOOST_AUTO_TEST_CASE(singleProcessor)
 }
 
 // Network = (StartProcessor,MiddleProcessor,EndProcessor)
-BOOST_AUTO_TEST_CASE(unconnectedGraph) 
+BOOST_AUTO_TEST_CASE(unconnectedGraph)
 {
     vector<Processor*> processors;
     processors.push_back(startProcessor);
@@ -387,15 +400,15 @@ BOOST_AUTO_TEST_CASE(unconnectedGraph)
 }
 
 // Network = (StartProcessor|a,a|MiddleProcessor|a,a|EndProcessor)
-//                           ^-/                 ^-/ 
-BOOST_AUTO_TEST_CASE(unconnectedGraph_RemoveLinksFromNetwork) 
+//                           ^-/                 ^-/
+BOOST_AUTO_TEST_CASE(unconnectedGraph_RemoveLinksFromNetwork)
 {
     // create size links
-    network->createPropertyLink(middleProcessor->inportActive_.getSizeOriginProperty(), 
-        startProcessor->outportActive_.getSizeReceiveProperty(), 
+    network->createPropertyLink(middleProcessor->inportActive_.getSizeOriginProperty(),
+        startProcessor->outportActive_.getSizeReceiveProperty(),
         new LinkEvaluatorRenderSize());
-    network->createPropertyLink(endProcessor->inportActive_.getSizeOriginProperty(), 
-        middleProcessor->outportActive_.getSizeReceiveProperty(), 
+    network->createPropertyLink(endProcessor->inportActive_.getSizeOriginProperty(),
+        middleProcessor->outportActive_.getSizeReceiveProperty(),
         new LinkEvaluatorRenderSize());
 
     // remove size links
@@ -406,8 +419,8 @@ BOOST_AUTO_TEST_CASE(unconnectedGraph_RemoveLinksFromNetwork)
 }
 
 // Network = (StartProcessor|a,a|MiddleProcessor|a,a|EndProcessor)
-//                           ^-/                 ^-/ 
-BOOST_AUTO_TEST_CASE(unconnectedGraph_RemoveLinksOverConnection) 
+//                           ^-/                 ^-/
+BOOST_AUTO_TEST_CASE(unconnectedGraph_RemoveLinksOverConnection)
 {
     // configure existing size links
     BOOST_CHECK(network->createRenderSizeLink(middleProcessor->inportActive_, startProcessor->outportActive_));
@@ -422,8 +435,8 @@ BOOST_AUTO_TEST_CASE(unconnectedGraph_RemoveLinksOverConnection)
 }
 
 // Network = (StartProcessor|a,a|MiddleProcessor|a,a|EndProcessor)
-//                           ^-/                 ^-/ 
-BOOST_AUTO_TEST_CASE(unconnectedGraph_RemoveLinksOverFalseConnection) 
+//                           ^-/                 ^-/
+BOOST_AUTO_TEST_CASE(unconnectedGraph_RemoveLinksOverFalseConnection)
 {
     // configure existing size links
     BOOST_CHECK(network->createRenderSizeLink(middleProcessor->inportActive_, startProcessor->outportActive_));
@@ -432,7 +445,7 @@ BOOST_AUTO_TEST_CASE(unconnectedGraph_RemoveLinksOverFalseConnection)
     // remove size links
     BOOST_CHECK(network->removeRenderSizeLinksOverConnection(&startProcessor->outportActive_, &endProcessor->inportActive_) == 0);
 
-    // no size link spans the (imaginary) connection from startProcessor to endProcessor 
+    // no size link spans the (imaginary) connection from startProcessor to endProcessor
     // => no size link should have been removed
     BOOST_CHECK(numSizeLinks(network->getPropertyLinks()) == 2);
     BOOST_CHECK(portsSizeLinked(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -440,7 +453,7 @@ BOOST_AUTO_TEST_CASE(unconnectedGraph_RemoveLinksOverFalseConnection)
 }
 
 // Network = (StartProcessor|a->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(twoProcessorsActive) 
+BOOST_AUTO_TEST_CASE(twoProcessorsActive)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -455,7 +468,7 @@ BOOST_AUTO_TEST_CASE(twoProcessorsActive)
 
 // Network = (StartProcessor|a->a|EndProcessor)
 //                           ^--/
-BOOST_AUTO_TEST_CASE(twoProcessorsActive_ExistingLink) 
+BOOST_AUTO_TEST_CASE(twoProcessorsActive_ExistingLink)
 {
     // create port connections and size links
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -471,7 +484,7 @@ BOOST_AUTO_TEST_CASE(twoProcessorsActive_ExistingLink)
 
 // Network = (StartProcessor|a->a|EndProcessor)
 //                           ^--/
-BOOST_AUTO_TEST_CASE(twoProcessorsActive_ExistingLinkReplace) 
+BOOST_AUTO_TEST_CASE(twoProcessorsActive_ExistingLinkReplace)
 {
     // create port connections and size links
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -486,7 +499,7 @@ BOOST_AUTO_TEST_CASE(twoProcessorsActive_ExistingLinkReplace)
 }
 
 // Network = (StartProcessor|a->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(twoProcessorsActive_OverConnection) 
+BOOST_AUTO_TEST_CASE(twoProcessorsActive_OverConnection)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -501,7 +514,7 @@ BOOST_AUTO_TEST_CASE(twoProcessorsActive_OverConnection)
 
 // Network = (StartProcessor|a->a|EndProcessor)
 //                           ^--/
-BOOST_AUTO_TEST_CASE(twoProcessorsActive_RemoveLinksFromNetwork) 
+BOOST_AUTO_TEST_CASE(twoProcessorsActive_RemoveLinksFromNetwork)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -518,7 +531,7 @@ BOOST_AUTO_TEST_CASE(twoProcessorsActive_RemoveLinksFromNetwork)
 
 // Network = (StartProcessor|a->a|EndProcessor)
 //                           ^--/
-BOOST_AUTO_TEST_CASE(twoProcessorsActive_RemoveLinksOverConnection) 
+BOOST_AUTO_TEST_CASE(twoProcessorsActive_RemoveLinksOverConnection)
 {
     vector<Processor*> processors;
     processors.push_back(startProcessor);
@@ -538,7 +551,7 @@ BOOST_AUTO_TEST_CASE(twoProcessorsActive_RemoveLinksOverConnection)
 }
 
 // Network = (StartProcessor|p->p|EndProcessor)
-BOOST_AUTO_TEST_CASE(twoProcessorsPassive) 
+BOOST_AUTO_TEST_CASE(twoProcessorsPassive)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportPassive_, endProcessor->inportPassive_));
@@ -551,24 +564,24 @@ BOOST_AUTO_TEST_CASE(twoProcessorsPassive)
 }
 
 // Network = (StartProcessor|p->p|EndProcessor)
-BOOST_AUTO_TEST_CASE(twoProcessorsPassive_RemoveLinksFromSubNetwork) 
+BOOST_AUTO_TEST_CASE(twoProcessorsPassive_RemoveLinksFromSubNetwork)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportPassive_, endProcessor->inportPassive_));
-    
+
     // remove size links
     BOOST_CHECK(network->removeRenderSizeLinksFromSubNetwork(network->getProcessors()) == 0);
 }
 
 // Network = (StartProcessor|p->p|EndProcessor)
-BOOST_AUTO_TEST_CASE(twoProcessorsPassive_RemoveLinksOverConnection) 
+BOOST_AUTO_TEST_CASE(twoProcessorsPassive_RemoveLinksOverConnection)
 {
     // remove size links
     BOOST_CHECK(network->removeRenderSizeLinksOverConnection(&startProcessor->outportPassive_, &endProcessor->inportPassive_) == 0);
 }
 
 // Network = (StartProcessor|a->p|EndProcessor)
-BOOST_AUTO_TEST_CASE(twoProcessorsActiveToPassive) 
+BOOST_AUTO_TEST_CASE(twoProcessorsActiveToPassive)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportPassive_));
@@ -581,7 +594,7 @@ BOOST_AUTO_TEST_CASE(twoProcessorsActiveToPassive)
 }
 
 // Network = (StartProcessor|p->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(twoProcessorsPassiveToActive) 
+BOOST_AUTO_TEST_CASE(twoProcessorsPassiveToActive)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportPassive_, endProcessor->inportActive_));
@@ -594,13 +607,13 @@ BOOST_AUTO_TEST_CASE(twoProcessorsPassiveToActive)
 }
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a->a|MiddleProcessor2|a->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipelineFullActive) 
+BOOST_AUTO_TEST_CASE(linearPipelineFullActive)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
     BOOST_CHECK(network->connectPorts(middleProcessor->outportActive_, middleProcessor2->inportActive_));
     BOOST_CHECK(network->connectPorts(middleProcessor2->outportActive_, endProcessor->inportActive_));
-    
+
     // create size links
     BOOST_CHECK(network->createRenderSizeLinksWithinSubNetwork(network->getProcessors()) == 3);
 
@@ -612,7 +625,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullActive)
 }
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a->a|MiddleProcessor2|a->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipelineFullActive_OverConnection) 
+BOOST_AUTO_TEST_CASE(linearPipelineFullActive_OverConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -628,7 +641,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullActive_OverConnection)
 }
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a->a|MiddleProcessor2|a->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipelineFullActive_CreateLinksForProcessor) 
+BOOST_AUTO_TEST_CASE(linearPipelineFullActive_CreateLinksForProcessor)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -645,7 +658,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullActive_CreateLinksForProcessor)
 }
 
 // Network = (StartProcessor|a->a|~MiddleProcessor~|a->a|MiddleProcessor2|a->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipelineFullActive_SkippedMiddle) 
+BOOST_AUTO_TEST_CASE(linearPipelineFullActive_SkippedMiddle)
 {
     vector<Processor*> processors;
     processors.push_back(startProcessor);
@@ -668,14 +681,14 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullActive_SkippedMiddle)
 }
 
 // Network = (StartProcessor|a->a|~MiddleProcessor~|a->a|~MiddleProcessor2~|a->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipelineFullActive_SkippedMiddle2) 
+BOOST_AUTO_TEST_CASE(linearPipelineFullActive_SkippedMiddle2)
 {
     vector<Processor*> processors;
     processors.push_back(startProcessor);
     //processors.push_back(middleProcessor);  //<<!!!
     //processors.push_back(middleProcessor2); //<<!!!
     processors.push_back(endProcessor);
-    
+
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
     BOOST_CHECK(network->connectPorts(middleProcessor->outportActive_, middleProcessor2->inportActive_));
@@ -691,7 +704,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullActive_SkippedMiddle2)
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a->a|MiddleProcessor2|a->a|EndProcessor)
 //                                                ^------------------------/
-BOOST_AUTO_TEST_CASE(linearPipelineFullActive_ReplaceExisting) 
+BOOST_AUTO_TEST_CASE(linearPipelineFullActive_ReplaceExisting)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -713,7 +726,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullActive_ReplaceExisting)
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a->a|MiddleProcessor2|a->a|EndProcessor)
 //                                                ^------------------------/
-BOOST_AUTO_TEST_CASE(linearPipelineFullActive_NotReplaceExisting) 
+BOOST_AUTO_TEST_CASE(linearPipelineFullActive_NotReplaceExisting)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -734,8 +747,8 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullActive_NotReplaceExisting)
 }
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a->a|MiddleProcessor2|a->a|EndProcessor)
-//                           ^--/                 ^--/                  ^--/  
-BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveLinksFromNetwork) 
+//                           ^--/                 ^--/                  ^--/
+BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveLinksFromNetwork)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -755,8 +768,8 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveLinksFromNetwork)
 }
 
 // Network = (~StartProcessor~|a->a|MiddleProcessor|a->a|MiddleProcessor2|a->a|~EndProcessor~)
-//                             ^--/                 ^--/                  ^--/  
-BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveMiddleLinksFromIncompleteNetwork) 
+//                             ^--/                 ^--/                  ^--/
+BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveMiddleLinksFromIncompleteNetwork)
 {
     vector<Processor*> processors;
     //processors.push_back(startProcessor);  //<<!!!
@@ -770,9 +783,9 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveMiddleLinksFromIncompleteNet
     BOOST_CHECK(network->connectPorts(middleProcessor2->outportActive_, endProcessor->inportActive_));
 
     // configure existing size links
-    BOOST_CHECK(network->createRenderSizeLink(middleProcessor->inportActive_, startProcessor->outportActive_)); 
-    BOOST_CHECK(network->createRenderSizeLink(middleProcessor2->inportActive_, middleProcessor->outportActive_)); 
-    BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, middleProcessor2->outportActive_)); 
+    BOOST_CHECK(network->createRenderSizeLink(middleProcessor->inportActive_, startProcessor->outportActive_));
+    BOOST_CHECK(network->createRenderSizeLink(middleProcessor2->inportActive_, middleProcessor->outportActive_));
+    BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, middleProcessor2->outportActive_));
 
     // remove size links
     BOOST_CHECK(network->removeRenderSizeLinksFromSubNetwork(processors) == 1);
@@ -784,14 +797,14 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveMiddleLinksFromIncompleteNet
 }
 
 // Network = (~StartProcessor~|a->a|MiddleProcessor|a->a|~MiddleProcessor2~|a->a|EndProcessor)
-//                             ^--/                 ^--/                    ^--/  
-BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveMiddleLinksFromIncompleteNetwork2) 
+//                             ^--/                 ^--/                    ^--/
+BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveMiddleLinksFromIncompleteNetwork2)
 {
     vector<Processor*> processors;
     //processors.push_back(startProcessor);   //<<!!!
     processors.push_back(middleProcessor);
     //processors.push_back(middleProcessor2); //<<!!!
-    processors.push_back(endProcessor);    
+    processors.push_back(endProcessor);
 
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -799,7 +812,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveMiddleLinksFromIncompleteNet
     BOOST_CHECK(network->connectPorts(middleProcessor2->outportActive_, endProcessor->inportActive_));
 
     // configure existing size links
-    BOOST_CHECK(network->createRenderSizeLink(middleProcessor->inportActive_, startProcessor->outportActive_)); 
+    BOOST_CHECK(network->createRenderSizeLink(middleProcessor->inportActive_, startProcessor->outportActive_));
     BOOST_CHECK(network->createRenderSizeLink(middleProcessor2->inportActive_, middleProcessor->outportActive_));
     BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, middleProcessor2->outportActive_));
 
@@ -814,8 +827,8 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveMiddleLinksFromIncompleteNet
 }
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a->a|MiddleProcessor2|a->a|EndProcessor)
-//                           ^--/                 ^--/                  ^--/  
-BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveLinksOverConnection) 
+//                           ^--/                 ^--/                  ^--/
+BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveLinksOverConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -837,8 +850,8 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveLinksOverConnection)
 }
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a->a|MiddleProcessor2|a->a|EndProcessor)
-//                           ^--/                 ^--/                  ^--/  
-BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveLinksFromProcessor) 
+//                           ^--/                 ^--/                  ^--/
+BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveLinksFromProcessor)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -859,7 +872,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullActive_RemoveLinksFromProcessor)
 }
 
 // Network = (StartProcessor|p->p|MiddleProcessor|p->p|MiddleProcessor2|p->p|EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipelineFullPassive) 
+BOOST_AUTO_TEST_CASE(linearPipelineFullPassive)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportPassive_, middleProcessor->inportPassive_));
@@ -874,7 +887,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullPassive)
 }
 
 // Network = (StartProcessor|p->p|MiddleProcessor|p->p|MiddleProcessor2|p->p|EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipelineFullPassive_CreateLinksForProcessor) 
+BOOST_AUTO_TEST_CASE(linearPipelineFullPassive_CreateLinksForProcessor)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportPassive_, middleProcessor->inportPassive_));
@@ -889,7 +902,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullPassive_CreateLinksForProcessor)
 }
 
 // Network = (StartProcessor|p->p|MiddleProcessor|p->p|MiddleProcessor2|p->p|EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipelineFullPassive_RemoveLinksFromProcessor) 
+BOOST_AUTO_TEST_CASE(linearPipelineFullPassive_RemoveLinksFromProcessor)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportPassive_, middleProcessor->inportPassive_));
@@ -904,7 +917,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineFullPassive_RemoveLinksFromProcessor)
 }
 
 // Network = (StartProcessor|a->p|MiddleProcessor|p->p|MiddleProcessor2|p->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive) 
+BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportPassive_));
@@ -920,7 +933,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive)
 }
 
 // Network = (StartProcessor|a->p|MiddleProcessor|p->p|MiddleProcessor2|p->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_OverPassiveConnection) 
+BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_OverPassiveConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportPassive_));
@@ -936,7 +949,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_OverPassiveConnection)
 }
 
 // Network = (StartProcessor|a->p|MiddleProcessor|p->p|MiddleProcessor2|p->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_OverActiveToPassiveConnection) 
+BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_OverActiveToPassiveConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportPassive_));
@@ -952,7 +965,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_OverActiveToPassiveConnection)
 }
 
 // Network = (StartProcessor|a->p|MiddleProcessor|p->p|MiddleProcessor2|p->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_OverPassiveToActiveConnection) 
+BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_OverPassiveToActiveConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportPassive_));
@@ -969,7 +982,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_OverPassiveToActiveConnection)
 
 // Network = (StartProcessor|a->p|MiddleProcessor|p->p|MiddleProcessor2|p->a|EndProcessor)
 //                           ^---------------------------------------------/
-BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_ReplaceExisting) 
+BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_ReplaceExisting)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportPassive_));
@@ -989,7 +1002,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_ReplaceExisting)
 
 // Network = (StartProcessor|a->p|MiddleProcessor|p->p|MiddleProcessor2|p->a|EndProcessor)
 //                           ^---------------------------------------------/
-BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_NotReplaceExisting) 
+BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_NotReplaceExisting)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportPassive_));
@@ -1009,7 +1022,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_NotReplaceExisting)
 
 // Network = (StartProcessor|a->p|MiddleProcessor|p->p|MiddleProcessor2|p->a|EndProcessor)
 //                           ^---------------------------------------------/
-BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_RemoveLinksFromSubNetwork) 
+BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_RemoveLinksFromSubNetwork)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportPassive_));
@@ -1028,7 +1041,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_RemoveLinksFromSubNetwork)
 
 // Network = (StartProcessor|a->p|MiddleProcessor|p->p|MiddleProcessor2|p->a|EndProcessor)
 //                           ^---------------------------------------------/
-BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_RemoveLinksOverPassiveConnection) 
+BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_RemoveLinksOverPassiveConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportPassive_));
@@ -1047,7 +1060,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_RemoveLinksOverPassiveConnectio
 
 // Network = (StartProcessor|a->p|MiddleProcessor|p->p|MiddleProcessor2|p->a|EndProcessor)
 //                           ^---------------------------------------------/
-BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_RemoveLinksOverActiveToPassiveConnection) 
+BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_RemoveLinksOverActiveToPassiveConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportPassive_));
@@ -1066,7 +1079,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_RemoveLinksOverActiveToPassiveC
 
 // Network = (StartProcessor|a->p|MiddleProcessor|p->p|MiddleProcessor2|p->a|EndProcessor)
 //                           ^---------------------------------------------/
-BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_RemoveLinksOverPassiveToActiveConnection) 
+BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_RemoveLinksOverPassiveToActiveConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportPassive_));
@@ -1084,7 +1097,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineMiddlePassive_RemoveLinksOverPassiveToActiveC
 }
 
 // Network = (StartProcessor|p->p|MiddleProcessor|a->a|MiddleProcessor2|p->p|EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipelineMiddleActive) 
+BOOST_AUTO_TEST_CASE(linearPipelineMiddleActive)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportPassive_, middleProcessor->inportPassive_));
@@ -1100,7 +1113,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineMiddleActive)
 }
 
 // Network = (StartProcessor|p->p|MiddleProcessor|a->a|MiddleProcessor2|p->p|EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipelineMiddleActive_OverConnection) 
+BOOST_AUTO_TEST_CASE(linearPipelineMiddleActive_OverConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportPassive_, middleProcessor->inportPassive_));
@@ -1117,7 +1130,7 @@ BOOST_AUTO_TEST_CASE(linearPipelineMiddleActive_OverConnection)
 
 // Network = (StartProcessor|a->a|EndProcessor )
 //                           \->a|EndProcessor2)
-BOOST_AUTO_TEST_CASE(multipleOrigins) 
+BOOST_AUTO_TEST_CASE(multipleOrigins)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -1132,7 +1145,7 @@ BOOST_AUTO_TEST_CASE(multipleOrigins)
 
 // Network = (StartProcessor|a->a|EndProcessor )
 //                           \->a|EndProcessor2)
-BOOST_AUTO_TEST_CASE(multipleOrigins_OverConnection) 
+BOOST_AUTO_TEST_CASE(multipleOrigins_OverConnection)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -1147,7 +1160,7 @@ BOOST_AUTO_TEST_CASE(multipleOrigins_OverConnection)
 
 // Network = (StartProcessor|a->a|EndProcessor )
 //                           \->a|EndProcessor2)
-BOOST_AUTO_TEST_CASE(multipleOrigins_RemoveLinksOverConnection) 
+BOOST_AUTO_TEST_CASE(multipleOrigins_RemoveLinksOverConnection)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -1167,7 +1180,7 @@ BOOST_AUTO_TEST_CASE(multipleOrigins_RemoveLinksOverConnection)
 
 // Network = (StartProcessor|a-->a|EndProcessor)
 //            StartProcessor2|a--^             )
-BOOST_AUTO_TEST_CASE(multipleReceivers) 
+BOOST_AUTO_TEST_CASE(multipleReceivers)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -1185,7 +1198,7 @@ BOOST_AUTO_TEST_CASE(multipleReceivers)
 // Network = (StartProcessor|a-->a|EndProcessor)
 //            StartProcessor2|a--^             )
 //                            ^--/             )
-BOOST_AUTO_TEST_CASE(multipleReceivers_ReplaceOneExisting) 
+BOOST_AUTO_TEST_CASE(multipleReceivers_ReplaceOneExisting)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -1206,7 +1219,7 @@ BOOST_AUTO_TEST_CASE(multipleReceivers_ReplaceOneExisting)
 // Network = (StartProcessor|a-->a|EndProcessor)
 //            StartProcessor2|a--^             )
 //                            ^--/             )
-BOOST_AUTO_TEST_CASE(multipleReceivers_NotReplaceOneExisting) 
+BOOST_AUTO_TEST_CASE(multipleReceivers_NotReplaceOneExisting)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -1226,7 +1239,7 @@ BOOST_AUTO_TEST_CASE(multipleReceivers_NotReplaceOneExisting)
 
 // Network = (StartProcessor|a-->a|EndProcessor)
 //            StartProcessor2|a--^             )
-BOOST_AUTO_TEST_CASE(multipleReceivers_OverConnection) 
+BOOST_AUTO_TEST_CASE(multipleReceivers_OverConnection)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -1242,7 +1255,7 @@ BOOST_AUTO_TEST_CASE(multipleReceivers_OverConnection)
 
 // Network = (StartProcessor|a-->a|EndProcessor)
 //            StartProcessor2|a--^             )
-BOOST_AUTO_TEST_CASE(multipleReceivers_CreateLinksForEndProcessor) 
+BOOST_AUTO_TEST_CASE(multipleReceivers_CreateLinksForEndProcessor)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -1259,7 +1272,7 @@ BOOST_AUTO_TEST_CASE(multipleReceivers_CreateLinksForEndProcessor)
 
 // Network = (StartProcessor|a-->a|EndProcessor)
 //            StartProcessor2|a--^             )
-BOOST_AUTO_TEST_CASE(multipleReceivers_CreateLinksForStartProcessor) 
+BOOST_AUTO_TEST_CASE(multipleReceivers_CreateLinksForStartProcessor)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -1275,7 +1288,7 @@ BOOST_AUTO_TEST_CASE(multipleReceivers_CreateLinksForStartProcessor)
 
 // Network = (StartProcessor|a-->a|EndProcessor)
 //            StartProcessor2|a--^             )
-BOOST_AUTO_TEST_CASE(multipleReceivers_RemoveLinksOverConnection) 
+BOOST_AUTO_TEST_CASE(multipleReceivers_RemoveLinksOverConnection)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -1283,8 +1296,8 @@ BOOST_AUTO_TEST_CASE(multipleReceivers_RemoveLinksOverConnection)
 
     // configure existing size links
     BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, startProcessor->outportActive_));
-    BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, startProcessor2->outportActive_)); 
-                                            
+    BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, startProcessor2->outportActive_));
+
     // remove size link
     BOOST_CHECK(network->removeRenderSizeLinksOverConnection(&startProcessor->outportActive_, &endProcessor->inportActive_) == 1);
 
@@ -1295,7 +1308,7 @@ BOOST_AUTO_TEST_CASE(multipleReceivers_RemoveLinksOverConnection)
 
 // Network = (StartProcessor|a-->a|EndProcessor)
 //            StartProcessor2|a--^             )
-BOOST_AUTO_TEST_CASE(multipleReceivers_RemoveLinksFromStartProcessor) 
+BOOST_AUTO_TEST_CASE(multipleReceivers_RemoveLinksFromStartProcessor)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -1303,7 +1316,7 @@ BOOST_AUTO_TEST_CASE(multipleReceivers_RemoveLinksFromStartProcessor)
 
     // configure existing size links
     BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, startProcessor->outportActive_));
-    BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, startProcessor2->outportActive_)); 
+    BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, startProcessor2->outportActive_));
 
     // remove size links
     BOOST_CHECK(network->removeRenderSizeLinksFromProcessor(startProcessor) == 1);
@@ -1315,7 +1328,7 @@ BOOST_AUTO_TEST_CASE(multipleReceivers_RemoveLinksFromStartProcessor)
 
 // Network = (StartProcessor|a-->a|EndProcessor)
 //            StartProcessor2|a--^             )
-BOOST_AUTO_TEST_CASE(multipleReceivers_RemoveLinksFromEndProcessor) 
+BOOST_AUTO_TEST_CASE(multipleReceivers_RemoveLinksFromEndProcessor)
 {
     // create port connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, endProcessor->inportActive_));
@@ -1323,7 +1336,7 @@ BOOST_AUTO_TEST_CASE(multipleReceivers_RemoveLinksFromEndProcessor)
 
     // configure existing size links
     BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, startProcessor->outportActive_));
-    BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, startProcessor2->outportActive_)); 
+    BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, startProcessor2->outportActive_));
 
     // remove size links
     BOOST_CHECK(network->removeRenderSizeLinksFromProcessor(endProcessor) == 2);
@@ -1333,7 +1346,7 @@ BOOST_AUTO_TEST_CASE(multipleReceivers_RemoveLinksFromEndProcessor)
 }
 
 // Network = (StartProcessor|a->p|MiddleProcessor|a->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(receiverBetweenReceiverAndOrigin) 
+BOOST_AUTO_TEST_CASE(receiverBetweenReceiverAndOrigin)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportPassive_));
@@ -1348,7 +1361,7 @@ BOOST_AUTO_TEST_CASE(receiverBetweenReceiverAndOrigin)
 }
 
 // Network = (StartProcessor|a->p|MiddleProcessor|a->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(receiverBetweenReceiverAndOrigin_OverActiveConnection) 
+BOOST_AUTO_TEST_CASE(receiverBetweenReceiverAndOrigin_OverActiveConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportPassive_));
@@ -1363,7 +1376,7 @@ BOOST_AUTO_TEST_CASE(receiverBetweenReceiverAndOrigin_OverActiveConnection)
 }
 
 // Network = (StartProcessor|a->p|MiddleProcessor|a->a|EndProcessor)
-BOOST_AUTO_TEST_CASE(receiverBetweenReceiverAndOrigin_OverActiveToPassiveConnection) 
+BOOST_AUTO_TEST_CASE(receiverBetweenReceiverAndOrigin_OverActiveToPassiveConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportPassive_));
@@ -1378,7 +1391,7 @@ BOOST_AUTO_TEST_CASE(receiverBetweenReceiverAndOrigin_OverActiveToPassiveConnect
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a1|a2->a2|a1|MiddleProcessor2|a->a|EndProcessor)
 //                                                 \--------^
-BOOST_AUTO_TEST_CASE(dualConnectionActive) 
+BOOST_AUTO_TEST_CASE(dualConnectionActive)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -1399,7 +1412,7 @@ BOOST_AUTO_TEST_CASE(dualConnectionActive)
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a1|a2->a2|a1|MiddleProcessor2|a->a|EndProcessor)
 //                                                 \--------^
-BOOST_AUTO_TEST_CASE(dualConnectionActive_OverConnection) 
+BOOST_AUTO_TEST_CASE(dualConnectionActive_OverConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -1417,7 +1430,7 @@ BOOST_AUTO_TEST_CASE(dualConnectionActive_OverConnection)
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a1|a2->a2|a1|MiddleProcessor2|a->a|EndProcessor)
 //                                                 \--------^
-BOOST_AUTO_TEST_CASE(dualConnectionActive_CreateLinksForProcessor) 
+BOOST_AUTO_TEST_CASE(dualConnectionActive_CreateLinksForProcessor)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -1426,7 +1439,7 @@ BOOST_AUTO_TEST_CASE(dualConnectionActive_CreateLinksForProcessor)
     BOOST_CHECK(network->connectPorts(middleProcessor2->outportActive_, endProcessor->inportActive_));
 
     // create size links
-    BOOST_CHECK(network->createRenderSizeLinksForProcessor(middleProcessor) == 3); 
+    BOOST_CHECK(network->createRenderSizeLinksForProcessor(middleProcessor) == 3);
 
     // check results
     BOOST_CHECK(numSizeLinks(network->getPropertyLinks()) == 3);
@@ -1437,7 +1450,7 @@ BOOST_AUTO_TEST_CASE(dualConnectionActive_CreateLinksForProcessor)
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a1|a2->a2|a1|MiddleProcessor2|a->a|EndProcessor)
 //                                                 \--------^
-BOOST_AUTO_TEST_CASE(dualConnectionActive_RemoveLinksOverConnection) 
+BOOST_AUTO_TEST_CASE(dualConnectionActive_RemoveLinksOverConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -1446,8 +1459,8 @@ BOOST_AUTO_TEST_CASE(dualConnectionActive_RemoveLinksOverConnection)
     BOOST_CHECK(network->connectPorts(middleProcessor2->outportActive_, endProcessor->inportActive_));
 
     // configure existing size links
-    BOOST_CHECK(network->createRenderSizeLink(middleProcessor->inportActive_, startProcessor->outportActive_)); 
-    BOOST_CHECK(network->createRenderSizeLink(middleProcessor2->inportActive_, middleProcessor->outportActive_)); 
+    BOOST_CHECK(network->createRenderSizeLink(middleProcessor->inportActive_, startProcessor->outportActive_));
+    BOOST_CHECK(network->createRenderSizeLink(middleProcessor2->inportActive_, middleProcessor->outportActive_));
     BOOST_CHECK(network->createRenderSizeLink(middleProcessor2->inportActive2_, middleProcessor->outportActive2_));
     BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, middleProcessor2->outportActive_));
 
@@ -1464,7 +1477,7 @@ BOOST_AUTO_TEST_CASE(dualConnectionActive_RemoveLinksOverConnection)
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a1|a2->a2|a1|MiddleProcessor2|a->a|EndProcessor)
 //                                                 \--------^
-BOOST_AUTO_TEST_CASE(dualConnectionActive_RemoveLinksFromProcessor) 
+BOOST_AUTO_TEST_CASE(dualConnectionActive_RemoveLinksFromProcessor)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -1473,8 +1486,8 @@ BOOST_AUTO_TEST_CASE(dualConnectionActive_RemoveLinksFromProcessor)
     BOOST_CHECK(network->connectPorts(middleProcessor2->outportActive_, endProcessor->inportActive_));
 
     // configure existing size links
-    BOOST_CHECK(network->createRenderSizeLink(middleProcessor->inportActive_, startProcessor->outportActive_)); 
-    BOOST_CHECK(network->createRenderSizeLink(middleProcessor2->inportActive_, middleProcessor->outportActive_)); 
+    BOOST_CHECK(network->createRenderSizeLink(middleProcessor->inportActive_, startProcessor->outportActive_));
+    BOOST_CHECK(network->createRenderSizeLink(middleProcessor2->inportActive_, middleProcessor->outportActive_));
     BOOST_CHECK(network->createRenderSizeLink(middleProcessor2->inportActive2_, middleProcessor->outportActive2_));
     BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, middleProcessor2->outportActive_));
 
@@ -1488,7 +1501,7 @@ BOOST_AUTO_TEST_CASE(dualConnectionActive_RemoveLinksFromProcessor)
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a|p->p|a|MiddleProcessor2|a->a|EndProcessor)
 //                                                 \-----^
-BOOST_AUTO_TEST_CASE(dualConnectionOnePassive) 
+BOOST_AUTO_TEST_CASE(dualConnectionOnePassive)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -1509,7 +1522,7 @@ BOOST_AUTO_TEST_CASE(dualConnectionOnePassive)
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a|p->p|a|MiddleProcessor2|a->a|EndProcessor)
 //                                                 \-----^
-BOOST_AUTO_TEST_CASE(dualConnectionOnePassive_OverActiveConnection) 
+BOOST_AUTO_TEST_CASE(dualConnectionOnePassive_OverActiveConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -1527,7 +1540,7 @@ BOOST_AUTO_TEST_CASE(dualConnectionOnePassive_OverActiveConnection)
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a|p->p|a|MiddleProcessor2|a->a|EndProcessor)
 //                                                 \-----^
-BOOST_AUTO_TEST_CASE(dualConnectionOnePassive_OverPassiveConnection) 
+BOOST_AUTO_TEST_CASE(dualConnectionOnePassive_OverPassiveConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -1544,7 +1557,7 @@ BOOST_AUTO_TEST_CASE(dualConnectionOnePassive_OverPassiveConnection)
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a|p->p|a|MiddleProcessor2|a->a|EndProcessor)
 //                                                 \-----^
-BOOST_AUTO_TEST_CASE(dualConnectionOnePassive_RemoveLinksOverActiveConnection) 
+BOOST_AUTO_TEST_CASE(dualConnectionOnePassive_RemoveLinksOverActiveConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -1568,7 +1581,7 @@ BOOST_AUTO_TEST_CASE(dualConnectionOnePassive_RemoveLinksOverActiveConnection)
 
 // Network = (StartProcessor|a->a|MiddleProcessor|a|p->p|a|MiddleProcessor2|a->a|EndProcessor)
 //                                                 \-----^
-BOOST_AUTO_TEST_CASE(dualConnectionOnePassive_RemoveLinksOverPassiveConnection) 
+BOOST_AUTO_TEST_CASE(dualConnectionOnePassive_RemoveLinksOverPassiveConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, middleProcessor->inportActive_));
@@ -1579,7 +1592,7 @@ BOOST_AUTO_TEST_CASE(dualConnectionOnePassive_RemoveLinksOverPassiveConnection)
     // configure existing size links
     BOOST_CHECK(network->createRenderSizeLink(middleProcessor->inportActive_, startProcessor->outportActive_));
     BOOST_CHECK(network->createRenderSizeLink(middleProcessor2->inportActive_, middleProcessor->outportActive_));
-    BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, middleProcessor2->outportActive_)); 
+    BOOST_CHECK(network->createRenderSizeLink(endProcessor->inportActive_, middleProcessor2->outportActive_));
 
     // remove link
     BOOST_CHECK(network->removeRenderSizeLinksOverConnection(&middleProcessor->outportPassive_, &middleProcessor2->inportPassive_) == 0);
@@ -1593,7 +1606,7 @@ BOOST_AUTO_TEST_CASE(dualConnectionOnePassive_RemoveLinksOverPassiveConnection)
 
 // Network = (StartProcessor|a->a|(la|LoopInitiator|a->a|MiddleProcessor|a->a|LoopFinalizer|la)|a->a|EndProcessor)
 //                                  ^-------------------------x3----------------------------/
-BOOST_AUTO_TEST_CASE(activeLoop_CreateSizeLinksInSubnetwork) 
+BOOST_AUTO_TEST_CASE(activeLoop_CreateSizeLinksInSubnetwork)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, loopInitiator->inportActive_));
@@ -1602,7 +1615,7 @@ BOOST_AUTO_TEST_CASE(activeLoop_CreateSizeLinksInSubnetwork)
     BOOST_CHECK(network->connectPorts(loopFinalizer->outportActive_, endProcessor->inportActive_));
     BOOST_CHECK(network->connectPorts(loopFinalizer->loopOutportActive_, loopInitiator->loopInportActive_));
     loopInitiator->loopInportActive_.setNumLoopIterations(3);
-        
+
     // create size links
     BOOST_CHECK(network->createRenderSizeLinksWithinSubNetwork(network->getProcessors()) == 4);
 
@@ -1619,7 +1632,7 @@ BOOST_AUTO_TEST_CASE(activeLoop_CreateSizeLinksInSubnetwork)
 
 // Network = (StartProcessor|a->a|(la|LoopInitiator|a->a|MiddleProcessor|a->a|LoopFinalizer|la)|a->a|EndProcessor)
 //                                  ^-------------------------x3----------------------------/
-BOOST_AUTO_TEST_CASE(activeLoop_RemoveSizeLinksInSubnetwork) 
+BOOST_AUTO_TEST_CASE(activeLoop_RemoveSizeLinksInSubnetwork)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, loopInitiator->inportActive_));
@@ -1645,7 +1658,7 @@ BOOST_AUTO_TEST_CASE(activeLoop_RemoveSizeLinksInSubnetwork)
 
 // Network = (StartProcessor|a->a|(la|LoopInitiator|a->a|MiddleProcessor|a->a|LoopFinalizer|la)|a->a|EndProcessor)
 //                                  ^-------------------------x3----------------------------/
-BOOST_AUTO_TEST_CASE(activeLoop_CreateSizeLinksOverConnection) 
+BOOST_AUTO_TEST_CASE(activeLoop_CreateSizeLinksOverConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, loopInitiator->inportActive_));
@@ -1665,7 +1678,7 @@ BOOST_AUTO_TEST_CASE(activeLoop_CreateSizeLinksOverConnection)
 
 // Network = (StartProcessor|a->a|(la|LoopInitiator|a->a|MiddleProcessor|a->a|LoopFinalizer|la)|a->a|EndProcessor)
 //                                  ^-------------------------x3----------------------------/
-BOOST_AUTO_TEST_CASE(activeLoop_RemoveSizeLinksOverConnection) 
+BOOST_AUTO_TEST_CASE(activeLoop_RemoveSizeLinksOverConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, loopInitiator->inportActive_));
@@ -1696,7 +1709,7 @@ BOOST_AUTO_TEST_CASE(activeLoop_RemoveSizeLinksOverConnection)
 
 // Network = (StartProcessor|a->p|(lp|LoopInitiator|p->p|MiddleProcessor|p->p|LoopFinalizer|lp)|p->a|EndProcessor)
 //                                  ^-------------------------x3----------------------------/
-BOOST_AUTO_TEST_CASE(passiveLoop_CreateSizeLinksInSubnetwork) 
+BOOST_AUTO_TEST_CASE(passiveLoop_CreateSizeLinksInSubnetwork)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, loopInitiator->inportPassive_));
@@ -1716,7 +1729,7 @@ BOOST_AUTO_TEST_CASE(passiveLoop_CreateSizeLinksInSubnetwork)
 
 // Network = (StartProcessor|a->p|(lp|LoopInitiator|p->p|MiddleProcessor|p->p|LoopFinalizer|lp)|p->a|EndProcessor)
 //                                  ^-------------------------x3----------------------------/
-BOOST_AUTO_TEST_CASE(passiveLoop_RemoveSizeLinksFromSubnetwork) 
+BOOST_AUTO_TEST_CASE(passiveLoop_RemoveSizeLinksFromSubnetwork)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, loopInitiator->inportPassive_));
@@ -1738,7 +1751,7 @@ BOOST_AUTO_TEST_CASE(passiveLoop_RemoveSizeLinksFromSubnetwork)
 
 // Network = (StartProcessor|a->p|(lp|LoopInitiator|p->p|MiddleProcessor|p->p|LoopFinalizer|lp)|p->a|EndProcessor)
 //                                  ^-------------------------x3----------------------------/
-BOOST_AUTO_TEST_CASE(passiveLoop_CreateSizeLinksOverConnection) 
+BOOST_AUTO_TEST_CASE(passiveLoop_CreateSizeLinksOverConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, loopInitiator->inportPassive_));
@@ -1758,7 +1771,7 @@ BOOST_AUTO_TEST_CASE(passiveLoop_CreateSizeLinksOverConnection)
 
 // Network = (StartProcessor|a->p|(lp|LoopInitiator|p->p|MiddleProcessor|p->p|LoopFinalizer|lp)|p->a|EndProcessor)
 //                                  ^-------------------------x3----------------------------/
-BOOST_AUTO_TEST_CASE(passiveLoop_RemoveSizeLinksOverConnection) 
+BOOST_AUTO_TEST_CASE(passiveLoop_RemoveSizeLinksOverConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, loopInitiator->inportPassive_));
@@ -1780,7 +1793,7 @@ BOOST_AUTO_TEST_CASE(passiveLoop_RemoveSizeLinksOverConnection)
 
 // Network = (StartProcessor|a->p|(lp|LoopInitiator|p->a|MiddleProcessor|a->p|LoopFinalizer|lp)|p->a|EndProcessor)
 //                                  ^-------------------------x3----------------------------/
-BOOST_AUTO_TEST_CASE(middleActiveLoop_CreateSizeLinksInSubnetwork) 
+BOOST_AUTO_TEST_CASE(middleActiveLoop_CreateSizeLinksInSubnetwork)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, loopInitiator->inportPassive_));
@@ -1801,7 +1814,7 @@ BOOST_AUTO_TEST_CASE(middleActiveLoop_CreateSizeLinksInSubnetwork)
 
 // Network = (StartProcessor|a->p|(lp|LoopInitiator|p->a|MiddleProcessor|a->p|LoopFinalizer|lp)|p->a|EndProcessor)
 //                                  ^-------------------------x3----------------------------/
-BOOST_AUTO_TEST_CASE(middleActiveLoop_CreateSizeLinksOverConnection) 
+BOOST_AUTO_TEST_CASE(middleActiveLoop_CreateSizeLinksOverConnection)
 {
     // configure network connections
     BOOST_CHECK(network->connectPorts(startProcessor->outportActive_, loopInitiator->inportPassive_));

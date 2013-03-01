@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -53,7 +53,7 @@ namespace voreen {
  *
  * @see SliceViewer
  */
-class RegionOfInterest2D : public ImageProcessor {
+class VRN_CORE_API RegionOfInterest2D : public ImageProcessor {
 
 public:
     RegionOfInterest2D();
@@ -123,15 +123,8 @@ public:
         bool antialiasing_;                     ///< Use OpenGL line/point smooth, respectively?
 
         tgt::vec4 boundingBox_  ;               ///< ROI points' bounding box (ll.x, ll.y, ur.x, ur.y)
-    };
 
-    /**
-     * Serialization factory for RegionOfInterestGeometries.
-     */
-    class RegionOfInterestGeometryFactory : public SerializableFactory {
-    public:
-        const std::string getTypeString(const std::type_info& type) const;
-        Serializable* createType(const std::string& typeString);
+        static const std::string loggerCat_;
     };
 
 protected:

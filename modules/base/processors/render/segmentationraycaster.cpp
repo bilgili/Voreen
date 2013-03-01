@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -45,7 +45,18 @@ using tgt::TextureUnit;
 
 SegmentationRaycaster::SegmentationRaycaster()
     : VolumeRaycaster()
-    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , volumeInport_(Port::INPORT, "volumehandle.volumehandle", "Volume Input")
+    , segmentationInport_(Port::INPORT, "volumehandle.segmentation", "Segmentation Volume Input")
+    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_RESULT)
+    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_RESULT)
+    , outport_(Port::OUTPORT, "image.outport1", "Image Output", true, Processor::INVALID_PROGRAM)
+    , outport1_(Port::OUTPORT, "image.outport2", "Image1 Output", true, Processor::INVALID_PROGRAM)
+    , outport2_(Port::OUTPORT, "image.outport3", "Image2 Output", true, Processor::INVALID_PROGRAM)
+    , internalRenderPort_(Port::OUTPORT, "internalRenderPort", "Internal Render Port")
+    , internalRenderPort1_(Port::OUTPORT, "internalRenderPort1", "Internal Render Port 1")
+    , internalRenderPort2_(Port::OUTPORT, "internalRenderPort2", "Internal Render Port 2")
+    , internalPortGroup_(true)
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)), true)
     , transferFunc_("SegmentationRaycaster.TransFunc", "Transfer function")
     , shaderProp_("raycast.prg", "Raycasting Shader", "rc_segmentation.frag", "passthrough.vert")
     , segmentTransFuncs_(0)
@@ -57,13 +68,6 @@ SegmentationRaycaster::SegmentationRaycaster()
     , lastSegment_(-1)
     , compositingMode1_("compositing1", "Compositing (OP2)", Processor::INVALID_PROGRAM)
     , compositingMode2_("compositing2", "Compositing (OP3)", Processor::INVALID_PROGRAM)
-    , volumeInport_(Port::INPORT, "volumehandle.volumehandle", "Volume Input")
-    , segmentationInport_(Port::INPORT, "volumehandle.segmentation", "Segmentation Volume Input")
-    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
-    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
-    , outport1_(Port::OUTPORT, "image.outport1", "Image Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER)
-    , outport2_(Port::OUTPORT, "image.outport2", "Image1 Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER)
-    , outport3_(Port::OUTPORT, "image.outport3", "Image2 Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER)
 {
     // ports
     volumeInport_.addCondition(new PortConditionVolumeTypeGL());
@@ -71,9 +75,14 @@ SegmentationRaycaster::SegmentationRaycaster()
     addPort(segmentationInport_);
     addPort(entryPort_);
     addPort(exitPort_);
+    addPort(outport_);
     addPort(outport1_);
     addPort(outport2_);
-    addPort(outport3_);
+
+    // internal render destinations
+    addPrivateRenderPort(internalRenderPort_);
+    addPrivateRenderPort(internalRenderPort1_);
+    addPrivateRenderPort(internalRenderPort2_);
 
     // properties
     addProperty(shaderProp_);
@@ -155,10 +164,10 @@ void SegmentationRaycaster::initialize() throw (tgt::Exception) {
     VolumeRaycaster::initialize();
     compile();
 
-    portGroup_.initialize();
-    portGroup_.addPort(outport1_);
-    portGroup_.addPort(outport2_);
-    portGroup_.addPort(outport3_);
+    internalPortGroup_.initialize();
+    internalPortGroup_.addPort(internalRenderPort_);
+    internalPortGroup_.addPort(internalRenderPort1_);
+    internalPortGroup_.addPort(internalRenderPort2_);
 
     createSegmentationTransFunc();
     initializeSegmentationTransFuncTex();
@@ -169,7 +178,12 @@ void SegmentationRaycaster::initialize() throw (tgt::Exception) {
 void SegmentationRaycaster::deinitialize() throw (tgt::Exception) {
     delete segmentationTransFuncTex_;
     segmentationTransFuncTex_ = 0;
-    portGroup_.deinitialize();
+    LGL_ERROR;
+
+    internalPortGroup_.removePort(internalRenderPort_);
+    internalPortGroup_.removePort(internalRenderPort1_);
+    internalPortGroup_.removePort(internalRenderPort2_);
+    internalPortGroup_.deinitialize();
     LGL_ERROR;
 
     VolumeRaycaster::deinitialize();
@@ -188,7 +202,7 @@ bool SegmentationRaycaster::isReady() const {
     if(!entryPort_.isReady() || !exitPort_.isReady() || !volumeInport_.isReady())
         return false;
 
-    if (!outport1_.isReady() && !outport2_.isReady() && !outport3_.isReady())
+    if (!outport_.isReady() && !outport1_.isReady() && !outport2_.isReady())
         return false;
 
     if (applySegmentation_.get() && !segmentationInport_.isReady())
@@ -202,15 +216,14 @@ void SegmentationRaycaster::process() {
         segmentationHandle_ = segmentationInport_.getData();
         invalidate(Processor::INVALID_PROGRAM);
         applySegmentationChanged();
+        if(volumeInport_.getData())
+            camera_.adaptInteractionToScene(volumeInport_.getData()->getBoundingBox().getBoundingBox());
     }
 
     // compile program if needed
     if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
         compile();
     LGL_ERROR;
-
-    portGroup_.activateTargets();
-    portGroup_.clearTargets();
 
     const VolumeBase* volumeHandle = volumeInport_.getData();
 
@@ -229,14 +242,35 @@ void SegmentationRaycaster::process() {
         return;
     }
 
-
-    // bind entry params
-    tgt::TextureUnit entryUnit, entryDepthUnit, exitUnit, exitDepthUnit;
-    entryPort_.bindTextures(entryUnit.getEnum(), entryDepthUnit.getEnum());
+    // determine render size and activate internal port group
+    const bool renderCoarse = interactionMode() && interactionCoarseness_.get() > 1;
+    const tgt::svec2 renderSize = (renderCoarse ? (outport_.getSize() / interactionCoarseness_.get()) : outport_.getSize());
+    internalPortGroup_.resize(renderSize);
+    internalPortGroup_.activateTargets();
+    internalPortGroup_.clearTargets();
     LGL_ERROR;
 
-    // bind exit params
-    exitPort_.bindTextures(exitUnit.getEnum(), exitDepthUnit.getEnum());
+    // initialize shader
+    tgt::Shader* raycastPrg = shaderProp_.getShader();
+    raycastPrg->activate();
+    LGL_ERROR;
+
+    // set common uniforms used by all shaders
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(raycastPrg, &cam, renderSize);
+    LGL_ERROR;
+
+    // bind entry/exit param textures
+    tgt::TextureUnit entryUnit, entryDepthUnit, exitUnit, exitDepthUnit;
+    entryPort_.bindTextures(entryUnit, entryDepthUnit, GL_NEAREST);
+    raycastPrg->setUniform("entryPoints_", entryUnit.getUnitNumber());
+    raycastPrg->setUniform("entryPointsDepth_", entryDepthUnit.getUnitNumber());
+    entryPort_.setTextureParameters(raycastPrg, "entryParameters_");
+
+    exitPort_.bindTextures(exitUnit, exitDepthUnit, GL_NEAREST);
+    raycastPrg->setUniform("exitPoints_", exitUnit.getUnitNumber());
+    raycastPrg->setUniform("exitPointsDepth_", exitDepthUnit.getUnitNumber());
+    exitPort_.setTextureParameters(raycastPrg, "exitParameters_");
     LGL_ERROR;
 
     // vector containing the volumes to bind; is passed to bindVolumes()
@@ -250,7 +284,7 @@ void SegmentationRaycaster::process() {
         "volume_","volumeStruct_")
     );
 
-       // segmentation volume
+    // segmentation volume
     const VolumeGL* segVolume = 0;
     if (segmentationHandle_) {
         segVolume = segmentationHandle_->getRepresentation<VolumeGL>();
@@ -280,24 +314,8 @@ void SegmentationRaycaster::process() {
         transferUnit.activate();
         transferFunc_.get()->bind();
     }
-
-    // initialize shader
-    tgt::Shader* raycastPrg = shaderProp_.getShader();
-    raycastPrg->activate();
-
-    // set common uniforms used by all shaders
-    tgt::Camera cam = camera_.get();
-    setGlobalShaderParameters(raycastPrg, &cam);
     // bind the volumes and pass the necessary information to the shader
     bindVolumes(raycastPrg, volumeTextures, &cam, lightPosition_.get());
-
-    // pass the remaining uniforms to the shader
-    raycastPrg->setUniform("entryPoints_", entryUnit.getUnitNumber());
-    raycastPrg->setUniform("entryPointsDepth_", entryDepthUnit.getUnitNumber());
-    entryPort_.setTextureParameters(raycastPrg, "entryParameters_");
-    raycastPrg->setUniform("exitPoints_", exitUnit.getUnitNumber());
-    raycastPrg->setUniform("exitPointsDepth_", exitDepthUnit.getUnitNumber());
-    exitPort_.setTextureParameters(raycastPrg, "exitParameters_");
 
     // assign segment tf to texture units
     if (segVolume && applySegmentation_.get())
@@ -305,12 +323,23 @@ void SegmentationRaycaster::process() {
     else
         transferFunc_.get()->setUniform(raycastPrg, "transferFunc_", "transferFuncTex_", transferUnit.getUnitNumber());
 
+    // perform the actual raycasting by drawing a screen-aligned quad
     renderQuad();
 
     raycastPrg->deactivate();
+    internalPortGroup_.deactivateTargets();
+    LGL_ERROR;
+
+    // copy over rendered images from internal port group to outports,
+    // thereby rescaling them to outport dimensions
+    if (outport_.isConnected())
+        rescaleRendering(internalRenderPort_, outport_);
+    if (outport1_.isConnected())
+        rescaleRendering(internalRenderPort1_, outport1_);
+    if (outport2_.isConnected())
+        rescaleRendering(internalRenderPort2_, outport2_);
 
     TextureUnit::setZeroUnit();
-    portGroup_.deactivateTargets();
     LGL_ERROR;
 }
 
@@ -353,8 +382,8 @@ std::string SegmentationRaycaster::generateHeader() {
     else if (compositingMode2_.get() == "fhn")
         headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
 
-    portGroup_.reattachTargets();
-    headerSource += portGroup_.generateHeader(shaderProp_.getShader());
+    internalPortGroup_.reattachTargets();
+    headerSource += internalPortGroup_.generateHeader(shaderProp_.getShader());
     return headerSource;
 }
 

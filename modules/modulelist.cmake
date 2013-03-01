@@ -14,6 +14,7 @@ OPTION(VRN_MODULE_PVM           "Provides a volume reader for Stefan Roettger's 
 OPTION(VRN_MODULE_SEGY          "Provides a volume reader for the SEGY format"                  ON )
 OPTION(VRN_MODULE_STEREOSCOPY   "Provides stereo rendering"                                     ON )
 OPTION(VRN_MODULE_STAGING       "Experimental code almost ready for productive use"             ON )
+OPTION(VRN_MODULE_RANDOMWALKER  "3D random walker implementation"                               ON )
 OPTION(VRN_MODULE_VOLUMELABELING "Provides interactive volume labeling"                         ON )
 
 # important modules with external dependencies that are usually available on a target system

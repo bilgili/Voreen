@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -43,7 +43,7 @@ class Geometry;
  * Renders a PointListGeometry<tgt::vec3> or PointSegmentListGeometry<tgt::vec3> which is passed
  * through a geometry inport. The point list can be rendered as points, spheres or illuminated spheres.
  */
-class PointListRenderer : public GeometryRendererBase {
+class VRN_CORE_API PointListRenderer : public GeometryRendererBase {
 public:
     PointListRenderer();
 
@@ -69,8 +69,10 @@ protected:
     /**
      * Generates the display list for the passed point list according
      * to current property states. Is called by PointListRenderer::render
+     *
+     * @param m Transformation matrix, @see Geometry::transform()
      */
-    virtual void generateDisplayList(const std::vector<tgt::vec3>& pointList);
+    virtual void generateDisplayList(const std::vector<tgt::vec3>& pointList, const tgt::mat4 m);
 
     /**
      * Property callback for invalidating the display list on property changes.

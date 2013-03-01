@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -38,14 +38,14 @@ namespace voreen {
  * In render method, this switch can be queried and bypass method can be used to
  * pass the image from inport to outport without changes.
  */
-class ImageProcessorBypassable : public ImageProcessor {
+class VRN_CORE_API ImageProcessorBypassable : public ImageProcessor {
 public:
     /**
      * Constructor.
      *
      * @param shaderFilename The filename of the shader that will be used.
      */
-    ImageProcessorBypassable(const std::string& shaderFilename = "");
+    ImageProcessorBypassable(const std::string& shaderFilename = "", bool enableCoarsenessAdaptation = false);
 
     virtual std::string getCategory() const { return "Image Processing"; }
     virtual std::string getClassName() const { return "ImageProcessorBypassable"; }

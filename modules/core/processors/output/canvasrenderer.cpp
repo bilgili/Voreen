@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -49,7 +49,7 @@ CanvasRenderer::CanvasRenderer()
     , canvasSize_("canvasSize", "Canvas Size", tgt::ivec2(256), tgt::ivec2(32), tgt::ivec2(2 << 12), Processor::VALID)
     , showCursor_("showCursor", "Show Cursor", true)
     , showFullScreen_("showFullScreen", "Show Fullscreen (F11)", false)
-    , screenshotFilename_("screenshotFilename", "File", "Select file...","", "*.*", FileDialogProperty::SAVE_FILE, Processor::VALID)
+    , screenshotFilename_("screenshotFilename", "File", "Select file...","", "*.*", FileDialogProperty::SAVE_FILE, Processor::INVALID_PATH)
     , saveScreenshotButton_("saveScreenshot", "Save Screenshot")
     , canvas_(0)
     , shader_(0)
@@ -97,7 +97,7 @@ void CanvasRenderer::process() {
                 LINFO("Saved rendering with dimensions " << inport_.getSize() << " to file: " << tgt::FileSystem::cleanupPath(renderToImageFilename_));
             }
             catch (std::bad_alloc& /*e*/) {
-                LERROR("Exception in CanvasRenderer::renderInportToImage(): bad allocation (" << getName() << ")");
+                LERROR("Exception in CanvasRenderer::renderInportToImage(): bad allocation (" << getID() << ")");
                 renderToImageError_ = "Not enough system memory (bad allocation)";
             }
             catch (VoreenException& e) {
@@ -105,7 +105,7 @@ void CanvasRenderer::process() {
                 renderToImageError_ = std::string(e.what());
             }
             catch (std::exception& e) {
-                LERROR("Exception in CanvasRenderer::renderInportToImage(): " << e.what() << " (" << getName() << ")");
+                LERROR("Exception in CanvasRenderer::renderInportToImage(): " << e.what() << " (" << getID() << ")");
                 renderToImageError_ = std::string(e.what());
             }
             renderToImage_ = false;
@@ -220,8 +220,22 @@ void CanvasRenderer::invalidate(int inv) {
     // NetworkEvaluator, we bypass Processor::invalidate()
     // in order to prevent a needless double processing of the network.
     PropertyOwner::invalidate(inv);
+    //check, if is ready (isInitialized)
+    bool ready = isReady();
+    if(ready && (processorState_ == PROCESSOR_STATE_NOT_READY)){
+        processorState_ = PROCESSOR_STATE_READY;
+        notifyStateChanged();
+    } else if(!ready && (processorState_ == PROCESSOR_STATE_READY)) {
+        processorState_ = PROCESSOR_STATE_NOT_READY;
+        notifyStateChanged();
+    }
+    //update
     if (canvas_)
         canvas_->update();
+
+    //take screenshot, if path has been changed
+    if(inv == Processor::INVALID_PATH && isInitialized())
+        saveScreenshotClicked();
 }
 
 void CanvasRenderer::setCanvas(tgt::GLCanvas* canvas) {

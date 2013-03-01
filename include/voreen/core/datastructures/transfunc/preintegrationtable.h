@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -46,14 +46,14 @@ public:
      * @param transFunc the transfer function for with the pre-integration table is computed
      * @param resolution the resolution of the table in both directions (if <= 1 the resolution is set to 256)
      * @param d the segment length (= sampling step size) for which the pre-integration table is computed (if <= 0 the segment length is set to 1.0)
-     * @param useIntegral Use integral to compute pre-integration table, which is faster but not quite as accurate.
+     * @param useIntegral Use integral functions to compute pre-integration table, which is faster but not quite as accurate.
      */
     PreIntegrationTable(const TransFunc1DKeys* transFunc, size_t resolution = 256, float d = 1.f, bool useIntegral = true);
 
     ~PreIntegrationTable();
 
     /**
-     * Compute the pre-integrated table for the given transfer function
+     * Compute the pre-integrated table for the given transfer function.
      */
     void computeTable();
 
@@ -83,9 +83,6 @@ private:
     // no default constructor
     PreIntegrationTable();
 
-    /// Returns the RGBA values for a segment.
-    tgt::vec4 apply1DTF(const tgt::Texture* tfTexture, float intensity);
-
     /// Generates the texture for the pre-integration table.
     virtual void createTex() const;
 
@@ -93,7 +90,7 @@ private:
 
     size_t resolution_; ///< resolution of the pre-integrated table
     float samplingStepSize_; ///< length of the segments
-    bool useIntegral_;
+    bool useIntegral_; ///< true for approximative (but faster) computation using integral functions
 
     tgt::vec4* table_; ///< the actual pre-integration table in row-major order
 

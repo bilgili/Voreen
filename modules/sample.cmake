@@ -88,6 +88,11 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/processors/myproc2.h
 )   
 
+# module applications without Qt dependency
+SET(MOD_CORE_APPLICATIONS
+    ${MOD_DIR}/apps/mycoretool.cpp
+)
+
 
 ################################################################################
 # Qt module resources (optional)
@@ -107,6 +112,15 @@ SET(MOD_QT_HEADERS
 # widget headers that do NOT have to be run through moc
 SET(MOD_QT_HEADERS_NONMOC
     ${MOD_DIR}/qt/nonmocwidget.h
+)
+
+SET(MOD_QT_FORMS_HEADERS
+    #${MOD_DIR}/myform.ui
+)
+    
+# module applications that are linked against the voreen_qt library
+SET(MOD_QT_APPLICATIONS
+    ${MOD_DIR}/apps/myqttool.cpp
 )
 
 

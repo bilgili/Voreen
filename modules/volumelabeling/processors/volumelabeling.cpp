@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -115,7 +115,7 @@ VolumeLabeling::VolumeLabeling()
     , drag_(false)
     , labelingPort_(Port::OUTPORT, "image.labeling", "Labeling Image Output", true)
     , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
-    , currentVolumeHandle_(0)
+    , currentVolume_(0)
 
 #ifdef labelDEBUG
     , showSegmentIDs_("showSegmentIDs", "Show segment IDs", false)
@@ -267,11 +267,11 @@ void VolumeLabeling::initialize() throw (tgt::Exception) {
     labelShader_ = program_;
     if(!labelShader_) {
         LERROR("Failed to load shaders!");
-        initialized_ = false;
+        processorState_ = PROCESSOR_STATE_NOT_INITIALIZED;
         throw VoreenException(getClassName() + ": Failed to load shader");
     }
 
-    initialized_ = true;
+    processorState_ = PROCESSOR_STATE_NOT_READY;
 
     labelFileChanged();
 }
@@ -318,7 +318,7 @@ void VolumeLabeling::process() {
     glPopAttrib();
 
     if (volumePort_.hasChanged()) {
-        currentVolumeHandle_ = volumePort_.getData();
+        currentVolume_ = volumePort_.getData();
     }
 
     // if not in coarseness-mode and label textures are available, perform labeling
@@ -3126,7 +3126,7 @@ void VolumeLabeling::readImage() {
     image_.idImage.setData(idImage, image_.width, image_.height, 1);
 
     image_.firstHitPositions.setData(positionBuffer, image_.width, image_.height, 3);
-    image_.firstHitPositions.setVolumeSize(currentVolumeHandle_->getCubeSize() / 2.f);
+    image_.firstHitPositions.setVolumeSize(currentVolume_->getCubeSize() / 2.f);
     image_.firstHitPositions.calcTransformationMatrix(camera_.get().getViewMatrix(),
         camera_.get().getProjectionMatrix(labelingPort_.getSize()),
         ivec2(image_.width, image_.height));

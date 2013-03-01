@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -25,23 +25,21 @@
 
 #include "voreen/core/processors/volumeraycaster.h"
 #include "voreen/core/utils/classificationmodes.h"
+#include "voreen/core/utils/glsl.h"
 #include "voreen/core/properties/cameraproperty.h"
 
+#include "tgt/textureunit.h"
 #include "tgt/vector.h"
 
 using tgt::mat4;
+using tgt::TextureUnit;
 
 namespace voreen {
 
 const std::string VolumeRaycaster::loggerCat_("voreen.VolumeRaycaster");
 
-/*
-    constructor and destructor
-*/
-
 VolumeRaycaster::VolumeRaycaster()
     : VolumeRenderer()
-    //, raycastPrg_(0)
     , samplingRate_("samplingRate", "Sampling Rate", 2.f, 0.01f, 20.f)
     , isoValue_("isoValue", "Iso Value", 0.5f, 0.0f, 1.0f)
     , maskingMode_("masking", "Masking", Processor::INVALID_PROGRAM)
@@ -49,27 +47,52 @@ VolumeRaycaster::VolumeRaycaster()
     , classificationMode_("classification", "Classification", Processor::INVALID_PROGRAM)
     , shadeMode_("shading", "Shading", Processor::INVALID_PROGRAM)
     , compositingMode_("compositing", "Compositing", Processor::INVALID_PROGRAM)
-    , interactionCoarseness_("interactionCoarseness","Interaction Coarseness", 4, 1, 16, Processor::VALID)
+    , interactionCoarseness_("interactionCoarseness","Interaction Coarseness", 3, 1, 8, Processor::VALID)
     , interactionQuality_("interactionQuality","Interaction Quality", 1.0f, 0.01f, 1.0f, Processor::VALID)
     , useInterpolationCoarseness_("interpolation.coarseness","Use Interpolation Coarseness", false, Processor::INVALID_PROGRAM)
-    , size_(128, 128)
-    , switchToInteractionMode_(false)
 {
-    initProperties();
+    addProperty(samplingRate_);
+
+    // initialization of the rendering properties
+    // the properties are added in the respective subclasses
+    maskingMode_.addOption("none", "none");
+    maskingMode_.addOption("Segmentation", "Segmentation");
+
+    gradientMode_.addOption("none",                 "none"                  );
+    gradientMode_.addOption("forward-differences",  "Forward Differences"   );
+    gradientMode_.addOption("central-differences",  "Central Differences"   );
+    gradientMode_.addOption("sobel",                "Sobel"                 );
+    gradientMode_.addOption("filtered",             "Filtered"              );
+    gradientMode_.select("central-differences");
+
+    ClassificationModes::fillProperty(&classificationMode_);
+
+    fillShadingModesProperty(shadeMode_);
+
+    compositingMode_.addOption("dvr", "DVR");
+    compositingMode_.addOption("mip", "MIP");
+    compositingMode_.addOption("mida", "MIDA");
+    compositingMode_.addOption("iso", "ISO");
+    compositingMode_.addOption("fhp", "FHP");
+    compositingMode_.addOption("fhn", "FHN");
+
+    addProperty(useInterpolationCoarseness_);
+    addProperty(interactionCoarseness_);
+    addProperty(interactionQuality_);
 }
 
 void VolumeRaycaster::initialize() throw (tgt::Exception) {
     VolumeRenderer::initialize();
 
-    // listen to port size receives on outports
-    const std::vector<Port*> outports = getOutports();
-    for (size_t i=0; i<outports.size(); i++) {
-        RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
-        if (rp && rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER)
-            rp->onSizeReceiveChange<VolumeRaycaster>(this, &VolumeRaycaster::updateInputSizeRequests);
-    }
+    // load rescale shader program
+    rescaleShader_ = ShdrMgr.loadSeparate("passthrough.vert", "copyimage.frag", generateHeader(), false);
+}
 
-    updateInputSizeRequests();
+void VolumeRaycaster::deinitialize() throw (tgt::Exception) {
+    ShdrMgr.dispose(rescaleShader_);
+    rescaleShader_ = 0;
+
+    VolumeRenderer::deinitialize();
 }
 
 /*
@@ -88,32 +111,14 @@ std::string VolumeRaycaster::generateHeader(const tgt::GpuCapabilities::GlVersio
         headerSource += "calcGradientA(volume, volumeStruct, samplePos);\n";
     else if (gradientMode_.isSelected("filtered"))
         headerSource += "calcGradientFiltered(volume, volumeStruct, samplePos);\n";
+    else if (gradientMode_.isSelected("sobel"))
+        headerSource += "calcGradientSobel(volume, volumeStruct, samplePos);\n";
 
     // configure classification
     headerSource += ClassificationModes::getShaderDefineFunction(classificationMode_.get());
 
     // configure shading mode
-    headerSource += "#define APPLY_SHADING(n, pos, lPos, cPos, ka, kd, ks) ";
-    if (shadeMode_.isSelected("none"))
-        headerSource += "ka;\n";
-    else if (shadeMode_.isSelected("phong-diffuse"))
-        headerSource += "phongShadingD(n, pos, lPos, cPos, kd);\n";
-    else if (shadeMode_.isSelected("phong-specular"))
-        headerSource += "phongShadingS(n, pos, lPos, cPos, ks);\n";
-    else if (shadeMode_.isSelected("phong-diffuse-ambient"))
-        headerSource += "phongShadingDA(n, pos, lPos, cPos, kd, ka);\n";
-    else if (shadeMode_.isSelected("phong-diffuse-specular"))
-        headerSource += "phongShadingDS(n, pos, lPos, cPos, kd, ks);\n";
-    else if (shadeMode_.isSelected("phong"))
-        headerSource += "phongShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-    else if (shadeMode_.isSelected("toon"))
-        headerSource += "toonShading(n, pos, lPos, cPos, kd, 3);\n";
-    else if (shadeMode_.isSelected("cook-torrance"))
-        headerSource += "cookTorranceShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-    else if (shadeMode_.isSelected("oren-nayar"))
-        headerSource += "orenNayarShading(n, pos, lPos, cPos, ka, kd);\n";
-    else if (shadeMode_.isSelected("ward"))
-        headerSource += "wardShading(n, pos, lPos, cPos, ka, kd, ks);\n";
+    headerSource += getShaderDefine(shadeMode_.get(), "APPLY_SHADING");
 
     // configure compositing mode
     headerSource += "#define RC_APPLY_COMPOSITING(result, color, samplePos, gradient, t, samplingStepSize, tDepth) ";
@@ -136,48 +141,8 @@ std::string VolumeRaycaster::generateHeader(const tgt::GpuCapabilities::GlVersio
     return headerSource;
 }
 
-void VolumeRaycaster::initProperties() {
-    addProperty(samplingRate_);
-
-    // initialization of the rendering properties
-    // the properties are added in the respective subclasses
-    maskingMode_.addOption("none", "none");
-    maskingMode_.addOption("Segmentation", "Segmentation");
-
-    gradientMode_.addOption("none",                 "none"                  );
-    gradientMode_.addOption("forward-differences",  "Forward Differences"   );
-    gradientMode_.addOption("central-differences",  "Central Differences"   );
-    gradientMode_.addOption("filtered",             "Filtered"              );
-    gradientMode_.select("central-differences");
-
-    ClassificationModes::fillProperty(&classificationMode_);
-
-    shadeMode_.addOption("none",                   "none"                   );
-    shadeMode_.addOption("phong-diffuse",          "Phong (Diffuse)"        );
-    shadeMode_.addOption("phong-specular",         "Phong (Specular)"       );
-    shadeMode_.addOption("phong-diffuse-ambient",  "Phong (Diffuse+Amb.)"   );
-    shadeMode_.addOption("phong-diffuse-specular", "Phong (Diffuse+Spec.)"  );
-    shadeMode_.addOption("phong",                  "Phong (Full)"           );
-    shadeMode_.addOption("toon",                   "Toon"                   );
-    shadeMode_.addOption("cook-torrance",          "Cook-Torrance"          );
-    shadeMode_.addOption("oren-nayar",             "Oren-Nayar"             );
-    shadeMode_.addOption("ward",                   "Ward (Isotropic)"       );
-    shadeMode_.select("phong");
-
-    compositingMode_.addOption("dvr", "DVR");
-    compositingMode_.addOption("mip", "MIP");
-    compositingMode_.addOption("mida", "MIDA");
-    compositingMode_.addOption("iso", "ISO");
-    compositingMode_.addOption("fhp", "FHP");
-    compositingMode_.addOption("fhn", "FHN");
-
-    addProperty(useInterpolationCoarseness_);
-    addProperty(interactionCoarseness_);
-    addProperty(interactionQuality_);
-}
-
-void VolumeRaycaster::setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera* camera) {
-    VolumeRenderer::setGlobalShaderParameters(shader, camera);
+void VolumeRaycaster::setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera* camera, tgt::ivec2 screenDim) {
+    VolumeRenderer::setGlobalShaderParameters(shader, camera, screenDim);
 
     shader->setIgnoreUniformLocationError(true);
 
@@ -195,80 +160,14 @@ void VolumeRaycaster::setGlobalShaderParameters(tgt::Shader* shader, tgt::Camera
 }
 
 void VolumeRaycaster::interactionModeToggled() {
-    if (interactionMode()) {
-        switchToInteractionMode_ = true;
-    }
-    else {
-        switchToInteractionMode_ = false;
-
-        updateInputSizeRequests();
-
-        /* TODO: remove (used before sizelinking)
-
-        if (interactionCoarseness_.get() != 1) {
-            // propagate to predecessing RenderProcessors
-            const std::vector<Port*> inports = getInports();
-            for(size_t i=0; i<inports.size(); ++i) {
-                RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
-                if (rp)
-                    rp->resize(size_);
-            }
-
-            //distribute to outports:
-            const std::vector<Port*> outports = getOutports();
-            for(size_t i=0; i<outports.size(); ++i) {
-                RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
-                if (rp)
-                    rp->resize(size_);
-            }
-
-            //distribute to private ports:
-            const std::vector<RenderPort*> pports = getPrivateRenderPorts();
-            for (size_t i=0; i<pports.size(); ++i) {
-                RenderPort* rp = pports[i];
-                rp->resize(size_);
-            }
-        }
-        if(interactionQuality_.get() != 1.0f)
-            invalidate(); */
-    }
     VolumeRenderer::interactionModeToggled();
+
+    // make sure, we re-render with full resolution after switching out of interaction mode
+    if (!interactionMode())
+        invalidate();
 }
 
 void VolumeRaycaster::invalidate(int inv) {
-    if (switchToInteractionMode_) {
-        switchToInteractionMode_ = false;
-
-        updateInputSizeRequests();
-
-        /* TODO: remove (used before sizelinking)
-        
-        if (interactionCoarseness_.get() != 1) {
-            // propagate to predecessing RenderProcessors
-            const std::vector<Port*> inports = getInports();
-            for(size_t i=0; i<inports.size(); ++i) {
-                RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
-                if (rp)
-                    rp->resize(size_ / interactionCoarseness_.get());
-            }
-
-            //distribute to outports:
-            const std::vector<Port*> outports = getOutports();
-            for(size_t i=0; i<outports.size(); ++i) {
-                RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
-                if (rp)
-                    rp->resize(size_ / interactionCoarseness_.get());
-            }
-
-            //distribute to private ports:
-            const std::vector<RenderPort*> pports = getPrivateRenderPorts();
-            for (size_t i=0; i<pports.size(); ++i) {
-                RenderPort* rp = pports[i];
-                rp->resize(size_ / interactionCoarseness_.get());
-            }
-        } */
-    }
-
     VolumeRenderer::invalidate(inv);
 }
 
@@ -309,81 +208,33 @@ bool VolumeRaycaster::bindVolumes(tgt::Shader* shader, const std::vector<VolumeS
     return true;
 }
 
-void VolumeRaycaster::adjustRenderOutportSizes() {
-    // detect received size of first connected size receiving outport
-    tgt::ivec2 receivedSize = tgt::ivec2(-1);
-    const std::vector<Port*> outports = getOutports();
-    for (size_t i=0; i<outports.size(); ++i) {
-        RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
-        if (rp && rp->isConnected() && rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER) {
-            receivedSize = rp->getReceivedSize();
-            break;
-        }
-    }
+void VolumeRaycaster::rescaleRendering(RenderPort& srcPort, RenderPort& destPort) {
+    // activate and clear output render target
+    destPort.activateTarget();
+    destPort.clearTarget();
 
-    // if no size has been received, use size of first connected inport
-    if (receivedSize == tgt::ivec2(-1)) {
-        const std::vector<Port*> inports = getInports();
-        for (size_t i=0; i<inports.size(); ++i) {
-            RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
-            if (rp && rp->isConnected()) {
-                receivedSize = rp->getSize();
-                break;
-            }
-        }
-    }
+    // activate shader and set uniforms
+    tgtAssert(rescaleShader_, "bypass shader not loaded");
+    rescaleShader_->activate();
+    setGlobalShaderParameters(rescaleShader_, 0, destPort.getSize());
 
-    // if still no valid receivedSize, nothing can be done
-    if (receivedSize == tgt::ivec2(-1))
-        return;
+    // bind input rendering to texture units
+    tgt::TextureUnit colorUnit, depthUnit;
+    srcPort.bindTextures(colorUnit.getEnum(), depthUnit.getEnum(), GL_LINEAR);
+    srcPort.setTextureParameters(rescaleShader_, "texParams_");
+    rescaleShader_->setUniform("colorTex_", colorUnit.getUnitNumber());
+    rescaleShader_->setUniform("depthTex_", depthUnit.getUnitNumber());
 
-    // set output size to received size, downscaled by coarseness factor if in interaction mode
-    tgt::ivec2 outputSize = receivedSize;
-    if (interactionMode())
-        outputSize /= interactionCoarseness_.get();
+    // render screen aligned quad
+    renderQuad();
 
-    // assign output dimensions to connected render outports
-    bool portsResized = false;
-    for (size_t i=0; i<outports.size(); ++i) {
-        RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
-        if (rp && rp->isConnected() && rp->getSize() != outputSize) {
-            rp->resize(outputSize);
-            portsResized = true;
-        }
-    }
+    // cleanup
+    rescaleShader_->deactivate();
+    destPort.deactivateTarget();
+    TextureUnit::setZeroUnit();
 
-    // resize private render ports to outputSize
-    const std::vector<RenderPort*> privateRenderPorts = getPrivateRenderPorts();
-    for (size_t i=0; i<privateRenderPorts.size(); i++) 
-        privateRenderPorts.at(i)->resize(outputSize);
-}
-
-void VolumeRaycaster::updateInputSizeRequests() {
-    // detect received size of first connected size receiving outport
-    tgt::ivec2 receivedSize = tgt::ivec2(-1);
-    const std::vector<Port*> outports = getOutports();
-    for (size_t i=0; i<outports.size(); ++i) {
-        RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
-        if (rp && rp->isConnected() && rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER) {
-            receivedSize = rp->getReceivedSize();
-            break;
-        }
-    }
-
-    // request received output size from connected inports
-    if (receivedSize != tgt::ivec2(-1)) {
-        tgt::ivec2 requestSize = receivedSize;
-        if (interactionMode())
-            requestSize /= interactionCoarseness_.get();
-
-        const std::vector<Port*> inports = getInports();
-        for (size_t i=0; i<inports.size(); ++i) {
-            RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
-            if (rp && rp->isConnected() && rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_ORIGIN)
-                rp->requestSize(requestSize);
-        }
-    }
-
+    // check for OpenGL errors
+    LGL_ERROR;
 }
 
 } // namespace voreen

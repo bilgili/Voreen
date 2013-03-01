@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -121,13 +121,13 @@ VolumeWriter* VolumeSerializer::getWriterByName(const std::string& className) co
     return 0;
 }
 
-VolumeCollection* VolumeSerializer::read(const std::string& url) const
+VolumeList* VolumeSerializer::read(const std::string& url) const
     throw (tgt::FileException, std::bad_alloc)
 {
     std::vector<VolumeReader*> matchingReaders = getReaders(url);
     tgtAssert(!matchingReaders.empty(), "readers vector empty (exception expected)");
     if (matchingReaders.size() == 1) {
-        VolumeCollection* collection = matchingReaders.front()->read(url);
+        VolumeList* collection = matchingReaders.front()->read(url);
         if (collection)
             appendPreferredReaderToOriginURLs(collection, matchingReaders.front());
         return collection;
@@ -143,7 +143,7 @@ VolumeCollection* VolumeSerializer::read(const std::string& url) const
             prefReader = getReaderByName(prefReaderStr);
         if (prefReader) {
             try {
-                VolumeCollection* collection = prefReader->read(url);
+                VolumeList* collection = prefReader->read(url);
                 if (collection)
                     appendPreferredReaderToOriginURLs(collection,  prefReader);
                 return collection;
@@ -159,7 +159,7 @@ VolumeCollection* VolumeSerializer::read(const std::string& url) const
             if (matchingReaders.at(i) == prefReader)
                 continue;
             try {
-                VolumeCollection* collection = matchingReaders.at(i)->read(url);
+                VolumeList* collection = matchingReaders.at(i)->read(url);
                 if (collection)
                     appendPreferredReaderToOriginURLs(collection,  matchingReaders.at(i));
                 return collection;
@@ -174,13 +174,13 @@ VolumeCollection* VolumeSerializer::read(const std::string& url) const
     }
 }
 
-VolumeCollection* VolumeSerializer::readSlices(const std::string& url, size_t firstSlice, size_t lastSlice) const
+VolumeList* VolumeSerializer::readSlices(const std::string& url, size_t firstSlice, size_t lastSlice) const
     throw (tgt::FileException, std::bad_alloc)
 {
     std::vector<VolumeReader*> matchingReaders = getReaders(url);
     tgtAssert(!matchingReaders.empty(), "readers vector empty (exception expected)");
     if (matchingReaders.size() == 1) {
-        VolumeCollection* collection = matchingReaders.front()->readSlices(url, firstSlice, lastSlice);
+        VolumeList* collection = matchingReaders.front()->readSlices(url, firstSlice, lastSlice);
         if (collection)
             appendPreferredReaderToOriginURLs(collection, matchingReaders.front());
         return collection;
@@ -190,7 +190,7 @@ VolumeCollection* VolumeSerializer::readSlices(const std::string& url, size_t fi
         std::vector<std::string> errors;
         for (size_t i=0; i<matchingReaders.size(); i++) {
             try {
-                VolumeCollection* collection = matchingReaders.at(i)->readSlices(url, firstSlice, lastSlice);
+                VolumeList* collection = matchingReaders.at(i)->readSlices(url, firstSlice, lastSlice);
                 if (collection)
                     appendPreferredReaderToOriginURLs(collection, matchingReaders.at(i));
                 return collection;
@@ -204,13 +204,13 @@ VolumeCollection* VolumeSerializer::readSlices(const std::string& url, size_t fi
     }
 }
 
-VolumeCollection* VolumeSerializer::readBrick(const std::string& url, tgt::ivec3 brickStartPos,
+VolumeList* VolumeSerializer::readBrick(const std::string& url, tgt::ivec3 brickStartPos,
     int brickSize) const throw (tgt::FileException, std::bad_alloc)
 {
     std::vector<VolumeReader*> matchingReaders = getReaders(url);
     tgtAssert(!matchingReaders.empty(), "readers vector empty (exception expected)");
     if (matchingReaders.size() == 1) {
-        VolumeCollection* collection = matchingReaders.front()->readBrick(url, brickStartPos, brickSize);
+        VolumeList* collection = matchingReaders.front()->readBrick(url, brickStartPos, brickSize);
         if (collection)
             appendPreferredReaderToOriginURLs(collection, matchingReaders.front());
         return collection;
@@ -220,7 +220,7 @@ VolumeCollection* VolumeSerializer::readBrick(const std::string& url, tgt::ivec3
         std::vector<std::string> errors;
         for (size_t i=0; i<matchingReaders.size(); i++) {
             try {
-                VolumeCollection* collection = matchingReaders.at(i)->readBrick(url, brickStartPos, brickSize);
+                VolumeList* collection = matchingReaders.at(i)->readBrick(url, brickStartPos, brickSize);
                 if (collection)
                     appendPreferredReaderToOriginURLs(collection, matchingReaders.at(i));
                 return collection;
@@ -417,7 +417,7 @@ void VolumeSerializer::setProgressBar(ProgressBar* progressBar) {
         writers_.at(i)->setProgressBar(progressBar);
 }
 
-void VolumeSerializer::appendPreferredReaderToOriginURLs(const VolumeCollection* collection, const VolumeReader* volumeReader) const {
+void VolumeSerializer::appendPreferredReaderToOriginURLs(const VolumeList* collection, const VolumeReader* volumeReader) const {
     tgtAssert(collection, "null pointer passed");
     tgtAssert(volumeReader, "null pointer passed");
 

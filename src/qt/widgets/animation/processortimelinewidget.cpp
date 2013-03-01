@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -25,6 +25,7 @@
 
 #include "voreen/core/animation/animatedprocessor.h"
 #include "voreen/core/animation/propertytimeline.h"
+#include "voreen/core/animation/serializationfactories.h"
 #include "voreen/core/animation/templatepropertytimeline.h"
 
 #include "voreen/core/properties/transfuncproperty.h"
@@ -50,10 +51,11 @@ using tgt::Camera;
 
 namespace voreen {
 
-ProcessorTimelineWidget::ProcessorTimelineWidget(std::string name, AnimatedProcessor* animatedProcessor,
+ProcessorTimelineWidget::ProcessorTimelineWidget(std::string name, AnimatedProcessor* animatedProcessor, Animation* animation,
                                                  int position,  QWidget* parent)
         : QWidget(parent)
         , animatedProcessor_(animatedProcessor)
+        , animation_(animation)
         , hiddenTimelines_(true)
 {
     QHBoxLayout* mainLayout = new QHBoxLayout(this);
@@ -108,18 +110,9 @@ ProcessorTimelineWidget::ProcessorTimelineWidget(std::string name, AnimatedProce
     timelineLayout_->setMargin(0);
     timelineLayout_->setSpacing(0);
 
-    initPropertyTimelines();
-
     infoLabelLayout->setAlignment(Qt::AlignTop);
+    showAnimatedPropertyTimelines();
     populatePropertyMenu();
-}
-
-void ProcessorTimelineWidget::initPropertyTimelines() {
-   const std::vector<PropertyTimeline*> timelines = animatedProcessor_->getPropertyTimelines();
-        for (size_t i=0; i < timelines.size(); i++)
-        {
-            propertyTimelines_[timelines.at(i)] = false;   // not instantiated yet
-        }
 }
 
 QSize ProcessorTimelineWidget::sizeHint() {
@@ -186,15 +179,6 @@ void ProcessorTimelineWidget::createPropertyTimelineWidget(PropertyTimeline* tl)
         TemplatePropertyTimeline<TransFunc*>* tempPropTL = dynamic_cast<TemplatePropertyTimeline<TransFunc*>*>(tl);
         propertyTimelineWidget = new TemplatePropertyTimelineWidget<TransFunc*>(tl->getPropertyName().c_str(), tempPropTL, currentFrame_, this);
     }
-    // TODO
-    /*else if(dynamic_cast<TemplatePropertyTimeline<VolumeCollection*>*>(tl)) {
-        TemplatePropertyTimeline<VolumeCollection*>* tempPropTL = dynamic_cast<TemplatePropertyTimeline<VolumeCollection*>*>(tl);
-        propertyTimelineWidget = new TemplatePropertyTimelineWidget<VolumeCollection*>(tl->getPropertyName().c_str(), tempPropTL, currentFrame_, this);
-    }*/
-    /*else if(dynamic_cast<TemplatePropertyTimeline<Volume*>*>(tl)) {
-        TemplatePropertyTimeline<Volume*>* tempPropTL = dynamic_cast<TemplatePropertyTimeline<Volume*>*>(tl);
-        propertyTimelineWidget = new TemplatePropertyTimelineWidget<Volume*>(tl->getPropertyName().c_str(), tempPropTL, currentFrame_, this);
-    }*/
     else if(dynamic_cast<TemplatePropertyTimeline<Camera>*>(tl)) {
         TemplatePropertyTimeline<Camera>* tempPropTL = dynamic_cast<TemplatePropertyTimeline<Camera>*>(tl);
         propertyTimelineWidget = new TemplatePropertyTimelineWidget<Camera>(tl->getPropertyName().c_str(), tempPropTL, currentFrame_, this);
@@ -207,6 +191,7 @@ void ProcessorTimelineWidget::createPropertyTimelineWidget(PropertyTimeline* tl)
     if (!(tl->getPropertyName() == "Canvas Size" && dynamic_cast<TemplatePropertyTimeline<tgt::ivec2>*>(tl)))
         propertyTimelineWidget->activateTimeline(tl->getActiveOnRendering());
 
+    propertyTimelines_[tl] = propertyTimelineWidget;
     timelineLayout_->addWidget(propertyTimelineWidget);
     propertyTimelineWidget->show();
     if(!hidePropertyTimelines_->isVisible())
@@ -220,6 +205,8 @@ void ProcessorTimelineWidget::createPropertyTimelineWidget(PropertyTimeline* tl)
 
     connect(propertyTimelineWidget, SIGNAL(renderAt(float)), this, SIGNAL(renderAt(float)));
     connect(propertyTimelineWidget, SIGNAL(keyframeAdded()), this, SIGNAL(keyframeAdded()));
+    connect(propertyTimelineWidget, SIGNAL(keyframeChanged()), this, SIGNAL(keyframeChanged()));
+    connect(propertyTimelineWidget, SIGNAL(removeTimeline(Property*)), this, SLOT(removeTimeline(Property*)));
     connect(propertyTimelineWidget->getPropertyTimelineView(), SIGNAL(sceneRequest(QMatrix)), this, SIGNAL(sceneRequest(QMatrix)));
     connect(propertyTimelineWidget->getPropertyTimelineView(), SIGNAL(scrollBarRequest(int)), this, SIGNAL(scrollBarRequest(int)));    // Request scrollbar position up to the AnimationEditor, then drop an order down the chain of command
     connect(propertyTimelineWidget->getPropertyTimelineView(), SIGNAL(addKeyframe(QPointF)), this, SIGNAL(keyframeAdded()));
@@ -248,43 +235,41 @@ void ProcessorTimelineWidget::hideTimelines() {
 
 void ProcessorTimelineWidget::populatePropertyMenu() {
     availablePropertiesMenu_->clear();
-    std::map<PropertyTimeline*, bool>::iterator it = propertyTimelines_.begin();
-    while(it != propertyTimelines_.end()) {
-        if((*it).second == 0) {
-            availablePropertiesMenu_->addAction(QString::fromStdString((*it).first->getPropertyName()));
+    const Processor* proc = animatedProcessor_->getCorrespondingProcessor();
+
+    const std::vector<Property*>& props = proc->getProperties();
+    for(size_t i=0; i<props.size(); i++) {
+        Property* prop = props[i];
+
+        if(!animatedProcessor_->isPropertyAnimated(prop)) {
+            if(PropertyTimelineFactory::getInstance()->canPropertyBeAnimated(prop)) {
+                QAction* propAction = new QAction(QString::fromStdString(prop->getGuiName()), availablePropertiesMenu_);
+                propAction->setData(QVariant(QString::fromStdString(prop->getID())));
+                availablePropertiesMenu_->addAction(propAction);
+            }
         }
-        it++;
     }
 }
 
-void ProcessorTimelineWidget::showPropertyTimeline(QString name) {
-
-    std::map<PropertyTimeline*, bool>::iterator it = propertyTimelines_.begin();
-    while(it != propertyTimelines_.end()) {
-        if(name == QString::fromStdString((*it).first->getPropertyName())) {
-            createPropertyTimelineWidget((*it).first);
-            propertyTimelines_[(*it).first] = true;
-        }
-        it++;
-    }
-    populatePropertyMenu();
-}
 int ProcessorTimelineWidget::getTimelineCount() {
-    return timelineCount_;
+    return static_cast<int>(propertyTimelines_.size());
+}
+
+PropertyTimelineWidget* ProcessorTimelineWidget::getPropertyTimelineWidget(PropertyTimeline* ptl) {
+    std::map<PropertyTimeline*, PropertyTimelineWidget*>::iterator it = propertyTimelines_.find(ptl);
+    if(it != propertyTimelines_.end())
+        return (*it).second;
+    else
+        return 0;
 }
 
 void ProcessorTimelineWidget::showAnimatedPropertyTimelines() {
-    timelineCount_ = 0;
     const std::vector<PropertyTimeline*> timelines = animatedProcessor_->getPropertyTimelines();
     bool altered = false;
     for (uint i = 0; i < timelines.size(); i++) {
-        if(propertyTimelines_[timelines.at(i)] == false) {  // Widget not instantiated yet
-            if(timelines.at(i)->isChanged()) {
-                ++timelineCount_;
-                createPropertyTimelineWidget(timelines.at(i));
-                propertyTimelines_[timelines.at(i)] = true;
-                altered = true;
-            }
+        if(getPropertyTimelineWidget(timelines.at(i)) == 0) {  // Widget not instantiated yet
+            createPropertyTimelineWidget(timelines.at(i));
+            altered = true;
         }
     }
     if(altered)
@@ -293,10 +278,47 @@ void ProcessorTimelineWidget::showAnimatedPropertyTimelines() {
 
 void ProcessorTimelineWidget::showAvailableProperties() {
     QAction* action = availablePropertiesMenu_->exec(QCursor::pos());
+
     if(action) {
-        showPropertyTimeline(action->text());
-        hidePropertyTimelines_->show();
+        std::string data = action->data().toString().toStdString();
+
+        Processor* proc = animatedProcessor_->getCorrespondingProcessor();
+        if(proc) {
+            Property* prop = proc->getProperty(data);
+            if(prop) {
+                PropertyTimeline* tl = animatedProcessor_->addTimeline(prop);
+                if(tl) {
+                    tl->registerUndoObserver(animation_);
+                    showAnimatedPropertyTimelines();
+                }
+            }
+        }
     }
+}
+
+void ProcessorTimelineWidget::removeTimeline(Property* prop) {
+    const std::vector<PropertyTimeline*> timelines = animatedProcessor_->getPropertyTimelines();
+
+    for (size_t i = 0; i < timelines.size(); i++) {
+        PropertyTimeline* tl = timelines[i];
+        if(tl->getProperty() == prop) {
+            std::map<PropertyTimeline*, PropertyTimelineWidget*>::iterator it = propertyTimelines_.find(tl);
+            if(it != propertyTimelines_.end()) {
+                (*it).second->deleteLater();
+                propertyTimelines_.erase(it);
+            }
+            else
+                return;
+
+            if(propertyTimelines_.size() == 0) {
+                emit removeProcessorTimelineWidget(this);
+            }
+        }
+    }
+
+    animatedProcessor_->removeTimeline(prop);
+
+    populatePropertyMenu();
 }
 
 } // namespace voreen

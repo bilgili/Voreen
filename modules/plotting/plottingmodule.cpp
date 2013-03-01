@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -41,38 +41,65 @@
 #include "processors/plotfunctiondiscret.h"
 #include "processors/imageanalyzer.h"
 
-#include "properties/link/plotlinkevaluatorfactory.h"
+#include "properties/link/linkevaluatorplotselection.h"
+#include "properties/link/linkevaluatorcolormapid.h"
+#include "properties/link/linkevaluatorplotentitiesid.h"
 
-#include "utils/aggregationfunctionfactory.h"
+#include "datastructures/aggregationfunction.h"
+
 #include "utils/plotpredicatefactory.h"
+
+#include "voreen/core/voreenapplication.h"
 
 namespace voreen {
 
 PlottingModule::PlottingModule(const std::string& modulePath)
     : VoreenModule(modulePath)
 {
-    setName("Plotting");
+    setID("Plotting");
+    setGuiName("Plotting");
 
-    registerProcessor(new PlotDataSource());
-    registerProcessor(new PlotFunctionSource());
-    registerProcessor(new BarPlot());
-    registerProcessor(new HemispherePlot());
-    registerProcessor(new ImageAnalyzer());
-    registerProcessor(new LinePlot());
-    registerProcessor(new PlotDataExport());
-    registerProcessor(new PlotDataExportText());
-    registerProcessor(new PlotDataFitFunction());
-    registerProcessor(new PlotDataGroup());
-    registerProcessor(new PlotDataMerge());
-    registerProcessor(new PlotDataSelect());
-    registerProcessor(new PlotFunctionDiscret());
-    registerProcessor(new ScatterPlot());
-    registerProcessor(new SurfacePlot());
+    registerSerializableType(new PlotDataSource());
+    registerSerializableType(new PlotFunctionSource());
+    registerSerializableType(new BarPlot());
+    registerSerializableType(new HemispherePlot());
+    registerSerializableType(new ImageAnalyzer());
+    registerSerializableType(new LinePlot());
+    registerSerializableType(new PlotDataExport());
+    registerSerializableType(new PlotDataExportText());
+    registerSerializableType(new PlotDataFitFunction());
+    registerSerializableType(new PlotDataGroup());
+    registerSerializableType(new PlotDataMerge());
+    registerSerializableType(new PlotDataSelect());
+    registerSerializableType(new PlotFunctionDiscret());
+    registerSerializableType(new ScatterPlot());
+    registerSerializableType(new SurfacePlot());
 
-    registerLinkEvaluatorFactory(new PlotLinkEvaluatorFactory());
+    registerSerializableType(new LinkEvaluatorColorMapId());
+    registerSerializableType(new LinkEvaluatorPlotEntitiesId());
+    registerSerializableType(new LinkEvaluatorPlotSelection());
 
-    registerSerializerFactory(new AggregationFunctionFactory());
-    registerSerializerFactory(PlotPredicateFactory::getInstance());
+    registerSerializableType(new AggregationFunctionMin());
+    registerSerializableType(new AggregationFunctionMinHistogram());
+    registerSerializableType(new AggregationFunctionMax());
+    registerSerializableType(new AggregationFunctionMaxHistogram());
+    registerSerializableType(new AggregationFunctionSum());
+    registerSerializableType(new AggregationFunctionSumHistogram());
+    registerSerializableType(new AggregationFunctionCount());
+    registerSerializableType(new AggregationFunctionCountHistogram());
+    registerSerializableType(new AggregationFunctionMedian());
+    registerSerializableType(new AggregationFunctionMedianHistogram());
+    registerSerializableType(new AggregationFunctionAverage());
+    registerSerializableType(new AggregationFunctionGeometricAverage());
+    registerSerializableType(new AggregationFunctionHarmonicAverage());
+    registerSerializableType(new AggregationFunctionStandardDeviation());
+    registerSerializableType(new AggregationFunctionVariance());
+    registerSerializableType(new AggregationFunctionMode());
+
+    // TODO: convert PlotPredicateFactory into VoreenSerializableObjectFactory
+    if (VoreenApplication::app()) {
+        VoreenApplication::app()->registerSerializerFactory(PlotPredicateFactory::getInstance());
+    }
 }
 
 } // namespace

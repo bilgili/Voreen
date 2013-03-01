@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -28,7 +28,6 @@
 #endif
 
 #include "voreen/core/voreenapplication.h"
-#include "voreen/core/processors/processorfactory.h"
 #include "voreen/core/network/processornetwork.h"
 #include "voreen/core/network/networkevaluator.h"
 
@@ -107,13 +106,13 @@ int main(int argc, char** argv) {
     size_t skipped = 0;
     size_t numFailed = 0;
     std::vector<std::string> failed;
-    const std::vector<Processor*>& knownClasses = ProcessorFactory::getInstance()->getRegisteredProcessors();
+    const std::vector<const Processor*>& knownClasses = VoreenApplication::app()->getSerializableTypes<Processor>();
 
     StringLog* log = new StringLog(false, false, true, true);
     log->addCat("", true);
     LogMgr.addLog(log);
     for(size_t i=0; i<knownClasses.size(); ++i) {
-        Processor* processor = knownClasses[i];
+        const Processor* processor = knownClasses[i];
         std::string classname = processor->getClassName();
         std::string module = processor->getModuleName();
 
@@ -142,7 +141,11 @@ int main(int argc, char** argv) {
         }
 
         LINFOC("processorinittest", "Creating class " << classname << " [" << (i+1) << "/" << knownClasses.size() << "]");
-        Processor* p = ProcessorFactory::getInstance()->create(classname);
+        Processor* p = dynamic_cast<Processor*>(VoreenApplication::app()->createSerializableType(classname));
+        if (!p) {
+            std::cout << "Failed to create processor: " << classname << std::endl;
+            return EXIT_FAILURE;
+        }
         network->addProcessor(p);
         LINFOC("processorinittest", "Initializing class " << classname);
 

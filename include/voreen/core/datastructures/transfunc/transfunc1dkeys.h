@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,11 +30,81 @@
 
 #include "tgt/vector.h"
 
+#include <queue>
+
 namespace voreen {
 
 class TransFuncMappingKey;
 
 class PreIntegrationTable;
+
+/// Used as key value for the PreIntegrationTableMap class.
+struct PreIntegrationTableAttributes {
+    float samplingStepSize_;
+    size_t dimension_;
+    bool useIntegral_;
+
+    // operator< needed for inserting as keys into std::map
+    bool operator< (const PreIntegrationTableAttributes& a) const {
+        if (samplingStepSize_ < a.samplingStepSize_)
+            return true;
+        else if (samplingStepSize_ == a.samplingStepSize_) {
+            if (dimension_ < a.dimension_)
+                return true;
+            else if (dimension_ == a.dimension_) {
+                if (useIntegral_ && !a.useIntegral_)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+};
+
+class TransFunc1DKeys;
+
+/**
+ * A map that holds several pre-integration tables for the same transfer function.
+ */
+class VRN_CORE_API PreIntegrationTableMap {
+
+public:
+
+    PreIntegrationTableMap(const TransFunc1DKeys* tf, size_t maxSize = 1);
+
+    ~PreIntegrationTableMap();
+
+    void setTransFunc(const TransFunc1DKeys* tf);
+
+    /**
+     * Returns the pre-integration table with the specified attributes.
+     * If necessary, the table is (re-)computed.
+     * If the table map already contains the maximum number of tables, the one inserted first is deleted from the table (FIFO).
+     *
+     * @param dimension width of the pre-integration table, 0 chooses the width according to the bit depth of the volume (up to 1024)
+     * @param samplingStepSize the segment length used for rendering
+     * @param useIntegral @see PreIntegrationTable
+     */
+    const PreIntegrationTable* getPreIntegrationTable(float samplingStepSize = 1.f, size_t dimension = 0, bool useIntegral = true);
+
+    /**
+     * Delete alle pre-integration tables in the map (e.g. if tf has changed).
+     */
+    void clear();
+
+private:
+
+    PreIntegrationTableMap();
+
+    const TransFunc1DKeys* tf_; ///< transfer function to compute the pre-integration tables
+
+    std::map<PreIntegrationTableAttributes, PreIntegrationTable*> tableMap_; ///< map containing the pre-integration tables
+    std::queue<PreIntegrationTableAttributes> queue_; ///< stores attributes of the tables in insertion order
+
+    size_t maxSize_; ///< maximum number of elements allowed in the map
+
+};
+
 
 /**
  * One dimensional, piece-wise linear transfer function based on key values.
@@ -61,6 +131,9 @@ public:
      * Destructor - deletes the keys of the transfer function
      */
     virtual ~TransFunc1DKeys();
+
+    virtual std::string getClassName() const { return "TransFunc1DKeys";     }
+    virtual TransFunc* create() const        { return new TransFunc1DKeys(); }
 
     /**
      * Operator to compare two TransFuncIntensity objects. True is returned when the width of the
@@ -277,8 +350,8 @@ public:
     virtual void reset();
 
     /**
-     * Returns the pre-integration table of the transfer function.
-     * If necessary, the table is re-computed.
+     * Returns the pre-integration table of the transfer function with the specified attributes.
+     * If necessary, the table is (re-)computed.
      *
      * @param dimension width of the pre-integration table, 0 chooses the width according to the bit depth of the volume (up to 1024)
      * @param samplingStepSize the segment length used for rendering
@@ -370,9 +443,9 @@ protected:
     void generateKeys(unsigned char* data);
 
     /**
-     * This method is called whenever the transfer function changes so that the pre-integration table has to be re-computed
+     * Deletes the transfer function texture and the cached preintegration tables.
      */
-    void clearPreIntegrationTable();
+    virtual void deleteTexture();
 
     std::vector<TransFuncMappingKey*> keys_; ///< internal representation of the transfer function as a set of keys
 
@@ -381,7 +454,7 @@ protected:
 
     tgt::vec2 domain_;
 
-    PreIntegrationTable* preIntegrationTable_; ///< for using the transfer function with pre-integration
+    PreIntegrationTableMap preIntegrationTableMap_; ///< contains several pre-integration tables for the tf
 
     static const std::string loggerCat_; ///< logger category
 };

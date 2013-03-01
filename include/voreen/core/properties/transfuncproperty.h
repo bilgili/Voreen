@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -46,7 +46,7 @@ template class VRN_CORE_API TemplateProperty<TransFunc*>;
  * to modify the transfer function. You can change the shown editors via the constructor or
  * by calling enableEditor() or disableEditor().
  */
-class VRN_CORE_API TransFuncProperty : public TemplateProperty<TransFunc*> {
+class VRN_CORE_API TransFuncProperty : public TemplateProperty<TransFunc*>, public VolumeObserver {
 public:
 
     ///< enum for all editors that can be used in the widget for this property
@@ -127,9 +127,9 @@ public:
     void setVolumeHandle(const VolumeBase* handle);
 
     /**
-     * Returns the volume handle that is assigned to this property.
+     * Returns the volume that is assigned to this property.
      *
-     * @return volume handle that is associated with this property
+     * @return volume that is associated with this property
      */
     const VolumeBase* getVolumeHandle() const;
 
@@ -138,6 +138,16 @@ public:
      * property is invalidated and the property's widgets are notified.
      */
     void notifyChange();
+
+    /**
+     * Implementation of VolumeObserver interface.
+     */
+    virtual void volumeDelete(const VolumeBase* source);
+
+    /**
+     * Implementation of VolumeObserver interface.
+     */
+    virtual void volumeChange(const VolumeBase* source);
 
     /**
      * @see Property::serialize
@@ -156,7 +166,7 @@ public:
     bool getLazyEditorInstantiation() const { return lazyEditorInstantiation_; }
 
     /**
-     * Returns whether the tf domain is always adapted when a new volume handle is passed.
+     * Returns whether the tf domain is always adapted when a new volume is passed.
      */
     void setAlwaysFitToDomain(bool b) {
         alwaysFitDomain_ = b;
@@ -170,7 +180,7 @@ public:
     }
 
     /**
-     * Sets the tf domain bounds from the current volume handle.
+     * Sets the tf domain bounds from the current volume.
      */
     void fitDomainToData();
 
@@ -190,7 +200,7 @@ protected:
      */
     void deinitialize() throw (tgt::Exception);
 
-    const VolumeBase* volumeHandle_; ///< volumehandle that is associated with the transfer function property
+    const VolumeBase* volume_; ///< volumehandle that is associated with the transfer function property
 
     int editors_; ///< number that indicates what editors will appear in the tf widget
 

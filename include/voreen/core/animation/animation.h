@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -38,7 +38,7 @@ namespace voreen {
 class AnimationObserver;
 class ProcessorNetwork;
 class AnimatedProcessor;
-class UndoableAnimation;
+class PropertyTimeline;
 class SerializableFactory;
 
 #ifdef DLL_TEMPLATE_INST
@@ -78,7 +78,7 @@ public:
      * 3.save the pointer to the last changed propertytimeline
      * 4.if there are already too many undosteps -> delete oldest states
      */
-    void animationChanged(UndoableAnimation* changedObject);
+    void animationChanged(PropertyTimeline* changedObject);
 
     /**
      * This function undos the last change by calling the undo-function of the last changed propertytimeline.
@@ -169,8 +169,8 @@ protected:
     static const std::string loggerCat_; ///< category used in logging
 
 private:
-    friend class XmlDeserializer;
     friend class CoreModule;
+    friend class XmlDeserializer;
 
     /**
      * Default constructor.
@@ -198,8 +198,8 @@ private:
     /**
      * Deque of pointers to the propertytimelines which were changed.
      */
-    std::deque<UndoableAnimation*> lastChanges_;
-    std::deque<UndoableAnimation*> lastUndos_;
+    std::deque<PropertyTimeline*> lastChanges_;
+    std::deque<PropertyTimeline*> lastUndos_;
 
     /**
      * Contains the fps-number for video-output.

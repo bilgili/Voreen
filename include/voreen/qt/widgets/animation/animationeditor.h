@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,11 +36,14 @@
 
 class QLineEdit;
 class QMenuBar;
+class QMenu;
 class QPushButton;
 class QTimer;
 class QLCDNumber;
 
 namespace voreen {
+
+class TimelineWidget;
 
 /**
 * Global Container for all Animation specific Widgets.
@@ -79,10 +82,14 @@ protected slots:
     void update();
     void setDuration(int);
     void timeStretchChanged(double);
+    void populateAddTimelineMenu();
+    void addTimeline(QAction* action);
 
 protected:
     NetworkEvaluator* evaluator_;
     QMenuBar* mainMenu_;
+    QMenu* addTimelineMenu_;
+    TimelineWidget* timelineWidget_;
     float currentFrame_;
     /// frameSkip determining the fastforward and backward speed
     int frameSkip_;
@@ -106,7 +113,6 @@ signals:
     void durationChanged(int);
     void newAnimation(Animation*);
     void autoPreview(bool);
-
 };
 
 } // namespace voreen

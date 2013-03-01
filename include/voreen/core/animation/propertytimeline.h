@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -27,7 +27,6 @@
 #define VRN_PROPERTYTIMELINE_H
 
 #include <string>
-#include "voreen/core/animation/undoableanimation.h"
 #include "voreen/core/io/serialization/serialization.h"
 
 namespace voreen {
@@ -38,8 +37,7 @@ class Property;
 /**
  * Interface for the templated PropertyTimelines.
  */
-class VRN_CORE_API PropertyTimeline : public UndoableAnimation {
-
+class VRN_CORE_API PropertyTimeline : public AbstractSerializable {
 public:
 
     /**
@@ -52,8 +50,12 @@ public:
      */
     virtual std::string getPropertyName() const = 0;
 
+    virtual bool isCompatibleWith(const Property* p) const = 0;
+
     /// returns true if there ist no keyvalue
     virtual bool isEmpty() = 0;
+
+    virtual void resetTimeline() = 0;
 
     /**
      * The current setting of the corresponding property in the rendernetwork is
@@ -77,26 +79,25 @@ public:
     virtual void setInteractionMode(bool interactionmode, void* source) = 0;
 
     /**
-     * Called explicitly to force the creation of a new undostep.
-     */
-    virtual void setNewUndoState() = 0;
-
-    /**
      * Called from animation-class.
      * All keyvalues after the duration-time will be deleted.
      */
     virtual void setDuration(float duration) = 0;
 
-    // from undoAbleAnimation:
     /**
-     * This method provides an undo-functionality (timeline-level).
+     * This method provides an undo-functionality.
      */
     virtual void undo() = 0;
 
     /**
-     * This method provides a redo-functionality (timeline-level) and is basically inverse to undo.
+     * This method provides a redo-functionality and is basically inverse to undo.
      */
     virtual void redo() = 0;
+
+    /**
+     * Called explicitly to force the creation of a new undostep.
+     */
+    virtual void setNewUndoState() = 0;
 
     /*
      * This method deletes all redo-states.
@@ -114,6 +115,8 @@ public:
      */
     virtual void removeOldestUndoState() = 0;
 
+    virtual void registerUndoObserver(Animation* observer) = 0;
+
     /**
      * Returns true if the timeline was changed.
      */
@@ -121,9 +124,13 @@ public:
 
     virtual Property* getProperty() const = 0;
 
+    virtual void setProperty(Property* p) = 0;
+
+    virtual AbstractSerializable* create() const = 0;
+
+    virtual std::string getClassName() const = 0;
 protected:
     float duration_;
-
 };
 
 } // namespace voreen

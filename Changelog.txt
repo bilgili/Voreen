@@ -1,6 +1,61 @@
 Voreen Changelog
 ----------------
 
+2013-03-01: Voreen 4.2
+----------------------
+
+   * Features:
+     o OptimizedProxyGeometry excluding subregions of the volume that are classified
+       as transparent by the current transfer function
+     o Significant performance optimizations in raycasting shaders
+     o 3D random walker implementation for interactive segmentation (module 'randomwalker')
+     o Stereo rendering (module 'stereoscopy')
+     o GL-optimized TriangleMeshGeometry
+     o Image-based camera-inside-volume technique
+     o Stacking/decomposing of multi-channel images/volumes
+     o Background threads (see OptimizedProxyGeometry as example)
+     o NetworkEditor depicts processor states (initialized/ready) by icons 
+     o 3D Sobel filter as gradient calculation technique
+     o OME-TIFF volume reader (XYZ stacks)
+     o VolumeOperatorEqualize for histogram equalization
+
+   * Framework/API Changes:
+     o Visual Studio 2012 support
+     o Added missing dynamic library export markers
+     o Introduced VoreenSerializableObject as base class for serializable Voreen types:
+       - VoreenModule derives from VoreenSerializableObjectFactory
+       - module resources are directly registered at the module
+       - no separate SerializableFactories required anymore
+     o Camera-to-scene adaptation is now performed by CameraProperty:
+       - Adaptation has to be triggered by owning processor or by the user via the camera editor
+       - By default, only raycasters trigger camera adaptation
+     o Raycasters handle interaction coarseness internally, thereby no longer forcing 
+       their predecessing entry-exit point processor to downsize its output textures
+     o Added complete volume format description to VolumeBase interface
+     o Added RepresentationConverterLoadFromDiskToGL for uploading volume data from disk 
+       directly to the GPU without the need to create an intermediate RAM representation.
+     o Modules can contain tool applications
+     o Renamed VolumeCollection to VolumeList
+     o Moved NetworkEditor from VoreenVE application to voreenqt library
+     o VoreenApplication supports multiple network evaluators 
+     o Introduced NumericProperty::BoundaryUpdatePolicy specifying whether min/max values 
+       should be static or serialized
+     o Overhaul of animation editor: property timelines have to be explicitly added  
+     o Added VolumeInfoProperty for displaying volume preview in processor property list
+     o Added boost::asio library
+     
+   * Bug Fixes/Minor Changes:
+     o Corrected offset calculation in GdcmVolumeReader
+     o Fixed multi volume rendering for some transformation matrices
+     o Fixed occasional flickering caused by Compositor
+     o Fixed application setting serialization for user data paths with uppercase letters.
+     o TransFuncProperty observes assigned volume to prevent occasional crash on volume deletion
+     o CameraProperty serializes its trackball settings  
+     o Added VolumeOperatorResizePowerOfTwo for resizing to next power-of-two dimensions
+     o Removed VRN_DEBUG CMake option: debugging code is implicitly enabled in debug builds.
+     o Save processors immediately save to file on path change
+
+
 2012-12-20: Voreen 4.1.1
 ------------------------
 

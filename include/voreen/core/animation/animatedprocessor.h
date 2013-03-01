@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -46,10 +46,6 @@ public:
      * Constructor, gets a pointer to the processor which should be animated.
      */
     AnimatedProcessor(Processor* processor);
-
-    /**
-     * Destructor.
-     */
     ~AnimatedProcessor();
 
     /**
@@ -66,6 +62,7 @@ public:
      * Returns a pointer to the corresponding processor
      */
     const Processor* getCorrespondingProcessor() const;
+    Processor* getCorrespondingProcessor();
 
     /**
      * Returns the name of the animated processor.
@@ -82,20 +79,21 @@ public:
      */
     virtual void deserialize(XmlDeserializer& s);
 
+    bool isPropertyAnimated(const Property* p);
+
+    /**
+     * Adds a new timeline for the given property.
+     */
+    PropertyTimeline* addTimeline(Property* prop);
+
+    void removeTimeline(Property* prop);
+
 protected:
     static const std::string loggerCat_; ///< category used in logging
 
 private:
     friend class XmlDeserializer;
 
-    /**
-     * Adds a new timeline for the given property.
-     */
-    void addTemplatePropertyTimeline(Property* prop);
-
-    /**
-     * Default constructor.
-     */
     AnimatedProcessor();
 
     Processor* processor_;

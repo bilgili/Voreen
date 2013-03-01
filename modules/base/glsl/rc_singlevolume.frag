@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -65,7 +65,7 @@ uniform sampler3D volume_;    // volume data with parameters
  * Performs the ray traversal
  * returns the final fragment color.
  ***/
-void rayTraversal(in vec3 first, in vec3 last) {
+void rayTraversal(in vec3 first, in vec3 last, float entryDepth, float exitDepth) {
     // calculate the required ray parameters
     float t     = 0.0;
     float tIncr = 0.0;
@@ -86,20 +86,20 @@ void rayTraversal(in vec3 first, in vec3 last) {
         vec3 samplePos = first + t * rayDirection;
         vec4 voxel = getVoxel(volume_, volumeStruct_, samplePos);
 
-        // calculate gradients
-        if(t == 0.0)
-            voxel.xyz = fixClipBorderGradient(samplePos, rayDirection, entryPoints_, entryParameters_);
-        else
-            voxel.xyz = CALC_GRADIENT(volume_, volumeStruct_, samplePos);
-
         // apply classification
         vec4 color = RC_APPLY_CLASSIFICATION(transferFunc_, transferFuncTex_, voxel);
 
-        // apply shading
-        color.rgb = APPLY_SHADING(voxel.xyz, texToPhysical(samplePos, volumeStruct_), volumeStruct_.lightPositionPhysical_, volumeStruct_.cameraPositionPhysical_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));
-
         // if opacity greater zero, apply compositing
         if (color.a > 0.0) {
+            // calculate gradients
+            if(t == 0.0)
+                voxel.xyz = fixClipBorderGradient(samplePos, rayDirection, entryPoints_, entryParameters_);
+            else
+                voxel.xyz = CALC_GRADIENT(volume_, volumeStruct_, samplePos);
+
+            // apply shading
+            color.rgb = APPLY_SHADING(voxel.xyz, texToPhysical(samplePos, volumeStruct_), volumeStruct_.lightPositionPhysical_, volumeStruct_.cameraPositionPhysical_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));
+
             result  = RC_APPLY_COMPOSITING(result, color, samplePos, voxel.xyz, t, samplingStepSize_, tDepth);
             result1 = RC_APPLY_COMPOSITING_1(result1, color, samplePos, voxel.xyz, t, samplingStepSize_, tDepth);
             result2 = RC_APPLY_COMPOSITING_2(result2, color, samplePos, voxel.xyz, t, samplingStepSize_, tDepth);
@@ -112,20 +112,25 @@ void rayTraversal(in vec3 first, in vec3 last) {
         finished = finished || (t > tEnd);
     } END_WHILE
 
-    gl_FragDepth = getDepthValue(tDepth, tEnd, entryPointsDepth_, entryParameters_, exitPointsDepth_, exitParameters_);
+    gl_FragDepth = getDepthValue(tDepth, tEnd, entryDepth, exitDepth);
 }
 
 void main() {
-    vec3 frontPos = textureLookup2D(entryPoints_, entryParameters_, gl_FragCoord.xy).rgb;
-    vec3 backPos = textureLookup2D(exitPoints_, exitParameters_, gl_FragCoord.xy).rgb;
+    // fetch entry/exit points
+    vec2 p = gl_FragCoord.xy * screenDimRCP_;
+    vec3 frontPos = textureLookup2Dnormalized(entryPoints_, entryParameters_, p).rgb;
+    vec3 backPos = textureLookup2Dnormalized(exitPoints_, exitParameters_, p).rgb;
+    float entryDepth = textureLookup2Dnormalized(entryPointsDepth_, entryParameters_, p).z;
+    float exitDepth = textureLookup2Dnormalized(exitPointsDepth_, exitParameters_, p).z;
 
     // determine whether the ray has to be casted
     if (frontPos == backPos)
         // background needs no raycasting
         discard;
-    else
+    else {
         // fragCoords are lying inside the bounding box
-        rayTraversal(frontPos, backPos);
+        rayTraversal(frontPos, backPos, entryDepth, exitDepth);
+    }
 
     #ifdef OP0
         FragData0 = result;

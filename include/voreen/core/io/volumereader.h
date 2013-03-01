@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,7 +30,7 @@
 #include <vector>
 
 #include "voreen/core/voreencoreapi.h"
-#include "voreen/core/datastructures/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumelist.h"
 #include "voreen/core/io/progressbar.h"
 
 #include "tgt/exception.h"
@@ -76,12 +76,12 @@ public:
      *      or a complete URL with resource type and inner path, e.g.
      *      zip://path/to/archive.zip/volume.dat
      *
-     * @return VolumeCollection containing all volumes read from the url.
+     * @return VolumeList containing all volumes read from the url.
      *      the caller is responsible for freeing the memory.
      *
      * @throw tgt::FileException if the data set could not be loaded
      */
-    virtual VolumeCollection* read(const std::string& url)
+    virtual VolumeList* read(const std::string& url)
         throw (tgt::FileException, std::bad_alloc) = 0;
 
     /**
@@ -93,7 +93,7 @@ public:
      *
      * @throw tgt::FileException if the data set could not be loaded
      */
-    virtual VolumeCollection* readSlices(const std::string& url, size_t firstSlice = 0, size_t lastSlice = 0)
+    virtual VolumeList* readSlices(const std::string& url, size_t firstSlice = 0, size_t lastSlice = 0)
         throw(tgt::FileException, std::bad_alloc);
 
     /**
@@ -105,7 +105,7 @@ public:
      *
      * @throw tgt::FileException if the data set could not be loaded
      */
-    virtual VolumeCollection* readBrick(const std::string& url, tgt::ivec3 start, int dimensions)
+    virtual VolumeList* readBrick(const std::string& url, tgt::ivec3 start, int dimensions)
         throw(tgt::FileException, std::bad_alloc);
 
     /**

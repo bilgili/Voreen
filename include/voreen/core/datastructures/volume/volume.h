@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -47,16 +47,16 @@ class VolumeBase;
 class Volume;
 
 /**
- * Interface for volume handle observers.
+ * Interface for volume observers.
  */
-class VRN_CORE_API VolumeHandleObserver : public Observer {
+class VRN_CORE_API VolumeObserver : public Observer {
 public:
     /**
      * This method is called by the observed Volume's destructor.
      *
      * @param source the calling Volume
      */
-    virtual void volumeHandleDelete(const VolumeBase* source) = 0;
+    virtual void volumeDelete(const VolumeBase* source) = 0;
 
     /**
      * This method is called by the observed Volume
@@ -200,10 +200,10 @@ private:
 //-------------------------------------------------------------------------------------------------
 
 #ifdef DLL_TEMPLATE_INST
-template class VRN_CORE_API Observable<VolumeHandleObserver>;
+template class VRN_CORE_API Observable<VolumeObserver>;
 #endif
 
-class VRN_CORE_API VolumeBase : public Observable<VolumeHandleObserver> {
+class VRN_CORE_API VolumeBase : public Observable<VolumeObserver> {
 public:
     virtual ~VolumeBase();
 
@@ -291,42 +291,12 @@ public:
     /// Concatenation of raw data and meta data hash (getRawDataHash() + "-" + getMetaDataHash())
     virtual std::string getHash() const;
 
+     /*
+      * Returns a representation (@see VolumeRepresentation) of type T, performing an automatic conversion between representation if necessory.
+      * Cannot be used to convert between formats (e.g., from 16- to 8-bit), call using the base class (i.e., VolumeRAM).
+      */
     template <class T>
-    const T* getRepresentation() const {
-        if(getNumRepresentations() == 0) {
-            LWARNING("Found no representations for this volumehandle!" << this);
-            return 0;
-        }
-
-        //Check if rep. is available:
-        for(size_t i=0; i<getNumRepresentations(); i++) {
-            if(dynamic_cast<const T*>(getRepresentation(i))) {
-                return static_cast<const T*>(getRepresentation(i));
-            }
-        }
-
-        //LWARNING("Representation not available, looking for converter...");
-
-        //Check if conversion is possible:
-        ConverterFactory fac;
-        for(size_t i=0; i<getNumRepresentations(); i++) {
-            RepresentationConverter<T>* converter = fac.findConverter<T>(getRepresentation(i));
-            if(converter) {
-                const T* rep = static_cast<const T*>(useConverter(converter)); //we can static cast here because we know the converter returns T*
-
-                if(rep)
-                    return rep;
-            }
-        }
-        LWARNING("Found no converter. Using fallback. (Converting to RAM volume)");
-        //TODO
-        //if(!hasRepresentation<VolumeRAM>()) {
-            //getRepresentationInternal<VolumeRAM>();
-            //return getRepresentationInternal<T>();
-        //}
-        //else
-            return 0;
-    }
+    const T* getRepresentation() const;
 
     virtual size_t getNumRepresentations() const = 0;
     virtual const VolumeRepresentation* getRepresentation(size_t i) const = 0;
@@ -341,6 +311,12 @@ public:
         return false;
     }
 
+    /// Returns the format of the volume as string (e.g., "uint8" or "Vector3(float)", @see VolumeFactory).
+    std::string getFormat() const;
+
+    /// Returns the base type (e.g., "float" for a representation of format "Vector3(float)").
+    std::string getBaseType() const;
+
     size_t getNumChannels() const;
     tgt::svec3 getDimensions() const;
     size_t getNumVoxels() const;
@@ -349,7 +325,7 @@ public:
     virtual Volume* clone() const throw (std::bad_alloc);
 
     // Metadata shortcuts:
-    /// Returns the associated timestep of this volume handle.
+    /// Returns the associated timestep of this volume.
     virtual float getTimestep() const;
     tgt::vec3 getSpacing() const;
     tgt::vec3 getOffset() const;
@@ -440,13 +416,13 @@ public:
     void setOrigin(const VolumeURL& origin);
 
     /**
-     * Notifies the registered VolumeHandleObservers about the pending
+     * Notifies the registered VolumeObservers about the pending
      * deletion of the Volume.
      */
     void notifyDelete();
 
     /**
-     * Notifies the registered VolumeHandleObservers that a reload
+     * Notifies the registered VolumeObservers that a reload
      * of the volume was done.
      */
     void notifyReload();
@@ -462,6 +438,48 @@ protected:
 
     static const std::string loggerCat_;
 };
+
+template <class T>
+const T* VolumeBase::getRepresentation() const {
+    if(getNumRepresentations() == 0) {
+        LWARNING("Found no representations for this volumehandle!" << this);
+        return 0;
+    }
+
+    //Check if rep. is available:
+    for(size_t i=0; i<getNumRepresentations(); i++) {
+        if(dynamic_cast<const T*>(getRepresentation(i))) {
+            return static_cast<const T*>(getRepresentation(i));
+        }
+    }
+
+    //Check if conversion is possible:
+    ConverterFactory fac;
+    for(size_t i=0; i<getNumRepresentations(); i++) {
+        RepresentationConverter<T>* converter = fac.findConverter<T>(getRepresentation(i));
+        if(converter) {
+            const T* rep = static_cast<const T*>(useConverter(converter)); //we can static cast here because we know the converter returns T*
+
+            if(rep)
+                return rep;
+        }
+    }
+
+    // Found no converter. Using fallback (Converting to RAM volume)
+    if(!hasRepresentation<VolumeRAM>()) {
+        if (getRepresentation<VolumeRAM>())
+            return getRepresentation<T>();
+        else
+            return 0;
+    }
+    else {
+        LERROR("Found no way to return a representation of the requested type!");
+        return 0;
+    }
+}
+
+template <>
+VRN_CORE_API const VolumeRAM* VolumeBase::getRepresentation() const;
 
 /**
  * Class for handling different types and needs for volumes.
@@ -509,7 +527,7 @@ public:
 
     /**
      * Returns a container storing the meta data items
-     * attached to this volume handle.
+     * attached to this volume.
      */
     virtual const MetaDataContainer& getMetaDataContainer() const;
 

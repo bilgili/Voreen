@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -39,6 +39,7 @@ namespace voreen {
 template<class T>
 class PointListGeometry : public Geometry {
 public:
+    PointListGeometry() : Geometry() {}
     void addPoint(T point) {points_.push_back(point);}
     void removeLast() {points_.pop_back();}
     void clear() {points_.clear();}
@@ -56,6 +57,10 @@ public:
     const T& operator[](size_t index) const { return points_[index]; };
 
     virtual void render() const {
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        tgt::multMatrix(getTransformationMatrix());
+
         glBegin(GL_POINTS);
         for (size_t i=0; i < points_.size(); ++i){
             // assuming data type stored in the point list is compatible to tgt::vertex
@@ -63,16 +68,8 @@ public:
             tgt::vertex(points_[i]);
         }
         glEnd();
-    }
 
-    /**
-     * Transforms the point list by applying the given transformation matrix to each its points.
-     *
-     * @see Geometry::transform
-     */
-    virtual void transform(const tgt::mat4& transformation) {
-        for (size_t i=0; i<points_.size(); i++)
-            points_[i] = transformation*points_[i];
+        glPopMatrix();
     }
 
     /**
@@ -88,6 +85,9 @@ public:
         if (getNumPoints() != pointListGeom->getNumPoints())
             return false;
 
+        if(getTransformationMatrix() != geometry->getTransformationMatrix())
+            return false;
+
         float epsilonSq = static_cast<float>(epsilon*epsilon);
         for (size_t i=0; i<getNumPoints(); i++) {
             // assuming data type stored in the point list is a tgt vector type
@@ -99,31 +99,38 @@ public:
         return true;
     }
 
-    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-6) {
+    virtual void clip(const tgt::plane& clipPlane, double epsilon = 1e-6) {
+        tgt::plane pl = clipPlane.transform(getInvertedTransformationMatrix());
+
         tgtAssert(epsilon, "negative epsilon");
         std::vector<T> clipped;
-        tgt::vec3 normal = clipPlane.xyz();
         for (size_t i=0; i<points_.size(); i++) {
-            double distance = tgt::dot(normal, points_[i]) - clipPlane.w;
+            double distance = pl.distance(points_[i]);
             if (distance <= epsilon)
                 clipped.push_back(points_[i]);
         }
         points_ = clipped;
     }
 
-    virtual tgt::Bounds getBoundingBox() const {
+    virtual tgt::Bounds getBoundingBox(bool transformed = true) const {
         tgt::Bounds bounds;
         for (size_t i=0; i<points_.size(); i++)
             bounds.addPoint(points_[i]);
-        return bounds;
+
+        if(transformed)
+            return bounds.transform(getTransformationMatrix());
+        else
+            return bounds;
     }
 
     virtual void serialize(XmlSerializer& s) const {
         s.serialize("points", points_);
+        Geometry::serialize(s);
     }
 
     virtual void deserialize(XmlDeserializer& s) {
         s.deserialize("points", points_);
+        Geometry::deserialize(s);
     }
 
 protected:
@@ -134,6 +141,8 @@ protected:
 // -------------------------------------------------------------------------
 
 class PointListGeometryVec3 : public PointListGeometry<tgt::vec3> {
+public:
+    PointListGeometryVec3() : PointListGeometry<tgt::vec3>() {}
     virtual Geometry* create() const { return new PointListGeometryVec3(); }
     virtual std::string getClassName() const { return "PointListGeometryVec3"; }
     virtual Geometry* clone() const {
@@ -230,3 +239,4 @@ T catmullRom(const std::vector<T>& v, float t, float length) {
 } // namespace
 
 #endif // VRN_POINTLISTGEOMETRY_H
+

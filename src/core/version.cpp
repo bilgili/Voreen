@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -41,6 +41,8 @@ const std::string VoreenVersion::getCompilerVersion() {
         ver << "Microsoft Visual C++ 2008";
     #elif _MSC_VER == 1600
         ver << "Microsoft Visual C++ 2010";
+    #elif _MSC_VER == 1700
+        ver << "Microsoft Visual C++ 2012";
     #else
         ver << "Unknown Microsoft Visual C++ (_MSC_VER=" << _MSC_VER << ")";
     #endif
@@ -65,7 +67,7 @@ const std::string VoreenVersion::getCompilerVersion() {
 }
 
 const std::string VoreenVersion::getVersion() {
-    return "4.1.1";
+    return "4.2";
 }
 
 const std::string VoreenVersion::getRevision() {
@@ -73,7 +75,7 @@ const std::string VoreenVersion::getRevision() {
 }
 
 const std::string VoreenVersion::getCopyright() {
-    return "Copyright (C) 2005-2012 University of Münster, Germany. \nVisualization and Computer Graphics Group (VisCG).";
+    return "Copyright (C) 2005-2013 University of Münster, Germany. \nVisualization and Computer Graphics Group (VisCG).";
 }
 
 void VoreenVersion::logAll(const std::string& loggerCat) {

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -39,10 +39,12 @@ const std::string VolumeSource::loggerCat_("voreen.core.VolumeSource");
 VolumeSource::VolumeSource()
     : Processor()
     , volumeURL_("volumeURL", "Volume", "")
+    , volumeInfo_("volumeInfo","")
     , outport_(Port::OUTPORT, "volumehandle.volumehandle", "Volume Output")
 {
     addPort(outport_);
     addProperty(volumeURL_);
+    addProperty(volumeInfo_);
 }
 
 Processor* VolumeSource::create() const {
@@ -75,15 +77,18 @@ void VolumeSource::initialize() throw (tgt::Exception) {
     }
 
     outport_.setData(volumeURL_.getVolume(), false);
+    volumeInfo_.setVolume(volumeURL_.getVolume());
 
     if (getProcessorWidget())
         getProcessorWidget()->updateFromProcessor();
 }
 
 void VolumeSource::deinitialize() throw (tgt::Exception) {
-    clearVolume();
-
+    std::string curURL = volumeURL_.get();
+    clearVolume(); //< also clears the URL string
     Processor::deinitialize();
+
+    volumeURL_.set(curURL); // restore URL
 }
 
 void VolumeSource::loadVolume(const std::string& url) throw (tgt::FileException, std::bad_alloc) {
@@ -104,6 +109,8 @@ void VolumeSource::loadVolume(const std::string& url) throw (tgt::FileException,
     }
     if (!volumeURL_.getVolume())
         volumeURL_.clear();
+    else
+        volumeInfo_.setVolume(volumeURL_.getVolume());
 
     /*if (getProcessorWidget())
         getProcessorWidget()->updateFromProcessor(); */
@@ -112,20 +119,22 @@ void VolumeSource::loadVolume(const std::string& url) throw (tgt::FileException,
 void VolumeSource::clearVolume() {
     if (volumeURL_.getVolume()) {
         volumeURL_.setVolume(0);
+        volumeInfo_.setVolume(0);
     }
 }
 
-void VolumeSource::setVolumeHandle(VolumeBase* handle) {
-    volumeURL_.setVolume(handle, false);
+void VolumeSource::setVolume(VolumeBase* volume) {
+    volumeURL_.setVolume(volume, false);
+    volumeInfo_.setVolume(volume);
 }
 
-VolumeBase* VolumeSource::getVolumeHandle() const {
+VolumeBase* VolumeSource::getVolume() const {
     return volumeURL_.getVolume();
 }
 
 void VolumeSource::invalidate(int inv) {
     Processor::invalidate(inv);
-
+    volumeInfo_.setVolume(volumeURL_.getVolume());
     if (outport_.getData() != volumeURL_.getVolume()) {
         outport_.setData(volumeURL_.getVolume(), false);
         if (getProcessorWidget())

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -49,7 +49,7 @@ VertexGeometry::VertexGeometry(const tgt::vec3& coords, const tgt::vec3& texcoor
     , normal_(normal)
 {}
 
-Geometry* VertexGeometry::create() const {
+VertexGeometry* VertexGeometry::create() const {
     return new VertexGeometry();
 }
 
@@ -59,8 +59,6 @@ tgt::vec3 VertexGeometry::getCoords() const {
 
 void VertexGeometry::setCoords(const tgt::vec3& coords) {
     coords_ = coords;
-
-    setHasChanged(true);
 }
 
 tgt::vec3 VertexGeometry::getTexCoords() const {
@@ -69,8 +67,6 @@ tgt::vec3 VertexGeometry::getTexCoords() const {
 
 void VertexGeometry::setTexCoords(const tgt::vec3& texcoords) {
     texcoords_ = texcoords;
-
-    setHasChanged(true);
 }
 
 tgt::vec4 VertexGeometry::getColor() const {
@@ -79,14 +75,10 @@ tgt::vec4 VertexGeometry::getColor() const {
 
 void VertexGeometry::setColor(const tgt::vec4& color) {
     color_ = color;
-
-    setHasChanged(true);
 }
 
 void VertexGeometry::setColor(const tgt::vec3& color) {
     color_ = tgt::vec4(color, 1);
-
-    setHasChanged(true);
 }
 
 tgt::vec3 VertexGeometry::getNormal() const {
@@ -97,8 +89,6 @@ tgt::vec3 VertexGeometry::getNormal() const {
 void VertexGeometry::setNormal(const tgt::vec3& normal) {
     normal_ = normal;
     normalIsSet_ = true;
-
-    setHasChanged(true);
 }
 
 void VertexGeometry::removeNormal() {
@@ -114,8 +104,8 @@ double VertexGeometry::getLength() const {
     return tgt::length(coords_);
 }
 
-double VertexGeometry::getDistanceToPlane(const tgt::vec4& plane, double epsilon) const {
-    double distance = tgt::dot(plane.xyz(), coords_) - plane.w;
+double VertexGeometry::getDistanceToPlane(const tgt::plane& plane, double epsilon) const {
+    double distance = tgt::dot(plane.n, coords_) - plane.d;
     if (std::abs(distance) <= epsilon)
         return 0;
     else
@@ -127,6 +117,10 @@ double VertexGeometry::getDistance(const VertexGeometry& vertex) const {
 }
 
 void VertexGeometry::render() const {
+    //glMatrixMode(GL_MODELVIEW);
+    //glPushMatrix();
+    //tgt::multMatrix(getTransformationMatrix());
+
     glBegin(GL_POINTS);
 
     glColor4fv(color_.elem);
@@ -136,6 +130,8 @@ void VertexGeometry::render() const {
     tgt::vertex(coords_);
 
     glEnd();
+
+    //glPopMatrix();
 }
 
 void VertexGeometry::combine(const VertexGeometry& vertex) {
@@ -151,8 +147,6 @@ void VertexGeometry::interpolate(const VertexGeometry& vertex, double t) {
     texcoords_ += (vertex.texcoords_ - texcoords_) * static_cast<tgt::vec3::ElemType>(t);
     color_ += (vertex.color_ - color_) * static_cast<tgt::vec4::ElemType>(t);
     normal_ += (vertex.normal_ - normal_) * static_cast<tgt::vec4::ElemType>(t);
-
-    setHasChanged(true);
 }
 
 VertexGeometry VertexGeometry::interpolate(const VertexGeometry& vertex1, const VertexGeometry& vertex2, double t) {
@@ -161,13 +155,7 @@ VertexGeometry VertexGeometry::interpolate(const VertexGeometry& vertex1, const 
     return result;
 }
 
-void VertexGeometry::transform(const tgt::mat4& transformation) {
-    coords_ = transformation * coords_;
-
-    setHasChanged(true);
-}
-
-void VertexGeometry::clip(const tgt::vec4& clipPlane, double epsilon /*= 1e-6*/) {
+void VertexGeometry::clip(const tgt::plane& clipPlane, double epsilon /*= 1e-6*/) {
     if (getDistanceToPlane(clipPlane, epsilon) > 0.0) {
         // invalidate vertex
         coords_ = tgt::vec3(std::numeric_limits<float>::quiet_NaN());
@@ -194,14 +182,6 @@ bool VertexGeometry::equals(const VertexGeometry& vertex, double epsilon) const 
         return false;
 
     return true;
-}
-
-bool VertexGeometry::equals(const Geometry* geometry, double epsilon /*= 1e-6*/) const {
-    const VertexGeometry* vertexGeometry = dynamic_cast<const VertexGeometry*>(geometry);
-    if (!vertexGeometry)
-        return false;
-    else
-        return equals(*vertexGeometry, epsilon);
 }
 
 tgt::Bounds VertexGeometry::getBoundingBox() const {
@@ -236,7 +216,6 @@ void VertexGeometry::deserialize(XmlDeserializer& s) {
         normalIsSet_ = false;
         s.removeLastError();
     }
-    setHasChanged(true);
 }
 
 } // namespace

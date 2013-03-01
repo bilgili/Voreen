@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -24,7 +24,7 @@
  ***********************************************************************************/
 
 #include "voreen/core/datastructures/roi/roibase.h"
-#include "voreen/core/datastructures/geometry/meshlistgeometry.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 
 #include "voreen/core/io/serialization/xmlserializer.h"
 #include "voreen/core/io/serialization/xmldeserializer.h"
@@ -99,25 +99,25 @@ ROIMeshCache::~ROIMeshCache() {
     clear();
 }
 
-MeshListGeometry* ROIMeshCache::getMesh() const {
+Geometry* ROIMeshCache::getMesh() const {
    return mesh3D_;
 }
 
-void ROIMeshCache::setMesh(MeshListGeometry* m) {
+void ROIMeshCache::setMesh(Geometry* m) {
     delete mesh3D_;
     mesh3D_ = m;
 }
 
-MeshListGeometry* ROIMeshCache::getRasterMesh() const {
+Geometry* ROIMeshCache::getRasterMesh() const {
    return rasterMesh3D_;
 }
 
-void ROIMeshCache::setRasterMesh(MeshListGeometry* m) {
+void ROIMeshCache::setRasterMesh(Geometry* m) {
     delete rasterMesh3D_;
     rasterMesh3D_ = m;
 }
 
-MeshListGeometry* ROIMeshCache::getMesh(tgt::plane pl) const {
+Geometry* ROIMeshCache::getMesh(tgt::plane pl) const {
     for(std::list<CacheEntry>::iterator it=planeMeshes_.begin(); it != planeMeshes_.end(); it++) {
         if((*it).plane_.toVec4() == pl.toVec4()) {
             // move to front:
@@ -130,7 +130,7 @@ MeshListGeometry* ROIMeshCache::getMesh(tgt::plane pl) const {
     return 0;
 }
 
-void ROIMeshCache::setMesh(MeshListGeometry* m, tgt::plane pl) {
+void ROIMeshCache::setMesh(Geometry* m, tgt::plane pl) {
     if(getMesh(pl)) {
         //TODO: duplicate
         return;
@@ -146,7 +146,7 @@ void ROIMeshCache::setMesh(MeshListGeometry* m, tgt::plane pl) {
     }
 }
 
-MeshListGeometry* ROIMeshCache::getRasterMesh(tgt::plane pl) const {
+Geometry* ROIMeshCache::getRasterMesh(tgt::plane pl) const {
     for(std::list<CacheEntry>::iterator it=planeRasterMeshes_.begin(); it != planeRasterMeshes_.end(); it++) {
         if((*it).plane_.toVec4() == pl.toVec4()) {
             // move to front:
@@ -159,7 +159,7 @@ MeshListGeometry* ROIMeshCache::getRasterMesh(tgt::plane pl) const {
     return 0;
 }
 
-void ROIMeshCache::setRasterMesh(MeshListGeometry* m, tgt::plane pl) {
+void ROIMeshCache::setRasterMesh(Geometry* m, tgt::plane pl) {
     if(getRasterMesh(pl)) {
         //TODO: duplicate
         return;
@@ -257,6 +257,25 @@ ROIBase* ROIBase::clone() const {
     return cloned;
 }
 
+std::string ROIBase::getID() const {
+    return name_.get();
+}
+
+std::string ROIBase::getGuiName() const {
+    return name_.get();
+}
+void ROIBase::setGuiName(const std::string& name) {
+    name_.set(name);
+    id_ = name;
+    guiName_ = name;
+}
+
+void ROIBase::setID(const std::string& id){
+    name_.set(id);
+    id_ = id;
+    guiName_ = id;
+}
+
 VolumeRAM* ROIBase::rasterize(Grid /*g*/) const {
     return 0;
 }
@@ -265,22 +284,22 @@ VolumeRAM* ROIBase::rasterize() const {
     return rasterize(getGrid());
 }
 
-MeshListGeometry* ROIBase::generateRasterMesh() const {
+Geometry* ROIBase::generateRasterMesh() const {
     return generateRasterMesh(getGrid());
 }
 
-MeshListGeometry* ROIBase::generateRasterMesh(const tgt::plane& pl) const
+Geometry* ROIBase::generateRasterMesh(const tgt::plane& pl) const
 {
     return generateRasterMesh(pl, getGrid());
 }
 
-MeshListGeometry* ROIBase::generateRasterMesh(Grid /*g*/) const {
+Geometry* ROIBase::generateRasterMesh(Grid /*g*/) const {
     //TODO
-    return new MeshListGeometry();
+    return new TriangleMeshGeometrySimple();
 }
 
-MeshListGeometry* ROIBase::getMesh() const {
-    MeshListGeometry* m = cache_.getMesh();
+Geometry* ROIBase::getMesh() const {
+    Geometry* m = cache_.getMesh();
     if(!m) {
         m = generateMesh();
         cache_.setMesh(m);
@@ -288,8 +307,8 @@ MeshListGeometry* ROIBase::getMesh() const {
     return m;
 }
 
-MeshListGeometry* ROIBase::getRasterMesh() const {
-    MeshListGeometry* m = cache_.getRasterMesh();
+Geometry* ROIBase::getRasterMesh() const {
+    Geometry* m = cache_.getRasterMesh();
     if(!m) {
         m = generateRasterMesh();
         if(m)
@@ -298,8 +317,8 @@ MeshListGeometry* ROIBase::getRasterMesh() const {
     return m;
 }
 
-MeshListGeometry* ROIBase::getMesh(tgt::plane pl) const {
-    MeshListGeometry* m = cache_.getMesh(pl);
+Geometry* ROIBase::getMesh(tgt::plane pl) const {
+    Geometry* m = cache_.getMesh(pl);
     if(!m) {
         m = generateMesh(pl);
         if(m)
@@ -308,8 +327,8 @@ MeshListGeometry* ROIBase::getMesh(tgt::plane pl) const {
     return m;
 }
 
-MeshListGeometry* ROIBase::getRasterMesh(tgt::plane pl) const {
-    MeshListGeometry* m = cache_.getRasterMesh(pl);
+Geometry* ROIBase::getRasterMesh(tgt::plane pl) const {
+    Geometry* m = cache_.getRasterMesh(pl);
     if(!m) {
         m = generateRasterMesh(pl);
         if(m)
@@ -318,10 +337,10 @@ MeshListGeometry* ROIBase::getRasterMesh(tgt::plane pl) const {
     return m;
 }
 
-MeshListGeometry* ROIBase::generateRasterMesh(const tgt::plane& pl, Grid g) const {
+Geometry* ROIBase::generateRasterMesh(const tgt::plane& pl, Grid g) const {
     // Transform plane to grid coordinates:
     mat4 m = g.getWorldToPhysicalMatrix();
-    const plane physicalPlane = transform(pl, m);
+    const plane physicalPlane = pl.transform(m);
 
     tgt::Bounds bb = getBoundingBox(); // FIXME: BB is in own grid
 
@@ -348,28 +367,28 @@ MeshListGeometry* ROIBase::generateRasterMesh(const tgt::plane& pl, Grid g) cons
         }
     }
 
-    FaceGeometry planeFace = createQuad(physicalPlane, getColor());
+    TriangleMeshGeometrySimple* planeFace = createQuad(physicalPlane);
 
-    vec4 xm(-1.0f, 0.0f, 0.0f, 0.0f);
-    vec4 xp(1.0f, 0.0f, 0.0f, 0.0f);
-    vec4 ym(0.0f, -1.0f, 0.0f, 0.0f);
-    vec4 yp(0.0f, 1.0f, 0.0f, 0.0f);
-    vec4 zm(0.0f, 0.0f, -1.0f, 0.0f);
-    vec4 zp(0.0f, 0.0f, 1.0f, 0.0f);
+    tgt::plane xm(-1.0f, 0.0f, 0.0f, 0.0f);
+    tgt::plane xp(1.0f, 0.0f, 0.0f, 0.0f);
+    tgt::plane ym(0.0f, -1.0f, 0.0f, 0.0f);
+    tgt::plane yp(0.0f, 1.0f, 0.0f, 0.0f);
+    tgt::plane zm(0.0f, 0.0f, -1.0f, 0.0f);
+    tgt::plane zp(0.0f, 0.0f, 1.0f, 0.0f);
 
-    MeshGeometry mg;
+    TriangleMeshGeometrySimple* mg = new TriangleMeshGeometrySimple();
     int numFaces = 0;
     float d = max(sp);
     ivec3 i;
     for(i.x=llfV.x; i.x < urbV.x; i.x++) {
-        xm.w = -(i.x * sp.x);
-        xp.w = (i.x+1) * sp.x;
+        xm.d = -(i.x * sp.x);
+        xp.d = (i.x+1) * sp.x;
         for(i.y=llfV.y; i.y < urbV.y; i.y++) {
-            ym.w = -(i.y * sp.y);
-            yp.w = (i.y+1) * sp.y;
+            ym.d = -(i.y * sp.y);
+            yp.d = (i.y+1) * sp.y;
             for(i.z=llfV.z; i.z < urbV.z; i.z++) {
-                zm.w = -(i.z * sp.z);
-                zp.w = (i.z+1) * sp.z;
+                zm.d = -(i.z * sp.z);
+                zp.d = (i.z+1) * sp.z;
 
                 // Calc bounds of this voxel:
                 vec3 llf = vec3(i.x * sp.x, i.y * sp.y, i.z * sp.z);
@@ -384,57 +403,52 @@ MeshListGeometry* ROIBase::generateRasterMesh(const tgt::plane& pl, Grid g) cons
                     continue;
 
                 if(optDir == -1) {
-                    FaceGeometry fg = planeFace;
-                    fg.clip(xm);
-                    fg.clip(xp);
-                    fg.clip(ym);
-                    fg.clip(yp);
-                    fg.clip(zm);
-                    fg.clip(zp);
+                    TriangleMeshGeometrySimple* fg = createQuad(physicalPlane);
+                    fg->clip(xm);
+                    fg->clip(xp);
+                    fg->clip(ym);
+                    fg->clip(yp);
+                    fg->clip(zm);
+                    fg->clip(zp);
 
-                    if(fg.getVertexCount() > 2) {
-                        mg.addFace(fg);
+                    if(!fg->isEmpty()) {
+                        mg->addMesh(fg);
                         numFaces++;
                     }
                 }
                 else if(optDir == 0) {
-                    FaceGeometry face;
-                    face.addVertex(VertexGeometry(vec3(optDist, llf.y, llf.z), vec3(0.0f), getColor()));
-                    face.addVertex(VertexGeometry(vec3(optDist, llf.y, urb.z), vec3(0.0f), getColor()));
-                    face.addVertex(VertexGeometry(vec3(optDist, urb.y, urb.z), vec3(0.0f), getColor()));
-                    face.addVertex(VertexGeometry(vec3(optDist, urb.y, llf.z), vec3(0.0f), getColor()));
+                    mg->addQuad(
+                    VertexBase(vec3(optDist, llf.y, llf.z)),
+                    VertexBase(vec3(optDist, llf.y, urb.z)),
+                    VertexBase(vec3(optDist, urb.y, urb.z)),
+                    VertexBase(vec3(optDist, urb.y, llf.z)));
 
-                    mg.addFace(face);
                     numFaces++;
                 }
                 else if(optDir == 1) {
-                    FaceGeometry face;
-                    face.addVertex(VertexGeometry(vec3(llf.x, optDist, llf.z), vec3(0.0f), getColor()));
-                    face.addVertex(VertexGeometry(vec3(llf.x, optDist, urb.z), vec3(0.0f), getColor()));
-                    face.addVertex(VertexGeometry(vec3(urb.x, optDist, urb.z), vec3(0.0f), getColor()));
-                    face.addVertex(VertexGeometry(vec3(urb.x, optDist, llf.z), vec3(0.0f), getColor()));
+                    mg->addQuad(
+                    VertexBase(vec3(llf.x, optDist, llf.z)),
+                    VertexBase(vec3(llf.x, optDist, urb.z)),
+                    VertexBase(vec3(urb.x, optDist, urb.z)),
+                    VertexBase(vec3(urb.x, optDist, llf.z)));
 
-                    mg.addFace(face);
                     numFaces++;
                 }
                 else if(optDir == 2) {
-                    FaceGeometry face;
-                    face.addVertex(VertexGeometry(vec3(llf.x, llf.y, optDist), vec3(0.0f), getColor()));
-                    face.addVertex(VertexGeometry(vec3(llf.x, urb.y, optDist), vec3(0.0f), getColor()));
-                    face.addVertex(VertexGeometry(vec3(urb.x, urb.y, optDist), vec3(0.0f), getColor()));
-                    face.addVertex(VertexGeometry(vec3(urb.x, llf.y, optDist), vec3(0.0f), getColor()));
+                    mg->addQuad(
+                    VertexBase(vec3(llf.x, llf.y, optDist)),
+                    VertexBase(vec3(llf.x, urb.y, optDist)),
+                    VertexBase(vec3(urb.x, urb.y, optDist)),
+                    VertexBase(vec3(urb.x, llf.y, optDist)));
 
-                    mg.addFace(face);
                     numFaces++;
                 }
             }
         }
     }
 
-    MeshListGeometry* mlg = new MeshListGeometry();
-    mlg->addMesh(mg);
-    mlg->transform(g.getPhysicalToWorldMatrix());
-    return mlg;
+    mg->transform(g.getPhysicalToWorldMatrix());
+    return mg;
 }
 
 Grid ROIBase::getGrid() const {
@@ -497,18 +511,7 @@ void ROIBase::invalidate(int inv) {
 
 //-----------------------------------------------------------------------------
 
-tgt::plane transform(const tgt::plane& pl, const tgt::mat4& m) {
-    vec3 a = pl.d * pl.n;
-    vec3 b = a + pl.n;
-
-    a = m * a;
-    b = m * b;
-    b = normalize(b-a);
-
-    return tgt::plane(b, dot(a, b));
-}
-
-FaceGeometry createQuad(const tgt::plane& pl, const tgt::vec4& color) {
+TriangleMeshGeometrySimple* createQuad(const tgt::plane& pl) {
     vec3 temp(1.0f, 1.0f, 0.0f);
     if(dot(temp, pl.n) > 0.9f)
         temp = vec3(0.0f, 1.0f, 1.0f);
@@ -519,11 +522,12 @@ FaceGeometry createQuad(const tgt::plane& pl, const tgt::vec4& color) {
     t2 *= 500.0f;
     vec3 base = pl.d * pl.n;
 
-    FaceGeometry face;
-    face.addVertex(VertexGeometry(base + t1 + t2, vec3(0.0f), color));
-    face.addVertex(VertexGeometry(base + t1 - t2, vec3(0.0f), color));
-    face.addVertex(VertexGeometry(base - t1 - t2, vec3(0.0f), color));
-    face.addVertex(VertexGeometry(base - t1 + t2, vec3(0.0f), color));
+    TriangleMeshGeometrySimple* face = new TriangleMeshGeometrySimple();
+    VertexBase v1(base + t1 + t2);
+    VertexBase v2(base + t1 - t2);
+    VertexBase v3(base - t1 - t2);
+    VertexBase v4(base - t1 + t2);
+    face->addQuad(v1, v2, v3, v4);
     return face;
 }
 

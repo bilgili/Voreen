@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -34,75 +34,380 @@
 
 namespace voreen {
 
+GLubyte* TransFuncInterpolationFunctionBase::convertTextureToRGBA(tgt::ivec3 dim, GLubyte* texture, GLuint inputformat) {
+    GLubyte* data = new GLubyte[4 * dim.x * dim.y * dim.z];
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                switch (inputformat) {
+                case GL_RED:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = texture[x*dim.y*dim.z+y*dim.z+z];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
+                    break;
+                case GL_GREEN:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = texture[x*dim.y*dim.z+y*dim.z+z];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
+                    break;
+                case GL_BLUE:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = texture[x*dim.y*dim.z+y*dim.z+z];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
+                    break;
+                case GL_ALPHA:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = 0;
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = texture[x*dim.y*dim.z+y*dim.z+z];
+                    break;
+                case GL_RGB:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = texture[3*(x*dim.y*dim.z+y*dim.z+z)+0];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = texture[3*(x*dim.y*dim.z+y*dim.z+z)+1];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = texture[3*(x*dim.y*dim.z+y*dim.z+z)+2];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
+                    break;
+                case GL_RGBA:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+0];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+1];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+2];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+3];
+                    break;
+                case GL_ABGR_EXT:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+3];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+2];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+1];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = texture[4*(x*dim.y*dim.z+y*dim.z+z)+0];
+                    break;
+                case GL_LUMINANCE:
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+0] = texture[x*dim.y*dim.z+y*dim.z+z];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+1] = texture[x*dim.y*dim.z+y*dim.z+z];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+2] = texture[x*dim.y*dim.z+y*dim.z+z];
+                    data[(x*dim.y*dim.z+y*dim.z+z)*4+3] = 1;
+                    break;
+                }
+            }
+        }
+    }
+    return data;
+}
+
+//Resizes a given 3D Textur in RGBA to another dimension by trilinear interpolation
+GLubyte* TransFuncInterpolationFunctionBase::changeTextureDimension(tgt::ivec3 in_dim, tgt::ivec3 out_dim, GLubyte* indata) {
+    GLubyte* outdata;
+    if (in_dim.x != out_dim.x) {
+        outdata = new GLubyte[4 * out_dim.x * in_dim.y * in_dim.z];
+        for (int x = 0; x < out_dim.x; ++x) {
+            float x_position = static_cast<float>(in_dim.x-1) / static_cast<float>(out_dim.x-1) * static_cast<float>(x);
+            int x1 = static_cast<int>(std::floor(x_position));
+            float a1 = 1-(x_position-x1);
+            int x2 = static_cast<int>(std::ceil(x_position));
+            float a2 = 1-a1;
+            int x_value = -1;
+            if (x1 == x2)
+                x_value = x1;
+            if (std::abs(a1) < 0.001f)
+                x_value = x2;
+            if (std::abs(a2) < 0.001f)
+                x_value = x1;
+            if (x_value >= 0) {
+                for (int y = 0; y < in_dim.y; ++y) {
+                    for (int z = 0; z < in_dim.z; ++z) {
+                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+0] = indata[4*(x_value*in_dim.y*in_dim.z+y*in_dim.z+z)+0];
+                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+1] = indata[4*(x_value*in_dim.y*in_dim.z+y*in_dim.z+z)+1];
+                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+2] = indata[4*(x_value*in_dim.y*in_dim.z+y*in_dim.z+z)+2];
+                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+3] = indata[4*(x_value*in_dim.y*in_dim.z+y*in_dim.z+z)+3];
+                    }
+                }
+            }
+            else {
+                for (int y = 0; y < in_dim.y; ++y) {
+                    for (int z = 0; z < in_dim.z; ++z) {
+                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+0] = static_cast<GLubyte>(a1*indata[4*(x1*in_dim.y*in_dim.z+y*in_dim.z+z)+0]+a2*indata[4*(x2*in_dim.y*in_dim.z+y*in_dim.z+z)+0]);
+                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+1] = static_cast<GLubyte>(a1*indata[4*(x1*in_dim.y*in_dim.z+y*in_dim.z+z)+1]+a2*indata[4*(x2*in_dim.y*in_dim.z+y*in_dim.z+z)+1]);
+                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+2] = static_cast<GLubyte>(a1*indata[4*(x1*in_dim.y*in_dim.z+y*in_dim.z+z)+2]+a2*indata[4*(x2*in_dim.y*in_dim.z+y*in_dim.z+z)+2]);
+                        outdata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z)+3] = static_cast<GLubyte>(a1*indata[4*(x1*in_dim.y*in_dim.z+y*in_dim.z+z)+3]+a2*indata[4*(x2*in_dim.y*in_dim.z+y*in_dim.z+z)+3]);
+                    }
+                }
+            }
+        }
+        in_dim.x = out_dim.x;
+        delete indata;
+        indata = outdata;
+    }
+    if (in_dim.y != out_dim.y) {
+        outdata = new GLubyte[4 * out_dim.x * out_dim.y * in_dim.z];
+        for (int y = 0; y < out_dim.y; ++y) {
+            float y_position = static_cast<float>(in_dim.y-1) / static_cast<float>(out_dim.y-1) * static_cast<float>(y);
+            int y1 = static_cast<int>(std::floor(y_position));
+            float a1 = 1-(y_position-y1);
+            int y2 = static_cast<int>(std::ceil(y_position));
+            float a2 = 1 - a1;
+            int y_value = -1;
+            if (y1 == y2)
+                y_value = y1;
+            if (std::abs(a1) < 0.001f)
+                y_value = y2;
+            if (std::abs(a2) < 0.001f)
+                y_value = y1;
+            if (y_value >= 0) {
+                for (int x = 0; x < out_dim.x; ++x) {
+                    for (int z = 0; z < in_dim.z; ++z) {
+                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+0] = indata[4*(x*in_dim.y*in_dim.z+y_value*in_dim.z+z)+0];
+                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+1] = indata[4*(x*in_dim.y*in_dim.z+y_value*in_dim.z+z)+1];
+                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+2] = indata[4*(x*in_dim.y*in_dim.z+y_value*in_dim.z+z)+2];
+                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+3] = indata[4*(x*in_dim.y*in_dim.z+y_value*in_dim.z+z)+3];
+                    }
+                }
+            }
+            else {
+                for (int x = 0; x < out_dim.x; ++x) {
+                    for (int z = 0; z < in_dim.z; ++z) {
+                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+0] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y1*in_dim.z+z)+0]+a2*indata[4*(x*in_dim.y*in_dim.z+y2*in_dim.z+z)+0]);
+                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+1] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y1*in_dim.z+z)+1]+a2*indata[4*(x*in_dim.y*in_dim.z+y2*in_dim.z+z)+1]);
+                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+2] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y1*in_dim.z+z)+2]+a2*indata[4*(x*in_dim.y*in_dim.z+y2*in_dim.z+z)+2]);
+                        outdata[4*(x*out_dim.y*in_dim.z+y*in_dim.z+z)+3] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y1*in_dim.z+z)+3]+a2*indata[4*(x*in_dim.y*in_dim.z+y2*in_dim.z+z)+3]);
+                    }
+                }
+            }
+        }
+        in_dim.y = out_dim.y;
+        delete indata;
+        indata = outdata;
+    }
+    if (in_dim.z != out_dim.z) {
+        outdata = new GLubyte[4 * out_dim.x * out_dim.y * out_dim.z];
+        for (int z = 0; z < out_dim.z; ++z) {
+            float z_position = static_cast<float>(in_dim.z-1) / static_cast<float>(out_dim.z-1) * static_cast<float>(z);
+            int z1 = static_cast<int>(std::floor(z_position));
+            float a1 = 1-(z_position-z1);
+            int z2 = static_cast<int>(std::ceil(z_position));
+            float a2 = 1-a1;
+            int z_value = -1;
+            if (z1 == z2)
+                z_value = z1;
+            if (std::abs(a1) < 0.001f)
+                z_value = z2;
+            if (std::abs(a2) < 0.001f)
+                z_value = z1;
+            if (z_value >= 0) {
+                for (int x = 0; x < out_dim.x; ++x) {
+                    for (int y = 0; y < out_dim.y; ++y) {
+                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+0] = indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z_value)+0];
+                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+1] = indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z_value)+1];
+                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+2] = indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z_value)+2];
+                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+3] = indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z_value)+3];
+                    }
+                }
+            }
+            else {
+                for (int x = 0; x < out_dim.x; ++x) {
+                    for (int y = 0; y < out_dim.y; ++y) {
+                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+0] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z1)+0]+a2*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z2)+0]);
+                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+1] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z1)+1]+a2*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z2)+1]);
+                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+2] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z1)+2]+a2*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z2)+2]);
+                        outdata[4*(x*out_dim.y*out_dim.z+y*out_dim.z+z)+3] = static_cast<GLubyte>(a1*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z1)+3]+a2*indata[4*(x*in_dim.y*in_dim.z+y*in_dim.z+z2)+3]);
+                    }
+                }
+            }
+        }
+        in_dim.y = out_dim.y;
+        delete indata;
+        indata = outdata;
+    }
+    return indata;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+TransFuncInterpolationFunction::TransFuncInterpolationFunction() {}
+
+std::string TransFuncInterpolationFunction::getGuiName() const {
+    return "linear interpolation";
+}
+
+std::string TransFuncInterpolationFunction::getCategory() const {
+    return "default linear (keywise if possible)";
+}
+
+TransFunc* TransFuncInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
+    if (!startvalue || !endvalue) {
+        LERROR("Null pointer passed");
+        return 0;
+    }
+
+    TransFunc1DKeys* func1 = dynamic_cast<TransFunc1DKeys*>(startvalue);
+    TransFunc1DKeys* func2 = dynamic_cast<TransFunc1DKeys*>(endvalue);
+    if (func1 && func2) {
+        std::vector<TransFuncMappingKey*> keys1 = func1->getKeys();
+        std::vector<TransFuncMappingKey*> keys2 = func2->getKeys();
+        if (keys1.size() == keys2.size()) {
+            TransFunc1DKeys* func = new TransFunc1DKeys();
+
+            tgt::vec2 t1 = func1->getThresholds();
+            tgt::vec2 t2 = func2->getThresholds();
+
+            func->setThresholds((1-time)*t1.x+time*t2.x,
+                                (1-time)*t1.y+time*t2.y);
+
+            tgt::vec2 d1 = func1->getDomain(0);
+            tgt::vec2 d2 = func2->getDomain(0);
+            if(d1 != d2)
+                LWARNING("Transfer functions have different domains...interpolation is (probably) incorrect.");
+
+            func->setDomain((1-time)*d1.x+time*d2.x,
+                            (1-time)*d1.y+time*d2.y, 0);
+
+            func->clearKeys();
+            std::vector<TransFuncMappingKey*>::iterator it1 = keys1.begin();
+            std::vector<TransFuncMappingKey*>::iterator it2 = keys2.begin();
+            while ((it1 != keys1.end()) && (it2 != keys2.end())) {
+                tgt::col4 col = tgt::col4();
+                TransFuncMappingKey* key = new TransFuncMappingKey(0, col);
+                key->setSplit((*it1)->isSplit()||(*it2)->isSplit(), true);
+
+                col.r = static_cast<uint8_t>((1-time)*(*it1)->getColorL().r + time*(*it2)->getColorL().r);
+                col.g = static_cast<uint8_t>((1-time)*(*it1)->getColorL().g + time*(*it2)->getColorL().g);
+                col.b = static_cast<uint8_t>((1-time)*(*it1)->getColorL().b + time*(*it2)->getColorL().b);
+                col.a = static_cast<uint8_t>((1-time)*(*it1)->getColorL().a + time*(*it2)->getColorL().a);
+                key->setColorL(col);
+
+                col.r = static_cast<uint8_t>((1-time)*(*it1)->getColorR().r + time*(*it2)->getColorR().r);
+                col.g = static_cast<uint8_t>((1-time)*(*it1)->getColorR().g + time*(*it2)->getColorR().g);
+                col.b = static_cast<uint8_t>((1-time)*(*it1)->getColorR().b + time*(*it2)->getColorR().b);
+                col.a = static_cast<uint8_t>((1-time)*(*it1)->getColorR().a + time*(*it2)->getColorR().a);
+                key->setColorR(col);
+
+                key->setIntensity((1-time)*(*it1)->getIntensity() + time*(*it2)->getIntensity());
+
+                func->addKey(key);
+
+                it1++;
+                it2++;
+            }
+            func->invalidateTexture();
+            return func;
+        }
+    }
+    float a2 = BasicFloatInterpolation::linearInterpolation(0, 1, time);
+    float a1 = 1 - a2;
+
+    tgtAssert(startvalue && endvalue, "null pointer");
+    tgt::ivec3 dimensions_start = startvalue->getDimensions();
+    tgt::ivec3 dimensions_end = endvalue->getDimensions();
+    tgt::ivec3 dim = tgt::ivec3();
+    dim.x = std::max(dimensions_start.x,dimensions_end.x);
+    dim.y = std::max(dimensions_start.y,dimensions_end.y);
+    dim.z = std::max(dimensions_start.z,dimensions_end.z);
+
+    GLubyte* texture1 = startvalue->getPixelData();
+    GLubyte* texture2 = endvalue->getPixelData();
+    texture1 = convertTextureToRGBA(startvalue->getDimensions(), texture1 , startvalue->getFormat());
+    texture2 = convertTextureToRGBA(endvalue->getDimensions(), texture2 , endvalue->getFormat());
+    texture1 = changeTextureDimension(startvalue->getDimensions(), dim, texture1);
+    texture2 = changeTextureDimension(startvalue->getDimensions(), dim, texture2);
+
+    TransFunc* func = new TransFunc(dim.x, dim.y, dim.z);
+
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
+    GLubyte* texture = new GLubyte[4 * dim.x * dim.y * dim.z];
+    for (int x = 0; x < dim.x; ++x) {
+        for (int y = 0; y < dim.y; ++y) {
+            for (int z = 0; z < dim.z; ++z) {
+                for (int i = 0; i < 4; ++i) {
+                    int index = 4*(x * dim.y * dim.z + y * dim.z + z) + i;
+                    float f = (a1 * texture1[index] + a2 * texture2[index]);
+                    texture[index] = static_cast<GLubyte>(f);
+                }
+            }
+        }
+    }
+    func->setPixelData(texture);
+    return func;
+}
+
+InterpolationFunction<TransFunc*>* TransFuncInterpolationFunction::create() const {
+    return new TransFuncInterpolationFunction();
+}
+
+//-------------------------------------------------------------------------------------------------
+
 TransFuncStartInterpolationFunction::TransFuncStartInterpolationFunction() {}
 
-std::string TransFuncStartInterpolationFunction::getMode() const {
+std::string TransFuncStartInterpolationFunction::getGuiName() const {
     return "focus on startvalue";
 }
 
-std::string TransFuncStartInterpolationFunction::getIdentifier() const {
+std::string TransFuncStartInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
 TransFunc* TransFuncStartInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
-InterpolationFunction<TransFunc*>* TransFuncStartInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncStartInterpolationFunction::create() const {
     return new TransFuncStartInterpolationFunction();
 }
 
 TransFuncEndInterpolationFunction::TransFuncEndInterpolationFunction() {}
 
-std::string TransFuncEndInterpolationFunction::getMode() const {
+std::string TransFuncEndInterpolationFunction::getGuiName() const {
     return "focus on endvalue";
 }
 
-std::string TransFuncEndInterpolationFunction::getIdentifier() const {
+std::string TransFuncEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
 TransFunc* TransFuncEndInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
     if (time > 0.f)
-        return endvalue->clone();
+        return endvalue->create();
     else
-        return startvalue->clone();
+        return startvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncEndInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncEndInterpolationFunction::create() const {
     return new TransFuncEndInterpolationFunction();
 }
 
 TransFuncStartEndInterpolationFunction::TransFuncStartEndInterpolationFunction() {}
 
-std::string TransFuncStartEndInterpolationFunction::getMode() const {
+std::string TransFuncStartEndInterpolationFunction::getGuiName() const {
     return "bisection";
 }
 
-std::string TransFuncStartEndInterpolationFunction::getIdentifier() const {
+std::string TransFuncStartEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
 TransFunc* TransFuncStartEndInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
     if (time < 0.5f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncStartEndInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncStartEndInterpolationFunction::create() const {
     return new TransFuncStartEndInterpolationFunction();
 }
 
 TransFuncKeyWiseInterpolationFunction::TransFuncKeyWiseInterpolationFunction() {}
 
-std::string TransFuncKeyWiseInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseInterpolationFunction::getGuiName() const {
     return "keywise linear";
 }
 
-std::string TransFuncKeyWiseInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseInterpolationFunction::getCategory() const {
     return "keywise linear";
 }
 
@@ -161,22 +466,22 @@ TransFunc* TransFuncKeyWiseInterpolationFunction::interpolate(TransFunc* startva
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseInterpolationFunction::create() const {
     return new TransFuncKeyWiseInterpolationFunction();
 }
 
 TransFuncKeyWiseQuadInInterpolationFunction::TransFuncKeyWiseQuadInInterpolationFunction() {}
 
-std::string TransFuncKeyWiseQuadInInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseQuadInInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string TransFuncKeyWiseQuadInInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseQuadInInterpolationFunction::getCategory() const {
     return "keywise quadratic";
 }
 
@@ -235,22 +540,22 @@ TransFunc* TransFuncKeyWiseQuadInInterpolationFunction::interpolate(TransFunc* s
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadInInterpolationFunction::create() const {
     return new TransFuncKeyWiseQuadInInterpolationFunction();
 }
 
 TransFuncKeyWiseQuadOutInterpolationFunction::TransFuncKeyWiseQuadOutInterpolationFunction() {}
 
-std::string TransFuncKeyWiseQuadOutInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseQuadOutInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string TransFuncKeyWiseQuadOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseQuadOutInterpolationFunction::getCategory() const {
     return "keywise quadratic";
 }
 
@@ -309,22 +614,22 @@ TransFunc* TransFuncKeyWiseQuadOutInterpolationFunction::interpolate(TransFunc* 
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadOutInterpolationFunction::create() const {
     return new TransFuncKeyWiseQuadOutInterpolationFunction();
 }
 
 TransFuncKeyWiseQuadInOutInterpolationFunction::TransFuncKeyWiseQuadInOutInterpolationFunction() {}
 
-std::string TransFuncKeyWiseQuadInOutInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseQuadInOutInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string TransFuncKeyWiseQuadInOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseQuadInOutInterpolationFunction::getCategory() const {
     return "keywise quadratic";
 }
 
@@ -383,22 +688,22 @@ TransFunc* TransFuncKeyWiseQuadInOutInterpolationFunction::interpolate(TransFunc
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadInOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadInOutInterpolationFunction::create() const {
     return new TransFuncKeyWiseQuadInOutInterpolationFunction();
 }
 
 TransFuncKeyWiseQuadOutInInterpolationFunction::TransFuncKeyWiseQuadOutInInterpolationFunction() {}
 
-std::string TransFuncKeyWiseQuadOutInInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseQuadOutInInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string TransFuncKeyWiseQuadOutInInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseQuadOutInInterpolationFunction::getCategory() const {
     return "keywise quadratic";
 }
 
@@ -457,22 +762,22 @@ TransFunc* TransFuncKeyWiseQuadOutInInterpolationFunction::interpolate(TransFunc
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadOutInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuadOutInInterpolationFunction::create() const {
     return new TransFuncKeyWiseQuadOutInInterpolationFunction();
 }
 
 TransFuncKeyWiseCubicInInterpolationFunction::TransFuncKeyWiseCubicInInterpolationFunction() {}
 
-std::string TransFuncKeyWiseCubicInInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseCubicInInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string TransFuncKeyWiseCubicInInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseCubicInInterpolationFunction::getCategory() const {
     return "keywise cubic";
 }
 
@@ -531,22 +836,22 @@ TransFunc* TransFuncKeyWiseCubicInInterpolationFunction::interpolate(TransFunc* 
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicInInterpolationFunction::create() const {
     return new TransFuncKeyWiseCubicInInterpolationFunction();
 }
 
 TransFuncKeyWiseCubicOutInterpolationFunction::TransFuncKeyWiseCubicOutInterpolationFunction() {}
 
-std::string TransFuncKeyWiseCubicOutInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseCubicOutInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string TransFuncKeyWiseCubicOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseCubicOutInterpolationFunction::getCategory() const {
     return "keywise cubic";
 }
 
@@ -605,22 +910,22 @@ TransFunc* TransFuncKeyWiseCubicOutInterpolationFunction::interpolate(TransFunc*
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicOutInterpolationFunction::create() const {
     return new TransFuncKeyWiseCubicOutInterpolationFunction();
 }
 
 TransFuncKeyWiseCubicInOutInterpolationFunction::TransFuncKeyWiseCubicInOutInterpolationFunction() {}
 
-std::string TransFuncKeyWiseCubicInOutInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseCubicInOutInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string TransFuncKeyWiseCubicInOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseCubicInOutInterpolationFunction::getCategory() const {
     return "keywise cubic";
 }
 
@@ -679,22 +984,22 @@ TransFunc* TransFuncKeyWiseCubicInOutInterpolationFunction::interpolate(TransFun
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicInOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicInOutInterpolationFunction::create() const {
     return new TransFuncKeyWiseCubicInOutInterpolationFunction();
 }
 
 TransFuncKeyWiseCubicOutInInterpolationFunction::TransFuncKeyWiseCubicOutInInterpolationFunction() {}
 
-std::string TransFuncKeyWiseCubicOutInInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseCubicOutInInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string TransFuncKeyWiseCubicOutInInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseCubicOutInInterpolationFunction::getCategory() const {
     return "keywise cubic";
 }
 
@@ -753,22 +1058,22 @@ TransFunc* TransFuncKeyWiseCubicOutInInterpolationFunction::interpolate(TransFun
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicOutInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCubicOutInInterpolationFunction::create() const {
     return new TransFuncKeyWiseCubicOutInInterpolationFunction();
 }
 
 TransFuncKeyWiseQuartInInterpolationFunction::TransFuncKeyWiseQuartInInterpolationFunction() {}
 
-std::string TransFuncKeyWiseQuartInInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseQuartInInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string TransFuncKeyWiseQuartInInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseQuartInInterpolationFunction::getCategory() const {
     return "keywise quartetic";
 }
 
@@ -827,22 +1132,22 @@ TransFunc* TransFuncKeyWiseQuartInInterpolationFunction::interpolate(TransFunc* 
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartInInterpolationFunction::create() const {
     return new TransFuncKeyWiseQuartInInterpolationFunction();
 }
 
 TransFuncKeyWiseQuartOutInterpolationFunction::TransFuncKeyWiseQuartOutInterpolationFunction() {}
 
-std::string TransFuncKeyWiseQuartOutInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseQuartOutInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string TransFuncKeyWiseQuartOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseQuartOutInterpolationFunction::getCategory() const {
     return "keywise quartetic";
 }
 
@@ -901,22 +1206,22 @@ TransFunc* TransFuncKeyWiseQuartOutInterpolationFunction::interpolate(TransFunc*
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartOutInterpolationFunction::create() const {
     return new TransFuncKeyWiseQuartOutInterpolationFunction();
 }
 
 TransFuncKeyWiseQuartInOutInterpolationFunction::TransFuncKeyWiseQuartInOutInterpolationFunction() {}
 
-std::string TransFuncKeyWiseQuartInOutInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseQuartInOutInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string TransFuncKeyWiseQuartInOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseQuartInOutInterpolationFunction::getCategory() const {
     return "keywise quartetic";
 }
 
@@ -975,22 +1280,22 @@ TransFunc* TransFuncKeyWiseQuartInOutInterpolationFunction::interpolate(TransFun
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartInOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartInOutInterpolationFunction::create() const {
     return new TransFuncKeyWiseQuartInOutInterpolationFunction();
 }
 
 TransFuncKeyWiseQuartOutInInterpolationFunction::TransFuncKeyWiseQuartOutInInterpolationFunction() {}
 
-std::string TransFuncKeyWiseQuartOutInInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseQuartOutInInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string TransFuncKeyWiseQuartOutInInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseQuartOutInInterpolationFunction::getCategory() const {
     return "keywise quartetic";
 }
 
@@ -1049,22 +1354,22 @@ TransFunc* TransFuncKeyWiseQuartOutInInterpolationFunction::interpolate(TransFun
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartOutInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuartOutInInterpolationFunction::create() const {
     return new TransFuncKeyWiseQuartOutInInterpolationFunction();
 }
 
 TransFuncKeyWiseQuintInInterpolationFunction::TransFuncKeyWiseQuintInInterpolationFunction() {}
 
-std::string TransFuncKeyWiseQuintInInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseQuintInInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string TransFuncKeyWiseQuintInInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseQuintInInterpolationFunction::getCategory() const {
     return "keywise quintic";
 }
 
@@ -1123,22 +1428,22 @@ TransFunc* TransFuncKeyWiseQuintInInterpolationFunction::interpolate(TransFunc* 
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintInInterpolationFunction::create() const {
     return new TransFuncKeyWiseQuintInInterpolationFunction();
 }
 
 TransFuncKeyWiseQuintOutInterpolationFunction::TransFuncKeyWiseQuintOutInterpolationFunction() {}
 
-std::string TransFuncKeyWiseQuintOutInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseQuintOutInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string TransFuncKeyWiseQuintOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseQuintOutInterpolationFunction::getCategory() const {
     return "keywise quintic";
 }
 
@@ -1197,22 +1502,22 @@ TransFunc* TransFuncKeyWiseQuintOutInterpolationFunction::interpolate(TransFunc*
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintOutInterpolationFunction::create() const {
     return new TransFuncKeyWiseQuintOutInterpolationFunction();
 }
 
 TransFuncKeyWiseQuintInOutInterpolationFunction::TransFuncKeyWiseQuintInOutInterpolationFunction() {}
 
-std::string TransFuncKeyWiseQuintInOutInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseQuintInOutInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string TransFuncKeyWiseQuintInOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseQuintInOutInterpolationFunction::getCategory() const {
     return "keywise quintic";
 }
 
@@ -1271,23 +1576,23 @@ TransFunc* TransFuncKeyWiseQuintInOutInterpolationFunction::interpolate(TransFun
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintInOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintInOutInterpolationFunction::create() const {
     return new TransFuncKeyWiseQuintInOutInterpolationFunction();
 }
 
 TransFuncKeyWiseQuintOutInInterpolationFunction::TransFuncKeyWiseQuintOutInInterpolationFunction() {
 }
 
-std::string TransFuncKeyWiseQuintOutInInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseQuintOutInInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string TransFuncKeyWiseQuintOutInInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseQuintOutInInterpolationFunction::getCategory() const {
     return "keywise quintic";
 }
 
@@ -1346,22 +1651,22 @@ TransFunc* TransFuncKeyWiseQuintOutInInterpolationFunction::interpolate(TransFun
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintOutInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseQuintOutInInterpolationFunction::create() const {
     return new TransFuncKeyWiseQuintOutInInterpolationFunction();
 }
 
 TransFuncKeyWiseSineInInterpolationFunction::TransFuncKeyWiseSineInInterpolationFunction() {}
 
-std::string TransFuncKeyWiseSineInInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseSineInInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string TransFuncKeyWiseSineInInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseSineInInterpolationFunction::getCategory() const {
     return "keywise sineousidal";
 }
 
@@ -1420,22 +1725,22 @@ TransFunc* TransFuncKeyWiseSineInInterpolationFunction::interpolate(TransFunc* s
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineInInterpolationFunction::create() const {
     return new TransFuncKeyWiseSineInInterpolationFunction();
 }
 
 TransFuncKeyWiseSineOutInterpolationFunction::TransFuncKeyWiseSineOutInterpolationFunction() {}
 
-std::string TransFuncKeyWiseSineOutInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseSineOutInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string TransFuncKeyWiseSineOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseSineOutInterpolationFunction::getCategory() const {
     return "keywise sineousidal";
 }
 
@@ -1494,22 +1799,22 @@ TransFunc* TransFuncKeyWiseSineOutInterpolationFunction::interpolate(TransFunc* 
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineOutInterpolationFunction::create() const {
     return new TransFuncKeyWiseSineOutInterpolationFunction();
 }
 
 TransFuncKeyWiseSineInOutInterpolationFunction::TransFuncKeyWiseSineInOutInterpolationFunction() {}
 
-std::string TransFuncKeyWiseSineInOutInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseSineInOutInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string TransFuncKeyWiseSineInOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseSineInOutInterpolationFunction::getCategory() const {
     return "keywise sineousidal";
 }
 
@@ -1568,22 +1873,22 @@ TransFunc* TransFuncKeyWiseSineInOutInterpolationFunction::interpolate(TransFunc
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineInOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineInOutInterpolationFunction::create() const {
     return new TransFuncKeyWiseSineInOutInterpolationFunction();
 }
 
 TransFuncKeyWiseSineOutInInterpolationFunction::TransFuncKeyWiseSineOutInInterpolationFunction() {}
 
-std::string TransFuncKeyWiseSineOutInInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseSineOutInInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string TransFuncKeyWiseSineOutInInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseSineOutInInterpolationFunction::getCategory() const {
     return "keywise sineousidal";
 }
 
@@ -1642,22 +1947,22 @@ TransFunc* TransFuncKeyWiseSineOutInInterpolationFunction::interpolate(TransFunc
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineOutInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseSineOutInInterpolationFunction::create() const {
     return new TransFuncKeyWiseSineOutInInterpolationFunction();
 }
 
 TransFuncKeyWiseExponentInInterpolationFunction::TransFuncKeyWiseExponentInInterpolationFunction() {}
 
-std::string TransFuncKeyWiseExponentInInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseExponentInInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string TransFuncKeyWiseExponentInInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseExponentInInterpolationFunction::getCategory() const {
     return "keywise exponential";
 }
 
@@ -1716,22 +2021,22 @@ TransFunc* TransFuncKeyWiseExponentInInterpolationFunction::interpolate(TransFun
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentInInterpolationFunction::create() const {
     return new TransFuncKeyWiseExponentInInterpolationFunction();
 }
 
 TransFuncKeyWiseExponentOutInterpolationFunction::TransFuncKeyWiseExponentOutInterpolationFunction() {}
 
-std::string TransFuncKeyWiseExponentOutInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseExponentOutInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string TransFuncKeyWiseExponentOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseExponentOutInterpolationFunction::getCategory() const {
     return "keywise exponential";
 }
 
@@ -1790,22 +2095,22 @@ TransFunc* TransFuncKeyWiseExponentOutInterpolationFunction::interpolate(TransFu
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentOutInterpolationFunction::create() const {
     return new TransFuncKeyWiseExponentOutInterpolationFunction();
 }
 
 TransFuncKeyWiseExponentInOutInterpolationFunction::TransFuncKeyWiseExponentInOutInterpolationFunction() {}
 
-std::string TransFuncKeyWiseExponentInOutInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseExponentInOutInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string TransFuncKeyWiseExponentInOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseExponentInOutInterpolationFunction::getCategory() const {
     return "keywise exponential";
 }
 
@@ -1864,22 +2169,22 @@ TransFunc* TransFuncKeyWiseExponentInOutInterpolationFunction::interpolate(Trans
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentInOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentInOutInterpolationFunction::create() const {
     return new TransFuncKeyWiseExponentInOutInterpolationFunction();
 }
 
 TransFuncKeyWiseExponentOutInInterpolationFunction::TransFuncKeyWiseExponentOutInInterpolationFunction() {}
 
-std::string TransFuncKeyWiseExponentOutInInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseExponentOutInInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string TransFuncKeyWiseExponentOutInInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseExponentOutInInterpolationFunction::getCategory() const {
     return "keywise exponential";
 }
 
@@ -1938,22 +2243,22 @@ TransFunc* TransFuncKeyWiseExponentOutInInterpolationFunction::interpolate(Trans
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentOutInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseExponentOutInInterpolationFunction::create() const {
     return new TransFuncKeyWiseExponentOutInInterpolationFunction();
 }
 
 TransFuncKeyWiseCircInInterpolationFunction::TransFuncKeyWiseCircInInterpolationFunction() {}
 
-std::string TransFuncKeyWiseCircInInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseCircInInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string TransFuncKeyWiseCircInInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseCircInInterpolationFunction::getCategory() const {
     return "keywise circular";
 }
 
@@ -2012,22 +2317,22 @@ TransFunc* TransFuncKeyWiseCircInInterpolationFunction::interpolate(TransFunc* s
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircInInterpolationFunction::create() const {
     return new TransFuncKeyWiseCircInInterpolationFunction();
 }
 
 TransFuncKeyWiseCircOutInterpolationFunction::TransFuncKeyWiseCircOutInterpolationFunction() {}
 
-std::string TransFuncKeyWiseCircOutInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseCircOutInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string TransFuncKeyWiseCircOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseCircOutInterpolationFunction::getCategory() const {
     return "keywise circular";
 }
 
@@ -2086,22 +2391,22 @@ TransFunc* TransFuncKeyWiseCircOutInterpolationFunction::interpolate(TransFunc* 
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircOutInterpolationFunction::create() const {
     return new TransFuncKeyWiseCircOutInterpolationFunction();
 }
 
 TransFuncKeyWiseCircInOutInterpolationFunction::TransFuncKeyWiseCircInOutInterpolationFunction() {}
 
-std::string TransFuncKeyWiseCircInOutInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseCircInOutInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string TransFuncKeyWiseCircInOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseCircInOutInterpolationFunction::getCategory() const {
     return "keywise circular";
 }
 
@@ -2160,22 +2465,22 @@ TransFunc* TransFuncKeyWiseCircInOutInterpolationFunction::interpolate(TransFunc
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircInOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircInOutInterpolationFunction::create() const {
     return new TransFuncKeyWiseCircInOutInterpolationFunction();
 }
 
 TransFuncKeyWiseCircOutInInterpolationFunction::TransFuncKeyWiseCircOutInInterpolationFunction() {}
 
-std::string TransFuncKeyWiseCircOutInInterpolationFunction::getMode() const {
+std::string TransFuncKeyWiseCircOutInInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string TransFuncKeyWiseCircOutInInterpolationFunction::getIdentifier() const {
+std::string TransFuncKeyWiseCircOutInInterpolationFunction::getCategory() const {
     return "keywise circular";
 }
 
@@ -2234,22 +2539,22 @@ TransFunc* TransFuncKeyWiseCircOutInInterpolationFunction::interpolate(TransFunc
         }
     }
     if (time < 1.f)
-        return startvalue->clone();
+        return startvalue->create();
     else
-        return endvalue->clone();
+        return endvalue->create();
 }
 
-InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircOutInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncKeyWiseCircOutInInterpolationFunction::create() const {
     return new TransFuncKeyWiseCircOutInInterpolationFunction();
 }
 
 TransFuncTextureLinearInterpolationFunction::TransFuncTextureLinearInterpolationFunction() {}
 
-std::string TransFuncTextureLinearInterpolationFunction::getMode() const {
+std::string TransFuncTextureLinearInterpolationFunction::getGuiName() const {
     return "texturebased linear";
 }
 
-std::string TransFuncTextureLinearInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureLinearInterpolationFunction::getCategory() const {
     return "texture linear";
 }
 
@@ -2274,6 +2579,11 @@ TransFunc* TransFuncTextureLinearInterpolationFunction::interpolate(TransFunc* s
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -2290,17 +2600,17 @@ TransFunc* TransFuncTextureLinearInterpolationFunction::interpolate(TransFunc* s
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureLinearInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureLinearInterpolationFunction::create() const {
     return new TransFuncTextureLinearInterpolationFunction();
 }
 
 TransFuncTextureQuadInInterpolationFunction::TransFuncTextureQuadInInterpolationFunction() {}
 
-std::string TransFuncTextureQuadInInterpolationFunction::getMode() const {
+std::string TransFuncTextureQuadInInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string TransFuncTextureQuadInInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureQuadInInterpolationFunction::getCategory() const {
     return "texture quadratic";
 }
 
@@ -2325,6 +2635,11 @@ TransFunc* TransFuncTextureQuadInInterpolationFunction::interpolate(TransFunc* s
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -2341,17 +2656,17 @@ TransFunc* TransFuncTextureQuadInInterpolationFunction::interpolate(TransFunc* s
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureQuadInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureQuadInInterpolationFunction::create() const {
     return new TransFuncTextureQuadInInterpolationFunction();
 }
 
 TransFuncTextureQuadOutInterpolationFunction::TransFuncTextureQuadOutInterpolationFunction() {}
 
-std::string TransFuncTextureQuadOutInterpolationFunction::getMode() const {
+std::string TransFuncTextureQuadOutInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string TransFuncTextureQuadOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureQuadOutInterpolationFunction::getCategory() const {
     return "texture quadratic";
 }
 
@@ -2376,6 +2691,11 @@ TransFunc* TransFuncTextureQuadOutInterpolationFunction::interpolate(TransFunc* 
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -2392,17 +2712,17 @@ TransFunc* TransFuncTextureQuadOutInterpolationFunction::interpolate(TransFunc* 
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureQuadOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureQuadOutInterpolationFunction::create() const {
     return new TransFuncTextureQuadOutInterpolationFunction();
 }
 
 TransFuncTextureQuadInOutInterpolationFunction::TransFuncTextureQuadInOutInterpolationFunction() {}
 
-std::string TransFuncTextureQuadInOutInterpolationFunction::getMode() const {
+std::string TransFuncTextureQuadInOutInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string TransFuncTextureQuadInOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureQuadInOutInterpolationFunction::getCategory() const {
     return "texture quadratic";
 }
 
@@ -2427,6 +2747,11 @@ TransFunc* TransFuncTextureQuadInOutInterpolationFunction::interpolate(TransFunc
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -2443,17 +2768,17 @@ TransFunc* TransFuncTextureQuadInOutInterpolationFunction::interpolate(TransFunc
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureQuadInOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureQuadInOutInterpolationFunction::create() const {
     return new TransFuncTextureQuadInOutInterpolationFunction();
 }
 
 TransFuncTextureQuadOutInInterpolationFunction::TransFuncTextureQuadOutInInterpolationFunction() {}
 
-std::string TransFuncTextureQuadOutInInterpolationFunction::getMode() const {
+std::string TransFuncTextureQuadOutInInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string TransFuncTextureQuadOutInInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureQuadOutInInterpolationFunction::getCategory() const {
     return "texture quadratic";
 }
 
@@ -2478,6 +2803,11 @@ TransFunc* TransFuncTextureQuadOutInInterpolationFunction::interpolate(TransFunc
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -2494,17 +2824,17 @@ TransFunc* TransFuncTextureQuadOutInInterpolationFunction::interpolate(TransFunc
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureQuadOutInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureQuadOutInInterpolationFunction::create() const {
     return new TransFuncTextureQuadOutInInterpolationFunction();
 }
 
 TransFuncTextureCubicInInterpolationFunction::TransFuncTextureCubicInInterpolationFunction() {}
 
-std::string TransFuncTextureCubicInInterpolationFunction::getMode() const {
+std::string TransFuncTextureCubicInInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string TransFuncTextureCubicInInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureCubicInInterpolationFunction::getCategory() const {
     return "texture cubic";
 }
 
@@ -2529,6 +2859,11 @@ TransFunc* TransFuncTextureCubicInInterpolationFunction::interpolate(TransFunc* 
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -2545,17 +2880,17 @@ TransFunc* TransFuncTextureCubicInInterpolationFunction::interpolate(TransFunc* 
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureCubicInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureCubicInInterpolationFunction::create() const {
     return new TransFuncTextureCubicInInterpolationFunction();
 }
 
 TransFuncTextureCubicOutInterpolationFunction::TransFuncTextureCubicOutInterpolationFunction() {}
 
-std::string TransFuncTextureCubicOutInterpolationFunction::getMode() const {
+std::string TransFuncTextureCubicOutInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string TransFuncTextureCubicOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureCubicOutInterpolationFunction::getCategory() const {
     return "texture cubic";
 }
 
@@ -2580,6 +2915,11 @@ TransFunc* TransFuncTextureCubicOutInterpolationFunction::interpolate(TransFunc*
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -2596,17 +2936,17 @@ TransFunc* TransFuncTextureCubicOutInterpolationFunction::interpolate(TransFunc*
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureCubicOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureCubicOutInterpolationFunction::create() const {
     return new TransFuncTextureCubicOutInterpolationFunction();
 }
 
 TransFuncTextureCubicInOutInterpolationFunction::TransFuncTextureCubicInOutInterpolationFunction() {}
 
-std::string TransFuncTextureCubicInOutInterpolationFunction::getMode() const {
+std::string TransFuncTextureCubicInOutInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string TransFuncTextureCubicInOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureCubicInOutInterpolationFunction::getCategory() const {
     return "texture cubic";
 }
 
@@ -2631,6 +2971,11 @@ TransFunc* TransFuncTextureCubicInOutInterpolationFunction::interpolate(TransFun
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -2647,17 +2992,17 @@ TransFunc* TransFuncTextureCubicInOutInterpolationFunction::interpolate(TransFun
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureCubicInOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureCubicInOutInterpolationFunction::create() const {
     return new TransFuncTextureCubicInOutInterpolationFunction();
 }
 
 TransFuncTextureCubicOutInInterpolationFunction::TransFuncTextureCubicOutInInterpolationFunction() {}
 
-std::string TransFuncTextureCubicOutInInterpolationFunction::getMode() const {
+std::string TransFuncTextureCubicOutInInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string TransFuncTextureCubicOutInInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureCubicOutInInterpolationFunction::getCategory() const {
     return "texture cubic";
 }
 
@@ -2682,6 +3027,11 @@ TransFunc* TransFuncTextureCubicOutInInterpolationFunction::interpolate(TransFun
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -2698,17 +3048,17 @@ TransFunc* TransFuncTextureCubicOutInInterpolationFunction::interpolate(TransFun
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureCubicOutInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureCubicOutInInterpolationFunction::create() const {
     return new TransFuncTextureCubicOutInInterpolationFunction();
 }
 
 TransFuncTextureQuartInInterpolationFunction::TransFuncTextureQuartInInterpolationFunction() {}
 
-std::string TransFuncTextureQuartInInterpolationFunction::getMode() const {
+std::string TransFuncTextureQuartInInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string TransFuncTextureQuartInInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureQuartInInterpolationFunction::getCategory() const {
     return "texture quartetic";
 }
 
@@ -2733,6 +3083,11 @@ TransFunc* TransFuncTextureQuartInInterpolationFunction::interpolate(TransFunc* 
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -2749,17 +3104,17 @@ TransFunc* TransFuncTextureQuartInInterpolationFunction::interpolate(TransFunc* 
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureQuartInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureQuartInInterpolationFunction::create() const {
     return new TransFuncTextureQuartInInterpolationFunction();
 }
 
 TransFuncTextureQuartOutInterpolationFunction::TransFuncTextureQuartOutInterpolationFunction() {}
 
-std::string TransFuncTextureQuartOutInterpolationFunction::getMode() const {
+std::string TransFuncTextureQuartOutInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string TransFuncTextureQuartOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureQuartOutInterpolationFunction::getCategory() const {
     return "texture quartetic";
 }
 
@@ -2784,6 +3139,11 @@ TransFunc* TransFuncTextureQuartOutInterpolationFunction::interpolate(TransFunc*
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -2800,17 +3160,17 @@ TransFunc* TransFuncTextureQuartOutInterpolationFunction::interpolate(TransFunc*
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureQuartOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureQuartOutInterpolationFunction::create() const {
     return new TransFuncTextureQuartOutInterpolationFunction();
 }
 
 TransFuncTextureQuartInOutInterpolationFunction::TransFuncTextureQuartInOutInterpolationFunction() {}
 
-std::string TransFuncTextureQuartInOutInterpolationFunction::getMode() const {
+std::string TransFuncTextureQuartInOutInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string TransFuncTextureQuartInOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureQuartInOutInterpolationFunction::getCategory() const {
     return "texture quartetic";
 }
 
@@ -2835,6 +3195,11 @@ TransFunc* TransFuncTextureQuartInOutInterpolationFunction::interpolate(TransFun
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -2851,17 +3216,17 @@ TransFunc* TransFuncTextureQuartInOutInterpolationFunction::interpolate(TransFun
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureQuartInOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureQuartInOutInterpolationFunction::create() const {
     return new TransFuncTextureQuartInOutInterpolationFunction();
 }
 
 TransFuncTextureQuartOutInInterpolationFunction::TransFuncTextureQuartOutInInterpolationFunction() {}
 
-std::string TransFuncTextureQuartOutInInterpolationFunction::getMode() const {
+std::string TransFuncTextureQuartOutInInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string TransFuncTextureQuartOutInInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureQuartOutInInterpolationFunction::getCategory() const {
     return "texture quartetic";
 }
 
@@ -2886,6 +3251,11 @@ TransFunc* TransFuncTextureQuartOutInInterpolationFunction::interpolate(TransFun
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -2902,17 +3272,17 @@ TransFunc* TransFuncTextureQuartOutInInterpolationFunction::interpolate(TransFun
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureQuartOutInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureQuartOutInInterpolationFunction::create() const {
     return new TransFuncTextureQuartOutInInterpolationFunction();
 }
 
 TransFuncTextureQuintInInterpolationFunction::TransFuncTextureQuintInInterpolationFunction() {}
 
-std::string TransFuncTextureQuintInInterpolationFunction::getMode() const {
+std::string TransFuncTextureQuintInInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string TransFuncTextureQuintInInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureQuintInInterpolationFunction::getCategory() const {
     return "texture quintic";
 }
 
@@ -2937,6 +3307,11 @@ TransFunc* TransFuncTextureQuintInInterpolationFunction::interpolate(TransFunc* 
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -2953,17 +3328,17 @@ TransFunc* TransFuncTextureQuintInInterpolationFunction::interpolate(TransFunc* 
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureQuintInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureQuintInInterpolationFunction::create() const {
     return new TransFuncTextureQuintInInterpolationFunction();
 }
 
 TransFuncTextureQuintOutInterpolationFunction::TransFuncTextureQuintOutInterpolationFunction() {}
 
-std::string TransFuncTextureQuintOutInterpolationFunction::getMode() const {
+std::string TransFuncTextureQuintOutInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string TransFuncTextureQuintOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureQuintOutInterpolationFunction::getCategory() const {
     return "texture quintic";
 }
 
@@ -2988,6 +3363,11 @@ TransFunc* TransFuncTextureQuintOutInterpolationFunction::interpolate(TransFunc*
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3004,17 +3384,17 @@ TransFunc* TransFuncTextureQuintOutInterpolationFunction::interpolate(TransFunc*
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureQuintOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureQuintOutInterpolationFunction::create() const {
     return new TransFuncTextureQuintOutInterpolationFunction();
 }
 
 TransFuncTextureQuintInOutInterpolationFunction::TransFuncTextureQuintInOutInterpolationFunction() {}
 
-std::string TransFuncTextureQuintInOutInterpolationFunction::getMode() const {
+std::string TransFuncTextureQuintInOutInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string TransFuncTextureQuintInOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureQuintInOutInterpolationFunction::getCategory() const {
     return "texture quintic";
 }
 
@@ -3039,6 +3419,11 @@ TransFunc* TransFuncTextureQuintInOutInterpolationFunction::interpolate(TransFun
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3055,17 +3440,17 @@ TransFunc* TransFuncTextureQuintInOutInterpolationFunction::interpolate(TransFun
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureQuintInOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureQuintInOutInterpolationFunction::create() const {
     return new TransFuncTextureQuintInOutInterpolationFunction();
 }
 
 TransFuncTextureQuintOutInInterpolationFunction::TransFuncTextureQuintOutInInterpolationFunction() {}
 
-std::string TransFuncTextureQuintOutInInterpolationFunction::getMode() const {
+std::string TransFuncTextureQuintOutInInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string TransFuncTextureQuintOutInInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureQuintOutInInterpolationFunction::getCategory() const {
     return "texture quintic";
 }
 
@@ -3090,6 +3475,11 @@ TransFunc* TransFuncTextureQuintOutInInterpolationFunction::interpolate(TransFun
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3106,17 +3496,17 @@ TransFunc* TransFuncTextureQuintOutInInterpolationFunction::interpolate(TransFun
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureQuintOutInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureQuintOutInInterpolationFunction::create() const {
     return new TransFuncTextureQuintOutInInterpolationFunction();
 }
 
 TransFuncTextureSineInInterpolationFunction::TransFuncTextureSineInInterpolationFunction() {}
 
-std::string TransFuncTextureSineInInterpolationFunction::getMode() const {
+std::string TransFuncTextureSineInInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string TransFuncTextureSineInInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureSineInInterpolationFunction::getCategory() const {
     return "texture sineousidal";
 }
 
@@ -3141,6 +3531,11 @@ TransFunc* TransFuncTextureSineInInterpolationFunction::interpolate(TransFunc* s
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3157,17 +3552,17 @@ TransFunc* TransFuncTextureSineInInterpolationFunction::interpolate(TransFunc* s
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureSineInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureSineInInterpolationFunction::create() const {
     return new TransFuncTextureSineInInterpolationFunction();
 }
 
 TransFuncTextureSineOutInterpolationFunction::TransFuncTextureSineOutInterpolationFunction() {}
 
-std::string TransFuncTextureSineOutInterpolationFunction::getMode() const {
+std::string TransFuncTextureSineOutInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string TransFuncTextureSineOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureSineOutInterpolationFunction::getCategory() const {
     return "texture sineousidal";
 }
 
@@ -3192,6 +3587,11 @@ TransFunc* TransFuncTextureSineOutInterpolationFunction::interpolate(TransFunc* 
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3208,17 +3608,17 @@ TransFunc* TransFuncTextureSineOutInterpolationFunction::interpolate(TransFunc* 
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureSineOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureSineOutInterpolationFunction::create() const {
     return new TransFuncTextureSineOutInterpolationFunction();
 }
 
 TransFuncTextureSineInOutInterpolationFunction::TransFuncTextureSineInOutInterpolationFunction() {}
 
-std::string TransFuncTextureSineInOutInterpolationFunction::getMode() const {
+std::string TransFuncTextureSineInOutInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string TransFuncTextureSineInOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureSineInOutInterpolationFunction::getCategory() const {
     return "texture sineousidal";
 }
 TransFunc* TransFuncTextureSineInOutInterpolationFunction::interpolate(TransFunc* startvalue, TransFunc* endvalue, float time) const {
@@ -3242,6 +3642,11 @@ TransFunc* TransFuncTextureSineInOutInterpolationFunction::interpolate(TransFunc
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3258,17 +3663,17 @@ TransFunc* TransFuncTextureSineInOutInterpolationFunction::interpolate(TransFunc
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureSineInOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureSineInOutInterpolationFunction::create() const {
     return new TransFuncTextureSineInOutInterpolationFunction();
 }
 
 TransFuncTextureSineOutInInterpolationFunction::TransFuncTextureSineOutInInterpolationFunction() {}
 
-std::string TransFuncTextureSineOutInInterpolationFunction::getMode() const {
+std::string TransFuncTextureSineOutInInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string TransFuncTextureSineOutInInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureSineOutInInterpolationFunction::getCategory() const {
     return "texture sineousidal";
 }
 
@@ -3293,6 +3698,11 @@ TransFunc* TransFuncTextureSineOutInInterpolationFunction::interpolate(TransFunc
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3309,17 +3719,17 @@ TransFunc* TransFuncTextureSineOutInInterpolationFunction::interpolate(TransFunc
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureSineOutInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureSineOutInInterpolationFunction::create() const {
     return new TransFuncTextureSineOutInInterpolationFunction();
 }
 
 TransFuncTextureExponentInInterpolationFunction::TransFuncTextureExponentInInterpolationFunction() {}
 
-std::string TransFuncTextureExponentInInterpolationFunction::getMode() const {
+std::string TransFuncTextureExponentInInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string TransFuncTextureExponentInInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureExponentInInterpolationFunction::getCategory() const {
     return "texture exponential";
 }
 
@@ -3344,6 +3754,11 @@ TransFunc* TransFuncTextureExponentInInterpolationFunction::interpolate(TransFun
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3360,17 +3775,17 @@ TransFunc* TransFuncTextureExponentInInterpolationFunction::interpolate(TransFun
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureExponentInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureExponentInInterpolationFunction::create() const {
     return new TransFuncTextureExponentInInterpolationFunction();
 }
 
 TransFuncTextureExponentOutInterpolationFunction::TransFuncTextureExponentOutInterpolationFunction() {}
 
-std::string TransFuncTextureExponentOutInterpolationFunction::getMode() const {
+std::string TransFuncTextureExponentOutInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string TransFuncTextureExponentOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureExponentOutInterpolationFunction::getCategory() const {
     return "texture exponential";
 }
 
@@ -3395,6 +3810,11 @@ TransFunc* TransFuncTextureExponentOutInterpolationFunction::interpolate(TransFu
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3411,17 +3831,17 @@ TransFunc* TransFuncTextureExponentOutInterpolationFunction::interpolate(TransFu
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureExponentOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureExponentOutInterpolationFunction::create() const {
     return new TransFuncTextureExponentOutInterpolationFunction();
 }
 
 TransFuncTextureExponentInOutInterpolationFunction::TransFuncTextureExponentInOutInterpolationFunction() {}
 
-std::string TransFuncTextureExponentInOutInterpolationFunction::getMode() const {
+std::string TransFuncTextureExponentInOutInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string TransFuncTextureExponentInOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureExponentInOutInterpolationFunction::getCategory() const {
     return "texture exponential";
 }
 
@@ -3446,6 +3866,11 @@ TransFunc* TransFuncTextureExponentInOutInterpolationFunction::interpolate(Trans
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3462,17 +3887,17 @@ TransFunc* TransFuncTextureExponentInOutInterpolationFunction::interpolate(Trans
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureExponentInOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureExponentInOutInterpolationFunction::create() const {
     return new TransFuncTextureExponentInOutInterpolationFunction();
 }
 
 TransFuncTextureExponentOutInInterpolationFunction::TransFuncTextureExponentOutInInterpolationFunction() {}
 
-std::string TransFuncTextureExponentOutInInterpolationFunction::getMode() const {
+std::string TransFuncTextureExponentOutInInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string TransFuncTextureExponentOutInInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureExponentOutInInterpolationFunction::getCategory() const {
     return "texture exponential";
 }
 
@@ -3497,6 +3922,11 @@ TransFunc* TransFuncTextureExponentOutInInterpolationFunction::interpolate(Trans
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3513,17 +3943,17 @@ TransFunc* TransFuncTextureExponentOutInInterpolationFunction::interpolate(Trans
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureExponentOutInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureExponentOutInInterpolationFunction::create() const {
     return new TransFuncTextureExponentOutInInterpolationFunction();
 }
 
 TransFuncTextureCircInInterpolationFunction::TransFuncTextureCircInInterpolationFunction() {}
 
-std::string TransFuncTextureCircInInterpolationFunction::getMode() const {
+std::string TransFuncTextureCircInInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string TransFuncTextureCircInInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureCircInInterpolationFunction::getCategory() const {
     return "texture circular";
 }
 
@@ -3548,6 +3978,11 @@ TransFunc* TransFuncTextureCircInInterpolationFunction::interpolate(TransFunc* s
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3564,17 +3999,17 @@ TransFunc* TransFuncTextureCircInInterpolationFunction::interpolate(TransFunc* s
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureCircInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureCircInInterpolationFunction::create() const {
     return new TransFuncTextureCircInInterpolationFunction();
 }
 
 TransFuncTextureCircOutInterpolationFunction::TransFuncTextureCircOutInterpolationFunction() {}
 
-std::string TransFuncTextureCircOutInterpolationFunction::getMode() const {
+std::string TransFuncTextureCircOutInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string TransFuncTextureCircOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureCircOutInterpolationFunction::getCategory() const {
     return "texture circular";
 }
 
@@ -3599,6 +4034,11 @@ TransFunc* TransFuncTextureCircOutInterpolationFunction::interpolate(TransFunc* 
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3615,17 +4055,17 @@ TransFunc* TransFuncTextureCircOutInterpolationFunction::interpolate(TransFunc* 
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureCircOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureCircOutInterpolationFunction::create() const {
     return new TransFuncTextureCircOutInterpolationFunction();
 }
 
 TransFuncTextureCircInOutInterpolationFunction::TransFuncTextureCircInOutInterpolationFunction() {}
 
-std::string TransFuncTextureCircInOutInterpolationFunction::getMode() const {
+std::string TransFuncTextureCircInOutInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string TransFuncTextureCircInOutInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureCircInOutInterpolationFunction::getCategory() const {
     return "texture circular";
 }
 
@@ -3650,6 +4090,11 @@ TransFunc* TransFuncTextureCircInOutInterpolationFunction::interpolate(TransFunc
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3666,17 +4111,17 @@ TransFunc* TransFuncTextureCircInOutInterpolationFunction::interpolate(TransFunc
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureCircInOutInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureCircInOutInterpolationFunction::create() const {
     return new TransFuncTextureCircInOutInterpolationFunction();
 }
 
 TransFuncTextureCircOutInInterpolationFunction::TransFuncTextureCircOutInInterpolationFunction() {}
 
-std::string TransFuncTextureCircOutInInterpolationFunction::getMode() const {
+std::string TransFuncTextureCircOutInInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string TransFuncTextureCircOutInInterpolationFunction::getIdentifier() const {
+std::string TransFuncTextureCircOutInInterpolationFunction::getCategory() const {
     return "texture circular";
 }
 
@@ -3701,6 +4146,11 @@ TransFunc* TransFuncTextureCircOutInInterpolationFunction::interpolate(TransFunc
 
     TransFunc* func = new TransFunc(dim.x,dim.y,dim.z);
 
+    tgt::vec2 d1 = startvalue->getDomain();
+    tgt::vec2 d2 = endvalue->getDomain();
+    func->setDomain(BasicFloatInterpolation::outQuadInterpolation(d1.x,d2.x,time),
+                    BasicFloatInterpolation::outQuadInterpolation(d1.y,d2.y,time), 0);
+
     GLubyte* texture = new GLubyte[4*dim.x*dim.y*dim.z];
     for (int x = 0; x < dim.x; ++x) {
         for (int y = 0; y < dim.y; ++y) {
@@ -3717,7 +4167,7 @@ TransFunc* TransFuncTextureCircOutInInterpolationFunction::interpolate(TransFunc
     return func;
 }
 
-InterpolationFunction<TransFunc*>* TransFuncTextureCircOutInInterpolationFunction::clone() const {
+InterpolationFunction<TransFunc*>* TransFuncTextureCircOutInInterpolationFunction::create() const {
     return new TransFuncTextureCircOutInInterpolationFunction();
 }
 

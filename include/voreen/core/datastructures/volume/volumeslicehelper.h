@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -40,14 +40,16 @@ enum SliceAlignment {
     XY_PLANE = 2
 };
 
+class TriangleMeshGeometryVec3;
+
 /**
- * @brief Generates a FaceGeometry that represents slice number \p sliceIndex with orientation \p alignment through the volume \p vh
+ * @brief Generates a geometry that represents slice number \p sliceIndex with orientation \p alignment through the volume \p vh
  *
  * @param vh The primary volume.
  * @param applyTransformation Apply the physicalToWorld-Matrix?
  * @param secondaryVolumes You can specify additional volumes to extend the area of the slice geometry to include these volumes. (For multi-volume slicing)
  */
-FaceGeometry getSliceGeometry(const VolumeBase* vh, SliceAlignment alignment, float sliceIndex, bool applyTransformation = true, const std::vector<const VolumeBase*> secondaryVolumes = std::vector<const VolumeBase*>());
+TriangleMeshGeometryVec3* getSliceGeometry(const VolumeBase* vh, SliceAlignment alignment, float sliceIndex, bool applyTransformation = true, const std::vector<const VolumeBase*> secondaryVolumes = std::vector<const VolumeBase*>());
 
 //TODO Should be replaced by new image class as soon as possible
 class Slice {

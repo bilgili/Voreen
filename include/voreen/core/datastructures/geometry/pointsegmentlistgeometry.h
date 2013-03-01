@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -55,15 +55,12 @@ public:
         for (size_t i=0; i<segmentList_.size(); ++i) {
             numPoints_ += static_cast<int>(segmentList_[i].size());
         }
-
-        setHasChanged(true);
     }
 
     void addSegment(std::vector<T> segment) {
         segmentList_.push_back(segment);
         pointList_.clear();
         numPoints_ += static_cast<int>(segment.size());
-        setHasChanged(true);
     }
 
     const std::vector<T>& getSegment(int i) const {
@@ -90,6 +87,10 @@ public:
     int getNumPoints() const { return numPoints_; }
 
     virtual void render() const {
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        tgt::multMatrix(getTransformationMatrix());
+
         glBegin(GL_POINTS);
         for (size_t i=0; i < segmentList_.size(); ++i){
             for (size_t j=0; j < segmentList_[i].size(); ++j){
@@ -99,17 +100,8 @@ public:
             }
         }
         glEnd();
-    }
 
-    /**
-     * Transforms the point list by applying the given transformation matrix to each its points.
-     *
-     * @see Geometry::transform
-     */
-    virtual void transform(const tgt::mat4& transformation) {
-        for (size_t i=0; i<segmentList_.size(); i++)
-            for (size_t j=0; j<segmentList_[i].size(); j++)
-                segmentList_[i][j] = transformation*segmentList_[i][j];
+        glPopMatrix();
     }
 
     /**
@@ -142,14 +134,15 @@ public:
         return true;
     }
 
-    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-6) {
+    virtual void clip(const tgt::plane clipPlane, double epsilon = 1e-6) {
+        tgt::plane plane = clipPlane.transform(getInvertedTransformationMatrix());
+
         tgtAssert(epsilon, "negative epsilon");
         std::vector< std::vector<T> > clippedSegmentList;
-        tgt::vec3 normal = clipPlane.xyz();
         for (size_t i=0; i<segmentList_.size(); i++) {
             std::vector<T> clippedSegment;
             for (size_t j=0; j<segmentList_[i].size(); j++) {
-                double distance = tgt::dot(normal, segmentList_[i][j]) - clipPlane.w;
+                double distance = plane.distance(segmentList_[i][j]);
                 if (distance <= epsilon)
                     clippedSegment.push_back(segmentList_[i][j]);
             }
@@ -158,21 +151,26 @@ public:
         segmentList_ = clippedSegmentList;
     }
 
-    virtual tgt::Bounds getBoundingBox() const {
+    virtual tgt::Bounds getBoundingBox(bool transformed = true) const {
         tgt::Bounds bounds;
         for (size_t i=0; i<segmentList_.size(); i++)
             for (size_t j=0; j<segmentList_[i].size(); j++)
                 bounds.addPoint(segmentList_[i][j]);
-        return bounds;
+
+        if(transformed)
+            return bounds.transform(getTransformationMatrix());
+        else
+            return bounds;
     }
 
     virtual void serialize(XmlSerializer& s) const {
         s.serialize("segments", segmentList_);
+        Geometry::serialize(s);
     }
 
     virtual void deserialize(XmlDeserializer& s) {
         s.deserialize("segments", segmentList_);
-        setHasChanged(true);
+        Geometry::deserialize(s);
     }
 
 protected:

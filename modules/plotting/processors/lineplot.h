@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -32,14 +32,14 @@
 
 namespace voreen {
 
-class LinePlot : public PlotProcessor {
+class VRN_CORE_API LinePlot : public PlotProcessor {
 
 public:
     LinePlot();
     virtual Processor* create() const;
 
-    virtual std::string getClassName() const { return "LinePlot"; }
-    virtual CodeState getCodeState() const   { return CODE_STATE_TESTING; }
+    virtual std::string getClassName() const { return "LinePlot";        }
+    virtual CodeState getCodeState() const   { return CODE_STATE_STABLE; }
 
 protected:
     virtual void setDescriptions() {

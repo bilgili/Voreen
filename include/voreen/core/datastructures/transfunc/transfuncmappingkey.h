@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,6 +26,7 @@
 #ifndef VRN_TRANSFUNCMAPPINGKEY_H
 #define VRN_TRANSFUNCMAPPINGKEY_H
 
+#include "voreen/core/voreenobject.h"
 #include "voreen/core/io/serialization/serialization.h"
 
 #include "tgt/vector.h"
@@ -38,7 +39,7 @@ namespace voreen {
  * Each key has an intensity at which it is located and a color.
  * Furthermore it can be split in two parts with two different colors.
  */
-class VRN_CORE_API TransFuncMappingKey : public Serializable {
+class VRN_CORE_API TransFuncMappingKey : public VoreenSerializableObject {
 public:
     /**
      * Constructor
@@ -52,6 +53,9 @@ public:
      * Standard Destructor
      */
     ~TransFuncMappingKey();
+
+    virtual std::string getClassName() const    { return "TransFuncMappingKey";     }
+    virtual TransFuncMappingKey* create() const { return new TransFuncMappingKey(); }
 
     /**
      * Operator to compare two TransFuncMappingKeys. True is returned when both keys

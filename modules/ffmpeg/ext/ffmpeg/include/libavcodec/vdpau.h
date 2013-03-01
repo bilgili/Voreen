@@ -25,7 +25,15 @@
 #define AVCODEC_VDPAU_H
 
 /**
- * \defgroup Decoder VDPAU Decoder and Renderer
+ * @file
+ * @ingroup lavc_codec_hwaccel_vdpau
+ * Public libavcodec VDPAU header.
+ */
+
+
+/**
+ * @defgroup lavc_codec_hwaccel_vdpau VDPAU Decoder and Renderer
+ * @ingroup lavc_codec_hwaccel
  *
  * VDPAU hardware acceleration has two modules
  * - VDPAU decoding
@@ -39,25 +47,22 @@
  * presentation (vo_vdpau.c) module.
  *
  * @{
- * \defgroup  VDPAU_Decoding VDPAU Decoding
- * \ingroup Decoder
- * @{
  */
 
 #include <vdpau/vdpau.h>
 #include <vdpau/vdpau_x11.h>
 
-/** \brief The videoSurface is used for rendering. */
+/** @brief The videoSurface is used for rendering. */
 #define FF_VDPAU_STATE_USED_FOR_RENDER 1
 
 /**
- * \brief The videoSurface is needed for reference/prediction.
+ * @brief The videoSurface is needed for reference/prediction.
  * The codec manipulates this.
  */
 #define FF_VDPAU_STATE_USED_FOR_REFERENCE 2
 
 /**
- * \brief This structure is used as a callback between the FFmpeg
+ * @brief This structure is used as a callback between the FFmpeg
  * decoder (vd_) and presentation (vo_) module.
  * This is used for defining a video frame containing surface,
  * picture parameter, bitstream information etc which are passed
@@ -68,17 +73,20 @@ struct vdpau_render_state {
 
     int state; ///< Holds FF_VDPAU_STATE_* values.
 
-    /** picture parameter information for all supported codecs */
-    union VdpPictureInfo {
-        VdpPictureInfoH264     h264;
-        VdpPictureInfoMPEG1Or2 mpeg;
-        VdpPictureInfoVC1       vc1;
-    } info;
-
-    /** Describe size/location of the compressed video data. */
+    /** Describe size/location of the compressed video data.
+        Set to 0 when freeing bitstream_buffers. */
     int bitstream_buffers_allocated;
     int bitstream_buffers_used;
+    /** The user is responsible for freeing this buffer using av_freep(). */
     VdpBitstreamBuffer *bitstream_buffers;
+
+    /** picture parameter information for all supported codecs */
+    union VdpPictureInfo {
+        VdpPictureInfoH264        h264;
+        VdpPictureInfoMPEG1Or2    mpeg;
+        VdpPictureInfoVC1          vc1;
+        VdpPictureInfoMPEG4Part2 mpeg4;
+    } info;
 };
 
 /* @}*/

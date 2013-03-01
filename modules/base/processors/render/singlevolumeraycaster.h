@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -46,7 +46,7 @@ namespace voreen {
  * @see CubeMeshProxyGeometry, MeshEntryExitPoints
  * @see MultiVolumeRaycaster
  */
-class SingleVolumeRaycaster : public VolumeRaycaster {
+class VRN_CORE_API SingleVolumeRaycaster : public VolumeRaycaster {
 public:
     SingleVolumeRaycaster();
     virtual Processor* create() const;
@@ -102,7 +102,11 @@ private:
     RenderPort outport1_;
     RenderPort outport2_;
 
-    PortGroup portGroup_;
+    // we render into internal buffers, which allows to reduce rendering size in interaction mode (coarseness)
+    RenderPort internalRenderPort_;
+    RenderPort internalRenderPort1_;
+    RenderPort internalRenderPort2_;
+    PortGroup internalPortGroup_;
 
     ShaderProperty shaderProp_;        ///< The shader property used by this raycaster.
     TransFuncProperty transferFunc_;  ///< the property that controls the transfer-function

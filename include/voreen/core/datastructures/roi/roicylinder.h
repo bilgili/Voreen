@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -40,8 +40,8 @@ public:
     virtual ROIBase* create() const { return new ROICylinder(); }
 
     virtual bool inROINormalized(tgt::vec3 p) const;
-    virtual MeshListGeometry* generateNormalizedMesh() const;
-    virtual MeshListGeometry* generateNormalizedMesh(tgt::plane pl) const;
+    virtual Geometry* generateNormalizedMesh() const;
+    virtual Geometry* generateNormalizedMesh(tgt::plane pl) const;
 private:
     static const std::string loggerCat_;
 };

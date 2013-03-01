@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -25,6 +25,7 @@
 
 #include "cubeproxygeometry.h"
 #include "voreen/core/datastructures/geometry/meshlistgeometry.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 
 namespace voreen {
 
@@ -125,11 +126,10 @@ void CubeProxyGeometry::process() {
     }
 
     // create output mesh
-    MeshListGeometry* geometry = new MeshListGeometry();
-    geometry->addMesh(MeshGeometry::createCube(coordLlf, coordUrb, texLlf, texUrb, texLlf, texUrb));
-    geometry->transform(inputVolume->getPhysicalToWorldMatrix());
+    TriangleMeshGeometryVec3* mesh = TriangleMeshGeometryVec3::createCube(VertexVec3(texLlf, texLlf), VertexVec3(texUrb, texUrb));
+    mesh->transform(inputVolume->getTextureToWorldMatrix());
 
-    outport_.setData(geometry);
+    outport_.setData(mesh);
 }
 
 void CubeProxyGeometry::onClipRightChange() {
@@ -175,12 +175,12 @@ void CubeProxyGeometry::resetClipPlanes() {
 }
 
 void CubeProxyGeometry::adjustClipPropertiesRanges() {
-    tgtAssert(inport_.getData() && inport_.getData()->getRepresentation<VolumeRAM>(), "No input volume");
+    tgtAssert(inport_.getData(), "No input volume");
 
     if (oldVolumeDimensions_ == tgt::ivec3(0,0,0))
-        oldVolumeDimensions_ = inport_.getData()->getRepresentation<VolumeRAM>()->getDimensions();
+        oldVolumeDimensions_ = inport_.getData()->getDimensions();
 
-    tgt::ivec3 numSlices = inport_.getData()->getRepresentation<VolumeRAM>()->getDimensions();
+    tgt::ivec3 numSlices = inport_.getData()->getDimensions();
 
     // assign new clipping values while taking care that the right>left validation
     // does not alter the assigned values

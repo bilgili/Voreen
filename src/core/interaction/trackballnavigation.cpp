@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -40,13 +40,12 @@ using tgt::KeyEvent;
 
 const std::string TrackballNavigation::loggerCat_ = "voreen.Trackballnavigation";
 
-TrackballNavigation::TrackballNavigation(CameraProperty* camera, TrackballNavigation::Mode mode, float minDist, float maxDist)
-    : trackball_(camera->getTrackball())
+TrackballNavigation::TrackballNavigation(CameraProperty* cameraProperty, TrackballNavigation::Mode mode, float minDist)
+    : cameraProperty_(cameraProperty)
+    , trackball_(&cameraProperty->getTrackball())
     , mode_(mode)
     , minDistance_(minDist)
-    , maxDistance_(maxDist)
 {
-
     initializeEventHandling();
 
     setMouseZoom(tgt::vec2(0.f, 0.5f));
@@ -56,8 +55,6 @@ TrackballNavigation::TrackballNavigation(CameraProperty* camera, TrackballNaviga
     setMouseWheelRoll(10.f, true);
     trackball_->setSize(0.7f); // sets trackball sensitivity
     resetButton_ = tgt::MouseEvent::MOUSE_BUTTON_NONE;
-
-//        trackball_->setContinuousSpin(false);
 
     wheelCounter_   = -1;
     spinCounter_    = -1;
@@ -105,7 +102,7 @@ void TrackballNavigation::mouseReleaseEvent(tgt::MouseEvent* e) {
 }
 
 void TrackballNavigation::mouseMoveEvent(tgt::MouseEvent* e) {
-
+    tgtAssert(cameraProperty_, "no camera property");
     e->ignore();
 
     if (!trackball_ || !tracking_)
@@ -137,8 +134,8 @@ void TrackballNavigation::mouseMoveEvent(tgt::MouseEvent* e) {
         // restrict distance within specified range
         if (trackball_->getCenterDistance() < minDistance_)
             trackball_->zoomAbsolute(minDistance_);
-        if (trackball_->getCenterDistance() > maxDistance_)
-            trackball_->zoomAbsolute(maxDistance_);
+        if (trackball_->getCenterDistance() > cameraProperty_->getMaxValue())
+            trackball_->zoomAbsolute(cameraProperty_->getMaxValue());
     }
 }
 
@@ -157,7 +154,7 @@ void TrackballNavigation::mouseDoubleClickEvent(tgt::MouseEvent* e) {
 }
 
 void TrackballNavigation::wheelEvent(tgt::MouseEvent* e) {
-
+    tgtAssert(cameraProperty_, "no camera property");
     e->ignore();
 
     if (!trackball_ )
@@ -186,9 +183,8 @@ void TrackballNavigation::wheelEvent(tgt::MouseEvent* e) {
         // restrict distance within specified range
         if (trackball_->getCenterDistance() < minDistance_)
             trackball_->zoomAbsolute(minDistance_);
-        if (trackball_->getCenterDistance() > maxDistance_)
-            trackball_->zoomAbsolute(maxDistance_);
-
+        if (trackball_->getCenterDistance() > cameraProperty_->getMaxValue())
+            trackball_->zoomAbsolute(cameraProperty_->getMaxValue());
     }
 }
 

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -86,17 +86,17 @@ Processor* VolumeCrop::create() const {
 }
 
 void VolumeCrop::process() {
-    tgtAssert(inport_.getData()->getRepresentation<VolumeRAM>(), "no input volume");
+    tgtAssert(inport_.getData(), "no input volume");
 
     if (oldVolumeDimensions_ == tgt::ivec3(0,0,0))
-        oldVolumeDimensions_ = inport_.getData()->getRepresentation<VolumeRAM>()->getDimensions();
+        oldVolumeDimensions_ = inport_.getData()->getDimensions();
 
     // adapt clipping plane properties on volume change
     if (inport_.hasChanged()) {
         adjustClipPropertiesRanges();
     }
 
-    tgt::svec3 inputDimensions = inport_.getData()->getRepresentation<VolumeRAM>()->getDimensions();
+    tgt::svec3 inputDimensions = inport_.getData()->getDimensions();
 
     // compute size of cropped volume in each rendering pass
     tgt::svec3 dimensions;
@@ -106,7 +106,7 @@ void VolumeCrop::process() {
     croppedDimensions_.setMaxValue(inputDimensions);
     croppedDimensions_.set(dimensions);
 
-    size_t bpp = static_cast<size_t>(inport_.getData()->getRepresentation<VolumeRAM>()->getBytesPerVoxel());
+    size_t bpp = static_cast<size_t>(inport_.getData()->getBytesPerVoxel());
     size_t inputRamSize = hmul(inputDimensions) * bpp / (1024 * 1024);
     size_t croppedRamSize = hmul(dimensions) * bpp / (1024 * 1024);
     croppedSize_.setMaxValue(static_cast<int>(inputRamSize));

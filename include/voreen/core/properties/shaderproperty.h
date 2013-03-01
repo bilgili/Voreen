@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,7 +33,6 @@ namespace voreen {
 
 class VRN_CORE_API ShaderSource : public Serializable {
 public:
-    // Default ctor
     ShaderSource() :
         originalGeometryFilename_(""), originalVertexFilename_(""), originalFragmentFilename_(""),
         externalGeometryFilename_(""), externalVertexFilename_(""), externalFragmentFilename_(""),
@@ -60,6 +59,7 @@ public:
         return geometryIsExternal_ ? externalGeometryFilename_ : originalGeometryFilename_;
     }
 
+//protected: FIXME!
     std::string originalGeometryFilename_;
     std::string originalVertexFilename_;
     std::string originalFragmentFilename_;
@@ -80,6 +80,7 @@ public:
     bool vertexIsExternal_;
     bool fragmentIsExternal_;
 
+public:
     /**
      * Operator to compare two ShaderSource objects.
      *

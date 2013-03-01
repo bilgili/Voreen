@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -29,11 +29,11 @@ namespace voreen {
 
 QuatStartInterpolationFunction::QuatStartInterpolationFunction() {}
 
-std::string QuatStartInterpolationFunction::getMode() const {
+std::string QuatStartInterpolationFunction::getGuiName() const {
     return "focus on startvalue";
 }
 
-std::string QuatStartInterpolationFunction::getIdentifier() const {
+std::string QuatStartInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -44,17 +44,17 @@ tgt::quat QuatStartInterpolationFunction::interpolate(tgt::quat startvalue, tgt:
         return endvalue;
 }
 
-InterpolationFunction<tgt::quat>* QuatStartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::quat>* QuatStartInterpolationFunction::create() const {
     return new QuatStartInterpolationFunction();
 }
 
 QuatEndInterpolationFunction::QuatEndInterpolationFunction() {}
 
-std::string QuatEndInterpolationFunction::getMode() const {
+std::string QuatEndInterpolationFunction::getGuiName() const {
     return "focus on endvalue";
 }
 
-std::string QuatEndInterpolationFunction::getIdentifier() const {
+std::string QuatEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -65,17 +65,17 @@ tgt::quat QuatEndInterpolationFunction::interpolate(tgt::quat startvalue, tgt::q
         return startvalue;
 }
 
-InterpolationFunction<tgt::quat>* QuatEndInterpolationFunction::clone() const {
+InterpolationFunction<tgt::quat>* QuatEndInterpolationFunction::create() const {
         return new QuatEndInterpolationFunction();
 }
 
 QuatStartEndInterpolationFunction::QuatStartEndInterpolationFunction() {}
 
-std::string QuatStartEndInterpolationFunction::getMode() const {
+std::string QuatStartEndInterpolationFunction::getGuiName() const {
     return "bisection";
 }
 
-std::string QuatStartEndInterpolationFunction::getIdentifier() const {
+std::string QuatStartEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -86,17 +86,17 @@ tgt::quat QuatStartEndInterpolationFunction::interpolate(tgt::quat startvalue, t
         return endvalue;
 }
 
-InterpolationFunction<tgt::quat>* QuatStartEndInterpolationFunction::clone() const {
+InterpolationFunction<tgt::quat>* QuatStartEndInterpolationFunction::create() const {
     return new QuatStartEndInterpolationFunction();
 }
 
 QuatLinearInterpolationFunction::QuatLinearInterpolationFunction() {}
 
-std::string QuatLinearInterpolationFunction::getMode() const {
+std::string QuatLinearInterpolationFunction::getGuiName() const {
     return "linear interpolation (Lerp)";
 }
 
-std::string QuatLinearInterpolationFunction::getIdentifier() const {
+std::string QuatLinearInterpolationFunction::getCategory() const {
     return "linear";
 }
 
@@ -104,17 +104,17 @@ tgt::quat QuatLinearInterpolationFunction::interpolate(tgt::quat startvalue, tgt
     return lerpQuat(startvalue, endvalue, time);
 }
 
-InterpolationFunction<tgt::quat>* QuatLinearInterpolationFunction::clone() const {
+InterpolationFunction<tgt::quat>* QuatLinearInterpolationFunction::create() const {
     return new QuatLinearInterpolationFunction();
 }
 
 QuatSphericalLinearInterpolationFunction::QuatSphericalLinearInterpolationFunction() {}
 
-std::string QuatSphericalLinearInterpolationFunction::getMode() const {
+std::string QuatSphericalLinearInterpolationFunction::getGuiName() const {
     return "spherical linear interpolation (Slerp)";
 }
 
-std::string QuatSphericalLinearInterpolationFunction::getIdentifier() const {
+std::string QuatSphericalLinearInterpolationFunction::getCategory() const {
     return "linear";
 }
 
@@ -122,7 +122,7 @@ tgt::quat QuatSphericalLinearInterpolationFunction::interpolate(tgt::quat startv
     return slerpQuat(startvalue, endvalue, time, false);
 }
 
-InterpolationFunction<tgt::quat>* QuatSphericalLinearInterpolationFunction::clone() const {
+InterpolationFunction<tgt::quat>* QuatSphericalLinearInterpolationFunction::create() const {
     return new QuatSphericalLinearInterpolationFunction();
 }
 

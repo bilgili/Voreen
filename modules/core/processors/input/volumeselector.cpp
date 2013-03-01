@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,7 +26,7 @@
 #include "volumeselector.h"
 
 #include "voreen/core/datastructures/volume/volume.h"
-#include "voreen/core/datastructures/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumelist.h"
 #include "voreen/core/processors/processorwidgetfactory.h"
 #include "voreen/core/ports/allports.h"
 
@@ -37,7 +37,7 @@ const std::string VolumeSelector::loggerCat_("voreen.core.VolumeSelector");
 VolumeSelector::VolumeSelector()
     : Processor(),
       volumeID_("volumeID", "Selected volume", 0, 0, 100),
-      inport_(Port::INPORT, "volumecollection", "VolumeCollection Input", false),
+      inport_(Port::INPORT, "volumecollection", "VolumeList Input", false),
       outport_(Port::OUTPORT, "volumehandle.volumehandle", "Volume Output", false)
 {
     addPort(inport_);
@@ -57,18 +57,20 @@ void VolumeSelector::process() {
 void VolumeSelector::initialize() throw (tgt::Exception) {
     Processor::initialize();
 
-    adjustToVolumeCollection();
+    adjustToVolumeList();
 }
 
-void VolumeSelector::invalidate(int /*inv = INVALID_RESULT*/) {
-    adjustToVolumeCollection();
+void VolumeSelector::invalidate(int inv/*inv = INVALID_RESULT*/) {
+    Processor::invalidate(inv);
+
+    adjustToVolumeList();
 }
 
-void VolumeSelector::adjustToVolumeCollection() {
+void VolumeSelector::adjustToVolumeList() {
     if (!outport_.isInitialized())
         return;
 
-    const VolumeCollection* collection = inport_.getData();
+    const VolumeList* collection = inport_.getData();
     int max = ((collection != 0) ? static_cast<int>(collection->size()) : 0);
 
     if (collection && !collection->empty() && (volumeID_.get() < max)) {

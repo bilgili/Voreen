@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -71,7 +71,7 @@ CameraWidget::CameraWidget(CameraProperty* cameraProp, float minDist, float maxD
 
     tgtAssert(cameraProp_, "No camera property");
 
-    track_ = cameraProp_->getTrackball();
+    track_ = &cameraProp_->getTrackball();
 
     minDist_ = tgt::iround(minDist * CAM_DIST_SCALE_FACTOR);
     maxDist_ = tgt::iround(maxDist * CAM_DIST_SCALE_FACTOR);
@@ -84,6 +84,20 @@ CameraWidget::CameraWidget(CameraProperty* cameraProp, float minDist, float maxD
 
 CameraWidget::~CameraWidget() {
     delete timer_;
+
+    delete cameraPosition_;
+    delete focusVector_;
+    delete upVector_;
+
+    delete leftProp_;
+    delete rightProp_;
+    delete bottomProp_;
+    delete topProp_;
+    delete nearProp_;
+    delete farProp_;
+
+    delete fovyProp_;
+    delete ratioProp_;
 }
 
 void CameraWidget::createWidgets() {
@@ -137,11 +151,11 @@ void CameraWidget::createWidgets() {
     upBox->setLayout(upLayout);
 
     //cameraPosition_ = new FloatVec3Property("Position", "Position", tgt::vec3(0.0f), tgt::vec3(-FLT_MAX), tgt::vec3(FLT_MAX));
-    cameraPosition_ = new FloatVec3Property("Position", "Position", tgt::vec3(0.0f), tgt::vec3(-5000.0f), tgt::vec3(5000.0f));
+    cameraPosition_ = new FloatVec3Property("Position", "Position", tgt::vec3(0.0f), tgt::vec3(-100000.0f), tgt::vec3(100000.0f));
     cameraPosition_->set(cameraProp_->get().getPosition());
 
     //focusVector_ = new FloatVec3Property("Focus", "Focus", tgt::vec3(0.0f), tgt::vec3(-FLT_MAX), tgt::vec3(FLT_MAX));
-    focusVector_ = new FloatVec3Property("Focus", "Focus", tgt::vec3(0.0f), tgt::vec3(-5000.0f), tgt::vec3(5000.0f));
+    focusVector_ = new FloatVec3Property("Focus", "Focus", tgt::vec3(0.0f), tgt::vec3(-100000.0f), tgt::vec3(100000.0f));
     focusVector_->set(cameraProp_->get().getFocus());
 
     upVector_ = new FloatVec3Property("Upvector", "Upvector", tgt::vec3(0.0f), tgt::vec3(-1.0f), tgt::vec3(1.0f));
@@ -168,6 +182,24 @@ void CameraWidget::createWidgets() {
     slDistance_->setSliderPosition(static_cast<int>(CAM_DIST_SCALE_FACTOR));
     slDistance_->setToolTip(tr("Adjust distance of point of view"));
 
+    shiftTrackballCenter_ = new QComboBox();
+    shiftTrackballCenter_->addItem("Scene center");
+    shiftTrackballCenter_->addItem("World origin");
+    shiftTrackballCenter_->addItem("Camera shift");
+    gridLayout->addWidget(new QLabel(tr("Rotate around: ")), 3, 0);
+    gridLayout->addWidget(shiftTrackballCenter_, 3, 1);
+
+    adjustCameraToScene_ = new QCheckBox(tr("Adapt camera to scene size"));
+    gridLayout->addWidget(adjustCameraToScene_, 4, 0);
+
+    if(!cameraProp_->isSceneAdjuster()) {
+        shiftTrackballCenter_->setEnabled(false);
+        adjustCameraToScene_->setEnabled(false);
+    }
+
+    resetCamFocusToTrackballCenter_ = new QPushButton("Reset Camera Focus to Trackball Center");
+    gridLayout->addWidget(resetCamFocusToTrackballCenter_, 6, 0);
+
     orientationBox_->setLayout(gridLayout);
     cameraLayout->addWidget(orientationBox_);
     posLayout->addWidget(positionBox);
@@ -181,7 +213,7 @@ void CameraWidget::createWidgets() {
     rotateAroundX_ = new QCheckBox(tr("Continually rotate around x-Axis"));
     rotateAroundY_ = new QCheckBox(tr("Continually rotate around y-Axis"));
     rotateAroundZ_ = new QCheckBox(tr("Continually rotate around z-Axis"));
-    continueSpin_  = new QCheckBox(tr("Give trackball a spin with\neach mouse-movement"));
+    //continueSpin_  = new QCheckBox(tr("Give trackball a spin with\neach mouse-movement"));
 
     vboxLayout->addWidget(rotateAroundX_);
     vboxLayout->addWidget(rotateAroundY_);
@@ -203,7 +235,7 @@ void CameraWidget::createWidgets() {
     rightProp_  = new FloatProperty("frust.right", "Right", 1.f, -1000.f, 1000.f);
     bottomProp_ = new FloatProperty("frust.bottom", "Bottom", -1.f, -1000.f, 1000.f);
     topProp_    = new FloatProperty("frust.top", "Top", 1.f, -1000.f, 1000.f);
-    nearProp_   = new FloatProperty("frust.near", "Near", 0.1f, 0.0001f, 1.f);
+    nearProp_   = new FloatProperty("frust.near", "Near", 0.1f, 0.0001f, 100.f);
     farProp_    = new FloatProperty("frust.far", "Far", 10.f, 0.0, maxDist_);
     fovyProp_   = new FloatProperty("frust.fovy", "Fov", 45.f, 5.f, 175.f);
     ratioProp_  = new FloatProperty("frust.ratio", "Ratio", 1.f, 0.05f, 10.f);
@@ -320,7 +352,6 @@ void CameraWidget::createWidgets() {
     cameraLayout->addStretch();
 
     setLayout(mainLayout);
-
 }
 
 void CameraWidget::positionChange(FloatVec3Property::ElemType pos) {
@@ -339,7 +370,7 @@ void CameraWidget::createConnections() {
     connect(rotateAroundX_,              SIGNAL(toggled(bool)),     this, SLOT(enableX(bool)));
     connect(rotateAroundY_,              SIGNAL(toggled(bool)),     this, SLOT(enableY(bool)));
     connect(rotateAroundZ_,              SIGNAL(toggled(bool)),     this, SLOT(enableZ(bool)));
-    connect(continueSpin_,               SIGNAL(toggled(bool)),     this, SLOT(enableContSpin(bool)));
+    //connect(continueSpin_,               SIGNAL(toggled(bool)),     this, SLOT(enableContSpin(bool)));
 
     connect(comboOrientation_,   SIGNAL(currentIndexChanged(int)),    this, SLOT(orientationChanged(int)));
     connect(slDistance_,         SIGNAL(valueChanged(int)), this, SLOT(distanceSliderChanged(int)));
@@ -350,6 +381,29 @@ void CameraWidget::createConnections() {
 
     connect(buRestoreTrackball_, SIGNAL(clicked()),     this, SLOT(restoreCamera()));
     connect(buSaveTrackball_,    SIGNAL(clicked()),     this, SLOT(saveCameraToDisk()));
+
+    connect(resetCamFocusToTrackballCenter_, SIGNAL(clicked()),                this, SLOT(resetCamFocus()));
+    connect(adjustCameraToScene_,            SIGNAL(toggled(bool)),            this, SLOT(adjustCameraToScene(bool)));
+    connect(shiftTrackballCenter_,           SIGNAL(currentIndexChanged(int)), this, SLOT(shiftTrackballCenter(int)));
+}
+
+void CameraWidget::resetCamFocus() {
+    cameraProp_->resetCameraFocusToTrackballCenter();
+}
+
+void CameraWidget::adjustCameraToScene(bool b) {
+    cameraProp_->setAdaptOnChange(b);
+    cameraProp_->notifyChange();
+}
+
+void CameraWidget::shiftTrackballCenter(int i) {
+    if(i == 0)
+        cameraProp_->setTrackballCenterBehaviour(CameraProperty::SCENE);
+    else if(i == 1)
+        cameraProp_->setTrackballCenterBehaviour(CameraProperty::WORLD);
+    else if(i == 2)
+        cameraProp_->setTrackballCenterBehaviour(CameraProperty::CAMSHIFT);
+    cameraProp_->notifyChange();
 }
 
 void CameraWidget::toAbove() {
@@ -466,7 +520,7 @@ void CameraWidget::timerEvent(QTimerEvent* /*event*/) {
         return;
 
     if (rotateX_ || rotateY_ || rotateZ_) {
-         continueSpin_->setCheckState(Qt::Unchecked);
+         //continueSpin_->setCheckState(Qt::Unchecked);
 //         painter_->setTrackballContinousSpin(false);
      }
 
@@ -513,10 +567,10 @@ void CameraWidget::checkCameraState() {
     nearProp_->set(f.getNearDist());
     farProp_->set(f.getFarDist());
 
-    cameraPosition_->setMinValue(tgt::vec3(-cameraProp_->getMaxValue()));
-    cameraPosition_->setMaxValue(tgt::vec3(cameraProp_->getMaxValue()));
-    focusVector_->setMinValue(tgt::vec3(-cameraProp_->getMaxValue()));
-    focusVector_->setMaxValue(tgt::vec3(cameraProp_->getMaxValue()));
+    //cameraPosition_->setMinValue(tgt::vec3(-cameraProp_->getMaxValue()));
+    //cameraPosition_->setMaxValue(tgt::vec3(cameraProp_->getMaxValue()));
+    //focusVector_->setMinValue(tgt::vec3(-cameraProp_->getMaxValue()));
+    //focusVector_->setMaxValue(tgt::vec3(cameraProp_->getMaxValue()));
     cameraPosition_->set(cameraProp_->get().getPosition());
     focusVector_->set(cameraProp_->get().getFocus());
     upVector_->set(cameraProp_->get().getUpVector());
@@ -558,6 +612,14 @@ void CameraWidget::checkCameraState() {
         comboProjection_->blockSignals(true);
         comboProjection_->setCurrentIndex((int)cameraProp_->get().getProjectionMode());
         comboProjection_->blockSignals(false);
+
+        adjustCameraToScene_->blockSignals(true);
+        adjustCameraToScene_->setCheckState(cameraProp_->getAdaptOnChange() ? Qt::Checked : Qt::Unchecked);
+        adjustCameraToScene_->blockSignals(false);
+
+        shiftTrackballCenter_->blockSignals(true);
+        shiftTrackballCenter_->setCurrentIndex((int)cameraProp_->getTrackballCenterBehaviour());
+        shiftTrackballCenter_->blockSignals(false);
 
         if (comboProjection_->currentIndex() == 1) {
             frustumBox_->hide();

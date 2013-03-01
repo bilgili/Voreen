@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -45,14 +45,12 @@ bool ROISubstract::inROI(tgt::vec3 p) const {
     return in;
 }
 
-MeshListGeometry* ROISubstract::generateMesh() const {
-    MeshListGeometry* mlg = new MeshListGeometry();
-    return mlg;
+Geometry* ROISubstract::generateMesh() const {
+    return 0;
 }
 
-MeshListGeometry* ROISubstract::generateMesh(tgt::plane /*pl*/) const {
-    MeshListGeometry* mlg = new MeshListGeometry();
-    return mlg;
+Geometry* ROISubstract::generateMesh(tgt::plane /*pl*/) const {
+    return 0;
 }
 
 tgt::Bounds ROISubstract::getBoundingBox() const {

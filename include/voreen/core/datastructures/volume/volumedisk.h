@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,11 +30,12 @@
 #include <vector>
 
 #include "voreen/core/datastructures/volume/volumeram.h"
+#include "voreen/core/datastructures/volume/volumegl.h"
 
 namespace voreen {
 
 /// A representation storing the information to do a lazy loading of the volume data.
-class VolumeDisk : public VolumeRepresentation {
+class VRN_CORE_API VolumeDisk : public VolumeRepresentation {
 public:
     /**
      * @param filename Absolute file name.
@@ -49,11 +50,20 @@ public:
 
     std::string getFileName() const { return filename_; }
     ///@see VolumeFactory
-    std::string getFormat() const { return format_; }
+    virtual std::string getFormat() const { return format_; }
+
+    /// Returns the base type (e.g., "float" for a representation of format "Vector3(float)").
+    virtual std::string getBaseType() const;
+
     virtual int getNumChannels() const;
     virtual int getBytesPerVoxel() const;
+    ///loads slices from the disk volume and returns the new (ram)volume
+    virtual VolumeRAM* loadSlices(const size_t firstSlice, const size_t lastSlice) const;
+    ///loads a sub brick volume
+    virtual VolumeRAM* loadBrick(const tgt::svec3 offset, const tgt::svec3 dimensions) const;
     ///Creates new disk representation based on current disk representation.
     virtual VolumeDisk* getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset = tgt::svec3(0,0,0)) const throw (std::bad_alloc);
+
     ///Offset in the file (in bytes).
     int64_t getOffset() const { return offset_; }
     bool getSwapEndian() const { return swapEndian_; }
@@ -66,8 +76,15 @@ protected:
     static const std::string loggerCat_;
 };
 
-/// Creates a Volume from a VolumeDisk.
-class RepresentationConverterLoadFromDisk : public RepresentationConverter<VolumeRAM> {
+/// Creates a VolumeRam from a VolumeDisk.
+class VRN_CORE_API  RepresentationConverterLoadFromDisk : public RepresentationConverter<VolumeRAM> {
+public:
+    virtual bool canConvert(const VolumeRepresentation* source) const;
+    virtual VolumeRepresentation* convert(const VolumeRepresentation* source) const;
+};
+
+/// Creates a VolumeGL from a VolumeDisk.
+class VRN_CORE_API  RepresentationConverterLoadFromDiskToGL : public RepresentationConverter<VolumeGL> {
 public:
     virtual bool canConvert(const VolumeRepresentation* source) const;
     virtual VolumeRepresentation* convert(const VolumeRepresentation* source) const;

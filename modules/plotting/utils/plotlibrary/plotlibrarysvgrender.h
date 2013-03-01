@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,7 +33,7 @@
 
 namespace voreen {
 
-class PlotLibrarySvgRender  {
+class VRN_CORE_API PlotLibrarySvgRender  {
 public:
 
 
@@ -63,7 +63,7 @@ private:
     static const std::string loggerCat_;
 };
 
-class PlotLibrarySvgRenderLine : public PlotLibrarySvgRender {
+class VRN_CORE_API PlotLibrarySvgRenderLine : public PlotLibrarySvgRender {
 public:
 
     PlotLibrarySvgRenderLine(const PlotLibraryFileBase::Projection_Coordinates& startPoint, const PlotLibraryFileBase::Projection_Coordinates& endPoint, tgt::Color lineColor, int clipping_number, double lineWidth, PlotEntitySettings::LineStyle lineStyle = PlotEntitySettings::CONTINUOUS);
@@ -84,7 +84,7 @@ private:
     PlotEntitySettings::LineStyle lineStyle_;
 };
 
-class PlotLibrarySvgRenderCircle : public PlotLibrarySvgRender {
+class VRN_CORE_API PlotLibrarySvgRenderCircle : public PlotLibrarySvgRender {
 public:
 
     PlotLibrarySvgRenderCircle(const PlotLibraryFileBase::Projection_Coordinates& point, plot_t radius, tgt::Color fillColor, tgt::Color borderColor, int clipping_number, double linewidth, int textureNumber = 0, PlotEntitySettings::PolygonFillStyle fillstyle = PlotEntitySettings::NONZERO, PlotEntitySettings::LineStyle lineStyle = PlotEntitySettings::CONTINUOUS);
@@ -108,7 +108,7 @@ private:
     int textureNumber_;
 };
 
-class PlotLibrarySvgRenderEllipse : public PlotLibrarySvgRender {
+class VRN_CORE_API PlotLibrarySvgRenderEllipse : public PlotLibrarySvgRender {
 public:
 
     PlotLibrarySvgRenderEllipse(const PlotLibraryFileBase::Projection_Coordinates& mpoint, double xradius, double yradius, tgt::Color fillColor, tgt::Color lineColor, int clipping_number, double lineWidth, int textureNumber = 0, PlotEntitySettings::PolygonFillStyle fillstyle = PlotEntitySettings::NONZERO, PlotEntitySettings::LineStyle lineStyle = PlotEntitySettings::CONTINUOUS);
@@ -133,7 +133,7 @@ private:
 };
 
 
-class PlotLibrarySvgRenderRect : public PlotLibrarySvgRender {
+class VRN_CORE_API PlotLibrarySvgRenderRect : public PlotLibrarySvgRender {
 public:
 
     PlotLibrarySvgRenderRect(const PlotLibraryFileBase::Projection_Coordinates& startPoint, double stepWidth, double height, const std::string& fillurl);
@@ -153,7 +153,7 @@ private:
 
 
 
-class PlotLibrarySvgRenderPolygon : public PlotLibrarySvgRender {
+class VRN_CORE_API PlotLibrarySvgRenderPolygon : public PlotLibrarySvgRender {
 public:
 
     PlotLibrarySvgRenderPolygon(const std::vector< PlotLibraryFileBase::Projection_Coordinates >& points, tgt::Color fillColor, tgt::Color lineColor, int clipping_number, double lineWidth, int textureNumber = 0, PlotEntitySettings::PolygonFillStyle fillstyle = PlotEntitySettings::EVENODD, PlotEntitySettings::LineStyle lineStyle = PlotEntitySettings::CONTINUOUS);
@@ -172,7 +172,7 @@ private:
     int textureNumber_;
 };
 
-class PlotLibrarySvgRenderPolyline : public PlotLibrarySvgRender {
+class VRN_CORE_API PlotLibrarySvgRenderPolyline : public PlotLibrarySvgRender {
 public:
 
     PlotLibrarySvgRenderPolyline(const std::vector< PlotLibraryFileBase::Projection_Coordinates >& points, tgt::Color fillColor, tgt::Color lineColor, int clipping_number, double lineWidth, int textureNumber = 0, PlotEntitySettings::PolygonFillStyle fillstyle = PlotEntitySettings::FILLNONE, PlotEntitySettings::LineStyle lineStyle = PlotEntitySettings::CONTINUOUS);
@@ -193,7 +193,7 @@ private:
 
 };
 
-class PlotLibrarySvgRenderText : public PlotLibrarySvgRender {
+class VRN_CORE_API PlotLibrarySvgRenderText : public PlotLibrarySvgRender {
 public:
 
     PlotLibrarySvgRenderText(const tgt::Vector3<plot_t>& startPoint, const std::string& text);

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -69,7 +69,7 @@ VolumeHistogramIntensity::VolumeHistogramIntensity(const VolumeBase* vol, int bu
 }
 
 VolumeDerivedData* VolumeHistogramIntensity::createFrom(const VolumeBase* handle) const {
-    tgtAssert(handle, "no volume handle");
+    tgtAssert(handle, "no volume");
     VolumeHistogramIntensity* h = new VolumeHistogramIntensity();
     Histogram1D hist = createHistogram1DFromVolume(handle, 256);
     h->hist_ = hist;
@@ -131,6 +131,10 @@ const Histogram1D& VolumeHistogramIntensity::getHistogram() const {
 
 Histogram1D& VolumeHistogramIntensity::getHistogram() {
     return hist_;
+}
+
+VolumeDerivedData* VolumeHistogramIntensity::create() const {
+    return new VolumeHistogramIntensity();
 }
 
 //-----------------------------------------------------------------------------
@@ -304,6 +308,10 @@ void VolumeHistogramIntensityGradient::deserialize(XmlDeserializer& s) {
     s.deserialize("significantRangeIntensity", significantRangeIntensity_);
     s.deserialize("significantRangeGradient", significantRangeGradient_);
     s.deserialize("scaleFactor", scaleFactor_);
+}
+
+VolumeDerivedData* VolumeHistogramIntensityGradient::create() const {
+    return new VolumeHistogramIntensityGradient();
 }
 
 } // namespace voreen

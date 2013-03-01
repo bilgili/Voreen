@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -54,7 +54,7 @@ AnimationExportWidget::AnimationExportWidget(QWidget* parent, Animation* animati
     , renderState_(Inactive)
 {
     setWindowTitle(tr("Export Animation"));
-    setObjectName(tr("Export Optionen"));
+    setObjectName(tr("Export Options"));
     createWidgets();
     createConnections();
 }
@@ -76,21 +76,25 @@ void AnimationExportWidget::networkChanged() {
     for (size_t i = 0; i < processors.size(); ++i) {
         std::vector<CameraProperty*> camPropsProcessor = processors[i]->getPropertiesByType<CameraProperty>();
         if (!camPropsProcessor.empty())
-            allCameraPropertys_.insert(std::make_pair(camPropsProcessor[0], processors[i]->getName()));
+            allCameraPropertys_.insert(std::make_pair(camPropsProcessor[0], processors[i]->getID()));
 
         CanvasRenderer* cr = dynamic_cast<CanvasRenderer*>(processors[i]);
         if (cr != 0) {
             tgt::QtCanvas* canvas = dynamic_cast<tgt::QtCanvas*>(cr->getCanvas());
             if (canvas != 0)
-                allCanvases_.insert(std::make_pair(canvas, cr->getName()));
+                allCanvases_.insert(std::make_pair(canvas, cr->getID()));
         }
     }
 
     if (!allCanvases_.empty()) {
         canvas_ = allCanvases_.begin()->first;
         canvasSize_ = canvas_->getSize();
-        if (canvas_ != 0)
+        if (canvas_ != 0) {
             painter_ = dynamic_cast<VoreenPainter*>(canvas_->getPainter());
+
+            spinWidth_->setValue(canvas_->height());
+            spinHeight_->setValue(canvas_->width());
+        }
     }
 
     refreshComboBoxes();
@@ -100,8 +104,12 @@ void AnimationExportWidget::controlledCanvasChanged(int index) {
     if ((comboCanvases_ == 0) || (index < 0) || (index >= comboCanvases_->count()))
         return;
     canvas_ = reinterpret_cast<tgt::QtCanvas*>(comboCanvases_->itemData(index).toULongLong());
-    if (canvas_ != 0)
+    if (canvas_ != 0) {
         painter_ = dynamic_cast<VoreenPainter*>(canvas_->getPainter());
+
+        spinWidth_->setValue(canvas_->width());
+        spinHeight_->setValue(canvas_->height());
+    }
 
 }
 

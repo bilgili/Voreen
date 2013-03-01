@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -46,8 +46,8 @@ class CameraInteractionHandler;
  * Performs rendering of streamlines from a stationary input flow volume by
  * using geometric primitives like lines, tubes or arrows.
  */
-class StreamlineRenderer3D : public RenderProcessor, public FlowreenProcessor
-{
+class StreamlineRenderer3D : public RenderProcessor, public FlowreenProcessor {
+
 public:
     StreamlineRenderer3D();
     virtual ~StreamlineRenderer3D();
@@ -95,6 +95,7 @@ private:
         STYLE_ARROWS,
         STYLE_ARROW_GRID
     };
+    friend class OptionProperty<StreamlineStyle>;
 
     ColorCodingAbility colorCoding_;
     IntProperty numStreamlinesProp_;

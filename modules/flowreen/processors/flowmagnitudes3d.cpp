@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,7 +33,7 @@ namespace voreen {
 
 FlowMagnitudes3D::FlowMagnitudes3D()
     : Processor(),
-    processedVolumeHandle_(0),
+    processedVolume_(0),
     volInport_(Port::INPORT, "volumehandle.input", "Volume Input"),
     volOutport_(Port::OUTPORT, "volumehandle.output", "Volume Output", true)
 {
@@ -42,14 +42,14 @@ FlowMagnitudes3D::FlowMagnitudes3D()
 }
 
 FlowMagnitudes3D::~FlowMagnitudes3D() {
-    if ((processedVolumeHandle_ != 0) && (processedVolumeHandle_ != currentVolumeHandle_))
-        delete processedVolumeHandle_;
+    if ((processedVolume_ != 0) && (processedVolume_ != currentVolume_))
+        delete processedVolume_;
 }
 
 void FlowMagnitudes3D::process() {
     if (volInport_.isReady() && volInport_.hasChanged()) {
-        currentVolumeHandle_ = volInport_.getData();
-        if (dynamic_cast<const VolumeFlow3D*>(currentVolumeHandle_->getRepresentation<VolumeRAM>()) != 0)
+        currentVolume_ = volInport_.getData();
+        if (dynamic_cast<const VolumeFlow3D*>(currentVolume_->getRepresentation<VolumeRAM>()) != 0)
             calculateMagnitudes();
         else
             LERROR("process(): supplied Volume seems to contain no flow data! Cannot proceed.");
@@ -66,20 +66,20 @@ void FlowMagnitudes3D::initialize() throw (tgt::Exception) {
 
 void FlowMagnitudes3D::calculateMagnitudes() {
     VolumeOperatorFlowMagnitude magnitudeOp;
-    VolumeRAM* output = magnitudeOp.apply(currentVolumeHandle_);
+    VolumeRAM* output = magnitudeOp.apply(currentVolume_);
 
-    if ((processedVolumeHandle_ != 0)
-        && processedVolumeHandle_ != currentVolumeHandle_)
+    if ((processedVolume_ != 0)
+        && processedVolume_ != currentVolume_)
     {
-        delete processedVolumeHandle_;
+        delete processedVolume_;
     }
 
     if (output != 0)
-        processedVolumeHandle_ = new Volume(output, currentVolumeHandle_);
+        processedVolume_ = new Volume(output, currentVolume_);
     else
-        processedVolumeHandle_ = 0;
+        processedVolume_ = 0;
 
-    volOutport_.setData(processedVolumeHandle_);
+    volOutport_.setData(processedVolume_);
 }
 
 }   // namespace

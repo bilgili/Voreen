@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -52,7 +52,7 @@ VvdVolumeReader::VvdVolumeReader(ProgressBar* progress)
     extensions_.push_back("vvd");
 }
 
-VolumeCollection* VvdVolumeReader::read(const std::string &url)
+VolumeList* VvdVolumeReader::read(const std::string &url)
     throw (tgt::FileException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -93,7 +93,7 @@ VolumeCollection* VvdVolumeReader::read(const std::string &url)
     if (vec.empty())
         throw tgt::FileException("Deserialization from file '" + fileName + "' failed: no volume found");
 
-    VolumeCollection* vc = new VolumeCollection();
+    VolumeList* vc = new VolumeList();
     for(size_t i=0; i<vec.size(); i++) {
         Volume* vh = vec[i].createVolume(tgt::FileSystem::dirName(fileName));
         vh->setOrigin(origin);

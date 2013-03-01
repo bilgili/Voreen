@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -50,7 +50,7 @@ PlotDataMergeWidget::PlotDataMergeWidget(QWidget* parent, PlotDataMerge* plotDat
     proxyModelFirst_ = new PlotDataExtendedTableModel(NULL, std::vector<std::pair<int,std::string> >(0), this);
     proxyModelSecond_ = new PlotDataExtendedTableModel(NULL, std::vector<std::pair<int,std::string> >(0), this);
     proxyModelOut_ = new PlotDataExtendedTableModel(NULL, std::vector<std::pair<int,std::string> >(0), this);
-    setWindowTitle(QString::fromStdString(plotDataMerge->getName()));
+    setWindowTitle(QString::fromStdString(plotDataMerge->getGuiName()));
     contextMenu_ = new QMenu(this);
     resize(512, 512);
 }

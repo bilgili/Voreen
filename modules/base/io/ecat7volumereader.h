@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -193,7 +193,7 @@ struct ECAT7ImageHeader {
 /**
  * Reader for ECAT 7 files from CTI / Siemens scanners
  */
-class ECAT7VolumeReader : public VolumeReader {
+class VRN_CORE_API ECAT7VolumeReader : public VolumeReader {
     struct SubVolume {
         ECAT7DirectoryEntry de_;
         ECAT7ImageHeader ih_;
@@ -227,7 +227,7 @@ public:
     VolumeBase* read(const VolumeURL& origin)
         throw (tgt::FileException, std::bad_alloc);
 
-    virtual VolumeCollection* read(const std::string& url)
+    virtual VolumeList* read(const std::string& url)
         throw (tgt::FileException, std::bad_alloc);
 
     /**
@@ -236,7 +236,7 @@ public:
      * \param   url         url to load volume from
      * \param   volumeId    id to select the volume, if -1 all volumes will be selected
      **/
-    virtual VolumeCollection* read(const std::string& url, int volumeId)
+    virtual VolumeList* read(const std::string& url, int volumeId)
         throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
     std::vector<VolumeURL> listVolumes(const std::string& url) const

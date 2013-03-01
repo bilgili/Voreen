@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -35,7 +35,7 @@
 
 namespace voreen {
 
-class GeometrySave : public Processor {
+class VRN_CORE_API GeometrySave : public Processor {
 public:
     GeometrySave();
     virtual Processor* create() const;
@@ -46,6 +46,7 @@ public:
     virtual bool isEndProcessor() const      { return true;              }
 
     virtual bool isReady() const { return true; }
+    virtual void invalidate(int inv = 1);
 
 protected:
     virtual void setDescriptions() {

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
 
     // initialize the network evaluator and retrieve the CanvasRenderer processor from the loaded network
     NetworkEvaluator* networkEvaluator = new NetworkEvaluator();
-    vapp.setNetworkEvaluator(networkEvaluator);
+    vapp.registerNetworkEvaluator(networkEvaluator);
     ProcessorNetwork* network = workspace->getProcessorNetwork();
     std::vector<CanvasRenderer*> canvasRenderer = network->getProcessorsByType<CanvasRenderer>();
     if (canvasRenderer.empty()) {

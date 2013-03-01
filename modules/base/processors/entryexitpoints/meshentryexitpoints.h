@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -44,7 +44,7 @@ class CameraInteractionHandler;
  *
  * @see CubeMeshProxyGeometry, SingleVolumeRaycaster
  */
-class MeshEntryExitPoints : public RenderProcessor {
+class VRN_CORE_API MeshEntryExitPoints : public RenderProcessor {
 public:
     MeshEntryExitPoints();
     virtual ~MeshEntryExitPoints();
@@ -56,10 +56,12 @@ public:
 
     virtual bool isReady() const;
 
+    virtual void adjustRenderOutportSizes();
+
 protected:
     virtual void setDescriptions() {
         setDescription("This is the standard processor for generating entry- and exit-points within Voreen. The generated image color-codes the ray parameters for a subsequent VolumeRaycaster. See also: CubeMeshProxyGeometry\
-<p><span style=\"font-weight: bold\">Note:</span> The input proxy geometry is expected to be convex. Non-convex geometry is accepted, but may yield unexpected results.</p>\
+<p><span style=\"font-weight: bold\">Note:</span> The input proxy geometry is expected to be convex. Non-convex geometry is accepted, but may yield unexpected results. The input geometry is expected to have texture coordinates and texture to world transformation matrix.</p>\
 ");
     }
 
@@ -73,7 +75,11 @@ protected:
      *  Entry and Exit Params have to be generated before
      *  calling this method.
      */
-    void jitterEntryPoints();
+    void jitterEntryPoints(RenderPort& entryPort, RenderPort& exitPort, RenderPort& outport);
+
+    void renderGeometry(const Geometry* geometry, RenderPort& outport, GLenum depthFunc, float clearDepth, GLenum cullFace);
+
+    void fillEntryPoints(RenderPort& firstBackPort, RenderPort& firstFrontPort, RenderPort& outport, const Geometry* geometry);
 
     void onJitterEntryPointsChanged();
 
@@ -86,9 +92,9 @@ protected:
     RenderPort tmpPort_;
 
     // properties
-    BoolProperty supportCameraInsideVolume_;
+    StringOptionProperty outputCoordinateSystem_;
+    StringOptionProperty cameraInsideVolumeTechnique_;
     BoolProperty jitterEntryPoints_;
-    BoolProperty useFloatRenderTargets_;
     BoolProperty useCulling_;
     FloatProperty jitterStepLength_;
     CameraProperty camera_;  ///< camera used for rendering the proxy geometry
@@ -98,8 +104,7 @@ protected:
 
     tgt::Shader* shaderProgram_;
     tgt::Shader* shaderProgramJitter_;
-
-    MeshListGeometry geometry_;
+    tgt::Shader* shaderProgramInsideVolume_;
 
     /// Category used for logging.
     static const std::string loggerCat_;

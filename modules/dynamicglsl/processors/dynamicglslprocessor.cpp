@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -63,10 +63,10 @@ Processor* DynamicGLSLProcessor::create() const {
 void DynamicGLSLProcessor::initialize() throw (tgt::Exception) {
     // assign header and create shader
     // Add definition of sampler type to allow shader compilation:
-    initialized_ = true;
+    processorState_ = PROCESSOR_STATE_NOT_READY;
     shader_->setHeader(generateHeader() + "\n #define TF_SAMPLER_TYPE sampler1D\n");
     shader_->rebuild();
-    initialized_ = false;
+    processorState_ = PROCESSOR_STATE_NOT_INITIALIZED;
     VolumeRaycaster::initialize();  // initializes the shader and transfunc properties
 
     tgt::Shader* sh = shader_->getShader();

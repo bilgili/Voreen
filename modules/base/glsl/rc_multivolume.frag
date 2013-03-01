@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -81,7 +81,7 @@ uniform TF_SAMPLER_TYPE_4 transferFuncTex4_;
  * Performs the ray traversal
  * returns the final fragment color.
  ***/
-void rayTraversal(in vec3 first, in vec3 last) {
+void rayTraversal(in vec3 first, in vec3 last, float entryDepth, float exitDepth) {
     // calculate the required ray parameters
     float t     = 0.0;
     float tIncr = 0.0;
@@ -121,20 +121,20 @@ void rayTraversal(in vec3 first, in vec3 last) {
         else
             voxel1 = vec4(0.0);
 
-        // calculate gradients
-        if(t == 0.0)
-            voxel1.xyz = fixClipBorderGradient(samplePos1, rayDirection, entryPoints_, entryParameters_); //FIXME
-        else
-            voxel1.xyz = CALC_GRADIENT(volume1_, volumeStruct1_, samplePos1);
-
         // apply classification
         vec4 color = RC_APPLY_CLASSIFICATION(transferFunc1_, transferFuncTex1_, voxel1);
 
-        // apply shading
-        color.rgb = APPLY_SHADING_1(voxel1.xyz, texToPhysical(samplePos1, volumeStruct1_), volumeStruct1_.lightPositionPhysical_, volumeStruct1_.cameraPositionPhysical_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));
-
         // if opacity greater zero, apply compositing
         if (color.a > 0.0) {
+            // calculate gradients
+            if(t == 0.0)
+                voxel1.xyz = fixClipBorderGradient(samplePos1, rayDirection, entryPoints_, entryParameters_); //FIXME
+            else
+                voxel1.xyz = CALC_GRADIENT(volume1_, volumeStruct1_, samplePos1);
+
+            // apply shading
+            color.rgb = APPLY_SHADING_1(voxel1.xyz, texToPhysical(samplePos1, volumeStruct1_), volumeStruct1_.lightPositionPhysical_, volumeStruct1_.cameraPositionPhysical_, color.rgb, color.rgb, vec3(1.0,1.0,1.0));
+
             //TODO: adapt t, tDepth ?
             result = RC_APPLY_COMPOSITING_1(result, color, worldSamplePos, voxel1.xyz, t, samplingStepSize_, tDepth);
             result1 = RC_APPLY_COMPOSITING_2(result1, color, worldSamplePos, voxel1.xyz, t, samplingStepSize_, tDepth);
@@ -151,20 +151,20 @@ void rayTraversal(in vec3 first, in vec3 last) {
         else
             voxel2 = vec4(0.0);
 
-        // calculate gradients
-        if(t == 0.0)
-            voxel2.xyz = fixClipBorderGradient(samplePos2, rayDirection, entryPoints_, entryParameters_); //FIXME
-        else
-            voxel2.xyz = CALC_GRADIENT(volume2_, volumeStruct2_, samplePos2);
-
         // apply classification
         vec4 color2 = RC_APPLY_CLASSIFICATION(transferFunc2_, transferFuncTex2_, voxel2);
 
-        // apply shading
-        color2.rgb = APPLY_SHADING_2(voxel2.xyz, texToPhysical(samplePos2, volumeStruct2_), volumeStruct2_.lightPositionPhysical_, volumeStruct2_.cameraPositionPhysical_, color2.rgb, color2.rgb, vec3(1.0,1.0,1.0));
-
         // if opacity greater zero, apply compositing
         if (color2.a > 0.0) {
+            // calculate gradients
+            if(t == 0.0)
+                voxel2.xyz = fixClipBorderGradient(samplePos2, rayDirection, entryPoints_, entryParameters_); //FIXME
+            else
+                voxel2.xyz = CALC_GRADIENT(volume2_, volumeStruct2_, samplePos2);
+
+            // apply shading
+            color2.rgb = APPLY_SHADING_2(voxel2.xyz, texToPhysical(samplePos2, volumeStruct2_), volumeStruct2_.lightPositionPhysical_, volumeStruct2_.cameraPositionPhysical_, color2.rgb, color2.rgb, vec3(1.0,1.0,1.0));
+
             result = RC_APPLY_COMPOSITING_1(result, color2, worldSamplePos, voxel2.xyz, t, samplingStepSize_, tDepth);
             result1 = RC_APPLY_COMPOSITING_2(result1, color2, worldSamplePos, voxel2.xyz, t, samplingStepSize_, tDepth);
             result2 = RC_APPLY_COMPOSITING_3(result2, color2, worldSamplePos, voxel2.xyz, t, samplingStepSize_, tDepth);
@@ -181,20 +181,20 @@ void rayTraversal(in vec3 first, in vec3 last) {
         else
             voxel3 = vec4(0.0);
 
-        // calculate gradients
-        if(t == 0.0)
-            voxel3.xyz = fixClipBorderGradient(samplePos3, rayDirection, entryPoints_, entryParameters_); //FIXME
-        else
-            voxel3.xyz = CALC_GRADIENT(volume3_, volumeStruct3_, samplePos3);
-
         // apply classification
         vec4 color3 = RC_APPLY_CLASSIFICATION(transferFunc3_, transferFuncTex3_, voxel3);
 
-        // apply shading
-        color3.rgb = APPLY_SHADING_3(voxel3.xyz, texToPhysical(samplePos3, volumeStruct3_), volumeStruct3_.lightPositionPhysical_, volumeStruct3_.cameraPositionPhysical_, color3.rgb, color3.rgb, vec3(1.0,1.0,1.0));
-
         // if opacity greater zero, apply compositing
         if (color3.a > 0.0) {
+            // calculate gradients
+            if(t == 0.0)
+                voxel3.xyz = fixClipBorderGradient(samplePos3, rayDirection, entryPoints_, entryParameters_); //FIXME
+            else
+                voxel3.xyz = CALC_GRADIENT(volume3_, volumeStruct3_, samplePos3);
+
+            // apply shading
+            color3.rgb = APPLY_SHADING_3(voxel3.xyz, texToPhysical(samplePos3, volumeStruct3_), volumeStruct3_.lightPositionPhysical_, volumeStruct3_.cameraPositionPhysical_, color3.rgb, color3.rgb, vec3(1.0,1.0,1.0));
+
             result = RC_APPLY_COMPOSITING_1(result, color3, worldSamplePos, voxel3.xyz, t, samplingStepSize_, tDepth);
             result1 = RC_APPLY_COMPOSITING_2(result1, color3, worldSamplePos, voxel3.xyz, t, samplingStepSize_, tDepth);
             result2 = RC_APPLY_COMPOSITING_3(result2, color3, worldSamplePos, voxel3.xyz, t, samplingStepSize_, tDepth);
@@ -211,20 +211,20 @@ void rayTraversal(in vec3 first, in vec3 last) {
         else
             voxel4 = vec4(0.0);
 
-        // calculate gradients
-        if(t == 0.0)
-            voxel4.xyz = fixClipBorderGradient(samplePos4, rayDirection, entryPoints_, entryParameters_); //FIXME
-        else
-            voxel4.xyz = CALC_GRADIENT(volume4_, volumeStruct4_, samplePos4);
-
         // apply classification
         vec4 color4 = RC_APPLY_CLASSIFICATION(transferFunc4_, transferFuncTex4_, voxel4);
 
-        // apply shading
-        color4.rgb = APPLY_SHADING_4(voxel4.xyz, texToPhysical(samplePos4, volumeStruct4_), volumeStruct4_.lightPositionPhysical_, volumeStruct4_.cameraPositionPhysical_, color4.rgb, color4.rgb, vec3(1.0,1.0,1.0));
-
         // if opacity greater zero, apply compositing
         if (color4.a > 0.0) {
+            // calculate gradients
+            if(t == 0.0)
+                voxel4.xyz = fixClipBorderGradient(samplePos4, rayDirection, entryPoints_, entryParameters_); //FIXME
+            else
+                voxel4.xyz = CALC_GRADIENT(volume4_, volumeStruct4_, samplePos4);
+
+            // apply shading
+            color4.rgb = APPLY_SHADING_4(voxel4.xyz, texToPhysical(samplePos4, volumeStruct4_), volumeStruct4_.lightPositionPhysical_, volumeStruct4_.cameraPositionPhysical_, color4.rgb, color4.rgb, vec3(1.0,1.0,1.0));
+
             result = RC_APPLY_COMPOSITING_1(result, color4, worldSamplePos, voxel4.xyz, t, samplingStepSize_, tDepth);
             result1 = RC_APPLY_COMPOSITING_2(result1, color4, worldSamplePos, voxel4.xyz, t, samplingStepSize_, tDepth);
             result2 = RC_APPLY_COMPOSITING_3(result2, color4, worldSamplePos, voxel4.xyz, t, samplingStepSize_, tDepth);
@@ -234,16 +234,19 @@ void rayTraversal(in vec3 first, in vec3 last) {
         t += tIncr;
         finished = finished || (t > tEnd);
     } END_WHILE
-    gl_FragDepth = getDepthValue(tDepth, tEnd, entryPointsDepth_, entryParameters_, exitPointsDepth_, exitParameters_);
+    gl_FragDepth = getDepthValue(tDepth, tEnd, entryDepth, exitDepth);
 }
 
 /***
  * The main method.
  ***/
 void main() {
-
-    vec3 frontPos = textureLookup2D(entryPoints_, entryParameters_, gl_FragCoord.xy).rgb;
-    vec3 backPos = textureLookup2D(exitPoints_, exitParameters_, gl_FragCoord.xy).rgb;
+    // fetch entry/exit points
+    vec2 p = gl_FragCoord.xy * screenDimRCP_;
+    vec3 frontPos = textureLookup2Dnormalized(entryPoints_, entryParameters_, p).rgb;
+    vec3 backPos = textureLookup2Dnormalized(exitPoints_, exitParameters_, p).rgb;
+    float entryDepth = textureLookup2Dnormalized(entryPointsDepth_, entryParameters_, p).z;
+    float exitDepth = textureLookup2Dnormalized(exitPointsDepth_, exitParameters_, p).z;
 
     // determine whether the ray has to be casted
     if (frontPos == backPos)
@@ -251,7 +254,7 @@ void main() {
         discard;
     else {
         // fragCoords are lying inside the bounding box
-        rayTraversal(frontPos, backPos);
+        rayTraversal(frontPos, backPos, entryDepth, exitDepth);
     }
 
     #ifdef OP0

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -25,6 +25,9 @@
 
 #include "multivolumeproxygeometry.h"
 
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
+#include "voreen/core/datastructures/geometry/geometrysequence.h"
+
 namespace voreen {
 
 MultiVolumeProxyGeometry::MultiVolumeProxyGeometry()
@@ -44,9 +47,7 @@ Processor* MultiVolumeProxyGeometry::create() const {
 }
 
 void MultiVolumeProxyGeometry::process() {
-    tgtAssert(inport_.getData()->getRepresentation<VolumeRAM>(), "no volume");
-
-    MeshListGeometry* geometry = new MeshListGeometry();
+    GeometrySequence* seq = new GeometrySequence(true);
 
     std::vector<const VolumeBase*> data = inport_.getAllData();
     for(size_t d=0; d<data.size(); ++d) {
@@ -55,26 +56,15 @@ void MultiVolumeProxyGeometry::process() {
 
         const VolumeBase* volume = data[d];
 
-        tgt::vec3 coordLlf = volume->getLLF();
-        tgt::vec3 coordUrb = volume->getURB();
+        tgt::vec3 coordLlf(0, 0, 0);
+        tgt::vec3 coordUrb(1, 1, 1);
 
-
-        MeshGeometry mesh = MeshGeometry::createCube(coordLlf, coordUrb, coordLlf, coordUrb);
-        //apply dataset transformation matrix:
-        mesh.transform(volume->getPhysicalToWorldMatrix());
-
-        //reset tex coords to coords after transformation:
-        for(size_t j=0; j<mesh.getFaceCount(); ++j) {
-            FaceGeometry& fg = mesh.getFace(j);
-            for(size_t k=0; k<fg.getVertexCount(); ++k) {
-                VertexGeometry& vg = fg.getVertex(k);
-                vg.setTexCoords(vg.getCoords());
-            }
-        }
-        geometry->addMesh(mesh);
+        TriangleMeshGeometryVec3* mesh = TriangleMeshGeometryVec3::createCube(VertexVec3(coordLlf, coordLlf), VertexVec3(coordUrb, coordUrb));
+        mesh->transform(volume->getTextureToWorldMatrix());
+        seq->addGeometry(mesh);
     }
 
-    outport_.setData(geometry);
+    outport_.setData(seq);
 }
 
 } // namespace

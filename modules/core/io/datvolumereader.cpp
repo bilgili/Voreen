@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -78,7 +78,7 @@ VolumeBase* DatVolumeReader::read(const VolumeURL& origin)
     if (! tmp.empty())
         timeframe = stoi(tmp);
 
-    VolumeCollection* collection = read(origin.getPath(), timeframe);
+    VolumeList* collection = read(origin.getPath(), timeframe);
 
     if (collection && collection->size() == 1) {
         result = collection->first();
@@ -93,7 +93,7 @@ VolumeBase* DatVolumeReader::read(const VolumeURL& origin)
     return result;
 }
 
-VolumeCollection* DatVolumeReader::read(const std::string &url)
+VolumeList* DatVolumeReader::read(const std::string &url)
     throw (tgt::FileException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -105,13 +105,13 @@ VolumeCollection* DatVolumeReader::read(const std::string &url)
     return readSlices(url, 0, 0, timeframe);
 }
 
-VolumeCollection* DatVolumeReader::read(const std::string &url, int timeframe)
+VolumeList* DatVolumeReader::read(const std::string &url, int timeframe)
     throw (tgt::FileException, std::bad_alloc)
 {
     return readSlices(url, 0, 0, timeframe);
 }
 
-VolumeCollection* DatVolumeReader::readMetaFile(const std::string &fileName, size_t firstSlice, size_t lastSlice, int timeframe)
+VolumeList* DatVolumeReader::readMetaFile(const std::string &fileName, size_t firstSlice, size_t lastSlice, int timeframe)
     throw (tgt::FileException, std::bad_alloc)
 {
     RawVolumeReader::ReadHints h;
@@ -257,17 +257,17 @@ VolumeCollection* DatVolumeReader::readMetaFile(const std::string &fileName, siz
             end = timeframe+1;
         }
 
-        VolumeCollection* toReturn = new VolumeCollection();
+        VolumeList* toReturn = new VolumeList();
         for (int frame = start; frame < end; ++frame) {
             h.timeframe_ = frame;
             rawReader.setReadHints(h);
 
-            VolumeCollection* volumeCollection = rawReader.readSlices(objectFilename, firstSlice, lastSlice);
-            if (!volumeCollection->empty()) {
+            VolumeList* volumeList = rawReader.readSlices(objectFilename, firstSlice, lastSlice);
+            if (!volumeList->empty()) {
                 VolumeURL origin(fileName);
                 origin.addSearchParameter("timeframe", itos(frame));
 
-                Volume* vh = static_cast<Volume*>(volumeCollection->first());
+                Volume* vh = static_cast<Volume*>(volumeList->first());
                 vh->setOrigin(origin);
                 vh->setTimestep(static_cast<float>(frame));
 
@@ -276,9 +276,9 @@ VolumeCollection* DatVolumeReader::readMetaFile(const std::string &fileName, siz
                 if(!h.hash_.empty())
                     vh->setHash(h.hash_);
 
-                toReturn->add(volumeCollection->first());
+                toReturn->add(volumeList->first());
             }
-            delete volumeCollection;
+            delete volumeList;
         }
         return toReturn;
     }
@@ -287,21 +287,21 @@ VolumeCollection* DatVolumeReader::readMetaFile(const std::string &fileName, siz
     }
 }
 
-VolumeCollection* DatVolumeReader::readSlices(const std::string &url, size_t firstSlice, size_t lastSlice, int timeframe)
+VolumeList* DatVolumeReader::readSlices(const std::string &url, size_t firstSlice, size_t lastSlice, int timeframe)
     throw (tgt::FileException, std::bad_alloc)
 {
     VolumeURL origin(url);
     return readMetaFile(origin.getPath(), firstSlice, lastSlice, timeframe);
 }
 
-VolumeCollection* DatVolumeReader::readBrick(const std::string& url, tgt::ivec3 brickStartPos, int brickSize)
+VolumeList* DatVolumeReader::readBrick(const std::string& url, tgt::ivec3 brickStartPos, int brickSize)
     throw (tgt::FileException, std::bad_alloc)
 {
     VolumeURL origin(url);
     return readMetaFileBrick(origin.getPath(), brickStartPos, brickSize);
 }
 
-VolumeCollection* DatVolumeReader::readVolumeFileBrick(const std::string &fileName, const tgt::ivec3& dims,
+VolumeList* DatVolumeReader::readVolumeFileBrick(const std::string &fileName, const tgt::ivec3& dims,
     tgt::ivec3 brickStartPos, int brickSize) throw (tgt::FileException, std::bad_alloc)
 {
     RawVolumeReader rawReader(getProgressBar());
@@ -313,12 +313,12 @@ VolumeCollection* DatVolumeReader::readVolumeFileBrick(const std::string &fileNa
                            1,                  // number of time frames
                            6);                 // header skip
 
-    VolumeCollection* volumeCollection = rawReader.readBrick(fileName,brickStartPos, brickSize);
+    VolumeList* volumeList = rawReader.readBrick(fileName,brickStartPos, brickSize);
 
-    return volumeCollection;
+    return volumeList;
 }
 
-VolumeCollection* DatVolumeReader::readMetaFileBrick(const std::string &fileName,tgt::ivec3 brickStartPos,
+VolumeList* DatVolumeReader::readMetaFileBrick(const std::string &fileName,tgt::ivec3 brickStartPos,
     int brickSize) throw (tgt::FileException, std::bad_alloc)
 {
     RawVolumeReader::ReadHints h;
@@ -422,8 +422,8 @@ VolumeCollection* DatVolumeReader::readMetaFileBrick(const std::string &fileName
             objectFilename = fileName.substr(0, p + 1) + objectFilename;
         }
 
-        VolumeCollection* volumeCollection = rawReader.readBrick(objectFilename, brickStartPos, brickSize);
-        return volumeCollection;
+        VolumeList* volumeList = rawReader.readBrick(objectFilename, brickStartPos, brickSize);
+        return volumeList;
     }
     else {
         throw tgt::CorruptedFileException("error while reading data", fileName);

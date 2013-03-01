@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,11 +30,11 @@ namespace voreen {
 
 Vec4StartInterpolationFunction::Vec4StartInterpolationFunction() {}
 
-std::string Vec4StartInterpolationFunction::getMode() const {
+std::string Vec4StartInterpolationFunction::getGuiName() const {
     return "focus on startvalue";
 }
 
-std::string Vec4StartInterpolationFunction::getIdentifier() const {
+std::string Vec4StartInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -45,17 +45,17 @@ tgt::vec4 Vec4StartInterpolationFunction::interpolate(tgt::vec4 startvalue, tgt:
         return endvalue;
 }
 
-InterpolationFunction<tgt::vec4>* Vec4StartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4StartInterpolationFunction::create() const {
     return new Vec4StartInterpolationFunction();
 }
 
 Vec4EndInterpolationFunction::Vec4EndInterpolationFunction() {}
 
-std::string Vec4EndInterpolationFunction::getMode() const {
+std::string Vec4EndInterpolationFunction::getGuiName() const {
     return "focus on endvalue";
 }
 
-std::string Vec4EndInterpolationFunction::getIdentifier() const {
+std::string Vec4EndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -66,17 +66,17 @@ tgt::vec4 Vec4EndInterpolationFunction::interpolate(tgt::vec4 startvalue, tgt::v
         return startvalue;
 }
 
-InterpolationFunction<tgt::vec4>* Vec4EndInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4EndInterpolationFunction::create() const {
     return new Vec4EndInterpolationFunction();
 }
 
 Vec4StartEndInterpolationFunction::Vec4StartEndInterpolationFunction() {}
 
-std::string Vec4StartEndInterpolationFunction::getMode() const {
+std::string Vec4StartEndInterpolationFunction::getGuiName() const {
     return "bisection";
 }
 
-std::string Vec4StartEndInterpolationFunction::getIdentifier() const {
+std::string Vec4StartEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -87,17 +87,17 @@ tgt::vec4 Vec4StartEndInterpolationFunction::interpolate(tgt::vec4 startvalue, t
         return endvalue;
 }
 
-InterpolationFunction<tgt::vec4>* Vec4StartEndInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4StartEndInterpolationFunction::create() const {
     return new Vec4StartEndInterpolationFunction();
 }
 
 Vec4LinearInterpolationFunction::Vec4LinearInterpolationFunction() {}
 
-std::string Vec4LinearInterpolationFunction::getMode() const {
+std::string Vec4LinearInterpolationFunction::getGuiName() const {
     return "linear interpolation";
 }
 
-std::string Vec4LinearInterpolationFunction::getIdentifier() const {
+std::string Vec4LinearInterpolationFunction::getCategory() const {
     return "linear";
 }
 
@@ -109,17 +109,17 @@ tgt::vec4 Vec4LinearInterpolationFunction::interpolate(tgt::vec4 startvalue, tgt
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4LinearInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4LinearInterpolationFunction::create() const {
     return new Vec4LinearInterpolationFunction();
 }
 
 Vec4InQuadInterpolationFunction::Vec4InQuadInterpolationFunction() {}
 
-std::string Vec4InQuadInterpolationFunction::getMode() const {
+std::string Vec4InQuadInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string Vec4InQuadInterpolationFunction::getIdentifier() const {
+std::string Vec4InQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -131,17 +131,17 @@ tgt::vec4 Vec4InQuadInterpolationFunction::interpolate(tgt::vec4 startvalue, tgt
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4InQuadInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4InQuadInterpolationFunction::create() const {
     return new Vec4InQuadInterpolationFunction();
 }
 
 Vec4InCubicInterpolationFunction::Vec4InCubicInterpolationFunction() {}
 
-std::string Vec4InCubicInterpolationFunction::getMode() const {
+std::string Vec4InCubicInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string Vec4InCubicInterpolationFunction::getIdentifier() const {
+std::string Vec4InCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -153,17 +153,17 @@ tgt::vec4 Vec4InCubicInterpolationFunction::interpolate(tgt::vec4 startvalue, tg
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4InCubicInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4InCubicInterpolationFunction::create() const {
     return new Vec4InCubicInterpolationFunction();
 }
 
 Vec4InQuartInterpolationFunction::Vec4InQuartInterpolationFunction() {}
 
-std::string Vec4InQuartInterpolationFunction::getMode() const {
+std::string Vec4InQuartInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string Vec4InQuartInterpolationFunction::getIdentifier() const {
+std::string Vec4InQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -175,17 +175,17 @@ tgt::vec4 Vec4InQuartInterpolationFunction::interpolate(tgt::vec4 startvalue, tg
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4InQuartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4InQuartInterpolationFunction::create() const {
     return new Vec4InQuartInterpolationFunction();
 }
 
 Vec4InQuintInterpolationFunction::Vec4InQuintInterpolationFunction() {}
 
-std::string Vec4InQuintInterpolationFunction::getMode() const {
+std::string Vec4InQuintInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string Vec4InQuintInterpolationFunction::getIdentifier() const {
+std::string Vec4InQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -197,17 +197,17 @@ tgt::vec4 Vec4InQuintInterpolationFunction::interpolate(tgt::vec4 startvalue, tg
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4InQuintInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4InQuintInterpolationFunction::create() const {
     return new Vec4InQuintInterpolationFunction();
 }
 
 Vec4InSineInterpolationFunction::Vec4InSineInterpolationFunction() {}
 
-std::string Vec4InSineInterpolationFunction::getMode() const {
+std::string Vec4InSineInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string Vec4InSineInterpolationFunction::getIdentifier() const {
+std::string Vec4InSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -219,17 +219,17 @@ tgt::vec4 Vec4InSineInterpolationFunction::interpolate(tgt::vec4 startvalue, tgt
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4InSineInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4InSineInterpolationFunction::create() const {
     return new Vec4InSineInterpolationFunction();
 }
 
 Vec4InExponentInterpolationFunction::Vec4InExponentInterpolationFunction() {}
 
-std::string Vec4InExponentInterpolationFunction::getMode() const {
+std::string Vec4InExponentInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string Vec4InExponentInterpolationFunction::getIdentifier() const {
+std::string Vec4InExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -241,17 +241,17 @@ tgt::vec4 Vec4InExponentInterpolationFunction::interpolate(tgt::vec4 startvalue,
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4InExponentInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4InExponentInterpolationFunction::create() const {
     return new Vec4InExponentInterpolationFunction();
 }
 
 Vec4InCircInterpolationFunction::Vec4InCircInterpolationFunction() {}
 
-std::string Vec4InCircInterpolationFunction::getMode() const {
+std::string Vec4InCircInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string Vec4InCircInterpolationFunction::getIdentifier() const {
+std::string Vec4InCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -263,17 +263,17 @@ tgt::vec4 Vec4InCircInterpolationFunction::interpolate(tgt::vec4 startvalue, tgt
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4InCircInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4InCircInterpolationFunction::create() const {
     return new Vec4InCircInterpolationFunction();
 }
 
 Vec4OutQuadInterpolationFunction::Vec4OutQuadInterpolationFunction() {}
 
-std::string Vec4OutQuadInterpolationFunction::getMode() const {
+std::string Vec4OutQuadInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string Vec4OutQuadInterpolationFunction::getIdentifier() const {
+std::string Vec4OutQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -285,17 +285,17 @@ tgt::vec4 Vec4OutQuadInterpolationFunction::interpolate(tgt::vec4 startvalue, tg
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4OutQuadInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4OutQuadInterpolationFunction::create() const {
     return new Vec4OutQuadInterpolationFunction();
 }
 
 Vec4OutCubicInterpolationFunction::Vec4OutCubicInterpolationFunction() {}
 
-std::string Vec4OutCubicInterpolationFunction::getMode() const {
+std::string Vec4OutCubicInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string Vec4OutCubicInterpolationFunction::getIdentifier() const {
+std::string Vec4OutCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -307,17 +307,17 @@ tgt::vec4 Vec4OutCubicInterpolationFunction::interpolate(tgt::vec4 startvalue, t
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4OutCubicInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4OutCubicInterpolationFunction::create() const {
     return new Vec4OutCubicInterpolationFunction();
 }
 
 Vec4OutQuartInterpolationFunction::Vec4OutQuartInterpolationFunction() {}
 
-std::string Vec4OutQuartInterpolationFunction::getMode() const {
+std::string Vec4OutQuartInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string Vec4OutQuartInterpolationFunction::getIdentifier() const {
+std::string Vec4OutQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -329,17 +329,17 @@ tgt::vec4 Vec4OutQuartInterpolationFunction::interpolate(tgt::vec4 startvalue, t
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4OutQuartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4OutQuartInterpolationFunction::create() const {
     return new Vec4OutQuartInterpolationFunction();
 }
 
 Vec4OutQuintInterpolationFunction::Vec4OutQuintInterpolationFunction() {}
 
-std::string Vec4OutQuintInterpolationFunction::getMode() const {
+std::string Vec4OutQuintInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string Vec4OutQuintInterpolationFunction::getIdentifier() const {
+std::string Vec4OutQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -351,17 +351,17 @@ tgt::vec4 Vec4OutQuintInterpolationFunction::interpolate(tgt::vec4 startvalue, t
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4OutQuintInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4OutQuintInterpolationFunction::create() const {
     return new Vec4OutQuintInterpolationFunction();
 }
 
 Vec4OutSineInterpolationFunction::Vec4OutSineInterpolationFunction() {}
 
-std::string Vec4OutSineInterpolationFunction::getMode() const {
+std::string Vec4OutSineInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string Vec4OutSineInterpolationFunction::getIdentifier() const {
+std::string Vec4OutSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -373,17 +373,17 @@ tgt::vec4 Vec4OutSineInterpolationFunction::interpolate(tgt::vec4 startvalue, tg
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4OutSineInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4OutSineInterpolationFunction::create() const {
     return new Vec4OutSineInterpolationFunction();
 }
 
 Vec4OutExponentInterpolationFunction::Vec4OutExponentInterpolationFunction() {}
 
-std::string Vec4OutExponentInterpolationFunction::getMode() const {
+std::string Vec4OutExponentInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string Vec4OutExponentInterpolationFunction::getIdentifier() const {
+std::string Vec4OutExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -395,17 +395,17 @@ tgt::vec4 Vec4OutExponentInterpolationFunction::interpolate(tgt::vec4 startvalue
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4OutExponentInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4OutExponentInterpolationFunction::create() const {
     return new Vec4OutExponentInterpolationFunction();
 }
 
 Vec4OutCircInterpolationFunction::Vec4OutCircInterpolationFunction() {}
 
-std::string Vec4OutCircInterpolationFunction::getMode() const {
+std::string Vec4OutCircInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string Vec4OutCircInterpolationFunction::getIdentifier() const {
+std::string Vec4OutCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -417,17 +417,17 @@ tgt::vec4 Vec4OutCircInterpolationFunction::interpolate(tgt::vec4 startvalue, tg
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4OutCircInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4OutCircInterpolationFunction::create() const {
     return new Vec4OutCircInterpolationFunction();
 }
 
 Vec4InOutQuadInterpolationFunction::Vec4InOutQuadInterpolationFunction() {}
 
-std::string Vec4InOutQuadInterpolationFunction::getMode() const {
+std::string Vec4InOutQuadInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string Vec4InOutQuadInterpolationFunction::getIdentifier() const {
+std::string Vec4InOutQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -439,17 +439,17 @@ tgt::vec4 Vec4InOutQuadInterpolationFunction::interpolate(tgt::vec4 startvalue, 
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4InOutQuadInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4InOutQuadInterpolationFunction::create() const {
     return new Vec4InOutQuadInterpolationFunction();
 }
 
 Vec4InOutCubicInterpolationFunction::Vec4InOutCubicInterpolationFunction() {}
 
-std::string Vec4InOutCubicInterpolationFunction::getMode() const {
+std::string Vec4InOutCubicInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string Vec4InOutCubicInterpolationFunction::getIdentifier() const {
+std::string Vec4InOutCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -461,17 +461,17 @@ tgt::vec4 Vec4InOutCubicInterpolationFunction::interpolate(tgt::vec4 startvalue,
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4InOutCubicInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4InOutCubicInterpolationFunction::create() const {
     return new Vec4InOutCubicInterpolationFunction();
 }
 
 Vec4InOutQuartInterpolationFunction::Vec4InOutQuartInterpolationFunction() {}
 
-std::string Vec4InOutQuartInterpolationFunction::getMode() const {
+std::string Vec4InOutQuartInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string Vec4InOutQuartInterpolationFunction::getIdentifier() const {
+std::string Vec4InOutQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -483,17 +483,17 @@ tgt::vec4 Vec4InOutQuartInterpolationFunction::interpolate(tgt::vec4 startvalue,
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4InOutQuartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4InOutQuartInterpolationFunction::create() const {
     return new Vec4InOutQuartInterpolationFunction();
 }
 
 Vec4InOutQuintInterpolationFunction::Vec4InOutQuintInterpolationFunction() {}
 
-std::string Vec4InOutQuintInterpolationFunction::getMode() const {
+std::string Vec4InOutQuintInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string Vec4InOutQuintInterpolationFunction::getIdentifier() const {
+std::string Vec4InOutQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -505,17 +505,17 @@ tgt::vec4 Vec4InOutQuintInterpolationFunction::interpolate(tgt::vec4 startvalue,
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4InOutQuintInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4InOutQuintInterpolationFunction::create() const {
     return new Vec4InOutQuintInterpolationFunction();
 }
 
 Vec4InOutSineInterpolationFunction::Vec4InOutSineInterpolationFunction() {}
 
-std::string Vec4InOutSineInterpolationFunction::getMode() const {
+std::string Vec4InOutSineInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string Vec4InOutSineInterpolationFunction::getIdentifier() const {
+std::string Vec4InOutSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -527,17 +527,17 @@ tgt::vec4 Vec4InOutSineInterpolationFunction::interpolate(tgt::vec4 startvalue, 
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4InOutSineInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4InOutSineInterpolationFunction::create() const {
     return new Vec4InOutSineInterpolationFunction();
 }
 
 Vec4InOutExponentInterpolationFunction::Vec4InOutExponentInterpolationFunction() {}
 
-std::string Vec4InOutExponentInterpolationFunction::getMode() const {
+std::string Vec4InOutExponentInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string Vec4InOutExponentInterpolationFunction::getIdentifier() const {
+std::string Vec4InOutExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -549,17 +549,17 @@ tgt::vec4 Vec4InOutExponentInterpolationFunction::interpolate(tgt::vec4 startval
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4InOutExponentInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4InOutExponentInterpolationFunction::create() const {
     return new Vec4InOutExponentInterpolationFunction();
 }
 
 Vec4InOutCircInterpolationFunction::Vec4InOutCircInterpolationFunction() {}
 
-std::string Vec4InOutCircInterpolationFunction::getMode() const {
+std::string Vec4InOutCircInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string Vec4InOutCircInterpolationFunction::getIdentifier() const {
+std::string Vec4InOutCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -571,17 +571,17 @@ tgt::vec4 Vec4InOutCircInterpolationFunction::interpolate(tgt::vec4 startvalue, 
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4InOutCircInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4InOutCircInterpolationFunction::create() const {
     return new Vec4InOutCircInterpolationFunction();
 }
 
 Vec4OutInQuadInterpolationFunction::Vec4OutInQuadInterpolationFunction() {}
 
-std::string Vec4OutInQuadInterpolationFunction::getMode() const {
+std::string Vec4OutInQuadInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string Vec4OutInQuadInterpolationFunction::getIdentifier() const {
+std::string Vec4OutInQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -593,17 +593,17 @@ tgt::vec4 Vec4OutInQuadInterpolationFunction::interpolate(tgt::vec4 startvalue, 
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4OutInQuadInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4OutInQuadInterpolationFunction::create() const {
     return new Vec4OutInQuadInterpolationFunction();
 }
 
 Vec4OutInCubicInterpolationFunction::Vec4OutInCubicInterpolationFunction() {}
 
-std::string Vec4OutInCubicInterpolationFunction::getMode() const {
+std::string Vec4OutInCubicInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string Vec4OutInCubicInterpolationFunction::getIdentifier() const {
+std::string Vec4OutInCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -615,17 +615,17 @@ tgt::vec4 Vec4OutInCubicInterpolationFunction::interpolate(tgt::vec4 startvalue,
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4OutInCubicInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4OutInCubicInterpolationFunction::create() const {
     return new Vec4OutInCubicInterpolationFunction();
 }
 
 Vec4OutInQuartInterpolationFunction::Vec4OutInQuartInterpolationFunction() {}
 
-std::string Vec4OutInQuartInterpolationFunction::getMode() const {
+std::string Vec4OutInQuartInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string Vec4OutInQuartInterpolationFunction::getIdentifier() const {
+std::string Vec4OutInQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -637,17 +637,17 @@ tgt::vec4 Vec4OutInQuartInterpolationFunction::interpolate(tgt::vec4 startvalue,
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4OutInQuartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4OutInQuartInterpolationFunction::create() const {
     return new Vec4OutInQuartInterpolationFunction();
 }
 
 Vec4OutInQuintInterpolationFunction::Vec4OutInQuintInterpolationFunction() {}
 
-std::string Vec4OutInQuintInterpolationFunction::getMode() const {
+std::string Vec4OutInQuintInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string Vec4OutInQuintInterpolationFunction::getIdentifier() const {
+std::string Vec4OutInQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -659,17 +659,17 @@ tgt::vec4 Vec4OutInQuintInterpolationFunction::interpolate(tgt::vec4 startvalue,
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4OutInQuintInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4OutInQuintInterpolationFunction::create() const {
     return new Vec4OutInQuintInterpolationFunction();
 }
 
 Vec4OutInSineInterpolationFunction::Vec4OutInSineInterpolationFunction() {}
 
-std::string Vec4OutInSineInterpolationFunction::getMode() const {
+std::string Vec4OutInSineInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string Vec4OutInSineInterpolationFunction::getIdentifier() const {
+std::string Vec4OutInSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -681,17 +681,17 @@ tgt::vec4 Vec4OutInSineInterpolationFunction::interpolate(tgt::vec4 startvalue, 
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4OutInSineInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4OutInSineInterpolationFunction::create() const {
     return new Vec4OutInSineInterpolationFunction();
 }
 
 Vec4OutInExponentInterpolationFunction::Vec4OutInExponentInterpolationFunction() {}
 
-std::string Vec4OutInExponentInterpolationFunction::getMode() const {
+std::string Vec4OutInExponentInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string Vec4OutInExponentInterpolationFunction::getIdentifier() const {
+std::string Vec4OutInExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -703,17 +703,17 @@ tgt::vec4 Vec4OutInExponentInterpolationFunction::interpolate(tgt::vec4 startval
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4OutInExponentInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4OutInExponentInterpolationFunction::create() const {
     return new Vec4OutInExponentInterpolationFunction();
 }
 
 Vec4OutInCircInterpolationFunction::Vec4OutInCircInterpolationFunction() {}
 
-std::string Vec4OutInCircInterpolationFunction::getMode() const {
+std::string Vec4OutInCircInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string Vec4OutInCircInterpolationFunction::getIdentifier() const {
+std::string Vec4OutInCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -725,7 +725,7 @@ tgt::vec4 Vec4OutInCircInterpolationFunction::interpolate(tgt::vec4 startvalue, 
     return tgt::vec4(compX, compY, compZ, compA);
 }
 
-InterpolationFunction<tgt::vec4>* Vec4OutInCircInterpolationFunction::clone() const {
+InterpolationFunction<tgt::vec4>* Vec4OutInCircInterpolationFunction::create() const {
     return new Vec4OutInCircInterpolationFunction();
 }
 

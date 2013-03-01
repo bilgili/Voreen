@@ -1,0 +1,30 @@
+################################################################################
+# Core module resources 
+################################################################################
+SET(MOD_CORE_MODULECLASS StereoscopyModule)
+
+SET(MOD_CORE_SOURCES
+    #Processors        
+    ${MOD_DIR}/processors/stereocanvasrenderer.cpp   
+)
+
+SET(MOD_CORE_HEADERS
+    #Processors    
+    ${MOD_DIR}/processors/stereocanvasrenderer.h  
+)
+
+################################################################################
+# Qt module resources 
+################################################################################
+SET(MOD_QT_MODULECLASS StereoscopyModuleQt)
+
+SET(MOD_QT_SOURCES
+    ${MOD_DIR}/qt/processor/stereoscopyprocessorwidgetfactory.cpp    
+)  
+    
+SET(MOD_QT_HEADERS
+)
+
+SET(MOD_QT_HEADERS_NONMOC
+    ${MOD_DIR}/qt/processor/stereoscopyprocessorwidgetfactory.h
+)

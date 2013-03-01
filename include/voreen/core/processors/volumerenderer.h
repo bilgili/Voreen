@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -83,7 +83,7 @@ protected:
      *
      * @see RenderProcessor::setGlobalShaderParameters
      */
-    virtual void setGlobalShaderParameters(tgt::Shader* shader, const tgt::Camera* camera = 0);
+    virtual void setGlobalShaderParameters(tgt::Shader* shader, const tgt::Camera* camera = 0, tgt::ivec2 screenDim = tgt::ivec2(-1));
 
     /**
      * This function binds the volume textures used by the volume renderer and passes the

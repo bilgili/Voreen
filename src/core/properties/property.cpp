@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -25,7 +25,7 @@
 
 #include "voreen/core/properties/property.h"
 #include "voreen/core/properties/propertywidget.h"
-#include "voreen/core/properties/link/linkevaluatorfactory.h"
+#include "voreen/core/properties/link/linkevaluatorhelper.h"
 
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/voreenmodule.h"
@@ -33,8 +33,7 @@
 namespace voreen {
 
 Property::Property(const std::string& id, const std::string& guiText, int invalidationLevel)
-    : id_(id)
-    , guiName_(guiText)
+    : VoreenSerializableObject(id, guiText)
     , owner_(0)
     , invalidationLevel_(invalidationLevel)
     , widgetsEnabled_(true)
@@ -52,8 +51,7 @@ Property::Property(const std::string& id, const std::string& guiText, int invali
 }
 
 Property::Property()
-    : id_("")
-    , guiName_("")
+    : VoreenSerializableObject()
     , owner_(0)
     , invalidationLevel_(Processor::INVALID_RESULT)
     , widgetsEnabled_(true)
@@ -173,28 +171,16 @@ void Property::updateWidgets() {
         (*it)->updateFromProperty();
 }
 
-std::string Property::getID() const {
-    return id_;
-}
-
 std::string Property::getFullyQualifiedID() const {
     if (getOwner())
-        return getOwner()->getName() + "." + getID();
+        return getOwner()->getID() + "." + getID();
     else
         return getID();
 }
 
-std::string Property::getGuiName() const {
-    return guiName_;
-}
-
-void Property::setGuiName(const std::string& guiName) {
-    guiName_ = guiName;
-}
-
 std::string Property::getFullyQualifiedGuiName() const {
     if (getOwner())
-        return getOwner()->getName() + "." + getGuiName();
+        return getOwner()->getGuiName() + "." + getGuiName();
     else
         return getGuiName();
 }
@@ -202,6 +188,8 @@ std::string Property::getFullyQualifiedGuiName() const {
 void Property::serialize(XmlSerializer& s) const {
     if(serializeValue_)
         return;
+
+    s.serialize("name", id_);
 
     if (guiName_ != initialGuiName_)
         s.serialize("guiName", guiName_);
@@ -363,51 +351,11 @@ bool Property::isLinkedWith(const Property* dest, bool transitive) const {
 }
 
 bool Property::isLinkableWith(const voreen::Property* dst) const{
-
-    if (!VoreenApplication::app()) {
-        LERRORC("voreen.property", "VoreenApplication not instantiated");
-        return false;
-    }
-    const std::vector<voreen::VoreenModule*>& modules = VoreenApplication::app()->getModules();
-
-    for (size_t m=0; m<modules.size(); m++) {
-        const std::vector<LinkEvaluatorFactory*>& factories = modules.at(m)->getLinkEvaluatorFactories();
-        for (size_t i=0; i<factories.size(); i++) {
-            if (factories.at(i)->arePropertiesLinkable(this, dst))
-                return true;
-        }
-    }
-
-    return false;
+    return (LinkEvaluatorHelper::arePropertiesLinkable(this, dst));
 }
 
 std::vector<std::pair<std::string, std::string> > Property::getCompatibleEvaluators(const voreen::Property* dst) const{
-
-    std::vector<std::pair<std::string, std::string> > result;
-
-    if (!VoreenApplication::app()) {
-        LERRORC("voreen.property", "VoreenApplication not instantiated");
-        return result;
-    }
-    const std::vector<VoreenModule*>& modules = VoreenApplication::app()->getModules();
-
-    for (size_t m=0; m<modules.size(); m++) {
-        const std::vector<LinkEvaluatorFactory*>& factories = modules.at(m)->getLinkEvaluatorFactories();
-        for (size_t i=0; i<factories.size(); i++) {
-            std::vector<std::pair<std::string, std::string> > evaluators = factories.at(i)->getCompatibleLinkEvaluators(this, dst);
-            result.insert(result.end(), evaluators.begin(), evaluators.end());
-        }
-    }
-
-    // put size link evaluator to front (HACK)
-    /*for (size_t i=1; i<result.size(); i++) {
-        if (result.at(i).first == "LinkEvaluatorRenderSize") {
-            std::swap(result.at(0), result.at(i));
-            break;
-        }
-    }*/
-
-    return result;
+    return LinkEvaluatorHelper::getCompatibleLinkEvaluators(this, dst);
 }
 
 std::string Property::getTypeDescription() const {

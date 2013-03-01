@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -39,7 +39,7 @@ namespace voreen {
  * Reads a Voreen Geometry, point list or segmented list from file
  * and provides it as geometry through its outport.
  */
-class GeometrySource : public Processor {
+class VRN_CORE_API GeometrySource : public Processor {
 public:
     GeometrySource();
     virtual Processor* create() const;

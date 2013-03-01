@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -51,13 +51,13 @@ PhilipsUSVolumeReader::PhilipsUSVolumeReader(ProgressBar* progress)
     protocols_.push_back("phus");   //< use this protocol specifier for loading philips us data
 }
 
-VolumeCollection* PhilipsUSVolumeReader::read(const std::string &url)
+VolumeList* PhilipsUSVolumeReader::read(const std::string &url)
     throw (tgt::FileException, std::bad_alloc)
 {
     return readSlices(url,0,0);
 }
 
-VolumeCollection* PhilipsUSVolumeReader::readSlices(const std::string &url, size_t firstSlice, size_t lastSlice)
+VolumeList* PhilipsUSVolumeReader::readSlices(const std::string &url, size_t firstSlice, size_t lastSlice)
     throw (tgt::FileException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -157,7 +157,7 @@ VolumeCollection* PhilipsUSVolumeReader::readSlices(const std::string &url, size
     }
 
     RawVolumeReader rawReader(getProgressBar());
-    VolumeCollection* volumeCollection = 0;
+    VolumeList* volumeList = 0;
     for (unsigned short curFrame=0; curFrame<numFrames; curFrame++) {
         RawVolumeReader::ReadHints hints(ivec3(columns, rows, depth), // dimensions of the volume
                                          spacing,                     // thickness of one slice
@@ -169,21 +169,21 @@ VolumeCollection* PhilipsUSVolumeReader::readSlices(const std::string &url, size
         rawReader.setReadHints(hints);
 
         if (curFrame==0) {
-            volumeCollection = rawReader.readSlices(fileName, firstSlice, lastSlice);
+            volumeList = rawReader.readSlices(fileName, firstSlice, lastSlice);
         }
         else {
-            VolumeCollection* curVolumeCollection = rawReader.readSlices(fileName, firstSlice, lastSlice);
+            VolumeList* curVolumeList = rawReader.readSlices(fileName, firstSlice, lastSlice);
             // we know that readSlices has returned only one Volume
-            tgtAssert(curVolumeCollection->size() == 1, "Collection with one volume expected");
-            Volume* curVolumeHandle = static_cast<Volume*>(curVolumeCollection->first());
+            tgtAssert(curVolumeList->size() == 1, "Collection with one volume expected");
+            Volume* curVolumeHandle = static_cast<Volume*>(curVolumeList->first());
             curVolumeHandle->setOrigin(VolumeURL("phus", fileName));
             curVolumeHandle->setTimestep(static_cast<float>(curFrame));
-            volumeCollection->add(curVolumeHandle);
+            volumeList->add(curVolumeHandle);
 
-            delete curVolumeCollection;
+            delete curVolumeList;
         }
     }
-    return volumeCollection;
+    return volumeList;
 }
 
 VolumeReader* PhilipsUSVolumeReader::create(ProgressBar* progress) const {

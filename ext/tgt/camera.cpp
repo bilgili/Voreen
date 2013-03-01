@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -26,6 +26,7 @@
 
 #include "tgt/assert.h"
 #include "tgt/glmath.h"
+#include "tgt/logmanager.h"
 #include "tgt/quaternion.h"
 #include "tgt/spline.h"
 #include "tgt/tgt_gl.h"
@@ -48,6 +49,19 @@ Camera::Camera(const vec3& position, const vec3& focus, const vec3& up,
       axisMode_(ON_AXIS)
 {
     viewMatrix_ = mat4::createLookAt(position, focus, up);
+}
+
+Camera::Camera(const Camera& cam)
+    : position_(cam.getPosition()),
+      focus_(cam.getFocus()),
+      upVector_(cam.getUpVector()),
+      frust_(cam.getFrustum()),
+      projectionMode_(cam.getProjectionMode()),
+      eyeSeparation_(cam.getStereoEyeSeparation()),
+      eyeMode_(cam.getStereoEyeMode()),
+      axisMode_(cam.getStereoAxisMode())
+{
+    viewMatrix_ = mat4::createLookAt(position_, focus_, upVector_);
 }
 
 Camera::~Camera() {
@@ -281,7 +295,8 @@ void Camera::stereoShift(tgt::vec3 shift) {
     if(length(shift) == 0.f)
         return;
     stereoCameraShift(shift);
-    stereoFrustumShift(shift);
+    if(axisMode_ == ON_AXIS)
+        stereoFrustumShift(shift);
 }
 
 tgt::vec3 Camera::getStereoShift(StereoEyeMode from, StereoEyeMode to) const {
@@ -324,7 +339,6 @@ void Camera::stereoCameraShift(tgt::vec3 shift) {
     //calculate new focus
     float moveXScalar = tgt::dot(shift, getStrafe());
     float moveYScalar = tgt::dot(shift, getUpVector());
-    //tgt::vec3 moveZ = tgt::dot(shift, getLook())*getLook();
     tgt::vec3 focusProj = moveXScalar * getStrafe() + moveYScalar * getUpVector();
 
     //set new position/focus
@@ -334,20 +348,24 @@ void Camera::stereoCameraShift(tgt::vec3 shift) {
 }
 
 void Camera::stereoFrustumShift(tgt::vec3 shift) {
+    if(projectionMode_ != FRUSTUM) {
+        LWARNINGC("tgt.camera", "Using stereo frustum shifting without proper projection mode, switching to frustum projection.");
+        setProjectionMode(FRUSTUM);
+    }
+
     float moveXScalar = tgt::dot(shift, getStrafe());
     float moveYScalar = tgt::dot(shift, getUpVector());
 
-    // TODO: find out if oldDist always == newDist (off/on-axis?)
     float oDist = getFocalLength();
     //float nDist = length(getPosition() - getFocus() + shift);
     float nDist = getFocalLength();
 
     setFrustRight((getFrustRight() * oDist - moveXScalar * getNearDist())/nDist);
-    //should be -dis... but left frustum value is < 0 so --=+
+    //should be +dis... but left frustum value is < 0 so --=+
     setFrustLeft((getFrustLeft() * oDist - moveXScalar * getNearDist())/nDist);
     setFrustTop((getFrustTop() * oDist - moveYScalar * getNearDist())/nDist);
-    //should be -dis... but left frustum value is < 0 so --=+
-    setFrustBottom((getFrustBottom() * oDist - moveYScalar * getNearDist())/nDist);        
+    //should be +dis... but left frustum value is < 0 so --=+
+    setFrustBottom((getFrustBottom() * oDist - moveYScalar * getNearDist())/nDist);
 }
 
 } // namespace tgt

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,11 +30,11 @@ namespace voreen {
 
 Mat4StartInterpolationFunction::Mat4StartInterpolationFunction() {}
 
-std::string Mat4StartInterpolationFunction::getMode() const {
+std::string Mat4StartInterpolationFunction::getGuiName() const {
     return "focus on startvalue";
 }
 
-std::string Mat4StartInterpolationFunction::getIdentifier() const {
+std::string Mat4StartInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -45,17 +45,17 @@ tgt::mat4 Mat4StartInterpolationFunction::interpolate(tgt::mat4 startvalue, tgt:
         return endvalue;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4StartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4StartInterpolationFunction::create() const {
     return new Mat4StartInterpolationFunction();
 }
 
 Mat4EndInterpolationFunction::Mat4EndInterpolationFunction() {}
 
-std::string Mat4EndInterpolationFunction::getMode() const {
+std::string Mat4EndInterpolationFunction::getGuiName() const {
     return "focus on endvalue";
 }
 
-std::string Mat4EndInterpolationFunction::getIdentifier() const {
+std::string Mat4EndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -66,17 +66,17 @@ tgt::mat4 Mat4EndInterpolationFunction::interpolate(tgt::mat4 startvalue, tgt::m
         return startvalue;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4EndInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4EndInterpolationFunction::create() const {
     return new Mat4EndInterpolationFunction();
 }
 
 Mat4StartEndInterpolationFunction::Mat4StartEndInterpolationFunction() {}
 
-std::string Mat4StartEndInterpolationFunction::getMode() const {
+std::string Mat4StartEndInterpolationFunction::getGuiName() const {
     return "bisection";
 }
 
-std::string Mat4StartEndInterpolationFunction::getIdentifier() const {
+std::string Mat4StartEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -87,17 +87,17 @@ tgt::mat4 Mat4StartEndInterpolationFunction::interpolate(tgt::mat4 startvalue, t
         return endvalue;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4StartEndInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4StartEndInterpolationFunction::create() const {
     return new Mat4StartEndInterpolationFunction();
 }
 
 Mat4LinearInterpolationFunction::Mat4LinearInterpolationFunction() {}
 
-std::string Mat4LinearInterpolationFunction::getMode() const {
+std::string Mat4LinearInterpolationFunction::getGuiName() const {
     return "linear interpolation";
 }
 
-std::string Mat4LinearInterpolationFunction::getIdentifier() const {
+std::string Mat4LinearInterpolationFunction::getCategory() const {
     return "linear";
 }
 
@@ -109,17 +109,17 @@ tgt::mat4 Mat4LinearInterpolationFunction::interpolate(tgt::mat4 startvalue, tgt
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4LinearInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4LinearInterpolationFunction::create() const {
     return new Mat4LinearInterpolationFunction();
 }
 
 Mat4InQuadInterpolationFunction::Mat4InQuadInterpolationFunction() {}
 
-std::string Mat4InQuadInterpolationFunction::getMode() const {
+std::string Mat4InQuadInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string Mat4InQuadInterpolationFunction::getIdentifier() const {
+std::string Mat4InQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -131,17 +131,17 @@ tgt::mat4 Mat4InQuadInterpolationFunction::interpolate(tgt::mat4 startvalue, tgt
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4InQuadInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4InQuadInterpolationFunction::create() const {
     return new Mat4InQuadInterpolationFunction();
 }
 
 Mat4InCubicInterpolationFunction::Mat4InCubicInterpolationFunction() {}
 
-std::string Mat4InCubicInterpolationFunction::getMode() const {
+std::string Mat4InCubicInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string Mat4InCubicInterpolationFunction::getIdentifier() const {
+std::string Mat4InCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -153,17 +153,17 @@ tgt::mat4 Mat4InCubicInterpolationFunction::interpolate(tgt::mat4 startvalue, tg
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4InCubicInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4InCubicInterpolationFunction::create() const {
     return new Mat4InCubicInterpolationFunction();
 }
 
 Mat4InQuartInterpolationFunction::Mat4InQuartInterpolationFunction() {}
 
-std::string Mat4InQuartInterpolationFunction::getMode() const {
+std::string Mat4InQuartInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string Mat4InQuartInterpolationFunction::getIdentifier() const {
+std::string Mat4InQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -175,17 +175,17 @@ tgt::mat4 Mat4InQuartInterpolationFunction::interpolate(tgt::mat4 startvalue, tg
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4InQuartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4InQuartInterpolationFunction::create() const {
     return new Mat4InQuartInterpolationFunction();
 }
 
 Mat4InQuintInterpolationFunction::Mat4InQuintInterpolationFunction() {}
 
-std::string Mat4InQuintInterpolationFunction::getMode() const {
+std::string Mat4InQuintInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string Mat4InQuintInterpolationFunction::getIdentifier() const {
+std::string Mat4InQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -197,17 +197,17 @@ tgt::mat4 Mat4InQuintInterpolationFunction::interpolate(tgt::mat4 startvalue, tg
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4InQuintInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4InQuintInterpolationFunction::create() const {
     return new Mat4InQuintInterpolationFunction();
 }
 
 Mat4InSineInterpolationFunction::Mat4InSineInterpolationFunction() {}
 
-std::string Mat4InSineInterpolationFunction::getMode() const {
+std::string Mat4InSineInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string Mat4InSineInterpolationFunction::getIdentifier() const {
+std::string Mat4InSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -219,17 +219,17 @@ tgt::mat4 Mat4InSineInterpolationFunction::interpolate(tgt::mat4 startvalue, tgt
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4InSineInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4InSineInterpolationFunction::create() const {
     return new Mat4InSineInterpolationFunction();
 }
 
 Mat4InExponentInterpolationFunction::Mat4InExponentInterpolationFunction() {}
 
-std::string Mat4InExponentInterpolationFunction::getMode() const {
+std::string Mat4InExponentInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string Mat4InExponentInterpolationFunction::getIdentifier() const {
+std::string Mat4InExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -241,17 +241,17 @@ tgt::mat4 Mat4InExponentInterpolationFunction::interpolate(tgt::mat4 startvalue,
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4InExponentInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4InExponentInterpolationFunction::create() const {
     return new Mat4InExponentInterpolationFunction();
 }
 
 Mat4InCircInterpolationFunction::Mat4InCircInterpolationFunction() {}
 
-std::string Mat4InCircInterpolationFunction::getMode() const {
+std::string Mat4InCircInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string Mat4InCircInterpolationFunction::getIdentifier() const {
+std::string Mat4InCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -263,17 +263,17 @@ tgt::mat4 Mat4InCircInterpolationFunction::interpolate(tgt::mat4 startvalue, tgt
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4InCircInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4InCircInterpolationFunction::create() const {
     return new Mat4InCircInterpolationFunction();
 }
 
 Mat4OutQuadInterpolationFunction::Mat4OutQuadInterpolationFunction() {}
 
-std::string Mat4OutQuadInterpolationFunction::getMode() const {
+std::string Mat4OutQuadInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string Mat4OutQuadInterpolationFunction::getIdentifier() const {
+std::string Mat4OutQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -285,17 +285,17 @@ tgt::mat4 Mat4OutQuadInterpolationFunction::interpolate(tgt::mat4 startvalue, tg
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4OutQuadInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4OutQuadInterpolationFunction::create() const {
     return new Mat4OutQuadInterpolationFunction();
 }
 
 Mat4OutCubicInterpolationFunction::Mat4OutCubicInterpolationFunction() {}
 
-std::string Mat4OutCubicInterpolationFunction::getMode() const {
+std::string Mat4OutCubicInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string Mat4OutCubicInterpolationFunction::getIdentifier() const {
+std::string Mat4OutCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -307,17 +307,17 @@ tgt::mat4 Mat4OutCubicInterpolationFunction::interpolate(tgt::mat4 startvalue, t
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4OutCubicInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4OutCubicInterpolationFunction::create() const {
     return new Mat4OutCubicInterpolationFunction();
 }
 
 Mat4OutQuartInterpolationFunction::Mat4OutQuartInterpolationFunction() {}
 
-std::string Mat4OutQuartInterpolationFunction::getMode() const {
+std::string Mat4OutQuartInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string Mat4OutQuartInterpolationFunction::getIdentifier() const {
+std::string Mat4OutQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -329,17 +329,17 @@ tgt::mat4 Mat4OutQuartInterpolationFunction::interpolate(tgt::mat4 startvalue, t
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4OutQuartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4OutQuartInterpolationFunction::create() const {
     return new Mat4OutQuartInterpolationFunction();
 }
 
 Mat4OutQuintInterpolationFunction::Mat4OutQuintInterpolationFunction() {}
 
-std::string Mat4OutQuintInterpolationFunction::getMode() const {
+std::string Mat4OutQuintInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string Mat4OutQuintInterpolationFunction::getIdentifier() const {
+std::string Mat4OutQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -351,17 +351,17 @@ tgt::mat4 Mat4OutQuintInterpolationFunction::interpolate(tgt::mat4 startvalue, t
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4OutQuintInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4OutQuintInterpolationFunction::create() const {
     return new Mat4OutQuintInterpolationFunction();
 }
 
 Mat4OutSineInterpolationFunction::Mat4OutSineInterpolationFunction() {}
 
-std::string Mat4OutSineInterpolationFunction::getMode() const {
+std::string Mat4OutSineInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string Mat4OutSineInterpolationFunction::getIdentifier() const {
+std::string Mat4OutSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -373,17 +373,17 @@ tgt::mat4 Mat4OutSineInterpolationFunction::interpolate(tgt::mat4 startvalue, tg
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4OutSineInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4OutSineInterpolationFunction::create() const {
     return new Mat4OutSineInterpolationFunction();
 }
 
 Mat4OutExponentInterpolationFunction::Mat4OutExponentInterpolationFunction() {}
 
-std::string Mat4OutExponentInterpolationFunction::getMode() const {
+std::string Mat4OutExponentInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string Mat4OutExponentInterpolationFunction::getIdentifier() const {
+std::string Mat4OutExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -395,17 +395,17 @@ tgt::mat4 Mat4OutExponentInterpolationFunction::interpolate(tgt::mat4 startvalue
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4OutExponentInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4OutExponentInterpolationFunction::create() const {
     return new Mat4OutExponentInterpolationFunction();
 }
 
 Mat4OutCircInterpolationFunction::Mat4OutCircInterpolationFunction() {}
 
-std::string Mat4OutCircInterpolationFunction::getMode() const {
+std::string Mat4OutCircInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string Mat4OutCircInterpolationFunction::getIdentifier() const {
+std::string Mat4OutCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -417,17 +417,17 @@ tgt::mat4 Mat4OutCircInterpolationFunction::interpolate(tgt::mat4 startvalue, tg
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4OutCircInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4OutCircInterpolationFunction::create() const {
     return new Mat4OutCircInterpolationFunction();
 }
 
 Mat4InOutQuadInterpolationFunction::Mat4InOutQuadInterpolationFunction() {}
 
-std::string Mat4InOutQuadInterpolationFunction::getMode() const {
+std::string Mat4InOutQuadInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string Mat4InOutQuadInterpolationFunction::getIdentifier() const {
+std::string Mat4InOutQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -439,17 +439,17 @@ tgt::mat4 Mat4InOutQuadInterpolationFunction::interpolate(tgt::mat4 startvalue, 
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4InOutQuadInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4InOutQuadInterpolationFunction::create() const {
     return new Mat4InOutQuadInterpolationFunction();
 }
 
 Mat4InOutCubicInterpolationFunction::Mat4InOutCubicInterpolationFunction() {}
 
-std::string Mat4InOutCubicInterpolationFunction::getMode() const {
+std::string Mat4InOutCubicInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string Mat4InOutCubicInterpolationFunction::getIdentifier() const {
+std::string Mat4InOutCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -461,17 +461,17 @@ tgt::mat4 Mat4InOutCubicInterpolationFunction::interpolate(tgt::mat4 startvalue,
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4InOutCubicInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4InOutCubicInterpolationFunction::create() const {
     return new Mat4InOutCubicInterpolationFunction();
 }
 
 Mat4InOutQuartInterpolationFunction::Mat4InOutQuartInterpolationFunction() {}
 
-std::string Mat4InOutQuartInterpolationFunction::getMode() const {
+std::string Mat4InOutQuartInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string Mat4InOutQuartInterpolationFunction::getIdentifier() const {
+std::string Mat4InOutQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -483,17 +483,17 @@ tgt::mat4 Mat4InOutQuartInterpolationFunction::interpolate(tgt::mat4 startvalue,
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4InOutQuartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4InOutQuartInterpolationFunction::create() const {
     return new Mat4InOutQuartInterpolationFunction();
 }
 
 Mat4InOutQuintInterpolationFunction::Mat4InOutQuintInterpolationFunction() {}
 
-std::string Mat4InOutQuintInterpolationFunction::getMode() const {
+std::string Mat4InOutQuintInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string Mat4InOutQuintInterpolationFunction::getIdentifier() const {
+std::string Mat4InOutQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -505,17 +505,17 @@ tgt::mat4 Mat4InOutQuintInterpolationFunction::interpolate(tgt::mat4 startvalue,
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4InOutQuintInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4InOutQuintInterpolationFunction::create() const {
     return new Mat4InOutQuintInterpolationFunction();
 }
 
 Mat4InOutSineInterpolationFunction::Mat4InOutSineInterpolationFunction() {}
 
-std::string Mat4InOutSineInterpolationFunction::getMode() const {
+std::string Mat4InOutSineInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string Mat4InOutSineInterpolationFunction::getIdentifier() const {
+std::string Mat4InOutSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -527,17 +527,17 @@ tgt::mat4 Mat4InOutSineInterpolationFunction::interpolate(tgt::mat4 startvalue, 
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4InOutSineInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4InOutSineInterpolationFunction::create() const {
     return new Mat4InOutSineInterpolationFunction();
 }
 
 Mat4InOutExponentInterpolationFunction::Mat4InOutExponentInterpolationFunction() {}
 
-std::string Mat4InOutExponentInterpolationFunction::getMode() const {
+std::string Mat4InOutExponentInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string Mat4InOutExponentInterpolationFunction::getIdentifier() const {
+std::string Mat4InOutExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -549,17 +549,17 @@ tgt::mat4 Mat4InOutExponentInterpolationFunction::interpolate(tgt::mat4 startval
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4InOutExponentInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4InOutExponentInterpolationFunction::create() const {
     return new Mat4InOutExponentInterpolationFunction();
 }
 
 Mat4InOutCircInterpolationFunction::Mat4InOutCircInterpolationFunction() {}
 
-std::string Mat4InOutCircInterpolationFunction::getMode() const {
+std::string Mat4InOutCircInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string Mat4InOutCircInterpolationFunction::getIdentifier() const {
+std::string Mat4InOutCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -571,17 +571,17 @@ tgt::mat4 Mat4InOutCircInterpolationFunction::interpolate(tgt::mat4 startvalue, 
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4InOutCircInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4InOutCircInterpolationFunction::create() const {
     return new Mat4InOutCircInterpolationFunction();
 }
 
 Mat4OutInQuadInterpolationFunction::Mat4OutInQuadInterpolationFunction() {}
 
-std::string Mat4OutInQuadInterpolationFunction::getMode() const {
+std::string Mat4OutInQuadInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string Mat4OutInQuadInterpolationFunction::getIdentifier() const {
+std::string Mat4OutInQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -593,17 +593,17 @@ tgt::mat4 Mat4OutInQuadInterpolationFunction::interpolate(tgt::mat4 startvalue, 
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4OutInQuadInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4OutInQuadInterpolationFunction::create() const {
     return new Mat4OutInQuadInterpolationFunction();
 }
 
 Mat4OutInCubicInterpolationFunction::Mat4OutInCubicInterpolationFunction() {}
 
-std::string Mat4OutInCubicInterpolationFunction::getMode() const {
+std::string Mat4OutInCubicInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string Mat4OutInCubicInterpolationFunction::getIdentifier() const {
+std::string Mat4OutInCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -615,17 +615,17 @@ tgt::mat4 Mat4OutInCubicInterpolationFunction::interpolate(tgt::mat4 startvalue,
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4OutInCubicInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4OutInCubicInterpolationFunction::create() const {
     return new Mat4OutInCubicInterpolationFunction();
 }
 
 Mat4OutInQuartInterpolationFunction::Mat4OutInQuartInterpolationFunction() {}
 
-std::string Mat4OutInQuartInterpolationFunction::getMode() const {
+std::string Mat4OutInQuartInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string Mat4OutInQuartInterpolationFunction::getIdentifier() const {
+std::string Mat4OutInQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -637,17 +637,17 @@ tgt::mat4 Mat4OutInQuartInterpolationFunction::interpolate(tgt::mat4 startvalue,
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4OutInQuartInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4OutInQuartInterpolationFunction::create() const {
     return new Mat4OutInQuartInterpolationFunction();
 }
 
 Mat4OutInQuintInterpolationFunction::Mat4OutInQuintInterpolationFunction() {}
 
-std::string Mat4OutInQuintInterpolationFunction::getMode() const {
+std::string Mat4OutInQuintInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string Mat4OutInQuintInterpolationFunction::getIdentifier() const {
+std::string Mat4OutInQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -659,17 +659,17 @@ tgt::mat4 Mat4OutInQuintInterpolationFunction::interpolate(tgt::mat4 startvalue,
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4OutInQuintInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4OutInQuintInterpolationFunction::create() const {
     return new Mat4OutInQuintInterpolationFunction();
 }
 
 Mat4OutInSineInterpolationFunction::Mat4OutInSineInterpolationFunction() {}
 
-std::string Mat4OutInSineInterpolationFunction::getMode() const {
+std::string Mat4OutInSineInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string Mat4OutInSineInterpolationFunction::getIdentifier() const {
+std::string Mat4OutInSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -681,17 +681,17 @@ tgt::mat4 Mat4OutInSineInterpolationFunction::interpolate(tgt::mat4 startvalue, 
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4OutInSineInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4OutInSineInterpolationFunction::create() const {
     return new Mat4OutInSineInterpolationFunction();
 }
 
 Mat4OutInExponentInterpolationFunction::Mat4OutInExponentInterpolationFunction() {}
 
-std::string Mat4OutInExponentInterpolationFunction::getMode() const {
+std::string Mat4OutInExponentInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string Mat4OutInExponentInterpolationFunction::getIdentifier() const {
+std::string Mat4OutInExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -703,17 +703,17 @@ tgt::mat4 Mat4OutInExponentInterpolationFunction::interpolate(tgt::mat4 startval
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4OutInExponentInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4OutInExponentInterpolationFunction::create() const {
     return new Mat4OutInExponentInterpolationFunction();
 }
 
 Mat4OutInCircInterpolationFunction::Mat4OutInCircInterpolationFunction() {}
 
-std::string Mat4OutInCircInterpolationFunction::getMode() const {
+std::string Mat4OutInCircInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string Mat4OutInCircInterpolationFunction::getIdentifier() const {
+std::string Mat4OutInCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -725,7 +725,7 @@ tgt::mat4 Mat4OutInCircInterpolationFunction::interpolate(tgt::mat4 startvalue, 
     return result;
 }
 
-InterpolationFunction<tgt::mat4>* Mat4OutInCircInterpolationFunction::clone() const {
+InterpolationFunction<tgt::mat4>* Mat4OutInCircInterpolationFunction::create() const {
     return new Mat4OutInCircInterpolationFunction();
 }
 

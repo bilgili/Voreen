@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -38,8 +38,9 @@ VolumeDecomposer::VolumeDecomposer()
     : RenderProcessor(),
       inport_(Port::INPORT, "volume.in", "Volume Input"),
       outport_(Port::OUTPORT, "imagesequence.out", "ImageSequence Output"),
-      startSlice_("startSlice", "Start Slice", 0, 0, 1000),
-      endSlice_("endSlice", "End Slice", 1000, 0, 1000),
+      startSlice_("startSlice", "Start Slice", 0, 0, 10000),
+      endSlice_("endSlice", "End Slice", 1000, 0, 10000),
+      convertMultiChannelToGrayscale_("convertMultiChannelToGrayscale", "Convert Multi-Channel Volumes to Grayscale"),
       sliceSequence_(0)
 {
     addPort(inport_);
@@ -49,6 +50,7 @@ VolumeDecomposer::VolumeDecomposer()
     endSlice_.onChange(CallMemberAction<VolumeDecomposer>(this, &VolumeDecomposer::endSliceChanged));
     addProperty(startSlice_);
     addProperty(endSlice_);
+    addProperty(convertMultiChannelToGrayscale_);
 }
 
 VolumeDecomposer::~VolumeDecomposer() {}
@@ -58,7 +60,7 @@ Processor* VolumeDecomposer::create() const {
 }
 
 bool VolumeDecomposer::isReady() const {
-    return (inport_.isConnected() && outport_.isConnected());
+    return (inport_.isReady() && outport_.isReady());
 }
 
 void VolumeDecomposer::initialize() throw (tgt::Exception) {
@@ -102,7 +104,7 @@ void VolumeDecomposer::decomposeVolume() {
     }
 
     const VolumeBase* volumeHandle = inport_.getData();
-    tgtAssert(volumeHandle, "No volume handle");
+    tgtAssert(volumeHandle, "No volume");
     const VolumeRAM* volume = volumeHandle->getRepresentation<VolumeRAM>();
     tgtAssert(volume, "No volume");
     //std::string volFilepath = volumeHandle->getOrigin().getPath();
@@ -111,21 +113,81 @@ void VolumeDecomposer::decomposeVolume() {
 
     size_t zStart = startSlice_.get();
     size_t zEnd = std::min(static_cast<size_t>(endSlice_.get()), volume->getDimensions().z-1);
-    setProgress(0.f);
-    for (size_t z=zStart; z<=zEnd; ++z) {
-        setProgress(static_cast<float>(z-zStart) / static_cast<float>(zEnd-zStart+1));
-        tgt::Texture* slice = new tgt::Texture(sliceDims, GL_LUMINANCE, GL_LUMINANCE, GL_FLOAT, tgt::Texture::LINEAR);
-        for (int x=0; x<slice->getWidth(); ++x) {
+
+    if (convertMultiChannelToGrayscale_.get()) {  //< convert volume slices to grayscale (if necessary)
+        LINFO("Decomposing volume into " << volume->getDimensions().z << " grayscale slices with dimensions " << volume->getDimensions().xy());
+        const size_t numInputChannels = volume->getNumChannels();
+        setProgress(0.f);
+        for (size_t z=zStart; z<=zEnd; ++z) {
+            setProgress(static_cast<float>(z-zStart) / static_cast<float>(zEnd-zStart+1));
+            tgt::Texture* slice = new tgt::Texture(sliceDims, GL_LUMINANCE, GL_LUMINANCE, GL_FLOAT, tgt::Texture::LINEAR);
             for (int y=0; y<slice->getHeight(); ++y) {
-                float intensity = volume->getVoxelNormalized(x,y,z);
-                slice->texel<float>(x,y) = intensity;
+                for (int x=0; x<slice->getWidth(); ++x) {
+                    float voxelVal = 0.f;
+                    for (size_t channel=0; channel<numInputChannels; channel++) {
+                        voxelVal += volume->getVoxelNormalized(x,y,z, channel);
+                    }
+                    voxelVal /= (float)(numInputChannels);
+                    slice->texel<float>(x,y) = voxelVal;
+                    //reinterpret_cast<float*>(slice->getPixelData())[(y*sliceDims.x + x) + channel] = voxelVal;
+                }
             }
+            slice->uploadTexture();
+            //slice->setName(volFilepath);
+            sliceSequence_->add(slice);
         }
-        slice->uploadTexture();
-        //slice->setName(volFilepath);
-        sliceSequence_->add(slice);
+        setProgress(1.f);
+
+        LGL_ERROR;
     }
-    setProgress(1.f);
+    else { //< copy volume slices channel-wise
+
+        // determine output volume type/channel count
+        const size_t numChannels = volume->getNumChannels();
+        GLint outputTextureType;
+        switch (numChannels) {
+        case 1:
+            outputTextureType = GL_LUMINANCE;
+            LINFO("Decomposing volume into " << volume->getDimensions().z << " grayscale slices with dimensions " << volume->getDimensions().xy());
+            break;
+        case 2:
+            outputTextureType = GL_LUMINANCE_ALPHA;
+            LINFO("Decomposing volume into " << volume->getDimensions().z << " luminance-alpha slices with dimensions " << volume->getDimensions().xy());
+            break;
+        case 3:
+            outputTextureType = GL_RGB;
+            LINFO("Decomposing volume into " << volume->getDimensions().z << " rgb slices with dimensions " << volume->getDimensions().xy());
+            break;
+        case 4:
+            outputTextureType = GL_RGBA;
+            LINFO("Decomposing volume into " << volume->getDimensions().z << " rgba slices with dimensions " << volume->getDimensions().xy());
+            break;
+        default:
+            LWARNING("Channel count of input volume unsupported: " + volume->getNumChannels());
+            return;
+        }
+
+        // decompose volume data into 2D textures
+        setProgress(0.f);
+        for (size_t z=zStart; z<=zEnd; ++z) {
+            setProgress(static_cast<float>(z-zStart) / static_cast<float>(zEnd-zStart+1));
+            tgt::Texture* slice = new tgt::Texture(sliceDims, outputTextureType, outputTextureType, GL_FLOAT, tgt::Texture::LINEAR);
+            for (int y=0; y<slice->getHeight(); ++y) {
+                for (int x=0; x<slice->getWidth(); ++x) {
+                    for (size_t channel=0; channel<numChannels; channel++) {
+                        float voxelVal = volume->getVoxelNormalized(x,y,z, channel);
+                        reinterpret_cast<float*>(slice->getPixelData())[(y*sliceDims.x + x)*numChannels + channel] = voxelVal;
+                    }
+                }
+            }
+            slice->uploadTexture();
+            //slice->setName(volFilepath);
+            sliceSequence_->add(slice);
+        }
+        setProgress(1.f);
+
+        LGL_ERROR;
+    }
 
     LGL_ERROR;
 }

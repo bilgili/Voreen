@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -37,7 +37,7 @@ namespace voreen {
 /**
  * Performs an unsharp masking operation by subtracting a blurred version from the input image
  */
-class UnsharpMasking : public ImageProcessorBypassable {
+class VRN_CORE_API UnsharpMasking : public ImageProcessorBypassable {
 public:
     UnsharpMasking();
     virtual Processor* create() const { return new UnsharpMasking(); }

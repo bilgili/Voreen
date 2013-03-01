@@ -55,6 +55,8 @@ SET(TGT_SOURCES
     event/keyevent.cpp
     event/mouseevent.cpp
     event/timeevent.cpp
+    event/touchevent.cpp
+    event/touchpoint.cpp
 #navigation 
     navigation/navigation.cpp
     navigation/trackball.cpp

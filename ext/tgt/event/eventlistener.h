@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -33,6 +33,7 @@ class Event;
 class KeyEvent;
 class MouseEvent;
 class TimeEvent;
+class TouchEvent;
 
 class TGT_API EventListener {
 public:
@@ -46,6 +47,7 @@ public:
     virtual void wheelEvent(MouseEvent* e);
     virtual void timerEvent(TimeEvent* e);
     virtual void keyEvent(KeyEvent* e);
+    virtual void touchEvent(TouchEvent* e);
 
     virtual void onEvent(Event* e);
 

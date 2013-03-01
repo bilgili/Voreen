@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,7 +33,7 @@ namespace voreen {
 /**
  * This is a LinkEvaluator only for PlotSelectionProperty. It links only the selections and not the flags specifying how the selections are used.
  */
-class LinkEvaluatorPlotSelection : public LinkEvaluatorBase {
+class VRN_CORE_API LinkEvaluatorPlotSelection : public LinkEvaluatorBase {
 public:
 
     virtual void eval(Property* src, Property* dest) throw (VoreenException);

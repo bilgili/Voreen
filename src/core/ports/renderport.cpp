@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -27,7 +27,6 @@
 #include "voreen/core/properties/vectorproperty.h"
 #include "voreen/core/datastructures/rendertarget.h"
 #include "voreen/core/processors/renderprocessor.h"
-
 #include "tgt/filesystem.h"
 
 #ifdef VRN_MODULE_DEVIL
@@ -45,19 +44,19 @@ const std::string RENDERSIZE_RECEIVE_PROPERTY_ID = "renderSizeReceive";
 
 const std::string RenderPort::loggerCat_("voreen.RenderPort");
 
-RenderSizeOriginProperty::RenderSizeOriginProperty(const std::string& id, const std::string& guiText, 
-      const tgt::ivec2& value, int invalidationLevel/*=Processor::INVALID_RESULT*/) 
+RenderSizeOriginProperty::RenderSizeOriginProperty(const std::string& id, const std::string& guiText,
+      const tgt::ivec2& value, int invalidationLevel/*=Processor::INVALID_RESULT*/)
     : IntVec2Property(id, guiText, value, tgt::ivec2(2), tgt::ivec2(8192), invalidationLevel)
 {}
-RenderSizeOriginProperty::RenderSizeOriginProperty() 
+RenderSizeOriginProperty::RenderSizeOriginProperty()
     : IntVec2Property("", "", tgt::ivec2(0), tgt::ivec2(2), tgt::ivec2(8192), Processor::INVALID_RESULT)
 {}
 
-RenderSizeReceiveProperty::RenderSizeReceiveProperty(const std::string& id, const std::string& guiText, const tgt::ivec2& value, 
+RenderSizeReceiveProperty::RenderSizeReceiveProperty(const std::string& id, const std::string& guiText, const tgt::ivec2& value,
       int invalidationLevel/*=Processor::INVALID_RESULT*/)
-    : IntVec2Property(id, guiText, value, tgt::ivec2(2), tgt::ivec2(8192), invalidationLevel)   
+    : IntVec2Property(id, guiText, value, tgt::ivec2(2), tgt::ivec2(8192), invalidationLevel)
 {}
-RenderSizeReceiveProperty::RenderSizeReceiveProperty() 
+RenderSizeReceiveProperty::RenderSizeReceiveProperty()
     : IntVec2Property("", "", tgt::ivec2(0), tgt::ivec2(2), tgt::ivec2(8192), Processor::INVALID_RESULT)
 {}
 
@@ -90,6 +89,7 @@ RenderPort::RenderPort(PortDirection direction, const std::string& id, const std
     , internalColorFormat_(internalColorFormat)
     , internalDepthFormat_(internalDepthFormat)
     , renderTargetSharing_(false)
+    , deinitializeOnDisconnect_(true)
 {
     if (renderSizePropagation_ == RENDERSIZE_ORIGIN) {
         if (direction == INPORT) {
@@ -120,17 +120,17 @@ RenderPort::RenderPort(PortDirection direction, const std::string& id, const std
 }
 
 RenderPort::~RenderPort() {
-    if (renderTarget_)
+    if (renderTarget_ && !renderTargetSharing_)
         LERROR("~RenderPort(): '" << getID()
                 << "' has not been deinitialized before destruction");
 
-    RenderSizeOriginProperty* originProp = dynamic_cast<RenderSizeOriginProperty*>(getProperty(id_ + "." + RENDERSIZE_ORIGIN_PROPERTY_ID));
+    RenderSizeOriginProperty* originProp = dynamic_cast<RenderSizeOriginProperty*>(getProperty(getID() + "." + RENDERSIZE_ORIGIN_PROPERTY_ID));
     if (originProp) {
         removeProperty(originProp);
         delete originProp;
     }
 
-    RenderSizeReceiveProperty* receiveProp = dynamic_cast<RenderSizeReceiveProperty*>(getProperty(id_ + "." + RENDERSIZE_RECEIVE_PROPERTY_ID));
+    RenderSizeReceiveProperty* receiveProp = dynamic_cast<RenderSizeReceiveProperty*>(getProperty(getID() + "." + RENDERSIZE_RECEIVE_PROPERTY_ID));
     if (receiveProp) {
         removeProperty(receiveProp);
         delete receiveProp;
@@ -139,7 +139,7 @@ RenderPort::~RenderPort() {
 
 std::string RenderPort::getContentDescription() const {
     std::stringstream strstr;
-    strstr  << getGuiName() << std::endl 
+    strstr  << getGuiName() << std::endl
             << "Type: " << getClassName() << std::endl
             << "Size: " << getSize().x << " x " << getSize().y;
     return strstr.str();
@@ -153,6 +153,27 @@ std::string RenderPort::getContentDescriptionHTML() const {
     return strstr.str();
 }
 
+void RenderPort::forwardData() const{
+    RenderPort *rp = 0;
+    for(std::vector<Port*>::const_iterator it = forwardPorts_.begin(); it != forwardPorts_.end(); ++it){
+        if(rp = dynamic_cast<RenderPort*>(*it)){
+            rp->setSharedRenderTarget(const_cast<RenderTarget*>(getRenderTarget()));
+            rp->validResult_ = hasValidResult();
+            rp->invalidatePort();
+        }
+    }
+}
+
+void RenderPort::addForwardPort(Port* port){
+    Port::addForwardPort(port);
+    dynamic_cast<RenderPort*>(port)->setRenderTargetSharing(true);
+}
+
+bool RenderPort::removeForwardPort(Port* port){
+    dynamic_cast<RenderPort*>(port)->setRenderTargetSharing(false);
+    return Port::removeForwardPort(port);
+}
+
 void RenderPort::setProcessor(Processor* p) {
     Port::setProcessor(p);
 
@@ -160,7 +181,7 @@ void RenderPort::setProcessor(Processor* p) {
     tgtAssert(rp, "RenderPort attached to processor of wrong type (RenderProcessor expected)");
     if (!rp)
         LERROR("RenderPort attached to processor of wrong type (RenderProcessor expected): "
-                << p->getName() << "." << getID());
+                << p->getID() << "." << getID());
 }
 
 void RenderPort::initialize() throw (tgt::Exception) {
@@ -170,7 +191,6 @@ void RenderPort::initialize() throw (tgt::Exception) {
     if (!isOutport())
         return;
 
-    // render targets are handled by network evaluator in sharing mode
     if (renderTargetSharing_)
         return;
 
@@ -178,14 +198,14 @@ void RenderPort::initialize() throw (tgt::Exception) {
     renderTarget_->initialize(internalColorFormat_, internalDepthFormat_);
 
     tgtAssert(processor_, "Not attached to processor!");
-    renderTarget_->setDebugLabel(processor_->getName()+ "::" + getID());
+    renderTarget_->setDebugLabel(processor_->getID()+ "::" + getID());
     renderTarget_->resize(size_);
     validResult_ = false;
     LGL_ERROR;
 }
 
 void RenderPort::deinitialize() throw (tgt::Exception) {
-    if (isOutport() && renderTarget_) {
+    if (isOutport() && renderTarget_ && !renderTargetSharing_) {
         renderTarget_->deinitialize();
         delete renderTarget_;
         renderTarget_ = 0;
@@ -198,25 +218,25 @@ void RenderPort::deinitialize() throw (tgt::Exception) {
 void RenderPort::activateTarget(const std::string& debugLabel) {
     if (isOutport()) {
         if (renderTarget_) {
-            renderTarget_->activateTarget(processor_->getName()+ ":" + getID()
+            renderTarget_->activateTarget(processor_->getID()+ ":" + getID()
                 + (debugLabel.empty() ? "" : ": " + debugLabel));
             validateResult();
         }
         else
             LERROR("Trying to activate RenderPort without RenderTarget (" <<
-            processor_->getName() << ":" << getID() << ")");
+            processor_->getID() << ":" << getID() << ")");
     }
     else {
         if (getRenderTarget()) {
-            getRenderTarget()->activateTarget(processor_->getName()+ ":" + getID()
+            getRenderTarget()->activateTarget(processor_->getID()+ ":" + getID()
                 + (debugLabel.empty() ? "" : ": " + debugLabel));
             //validateResult();
         }
         else
             LERROR("Trying to activate RenderPort without RenderTarget (" <<
-            processor_->getName() << ":" << getID() << ")");
+            processor_->getID() << ":" << getID() << ")");
         //LERROR("activateTarget() called on inport (" <<
-            //processor_->getName() << ":" << getName() << ")");
+            //processor_->getID() << ":" << getID() << ")");
     }
 }
 
@@ -254,8 +274,8 @@ void RenderPort::clear() {
         if(hasRenderTarget()) {
             activateTarget();
             clearTarget();
-            deactivateTarget();
             invalidateResult();
+            deactivateTarget();
         }
     }
 }
@@ -389,13 +409,13 @@ void RenderPort::bindColorTexture() {
         getRenderTarget()->bindColorTexture();
 }
 
-void RenderPort::bindColorTexture(GLint texUnit) {
+void RenderPort::bindColorTexture(GLint texUnit, GLint filterMode/* = GL_LINEAR*/, GLint wrapMode /*= GL_CLAMP_TO_EDGE*/, tgt::vec4 borderColor /*= tgt::vec4(0.f)*/) {
     if (getRenderTarget())
-        getRenderTarget()->bindColorTexture(texUnit);
+        getRenderTarget()->bindColorTexture(texUnit, filterMode, wrapMode, borderColor);
 }
 
-void RenderPort::bindColorTexture(tgt::TextureUnit& texUnit) {
-    bindColorTexture(texUnit.getEnum());
+void RenderPort::bindColorTexture(tgt::TextureUnit& texUnit, GLint filterMode /*= GL_LINEAR*/, GLint wrapMode /*= GL_CLAMP_TO_EDGE*/, tgt::vec4 borderColor /*= tgt::vec4(0.f)*/) {
+    bindColorTexture(texUnit.getEnum(), filterMode, wrapMode, borderColor);
 }
 
 void RenderPort::bindDepthTexture() {
@@ -403,23 +423,23 @@ void RenderPort::bindDepthTexture() {
         getRenderTarget()->bindDepthTexture();
 }
 
-void RenderPort::bindDepthTexture(GLint texUnit) {
+void RenderPort::bindDepthTexture(GLint texUnit, GLint filterMode /*= GL_LINEAR*/, GLint wrapMode /*= GL_CLAMP_TO_EDGE*/, tgt::vec4 borderColor /*= tgt::vec4(0.f)*/) {
     if (getRenderTarget())
-        getRenderTarget()->bindDepthTexture(texUnit);
+        getRenderTarget()->bindDepthTexture(texUnit, filterMode, wrapMode, borderColor);
 }
 
-void RenderPort::bindDepthTexture(tgt::TextureUnit& texUnit) {
-    bindDepthTexture(texUnit.getEnum());
+void RenderPort::bindDepthTexture(tgt::TextureUnit& texUnit, GLint filterMode /*= GL_LINEAR*/, GLint wrapMode /*= GL_CLAMP_TO_EDGE*/, tgt::vec4 borderColor /*= tgt::vec4(0.f)*/) {
+    bindDepthTexture(texUnit.getEnum(), filterMode, wrapMode, borderColor);
 }
 
-void RenderPort::bindTextures(GLint colorUnit, GLint depthUnit) {
-    bindColorTexture(colorUnit);
-    bindDepthTexture(depthUnit);
+void RenderPort::bindTextures(GLint colorUnit, GLint depthUnit, GLint filterMode /*= GL_LINEAR*/, GLint wrapMode /*= GL_CLAMP_TO_EDGE*/, tgt::vec4 borderColor /*= tgt::vec4(0.f)*/) {
+    bindColorTexture(colorUnit, filterMode, wrapMode, borderColor);
+    bindDepthTexture(depthUnit, filterMode, wrapMode, borderColor);
 }
 
-void RenderPort::bindTextures(tgt::TextureUnit& colorUnit, tgt::TextureUnit& depthUnit) {
-    bindColorTexture(colorUnit);
-    bindDepthTexture(depthUnit);
+void RenderPort::bindTextures(tgt::TextureUnit& colorUnit, tgt::TextureUnit& depthUnit, GLint filterMode /*= GL_LINEAR*/, GLint wrapMode /*= GL_CLAMP_TO_EDGE*/, tgt::vec4 borderColor /*= tgt::vec4(0.f)*/) {
+    bindColorTexture(colorUnit, filterMode, wrapMode, borderColor);
+    bindDepthTexture(depthUnit, filterMode, wrapMode, borderColor);
 }
 
 const tgt::Texture* RenderPort::getColorTexture() const {
@@ -489,9 +509,15 @@ void RenderPort::saveToImage(const std::string& /*filename*/) throw (VoreenExcep
 
 #endif // VRN_MODULE_DEVIL
 
-void RenderPort::setRenderTarget(RenderTarget* renderTarget) {
+void RenderPort::setSharedRenderTarget(RenderTarget* renderTarget) {
     if (isOutport()) {
-        renderTarget_ = renderTarget;
+        if(renderTargetSharing_)
+            renderTarget_ = renderTarget;
+        else {
+            setRenderTargetSharing(true);
+            renderTarget_ = renderTarget;
+        }
+
         invalidatePort();
     }
     else {
@@ -526,11 +552,34 @@ bool RenderPort::hasRenderTarget() const {
 }
 
 void RenderPort::setRenderTargetSharing(bool sharing) {
+    if(sharing == renderTargetSharing_)
+        return;
+    if(sharing && renderTarget_){
+        renderTarget_->deinitialize();
+        delete renderTarget_;
+        renderTarget_ = 0;
+    } else {
+        renderTarget_ = 0;
+    }
     renderTargetSharing_ = sharing;
 }
 
 bool RenderPort::getRenderTargetSharing() const {
     return renderTargetSharing_;
+}
+
+void RenderPort::setDeinitializeOnDisconnect(bool deinitializeOnDisconnect) {
+    if(isInport())
+        LWARNING("Called setDeinitializeOnDisconnect() on inport!");
+
+    deinitializeOnDisconnect_ = deinitializeOnDisconnect;
+}
+
+bool RenderPort::getDeinitializeOnDisconnect() const {
+    if(isInport())
+        LWARNING("Called getDeinitializeOnDisconnect() on inport!");
+
+    return deinitializeOnDisconnect_;
 }
 
 bool RenderPort::hasData() const {
@@ -546,11 +595,11 @@ RenderPort::RenderSizePropagation RenderPort::getRenderSizePropagation() const {
 }
 
 RenderSizeOriginProperty* RenderPort::getSizeOriginProperty() const {
-    return dynamic_cast<RenderSizeOriginProperty*>(getProperty(id_ + "." + RENDERSIZE_ORIGIN_PROPERTY_ID));
+    return dynamic_cast<RenderSizeOriginProperty*>(getProperty(getID() + "." + RENDERSIZE_ORIGIN_PROPERTY_ID));
 }
 
 RenderSizeReceiveProperty* RenderPort::getSizeReceiveProperty() const {
-    return dynamic_cast<RenderSizeReceiveProperty*>(getProperty(id_ + "." + RENDERSIZE_RECEIVE_PROPERTY_ID));
+    return dynamic_cast<RenderSizeReceiveProperty*>(getProperty(getID() + "." + RENDERSIZE_RECEIVE_PROPERTY_ID));
 }
 
 void RenderPort::requestSize(const tgt::ivec2& size) {
@@ -643,8 +692,8 @@ void PortGroup::activateTargets(const std::string& debugLabel) {
         if (ignoreConnectivity_ || ports_[i]->isConnected()) {
             buffers[count] = static_cast<GLenum>(GL_COLOR_ATTACHMENT0_EXT+i);
             ports_[i]->validateResult();
-            ports_[i]->getRenderTarget()->setDebugLabel(ports_[i]->getProcessor()->getName() + "::"
-                                                + ports_[i]->getName() + (debugLabel.empty() ? "" : ": " + debugLabel));
+            ports_[i]->getRenderTarget()->setDebugLabel(ports_[i]->getProcessor()->getID() + "::"
+                                                + ports_[i]->getID() + (debugLabel.empty() ? "" : ": " + debugLabel));
             count++;
         }
     }
@@ -704,6 +753,7 @@ void PortGroup::resize(const tgt::ivec2& newsize) {
     for (size_t i=0; i<ports_.size(); ++i) {
         ports_[i]->resize(newsize);
     }
+    LGL_ERROR;
 }
 
 std::string PortGroup::generateHeader(tgt::Shader* shader) {

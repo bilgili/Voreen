@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -85,6 +85,7 @@
 #include "processors/proxygeometry/explosionproxygeometry.h"
 #include "processors/proxygeometry/multiplanarproxygeometry.h"
 #include "processors/proxygeometry/multivolumeproxygeometry.h"
+#include "processors/proxygeometry/optimizedproxygeometry.h"
 
 // render
 #include "processors/render/cpuraycaster.h"
@@ -110,7 +111,7 @@
 #include "processors/utility/renderstore.h"
 #include "processors/utility/scale.h"
 #include "processors/utility/segmentationvalidation.h"
-#include "processors/utility/volumecollectionmodalityfilter.h"
+#include "processors/utility/volumelistmodalityfilter.h"
 #include "processors/utility/volumeinformation.h"
 #include "processors/utility/volumepicking.h"
 
@@ -136,6 +137,7 @@
 #include "processors/volume/volumecubify.h"
 #include "processors/volume/volumehalfsample.h"
 #include "processors/volume/volumemirror.h"
+#include "processors/volume/volumevorticity.h"
 
 
 ///
@@ -160,114 +162,117 @@ namespace voreen {
 const std::string BaseModule::loggerCat_("voreen.BaseModule");
 
 BaseModule::BaseModule(const std::string& modulePath) : VoreenModule(modulePath) {
-    setName("Base");
+    setID("Base");
+    setGuiName("Base");
 
     // entry-exit points
-    registerProcessor(new EEPGeometryIntegrator());
-    registerProcessor(new MeshEntryExitPoints());
+    registerSerializableType(new EEPGeometryIntegrator());
+    registerSerializableType(new MeshEntryExitPoints());
 
     // geometry
-    registerProcessor(new BoundingBoxRenderer());
-    registerProcessor(new CameraPositionRenderer());
-    registerProcessor(new GeometryProcessor());
-    registerProcessor(new GeometryRenderer());
-    registerProcessor(new GeometryClipping());
-    registerProcessor(new GeometryClippingWidget());
-    registerProcessor(new GeometrySlabClipping());
-    registerProcessor(new GeometryTransformation());
-    registerProcessor(new GeometryTransformationVolume());
-    registerProcessor(new LightWidgetRenderer());
-    registerProcessor(new PlaneWidgetProcessor());
-    registerProcessor(new PointListRenderer());
-    registerProcessor(new PointSegmentListRenderer());
-    registerProcessor(new QuadricRenderer());
-    registerProcessor(new SlicePositionRenderer());
+    registerSerializableType(new BoundingBoxRenderer());
+    registerSerializableType(new CameraPositionRenderer());
+    registerSerializableType(new GeometryProcessor());
+    registerSerializableType(new GeometryRenderer());
+    registerSerializableType(new GeometryClipping());
+    registerSerializableType(new GeometryClippingWidget());
+    registerSerializableType(new GeometrySlabClipping());
+    registerSerializableType(new GeometryTransformation());
+    registerSerializableType(new GeometryTransformationVolume());
+    registerSerializableType(new LightWidgetRenderer());
+    registerSerializableType(new PlaneWidgetProcessor());
+    registerSerializableType(new PointListRenderer());
+    registerSerializableType(new PointSegmentListRenderer());
+    registerSerializableType(new QuadricRenderer());
+    registerSerializableType(new SlicePositionRenderer());
 
     // image
-    registerProcessor(new Background());
-    registerProcessor(new BinaryImageProcessor());
-    registerProcessor(new ColorDepth());
-    registerProcessor(new Compositor());
-    registerProcessor(new Convolution());
-    registerProcessor(new DepthDarkening());
-    registerProcessor(new EdgeDetect());
-    registerProcessor(new ExplosionCompositor());
-    registerProcessor(new Fade());
-    registerProcessor(new Gaussian());
-    registerProcessor(new Grayscale());
-    registerProcessor(new ImageMasking());
-    registerProcessor(new ImageMorphology());
-    registerProcessor(new ImageOverlay());
-    registerProcessor(new ImageThreshold());
-    registerProcessor(new Mean());
-    registerProcessor(new Median());
-    registerProcessor(new MultiView());
-    registerProcessor(new NonMinMaxSuppression());
-    registerProcessor(new OrientationOverlay());
-    registerProcessor(new QuadView());
-    registerProcessor(new RegionOfInterest2D());
-    registerProcessor(new Splitter());
-    registerProcessor(new TextOverlay());
-    registerProcessor(new TripleView());
-    registerProcessor(new UnaryImageProcessor());
-    registerProcessor(new UnsharpMasking());
+    registerSerializableType(new Background());
+    registerSerializableType(new BinaryImageProcessor());
+    registerSerializableType(new ColorDepth());
+    registerSerializableType(new Compositor());
+    registerSerializableType(new Convolution());
+    registerSerializableType(new DepthDarkening());
+    registerSerializableType(new EdgeDetect());
+    registerSerializableType(new ExplosionCompositor());
+    registerSerializableType(new Fade());
+    registerSerializableType(new Gaussian());
+    registerSerializableType(new Grayscale());
+    registerSerializableType(new ImageMasking());
+    registerSerializableType(new ImageMorphology());
+    registerSerializableType(new ImageOverlay());
+    registerSerializableType(new ImageThreshold());
+    registerSerializableType(new Mean());
+    registerSerializableType(new Median());
+    registerSerializableType(new MultiView());
+    registerSerializableType(new NonMinMaxSuppression());
+    registerSerializableType(new OrientationOverlay());
+    registerSerializableType(new QuadView());
+    registerSerializableType(new RegionOfInterest2D());
+    registerSerializableType(new Splitter());
+    registerSerializableType(new TextOverlay());
+    registerSerializableType(new TripleView());
+    registerSerializableType(new UnaryImageProcessor());
+    registerSerializableType(new UnsharpMasking());
 
     // proxy geometry
-    registerProcessor(new CubeProxyGeometry());
-    registerProcessor(new ExplosionProxyGeometry());
-    registerProcessor(new MultiPlanarProxyGeometry());
-    registerProcessor(new MultiVolumeProxyGeometry());
+    registerSerializableType(new CubeProxyGeometry());
+    registerSerializableType(new ExplosionProxyGeometry());
+    registerSerializableType(new MultiPlanarProxyGeometry());
+    registerSerializableType(new MultiVolumeProxyGeometry());
+    registerSerializableType(new OptimizedProxyGeometry());
 
     // render
-    registerProcessor(new CPURaycaster());
-    registerProcessor(new MultiplanarSliceRenderer());
-    registerProcessor(new MultiVolumeRaycaster());
-    registerProcessor(new SegmentationRaycaster());
-    registerProcessor(new SimpleRaycaster());
-    registerProcessor(new SingleVolumeRaycaster());
-    registerProcessor(new SingleVolumeSlicer());
-    registerProcessor(new SliceViewer());
-    registerProcessor(new RGBRaycaster());
+    registerSerializableType(new CPURaycaster());
+    registerSerializableType(new MultiplanarSliceRenderer());
+    registerSerializableType(new MultiVolumeRaycaster());
+    registerSerializableType(new SegmentationRaycaster());
+    registerSerializableType(new SimpleRaycaster());
+    registerSerializableType(new SingleVolumeRaycaster());
+    registerSerializableType(new SingleVolumeSlicer());
+    registerSerializableType(new SliceViewer());
+    registerSerializableType(new RGBRaycaster());
 
     // utility
-    registerProcessor(new ClockProcessor());
-    registerProcessor(new DistanceMeasure());
-    registerProcessor(new IntensityMeasure());
-    registerProcessor(new ImageSequenceLoopInitiator());
-    registerProcessor(new ImageSequenceLoopFinalizer());
-    registerProcessor(new MetaDataExtractor());
-    registerProcessor(new MultiScale());
-    registerProcessor(new RenderLoopInitiator());
-    registerProcessor(new RenderLoopFinalizer());
-    registerProcessor(new RenderStore());
-    registerProcessor(new SegmentationValidation());
-    registerProcessor(new SingleScale());
-    registerProcessor(new VolumeCollectionModalityFilter());
-    registerProcessor(new VolumeInformation());
-    registerProcessor(new VolumePicking());
+    registerSerializableType(new ClockProcessor());
+    registerSerializableType(new DistanceMeasure());
+    registerSerializableType(new IntensityMeasure());
+    registerSerializableType(new ImageSequenceLoopInitiator());
+    registerSerializableType(new ImageSequenceLoopFinalizer());
+    registerSerializableType(new MetaDataExtractor());
+    registerSerializableType(new MultiScale());
+    registerSerializableType(new RenderLoopInitiator());
+    registerSerializableType(new RenderLoopFinalizer());
+    registerSerializableType(new RenderStore());
+    registerSerializableType(new SegmentationValidation());
+    registerSerializableType(new SingleScale());
+    registerSerializableType(new VolumeListModalityFilter());
+    registerSerializableType(new VolumeInformation());
+    registerSerializableType(new VolumePicking());
 
     // volume
-    registerProcessor(new VectorMagnitude());
-    registerProcessor(new VolumeCombine());
-    registerProcessor(new VolumeComposer());
-    registerProcessor(new VolumeCreate());
-    registerProcessor(new VolumeCrop());
-    registerProcessor(new VolumeCubify());
-    registerProcessor(new VolumeDecomposer());
-    registerProcessor(new VolumeDistanceTransform());
-    registerProcessor(new VolumeFiltering());
-    registerProcessor(new VolumeFormatConversion());
-    registerProcessor(new VolumeGradient());
-    registerProcessor(new VolumeHalfsample());
-    registerProcessor(new VolumeInversion());
-    registerProcessor(new VolumeLandmarkRegistration());
-    registerProcessor(new VolumeMasking());
-    registerProcessor(new VolumeMirror());
-    registerProcessor(new VolumeMorphology());
-    registerProcessor(new VolumeResample());
-    registerProcessor(new VolumeSpacing());
-    registerProcessor(new VolumeTransformation());
-    registerProcessor(new VolumeOffset());
+    registerSerializableType(new VectorMagnitude());
+    registerSerializableType(new VolumeCombine());
+    registerSerializableType(new VolumeComposer());
+    registerSerializableType(new VolumeCreate());
+    registerSerializableType(new VolumeCrop());
+    registerSerializableType(new VolumeCubify());
+    registerSerializableType(new VolumeDecomposer());
+    registerSerializableType(new VolumeDistanceTransform());
+    registerSerializableType(new VolumeFiltering());
+    registerSerializableType(new VolumeFormatConversion());
+    registerSerializableType(new VolumeGradient());
+    registerSerializableType(new VolumeHalfsample());
+    registerSerializableType(new VolumeInversion());
+    registerSerializableType(new VolumeLandmarkRegistration());
+    registerSerializableType(new VolumeMasking());
+    registerSerializableType(new VolumeMirror());
+    registerSerializableType(new VolumeMorphology());
+    registerSerializableType(new VolumeResample());
+    registerSerializableType(new VolumeSpacing());
+    registerSerializableType(new VolumeTransformation());
+    registerSerializableType(new VolumeOffset());
+    registerSerializableType(new VolumeVorticity());
 
     // volume readers/writers
     registerVolumeReader(new AnalyzeVolumeReader());
@@ -286,8 +291,8 @@ BaseModule::BaseModule(const std::string& modulePath) : VoreenModule(modulePath)
     // shader paths
     addShaderPath(getModulePath("glsl"));
 
-    // serialization factories
-    registerSerializerFactory(new RegionOfInterest2D::RegionOfInterestGeometryFactory());
+    // RegionOfInterestGeometry
+    registerSerializableType(new RegionOfInterest2D::RegionOfInterestGeometry());
 }
 
 void BaseModule::initialize() throw (tgt::Exception) {

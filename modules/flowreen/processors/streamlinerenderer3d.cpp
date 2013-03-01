@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -121,11 +121,11 @@ void StreamlineRenderer3D::process() {
         return;
 
     bool changed = volInport_.hasChanged();
-    currentVolumeHandle_ = volInport_.getData();
+    currentVolume_ = volInport_.getData();
 
     // check whether the current Volume belongs to flow data
     //
-    const VolumeFlow3D* volFlow = dynamic_cast<const VolumeFlow3D*>(currentVolumeHandle_->getRepresentation<VolumeRAM>());
+    const VolumeFlow3D* volFlow = dynamic_cast<const VolumeFlow3D*>(currentVolume_->getRepresentation<VolumeRAM>());
     if (volFlow == 0) {
         LERROR("process(): volume data appear to not contain flow data!");
         return;
@@ -135,7 +135,7 @@ void StreamlineRenderer3D::process() {
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    const VolumeTexture* const tex = currentVolumeHandle_->getRepresentation<VolumeGL>()->getTexture();
+    const VolumeTexture* const tex = currentVolume_->getRepresentation<VolumeGL>()->getTexture();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_3D, tex->getId());
 

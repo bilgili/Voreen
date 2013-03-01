@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,59 +26,78 @@
 #include "clockprocessor.h"
 #include "voreen/core/voreenapplication.h"
 #include "tgt/event/timeevent.h"
+#include <limits.h>
 
 namespace voreen {
 
 ClockProcessor::ClockProcessor()
     : Processor(),
     counter_(0),
-    highResCounter_(0.0f),
-    period_(1),
     timerIsActive_(false),
     timer_(0),
     eventHandler_(),
     enableTimerProp_("enableTimerProp", "Enable Timer", false),
-    intervalProp_("intervalProp", "Interval (ms)", 1000, 1, 10 * 1000),
+    intervalProp_("intervalProp", "Interval (ms)", 1000, 1, 10000),
     counterStyleProp_("counterStyle", "Counter Style"),
-    periodProp_("period", "Period (counts)", 2, 1, 1000),
-    tickCounterProp_("tickCounterProp", "Counter", 0, 0, 1000),
+    beginProp_("beginProp","Start Count (including)",0,std::numeric_limits<int32_t>::min(),std::numeric_limits<int32_t>::max()),
+    endProp_("endProp","End Count (including)",10,std::numeric_limits<int32_t>::min(),std::numeric_limits<int32_t>::max()),
+    tickCounterProp_("tickCounterProp", "Counter",0,std::numeric_limits<int32_t>::min(),std::numeric_limits<int32_t>::max()),
     useHighResCounterProp_("useHighResCounterProp", "Use High Resolution Counter", false),
-    resolutionProp_("resolutionProp", "Resolution (1/counts)", 0.5f, 0.0f, 1.0f),
-    highResCounterProp_("highResCounterProp", "High Resolution Counter", 0.0f, 0.0f, 1000.f),
+    resolutionProp_("resolutionProp", "Resolution (*counts)", 0.5f, 0.0f, 1.0f),
+    highResCounterProp_("highResCounterProp", "High Resolution Counter", 0.0f,-std::numeric_limits<float>::max(),std::numeric_limits<float>::max()),
     resetProp_("resetProp", "Reset Counters")
 {
-
+    //set timer
     eventHandler_.addListenerToBack(this);
     timer_ = VoreenApplication::app()->createTimer(&eventHandler_);
 
-    enableTimerProp_.onChange(CallMemberAction<ClockProcessor>(this, &ClockProcessor::toggleTimer));
-    intervalProp_.onChange(CallMemberAction<ClockProcessor>(this, &ClockProcessor::onIntervalChange));
-    periodProp_.onChange(CallMemberAction<ClockProcessor>(this, &ClockProcessor::onPeriodChange));
-    resetProp_.onChange(CallMemberAction<ClockProcessor>(this, &ClockProcessor::resetCounter));
-    useHighResCounterProp_.onChange(CallMemberAction<ClockProcessor>(this,
-        &ClockProcessor::onUseHighResCounterChange));
+    //enable timer
+    addProperty(enableTimerProp_);
+        enableTimerProp_.onChange(CallMemberAction<ClockProcessor>(this, &ClockProcessor::toggleTimer));
+    //settings
+    addProperty(intervalProp_);
+        intervalProp_.setGroupID("settings");
+        intervalProp_.onChange(CallMemberAction<ClockProcessor>(this, &ClockProcessor::onIntervalChange));
+    addProperty(counterStyleProp_);
+        counterStyleProp_.addOption("linear", "Linear", ClockProcessor::COUNTER_LINEAR);
+        counterStyleProp_.addOption("linear_reverse", "Linear (Reverse)", ClockProcessor::COUNTER_LINEAR_REVERSE);
+        counterStyleProp_.addOption("cyclic", "Cyclic", ClockProcessor::COUNTER_CYCLIC);
+        counterStyleProp_.addOption("cyclic_reverse", "Cyclic (Reverse)", ClockProcessor::COUNTER_CYCLIC_REVERSE);
+        counterStyleProp_.set("cyclic");
+        counterStyleProp_.onChange(CallMemberAction<ClockProcessor>(this, &ClockProcessor::onCounterStyleChange));
+        counterStyleProp_.setGroupID("settings");
+    addProperty(beginProp_);
+        beginProp_.onChange(CallMemberAction<ClockProcessor>(this, &ClockProcessor::onBeginChange));
+        beginProp_.setGroupID("settings");
+    addProperty(endProp_);
+        endProp_.onChange(CallMemberAction<ClockProcessor>(this, &ClockProcessor::onEndChange));
+        endProp_.setGroupID("settings");
+    addProperty(tickCounterProp_);
+        tickCounterProp_.setGroupID("settings");
+    //res counter
+    addProperty(useHighResCounterProp_);
+        useHighResCounterProp_.setGroupID("res");
+        useHighResCounterProp_.onChange(CallMemberAction<ClockProcessor>(this, &ClockProcessor::onUseHighResCounterChange));
+    addProperty(resolutionProp_);
+        resolutionProp_.setGroupID("res");
+        resolutionProp_.setNumDecimals(3);
+        resolutionProp_.onChange(CallMemberAction<ClockProcessor>(this, &ClockProcessor::onResolutionChange));
+    addProperty(highResCounterProp_);
+        highResCounterProp_.setGroupID("res");
+    //reset button
+    addProperty(resetProp_);
+        resetProp_.onChange(CallMemberAction<ClockProcessor>(this, &ClockProcessor::resetCounter));
 
+    //modify properties
     tickCounterProp_.setWidgetsEnabled(false);
     highResCounterProp_.setWidgetsEnabled(false);
-
-    counterStyleProp_.addOption("linear", "Linear", ClockProcessor::COUNTER_LINEAR);
-    counterStyleProp_.addOption("cyclic", "Cyclic", ClockProcessor::COUNTER_CYCLIC);
-    counterStyleProp_.addOption("reversing", "Reversing", ClockProcessor::COUNTER_REVERSING);
-    counterStyleProp_.onChange(CallMemberAction<ClockProcessor>(this, &ClockProcessor::onCounterStyleChange));
-    counterStyleProp_.set("cyclic");
-
-    addProperty(enableTimerProp_);
-    addProperty(intervalProp_);
-    addProperty(counterStyleProp_);
-    addProperty(periodProp_);
-    addProperty(tickCounterProp_);
-    addProperty(useHighResCounterProp_);
-    addProperty(resolutionProp_);
-    addProperty(highResCounterProp_);
-    addProperty(resetProp_);
+    setPropertyGroupGuiName("settings","Settings");
+    setPropertyGroupGuiName("res","High Resolution Counter");
 
     onCounterStyleChange();
-    onPeriodChange();
+    //onPeriodChange();
+    onBeginChange();
+    onEndChange();
     onUseHighResCounterChange();
 }
 
@@ -106,34 +125,45 @@ void ClockProcessor::initialize() throw (tgt::Exception) {
 }
 
 void ClockProcessor::timerEvent(tgt::TimeEvent* te) {
-    ++counter_;
     if (counter_ < 0)   // in case of overflow of int, reset counter to zero to prevent strange results
         counter_ = 0;
 
+    if (te)
+        te->accept();
+
     switch (counterStyleProp_.getValue()) {
         case COUNTER_LINEAR:
-            tickCounterProp_.set(counter_);
+            if(counter_ == endProp_.get()) {
+                enableTimerProp_.set(false);
+                return;
+            }
+            tickCounterProp_.set(++counter_);
+            break;
+        case COUNTER_LINEAR_REVERSE:
+            if(counter_ == beginProp_.get()) {
+                enableTimerProp_.set(false);
+                return;
+            }
+            tickCounterProp_.set(--counter_);
             break;
         case COUNTER_CYCLIC:
-            counter_ = counter_ % period_;
+            counter_++;
+            if(counter_ > endProp_.get())
+                counter_ = beginProp_.get();
             tickCounterProp_.set(counter_);
             break;
-        case COUNTER_REVERSING:
-            if (counter_ >= (2 * (period_ - 1)))
-                counter_ = 0;
-
-            if (counter_ < period_)
-                tickCounterProp_.set(counter_);
-            else
-                tickCounterProp_.set(((2 * (period_ - 1)) - counter_));
+        case COUNTER_CYCLIC_REVERSE:
+            counter_--;
+            if(counter_ < beginProp_.get())
+                counter_ = endProp_.get();
+            tickCounterProp_.set(counter_);
             break;
     }
 
     if (useHighResCounterProp_.get())
         triggerHighResCounter();
 
-    if (te)
-        te->accept();
+
 }
 
 bool ClockProcessor::isTimerActive() const {
@@ -167,10 +197,7 @@ void ClockProcessor::stopTimer() {
 //
 
 void ClockProcessor::onCounterStyleChange() {
-    if (counterStyleProp_.getValue() != COUNTER_LINEAR)
-        periodProp_.setVisible(true);
-    else
-        periodProp_.setVisible(false);
+    resetCounter();
 }
 
 void ClockProcessor::onIntervalChange() {
@@ -183,32 +210,55 @@ void ClockProcessor::onIntervalChange() {
     }
 }
 
-void ClockProcessor::onPeriodChange() {
-    period_ = periodProp_.get();
-    if (period_ <= 0)    // prevent errors caused by possibly defect properties
-        period_ = 1;
+void ClockProcessor::onBeginChange() {
+    if(timerIsActive_)
+        enableTimerProp_.set(false);
+
+    if(beginProp_.get() > endProp_.get())
+        endProp_.set(beginProp_.get());
+
+    resetCounter();
+}
+
+void ClockProcessor::onEndChange() {
+    if(timerIsActive_)
+        enableTimerProp_.set(false);
+
+    if(beginProp_.get() > endProp_.get())
+        beginProp_.set(endProp_.get());
+
+    resetCounter();
 }
 
 void ClockProcessor::resetCounter() {
-    counter_ = 0;
+    if(timerIsActive_)
+        enableTimerProp_.set(false);
+
+    if(counterStyleProp_.getValue() == COUNTER_LINEAR ||
+       counterStyleProp_.getValue() == COUNTER_CYCLIC )
+        counter_ = beginProp_.get();
+    else
+        counter_ = endProp_.get();
     tickCounterProp_.set(counter_);
     onResolutionChange();
 }
 
 void ClockProcessor::onResolutionChange() {
-    highResCounter_ = 0.0f;
-    highResCounterProp_.set(highResCounter_);
+    highResCounterProp_.set(static_cast<float>(counter_)*resolutionProp_.get());
 }
 
 void ClockProcessor::onUseHighResCounterChange() {
     if (useHighResCounterProp_.get() == true) {
         resolutionProp_.setVisible(true);
         highResCounterProp_.setVisible(true);
+        onResolutionChange();
     }
     else {
         resolutionProp_.setVisible(false);
         highResCounterProp_.setVisible(false);
+        highResCounterProp_.set(0.0f);
     }
+
 }
 
 void ClockProcessor::toggleTimer() {
@@ -219,30 +269,7 @@ void ClockProcessor::toggleTimer() {
 }
 
 void ClockProcessor::triggerHighResCounter() {
-    highResCounter_ += resolutionProp_.get();
-
-    switch (counterStyleProp_.getValue()) {
-        case COUNTER_LINEAR:
-            highResCounterProp_.set(highResCounter_);
-            break;
-        case COUNTER_CYCLIC:
-            if (highResCounter_ >= static_cast<float>(period_))
-                highResCounter_ = 0.0f;
-            highResCounterProp_.set(highResCounter_);
-            break;
-        case COUNTER_REVERSING:
-            {
-                float limit = (2.0f * (static_cast<float>(period_) - resolutionProp_.get()));
-                if (highResCounter_ >= limit)
-                    highResCounter_ = 0.0;
-
-                if (highResCounter_ < static_cast<float>(period_))
-                    highResCounterProp_.set(highResCounter_);
-                else
-                    highResCounterProp_.set((limit - highResCounter_));
-            }
-            break;
-    }
+    highResCounterProp_.set(static_cast<float>(counter_)*resolutionProp_.get());
 }
 
 }   // namespace

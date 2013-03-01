@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -75,6 +75,7 @@ TimelineWidget::TimelineWidget(Animation* animation, AnimationEditor* parent, Ne
 
     connect(this, SIGNAL(viewResizeSignal(int)), overviewTimeline_, SLOT(updateViewportRect(int)));
     connect(this, SIGNAL(autoPreview(bool)), overviewTimeline_, SLOT(autoPreview(bool)));
+    connect(this, SIGNAL(updatePreviews()), overviewTimeline_, SLOT(updatePreviews()));
     connect(this, SIGNAL(durationChanged(int)), overviewTimeline_, SLOT(setDuration(int)));
     connect(overviewTimeline_, SIGNAL(currentFrameChanged(int)), this, SIGNAL(currentFrameChanged(int)));
     connect(overviewTimeline_, SIGNAL(recordAt(int)), this, SIGNAL(recordAt(int)));
@@ -83,14 +84,15 @@ TimelineWidget::TimelineWidget(Animation* animation, AnimationEditor* parent, Ne
     connect(this, SIGNAL(scrollBarOrder(int)), overviewTimeline_, SLOT(scrollBarOrder(int)));
     connect(this, SIGNAL(sceneOrder(QMatrix)), overviewTimeline_, SLOT(sceneOrder(QMatrix)));
 
+
     mainLayout_->setMargin(1);
     mainLayout_->setSpacing(1);
     mainLayout_->setAlignment(Qt::AlignTop);
 
     scrollArea_ = new QScrollArea();
-    QWidget* container = new QWidget(scrollArea_);
-    scrollArea_->setWidget(container);
-    scrollAreaLayout_ = new QVBoxLayout(container);;
+    containerWidget_ = new QWidget(scrollArea_);
+    scrollArea_->setWidget(containerWidget_);
+    scrollAreaLayout_ = new QVBoxLayout(containerWidget_);;
     scrollAreaLayout_->setSizeConstraint(QLayout::SetMinimumSize);
     mainLayout_->addWidget(scrollArea_);
     scrollArea_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -109,9 +111,6 @@ void TimelineWidget::rebuildAnimation(Animation* animation) {
             processorTimelineWidgets_.at(i)->setFixedHeight(0);
             processorTimelineWidgets_.at(i)->deleteLater();
         }
-    }
-    for(size_t i= 0; i < processorTimelineWidgets_.size(); i++ ) {
-        processorTimelineWidgets_.pop_back();
     }
     processorTimelineWidgets_.clear();
     populateProcessors();
@@ -142,9 +141,8 @@ void TimelineWidget::reloadAnimation() {
 }
 
 void TimelineWidget::animatedProcessorAdded(const AnimatedProcessor* processor) {
-
     AnimatedProcessor* proc = const_cast<AnimatedProcessor*>(processor);    // Maybe we should do this another way, but today we feel quick and dirty
-    ProcessorTimelineWidget* processorTimelineWidget = new ProcessorTimelineWidget(processor->getProcessorName(), proc, timeBox_->width()+172, this);
+    ProcessorTimelineWidget* processorTimelineWidget = new ProcessorTimelineWidget(processor->getProcessorName(), proc, animation_, timeBox_->width()+172, this);
     scrollAreaLayout_->addWidget(processorTimelineWidget);
     processorTimelineWidgets_.push_back(processorTimelineWidget);
 
@@ -152,6 +150,8 @@ void TimelineWidget::animatedProcessorAdded(const AnimatedProcessor* processor) 
     connect(processorTimelineWidget, SIGNAL(scrollBarRequest(int)), this, SIGNAL(scrollBarOrder(int)));
     connect(processorTimelineWidget, SIGNAL(renderAt(float)), this, SLOT(renderAt(float)));
     connect(processorTimelineWidget, SIGNAL(keyframeAdded()), overviewTimeline_, SLOT(renderPreviews()));
+    connect(processorTimelineWidget, SIGNAL(keyframeChanged()), overviewTimeline_, SLOT(renderPreviews()));
+    connect(processorTimelineWidget, SIGNAL(removeProcessorTimelineWidget(ProcessorTimelineWidget*)), this, SLOT(removeProcessorTimelineWidget(ProcessorTimelineWidget*)));
     connect(overviewTimeline_, SIGNAL(barMovement(int)), processorTimelineWidget, SIGNAL(barMovement(int)));
     connect(this, SIGNAL(sceneOrder(QMatrix)), processorTimelineWidget, SIGNAL(sceneOrder(QMatrix)));
     connect(this, SIGNAL(scrollBarOrder(int)), processorTimelineWidget, SIGNAL(scrollBarOrder(int)));
@@ -172,6 +172,33 @@ void TimelineWidget::animatedProcessorAdded(const AnimatedProcessor* processor) 
         if ((*it)->getPropertyName() == "Canvas Size" && dynamic_cast<TemplatePropertyTimeline<tgt::ivec2>*>(*it))
             (*it)->setActiveOnRendering(false);
         ++it;
+    }
+}
+
+void TimelineWidget::removeProcessorTimelineWidget(ProcessorTimelineWidget* ptlw) {
+    if(ptlw->getTimelineCount() > 0) {
+        LWARNINGC("voreen.TimelineWidget", "Trying to remove non-empty ProcessorTimelineWidget");
+        return;
+    }
+
+    for(int i=0; i<scrollAreaLayout_->count(); i++) {
+        QLayoutItem* li = scrollAreaLayout_->itemAt(i);
+        QWidget* qw = li->widget();
+        if(qw) {
+            if(ptlw == qw) {
+                scrollAreaLayout_->takeAt(i);
+                break;
+            }
+        }
+    }
+
+    std::vector<ProcessorTimelineWidget*>::iterator it;
+    for(it = processorTimelineWidgets_.begin(); it != processorTimelineWidgets_.end(); it++) {
+        if((*it) == ptlw) {
+            processorTimelineWidgets_.erase(it);
+            ptlw->deleteLater();
+            return;
+        }
     }
 }
 

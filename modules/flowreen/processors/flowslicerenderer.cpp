@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -236,8 +236,8 @@ void FlowSliceRenderer::prepareFlowTexture2D(const Flow2D& flow2D) {
 }
 
 void FlowSliceRenderer::prepareFlowTexture3D() {
-    if ((currentVolumeHandle_ != 0) && (currentVolumeHandle_->getRepresentation<VolumeGL>() != 0))
-        flow3DTexture_ = currentVolumeHandle_->getRepresentation<VolumeGL>()->getTexture();
+    if ((currentVolume_ != 0) && (currentVolume_->getRepresentation<VolumeGL>() != 0))
+        flow3DTexture_ = currentVolume_->getRepresentation<VolumeGL>()->getTexture();
     else
         flow3DTexture_ = 0;
 }

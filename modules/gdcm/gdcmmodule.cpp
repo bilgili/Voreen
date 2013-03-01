@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -38,7 +38,8 @@ GdcmModule::GdcmModule(const std::string& modulePath)
       scpPortProperty_("scpPort", "Default SCP Port", 104, 1, 65535)
 {
     //module name
-    setName("Grassroots DICOM");
+    setID("Grassroots DICOM");
+    setGuiName("Grassroots DICOM");
 
     //register each processor
     registerVolumeReader(new GdcmVolumeReader());

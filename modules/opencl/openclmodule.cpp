@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -48,14 +48,15 @@ OpenCLModule::OpenCLModule(const std::string& modulePath)
     //, device_(0)
     , glSharing_(true)
 {
-    setName("OpenCL");
+    setID("OpenCL");
+    setGuiName("OpenCL");
     instance_ = this;
 
-    registerProcessor(new DynamicCLProcessor());
-    registerProcessor(new GrayscaleCL());
-    registerProcessor(new RaycasterCL());
-    registerProcessor(new RaytracingEntryExitPoints());
-    registerProcessor(new VolumeGradientCL());
+    registerSerializableType(new DynamicCLProcessor());
+    registerSerializableType(new GrayscaleCL());
+    registerSerializableType(new RaycasterCL());
+    registerSerializableType(new RaytracingEntryExitPoints());
+    registerSerializableType(new VolumeGradientCL());
 }
 
 void OpenCLModule::deinitialize() throw (tgt::Exception) {
@@ -97,6 +98,7 @@ void OpenCLModule::initCL() throw (VoreenException) {
             platform_ = platforms.front();
         LINFO("Selected platform: " << platform_.getName());
     }
+    platform_.logInfos();
 
     // select device
     const std::vector<cl::Device>& devices = platform_.getDevices();
@@ -106,10 +108,15 @@ void OpenCLModule::initCL() throw (VoreenException) {
     }
     else if (devices.size() == 1){
         device_ = devices.front();
-        LINFO("Selected device: " << device_.getName());
+        LINFO("Device 0: " << device_.getName());
     }
     else {
-        // multiple devices available => select GPU device
+        // multiple devices available
+        for (size_t i=0; i<devices.size(); i++) {
+            LINFO("Device " << i << ": " << devices.at(i).getName());
+        }
+
+        // select GPU device
         bool found = false;
         for (size_t i=0; i<devices.size() && !found; i++) {
             if (devices.at(i).getType() == CL_DEVICE_TYPE_GPU) {
@@ -136,7 +143,9 @@ void OpenCLModule::initCL() throw (VoreenException) {
         LINFO("OpenGL sharing: disabled");
         context_ = new cl::Context(device_);
     }
-    queue_ = new cl::CommandQueue(context_, device_); 
+    queue_ = new cl::CommandQueue(context_, device_);
+
+    device_.logInfos();
 }
 
 cl::OpenCL* OpenCLModule::getOpenCL() const {

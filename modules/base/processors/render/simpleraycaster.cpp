@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,19 +36,22 @@ namespace voreen {
 SimpleRaycaster::SimpleRaycaster()
     : VolumeRaycaster()
     , volumePort_(Port::INPORT, "volumehandle.volumehandle", "Volume Input")
-    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
-    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
-    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
+    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_RESULT)
+    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_RESULT)
+    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_RESULT)
+    , internalRenderPort_(Port::OUTPORT, "internalPort", "Internal Port")
     , shader_("shader", "Shader", "rc_simple.frag", "passthrough.vert")
     , transferFunc_("transferFunction", "Transfer Function", Processor::INVALID_RESULT,
         TransFuncProperty::Editors(TransFuncProperty::INTENSITY | TransFuncProperty::INTENSITY_RAMP))
-    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)), true)
 {
     volumePort_.showTextureAccessProperties(true);
     addPort(volumePort_);
     addPort(entryPort_);
     addPort(exitPort_);
+
     addPort(outport_);
+    addPrivateRenderPort(internalRenderPort_);
 
     addProperty(shader_);
     addProperty(transferFunc_);
@@ -79,13 +82,26 @@ void SimpleRaycaster::beforeProcess() {
 
     // assign volume to transfer function
     transferFunc_.setVolumeHandle(volumePort_.getData());
+
+    if(volumePort_.hasChanged() && volumePort_.getData())
+        camera_.adaptInteractionToScene(volumePort_.getData()->getBoundingBox().getBoundingBox());
     LGL_ERROR;
 }
 
 void SimpleRaycaster::process() {
-    // activate and clear output render target
-    outport_.activateTarget();
-    outport_.clearTarget();
+    // determine, activate and clear render target
+    const bool renderCoarse = interactionMode() && interactionCoarseness_.get() > 1;
+    tgt::svec2 renderSize;
+    if (renderCoarse) {
+        renderSize = outport_.getSize() / interactionCoarseness_.get();
+        internalRenderPort_.resize(renderSize);
+    }
+    else {
+        renderSize = outport_.getSize();
+    }
+    RenderPort& renderDestination = (renderCoarse ? internalRenderPort_ : outport_);
+    renderDestination.activateTarget();
+    renderDestination.clearTarget();
 
     // retrieve shader from shader property
     tgt::Shader* shader = shader_.getShader();
@@ -97,19 +113,21 @@ void SimpleRaycaster::process() {
     // activate shader and set common uniforms
     shader->activate();
     tgt::Camera cam = camera_.get();
-    setGlobalShaderParameters(shader, &cam);
+    setGlobalShaderParameters(shader, &cam, renderSize);
+    LGL_ERROR;
 
     // bind entry and exit params and pass texture units to the shader
     TextureUnit entryUnit, entryDepthUnit, exitUnit, exitDepthUnit;
-    entryPort_.bindTextures(entryUnit, entryDepthUnit);
+    entryPort_.bindTextures(entryUnit, entryDepthUnit, GL_NEAREST);
     shader->setUniform("entryPoints_", entryUnit.getUnitNumber());
     shader->setUniform("entryPointsDepth_", entryDepthUnit.getUnitNumber());
     entryPort_.setTextureParameters(shader, "entryParameters_");
 
-    exitPort_.bindTextures(exitUnit, exitDepthUnit);
+    exitPort_.bindTextures(exitUnit, exitDepthUnit, GL_NEAREST);
     shader->setUniform("exitPoints_", exitUnit.getUnitNumber());
     shader->setUniform("exitPointsDepth_", exitDepthUnit.getUnitNumber());
     exitPort_.setTextureParameters(shader, "exitParameters_");
+    LGL_ERROR;
 
     // bind volume texture and pass it to the shader
     std::vector<VolumeStruct> volumeTextures;
@@ -124,6 +142,7 @@ void SimpleRaycaster::process() {
         volumePort_.getTextureFilterModeProperty().getValue())
     );
     bindVolumes(shader, volumeTextures, &cam, lightPosition_.get());
+    LGL_ERROR;
 
     // bind transfer function and pass it to the shader
     TextureUnit transferUnit;
@@ -138,7 +157,13 @@ void SimpleRaycaster::process() {
 
     // clean up
     shader->deactivate();
-    outport_.deactivateTarget();
+    renderDestination.deactivateTarget();
+
+    // copy over and rescale image from internal render port to outport in coarseness mode
+    if (renderCoarse) {
+        rescaleRendering(renderDestination, outport_);
+    }
+
     TextureUnit::setZeroUnit();
     LGL_ERROR;
 }

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,6 +26,7 @@
 #include "voreen/core/io/serialization/xmlserializer.h"
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/voreenmodule.h"
+#include "voreen/core/animation/animation.h"
 
 namespace voreen {
 
@@ -36,6 +37,15 @@ XmlSerializer::XmlSerializer(std::string documentPath)
     , id_(0)
     , documentPath_(documentPath)
 {
+    // register application (as proxy for modules)
+    if (VoreenApplication::app()) {
+        registerFactory(VoreenApplication::app());
+        registerFactories(VoreenApplication::app()->getSerializerFactories());
+    }
+    else {
+        LWARNING("VoreenApplication not instantiated");
+    }
+
     // Insert XML declaration...
     document_.LinkEndChild(new TiXmlDeclaration(
         XmlSerializationConstants::XMLVERSION,
@@ -48,17 +58,6 @@ XmlSerializer::XmlSerializer(std::string documentPath)
         XmlSerializationConstants::VERSIONATTRIBUTE,
         XmlSerializationConstants::VERSION);
     document_.LinkEndChild(root);
-
-    // retrieve serialization factories from modules
-    if (VoreenApplication::app()) {
-        const std::vector<VoreenModule*>& modules = VoreenApplication::app()->getModules();
-        for (size_t i=0; i<modules.size(); i++)
-            registerFactories(modules.at(i)->getSerializerFactories());
-        registerFactories(VoreenApplication::app()->getSerializerFactories());
-    }
-    else {
-        LWARNING("Unable to retrieve factories from modules: VoreenApplication not instantiated");
-    }
 
     node_ = root;
 }

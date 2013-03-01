@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -40,7 +40,7 @@ class VRN_CORE_API FloatVec2Property : public NumericProperty<tgt::vec2> {
 public:
     FloatVec2Property(const std::string& id, const std::string& guiText, const tgt::vec2& value,
                   const tgt::vec2& minimum = tgt::vec2(0.0f), const tgt::vec2& maximum = tgt::vec2(1.0f),
-                  int invalidationLevel=Processor::INVALID_RESULT);
+                  int invalidationLevel=Processor::INVALID_RESULT, NumericProperty<tgt::vec2>::BoundaryUpdatePolicy bup = NumericProperty<tgt::vec2>::STATIC);
     FloatVec2Property();
     virtual ~FloatVec2Property() {}
 
@@ -59,7 +59,7 @@ class VRN_CORE_API FloatVec3Property : public NumericProperty<tgt::vec3> {
 public:
     FloatVec3Property(const std::string& id, const std::string& guiText, const tgt::vec3& value,
                   const tgt::vec3& minimum = tgt::vec3(0.0f), const tgt::vec3& maximum = tgt::vec3(1.0f),
-                  int invalidationLevel=Processor::INVALID_RESULT);
+                  int invalidationLevel=Processor::INVALID_RESULT, NumericProperty<tgt::vec3>::BoundaryUpdatePolicy bup = NumericProperty<tgt::vec3>::STATIC);
     FloatVec3Property();
     virtual ~FloatVec3Property() {}
 
@@ -79,7 +79,7 @@ public:
     FloatVec4Property();
     FloatVec4Property(const std::string& id, const std::string& guiText, const tgt::vec4& value,
                   const tgt::vec4& minimum = tgt::vec4(0.0f), const tgt::vec4& maximum = tgt::vec4(1.0f),
-                  int invalidationLevel=Processor::INVALID_RESULT);
+                  int invalidationLevel=Processor::INVALID_RESULT, NumericProperty<tgt::vec4>::BoundaryUpdatePolicy bup = NumericProperty<tgt::vec4>::STATIC);
     virtual ~FloatVec4Property() {}
 
     virtual Property* create() const;
@@ -98,7 +98,7 @@ public:
     IntVec2Property();
     IntVec2Property(const std::string& id, const std::string& guiText, const tgt::ivec2& value,
                 const tgt::ivec2& minimum = tgt::ivec2(0), const tgt::ivec2& maximum = tgt::ivec2(100),
-                int invalidationLevel=Processor::INVALID_RESULT);
+                int invalidationLevel=Processor::INVALID_RESULT, NumericProperty<tgt::ivec2>::BoundaryUpdatePolicy bup = NumericProperty<tgt::ivec2>::STATIC);
     virtual ~IntVec2Property() {}
 
     virtual Property* create() const;
@@ -116,7 +116,7 @@ class VRN_CORE_API IntVec3Property : public NumericProperty<tgt::ivec3> {
 public:
     IntVec3Property(const std::string& id, const std::string& guiText, const tgt::ivec3& value,
                 const tgt::ivec3& minimum = tgt::ivec3(0), const tgt::ivec3& maximum = tgt::ivec3(100),
-                int invalidationLevel=Processor::INVALID_RESULT);
+                int invalidationLevel=Processor::INVALID_RESULT, NumericProperty<tgt::ivec3>::BoundaryUpdatePolicy bup = NumericProperty<tgt::ivec3>::STATIC);
     IntVec3Property();
     virtual ~IntVec3Property() {}
 
@@ -135,7 +135,7 @@ class VRN_CORE_API IntVec4Property : public NumericProperty<tgt::ivec4> {
 public:
     IntVec4Property(const std::string& id, const std::string& guiText, const tgt::ivec4& value,
                 const tgt::ivec4& minimum = tgt::ivec4(0), const tgt::ivec4& maximum = tgt::ivec4(100),
-                int invalidationLevel=Processor::INVALID_RESULT);
+                int invalidationLevel=Processor::INVALID_RESULT, NumericProperty<tgt::ivec4>::BoundaryUpdatePolicy bup = NumericProperty<tgt::ivec4>::STATIC);
     IntVec4Property();
     virtual ~IntVec4Property() {}
 

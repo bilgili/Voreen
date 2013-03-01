@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -31,13 +31,13 @@
 
 namespace voreen {
 
-class JCampParserException : public VoreenException {
+class VRN_CORE_API JCampParserException : public VoreenException {
 public:
     JCampParserException(const std::string& what = "") : VoreenException(what) {}
     virtual ~JCampParserException() throw() {}
 };
 
-struct JCampToken {
+struct VRN_CORE_API JCampToken {
     enum Type {
         OPENING_BRACKET,
         CLOSING_BRACKET,
@@ -67,7 +67,7 @@ private:
     std::string content_;
 };
 
-class JCampElement {
+class VRN_CORE_API JCampElement {
 public:
     void addLine(std::string line);
     bool parse();
@@ -123,7 +123,7 @@ protected:
     static const std::string loggerCat_;
 };
 
-class JCampParser {
+class VRN_CORE_API JCampParser {
 public:
     bool parseFile(std::string filename);
 
@@ -242,7 +242,7 @@ protected:
  * Hooray, found some official docs: http://filer.case.edu/vxs33/pvman/D/Docs/
  *                                   http://filer.case.edu/vxs33/pvman/A/Docs/
  */
-class BrukerVolumeReader : public VolumeReader {
+class VRN_CORE_API BrukerVolumeReader : public VolumeReader {
     struct FrameGroup {
         int len_;
         std::string groupId_;
@@ -315,7 +315,7 @@ public:
      *
      * \see VolumeReader::read
      **/
-    virtual VolumeCollection* read(const std::string& url)
+    virtual VolumeList* read(const std::string& url)
         throw (tgt::FileException, std::bad_alloc);
 
     /**
@@ -324,7 +324,7 @@ public:
      * \param   url         url to load volume from
      * \param   volumeId    id to select the volume, if -1 all volumes will be selected
      **/
-    virtual VolumeCollection* read(const std::string& url, int volumeId)
+    virtual VolumeList* read(const std::string& url, int volumeId)
         throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
     std::vector<VolumeURL> listVolumes(const std::string& url) const

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -338,7 +338,11 @@ struct VEAVContext {
             return false;
         }
 
+#if (LIBAVCODEC_VERSION_MAJOR < 53)
         if (avcodec_open(codecContext, codec) < 0) {
+#else
+        if (avcodec_open2(codecContext, codec, 0) < 0) {
+#endif
             LERRORC(loggerCat_, "Could not load Codec " << codec->id);
             return false;
         }
@@ -389,7 +393,7 @@ struct VEAVContext {
         AVOutputFormat* outputFormat;
 
         if (preset == VideoEncoder::GUESS) {
-#ifdef WIN32
+#if (LIBAVFORMAT_VERSION_MAJOR < 53)
             outputFormat = guess_format(0, filePath.c_str(), 0);
 #else
             outputFormat = av_guess_format(0, filePath.c_str(), 0);
@@ -397,7 +401,7 @@ struct VEAVContext {
 
             if (!outputFormat) {
                 LWARNINGC(loggerCat_, "Could not guess output format, using MPEG");
-#ifdef WIN32
+#if (LIBAVFORMAT_VERSION_MAJOR < 53)
                 outputFormat = guess_format(mpegAppendix, 0, 0);
 #else
                 outputFormat = av_guess_format(mpegAppendix, 0, 0);
@@ -414,7 +418,7 @@ struct VEAVContext {
             formatContext_->video_codec_id = outputFormat->video_codec;
         } else {
             const char* appendix = containerAppendix(preset);
-#ifdef WIN32
+#if (LIBAVFORMAT_VERSION_MAJOR < 53)
             outputFormat = guess_format(appendix, 0, 0);
 #else
             outputFormat = av_guess_format(appendix, 0, 0);
@@ -466,7 +470,12 @@ struct VEAVContext {
 
         // init video-stream
         if (formatContext_->video_codec_id != CODEC_ID_NONE) {
+#if (LIBAVFORMAT_VERSION_MAJOR < 53)
             videoStream = av_new_stream(formatContext_, 1);
+#else
+            videoStream = avformat_new_stream(formatContext_, NULL);
+            videoStream->id = 1;
+#endif
 
             if (!videoStream) {
                 throw tgt::Exception("Could not allocate stream");
@@ -479,32 +488,49 @@ struct VEAVContext {
             return;
         }
 
+#if (LIBAVFORMAT_VERSION_MAJOR < 53)
         // must set parameters
         if (av_set_parameters(formatContext_, 0) < 0) {
             LERRORC(loggerCat_, "invalid format parameters");
             return;
         }
+#endif
 
 #ifdef TGT_DEBUG
+#if (LIBAVFORMAT_VERSION_MAJOR < 53)
         dump_format(formatContext_, 0, filePath.c_str(), 1);//outputs format specs
+#else
+        av_dump_format(formatContext_, 0, filePath.c_str(), 1);//outputs format specs
+#endif
 #endif
 
         // open video's file (will overwrite)
+#if (LIBAVFORMAT_VERSION_MAJOR < 53)
         if (url_fopen(&formatContext_->pb, filePath.c_str(), URL_WRONLY) < 0) {
+#else
+        if (avio_open(&formatContext_->pb, filePath.c_str(), AVIO_FLAG_WRITE) < 0) {
+#endif
             throw tgt::Exception("file " + filePath + " is not accessible for write-access");
         }
 
+#if (LIBAVFORMAT_VERSION_MAJOR < 53)
         /*
          * must be called before any I/O
          * double videoOutBufferSize for slow fs
          */
         url_setbufsize(formatContext_->pb, 2 * videoOutBufferSize);
+#endif
+
 #if (LIBAVFORMAT_VERSION_MAJOR < 53)
-        url_resetbuf(formatContext_->pb, URL_WRONLY); //missing from newer version...not sure what to do about it (stefan)
+        url_resetbuf(formatContext_->pb, URL_WRONLY);
 #endif
 
         // write format's header (if any)
+#if (LIBAVFORMAT_VERSION_MAJOR < 53)
         av_write_header(formatContext_);
+#else
+        avformat_write_header(formatContext_, 0);
+#endif
     }
 
     /**
@@ -577,7 +603,11 @@ struct VEAVContext {
 
         av_write_trailer(formatContext_);
 
+#if (LIBAVFORMAT_VERSION_MAJOR < 53)
         url_fclose(formatContext_->pb);
+#else
+        avio_close(formatContext_->pb);
+#endif
 
         av_free(formatContext_);
     }

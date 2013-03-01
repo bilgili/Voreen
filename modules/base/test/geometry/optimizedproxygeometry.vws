@@ -1,0 +1,1227 @@
+<?xml version="1.0" ?>
+<VoreenData version="1">
+    <Workspace version="2" GlobalDescription="">
+        <ProcessorNetwork version="15">
+            <MetaData>
+                <MetaItem name="ZoomCenter" type="Vec2MetaData">
+                    <value x="-511.67364502" y="-185.55198669" />
+                </MetaItem>
+                <MetaItem name="ZoomFactor" type="FloatMetaData" value="0.53354323" />
+            </MetaData>
+            <Processors>
+                <Processor type="VolumeSource" name="walnut" id="ref0">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-481" y="-516" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="volumeInfo" name="volumeInfo" />
+                        <Property mapKey="volumeURL" name="volumeURL" url="input/walnut_medium.vvd?preferredReader=VvdVolumeReader" />
+                    </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle" direction="0" portID="volumehandle.volumehandle" guiName="Volume Output" allowMultipleConnections="true" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="OptimizedProxyGeometry" name="cube_noclip" id="ref5">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-967" y="-212" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="backClippingPlane" name="backClippingPlane" value="40" />
+                        <Property mapKey="bottomClippingPlane" name="bottomClippingPlane" value="0" />
+                        <Property mapKey="frontClippingPlane" name="frontClippingPlane" value="0" />
+                        <Property mapKey="leftClippingPlane" name="leftClippingPlane" value="40" />
+                        <Property mapKey="modeString" name="modeString" value="cube" />
+                        <Property mapKey="resetClipPlanes" name="resetClipPlanes" />
+                        <Property mapKey="resolution" name="resolution" value="24" />
+                        <Property mapKey="resolutionMode" name="resolutionMode" value="subdivide" />
+                        <Property mapKey="resolutionvoxel" name="resolutionvoxel" value="2" />
+                        <Property mapKey="rightClippingPlane" name="rightClippingPlane" value="0" />
+                        <Property mapKey="threshold" name="threshold" value="5" id="ref54" />
+                        <Property mapKey="topClippingPlane" name="topClippingPlane" value="40" />
+                        <Property mapKey="transferfunction" name="transferfunction" AlwaysFitDomain="false" id="ref18">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.134921" split="false">
+                                        <colorL r="153" g="0" b="255" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.145833" split="false">
+                                        <colorL r="129" g="90" b="255" a="11" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.168651" split="false">
+                                        <colorL r="145" g="78" b="221" a="11" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.180556" split="false">
+                                        <colorL r="172" g="58" b="165" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.39781699" split="false">
+                                        <colorL r="255" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.42222223" split="false">
+                                        <colorL r="255" g="0" b="0" a="9" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.46031746" split="false">
+                                        <colorL r="255" g="0" b="0" a="11" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.489362" split="false">
+                                        <colorL r="156" g="99" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.75496" split="false">
+                                        <colorL r="4" g="255" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.82539684" split="false">
+                                        <colorL r="73" g="255" b="1" a="40" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.90793651" split="false">
+                                        <colorL r="8" g="82" b="7" a="35" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.96627003" split="false">
+                                        <colorL r="54" g="254" b="51" a="0" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="1" />
+                            </TransferFunction>
+                        </Property>
+                        <Property mapKey="useClipping" name="useClipping" value="false" />
+                        <Property mapKey="waitForOptimization" name="waitForOptimization" value="true" />
+                    </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle" direction="1" portID="volumehandle.volumehandle" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry" direction="0" portID="proxygeometry.geometry" guiName="Proxy Geometry Output" allowMultipleConnections="true" invalidationLevel="20">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="OptimizedProxyGeometry" name="minbb_noclip" id="ref7">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-899" y="-107" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="backClippingPlane" name="backClippingPlane" value="40" />
+                        <Property mapKey="bottomClippingPlane" name="bottomClippingPlane" value="0" />
+                        <Property mapKey="frontClippingPlane" name="frontClippingPlane" value="0" />
+                        <Property mapKey="leftClippingPlane" name="leftClippingPlane" value="40" />
+                        <Property mapKey="modeString" name="modeString" value="mincube" />
+                        <Property mapKey="resetClipPlanes" name="resetClipPlanes" />
+                        <Property mapKey="resolution" name="resolution" value="24" />
+                        <Property mapKey="resolutionMode" name="resolutionMode" value="subdivide" />
+                        <Property mapKey="resolutionvoxel" name="resolutionvoxel" value="2" />
+                        <Property mapKey="rightClippingPlane" name="rightClippingPlane" value="0" />
+                        <Property mapKey="threshold" name="threshold" value="5" id="ref55" />
+                        <Property mapKey="topClippingPlane" name="topClippingPlane" value="40" />
+                        <Property mapKey="transferfunction" name="transferfunction" AlwaysFitDomain="false" id="ref19">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.134921" split="false">
+                                        <colorL r="153" g="0" b="255" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.145833" split="false">
+                                        <colorL r="129" g="90" b="255" a="11" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.168651" split="false">
+                                        <colorL r="145" g="78" b="221" a="11" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.180556" split="false">
+                                        <colorL r="172" g="58" b="165" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.39781699" split="false">
+                                        <colorL r="255" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.42222223" split="false">
+                                        <colorL r="255" g="0" b="0" a="9" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.46031746" split="false">
+                                        <colorL r="255" g="0" b="0" a="11" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.489362" split="false">
+                                        <colorL r="156" g="99" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.75496" split="false">
+                                        <colorL r="4" g="255" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.82539684" split="false">
+                                        <colorL r="73" g="255" b="1" a="40" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.90793651" split="false">
+                                        <colorL r="8" g="82" b="7" a="35" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.96627003" split="false">
+                                        <colorL r="54" g="254" b="51" a="0" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="1" />
+                            </TransferFunction>
+                        </Property>
+                        <Property mapKey="useClipping" name="useClipping" value="false" />
+                        <Property mapKey="waitForOptimization" name="waitForOptimization" value="true" />
+                    </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle" direction="1" portID="volumehandle.volumehandle" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry" direction="0" portID="proxygeometry.geometry" guiName="Proxy Geometry Output" allowMultipleConnections="true" invalidationLevel="20">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="OptimizedProxyGeometry" name="maxbrixks_noclip" id="ref9">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-808" y="-192" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="backClippingPlane" name="backClippingPlane" value="40" />
+                        <Property mapKey="bottomClippingPlane" name="bottomClippingPlane" value="0" />
+                        <Property mapKey="frontClippingPlane" name="frontClippingPlane" value="0" />
+                        <Property mapKey="leftClippingPlane" name="leftClippingPlane" value="40" />
+                        <Property mapKey="modeString" name="modeString" value="maximalcubes" />
+                        <Property mapKey="resetClipPlanes" name="resetClipPlanes" />
+                        <Property mapKey="resolution" name="resolution" value="24" />
+                        <Property mapKey="resolutionMode" name="resolutionMode" value="subdivide" />
+                        <Property mapKey="resolutionvoxel" name="resolutionvoxel" value="2" />
+                        <Property mapKey="rightClippingPlane" name="rightClippingPlane" value="0" />
+                        <Property mapKey="threshold" name="threshold" value="5" id="ref56" />
+                        <Property mapKey="topClippingPlane" name="topClippingPlane" value="40" />
+                        <Property mapKey="transferfunction" name="transferfunction" AlwaysFitDomain="false" id="ref20">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.134921" split="false">
+                                        <colorL r="153" g="0" b="255" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.145833" split="false">
+                                        <colorL r="129" g="90" b="255" a="11" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.168651" split="false">
+                                        <colorL r="145" g="78" b="221" a="11" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.180556" split="false">
+                                        <colorL r="172" g="58" b="165" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.39781699" split="false">
+                                        <colorL r="255" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.42222223" split="false">
+                                        <colorL r="255" g="0" b="0" a="9" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.46031746" split="false">
+                                        <colorL r="255" g="0" b="0" a="11" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.489362" split="false">
+                                        <colorL r="156" g="99" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.75496" split="false">
+                                        <colorL r="4" g="255" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.82539684" split="false">
+                                        <colorL r="73" g="255" b="1" a="40" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.90793651" split="false">
+                                        <colorL r="8" g="82" b="7" a="35" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.96627003" split="false">
+                                        <colorL r="54" g="254" b="51" a="0" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="1" />
+                            </TransferFunction>
+                        </Property>
+                        <Property mapKey="useClipping" name="useClipping" value="false" />
+                        <Property mapKey="waitForOptimization" name="waitForOptimization" value="true" />
+                    </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle" direction="1" portID="volumehandle.volumehandle" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry" direction="0" portID="proxygeometry.geometry" guiName="Proxy Geometry Output" allowMultipleConnections="true" invalidationLevel="20">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="OptimizedProxyGeometry" name="octree_noclip" id="ref11">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-688" y="-101" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="backClippingPlane" name="backClippingPlane" value="40" />
+                        <Property mapKey="bottomClippingPlane" name="bottomClippingPlane" value="0" />
+                        <Property mapKey="frontClippingPlane" name="frontClippingPlane" value="0" />
+                        <Property mapKey="leftClippingPlane" name="leftClippingPlane" value="40" />
+                        <Property mapKey="modeString" name="modeString" value="octreemax" />
+                        <Property mapKey="resetClipPlanes" name="resetClipPlanes" />
+                        <Property mapKey="resolution" name="resolution" value="24" />
+                        <Property mapKey="resolutionMode" name="resolutionMode" value="subdivide" />
+                        <Property mapKey="resolutionvoxel" name="resolutionvoxel" value="2" />
+                        <Property mapKey="rightClippingPlane" name="rightClippingPlane" value="0" />
+                        <Property mapKey="threshold" name="threshold" value="5" id="ref57" />
+                        <Property mapKey="topClippingPlane" name="topClippingPlane" value="40" />
+                        <Property mapKey="transferfunction" name="transferfunction" AlwaysFitDomain="false" id="ref21">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.134921" split="false">
+                                        <colorL r="153" g="0" b="255" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.145833" split="false">
+                                        <colorL r="129" g="90" b="255" a="11" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.168651" split="false">
+                                        <colorL r="145" g="78" b="221" a="11" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.180556" split="false">
+                                        <colorL r="172" g="58" b="165" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.39781699" split="false">
+                                        <colorL r="255" g="0" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.42222223" split="false">
+                                        <colorL r="255" g="0" b="0" a="9" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.46031746" split="false">
+                                        <colorL r="255" g="0" b="0" a="11" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.489362" split="false">
+                                        <colorL r="156" g="99" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.75496" split="false">
+                                        <colorL r="4" g="255" b="0" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.82539684" split="false">
+                                        <colorL r="73" g="255" b="1" a="40" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.90793651" split="false">
+                                        <colorL r="8" g="82" b="7" a="35" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.96627003" split="false">
+                                        <colorL r="54" g="254" b="51" a="0" />
+                                    </key>
+                                </Keys>
+                                <domain x="0" y="1" />
+                            </TransferFunction>
+                        </Property>
+                        <Property mapKey="useClipping" name="useClipping" value="false" />
+                        <Property mapKey="waitForOptimization" name="waitForOptimization" value="true" />
+                    </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle" direction="1" portID="volumehandle.volumehandle" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry" direction="0" portID="proxygeometry.geometry" guiName="Proxy Geometry Output" allowMultipleConnections="true" invalidationLevel="20">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="OptimizedProxyGeometry" name="octree_clip" id="ref4">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-232" y="-175" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="backClippingPlane" name="backClippingPlane" value="95" id="ref51" />
+                        <Property mapKey="bottomClippingPlane" name="bottomClippingPlane" value="66.97422791" id="ref52" />
+                        <Property mapKey="frontClippingPlane" name="frontClippingPlane" value="49.97441864" id="ref50" />
+                        <Property mapKey="leftClippingPlane" name="leftClippingPlane" value="127" id="ref49" />
+                        <Property mapKey="modeString" name="modeString" value="octreemax" />
+                        <Property mapKey="resetClipPlanes" name="resetClipPlanes" />
+                        <Property mapKey="resolution" name="resolution" value="24" />
+                        <Property mapKey="resolutionMode" name="resolutionMode" value="subdivide" />
+                        <Property mapKey="resolutionvoxel" name="resolutionvoxel" value="4" />
+                        <Property mapKey="rightClippingPlane" name="rightClippingPlane" value="86.61260986" id="ref48" />
+                        <Property mapKey="threshold" name="threshold" value="10" />
+                        <Property mapKey="topClippingPlane" name="topClippingPlane" value="113" id="ref53" />
+                        <Property mapKey="transferfunction" name="transferfunction" AlwaysFitDomain="false" id="ref25">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="0.9999997">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.095439" split="false">
+                                        <colorL r="187" g="153" b="79" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.10121457" split="false">
+                                        <colorL r="225" g="186" b="130" a="41" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.11589" split="false">
+                                        <colorL r="181" g="147" b="52" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.29934201" split="false">
+                                        <colorL r="132" g="91" b="77" a="56" />
+                                    </key>
+                                </Keys>
+                                <domain x="23" y="29.0151825" />
+                            </TransferFunction>
+                        </Property>
+                        <Property mapKey="useClipping" name="useClipping" value="true" id="ref47" />
+                        <Property mapKey="waitForOptimization" name="waitForOptimization" value="true" />
+                    </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle" direction="1" portID="volumehandle.volumehandle" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry" direction="0" portID="proxygeometry.geometry" guiName="Proxy Geometry Output" allowMultipleConnections="true" invalidationLevel="20">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="OptimizedProxyGeometry" name="cube_clip" id="ref1">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-538" y="-92" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="backClippingPlane" name="backClippingPlane" value="95" id="ref34" />
+                        <Property mapKey="bottomClippingPlane" name="bottomClippingPlane" value="66.97422791" id="ref36" />
+                        <Property mapKey="frontClippingPlane" name="frontClippingPlane" value="49.97441864" id="ref32" />
+                        <Property mapKey="leftClippingPlane" name="leftClippingPlane" value="127" id="ref30" />
+                        <Property mapKey="modeString" name="modeString" value="cube" />
+                        <Property mapKey="resetClipPlanes" name="resetClipPlanes" />
+                        <Property mapKey="resolution" name="resolution" value="24" />
+                        <Property mapKey="resolutionMode" name="resolutionMode" value="subdivide" />
+                        <Property mapKey="resolutionvoxel" name="resolutionvoxel" value="4" />
+                        <Property mapKey="rightClippingPlane" name="rightClippingPlane" value="86.61260986" id="ref28" />
+                        <Property mapKey="threshold" name="threshold" value="20" />
+                        <Property mapKey="topClippingPlane" name="topClippingPlane" value="113" id="ref38" />
+                        <Property mapKey="transferfunction" name="transferfunction" AlwaysFitDomain="false" id="ref22">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="0.9999997">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.095439" split="false">
+                                        <colorL r="187" g="153" b="79" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.10121457" split="false">
+                                        <colorL r="225" g="186" b="130" a="41" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.11589" split="false">
+                                        <colorL r="181" g="147" b="52" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.29934201" split="false">
+                                        <colorL r="132" g="91" b="77" a="56" />
+                                    </key>
+                                </Keys>
+                                <domain x="23" y="29.0151825" />
+                            </TransferFunction>
+                        </Property>
+                        <Property mapKey="useClipping" name="useClipping" value="true" id="ref26" />
+                        <Property mapKey="waitForOptimization" name="waitForOptimization" value="true" />
+                    </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle" direction="1" portID="volumehandle.volumehandle" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry" direction="0" portID="proxygeometry.geometry" guiName="Proxy Geometry Output" allowMultipleConnections="true" invalidationLevel="20">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="OptimizedProxyGeometry" name="minbb_clip" id="ref2">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-436" y="-177" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="backClippingPlane" name="backClippingPlane" value="95" id="ref35" />
+                        <Property mapKey="bottomClippingPlane" name="bottomClippingPlane" value="66.97422791" id="ref37" />
+                        <Property mapKey="frontClippingPlane" name="frontClippingPlane" value="49.97441864" id="ref33" />
+                        <Property mapKey="leftClippingPlane" name="leftClippingPlane" value="127" id="ref31" />
+                        <Property mapKey="modeString" name="modeString" value="mincube" />
+                        <Property mapKey="resetClipPlanes" name="resetClipPlanes" />
+                        <Property mapKey="resolution" name="resolution" value="24" />
+                        <Property mapKey="resolutionMode" name="resolutionMode" value="subdivide" />
+                        <Property mapKey="resolutionvoxel" name="resolutionvoxel" value="4" />
+                        <Property mapKey="rightClippingPlane" name="rightClippingPlane" value="86.61260986" id="ref29" />
+                        <Property mapKey="threshold" name="threshold" value="10" />
+                        <Property mapKey="topClippingPlane" name="topClippingPlane" value="113" id="ref39" />
+                        <Property mapKey="transferfunction" name="transferfunction" AlwaysFitDomain="false" id="ref23">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="0.9999997">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.095439" split="false">
+                                        <colorL r="187" g="153" b="79" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.10121457" split="false">
+                                        <colorL r="225" g="186" b="130" a="41" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.11589" split="false">
+                                        <colorL r="181" g="147" b="52" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.29934201" split="false">
+                                        <colorL r="132" g="91" b="77" a="56" />
+                                    </key>
+                                </Keys>
+                                <domain x="23" y="29.0151825" />
+                            </TransferFunction>
+                        </Property>
+                        <Property mapKey="useClipping" name="useClipping" value="true" id="ref27" />
+                        <Property mapKey="waitForOptimization" name="waitForOptimization" value="true" />
+                    </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle" direction="1" portID="volumehandle.volumehandle" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry" direction="0" portID="proxygeometry.geometry" guiName="Proxy Geometry Output" allowMultipleConnections="true" invalidationLevel="20">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="OptimizedProxyGeometry" name="maxbricks_clip" id="ref3">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-336" y="-91" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="backClippingPlane" name="backClippingPlane" value="95" id="ref44" />
+                        <Property mapKey="bottomClippingPlane" name="bottomClippingPlane" value="66.97422791" id="ref45" />
+                        <Property mapKey="frontClippingPlane" name="frontClippingPlane" value="49.97441864" id="ref43" />
+                        <Property mapKey="leftClippingPlane" name="leftClippingPlane" value="127" id="ref42" />
+                        <Property mapKey="modeString" name="modeString" value="maximalcubes" />
+                        <Property mapKey="resetClipPlanes" name="resetClipPlanes" />
+                        <Property mapKey="resolution" name="resolution" value="24" />
+                        <Property mapKey="resolutionMode" name="resolutionMode" value="subdivide" />
+                        <Property mapKey="resolutionvoxel" name="resolutionvoxel" value="4" />
+                        <Property mapKey="rightClippingPlane" name="rightClippingPlane" value="86.61260986" id="ref41" />
+                        <Property mapKey="threshold" name="threshold" value="10" />
+                        <Property mapKey="topClippingPlane" name="topClippingPlane" value="113" id="ref46" />
+                        <Property mapKey="transferfunction" name="transferfunction" AlwaysFitDomain="false" id="ref24">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                            <TransferFunction type="TransFuncIntensity" lower="0" upper="0.9999997">
+                                <Keys>
+                                    <key type="TransFuncMappingKey" intensity="0.095439" split="false">
+                                        <colorL r="187" g="153" b="79" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.10121457" split="false">
+                                        <colorL r="225" g="186" b="130" a="41" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.11589" split="false">
+                                        <colorL r="181" g="147" b="52" a="0" />
+                                    </key>
+                                    <key type="TransFuncMappingKey" intensity="0.29934201" split="false">
+                                        <colorL r="132" g="91" b="77" a="56" />
+                                    </key>
+                                </Keys>
+                                <domain x="23" y="29.0151825" />
+                            </TransferFunction>
+                        </Property>
+                        <Property mapKey="useClipping" name="useClipping" value="true" id="ref40" />
+                        <Property mapKey="waitForOptimization" name="waitForOptimization" value="true" />
+                    </Properties>
+                    <Inports>
+                        <Port name="volumehandle.volumehandle" direction="1" portID="volumehandle.volumehandle" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="proxygeometry.geometry" direction="0" portID="proxygeometry.geometry" guiName="Proxy Geometry Output" allowMultipleConnections="true" invalidationLevel="20">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="VolumeSource" name="nucleon" id="ref17">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-727" y="-509" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="volumeInfo" name="volumeInfo" />
+                        <Property mapKey="volumeURL" name="volumeURL" url="input/nucleon.vvd?preferredReader=VvdVolumeReader" />
+                    </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle" direction="0" portID="volumehandle.volumehandle" guiName="Volume Output" allowMultipleConnections="true" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometrySave" name="nucleon_cube" id="ref6">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-1023" y="3" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="continousSave" name="continousSave" value="false" />
+                        <Property mapKey="file" name="file" noPathSet="false" value="output/nucleon_cube.vge" />
+                        <Property mapKey="save" name="save" />
+                    </Properties>
+                    <Inports>
+                        <Port name="inport" direction="1" portID="inport" guiName="Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometrySave" name="nucleon_minbb" id="ref8">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-897" y="-2" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="continousSave" name="continousSave" value="false" />
+                        <Property mapKey="file" name="file" noPathSet="false" value="output/nucleon_minbb.vge" />
+                        <Property mapKey="save" name="save" />
+                    </Properties>
+                    <Inports>
+                        <Port name="inport" direction="1" portID="inport" guiName="Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometrySave" name="nucleon_maxbricks" id="ref10">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-813" y="87" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="continousSave" name="continousSave" value="false" />
+                        <Property mapKey="file" name="file" noPathSet="false" value="output/nucleon_maxbricks.vge" />
+                        <Property mapKey="save" name="save" />
+                    </Properties>
+                    <Inports>
+                        <Port name="inport" direction="1" portID="inport" guiName="Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometrySave" name="nucleon_octree" id="ref12">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-701" y="10" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="continousSave" name="continousSave" value="false" />
+                        <Property mapKey="file" name="file" noPathSet="false" value="output/nucleon_octree.vge" />
+                        <Property mapKey="save" name="save" />
+                    </Properties>
+                    <Inports>
+                        <Port name="inport" direction="1" portID="inport" guiName="Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometrySave" name="walnut_clip_cube" id="ref14">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-544" y="22" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="continousSave" name="continousSave" value="false" />
+                        <Property mapKey="file" name="file" noPathSet="false" value="output/walnut_clip_cube.vge" />
+                        <Property mapKey="save" name="save" />
+                    </Properties>
+                    <Inports>
+                        <Port name="inport" direction="1" portID="inport" guiName="Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometrySave" name="walnut_clip_minbb" id="ref15">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-426" y="98" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="continousSave" name="continousSave" value="false" />
+                        <Property mapKey="file" name="file" noPathSet="false" value="output/walnut_clip_minbb.vge" />
+                        <Property mapKey="save" name="save" />
+                    </Properties>
+                    <Inports>
+                        <Port name="inport" direction="1" portID="inport" guiName="Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometrySave" name="walnut_clip_maxbricks" id="ref16">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-321" y="16" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="continousSave" name="continousSave" value="false" />
+                        <Property mapKey="file" name="file" noPathSet="false" value="output/walnut_clip_maxbricks.vge" />
+                        <Property mapKey="save" name="save" />
+                    </Properties>
+                    <Inports>
+                        <Port name="inport" direction="1" portID="inport" guiName="Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
+                    <InteractionHandlers />
+                </Processor>
+                <Processor type="GeometrySave" name="walnut_clip_octree" id="ref13">
+                    <MetaData>
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-178" y="92" />
+                    </MetaData>
+                    <Properties>
+                        <Property mapKey="continousSave" name="continousSave" value="false" />
+                        <Property mapKey="file" name="file" noPathSet="false" value="output/walnut_clip_octree.vge" />
+                        <Property mapKey="save" name="save" />
+                    </Properties>
+                    <Inports>
+                        <Port name="inport" direction="1" portID="inport" guiName="Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
+                            <Properties />
+                        </Port>
+                    </Inports>
+                    <Outports />
+                    <InteractionHandlers />
+                </Processor>
+            </Processors>
+            <Connections>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="OptimizedProxyGeometry" ref="ref1" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="OptimizedProxyGeometry" ref="ref2" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="OptimizedProxyGeometry" ref="ref3" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref0" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="OptimizedProxyGeometry" ref="ref4" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="OptimizedProxyGeometry" ref="ref5" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref6" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="OptimizedProxyGeometry" ref="ref7" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref8" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="OptimizedProxyGeometry" ref="ref9" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref10" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="OptimizedProxyGeometry" ref="ref11" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref12" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="OptimizedProxyGeometry" ref="ref4" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref13" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="OptimizedProxyGeometry" ref="ref1" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref14" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="OptimizedProxyGeometry" ref="ref2" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref15" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="proxygeometry.geometry">
+                        <Processor type="OptimizedProxyGeometry" ref="ref3" />
+                    </Outport>
+                    <Inport name="inport">
+                        <Processor type="GeometrySave" ref="ref16" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref17" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="OptimizedProxyGeometry" ref="ref5" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref17" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="OptimizedProxyGeometry" ref="ref7" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref17" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="OptimizedProxyGeometry" ref="ref9" />
+                    </Inport>
+                </Connection>
+                <Connection>
+                    <Outport name="volumehandle.volumehandle">
+                        <Processor type="VolumeSource" ref="ref17" />
+                    </Outport>
+                    <Inport name="volumehandle.volumehandle">
+                        <Processor type="OptimizedProxyGeometry" ref="ref11" />
+                    </Inport>
+                </Connection>
+            </Connections>
+            <CoProcessorConnections />
+            <PropertyLinks>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref18" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref19" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref19" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref18" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref20" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref21" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref21" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref20" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref18" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref20" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref20" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref18" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref18" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref21" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref21" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref18" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref22" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref23" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref23" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref22" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref24" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref25" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref25" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref24" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref22" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref24" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref24" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref22" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref22" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref25" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="TransFuncProperty" ref="ref25" />
+                    <DestinationProperty type="TransFuncProperty" ref="ref22" />
+                    <Evaluator type="LinkEvaluatorTransFuncId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="BoolProperty" ref="ref26" />
+                    <DestinationProperty type="BoolProperty" ref="ref27" />
+                    <Evaluator type="LinkEvaluatorBoolId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="BoolProperty" ref="ref27" />
+                    <DestinationProperty type="BoolProperty" ref="ref26" />
+                    <Evaluator type="LinkEvaluatorBoolId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref28" />
+                    <DestinationProperty type="FloatProperty" ref="ref29" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref29" />
+                    <DestinationProperty type="FloatProperty" ref="ref28" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref30" />
+                    <DestinationProperty type="FloatProperty" ref="ref31" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref31" />
+                    <DestinationProperty type="FloatProperty" ref="ref30" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref32" />
+                    <DestinationProperty type="FloatProperty" ref="ref33" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref33" />
+                    <DestinationProperty type="FloatProperty" ref="ref32" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref34" />
+                    <DestinationProperty type="FloatProperty" ref="ref35" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref35" />
+                    <DestinationProperty type="FloatProperty" ref="ref34" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref36" />
+                    <DestinationProperty type="FloatProperty" ref="ref37" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref37" />
+                    <DestinationProperty type="FloatProperty" ref="ref36" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref38" />
+                    <DestinationProperty type="FloatProperty" ref="ref39" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref39" />
+                    <DestinationProperty type="FloatProperty" ref="ref38" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="BoolProperty" ref="ref26" />
+                    <DestinationProperty type="BoolProperty" ref="ref40" />
+                    <Evaluator type="LinkEvaluatorBoolId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="BoolProperty" ref="ref40" />
+                    <DestinationProperty type="BoolProperty" ref="ref26" />
+                    <Evaluator type="LinkEvaluatorBoolId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref28" />
+                    <DestinationProperty type="FloatProperty" ref="ref41" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref41" />
+                    <DestinationProperty type="FloatProperty" ref="ref28" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref30" />
+                    <DestinationProperty type="FloatProperty" ref="ref42" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref42" />
+                    <DestinationProperty type="FloatProperty" ref="ref30" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref32" />
+                    <DestinationProperty type="FloatProperty" ref="ref43" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref43" />
+                    <DestinationProperty type="FloatProperty" ref="ref32" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref34" />
+                    <DestinationProperty type="FloatProperty" ref="ref44" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref44" />
+                    <DestinationProperty type="FloatProperty" ref="ref34" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref36" />
+                    <DestinationProperty type="FloatProperty" ref="ref45" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref45" />
+                    <DestinationProperty type="FloatProperty" ref="ref36" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref38" />
+                    <DestinationProperty type="FloatProperty" ref="ref46" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref46" />
+                    <DestinationProperty type="FloatProperty" ref="ref38" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="BoolProperty" ref="ref26" />
+                    <DestinationProperty type="BoolProperty" ref="ref47" />
+                    <Evaluator type="LinkEvaluatorBoolId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="BoolProperty" ref="ref47" />
+                    <DestinationProperty type="BoolProperty" ref="ref26" />
+                    <Evaluator type="LinkEvaluatorBoolId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref28" />
+                    <DestinationProperty type="FloatProperty" ref="ref48" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref48" />
+                    <DestinationProperty type="FloatProperty" ref="ref28" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref30" />
+                    <DestinationProperty type="FloatProperty" ref="ref49" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref49" />
+                    <DestinationProperty type="FloatProperty" ref="ref30" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref32" />
+                    <DestinationProperty type="FloatProperty" ref="ref50" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref50" />
+                    <DestinationProperty type="FloatProperty" ref="ref32" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref34" />
+                    <DestinationProperty type="FloatProperty" ref="ref51" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref51" />
+                    <DestinationProperty type="FloatProperty" ref="ref34" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref36" />
+                    <DestinationProperty type="FloatProperty" ref="ref52" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref52" />
+                    <DestinationProperty type="FloatProperty" ref="ref36" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref38" />
+                    <DestinationProperty type="FloatProperty" ref="ref53" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="FloatProperty" ref="ref53" />
+                    <DestinationProperty type="FloatProperty" ref="ref38" />
+                    <Evaluator type="LinkEvaluatorFloatId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntegerProperty" ref="ref54" />
+                    <DestinationProperty type="IntegerProperty" ref="ref55" />
+                    <Evaluator type="LinkEvaluatorIntId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntegerProperty" ref="ref55" />
+                    <DestinationProperty type="IntegerProperty" ref="ref54" />
+                    <Evaluator type="LinkEvaluatorIntId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntegerProperty" ref="ref55" />
+                    <DestinationProperty type="IntegerProperty" ref="ref56" />
+                    <Evaluator type="LinkEvaluatorIntId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntegerProperty" ref="ref56" />
+                    <DestinationProperty type="IntegerProperty" ref="ref55" />
+                    <Evaluator type="LinkEvaluatorIntId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntegerProperty" ref="ref55" />
+                    <DestinationProperty type="IntegerProperty" ref="ref57" />
+                    <Evaluator type="LinkEvaluatorIntId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntegerProperty" ref="ref57" />
+                    <DestinationProperty type="IntegerProperty" ref="ref55" />
+                    <Evaluator type="LinkEvaluatorIntId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntegerProperty" ref="ref57" />
+                    <DestinationProperty type="IntegerProperty" ref="ref56" />
+                    <Evaluator type="LinkEvaluatorIntId" />
+                </PropertyLink>
+                <PropertyLink>
+                    <SourceProperty type="IntegerProperty" ref="ref56" />
+                    <DestinationProperty type="IntegerProperty" ref="ref57" />
+                    <Evaluator type="LinkEvaluatorIntId" />
+                </PropertyLink>
+            </PropertyLinks>
+        </ProcessorNetwork>
+        <Animation />
+    </Workspace>
+</VoreenData>

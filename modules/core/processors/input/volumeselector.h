@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -37,9 +37,9 @@ class Volume;
 class ProcessorWidgetFactory;
 
 /**
- * Selects a single volume out of a input collection.
+ * Selects a single volume out of a input list.
  */
-class VolumeSelector : public Processor {
+class VRN_CORE_API VolumeSelector : public Processor {
 
 public:
     VolumeSelector();
@@ -54,7 +54,7 @@ public:
 
 protected:
     virtual void setDescriptions() {
-        setDescription("Selects a single volume from the input collection.");
+        setDescription("Selects a single volume from the input list.");
     }
 
     virtual void process();
@@ -62,8 +62,8 @@ protected:
 
     IntProperty volumeID_;
 
-    /// Inport for the volume collection.
-    VolumeCollectionPort inport_;
+    /// Inport for the volume list.
+    VolumeListPort inport_;
 
     /// The volume port the selected volume is written to.
     VolumePort outport_;
@@ -71,7 +71,7 @@ protected:
     static const std::string loggerCat_;
 
 private:
-    void adjustToVolumeCollection();
+    void adjustToVolumeList();
 
 };
 

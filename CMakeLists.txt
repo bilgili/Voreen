@@ -5,7 +5,7 @@ include(cmake/commonconf.cmake)
 ################################################################################
 # handle target dependencies
 ################################################################################
-IF(VRN_BUILD_VOREENVE OR VRN_BUILD_VOREENTOOL OR VRN_BUILD_SIMPLEQT)
+IF(VRN_BUILD_VOREENVE OR VRN_BUILD_VOREENTOOL OR VRN_BUILD_SIMPLEQT OR VRN_MODULE_QT_APPLICATIONS)
     SET(VRN_BUILD_LIB_VOREENQT ON)
 ENDIF()
 
@@ -71,7 +71,74 @@ IF(VRN_BUILD_ITKWRAPPER AND EXISTS ${VRN_HOME}/apps/itk_wrapper)
     ADD_SUBDIRECTORY(apps/itk_wrapper)
 ENDIF()
 
-      
+#-------------------------------------------------------------------------------
+
+# add core module applications
+IF(VRN_MODULE_CORE_APPLICATIONS)
+    MESSAGE(STATUS "Adding core module applications:")
+    FOREACH(core_app ${VRN_MODULE_CORE_APPLICATIONS})
+        GET_FILENAME_COMPONENT(core_app_we ${core_app} NAME_WE)
+        FILE(RELATIVE_PATH core_app_rel ${VRN_HOME} ${core_app})
+        MESSAGE(STATUS "* ${core_app_rel}")
+        ADD_EXECUTABLE(${core_app_we} ${core_app})	
+        ADD_DEFINITIONS(${VRN_DEFINITIONS} ${VRN_MODULE_DEFINITIONS})
+        INCLUDE_DIRECTORIES(${VRN_INCLUDE_DIRECTORIES} ${VRN_MODULE_INCLUDE_DIRECTORIES})
+        TARGET_LINK_LIBRARIES(${core_app_we} tgt voreen_core ${VRN_EXTERNAL_LIBRARIES} )
+    ENDFOREACH()
+ENDIF()
+
+# add qt module applications
+IF(VRN_MODULE_QT_APPLICATIONS)
+    MESSAGE(STATUS "Adding Qt module applications:")
+    SET(VRN_QT_COMPONENTS QtCore QtGui QtOpenGL)
+    IF(QT_USE_QTNETWORK)
+        LIST(APPEND VRN_QT_COMPONENTS QtNetwork)
+    ENDIF()
+    FIND_PACKAGE(Qt4 ${VRN_REQUIRED_QT_VERSION} REQUIRED ${VRN_QT_COMPONENTS})
+    SET(cur_qt_app_name "")
+    SET(cur_qt_app_cpp "")
+    SET(cur_qt_app_cpp_rel "")
+    SET(cur_qt_app_ui_headers)
+    FOREACH(qt_app_file ${VRN_MODULE_QT_APPLICATIONS})
+        GET_FILENAME_COMPONENT(qt_app_ext ${qt_app_file} EXT)
+        IF(${qt_app_ext} STREQUAL ".cpp") # cpp file => new binary
+            IF(NOT ${cur_qt_app_name} STREQUAL "")  # finish previous binary, if present
+                MESSAGE(STATUS "* ${cur_qt_app_cpp_rel}")
+                QT4_WRAP_UI(cur_qt_app_ui_headers_processed ${cur_qt_app_ui_headers})
+                ADD_EXECUTABLE(${cur_qt_app_name} ${cur_qt_app_cpp} ${cur_qt_app_ui_headers_processed})
+                ADD_DEFINITIONS(${VRN_DEFINITIONS} ${VRN_MODULE_DEFINITIONS})
+                INCLUDE_DIRECTORIES(${VRN_INCLUDE_DIRECTORIES} ${VRN_MODULE_INCLUDE_DIRECTORIES})
+                TARGET_LINK_LIBRARIES(${cur_qt_app_name} tgt voreen_core voreen_qt ${VRN_EXTERNAL_LIBRARIES} )
+                # add Qt dependency
+                INCLUDE(${QT_USE_FILE})
+                ADD_DEFINITIONS(${QT_DEFINITIONS})
+                TARGET_LINK_LIBRARIES(${cur_qt_app_name} ${QT_LIBRARIES})
+            ENDIF()
+            
+            # init new binary 
+            SET(cur_qt_app_cpp ${qt_app_file})
+            GET_FILENAME_COMPONENT(cur_qt_app_name ${qt_app_file} NAME_WE)
+            FILE(RELATIVE_PATH cur_qt_app_cpp_rel ${VRN_HOME} ${qt_app_file})
+            SET(cur_qt_app_ui_headers)
+        ELSEIF(${qt_app_ext} STREQUAL ".ui") # ui file => add as ui header to current binary
+            LIST(APPEND cur_qt_app_ui_headers ${qt_app_file})
+        ENDIF()
+    ENDFOREACH()
+    
+    IF(NOT ${cur_qt_app_name} STREQUAL "") # finish last binary, if present
+        MESSAGE(STATUS "* ${cur_qt_app_cpp_rel}")
+        QT4_WRAP_UI(cur_qt_app_ui_headers_processed ${cur_qt_app_ui_headers})
+        ADD_EXECUTABLE(${cur_qt_app_name} ${cur_qt_app_cpp} ${cur_qt_app_ui_headers_processed})
+        ADD_DEFINITIONS(${VRN_DEFINITIONS} ${VRN_MODULE_DEFINITIONS})
+        INCLUDE_DIRECTORIES(${VRN_INCLUDE_DIRECTORIES} ${VRN_MODULE_INCLUDE_DIRECTORIES})
+        TARGET_LINK_LIBRARIES(${cur_qt_app_name} tgt voreen_core voreen_qt ${VRN_EXTERNAL_LIBRARIES} )
+        # add Qt dependency
+        INCLUDE(${QT_USE_FILE})
+        ADD_DEFINITIONS(${QT_DEFINITIONS})
+        TARGET_LINK_LIBRARIES(${cur_qt_app_name} ${QT_LIBRARIES})
+     ENDIF()
+ENDIF()
+
 ################################################################################
 # copy/install external DLLs
 ################################################################################

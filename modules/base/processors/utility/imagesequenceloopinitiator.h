@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -27,6 +27,7 @@
 #define VRN_IMAGESEQUENCELOOPINITIATOR_H
 
 #include "voreen/core/processors/renderprocessor.h"
+#include "voreen/core/ports/loopport.h"
 
 namespace voreen {
 
@@ -34,7 +35,7 @@ namespace voreen {
  * Defines an image-processing loop in combination with ImageSequenceLoopFinalizer.
  * All images of the input sequence are processed by the loop.
  */
-class ImageSequenceLoopInitiator : public RenderProcessor {
+class VRN_CORE_API ImageSequenceLoopInitiator : public RenderProcessor {
 
 public:
     ImageSequenceLoopInitiator();

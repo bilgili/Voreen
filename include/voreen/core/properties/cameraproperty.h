@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -28,6 +28,7 @@
 
 #include "voreen/core/properties/templateproperty.h"
 #include "voreen/core/properties/condition.h"
+#include "voreen/core/interaction/voreentrackball.h"
 #include "tgt/camera.h"
 
 namespace voreen {
@@ -45,14 +46,25 @@ class VRN_CORE_API CameraProperty : public TemplateProperty<tgt::Camera> {
 
 public:
 
+    enum TrackballCenter {
+        SCENE,
+        WORLD,
+        CAMSHIFT
+    };
+
     /**
      * Constructor.
      *
+     * @param scenedAdjuster When set to true, the cameras property widget will include
+     *        options to control the camera's behaviour if a scene size change occurs. This
+     *        should only be enabled for processors with volume ports or other means to actually
+     *        determine the scene size.
      * @param adjustProjectionToViewport when set to true, the camera's projection matrix
      *        is adjusted automatically to viewport changes. This is especially necessary to
      *        reflect the viewport's aspect ratio.
      */
     CameraProperty(const std::string& id, const std::string& guiText, tgt::Camera const value = tgt::Camera(),
+               bool sceneAdjuster = false,
                bool adjustProjectionToViewport = true,
                float maxValue = 500.f,
                int invalidationLevel=Processor::INVALID_RESULT);
@@ -78,7 +90,16 @@ public:
     bool setStereoEyeSeparation(float separation);
     bool setStereoEyeMode(tgt::Camera::StereoEyeMode mode);
     //bool stereoShift(tgt::vec3 shift);
-    void setStereoAxisMode(tgt::Camera::StereoAxisMode mode);
+    bool setStereoAxisMode(tgt::Camera::StereoAxisMode mode);
+
+    void adaptInteractionToScene(const tgt::Bounds& bounds);
+    void resetCameraFocusToTrackballCenter();
+
+    void setAdaptOnChange(bool b);
+    bool getAdaptOnChange() const;
+
+    void setTrackballCenterBehaviour(TrackballCenter t);
+    TrackballCenter getTrackballCenterBehaviour() const;
 
     /// Set the maximum absolute value that an element of the camera position vector can have
     void setMaxValue(float val);
@@ -103,12 +124,26 @@ public:
     virtual void deserialize(XmlDeserializer& s);
 
     virtual void look(tgt::ivec2 viewportSize);
-    VoreenTrackball* getTrackball();
+    VoreenTrackball& getTrackball();
+    const VoreenTrackball& getTrackball() const;
+
+    bool isSceneAdjuster() const;
+
+    const tgt::Bounds& getSceneBounds() const;
+    void setSceneBounds(const tgt::Bounds& b);
 
 private:
 
-    VoreenTrackball* track_;
+    bool sceneAdjuster_;
+    VoreenTrackball trackball_;
     float maxValue_;
+
+    // Stores the current bounds of the scene (if present) to adapt interaction to the scene size
+    tgt::Bounds currentSceneBounds_;
+
+    bool adaptOnChange_;
+    TrackballCenter centerOption_;
+    bool autoFocus_;
 };
 
 } // namespace voreen

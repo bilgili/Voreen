@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -34,10 +34,9 @@ InteractionHandler::InteractionHandler(const std::string& id, const std::string&
         tgt::MouseEvent::MouseAction mouseAction,
         tgt::Event::Modifier modifier,
         bool shareEvents, bool enabled)
- : tgt::EventListener()
- , owner_(0)
- , id_(id)
- , guiName_(guiName)
+    : tgt::EventListener()
+    , PropertyOwner(id, guiName)
+    , owner_(0)
 {
     tgtAssert(!id.empty(), "InteractionHandler id must not be empty");
 
@@ -51,10 +50,10 @@ InteractionHandler::InteractionHandler(const std::string& id, const std::string&
         tgt::KeyEvent::KeyCode keycode, tgt::Event::Modifier modifier,
         bool shareEvents, bool enabled) :
     tgt::EventListener(),
-    owner_(0),
-    id_(id),
-    guiName_(guiName)
+    owner_(0)
 {
+    id_ = id;
+    guiName_ = guiName;
     tgtAssert(!id.empty(), "InteractionHandler id must not be empty");
 
     EventPropertyBase* eventProp = new EventProperty<InteractionHandler>(id, guiName, this, &InteractionHandler::onEvent,
@@ -71,21 +70,20 @@ InteractionHandler::InteractionHandler(const std::string& id, const std::string&
         tgt::Event::Modifier modifier,
         bool shareEvents, bool enabled) :
     tgt::EventListener(),
-    owner_(0),
-    id_(id),
-    guiName_(guiName)
+    owner_(0)
 {
+    id_ = id;
+    guiName_ = guiName;
     tgtAssert(!id.empty(), "InteractionHandler id must not be empty");
 
     addEventProperty(new EventProperty<InteractionHandler>(id, guiName, this, &InteractionHandler::onEvent,
        mouseButtons, mouseAction, keycode, modifier, shareEvents, enabled));
 }
 
-InteractionHandler::InteractionHandler(const std::string& id, const std::string& guiName) :
-    tgt::EventListener(),
-    owner_(0),
-    id_(id),
-    guiName_(guiName)
+InteractionHandler::InteractionHandler(const std::string& id, const std::string& guiName)
+    : PropertyOwner(id, guiName)
+    , tgt::EventListener()
+    , owner_(0)
 {
     tgtAssert(!id.empty(), "InteractionHandler id must not be empty");
 }
@@ -104,14 +102,6 @@ void InteractionHandler::setOwner(Processor* p) {
     if (owner_)
         LWARNINGC("voreen.InteractionHandler", "Setting new owner for InteractionHandler!");
     owner_ = p;
-}
-
-std::string InteractionHandler::getID() const {
-    return id_;
-}
-
-std::string InteractionHandler::getName() const {
-    return guiName_;
 }
 
 const std::vector<EventPropertyBase*>& InteractionHandler::getEventProperties() const {

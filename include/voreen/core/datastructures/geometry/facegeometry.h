@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -41,13 +41,6 @@ namespace voreen {
  *       (2) each vertex lies in the same plane;
  *       (3) counter clockwise vertex order determines the front face of the face geometry.
  *
- * @attention Each function which possibly change the face geometry sets the @c hasChanged flag
- *            to @c true, even if nothing has changed at all.
- *
- * @attention If the face geometry is changed by using the @c operator[]
- *            or the @c getVertex function then @c setHasChanged(true)
- *            has to be called manually.
- *
  * @par
  * Here is a short example of using the @c FaceGeometry:
  * @code
@@ -65,7 +58,7 @@ namespace voreen {
  * @see VertexGeometry
  * @see MeshGeometry
  */
-class VRN_CORE_API FaceGeometry : public Geometry {
+class VRN_CORE_API FaceGeometry : public VoreenSerializableObject {
 public:
     /**
      * Type of the vertex geometry list.
@@ -87,7 +80,7 @@ public:
      */
     FaceGeometry();
 
-    virtual Geometry* create() const;
+    FaceGeometry* create() const; //TODO: needed?
 
     virtual std::string getClassName() const { return "FaceGeometry"; }
 
@@ -123,10 +116,6 @@ public:
 
     /**
      * Returns the vertex geometry at the given @c index.
-     *
-     * @attention If the face geometry is changed by using the @c operator[]
-     *            or the @c getVertex function then @c setHasChanged(true)
-     *            has to be called manually.
      *
      * @param index the vertex geometry index
      *
@@ -177,10 +166,6 @@ public:
     /**
      * Returns the vertex geometry at the given @c index.
      *
-     * @attention If the face geometry is changed by using the @c operator[]
-     *            or the @c getVertex function then @c setHasChanged(true)
-     *            has to be called manually.
-     *
      * @param index the index
      *
      * @returns the vertex geometry at the given @c index
@@ -194,13 +179,6 @@ public:
      * @see Geometry::render
      */
     virtual void render() const;
-
-    /**
-     * Transforms the face geometry using the given transformation matrix.
-     *
-     * @param transformation the transformation matrix
-     */
-    virtual void transform(const tgt::mat4& transformation);
 
     /**
      * Clips the face geometry by the given arbitrary clipping plane.
@@ -225,15 +203,7 @@ public:
      * @param clipPlane the arbitrary clipping plane
      * @param epsilon the accuracy for vertex geometry comparison
      */
-    void clip(const tgt::vec4& clipPlane, double epsilon = 1e-5);
-
-    /**
-     * Returns true, if all vertices of the passed FaceGeometry are equal to this one's.
-     *
-     * @param face the face to compare
-     * @param epsilon maximum distance at which two vertices are to be considered equal
-     */
-    bool equals(const FaceGeometry& face, double epsilon = 1e-5) const;
+    void clip(const tgt::plane& clipPlane, double epsilon = 1e-5);
 
     /**
      * Returns the axis-aligned bounding box enclosing all vertices of the face.
@@ -241,12 +211,9 @@ public:
     virtual tgt::Bounds getBoundingBox() const;
 
     /**
-     * Returns true, if the passed Geometry is a FaceGeometry
-     * and all its vertices are equal to this one's.
-     *
-     * @see Geometry::equals
+     * Returns true, if all vertices are equal to this one's.
      */
-    virtual bool equals(const Geometry* geometry, double epsilon = 1e-6) const;
+    bool equals(const FaceGeometry& face, double epsilon /*= 1e-6*/) const;
 
     virtual void serialize(XmlSerializer& s) const;
 

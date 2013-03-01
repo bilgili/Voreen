@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,6 +30,7 @@
 #include "voreen/core/ports/allports.h"
 #include "voreen/core/datastructures/volume/volume.h"
 #include "voreen/core/properties/volumeurlproperty.h"
+#include "voreen/core/properties/volumeinfoproperty.h"
 
 namespace voreen {
 
@@ -52,7 +53,7 @@ public:
 
     /**
      * Loads the volume specified by filename. The loading is
-     * delegated to the processor's VolumeHandleProperty.
+     * delegated to the processor's VolumeURLProperty.
      *
      * @param filename the volume to load
      */
@@ -65,17 +66,17 @@ public:
     void clearVolume();
 
     /**
-     * Assigns a volume handle to this processor.
+     * Assigns a volume to this processor.
      * The processor does \e not take ownership of the assigned volume.
      *
-     * @param handle the handle to assign, is written to the processor's outport
+     * @param volume The volume to assign, is written to the processor's outport
      */
-    void setVolumeHandle(VolumeBase* handle);
+    void setVolume(VolumeBase* volume);
 
     /**
-     * Returns a reference to the handle of the loaded volume. May be null.
+     * Returns a reference to the volume of the loaded volume. May be null.
      */
-    VolumeBase* getVolumeHandle() const;
+    VolumeBase* getVolume() const;
 
 protected:
     virtual void setDescriptions() {
@@ -87,6 +88,7 @@ protected:
     virtual void deinitialize() throw (tgt::Exception);
 
     VolumeURLProperty volumeURL_;
+    VolumeInfoProperty volumeInfo_;
 
     /// The volume port the loaded data set is written to.
     VolumePort outport_;

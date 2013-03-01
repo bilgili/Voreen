@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -34,7 +34,7 @@
 namespace voreen {
 
 ///Helper class to save .vvd files.
-class VvdRawDataObject : public Serializable {
+class VRN_CORE_API VvdRawDataObject : public Serializable {
 public:
     VvdRawDataObject() {}
     VvdRawDataObject(const VolumeRAM* volume, std::string filename);
@@ -52,7 +52,7 @@ private:
 };
 
 ///Helper class to save .vvd files.
-class VvdObject : public Serializable {
+class VRN_CORE_API VvdObject : public Serializable {
 public:
     VvdObject() {}
     VvdObject(const VolumeBase* vh, std::string rawFilename);

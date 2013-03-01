@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -64,6 +64,7 @@ void KeyframeGraphicsItem::paint(QPainter *painter, const QStyleOptionGraphicsIt
 QRectF KeyframeGraphicsItem::boundingRect() const {
     return QRectF(-5, -10, 10, 18 );
 }
+
 void KeyframeGraphicsItem::mousePressEvent (QGraphicsSceneMouseEvent * event ) {
     emit itemClicked(this);
     QGraphicsItem::mousePressEvent(event);
@@ -82,9 +83,12 @@ void KeyframeGraphicsItem::mouseMoveEvent (QGraphicsSceneMouseEvent* event ) {
     emit itemMoving(this);
 }
 
-void KeyframeGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent*) {
+void KeyframeGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* e) {
     setPos(scenePos().x(), 10);
-    emit itemReleased(this);
+    if(e->modifiers() & Qt::ShiftModifier)
+        emit itemReleased(this, true);
+    else
+        emit itemReleased(this, false);
 }
 
 } // namespace voreen

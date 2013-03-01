@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -123,6 +123,13 @@ public:
      */
     virtual float maxNormalizedValue(size_t channel = 0) const;
 
+    /**
+     * Returns the value with maximum magnitude contained contained in the volume, converted to float.
+     * This function chooses between a scalar implementation or a euclidian vector length method,
+     * in case the volume has multiple channels.
+     */
+    virtual float maxMagnitude() const;
+
     virtual size_t getNumBytes() const;
 
     /*
@@ -199,6 +206,12 @@ protected:
 
     // Helper method for non-scalar maximum float value
     float maxNormalizedImpl(size_t channel, IsScalar<false>) const;
+
+    // Helper method for scalar maximum magnitude
+    float maxMagnitudeImpl(IsScalar<true>) const;
+
+    // Helper method for non-scalar maximum magnitude (euclidian vector length)
+    float maxMagnitudeImpl(IsScalar<false>) const;
 
     T* data_;
 
@@ -562,6 +575,33 @@ float VolumeAtomic<T>::maxNormalizedImpl(size_t channel, IsScalar<false>) const 
 template<class T>
 float VolumeAtomic<T>::maxNormalizedValue(size_t channel) const {
     return maxNormalizedImpl(channel, IsScalar<std::numeric_limits<T>::is_specialized>());
+}
+
+// scalar
+template<typename T>
+float VolumeAtomic<T>::maxMagnitudeImpl(IsScalar<true>) const {
+    float maxMagnitude = 0.f;
+    for (size_t i=0; i<numVoxels_; i++) {
+        T val = voxel(i);
+        maxMagnitude = std::max(maxMagnitude, std::abs((float)val));
+    }
+    return maxMagnitude;
+}
+
+// non-scalar: use VolumeElement::calcSquaredDifference for vectors (TODO difference unnecessary, implement VolumeElement::getSquaredMagnitude)
+template<typename T>
+float VolumeAtomic<T>::maxMagnitudeImpl(IsScalar<false>) const {
+    float maxMagnitude = 0.f;
+    for (size_t i=0; i<numVoxels_; i++) {
+        T val = voxel(i);
+        maxMagnitude = std::max(maxMagnitude, static_cast<float>(VolumeElement<T>::calcSquaredDifference(val, VolumeElement<T>::getZero())));
+    }
+    return std::sqrt(maxMagnitude);
+}
+
+template<class T>
+float VolumeAtomic<T>::maxMagnitude() const {
+    return maxMagnitudeImpl(IsScalar<std::numeric_limits<T>::is_specialized>());
 }
 
 template<class T>

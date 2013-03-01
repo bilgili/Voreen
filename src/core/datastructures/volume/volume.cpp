@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -558,6 +558,26 @@ float VolumeBase::getTimestep() const {
     return getMetaDataValue<FloatMetaData>("Timestep", 0.0f);
 }
 
+std::string VolumeBase::getFormat() const {
+    const VolumeRepresentation* rep = getRepresentation(0);
+    if(rep)
+        return rep->getFormat();
+    else {
+        tgtAssert(false, "Volume has no representation!");
+        return 0;
+    }
+}
+
+std::string VolumeBase::getBaseType() const {
+    const VolumeRepresentation* rep = getRepresentation(0);
+    if(rep)
+        return rep->getBaseType();
+    else {
+        tgtAssert(false, "Volume has no representation!");
+        return 0;
+    }
+}
+
 size_t VolumeBase::getNumChannels() const {
     const VolumeRepresentation* rep = getRepresentation(0);
     if(rep)
@@ -615,17 +635,46 @@ Modality VolumeBase::getModality() const {
 }
 
 void VolumeBase::notifyDelete() {
-    std::vector<VolumeHandleObserver*> observers = getObservers();
+    std::vector<VolumeObserver*> observers = getObservers();
     for (size_t i=0; i<observers.size(); ++i)
-        observers[i]->volumeHandleDelete(this);
+        observers[i]->volumeDelete(this);
 }
 
 void VolumeBase::notifyReload() {
-    std::vector<VolumeHandleObserver*> observers = getObservers();
+    std::vector<VolumeObserver*> observers = getObservers();
     for (size_t i=0; i<observers.size(); ++i)
         observers[i]->volumeChange(this);
 }
 
+template <>
+const VolumeRAM* VolumeBase::getRepresentation() const {
+    if(getNumRepresentations() == 0) {
+        LWARNING("Found no representations for this volumehandle!" << this);
+        return 0;
+    }
+
+    //Check if rep. is available:
+    for(size_t i=0; i<getNumRepresentations(); i++) {
+        if(dynamic_cast<const VolumeRAM*>(getRepresentation(i))) {
+            return static_cast<const VolumeRAM*>(getRepresentation(i));
+        }
+    }
+
+    //Check if conversion is possible:
+    ConverterFactory fac;
+    for(size_t i=0; i<getNumRepresentations(); i++) {
+        RepresentationConverter<VolumeRAM>* converter = fac.findConverter<VolumeRAM>(getRepresentation(i));
+        if(converter) {
+            const VolumeRAM* rep = static_cast<const VolumeRAM*>(useConverter(converter)); //we can static cast here because we know the converter returns VolumeRAM*
+
+            if(rep)
+                return rep;
+        }
+    }
+
+    LERROR("Found no way to return a VolumeRAM!");
+    return 0;
+}
 // ----------------------------------------------------------------------------
 
 Volume::Volume(VolumeRepresentation* const volume, const tgt::vec3& spacing, const tgt::vec3& offset, const tgt::mat4& transformation)

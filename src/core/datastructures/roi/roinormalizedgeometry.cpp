@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -24,7 +24,7 @@
  ***********************************************************************************/
 
 #include "voreen/core/datastructures/roi/roinormalizedgeometry.h"
-#include "voreen/core/datastructures/geometry/meshlistgeometry.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 
 #include "voreen/core/io/serialization/xmlserializer.h"
 #include "voreen/core/io/serialization/xmldeserializer.h"
@@ -99,42 +99,42 @@ tgt::mat4 ROINormalizedGeometry::getNormalizedToPhysicalMatrix() const {
     return mat4::createTranslation(center_.get()) * mat4::createScale(dimensions_.get() * 0.5f);
 }
 
-MeshListGeometry* ROINormalizedGeometry::generateMesh() const {
-    MeshListGeometry* geometry = generateNormalizedMesh();
+Geometry* ROINormalizedGeometry::generateMesh() const {
+    Geometry* geometry = generateNormalizedMesh();
     geometry->transform(getNormalizedToPhysicalMatrix());
     geometry->transform(getGrid().getPhysicalToWorldMatrix());
     return geometry;
 }
 
-FaceGeometry ROINormalizedGeometry::getPlanePolygon(tgt::plane pl) const {
+TriangleMeshGeometrySimple* ROINormalizedGeometry::getPlanePolygon(tgt::plane pl) const {
     // Transform plane to grid coordinates:
     mat4 m = getGrid().getWorldToPhysicalMatrix();
-    const tgt::plane physicalPlane = transform(pl, m);
+    const tgt::plane physicalPlane = pl.transform(m);
 
-    FaceGeometry planeFace = createQuad(physicalPlane, getColor());
+    TriangleMeshGeometrySimple* planeFace = createQuad(physicalPlane);
 
-    vec4 xm(-1.0f, 0.0f, 0.0f, -getLLF().x);
-    vec4 xp(1.0f, 0.0f, 0.0f, getURB().x);
-    vec4 ym(0.0f, -1.0f, 0.0f, -getLLF().y);
-    vec4 yp(0.0f, 1.0f, 0.0f, getURB().y);
-    vec4 zm(0.0f, 0.0f, -1.0f, -getLLF().z);
-    vec4 zp(0.0f, 0.0f, 1.0f, getURB().z);
+    tgt::plane xm(-1.0f, 0.0f, 0.0f, -getLLF().x);
+    tgt::plane xp(1.0f, 0.0f, 0.0f, getURB().x);
+    tgt::plane ym(0.0f, -1.0f, 0.0f, -getLLF().y);
+    tgt::plane yp(0.0f, 1.0f, 0.0f, getURB().y);
+    tgt::plane zm(0.0f, 0.0f, -1.0f, -getLLF().z);
+    tgt::plane zp(0.0f, 0.0f, 1.0f, getURB().z);
 
-    planeFace.clip(xm);
-    planeFace.clip(xp);
-    planeFace.clip(ym);
-    planeFace.clip(yp);
-    planeFace.clip(zm);
-    planeFace.clip(zp);
+    planeFace->clip(xm);
+    planeFace->clip(xp);
+    planeFace->clip(ym);
+    planeFace->clip(yp);
+    planeFace->clip(zm);
+    planeFace->clip(zp);
 
     return planeFace;
 }
 
-MeshListGeometry* ROINormalizedGeometry::generateMesh(tgt::plane pl) const {
-    const tgt::plane physicalPlane = transform(pl, getGrid().getWorldToPhysicalMatrix());
-    const tgt::plane normalizedPlane = transform(physicalPlane, getPhysicalToNormalizedMatrix());
+Geometry* ROINormalizedGeometry::generateMesh(tgt::plane pl) const {
+    const tgt::plane physicalPlane = pl.transform(getGrid().getWorldToPhysicalMatrix());
+    const tgt::plane normalizedPlane = physicalPlane.transform(getPhysicalToNormalizedMatrix());
 
-    MeshListGeometry* mlg = generateNormalizedMesh(normalizedPlane);
+    Geometry* mlg = generateNormalizedMesh(normalizedPlane);
 
     mlg->transform(getNormalizedToPhysicalMatrix());
     mlg->transform(getGrid().getPhysicalToWorldMatrix());
@@ -155,8 +155,8 @@ std::vector<const ControlPoint*> ROINormalizedGeometry::getControlPoints() const
 std::vector<const ControlPoint*> ROINormalizedGeometry::getControlPoints(tgt::plane pl) const {
     std::vector<const ControlPoint*> cps;
 
-    FaceGeometry planeFace = getPlanePolygon(pl);
-    if(planeFace.getVertexCount() >= 3) {
+    TriangleMeshGeometrySimple* planeFace = getPlanePolygon(pl);
+    if(!planeFace->isEmpty()) {
         std::vector<vec4> planes;
 
         planes.push_back(vec4(1.0f, 0.0f, 0.0f, getURB().x));
@@ -167,33 +167,34 @@ std::vector<const ControlPoint*> ROINormalizedGeometry::getControlPoints(tgt::pl
         planes.push_back(vec4(0.0f, 0.0f, -1.0f, -getLLF().z));
 
         vec3 com(0.0f); //Center of mass
-        for(size_t i=0; i<planeFace.getVertexCount(); i++) {
-            com += planeFace.getVertex(i).getCoords();
+        //TODO
+        //for(size_t i=0; i<planeFace.getVertexCount(); i++) {
+            //com += planeFace.getVertex(i).getCoords();
 
-            size_t prev;
-            if(i == 0)
-                prev = planeFace.getVertexCount() - 1;
-            else
-                prev = i - 1;
+            //size_t prev;
+            //if(i == 0)
+                //prev = planeFace.getVertexCount() - 1;
+            //else
+                //prev = i - 1;
 
-            vec3 a = planeFace.getVertex(prev).getCoords();
-            vec3 b = planeFace.getVertex(i).getCoords();
-            tgt::vec3 p = 0.5f * (a + b);
+            //vec3 a = planeFace.getVertex(prev).getCoords();
+            //vec3 b = planeFace.getVertex(i).getCoords();
+            //tgt::vec3 p = 0.5f * (a + b);
 
-            // Find plane id:
-            int closest = 0;
-            for(size_t j=1; j<planes.size(); j++) {
-                float d = fabs(dot(p, planes[j].xyz()) - planes[j].w);
-                if(d < fabs(dot(p, planes[closest].xyz()) - planes[closest].w))
-                    closest = static_cast<int>(j);
-            }
+            //// Find plane id:
+            //int closest = 0;
+            //for(size_t j=1; j<planes.size(); j++) {
+                //float d = fabs(dot(p, planes[j].xyz()) - planes[j].w);
+                //if(d < fabs(dot(p, planes[closest].xyz()) - planes[closest].w))
+                    //closest = static_cast<int>(j);
+            //}
 
-            cps.push_back(new ControlPoint(this, closest+1, getGrid().getPhysicalToWorldMatrix() * p));
-        }
+            //cps.push_back(new ControlPoint(this, closest+1, getGrid().getPhysicalToWorldMatrix() * p));
+        //}
 
-        com /= (float) planeFace.getVertexCount();
-        //Center:
-        cps.push_back(new ControlPoint(this, ControlPoint::CENTER, getGrid().getPhysicalToWorldMatrix() * com));
+        //com /= (float) planeFace.getVertexCount();
+        ////Center:
+        //cps.push_back(new ControlPoint(this, ControlPoint::CENTER, getGrid().getPhysicalToWorldMatrix() * com));
     }
 
     return cps;

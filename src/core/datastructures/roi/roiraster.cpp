@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -24,7 +24,7 @@
  ***********************************************************************************/
 
 #include "voreen/core/datastructures/roi/roiraster.h"
-#include "voreen/core/datastructures/geometry/meshlistgeometry.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 
 #include "voreen/core/io/serialization/xmlserializer.h"
 #include "voreen/core/io/serialization/xmldeserializer.h"
@@ -185,15 +185,11 @@ tgt::ivec3 ROIRaster::physicalToVoxel(const tgt::vec3& physical) const {
     return iVoxelCoords;
 }
 
-MeshListGeometry* ROIRaster::generateMesh() const {
+Geometry* ROIRaster::generateMesh() const {
     return 0;
-    //MeshListGeometry* geometry = new MeshListGeometry();
-    //geometry->addMesh(MeshGeometry::createCube(getLLF(), getURB(), vec3(0.0f), vec3(1.0f), getColor().xyz(), getColor().xyz()));
-    //geometry->transform(getGrid().getPhysicalToWorldMatrix());
-    //return geometry;
 }
 
-MeshListGeometry* ROIRaster::generateMesh(tgt::plane /*pl*/) const {
+Geometry* ROIRaster::generateMesh(tgt::plane /*pl*/) const {
     return 0;
 }
 

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -27,6 +27,7 @@
 #define VRN_TRANSFUNC_H
 
 #include "voreen/core/io/serialization/serialization.h"
+#include "voreen/core/voreenobject.h"
 
 #include "voreen/core/voreencoreapi.h"
 #include "tgt/texture.h"
@@ -47,7 +48,7 @@ namespace voreen {
  * The lookup table can be defined by passing pixel data that is directly
  * assigned to the transfer function's texture.
  */
-class VRN_CORE_API TransFunc : public Serializable {
+class VRN_CORE_API TransFunc : public VoreenSerializableObject {
 public:
 
     /**
@@ -67,6 +68,9 @@ public:
      * Destructor.
      */
     virtual ~TransFunc();
+
+    virtual std::string getClassName() const { return "TransFunc";     }
+    virtual TransFunc* create() const        { return new TransFunc(); }
 
     /**
      * Returns a define for the usage of transfer functions in shaders.
@@ -141,6 +145,11 @@ public:
      *
      */
     virtual void updateTexture();
+
+    /**
+     * Deletes the transfer function texture.
+     */
+    virtual void deleteTexture();
 
     /**
      * Use this function to define the transfer function's look up table.

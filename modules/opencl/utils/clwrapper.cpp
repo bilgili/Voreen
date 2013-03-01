@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,6 +26,7 @@
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "clwrapper.h"
 #include "tgt/filesystem.h"
+#include "voreen/core/utils/stringutils.h"
 
 #include <typeinfo>
 
@@ -59,13 +60,13 @@ OpenCL::OpenCL() {
 
     cl_uint numPlatforms;
     LCL_ERROR(clGetPlatformIDs(0, 0, &numPlatforms));
-    LINFO("Number of platforms: " << numPlatforms);
 
     cl_platform_id* platforms = new cl_platform_id[numPlatforms];
     LCL_ERROR(clGetPlatformIDs(numPlatforms, platforms, 0));
 
     for(cl_uint i=0; i<numPlatforms; ++i) {
         platforms_.push_back(Platform(platforms[i]));
+        LINFO("Platform " << i << ": " << platforms_.back().getName());
     }
     delete[] platforms;
 }
@@ -154,7 +155,7 @@ std::vector<Device> OpenCL::getDevicesForGlContext() {
     int numDevs = retSize/sizeof(cl_device_id);
     cl_device_id* devs = new cl_device_id[numDevs];
     LCL_ERROR(fn(props, CL_DEVICES_FOR_GL_CONTEXT_KHR, retSize, devs, 0));
-    delete props; 
+    delete props;
     for (int i=0; i<numDevs; ++i) {
         if(devs[i])
             devices.push_back(Device(devs[i]));
@@ -179,7 +180,7 @@ const std::string Platform::loggerCat_ = "voreen.OpenCL.Platform";
 Platform::Platform(cl_platform_id id) : id_(id), profile_(UNKNOWN) {
     std::string profileString = getInfo<std::string>(CL_PLATFORM_PROFILE); //FULL_PROFILE or EMBEDDED_PROFILE
 
-    if(profileString == "FULL_PROFILE")
+    if (profileString == "FULL_PROFILE")
         profile_ = FULL_PROFILE;
     else if(profileString == "EMBEDDED_PROFILE") {
         profile_ = EMBEDDED_PROFILE;
@@ -210,28 +211,14 @@ Platform::Platform(cl_platform_id id) : id_(id), profile_(UNKNOWN) {
         extensions_.insert(str);
     }
 
-    //Log infos:
-    LINFO("Name: " << name_);
-    LINFO("Profile: " << profileString);
-    LINFO("Version: " << versionString_);
-    LINFO("Parsed Version: " << version_);
-    LINFO("Vendor: " << vendor_);
-    LINFO("Extensions: " << extensionString_);
-
     //LINFO("Extensions:");
     //for( std::set<std::string>::const_iterator iter = extensions_.begin(); iter != extensions_.end(); ++iter ) {
         //LINFO(">" << *iter << "<");
     //}
 
-    if(isExtensionSupported("cl_khr_gl_sharing"))
-        LINFO("GL sharing is supported.");
-    else
-        LWARNING("GL sharing is not supported.");
-
     //find devices:
     cl_uint numDevices;
     LCL_ERROR(clGetDeviceIDs(id_, CL_DEVICE_TYPE_ALL, 0, 0, &numDevices));
-    LINFO("Number of devices: " << numDevices);
 
     cl_device_id* devices = new cl_device_id[numDevices];
     LCL_ERROR(clGetDeviceIDs(id_, CL_DEVICE_TYPE_ALL, numDevices, devices, 0));
@@ -270,6 +257,22 @@ std::string Platform::getInfo(cl_platform_info info) const {
     std::string ret(buffer);
     delete[] buffer;
     return ret;
+}
+
+void Platform::logInfos() const {
+    LINFO("Name: " << name_);
+    LINFO("Profile: " << getInfo<std::string>(CL_PLATFORM_PROFILE););
+    LINFO("Version: " << versionString_);
+    LINFO("Parsed Version: " << version_);
+    LINFO("Vendor: " << vendor_);
+    LINFO("Extensions: " << extensionString_);
+
+    if (isExtensionSupported("cl_khr_gl_sharing"))
+        LINFO("GL sharing is supported.");
+    else
+        LWARNING("GL sharing is not supported.");
+
+    LINFO("Number of devices: " << devices_.size());
 }
 
 //-----------------------------------------------------------------------------------
@@ -414,224 +417,33 @@ Device::Device() : id_(0) {
 }
 
 Device::Device(cl_device_id id) : id_(id) {
-//General info about the device:-------------------------------------------------------------------
-name_ = getInfo<std::string>(CL_DEVICE_NAME);
-LINFO("Name: " << name_);
-//Device name string.
+    name_ = getInfo<std::string>(CL_DEVICE_NAME);
 
-LINFO("Vendor: " << getInfo<std::string>(CL_DEVICE_VENDOR    ));
-//Vendor name string.
+    extensionString_ = getInfo<std::string>(CL_DEVICE_EXTENSIONS);
+    //Returns a space separated list of extension names (the extension names themselves do not contain any spaces). The list of extension names returned currently can include one or more of the following approved extension names:
+    //cl_khr_fp64
+    //cl_khr_select_fprounding_mode
+    //cl_khr_global_int32_base_atomics
+    //cl_khr_global_int32_extended_atomics
+    //cl_khr_local_int32_base_atomics
+    //cl_khr_local_int32_extended_atomics
+    //cl_khr_int64_base_atomics
+    //cl_khr_int64_extended_atomics
+    //cl_khr_3d_image_writes
+    //cl_khr_byte_addressable_store
+    //cl_khr_fp16
+    std::vector<std::string> extensionVec = strSplit(extensionString_, ' ');
+    extensions_.insert(extensionVec.begin(), extensionVec.end());
 
-LINFO("Vendor ID: " << getInfo<cl_uint>(CL_DEVICE_VENDOR_ID));
-//A unique device vendor identifier. An example of a unique device identifier could be the PCIe ID.
+    imageSupport_ = getInfo<cl_bool>(CL_DEVICE_IMAGE_SUPPORT);
+    if (imageSupport_) {
+        maxImageSize2D_.x = static_cast<int>(getInfo<size_t>(CL_DEVICE_IMAGE2D_MAX_WIDTH));
+        maxImageSize2D_.y = static_cast<int>(getInfo<size_t>(CL_DEVICE_IMAGE2D_MAX_HEIGHT));
 
-LINFO("CL_DEVICE_VERSION: " << getInfo<std::string>(CL_DEVICE_VERSION));
-//OpenCL version string. Returns the OpenCL version supported by the device. This version string has the following format:
-//OpenCL<space><major_version.minor_version><space><vendor-specific information>
-//The major_version.minor_version value returned will be 1.0.
-
-LINFO("CL_DRIVER_VERSION: " << getInfo<std::string>(CL_DRIVER_VERSION));
-//OpenCL software driver version string in the form major_number.minor_number.
-
-//LINFO("CL_DEVICE_PLATFORM: " << getInfo<cl_platform_id>(CL_DEVICE_PLATFORM));
-//The platform associated with this device.
-
-LINFO("CL_DEVICE_TYPE: " << getInfo<cl_device_type>(CL_DEVICE_TYPE));
-//The OpenCL device type. Currently supported values are one of or a combination of: CL_DEVICE_TYPE_CPU, CL_DEVICE_TYPE_GPU, CL_DEVICE_TYPE_ACCELERATOR, or CL_DEVICE_TYPE_DEFAULT.
-
-LINFO("CL_DEVICE_AVAILABLE: " << getInfo<cl_bool>(CL_DEVICE_AVAILABLE));
-//Is CL_TRUE if the device is available and CL_FALSE if the device is not available.
-
-LINFO("CL_DEVICE_COMPILER_AVAILABLE: " << getInfo<cl_bool>(CL_DEVICE_COMPILER_AVAILABLE));
-//Is CL_FALSE if the implementation does not have a compiler available to compile the program source. Is CL_TRUE if the compiler is available. This can be CL_FALSE for the embededed platform profile only.
-
-extensionString_ = getInfo<std::string>(CL_DEVICE_EXTENSIONS);
-LINFO("Extensions: " << extensionString_);
-//Returns a space separated list of extension names (the extension names themselves do not contain any spaces). The list of extension names returned currently can include one or more of the following approved extension names:
-//cl_khr_fp64
-//cl_khr_select_fprounding_mode
-//cl_khr_global_int32_base_atomics
-//cl_khr_global_int32_extended_atomics
-//cl_khr_local_int32_base_atomics
-//cl_khr_local_int32_extended_atomics
-//cl_khr_int64_base_atomics
-//cl_khr_int64_extended_atomics
-//cl_khr_3d_image_writes
-//cl_khr_byte_addressable_store
-//cl_khr_fp16
-
-//explode extensions string with space as delimiter:
-std::string str = extensionString_;
-size_t found;
-found = str.find_first_of(" ");
-while(found != std::string::npos){
-    if (found > 0){
-        extensions_.insert(str.substr(0,found));
+        maxImageSize3D_.x = static_cast<int>(getInfo<size_t>(CL_DEVICE_IMAGE3D_MAX_WIDTH));
+        maxImageSize3D_.y = static_cast<int>(getInfo<size_t>(CL_DEVICE_IMAGE3D_MAX_HEIGHT));
+        maxImageSize3D_.z = static_cast<int>(getInfo<size_t>(CL_DEVICE_IMAGE3D_MAX_DEPTH));
     }
-    str = str.substr(found+1);
-    found = str.find_first_of(" ");
-}
-if (str.length() > 0){
-    extensions_.insert(str);
-}
-
-LINFO("CL_DEVICE_PROFILE: " << getInfo<std::string>(CL_DEVICE_PROFILE));
-//OpenCL profile string. Returns the profile name supported by the device (see note). The profile name returned can be one of the following strings:
-//FULL_PROFILE - if the device supports the OpenCL specification (functionality defined as part of the core specification and does not require any extensions to be supported).
-//EMBEDDED_PROFILE - if the device supports the OpenCL embedded profile.
-
-LINFO("CL_DEVICE_MAX_CLOCK_FREQUENCY: " << getInfo<cl_uint>(CL_DEVICE_MAX_CLOCK_FREQUENCY) << " MHz");
-//Maximum configured clock frequency of the device in MHz.
-
-LINFO("CL_DEVICE_PROFILING_TIMER_RESOLUTION: " << getInfo<size_t>(CL_DEVICE_PROFILING_TIMER_RESOLUTION) << " ns");
-//Describes the resolution of device timer. This is measured in nanoseconds.
-
-//Image support:----------------------------------------------------------------------------------
-
-if(getInfo<cl_bool>(CL_DEVICE_IMAGE_SUPPORT)) {
-    maxImageSize2D_.x = static_cast<int>(getInfo<size_t>(CL_DEVICE_IMAGE2D_MAX_WIDTH));
-    maxImageSize2D_.y = static_cast<int>(getInfo<size_t>(CL_DEVICE_IMAGE2D_MAX_HEIGHT));
-
-    maxImageSize3D_.x = static_cast<int>(getInfo<size_t>(CL_DEVICE_IMAGE3D_MAX_WIDTH));
-    maxImageSize3D_.y = static_cast<int>(getInfo<size_t>(CL_DEVICE_IMAGE3D_MAX_HEIGHT));
-    maxImageSize3D_.z = static_cast<int>(getInfo<size_t>(CL_DEVICE_IMAGE3D_MAX_DEPTH));
-    LINFO("Image support: yes; Max sizes: 2D " << maxImageSize2D_ <<  ", 3D " << maxImageSize3D_);
-
-    LINFO("CL_DEVICE_MAX_READ_IMAGE_ARGS: " << getInfo<cl_uint>(CL_DEVICE_MAX_READ_IMAGE_ARGS     ));
-    //Max number of simultaneous image objects that can be read by a kernel. The minimum value is 128 if CL_DEVICE_IMAGE_SUPPORT is CL_TRUE.
-
-    LINFO("CL_DEVICE_MAX_WRITE_IMAGE_ARGS: " << getInfo<cl_uint>(CL_DEVICE_MAX_WRITE_IMAGE_ARGS     ));
-    //Max number of simultaneous image objects that can be written to by a kernel. The minimum value is 8 if CL_DEVICE_IMAGE_SUPPORT is CL_TRUE.
-
-    LINFO("CL_DEVICE_MAX_SAMPLERS: " << getInfo<cl_uint>(CL_DEVICE_MAX_SAMPLERS     ));
-    //Maximum number of samplers that can be used in a kernel. The minimum value is 16 if CL_DEVICE_IMAGE_SUPPORT is CL_TRUE. (Also see sampler_t.)
-}
-else {
-    LINFO("Image support: no");
-}
-
-//-------------------------------------------------------------------------------------
-
-LINFO("CL_DEVICE_ADDRESS_BITS: " << getInfo<cl_uint>(CL_DEVICE_ADDRESS_BITS       ));
-//The default compute device address space size specified as an unsigned integer value in bits. Currently supported values are 32 or 64 bits.
-
-//LINFO("CL_DEVICE_DOUBLE_FP_CONFIG: " << getInfo<cl_device_fp_config>(CL_DEVICE_DOUBLE_FP_CONFIG     ));
-//Describes the OPTIONAL double precision floating-point capability of the OpenCL device. This is a bit-field that describes one or more of the following values:
-    //* CL_FP_DENORM - denorms are supported.
-    //* CL_FP_INF_NAN - INF and NaNs are supported.
-    //* CL_FP_ROUND_TO_NEAREST - round to nearest even rounding mode supported.
-    //* CL_FP_ROUND_TO_ZERO - round to zero rounding mode supported.
-    //* CL_FP_ROUND_TO_INF - round to +ve and -ve infinity rounding modes supported.
-    //* CP_FP_FMA - IEEE754-2008 fused multiply-add is supported.
-//The mandated minimum double precision floating-point capability is CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM.
-
-LINFO("CL_DEVICE_ENDIAN_LITTLE: " << getInfo<cl_bool>(CL_DEVICE_ENDIAN_LITTLE     ));
-//Is CL_TRUE if the OpenCL device is a little endian device and CL_FALSE otherwise.
-
-LINFO("CL_DEVICE_ERROR_CORRECTION_SUPPORT: " << getInfo<cl_bool>(CL_DEVICE_ERROR_CORRECTION_SUPPORT     ));
-//Is CL_TRUE if the device implements error correction for the memories, caches, registers etc. in the device. Is CL_FALSE if the device does not implement error correction. This can be a requirement for certain clients of OpenCL.
-
-LINFO("CL_DEVICE_EXECUTION_CAPABILITIES: " << getInfo<cl_device_exec_capabilities>(CL_DEVICE_EXECUTION_CAPABILITIES     ));
-//Describes the execution capabilities of the device. This is a bit-field that describes one or more of the following values:
-//CL_EXEC_KERNEL - The OpenCL device can execute OpenCL kernels.
-//CL_EXEC_NATIVE_KERNEL - The OpenCL device can execute native kernels.
-//The mandated minimum capability is CL_EXEC_KERNEL.
-
-LINFO("CL_DEVICE_GLOBAL_MEM_CACHE_SIZE: " << getInfo<cl_ulong>(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE     ));
-//Size of global memory cache in bytes.
-
-LINFO("CL_DEVICE_GLOBAL_MEM_CACHE_TYPE: " << getInfo<cl_device_mem_cache_type>(CL_DEVICE_GLOBAL_MEM_CACHE_TYPE     ));
-//Type of global memory cache supported. Valid values are: CL_NONE, CL_READ_ONLY_CACHE, and CL_READ_WRITE_CACHE.
-
-LINFO("CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE: " << getInfo<cl_uint>(CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE     ));
-//Size of global memory cache line in bytes.
-
-cl_ulong globalMemSize_;
-globalMemSize_ = getInfo<cl_ulong>(CL_DEVICE_GLOBAL_MEM_SIZE);
-LINFO("CL_DEVICE_GLOBAL_MEM_SIZE: " <<  globalMemSize_ << "b (" << (globalMemSize_ / (1024*1024))<< " mb)");
-//Size of global device memory in bytes.
-
-//LINFO("CL_DEVICE_HALF_FP_CONFIG: " << getInfo<cl_device_fp_config>(CL_DEVICE_HALF_FP_CONFIG     ));
-//Describes the OPTIONAL half precision floating-point capability of the OpenCL device. This is a bit-field that describes one or more of the following values:
-    //* CL_FP_DENORM - denorms are supported.
-    //* CL_FP_INF_NAN - INF and NaNs are supported.
-    //* CL_FP_ROUND_TO_NEAREST - round to nearest even rounding mode supported.
-    //* CL_FP_ROUND_TO_ZERO - round to zero rounding mode supported.
-    //* CL_FP_ROUND_TO_INF - round to +ve and -ve infinity rounding modes supported.
-    //* CP_FP_FMA - IEEE754-2008 fused multiply-add is supported.
-//The required minimum half precision floating-point capability as implemented by this extension is CL_FP_ROUND_TO_ZERO | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN.
-
-cl_ulong localMemSize_;
-localMemSize_ = getInfo<cl_ulong>(CL_DEVICE_LOCAL_MEM_SIZE);
-LINFO("CL_DEVICE_LOCAL_MEM_SIZE: " << localMemSize_ << "b (" << (localMemSize_ / 1024) << "kb)");
-//Size of local memory arena in bytes. The minimum value is 16 KB.
-
-LINFO("CL_DEVICE_LOCAL_MEM_TYPE: " << getInfo<cl_device_local_mem_type>(CL_DEVICE_LOCAL_MEM_TYPE));
-//Type of local memory supported. This can be set to CL_LOCAL implying dedicated local memory storage such as SRAM, or CL_GLOBAL.
-
-LINFO("CL_DEVICE_MAX_COMPUTE_UNITS: " << getInfo<cl_uint>(CL_DEVICE_MAX_COMPUTE_UNITS     ));
-//The number of parallel compute cores on the OpenCL device. The minimum value is 1.
-
-LINFO("CL_DEVICE_MAX_CONSTANT_ARGS: " << getInfo<cl_uint>(CL_DEVICE_MAX_CONSTANT_ARGS     ));
-//Max number of arguments declared with the __constant qualifier in a kernel. The minimum value is 8.
-
-LINFO("CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE: " << getInfo<cl_ulong>(CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE     ));
-//Max size in bytes of a constant buffer allocation. The minimum value is 64 KB.
-
-LINFO("CL_DEVICE_MAX_MEM_ALLOC_SIZE: " << getInfo<cl_ulong>(CL_DEVICE_MAX_MEM_ALLOC_SIZE     ));
-//Max size of memory object allocation in bytes. The minimum value is max (1/4th of CL_DEVICE_GLOBAL_MEM_SIZE, 128*1024*1024)
-
-LINFO("CL_DEVICE_MAX_PARAMETER_SIZE: " << getInfo<size_t>(CL_DEVICE_MAX_PARAMETER_SIZE     ));
-//Max size in bytes of the arguments that can be passed to a kernel. The minimum value is 256.
-
-LINFO("CL_DEVICE_MAX_WORK_GROUP_SIZE: " << getInfo<size_t>(CL_DEVICE_MAX_WORK_GROUP_SIZE     ));
-//Maximum number of work-items in a work-group executing a kernel using the data parallel execution model. (Refer to clEnqueueNDRangeKernel). The minimum value is 1.
-
-cl_uint maxWorkItemDimensions = getInfo<cl_uint>(CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS);
-//LINFO("CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS: " << maxWorkItemDimensions);
-//Maximum dimensions that specify the global and local work-item IDs used by the data parallel execution model. (Refer to clEnqueueNDRangeKernel). The minimum value is 3.
-
-std::vector<size_t> maxWorkItemSizes;
-maxWorkItemSizes.resize(maxWorkItemDimensions);
-LCL_ERROR(clGetDeviceInfo(id_, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t)*maxWorkItemDimensions, &maxWorkItemSizes[0], 0));
-std::stringstream temp;
-for(size_t i=0; i<maxWorkItemDimensions; ++i)
-    temp << maxWorkItemSizes[i] << " ";
-LINFO("CL_DEVICE_MAX_WORK_ITEM_SIZES: " << temp.str());
-//Maximum number of work-items that can be specified in each dimension of the work-group to clEnqueueNDRangeKernel.
-//Returns n size_t entries, where n is the value returned by the query for CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS. The minimum value is (1, 1, 1).
-
-LINFO("CL_DEVICE_MEM_BASE_ADDR_ALIGN: " << getInfo<cl_uint>(CL_DEVICE_MEM_BASE_ADDR_ALIGN     ));
-//Describes the alignment in bits of the base address of any allocated memory object.
-
-LINFO("CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE: " << getInfo<cl_uint>(CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE     ));
-//The smallest alignment in bytes which can be used for any data type.
-
-LINFO("CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR: " << getInfo<cl_uint>(CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR));
-LINFO("CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT: " << getInfo<cl_uint>(CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT));
-LINFO("CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT: " << getInfo<cl_uint>(CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT));
-LINFO("CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG: " << getInfo<cl_uint>(CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG));
-LINFO("CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT: " << getInfo<cl_uint>(CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT));
-LINFO("CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE: " << getInfo<cl_uint>(CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE));
-//Preferred native vector width size for built-in scalar types that can be put into vectors. The vector width is defined as the number of scalar elements that can be stored in the vector.
-//If the cl_khr_fp64 extension is not supported, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0.
-
-LINFO("CL_DEVICE_QUEUE_PROPERTIES: " << getInfo<cl_command_queue_properties>(CL_DEVICE_QUEUE_PROPERTIES     ));
-//Describes the command-queue properties supported by the device. This is a bit-field that describes one or more of the following values:
-//CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
-//CL_QUEUE_PROFILING_ENABLE
-//These properties are described in the table for clCreateCommandQueue. The mandated minimum capability is CL_QUEUE_PROFILING_ENABLE.
-
-LINFO("CL_DEVICE_SINGLE_FP_CONFIG: " << getInfo<cl_device_fp_config>(CL_DEVICE_SINGLE_FP_CONFIG     ));
-//Describes single precision floating-point capability of the device. This is a bit-field that describes one or more of the following values:
-//CL_FP_DENORM - denorms are supported
-//CL_FP_INF_NAN - INF and quiet NaNs are supported
-//CL_FP_ROUND_TO_NEAREST - round to nearest even rounding mode supported
-//CL_FP_ROUND_TO_ZERO - round to zero rounding mode supported
-//CL_FP_ROUND_TO_INF - round to +ve and -ve infinity rounding modes supported
-//CL_FP_FMA - IEEE754-2008 fused multiply-add is supported
-//The mandated minimum floating-point capability is CL_FP_ROUND_TO_NEAREST | CL_FP_INF_NAN.
-
 }
 
 //template specialization for strings:
@@ -649,6 +461,210 @@ std::string Device::getInfo(cl_device_info info) const {
 cl_uint Device::getMaxWorkGroupSize() const {
     cl_uint result = static_cast<cl_uint>(getInfo<size_t>(CL_DEVICE_MAX_WORK_GROUP_SIZE));
     return result;
+}
+
+void Device::logInfos() const {
+    //General info about the device:-------------------------------------------------------------------
+    LINFO("Name: " << name_);
+    //Device name string.
+
+    LINFO("Vendor: " << getInfo<std::string>(CL_DEVICE_VENDOR    ));
+    //Vendor name string.
+
+    LINFO("Vendor ID: " << getInfo<cl_uint>(CL_DEVICE_VENDOR_ID));
+    //A unique device vendor identifier. An example of a unique device identifier could be the PCIe ID.
+
+    LINFO("CL_DEVICE_VERSION: " << getInfo<std::string>(CL_DEVICE_VERSION));
+    //OpenCL version string. Returns the OpenCL version supported by the device. This version string has the following format:
+    //OpenCL<space><major_version.minor_version><space><vendor-specific information>
+    //The major_version.minor_version value returned will be 1.0.
+
+    LINFO("CL_DRIVER_VERSION: " << getInfo<std::string>(CL_DRIVER_VERSION));
+    //OpenCL software driver version string in the form major_number.minor_number.
+
+    //LINFO("CL_DEVICE_PLATFORM: " << getInfo<cl_platform_id>(CL_DEVICE_PLATFORM));
+    //The platform associated with this device.
+
+    LINFO("CL_DEVICE_TYPE: " << getInfo<cl_device_type>(CL_DEVICE_TYPE));
+    //The OpenCL device type. Currently supported values are one of or a combination of: CL_DEVICE_TYPE_CPU, CL_DEVICE_TYPE_GPU, CL_DEVICE_TYPE_ACCELERATOR, or CL_DEVICE_TYPE_DEFAULT.
+
+    LINFO("CL_DEVICE_AVAILABLE: " << getInfo<cl_bool>(CL_DEVICE_AVAILABLE));
+    //Is CL_TRUE if the device is available and CL_FALSE if the device is not available.
+
+    LINFO("CL_DEVICE_COMPILER_AVAILABLE: " << getInfo<cl_bool>(CL_DEVICE_COMPILER_AVAILABLE));
+    //Is CL_FALSE if the implementation does not have a compiler available to compile the program source. Is CL_TRUE if the compiler is available. This can be CL_FALSE for the embededed platform profile only.
+
+    LINFO("Extensions: " << extensionString_);
+    //Returns a space separated list of extension names (the extension names themselves do not contain any spaces). The list of extension names returned currently can include one or more of the following approved extension names:
+    //cl_khr_fp64
+    //cl_khr_select_fprounding_mode
+    //cl_khr_global_int32_base_atomics
+    //cl_khr_global_int32_extended_atomics
+    //cl_khr_local_int32_base_atomics
+    //cl_khr_local_int32_extended_atomics
+    //cl_khr_int64_base_atomics
+    //cl_khr_int64_extended_atomics
+    //cl_khr_3d_image_writes
+    //cl_khr_byte_addressable_store
+    //cl_khr_fp16
+
+    LINFO("CL_DEVICE_PROFILE: " << getInfo<std::string>(CL_DEVICE_PROFILE));
+    //OpenCL profile string. Returns the profile name supported by the device (see note). The profile name returned can be one of the following strings:
+    //FULL_PROFILE - if the device supports the OpenCL specification (functionality defined as part of the core specification and does not require any extensions to be supported).
+    //EMBEDDED_PROFILE - if the device supports the OpenCL embedded profile.
+
+    LINFO("CL_DEVICE_MAX_CLOCK_FREQUENCY: " << getInfo<cl_uint>(CL_DEVICE_MAX_CLOCK_FREQUENCY) << " MHz");
+    //Maximum configured clock frequency of the device in MHz.
+
+    LINFO("CL_DEVICE_PROFILING_TIMER_RESOLUTION: " << getInfo<size_t>(CL_DEVICE_PROFILING_TIMER_RESOLUTION) << " ns");
+    //Describes the resolution of device timer. This is measured in nanoseconds.
+
+    //Image support:----------------------------------------------------------------------------------
+
+    if (imageSupport_) {
+        LINFO("Image support: yes; Max sizes: 2D " << maxImageSize2D_ <<  ", 3D " << maxImageSize3D_);
+
+        LINFO("CL_DEVICE_MAX_READ_IMAGE_ARGS: " << getInfo<cl_uint>(CL_DEVICE_MAX_READ_IMAGE_ARGS     ));
+        //Max number of simultaneous image objects that can be read by a kernel. The minimum value is 128 if CL_DEVICE_IMAGE_SUPPORT is CL_TRUE.
+
+        LINFO("CL_DEVICE_MAX_WRITE_IMAGE_ARGS: " << getInfo<cl_uint>(CL_DEVICE_MAX_WRITE_IMAGE_ARGS     ));
+        //Max number of simultaneous image objects that can be written to by a kernel. The minimum value is 8 if CL_DEVICE_IMAGE_SUPPORT is CL_TRUE.
+
+        LINFO("CL_DEVICE_MAX_SAMPLERS: " << getInfo<cl_uint>(CL_DEVICE_MAX_SAMPLERS     ));
+        //Maximum number of samplers that can be used in a kernel. The minimum value is 16 if CL_DEVICE_IMAGE_SUPPORT is CL_TRUE. (Also see sampler_t.)
+    }
+    else {
+        LINFO("Image support: no");
+    }
+
+    //-------------------------------------------------------------------------------------
+
+    LINFO("CL_DEVICE_ADDRESS_BITS: " << getInfo<cl_uint>(CL_DEVICE_ADDRESS_BITS       ));
+    //The default compute device address space size specified as an unsigned integer value in bits. Currently supported values are 32 or 64 bits.
+
+    //LINFO("CL_DEVICE_DOUBLE_FP_CONFIG: " << getInfo<cl_device_fp_config>(CL_DEVICE_DOUBLE_FP_CONFIG     ));
+    //Describes the OPTIONAL double precision floating-point capability of the OpenCL device. This is a bit-field that describes one or more of the following values:
+        //* CL_FP_DENORM - denorms are supported.
+        //* CL_FP_INF_NAN - INF and NaNs are supported.
+        //* CL_FP_ROUND_TO_NEAREST - round to nearest even rounding mode supported.
+        //* CL_FP_ROUND_TO_ZERO - round to zero rounding mode supported.
+        //* CL_FP_ROUND_TO_INF - round to +ve and -ve infinity rounding modes supported.
+        //* CP_FP_FMA - IEEE754-2008 fused multiply-add is supported.
+    //The mandated minimum double precision floating-point capability is CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM.
+
+    LINFO("CL_DEVICE_ENDIAN_LITTLE: " << getInfo<cl_bool>(CL_DEVICE_ENDIAN_LITTLE     ));
+    //Is CL_TRUE if the OpenCL device is a little endian device and CL_FALSE otherwise.
+
+    LINFO("CL_DEVICE_ERROR_CORRECTION_SUPPORT: " << getInfo<cl_bool>(CL_DEVICE_ERROR_CORRECTION_SUPPORT     ));
+    //Is CL_TRUE if the device implements error correction for the memories, caches, registers etc. in the device. Is CL_FALSE if the device does not implement error correction. This can be a requirement for certain clients of OpenCL.
+
+    LINFO("CL_DEVICE_EXECUTION_CAPABILITIES: " << getInfo<cl_device_exec_capabilities>(CL_DEVICE_EXECUTION_CAPABILITIES     ));
+    //Describes the execution capabilities of the device. This is a bit-field that describes one or more of the following values:
+    //CL_EXEC_KERNEL - The OpenCL device can execute OpenCL kernels.
+    //CL_EXEC_NATIVE_KERNEL - The OpenCL device can execute native kernels.
+    //The mandated minimum capability is CL_EXEC_KERNEL.
+
+    LINFO("CL_DEVICE_GLOBAL_MEM_CACHE_SIZE: " << getInfo<cl_ulong>(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE     ));
+    //Size of global memory cache in bytes.
+
+    LINFO("CL_DEVICE_GLOBAL_MEM_CACHE_TYPE: " << getInfo<cl_device_mem_cache_type>(CL_DEVICE_GLOBAL_MEM_CACHE_TYPE     ));
+    //Type of global memory cache supported. Valid values are: CL_NONE, CL_READ_ONLY_CACHE, and CL_READ_WRITE_CACHE.
+
+    LINFO("CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE: " << getInfo<cl_uint>(CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE     ));
+    //Size of global memory cache line in bytes.
+
+    cl_ulong globalMemSize;
+    globalMemSize = getInfo<cl_ulong>(CL_DEVICE_GLOBAL_MEM_SIZE);
+    LINFO("CL_DEVICE_GLOBAL_MEM_SIZE: " <<  globalMemSize << "b (" << (globalMemSize / (1024*1024))<< " mb)");
+    //Size of global device memory in bytes.
+
+    //LINFO("CL_DEVICE_HALF_FP_CONFIG: " << getInfo<cl_device_fp_config>(CL_DEVICE_HALF_FP_CONFIG     ));
+    //Describes the OPTIONAL half precision floating-point capability of the OpenCL device. This is a bit-field that describes one or more of the following values:
+        //* CL_FP_DENORM - denorms are supported.
+        //* CL_FP_INF_NAN - INF and NaNs are supported.
+        //* CL_FP_ROUND_TO_NEAREST - round to nearest even rounding mode supported.
+        //* CL_FP_ROUND_TO_ZERO - round to zero rounding mode supported.
+        //* CL_FP_ROUND_TO_INF - round to +ve and -ve infinity rounding modes supported.
+        //* CP_FP_FMA - IEEE754-2008 fused multiply-add is supported.
+    //The required minimum half precision floating-point capability as implemented by this extension is CL_FP_ROUND_TO_ZERO | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN.
+
+    cl_ulong localMemSize;
+    localMemSize = getInfo<cl_ulong>(CL_DEVICE_LOCAL_MEM_SIZE);
+    LINFO("CL_DEVICE_LOCAL_MEM_SIZE: " << localMemSize << "b (" << (localMemSize / 1024) << "kb)");
+    //Size of local memory arena in bytes. The minimum value is 16 KB.
+
+    LINFO("CL_DEVICE_LOCAL_MEM_TYPE: " << getInfo<cl_device_local_mem_type>(CL_DEVICE_LOCAL_MEM_TYPE));
+    //Type of local memory supported. This can be set to CL_LOCAL implying dedicated local memory storage such as SRAM, or CL_GLOBAL.
+
+    LINFO("CL_DEVICE_MAX_COMPUTE_UNITS: " << getInfo<cl_uint>(CL_DEVICE_MAX_COMPUTE_UNITS     ));
+    //The number of parallel compute cores on the OpenCL device. The minimum value is 1.
+
+    LINFO("CL_DEVICE_MAX_CONSTANT_ARGS: " << getInfo<cl_uint>(CL_DEVICE_MAX_CONSTANT_ARGS     ));
+    //Max number of arguments declared with the __constant qualifier in a kernel. The minimum value is 8.
+
+    LINFO("CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE: " << getInfo<cl_ulong>(CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE     ));
+    //Max size in bytes of a constant buffer allocation. The minimum value is 64 KB.
+
+    LINFO("CL_DEVICE_MAX_MEM_ALLOC_SIZE: " << getInfo<cl_ulong>(CL_DEVICE_MAX_MEM_ALLOC_SIZE     ));
+    //Max size of memory object allocation in bytes. The minimum value is max (1/4th of CL_DEVICE_GLOBAL_MEM_SIZE, 128*1024*1024)
+
+    LINFO("CL_DEVICE_MAX_PARAMETER_SIZE: " << getInfo<size_t>(CL_DEVICE_MAX_PARAMETER_SIZE     ));
+    //Max size in bytes of the arguments that can be passed to a kernel. The minimum value is 256.
+
+    LINFO("CL_DEVICE_MAX_WORK_GROUP_SIZE: " << getInfo<size_t>(CL_DEVICE_MAX_WORK_GROUP_SIZE     ));
+    //Maximum number of work-items in a work-group executing a kernel using the data parallel execution model. (Refer to clEnqueueNDRangeKernel). The minimum value is 1.
+
+    cl_uint maxWorkItemDimensions = getInfo<cl_uint>(CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS);
+    //LINFO("CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS: " << maxWorkItemDimensions);
+    //Maximum dimensions that specify the global and local work-item IDs used by the data parallel execution model. (Refer to clEnqueueNDRangeKernel). The minimum value is 3.
+
+    std::vector<size_t> maxWorkItemSizes;
+    maxWorkItemSizes.resize(maxWorkItemDimensions);
+    LCL_ERROR(clGetDeviceInfo(id_, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t)*maxWorkItemDimensions, &maxWorkItemSizes[0], 0));
+    std::stringstream temp;
+    for(size_t i=0; i<maxWorkItemDimensions; ++i)
+        temp << maxWorkItemSizes[i] << " ";
+    LINFO("CL_DEVICE_MAX_WORK_ITEM_SIZES: " << temp.str());
+    //Maximum number of work-items that can be specified in each dimension of the work-group to clEnqueueNDRangeKernel.
+    //Returns n size_t entries, where n is the value returned by the query for CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS. The minimum value is (1, 1, 1).
+
+    LINFO("CL_DEVICE_MEM_BASE_ADDR_ALIGN: " << getInfo<cl_uint>(CL_DEVICE_MEM_BASE_ADDR_ALIGN     ));
+    //Describes the alignment in bits of the base address of any allocated memory object.
+
+    LINFO("CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE: " << getInfo<cl_uint>(CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE     ));
+    //The smallest alignment in bytes which can be used for any data type.
+
+    LINFO("CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR: " << getInfo<cl_uint>(CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR));
+    LINFO("CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT: " << getInfo<cl_uint>(CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT));
+    LINFO("CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT: " << getInfo<cl_uint>(CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT));
+    LINFO("CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG: " << getInfo<cl_uint>(CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG));
+    LINFO("CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT: " << getInfo<cl_uint>(CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT));
+    LINFO("CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE: " << getInfo<cl_uint>(CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE));
+    //Preferred native vector width size for built-in scalar types that can be put into vectors. The vector width is defined as the number of scalar elements that can be stored in the vector.
+    //If the cl_khr_fp64 extension is not supported, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0.
+
+    LINFO("CL_DEVICE_QUEUE_PROPERTIES: " << getInfo<cl_command_queue_properties>(CL_DEVICE_QUEUE_PROPERTIES     ));
+    //Describes the command-queue properties supported by the device. This is a bit-field that describes one or more of the following values:
+    //CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
+    //CL_QUEUE_PROFILING_ENABLE
+    //These properties are described in the table for clCreateCommandQueue. The mandated minimum capability is CL_QUEUE_PROFILING_ENABLE.
+
+    LINFO("CL_DEVICE_SINGLE_FP_CONFIG: " << getInfo<cl_device_fp_config>(CL_DEVICE_SINGLE_FP_CONFIG     ));
+    //Describes single precision floating-point capability of the device. This is a bit-field that describes one or more of the following values:
+    //CL_FP_DENORM - denorms are supported
+    //CL_FP_INF_NAN - INF and quiet NaNs are supported
+    //CL_FP_ROUND_TO_NEAREST - round to nearest even rounding mode supported
+    //CL_FP_ROUND_TO_ZERO - round to zero rounding mode supported
+    //CL_FP_ROUND_TO_INF - round to +ve and -ve infinity rounding modes supported
+    //CL_FP_FMA - IEEE754-2008 fused multiply-add is supported
+    //The mandated minimum floating-point capability is CL_FP_ROUND_TO_NEAREST | CL_FP_INF_NAN.
+}
+
+bool Device::isExtensionSupported(std::string ext) const {
+    if (extensions_.find(ext) != extensions_.end())
+        return true;
+    else
+        return false;
 }
 
 //-------------------------------------------------------------------------------------
@@ -811,7 +827,7 @@ Event CommandQueue::enqueue(const Kernel* kernel, const std::vector<size_t>& glo
     return e;
 }
 
-Event CommandQueue::enqueueRead(const Buffer* buffer, void* data, bool blocking) {
+Event CommandQueue::enqueueReadBuffer(const Buffer* buffer, void* data, bool blocking) {
     cl_event event;
     LCL_ERROR(clEnqueueReadBuffer(id_, buffer->getId(), blocking, 0, buffer->getSize(), data, 0, 0, &event));
     Event e(event);
@@ -820,9 +836,33 @@ Event CommandQueue::enqueueRead(const Buffer* buffer, void* data, bool blocking)
     return e;
 }
 
-Event CommandQueue::enqueueWrite(const Buffer* buffer, void* data, bool blocking) {
+Event CommandQueue::enqueueReadBuffer(const Buffer* buffer, size_t byteOffset, size_t numBytes, void* data, bool blocking /*= true*/) {
+    tgtAssert(byteOffset < buffer->getSize(), "offset outside buffer");
+    tgtAssert(byteOffset+numBytes < buffer->getSize(), "offset+numBytes outside buffer");
+
+    cl_event event;
+    LCL_ERROR(clEnqueueReadBuffer(id_, buffer->getId(), blocking, byteOffset, numBytes, data, 0, 0, &event));
+    Event e(event);
+    //if(event)
+        //LCL_ERROR(clReleaseEvent(event));
+    return e;
+}
+
+Event CommandQueue::enqueueWriteBuffer(const Buffer* buffer, void* data, bool blocking) {
     cl_event event;
     LCL_ERROR(clEnqueueWriteBuffer(id_, buffer->getId(), blocking, 0, buffer->getSize(), data, 0, 0, &event));
+    Event e(event);
+    //if(event)
+        //LCL_ERROR(clReleaseEvent(event));
+    return e;
+}
+
+Event CommandQueue::enqueueWriteBuffer(const Buffer* buffer, size_t byteOffset, size_t numBytes, void* data, bool blocking /*= true*/ ) {
+    tgtAssert(byteOffset < buffer->getSize(), "offset outside buffer");
+    tgtAssert(byteOffset+numBytes < buffer->getSize(), "offset+numBytes outside buffer");
+
+    cl_event event;
+    LCL_ERROR(clEnqueueWriteBuffer(id_, buffer->getId(), blocking, byteOffset, numBytes, data, 0, 0, &event));
     Event e(event);
     //if(event)
         //LCL_ERROR(clReleaseEvent(event));

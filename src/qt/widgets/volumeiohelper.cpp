@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -380,7 +380,7 @@ void VolumeIOHelper::loadOrigin(const VolumeURL& origin, VolumeReader* reader) {
             emit(volumeLoaded(handle));
         }
         else {
-            LERROR("Reader '" << reader->getClassName() << "' returned null pointer as volume handle (exception expected)");
+            LERROR("Reader '" << reader->getClassName() << "' returned null pointer as volume (exception expected)");
         }
     }
     catch (const tgt::FileException& e) {
@@ -472,7 +472,7 @@ void VolumeIOHelper::loadRawVolume(const std::string& filenameStd) {
         for (int frame=0; frame < numFrames; ++frame) {
             RawVolumeReader rawReader(progressBar_);
             rawReader.setReadHints(dim, spacing, objectModel, format, frame, headerSkip, bigEndian);
-            VolumeCollection* collection = rawReader.read(filename.toStdString());
+            VolumeList* collection = rawReader.read(filename.toStdString());
             if (collection && !collection->empty()) {
                 tgtAssert(collection->size() == 1, "More than one raw volume returned");
                 Volume* volumeHandle = static_cast<Volume*>(collection->first());

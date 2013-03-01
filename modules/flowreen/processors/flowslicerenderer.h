@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -64,6 +64,7 @@ protected:
         PLANE_XZ = 1,   /** view from the volume's bottom to top (negative y-axis) */
         PLANE_ZY = 0    /** view from the volume's right to left (negative x-axis) */
     };
+    friend class OptionProperty<SliceAlignment>;
 
     enum RenderingTechnique {
         TECHNIQUE_COLOR_CODING,
@@ -77,6 +78,7 @@ protected:
         TECHNIQUE_SPOTNOISE_PROJECTED,
         TECHNIQUE_SPOTNOISE
     };
+    friend class OptionProperty<RenderingTechnique>;
 
     enum TextureZoom {
         ZOOM_FULL_SIZE = 0,
@@ -85,6 +87,7 @@ protected:
         ZOOM_4X = 4,
         ZOOM_8X = 8
     };
+    friend class OptionProperty<TextureZoom>;
 
     typedef unsigned char BYTE;
 

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -549,8 +549,8 @@ void TransFunc1DRampEditor::updateFromProperty() {
 
     // check whether the volume associated with the TransFuncProperty has changed
     const VolumeBase* newHandle = property_->getVolumeHandle();
-    if (newHandle != volumeHandle_) {
-        volumeHandle_ = newHandle;
+    if (newHandle != volume_) {
+        volume_ = newHandle;
         volumeChanged();
     }
 
@@ -570,8 +570,8 @@ void TransFunc1DRampEditor::updateFromProperty() {
 }
 
 void TransFunc1DRampEditor::volumeChanged() {
-    if (volumeHandle_ && volumeHandle_->getRepresentation<VolumeRAM>()) {
-        int bits = volumeHandle_->getRepresentation<VolumeRAM>()->getBitsAllocated() / volumeHandle_->getRepresentation<VolumeRAM>()->getNumChannels();
+    if (volume_ && volume_->getRepresentation<VolumeRAM>()) {
+        int bits = volume_->getRepresentation<VolumeRAM>()->getBitsAllocated() / volume_->getRepresentation<VolumeRAM>()->getNumChannels();
         int maxNew = static_cast<int>(pow(2.f, static_cast<float>(bits))) - 1;
         if (maxNew != maximumIntensity_) {
             float lowerRelative = lowerThresholdSpin_->value() / static_cast<float>(maximumIntensity_);
@@ -611,7 +611,7 @@ void TransFunc1DRampEditor::volumeChanged() {
     }
 
     // propagate new volume to transfuncMappingCanvas
-    transCanvas_->volumeChanged(volumeHandle_);
+    transCanvas_->volumeChanged(volume_);
 }
 
 void TransFunc1DRampEditor::restoreThresholds() {

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,9 +26,10 @@
 #ifndef VRN_APPLICATION_H
 #define VRN_APPLICATION_H
 
-#include "voreen/core/voreencoreapi.h"
+#include "voreen/core/voreenmodule.h"
 #include "voreen/core/properties/property.h"
 #include "voreen/core/properties/propertyowner.h"
+#include "voreen/core/io/serialization/serializablefactory.h"
 
 #include <string>
 #include "tgt/logmanager.h"
@@ -53,6 +54,7 @@ class FileDialogProperty;
 class PropertyWidget;
 class VoreenModule;
 class NetworkEvaluator;
+class ProcessorNetwork;
 class ProgressBar;
 class CommandLineParser;
 
@@ -60,7 +62,7 @@ class CommandLineParser;
  * Represents basic properties of a Voreen application. There should only be one instance of
  * this class, which can be access via the static method app().
  */
-class VRN_CORE_API VoreenApplication : private tgt::EventListener, public PropertyOwner {
+class VRN_CORE_API VoreenApplication : private tgt::EventListener, public PropertyOwner, public SerializableFactory {
 
     friend class Processor;
     friend class NetworkEvaluator;
@@ -86,7 +88,7 @@ public:
      * @param argv Argument vector as retrieved from main()
      * @param appType Features to activate
      */
-    VoreenApplication(const std::string& binaryName, const std::string& displayName, const std::string& description,
+    VoreenApplication(const std::string& binaryName, const std::string& guiName, const std::string& description,
                       int argc, char** argv, ApplicationFeatures appType = APP_DEFAULT);
 
     virtual ~VoreenApplication();
@@ -94,14 +96,13 @@ public:
     /// Allows access to the global instance of this class.
     static VoreenApplication* app();
 
+    virtual std::string getClassName() const { return "VoreenApplication"; }
+
+    /// Do not use!
+    virtual VoreenApplication* create() const { return 0; }
+
     /// Returns the name of the application binary.
     const std::string& getBinaryName() const;
-
-    /// Returns the application's display name.
-    const std::string& getDisplayName() const;
-
-    /// Returns the display name.
-    std::string getName() const;
 
     /// Returns the application features as passed to the constructor.
     ApplicationFeatures getApplicationType() const;
@@ -267,17 +268,37 @@ public:
     bool isInitializedGL() const;
 
     /**
-     * Assigns the network evaluator.
+     * Registers a network evaluator.
      *
      * Is internally used for scheduled network processing.
      * @see scheduleNetworkProcessing
      */
-    void setNetworkEvaluator(NetworkEvaluator* evaluator);
+    void registerNetworkEvaluator(NetworkEvaluator* evaluator);
 
     /**
-     * Returns the network evaluator.
+     * Deregisters a network evaluator.
+     *
+     * Is internally used for scheduled network processing.
+     * @see scheduleNetworkProcessing
+     */
+    void deregisterNetworkEvaluator(NetworkEvaluator* evaluator);
+
+    /**
+     * Returns the first network evaluator in the set.
      */
     NetworkEvaluator* getNetworkEvaluator() const;
+
+    /**
+     * Returns the network evaluator belonging to the passed processor,
+     * or null if no evaluator has a network assigned that contains the processor.
+     */
+    NetworkEvaluator* getNetworkEvaluator(Processor* p) const;
+
+    /**
+     * Returns the network evaluator that has the passed ProcessorNetwork assigned,
+     * or null if no such evaluator exists.
+     */
+    NetworkEvaluator* getNetworkEvaluator(ProcessorNetwork* network) const;
 
     //
     // Settings (saved as properties)
@@ -310,19 +331,74 @@ public:
      */
     std::string getModulePath(const std::string& moduleName) const;
 
+
+    //
+    // Factory methods
+    //
+
+    /**
+     * Implementation of SerializableFactory::createType:
+     * Returns a new instance of the serializable class corresponding to the given @c typeString,
+     * if such has been registered at one of the application's modules.
+     *
+     * Internally, this function iterates over all registered modules and
+     * delegates the call to them.
+     *
+     * @see SerializableFactory::createType
+     *
+     * @returns either the new instance or @c 0, if no class with this type string
+     *  has been registered.
+     */
+    virtual VoreenSerializableObject* createSerializableType(const std::string& typeString) const;
+
+    /**
+     * Returns the registered instance of the serializable class corresponding to the given @c typeString,
+     * if such has been registered at one of the application's modules.
+     *
+     * Internally, this function iterates over all registered modules and
+     * delegates the call to them.
+     *
+     * @returns either the registered instance or @c 0, if no class with this type string
+     *  has been registered.
+     */
+    const VoreenSerializableObject* getSerializableType(const std::string& typeString) const;
+
+    /**
+     * Iterates over all registered modules and collects the registered
+     * VoreenSerializableObject instances of the specified type.
+     */
+    template<typename T>
+    std::vector<const T*> getSerializableTypes() const;
+
+    /**
+     * Implementation of SerializableFactory::getTypeString:
+     * Returns a type string corresponding to the given @c type_info object,
+     * in case this type has been registered at any of the application's modules.
+     *
+     * Internally, this function iterates over all registered modules and
+     * delegates the call to them.
+     *
+     * @see SerializableFactory::getTypeString
+     *
+     * @returns either the string corresponding to the given @c type_info object,
+     *          or an empty string, if the type has not been registered at any of the application's modules.
+     */
+    virtual std::string getSerializableTypeString(const std::type_info& type) const;
+
     /**
      * Registers a serializer factory.
+     *
+     * @deprecated Register types directly at your module as VoreenSerializableObject!
      */
     void registerSerializerFactory(SerializableFactory* factory);
 
     /**
      * Returns the application's serializer factories.
+     *
+     * @deprecated Register types directly at your module as VoreenSerializableObject!
      */
     const std::vector<SerializableFactory*>& getSerializerFactories() const;
 
-    //
-    // Factory methods
-    //
 
     /**
      * Creates and returns a ProcessorWidget for the passed processor by delegation to
@@ -343,7 +419,6 @@ public:
      *  In this case, the method always returns null.
      */
     virtual PropertyWidget* createPropertyWidget(Property* property) const;
-
 
     /**
      * Checks whether or not the widget for this property has to be immediately created or not.
@@ -372,14 +447,6 @@ public:
      */
     virtual ProgressBar* createProgressDialog() const;
 
-    /**
-     * Factory method for LinkEvaluators.
-     *
-     * @note You have to override this function in a toolkit specific subclass
-     *  in order to actual create a timer. The standard implementation returns
-     *  the null pointer.
-     */
-    virtual LinkEvaluatorBase* createLinkEvaluator(const std::string& typeString) const;
 
     //
     // Paths
@@ -499,7 +566,6 @@ private:
 
     ApplicationFeatures appFeatures_;  ///< application configuration as passed to the constructor
     std::string binaryName_;    ///< name of the application binary set in the constructor
-    std::string displayName_;   ///< application's display name set in the constructor
 
     // command line options
     bool enableLogging_;        ///< if false, console and HTML file logging is disabled
@@ -524,9 +590,10 @@ private:
 
     CommandLineParser* cmdParser_;
 
-    NetworkEvaluator* networkEvaluator_;
+    std::set<NetworkEvaluator*> networkEvaluators_;
     tgt::Timer* schedulingTimer_;       ///< Timer for scheduled network processing.
     tgt::EventHandler eventHandler_;    ///< Local event handler for the scheduling events.
+    bool networkEvaluationRequired_;    ///< set to true by scheduleNetworkProcessing and checked on timer event
 
     // settings properties for caching
     BoolProperty* useCaching_;
@@ -547,6 +614,19 @@ private:
     bool initializedGL_;
 
 };
+
+//-----------------------------------------------------------------------------
+// template definitions
+
+template<typename T>
+std::vector<const T*> voreen::VoreenApplication::getSerializableTypes() const {
+    std::vector<const T*> result;
+    for (size_t i=0; i<modules_.size(); i++) {
+        std::vector<const T*> modResources = modules_[i]->getSerializableTypes<T>();
+        result.insert(result.end(), modResources.begin(), modResources.end());
+    }
+    return result;
+}
 
 } // namespace
 

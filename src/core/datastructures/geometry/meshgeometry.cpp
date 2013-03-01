@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -24,6 +24,8 @@
  ***********************************************************************************/
 
 #include "voreen/core/datastructures/geometry/meshgeometry.h"
+
+#include "tgt/glmath.h"
 
 #include "voreen/core/io/serialization/xmlserializer.h"
 #include "voreen/core/io/serialization/xmldeserializer.h"
@@ -152,20 +154,24 @@ FaceGeometry& MeshGeometry::operator[] (size_t index) {
 }
 
 void MeshGeometry::render() const {
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    tgt::multMatrix(getTransformationMatrix());
+
     for (const_iterator it = begin(); it != end(); ++it)
         it->render();
+
+    glPopMatrix();
 }
 
-void MeshGeometry::transform(const tgt::mat4& transformation) {
-    for (iterator it = begin(); it != end(); ++it)
-        it->transform(transformation);
-}
-
-void MeshGeometry::clip(const vec4& clipPlane, MeshGeometry& closingMesh, double epsilon) {
+void MeshGeometry::clip(const tgt::plane& clipPlane, MeshGeometry& closingMesh, double epsilon) {
     tgtAssert(epsilon >= 0.0, "negative epsilon");
+
+    tgt::plane pl = clipPlane.transform(getInvertedTransformationMatrix());
+
     // Clip all faces...
     for (iterator it = begin(); it != end(); ++it)
-        it->clip(clipPlane, epsilon);
+        it->clip(pl, epsilon);
 
     // Remove empty faces...
     for (size_t i = 0; i < faces_.size(); ++i) {
@@ -189,7 +195,7 @@ void MeshGeometry::clip(const vec4& clipPlane, MeshGeometry& closingMesh, double
         VertexListType verticesOnClipplane;
 
         for (size_t j = 0; j < face.getVertexCount(); ++j) {
-            if (face.getVertex(j).getDistanceToPlane(clipPlane, epsilon) == 0)
+            if (face.getVertex(j).getDistanceToPlane(pl, epsilon) == 0)
                 verticesOnClipplane.push_back(face.getVertex(j));
 
             // Is face in the same plane as the clipping plane?
@@ -252,7 +258,7 @@ void MeshGeometry::clip(const vec4& clipPlane, MeshGeometry& closingMesh, double
             closingFaceNormal += tgt::cross(closingFaceVertices[i].getCoords(), closingFaceVertices[(i + 1) % closingFaceVertices.size()].getCoords());
         closingFaceNormal = tgt::normalize(closingFaceNormal);
 
-        if (tgt::dot(clipPlane.xyz(), closingFaceNormal) < 0)
+        if (tgt::dot(pl.n, closingFaceNormal) < 0)
             std::reverse(closingFaceVertices.begin(), closingFaceVertices.end());
 
         // Close convex polyhedron...
@@ -270,9 +276,11 @@ void MeshGeometry::clip(const vec4& clipPlane, MeshGeometry& closingMesh, double
 
     if (closingFace.getVertexCount() > 0)
         closingMesh.addFace(closingFace);
+
+    closingMesh.setTransformationMatrix(getTransformationMatrix());
 }
 
-void MeshGeometry::clip(const tgt::vec4& clipPlane, double epsilon) {
+void MeshGeometry::clip(const tgt::plane& clipPlane, double epsilon) {
     MeshGeometry dummy;
     clip(clipPlane, dummy, epsilon);
 }
@@ -280,6 +288,12 @@ void MeshGeometry::clip(const tgt::vec4& clipPlane, double epsilon) {
 bool MeshGeometry::equals(const MeshGeometry& mesh, double epsilon /*= 1e-6*/) const {
     if (getFaceCount() != mesh.getFaceCount())
         return false;
+
+    if(getTransformationMatrix() != mesh.getTransformationMatrix()) {
+        LWARNINGC("", "Matrices differ" << std::endl << getTransformationMatrix() << std::endl << mesh.getTransformationMatrix());
+        return false;
+    }
+
     for (size_t i=0; i<getFaceCount(); i++) {
         if (!faces_[i].equals(mesh.faces_[i], epsilon))
             return false;
@@ -295,20 +309,25 @@ bool MeshGeometry::equals(const Geometry* geometry, double epsilon /*= 1e-6*/) c
         return equals(*meshGeometry, epsilon);
 }
 
-tgt::Bounds MeshGeometry::getBoundingBox() const {
+tgt::Bounds MeshGeometry::getBoundingBox(bool transformed) const {
     tgt::Bounds bounds;
     for (size_t i=0; i<faces_.size(); i++)
         bounds.addVolume(faces_[i].getBoundingBox());
-    return bounds;
+
+    if(transformed)
+        return bounds.transform(getTransformationMatrix());
+    else
+        return bounds;
 }
 
 void MeshGeometry::serialize(XmlSerializer& s) const {
     s.serialize("faces", faces_);
+    Geometry::serialize(s);
 }
 
 void MeshGeometry::deserialize(XmlDeserializer& s) {
     s.deserialize("faces", faces_);
-    setHasChanged(true);
+    Geometry::deserialize(s);
 }
 
 void MeshGeometry::createCubeFaces(FaceGeometry& topFace, FaceGeometry& frontFace, FaceGeometry& leftFace,

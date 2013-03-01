@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,6 +33,8 @@ GeometryRenderer::GeometryRenderer()
     , inport_(Port::INPORT, "inport.geometry", "Geometry Input")
     , texPort_(Port::INPORT, "inport.texture", "Texture Input")
     , polygonMode_("polygonMode", "Polygon Mode")
+    , lineWidth_("lineWidth", "Line Width", 1.f, 1.f, 20.f)
+    , pointSize_("pointSize", "Point Size", 1.f, 1.f, 20.f)
     , mapTexture_("mapTexture", "Map Texture", false)
     , textureMode_("textureMode", "Texture Mode")
     , enableLighting_("enableLighting", "Enable Lighting", false)
@@ -49,7 +51,11 @@ GeometryRenderer::GeometryRenderer()
     polygonMode_.addOption("line",  "Line",  GL_LINE);
     polygonMode_.addOption("fill",  "Fill",  GL_FILL);
     polygonMode_.select("fill");
+    polygonMode_.onChange(CallMemberAction<GeometryRenderer>(this, &GeometryRenderer::updatePropertyVisibilities));
     addProperty(polygonMode_);
+
+    addProperty(pointSize_);
+    addProperty(lineWidth_);
 
     mapTexture_.onChange(CallMemberAction<GeometryRenderer>(this, &GeometryRenderer::updatePropertyVisibilities));
     textureMode_.addOption("modulate", "GL_MODULATE",  GL_MODULATE);
@@ -99,6 +105,11 @@ void GeometryRenderer::render() {
     glPolygonMode(GL_FRONT_AND_BACK, polygonMode_.getValue());
     glShadeModel(GL_SMOOTH);
 
+    if (polygonMode_.isSelected("point"))
+        glPointSize(pointSize_.get());
+    else if (polygonMode_.isSelected("line"))
+        glLineWidth(lineWidth_.get());
+
     if (mapTexture_.get() && texPort_.isReady()) {
         texPort_.bindColorTexture(GL_TEXTURE0);
         glEnable(GL_TEXTURE_2D);
@@ -125,6 +136,9 @@ void GeometryRenderer::render() {
 }
 
 void GeometryRenderer::updatePropertyVisibilities() {
+    pointSize_.setVisible(polygonMode_.isSelected("point"));
+    lineWidth_.setVisible(polygonMode_.isSelected("line"));
+
     bool lighting = enableLighting_.get();
     /*lightPosition_.setVisible(lighting);
     lightAmbient_.setVisible(lighting);

@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -44,8 +44,8 @@ Font::Font(const std::string& fontName, int size, FontType fontType, float lineW
     hAlign_ = textAlignment;
     vAlign_ = verticalTextAlignment;
     font_ = 0;
-    simpleLayout_ = 0;
-    update();
+    simpleLayout_ = new FTSimpleLayout();
+    update(true);
 }
 
 Font::~Font() {
@@ -163,36 +163,41 @@ std::string Font::getVerticalTextAlignmentName(VerticalTextAlignment verticalTex
     }
 }
 
-void Font::update() {
-    delete font_;
-    font_ = 0;
+void Font::update(bool reloadFont) {
 
-    delete simpleLayout_;
-    simpleLayout_ = 0;
+    if(reloadFont)
+    {
+        delete font_;
+        font_ = 0;
 
-    switch(fontType_) {
-    case BitmapFont:
-        font_ = new FTBitmapFont(fontName_.c_str()); break;
-    case BufferFont:
-        font_ = new FTBufferFont(fontName_.c_str()); break;
-    case ExtrudeFont:
-        font_ = new FTExtrudeFont(fontName_.c_str()); break;
-    case OutlineFont:
-        font_ = new FTOutlineFont(fontName_.c_str()); break;
-    case PixmapFont:
-        font_ = new FTPixmapFont(fontName_.c_str()); break;
-    case PolygonFont:
-        font_ = new FTPolygonFont(fontName_.c_str()); break;
-    case TextureFont:
-        font_ = new FTTextureFont(fontName_.c_str()); break;
-    default:
-        LWARNINGC("tgt.Font", "Unknown fontType. Defaulting to TextureFont.");
-        font_ = new FTTextureFont(fontName_.c_str());
+        switch(fontType_) {
+        case BitmapFont:
+            font_ = new FTBitmapFont(fontName_.c_str()); break;
+        case BufferFont:
+            font_ = new FTBufferFont(fontName_.c_str()); break;
+        case ExtrudeFont:
+            font_ = new FTExtrudeFont(fontName_.c_str()); break;
+        case OutlineFont:
+            font_ = new FTOutlineFont(fontName_.c_str()); break;
+        case PixmapFont:
+            font_ = new FTPixmapFont(fontName_.c_str()); break;
+        case PolygonFont:
+            font_ = new FTPolygonFont(fontName_.c_str()); break;
+        case TextureFont:
+            font_ = new FTTextureFont(fontName_.c_str()); break;
+        default:
+            LWARNINGC("tgt.Font", "Unknown fontType. Defaulting to TextureFont.");
+            font_ = new FTTextureFont(fontName_.c_str());
+        }
     }
 
     if (!font_->Error()) {
         font_->FaceSize(fontSize_);
-        simpleLayout_ = new FTSimpleLayout();
+
+        //delete simpleLayout_;
+        //simpleLayout_ = 0;
+        //simpleLayout_ = new FTSimpleLayout();
+
         simpleLayout_->SetFont(font_);
         simpleLayout_->SetLineLength(lineWidth_);
 
@@ -226,22 +231,22 @@ float Font::getLineWidth() {
 
 void Font::setLineWidth(float lineWidth) {
     lineWidth_ = lineWidth;
-    update();
+    update(false);
 }
 
 void Font::setTextAlignment(TextAlignment textAlignment) {
     hAlign_ = textAlignment;
-    update();
+    update(false);
 }
 
 void Font::setVerticalTextAlignment(VerticalTextAlignment verticalTextAlignment) {
     vAlign_ = verticalTextAlignment;
-    update();
+    update(false);
 }
 
 void Font::setSize(int size) {
     fontSize_ = size;
-    update();
+    update(false);
 }
 
 int Font::getSize() {
@@ -250,7 +255,7 @@ int Font::getSize() {
 
 void Font::setFontName(const std::string& fontName) {
     fontName_ = fontName;
-    update();
+    update(true);
 }
 
 std::string Font::getFontName() {
@@ -259,7 +264,7 @@ std::string Font::getFontName() {
 
 void Font::setFontType(Font::FontType fontType) {
     fontType_ = fontType;
-    update();
+    update(true);
 }
 
 Font::FontType Font::getFontType() {
@@ -351,7 +356,7 @@ Font::Font(const std::string& /*fontName*/, int /*size*/, FontType /*fontType*/,
 
 Font::~Font() {}
 
-void Font::update() {}
+void Font::update(bool reloadFont) {}
 
 float Font::getLineHeight() {
     return 1.f;

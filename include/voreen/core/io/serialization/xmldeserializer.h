@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -144,10 +144,23 @@ public:
     }
 
     /**
+     * Deserialize binary from a base64 encoded string to inputBuffer, memory has to be reserved in advance.
+     */
+    void deserializeBinaryBlob(const std::string& key, unsigned char* inputBuffer, size_t reservedMemory)
+        throw (SerializationException);
+
+    /**
      * Deserialize binary @c data from a base64 encoded string.
      */
-    void deserializeBinaryBlob(const std::string& key, unsigned char*& inputBuffer)
-        throw (SerializationException);
+    template<class T>
+    void deserializeBinaryBlob(const std::string& key, std::vector<T>& data)
+        throw (SerializationException)
+    {
+        size_t numItems;
+        deserialize(key+".numItems", numItems);
+        data.assign(numItems, T());
+        deserializeBinaryBlob(key+".data", reinterpret_cast<unsigned char*>(&data[0]), sizeof(T) * data.size());
+    }
 
     /**
      * Deserialize binary @c data from a base64 encoded string.
@@ -1548,7 +1561,7 @@ inline T* XmlDeserializer::allocateMemory(const std::string* type)
         // Look for a matching factory to create object instance...
         for (FactoryListType::iterator it = factories_.begin(); it != factories_.end(); ++it) {
             try {
-                Serializable* serializable = (*it)->createType(*type);
+                Serializable* serializable = (*it)->createSerializableType(*type);
                 data = dynamic_cast<T*>(serializable);
             }
             catch (std::exception& e) {

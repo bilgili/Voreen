@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -35,42 +35,45 @@ template class VRN_CORE_API InterpolationFunction<std::string>;
 #endif
 
 /**
- * This class VRN_CORE_API offers an interpolation function for strings. Interpolation: focus on startvalue.
+ * This class offers an interpolation function for strings. Interpolation: focus on startvalue.
  */
 class VRN_CORE_API StringStartInterpolationFunction : public InterpolationFunction<std::string> {
 public:
     StringStartInterpolationFunction();
-    InterpolationFunction<std::string>* clone() const;
+    virtual std::string getClassName() const { return "StringStartInterpolationFunction"; }
+    InterpolationFunction<std::string>* create() const;
     std::string interpolate(std::string startvalue, std::string endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for strings. Interpolation: focus on endvalue.
+ * This class offers an interpolation function for strings. Interpolation: focus on endvalue.
  */
 class VRN_CORE_API StringEndInterpolationFunction : public InterpolationFunction<std::string> {
 public:
     StringEndInterpolationFunction();
-    InterpolationFunction<std::string>* clone() const;
+    virtual std::string getClassName() const { return "StringEndInterpolationFunction"; }
+    InterpolationFunction<std::string>* create() const;
     std::string interpolate(std::string startvalue, std::string endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for strings. Interpolation: bisection.
+ * This class offers an interpolation function for strings. Interpolation: bisection.
  */
 class VRN_CORE_API StringStartEndInterpolationFunction : public InterpolationFunction<std::string> {
 public:
     StringStartEndInterpolationFunction();
-    InterpolationFunction<std::string>* clone() const;
+    virtual std::string getClassName() const { return "StringStartEndInterpolationFunction"; }
+    InterpolationFunction<std::string>* create() const;
     std::string interpolate(std::string startvalue, std::string endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 } // namespace voreen

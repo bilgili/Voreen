@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,7 +36,7 @@ ImageSelector::ImageSelector()
     : RenderProcessor(),
       inport_(Port::INPORT, "imagesequence.in", "ImageSequence Input", false),
       outport_(Port::OUTPORT, "image.out", "image.out", false),
-      imageID_("imageID", "Selected Image", 0, 0, 100),
+      imageID_("imageID", "Selected Image", 0, 0, 10000),
       imageSize_("imageSize", "Image Size", tgt::ivec2(0), tgt::ivec2(0), tgt::ivec2(1 << 12), VALID),
       wheelHandler_("wheelHandler.imageCycling", "Image Cycling", &imageID_),
       shader_(0)

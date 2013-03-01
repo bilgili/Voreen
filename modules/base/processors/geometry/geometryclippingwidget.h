@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -42,7 +42,7 @@ namespace voreen {
  * Renders 3D-control elements to manipulate an arbitrary oriented clipping plane
  * using linking to propagate property changes to @c GeometryClipping processors.
  */
-class GeometryClippingWidget : public GeometryRendererBase {
+class VRN_CORE_API GeometryClippingWidget : public GeometryRendererBase {
 public:
     GeometryClippingWidget();
     ~GeometryClippingWidget();

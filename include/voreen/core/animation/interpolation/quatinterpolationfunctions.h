@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,12 +36,13 @@ namespace voreen {
  */
 class QuatStartInterpolationFunction : public InterpolationFunction<tgt::quat> {
 public:
-        QuatStartInterpolationFunction();
-        InterpolationFunction<tgt::quat>* clone() const;
-        tgt::quat interpolate(tgt::quat startvalue, tgt::quat endvalue, float time) const;
+    QuatStartInterpolationFunction();
+    virtual std::string getClassName() const { return "QuatStartInterpolationFunction"; }
+    InterpolationFunction<tgt::quat>* create() const;
+    tgt::quat interpolate(tgt::quat startvalue, tgt::quat endvalue, float time) const;
 
-        std::string getMode() const;
-        std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
@@ -50,11 +51,12 @@ public:
 class QuatEndInterpolationFunction : public InterpolationFunction<tgt::quat> {
 public:
     QuatEndInterpolationFunction();
-    InterpolationFunction<tgt::quat>* clone() const;
+    virtual std::string getClassName() const { return "QuatEndInterpolationFunction"; }
+    InterpolationFunction<tgt::quat>* create() const;
     tgt::quat interpolate(tgt::quat startvalue, tgt::quat endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
@@ -63,11 +65,12 @@ public:
 class QuatStartEndInterpolationFunction : public InterpolationFunction<tgt::quat> {
 public:
     QuatStartEndInterpolationFunction();
-    InterpolationFunction<tgt::quat>* clone() const;
+    virtual std::string getClassName() const { return "QuatStartEndInterpolationFunction"; }
+    InterpolationFunction<tgt::quat>* create() const;
     tgt::quat interpolate(tgt::quat startvalue, tgt::quat endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
@@ -76,11 +79,12 @@ public:
 class QuatLinearInterpolationFunction : public InterpolationFunction<tgt::quat> {
 public:
     QuatLinearInterpolationFunction();
-    InterpolationFunction<tgt::quat>* clone() const;
+    virtual std::string getClassName() const { return "QuatLinearInterpolationFunction"; }
+    InterpolationFunction<tgt::quat>* create() const;
     tgt::quat interpolate(tgt::quat startvalue, tgt::quat endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
@@ -89,11 +93,12 @@ public:
 class QuatSphericalLinearInterpolationFunction : public InterpolationFunction<tgt::quat> {
 public:
     QuatSphericalLinearInterpolationFunction();
-    InterpolationFunction<tgt::quat>* clone() const;
+    virtual std::string getClassName() const { return "QuatSphericalLinearInterpolationFunction"; }
+    InterpolationFunction<tgt::quat>* create() const;
     tgt::quat interpolate(tgt::quat startvalue, tgt::quat endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 } //namespace voreen

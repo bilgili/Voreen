@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,7 +36,7 @@ namespace voreen {
 /**
  * Provides a textport output with content defined by the corresponding property.
  */
-class TextSource : public Processor {
+class VRN_CORE_API TextSource : public Processor {
 public:
     TextSource();
     virtual ~TextSource();

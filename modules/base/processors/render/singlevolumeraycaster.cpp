@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -42,14 +42,18 @@ const std::string SingleVolumeRaycaster::loggerCat_("voreen.SingleVolumeRaycaste
 SingleVolumeRaycaster::SingleVolumeRaycaster()
     : VolumeRaycaster()
     , volumeInport_(Port::INPORT, "volumehandle.volumehandle", "Volume Input", false, Processor::INVALID_PROGRAM)
-    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
-    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
-    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER)
-    , outport1_(Port::OUTPORT, "image.output1", "Image1 Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER)
-    , outport2_(Port::OUTPORT, "image.output2", "Image2 Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER)
+    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_RESULT)
+    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_RESULT)
+    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_PROGRAM)
+    , outport1_(Port::OUTPORT, "image.output1", "Image1 Output", true, Processor::INVALID_PROGRAM)
+    , outport2_(Port::OUTPORT, "image.output2", "Image2 Output", true, Processor::INVALID_PROGRAM)
+    , internalRenderPort_(Port::OUTPORT, "internalRenderPort", "Internal Render Port")
+    , internalRenderPort1_(Port::OUTPORT, "internalRenderPort1", "Internal Render Port 1")
+    , internalRenderPort2_(Port::OUTPORT, "internalRenderPort2", "Internal Render Port 2")
+    , internalPortGroup_(true)
     , shaderProp_("raycast.prg", "Raycasting Shader", "rc_singlevolume.frag", "passthrough.vert")
     , transferFunc_("transferFunction", "Transfer Function")
-    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)), true)
     , compositingMode1_("compositing1", "Compositing (OP2)", Processor::INVALID_PROGRAM)
     , compositingMode2_("compositing2", "Compositing (OP3)", Processor::INVALID_PROGRAM)
     , gammaValue_("gammaValue", "Gamma Value (OP1)", 0, -1, 1)
@@ -65,6 +69,11 @@ SingleVolumeRaycaster::SingleVolumeRaycaster()
     addPort(outport_);
     addPort(outport1_);
     addPort(outport2_);
+
+    // internal render destinations
+    addPrivateRenderPort(internalRenderPort_);
+    addPrivateRenderPort(internalRenderPort1_);
+    addPrivateRenderPort(internalRenderPort2_);
 
     addProperty(shaderProp_);
 
@@ -138,10 +147,10 @@ void SingleVolumeRaycaster::initialize() throw (tgt::Exception) {
     VolumeRaycaster::initialize();
     compile();
 
-    portGroup_.initialize();
-    portGroup_.addPort(outport_);
-    portGroup_.addPort(outport1_);
-    portGroup_.addPort(outport2_);
+    internalPortGroup_.initialize();
+    internalPortGroup_.addPort(internalRenderPort_);
+    internalPortGroup_.addPort(internalRenderPort1_);
+    internalPortGroup_.addPort(internalRenderPort2_);
 
     adjustPropertyVisibilities();
 
@@ -152,7 +161,10 @@ void SingleVolumeRaycaster::initialize() throw (tgt::Exception) {
 }
 
 void SingleVolumeRaycaster::deinitialize() throw (tgt::Exception) {
-    portGroup_.deinitialize();
+    internalPortGroup_.deinitialize();
+    internalPortGroup_.removePort(internalRenderPort_);
+    internalPortGroup_.removePort(internalRenderPort1_);
+    internalPortGroup_.removePort(internalRenderPort2_);
     LGL_ERROR;
 
     VolumeRaycaster::deinitialize();
@@ -189,34 +201,49 @@ void SingleVolumeRaycaster::beforeProcess() {
     LGL_ERROR;
 
     transferFunc_.setVolumeHandle(volumeInport_.getData());
+
+    // A new volume was loaded
+    if(volumeInport_.hasChanged() && volumeInport_.hasData())
+        camera_.adaptInteractionToScene(volumeInport_.getData()->getBoundingBox().getBoundingBox());
 }
 
 void SingleVolumeRaycaster::process() {
-
-    // bind transfer function
-    tgt::TextureUnit transferUnit;
-    transferUnit.activate();
-    LGL_ERROR;
-    ClassificationModes::bindTexture(classificationMode_.get(), transferFunc_.get(), getSamplingStepSize(volumeInport_.getData()));
-
-    portGroup_.activateTargets();
-    portGroup_.clearTargets();
     LGL_ERROR;
 
-    // bind entry params
+    // determine render size and activate internal port group
+    const bool renderCoarse = interactionMode() && interactionCoarseness_.get() > 1;
+    const tgt::svec2 renderSize = (renderCoarse ? (outport_.getSize() / interactionCoarseness_.get()) : outport_.getSize());
+    internalPortGroup_.resize(renderSize);
+    internalPortGroup_.activateTargets();
+    internalPortGroup_.clearTargets();
+    LGL_ERROR;
+
+    // initialize shader
+    tgt::Shader* raycastPrg = shaderProp_.getShader();
+    raycastPrg->activate();
+    LGL_ERROR;
+
+    // set common uniforms used by all shaders
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(raycastPrg, &cam, renderSize);
+    LGL_ERROR;
+
+    // bind entry/exit param textures
     tgt::TextureUnit entryUnit, entryDepthUnit, exitUnit, exitDepthUnit;
-    entryPort_.bindTextures(entryUnit, entryDepthUnit);
+    entryPort_.bindTextures(entryUnit, entryDepthUnit, GL_NEAREST);
+    raycastPrg->setUniform("entryPoints_", entryUnit.getUnitNumber());
+    raycastPrg->setUniform("entryPointsDepth_", entryDepthUnit.getUnitNumber());
+    entryPort_.setTextureParameters(raycastPrg, "entryParameters_");
+
+    exitPort_.bindTextures(exitUnit, exitDepthUnit, GL_NEAREST);
+    raycastPrg->setUniform("exitPoints_", exitUnit.getUnitNumber());
+    raycastPrg->setUniform("exitPointsDepth_", exitDepthUnit.getUnitNumber());
+    exitPort_.setTextureParameters(raycastPrg, "exitParameters_");
     LGL_ERROR;
 
-    // bind exit params
-    exitPort_.bindTextures(exitUnit, exitDepthUnit);
-    LGL_ERROR;
-
-    // vector containing the volumes to bind; is passed to bindVolumes()
-    std::vector<VolumeStruct> volumeTextures;
-
-    // add main volume
+    // bind the volumes and pass the necessary information to the shader
     TextureUnit volUnit;
+    std::vector<VolumeStruct> volumeTextures;
     volumeTextures.push_back(VolumeStruct(
         volumeInport_.getData(),
         &volUnit,
@@ -225,25 +252,16 @@ void SingleVolumeRaycaster::process() {
         tgt::vec4(volumeInport_.getTextureBorderIntensityProperty().get()),
         volumeInport_.getTextureFilterModeProperty().getValue())
     );
-
-    // initialize shader
-    tgt::Shader* raycastPrg = shaderProp_.getShader();
-    raycastPrg->activate();
-
-    // set common uniforms used by all shaders
-    tgt::Camera cam = camera_.get();
-    setGlobalShaderParameters(raycastPrg, &cam);
-    // bind the volumes and pass the necessary information to the shader
     bindVolumes(raycastPrg, volumeTextures, &cam, lightPosition_.get());
+    LGL_ERROR;
 
-    // pass the remaining uniforms to the shader
-    raycastPrg->setUniform("entryPoints_", entryUnit.getUnitNumber());
-    raycastPrg->setUniform("entryPointsDepth_", entryDepthUnit.getUnitNumber());
-    entryPort_.setTextureParameters(raycastPrg, "entryParameters_");
-    raycastPrg->setUniform("exitPoints_", exitUnit.getUnitNumber());
-    raycastPrg->setUniform("exitPointsDepth_", exitDepthUnit.getUnitNumber());
-    exitPort_.setTextureParameters(raycastPrg, "exitParameters_");
+    // bind transfer function
+    tgt::TextureUnit transferUnit;
+    transferUnit.activate();
+    ClassificationModes::bindTexture(classificationMode_.get(), transferFunc_.get(), getSamplingStepSize(volumeInport_.getData()));
+    LGL_ERROR;
 
+    // pass remaining uniforms to shader
     if (compositingMode_.isSelected("iso")  ||
         compositingMode1_.isSelected("iso") ||
         compositingMode2_.isSelected("iso") )
@@ -263,13 +281,24 @@ void SingleVolumeRaycaster::process() {
 
     LGL_ERROR;
 
+    // perform the actual raycasting by drawing a screen-aligned quad
     {
         PROFILING_BLOCK("raycasting");
         renderQuad();
     }
 
     raycastPrg->deactivate();
-    portGroup_.deactivateTargets();
+    internalPortGroup_.deactivateTargets();
+    LGL_ERROR;
+
+    // copy over rendered images from internal port group to outports,
+    // thereby rescaling them to outport dimensions
+    if (outport_.isConnected())
+        rescaleRendering(internalRenderPort_, outport_);
+    if (outport1_.isConnected())
+        rescaleRendering(internalRenderPort1_, outport1_);
+    if (outport2_.isConnected())
+        rescaleRendering(internalRenderPort2_, outport2_);
 
     TextureUnit::setZeroUnit();
     LGL_ERROR;
@@ -278,7 +307,7 @@ void SingleVolumeRaycaster::process() {
 std::string SingleVolumeRaycaster::generateHeader() {
     std::string headerSource = VolumeRaycaster::generateHeader();
 
-    headerSource += ClassificationModes::getShaderDefineSamplerType(classificationMode_.get(), transferFunc_.get()); 
+    headerSource += ClassificationModes::getShaderDefineSamplerType(classificationMode_.get(), transferFunc_.get());
 
     // configure compositing mode for port 2
     headerSource += "#define RC_APPLY_COMPOSITING_1(result, color, samplePos, gradient, t, samplingStepSize, tDepth) ";
@@ -310,8 +339,8 @@ std::string SingleVolumeRaycaster::generateHeader() {
     else if (compositingMode2_.isSelected("fhn"))
         headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
 
-    portGroup_.reattachTargets();
-    headerSource += portGroup_.generateHeader(shaderProp_.getShader());
+    internalPortGroup_.reattachTargets();
+    headerSource += internalPortGroup_.generateHeader(shaderProp_.getShader());
     return headerSource;
 }
 

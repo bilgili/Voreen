@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -123,18 +123,6 @@ public:
     virtual ~InteractionHandler();
 
     /**
-     * Returns the identifier of the property (unique within a processor).
-     */
-    std::string getID() const;
-
-    /**
-     * Returns the string that is displayed in the gui.
-     *
-     * Implementation of PropertyOwner::getName.
-     */
-    virtual std::string getName() const;
-
-    /**
      * Returns the processor this handler is assigned to.
      */
     Processor* getOwner() const;
@@ -202,8 +190,6 @@ protected:
     void addEventProperty(EventPropertyBase* eventProperty);
 
     Processor* owner_;              ///< The processor this interaction handler is associated with
-    std::string id_;                ///< handler's identifier (unique within a processor)
-    std::string guiName_;           ///< textual representation of the handler in the GUI
 
     std::vector<EventPropertyBase*> eventProperties_;  ///< Event filter properties, used by owning processor for passing events
 };

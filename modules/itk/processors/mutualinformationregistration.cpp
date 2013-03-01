@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -150,8 +150,8 @@ const std::string MutualInformationRegistration::loggerCat_("voreen.MutualInform
 
 MutualInformationRegistration::MutualInformationRegistration()
     : VolumeProcessor(),
-    fixedVolumeInport_(Port::INPORT, "fixedVolumeInport"),
-    movingVolumeInport_(Port::INPORT, "movingVolumeInport"),
+    fixedVolumeInport_(Port::INPORT, "fixedVolumeInport", "Fixed Volume"),
+    movingVolumeInport_(Port::INPORT, "movingVolumeInport", "Moving Volume"),
     transformationMatrix_("voreenTransformMatrix", "Voreen transformation matrix", tgt::mat4::identity, tgt::mat4(-2000.0), tgt::mat4(2000.0), VALID),
     numLevels_("numLevels", "Number of levels", 5, 1, 20, VALID),
     numIterations_("numIterations", "Number of iterations", 200, 1, 5000, VALID),

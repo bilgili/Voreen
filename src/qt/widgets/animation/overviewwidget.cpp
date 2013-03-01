@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -47,6 +47,8 @@
 #include <sstream>
 
 namespace voreen {
+
+#define PREVIEW_SIZE 40
 
 OverviewView::OverviewView(QGraphicsScene* qgs, QWidget* parent)
     : QGraphicsView(qgs, parent)
@@ -151,7 +153,7 @@ OverviewWidget::OverviewWidget(QWidget* parent, NetworkEvaluator* networkEval)
 
     mainLayout->setMargin(1);
     mainLayout->setSpacing(1);
-    setFixedHeight(110);
+    setFixedHeight(70 + PREVIEW_SIZE);
 
     overviewScene_ = new QGraphicsScene(this);
 
@@ -161,7 +163,7 @@ OverviewWidget::OverviewWidget(QWidget* parent, NetworkEvaluator* networkEval)
     overviewView_->setBar(highlightBar_);
     highlightBar_->setZValue(2);
     highlightBar_->setPen(QPen(Qt::DotLine));
-    QLinearGradient gradient1(0,0,0, 40 );
+    QLinearGradient gradient1(0,0,0, PREVIEW_SIZE);
     gradient1.setSpread(QGradient::ReflectSpread);
     gradient1.setColorAt(0.0, QColor(20, 100 ,100, 30));
     gradient1.setColorAt(1.0, QColor(80, 100 ,100, 30));
@@ -170,7 +172,7 @@ OverviewWidget::OverviewWidget(QWidget* parent, NetworkEvaluator* networkEval)
     overviewScene_->addItem(highlightBar_);
     highlight_ = new QGraphicsRectItem();
     highlight_->setPen(QPen(Qt::DotLine));
-    QLinearGradient gradient(0,0,0, 40 );
+    QLinearGradient gradient(0,0,0, PREVIEW_SIZE );
     gradient.setSpread(QGradient::ReflectSpread);
     gradient.setColorAt(0.0, QColor(120, 100 ,100, 30));
     gradient.setColorAt(1.0, QColor(100, 100 ,100, 30));
@@ -234,7 +236,7 @@ void OverviewWidget::contextMenuRequest(QPoint pos) {
     std::map<QAction*, CanvasRenderer*> menuMap;
 
     for (size_t i = 0; i < canvasRenderer.size(); ++i) {
-        QString canvasRendererName = QString::fromStdString(canvasRenderer.at(i)->getName());
+        QString canvasRendererName = QString::fromStdString(canvasRenderer.at(i)->getID());
         QAction* action = new QAction(canvasRendererName, canvasRendererMenu);
         canvasRendererMenu->addAction(action);
         menuMap[action] = canvasRenderer.at(i);
@@ -249,10 +251,7 @@ void OverviewWidget::contextMenuRequest(QPoint pos) {
             renderPreviews();
     }
     else if (action == &regeneratePreviews) {
-        bool temp = autoPreview_;
-        autoPreview_ = true;
-        renderPreviews();
-        autoPreview_ = temp;
+        updatePreviews();
     }
     else if (action != 0){
         canvasRenderer_ = menuMap[action];
@@ -290,7 +289,7 @@ void OverviewWidget::selectCanvasRenderer() {
    std::map<QAction*, CanvasRenderer*> menuMap;
 
    for (size_t i = 0; i < canvasRenderer.size(); ++i) {
-       QString canvasRendererName = QString::fromStdString(canvasRenderer.at(i)->getName());
+       QString canvasRendererName = QString::fromStdString(canvasRenderer.at(i)->getID());
        QAction* action = new QAction(canvasRendererName, menu);
        menu->addAction(action);
        menuMap[action] = canvasRenderer.at(i);
@@ -306,7 +305,7 @@ void OverviewWidget::selectCanvasRenderer() {
    }
    delete menu;
    if(autoPreview_)
-    renderPreviews();
+       renderPreviews();
 }
 
 void OverviewWidget::sceneOrder(QMatrix matrix) {
@@ -323,6 +322,13 @@ void OverviewWidget::scrollBarOrder(int scrollBarPosition) {
     }
 }
 
+void OverviewWidget::updatePreviews() {
+    bool temp = autoPreview_;
+    autoPreview_ = true;
+    renderPreviews();
+    autoPreview_ = temp;
+}
+
 void OverviewWidget::renderPreviews() {
     if(autoPreview_) {
         if (renderPort_) {
@@ -333,17 +339,17 @@ void OverviewWidget::renderPreviews() {
                 }
             }
             previews_.clear();
-            int quadSize = 40;
+            int quadSize = PREVIEW_SIZE;
             int stepLength = duration_ / quadSize;
             if (stepLength < quadSize)
                 stepLength = quadSize;
             // save the current settings
             tgt::ivec2 size = renderPort_->getSize();
-            renderPort_->resize(tgt::ivec2(quadSize,quadSize));
+            renderPort_->requestSize(tgt::ivec2(quadSize,quadSize));
             QPixmap previewPixmap;
             QImage* preview = 0;
             for (int i = 0; i < duration_ - 1; i += stepLength) {
-                preview = new QImage(QSize(quadSize,quadSize), QImage::Format_ARGB32);
+                preview = new QImage(QSize(quadSize, quadSize), QImage::Format_ARGB32);
                 emit currentFrameChanged(i);
                 networkEvaluator_->process();
                 tgt::col4* buffer = renderPort_->readColorBuffer<uint8_t>(); // TODO: catch exceptions
@@ -351,7 +357,7 @@ void OverviewWidget::renderPreviews() {
                     for (int y = 0; y < quadSize; y+=1) {
                         QColor color(buffer->r, buffer->g, buffer->b, 255);
                         QRgb rgba = color.rgba();
-                        preview->setPixel(x,y, rgba);
+                        preview->setPixel(y,x, rgba);
                         buffer++;
                     }
                 }
@@ -364,7 +370,7 @@ void OverviewWidget::renderPreviews() {
                 pixmapItem->setZValue(-1);
             }
             delete preview;
-            renderPort_->resize(size);
+            renderPort_->requestSize(size);
             setCurrentFrame(currentFrame);
             emit currentFrameChanged(currentFrame);
         }

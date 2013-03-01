@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -58,7 +58,7 @@ public:
 
     enum StereoAxisMode {
         ON_AXIS,
-        OFF_AXIS
+        ON_AXIS_HMD
     };
 
     /**
@@ -82,6 +82,9 @@ public:
            float distf          =  50.f,
            ProjectionMode pm    =  PERSPECTIVE);
 
+    /// Copy constructor.
+    Camera(const Camera& cam);
+
     virtual ~Camera();
 
     /**
@@ -98,14 +101,16 @@ public:
             stereoFrustumShift(getStereoShift(EYE_MIDDLE, eyeMode_));
         invalidateVM();
     }
+
     void setFocus(const vec3& foc) {
         if(eyeMode_ != EYE_MIDDLE)
             stereoFrustumShift(getStereoShift(eyeMode_, EYE_MIDDLE));
-        focus_  = foc;
+        focus_ = foc;
         if(eyeMode_ != EYE_MIDDLE)
             stereoFrustumShift(getStereoShift(EYE_MIDDLE, eyeMode_));
         invalidateVM();
     }
+
     void setUpVector(const vec3& up) {
         upVector_ = normalize(up);
         invalidateVM();
@@ -222,10 +227,12 @@ public:
 
     void setFocalLength(float f)   {
         if(eyeMode_ != EYE_MIDDLE)
-            stereoFrustumShift(getStereoShift(eyeMode_, EYE_MIDDLE));
-        setFocus(getPosition() + f * getLook());
+            stereoShift(getStereoShift(eyeMode_, EYE_MIDDLE));
+        tgt::vec3 tmpPos = getPosition();
+        tgt::vec3 tmpLook = getLook();
         if(eyeMode_ != EYE_MIDDLE)
-            stereoFrustumShift(getStereoShift(EYE_MIDDLE, eyeMode_));
+            stereoShift(getStereoShift(EYE_MIDDLE, eyeMode_));
+        setFocus(tmpPos + f * tmpLook);
     }
 
     float getFocalLength() const   {
@@ -244,8 +251,21 @@ public:
         return eyeSeparation_;
     }
 
-    void setStereoAxisMode(StereoAxisMode mode) {
+    bool setStereoAxisMode(StereoAxisMode mode, bool updateCam = true) {
+        if(mode == axisMode_)
+            return false;
+
         axisMode_ = mode;
+        if(!updateCam)
+            return false;
+
+        // un-shear / shear frustum if we are switching to / from HMD mode
+        if(mode == ON_AXIS_HMD && eyeMode_ != EYE_MIDDLE)
+            stereoFrustumShift(getStereoShift(eyeMode_, EYE_MIDDLE));
+        else if(eyeMode_ != EYE_MIDDLE)
+            stereoFrustumShift(getStereoShift(EYE_MIDDLE, eyeMode_));
+
+        return true;
     }
 
     StereoAxisMode getStereoAxisMode() const {

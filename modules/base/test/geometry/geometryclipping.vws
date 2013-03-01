@@ -22,7 +22,7 @@
                         <Property name="planeNormal">
                             <value x="0.22499999" y="0.35100001" z="0.11090852" />
                         </Property>
-                        <Property name="planePosition" value="0.262768" />
+                        <Property name="planePosition" value="0.262768" minValue="-2.71740389" maxValue="2.71740389" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -62,7 +62,7 @@
                         <Property name="planeNormal">
                             <value x="0.22499999" y="0.35100001" z="0.11090852" />
                         </Property>
-                        <Property name="planePosition" value="0.262768" />
+                        <Property name="planePosition" value="0.262768" minValue="-2.71740389" maxValue="2.71740389" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>
@@ -86,7 +86,7 @@
                         <Property name="planeNormal">
                             <value x="0.22499999" y="0.35100001" z="0.11090852" />
                         </Property>
-                        <Property name="planePosition" value="0.262768" />
+                        <Property name="planePosition" value="0.262768" minValue="-2.71740389" maxValue="2.71740389" />
                     </Properties>
                     <InteractionHandlers />
                 </Processor>

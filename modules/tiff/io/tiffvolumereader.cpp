@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -55,7 +55,7 @@ TiffVolumeReader::TiffVolumeReader(ProgressBar* progress) : VolumeReader(progres
     extensions_.push_back("tif");
 }
 
-VolumeCollection* TiffVolumeReader::read(const std::string &url)
+VolumeList* TiffVolumeReader::read(const std::string &url)
     throw (tgt::FileException, tgt::IOException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -262,16 +262,16 @@ VolumeCollection* TiffVolumeReader::read(const std::string &url)
         delete[] maxValue;
     }
 
-    VolumeCollection* volumeCollection = new VolumeCollection();
+    VolumeList* volumeList = new VolumeList();
     for (int i = 0; i < band; i++ ) {
         Volume* volumeHandle = new Volume(targetDataset[i], vec3(1.0f), vec3(0.0f));
         volumeHandle->setTimestep(static_cast<float>(i));
         oldVolumePosition(volumeHandle);
-        volumeCollection->add(volumeHandle);
+        volumeList->add(volumeHandle);
     }
-    if (!volumeCollection->empty())
-        volumeCollection->first()->setOrigin(VolumeURL(fileName));
-    return volumeCollection;
+    if (!volumeList->empty())
+        volumeList->first()->setOrigin(VolumeURL(fileName));
+    return volumeList;
 }
 
 VolumeReader* TiffVolumeReader::create(ProgressBar* progress) const {

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -23,9 +23,12 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#include "voreen/core/voreenmodule.h"
-
 #include "voreen/qt/widgets/processorlistwidget.h"
+
+#include "voreen/core/voreenmodule.h"
+#include "voreen/core/ports/port.h"
+#include "voreen/core/properties/property.h"
+
 #include "voreen/qt/widgets/lineeditresetwidget.h"
 #include "voreen/qt/voreenapplicationqt.h"
 
@@ -95,7 +98,7 @@ ProcessorListWidget::ProcessorListWidget(QWidget* parent)
     showCodeState_->setCheckable(true);
     showCodeState_->setChecked(true);
 
-    const std::vector<Processor*>& processors = ProcessorFactory::getInstance()->getRegisteredProcessors();
+    const std::vector<const Processor*> processors = VoreenApplication::app()->getSerializableTypes<Processor>();
 
     //get all moduleNames and set bool for visibility filtration
     std::string moduleName;
@@ -276,14 +279,14 @@ void ProcessorListWidget::setInfo() {
     QTreeWidgetItem* currentItem = tree_->currentItem();
     if (currentItem) {
         std::string selectionName = currentItem->text(0).toStdString();
-        const Processor* processor = ProcessorFactory::getInstance()->getProcessor(selectionName);
+        const Processor* processor = dynamic_cast<const Processor*>(VoreenApplication::app()->getSerializableType(selectionName));
         if (processor)
             setInfo(processor);
         else {
             // selected item is a module or a category
             const std::vector<VoreenModule*> modules = VoreenApplication::app()->getModules();
             foreach (VoreenModule* module, modules) {
-                if (module->getName() == selectionName)
+                if (module->getGuiName() == selectionName)
                     setInfo(module);
             }
         }
@@ -321,52 +324,55 @@ void ProcessorListWidget::setInfo(const Processor* processor) {
     clearInfo();
     recentlyUsedProcessor_ = processor;
 
-    const VoreenModule* module = VoreenApplication::app()->getModule(processorModule);
-    if (module) {
-        std::string info;
-        info = "<b>" + processorClass + "</b><br>";
-        info += module->getDocumentationDescription(processorClass);
+    std::string info;
+    info = "<b>" + processorClass + "</b><br>";
+    info += processor->getDescription();
 
-        std::vector<std::pair<std::string, std::string> > properties = module->getDocumentationProperties(processorClass);
-        if (!properties.empty()) {
-            info += "<br><br>";
-            info += "<i><b>Properties</b></i><br>";
-            std::pair<std::string, std::string> p;
-            for (size_t i = 0; i < properties.size(); ++i) {
-                std::pair<std::string, std::string> p = properties[i];
-                std::string guiName = getGUINameFromID(processor, p.first);
-                info += "<b>" + guiName + "</b>: " + p.second;
-                if (i != properties.size() - 1) {
-                    info += "<br>";
-                }
+    std::vector<std::pair<std::string, std::string> > properties;
+    const std::vector<Property*>&  props = processor->getProperties();
+    for(size_t i=0; i<props.size(); i++) {
+        if (props[i]->getDescription() != "")
+            properties.push_back(std::pair<std::string, std::string>(props[i]->getID(), props[i]->getDescription()));
+    }
+    if (!properties.empty()) {
+        info += "<br><br>";
+        info += "<i><b>Properties</b></i><br>";
+        std::pair<std::string, std::string> p;
+        for (size_t i = 0; i < properties.size(); ++i) {
+            std::pair<std::string, std::string> p = properties[i];
+            std::string guiName = getGUINameFromID(processor, p.first);
+            info += "<b>" + guiName + "</b>: " + p.second;
+            if (i != properties.size() - 1) {
+                info += "<br>";
             }
         }
-
-        std::vector<std::pair<std::string, std::string> > ports = module->getDocumentationPorts(processorClass);
-        if (!ports.empty()) {
-            info += "<br><br>";
-            info += "<i><b>Ports</b></i><br>";
-            for (size_t i = 0; i < ports.size(); ++i) {
-                std::pair<std::string, std::string> p = ports[i];
-                info += "<b>" + p.first + "</b>: " + p.second;
-                if (i != ports.size() - 1) {
-                    info += "<br>";
-                }
-            }
-        }
-
-        info_->setHtml(QString::fromStdString(info));
-
-        return;
     }
 
-    LERRORC("voreen.ProcesserListWidget", "No module contains the processor '" + processor->getClassName() + "'");
+    std::vector<std::pair<std::string, std::string> > ports;
+    const std::vector<Port*>& tPorts = processor->getPorts();
+    for (size_t i=0; i<tPorts.size(); i++) {
+        if (tPorts[i]->getDescription() != "")
+            ports.push_back(std::pair<std::string, std::string>(tPorts[i]->getID(), tPorts[i]->getDescription()));
+    }
+    if (!ports.empty()) {
+        info += "<br><br>";
+        info += "<i><b>Ports</b></i><br>";
+        for (size_t i = 0; i < ports.size(); ++i) {
+            std::pair<std::string, std::string> p = ports[i];
+            info += "<b>" + p.first + "</b>: " + p.second;
+            if (i != ports.size() - 1) {
+                info += "<br>";
+            }
+        }
+    }
+
+    info_->setHtml(QString::fromStdString(info));
 }
 
 void ProcessorListWidget::setInfo(VoreenModule* module) {
     clearInfo();
     recentlyUsedModule_ = module;
-    info_->setHtml(QString::fromStdString("<b>" + module->getName() + "</b><br>" + module->getDescription()));
+    info_->setHtml(QString::fromStdString("<b>" + module->getGuiName() + "</b><br>" + module->getDescription()));
 }
 
 void ProcessorListWidget::sortMenu() {
@@ -510,7 +516,7 @@ ProcessorListTreeWidget::ProcessorListTreeWidget(ProcessorListWidget* processorL
 
     const std::vector<VoreenModule*> modules = VoreenApplication::app()->getModules();
     foreach (VoreenModule* module, modules) {
-        std::string moduleName = module->getName();
+        std::string moduleName = module->getGuiName();
         moduleVisibility_[moduleName] = true;
     }
     sortByCategory();
@@ -546,7 +552,7 @@ void ProcessorListTreeWidget::mousePressEvent(QMouseEvent *event) {
         foreach (VoreenModule* module, modules) {
             QTreeWidgetItem* item = itemAt(event->pos());
 
-            if (item && (item->text(0).toStdString() == module->getName()))
+            if (item && (item->text(0).toStdString() == module->getGuiName()))
                 processorListWidget_->setInfo(module);
         }
         return;
@@ -589,7 +595,7 @@ void ProcessorListTreeWidget::setModuleNameVisibility(QString module, bool visib
 }
 
 std::vector<const Processor*> ProcessorListTreeWidget::getVisibleProcessors() const {
-    const std::vector<Processor*>& knownProcessors = ProcessorFactory::getInstance()->getRegisteredProcessors();
+    const std::vector<const Processor*>& knownProcessors = VoreenApplication::app()->getSerializableTypes<Processor>();
     std::vector<const Processor*> visibleProcessors;
     for (size_t i = 0; i < knownProcessors.size(); ++i) {
         const Processor* processor = knownProcessors[i];
@@ -786,8 +792,8 @@ QList<QTreeWidgetItem*> ProcessorListTreeWidget::createCategoryHierarchy(
 }
 
 void ProcessorListTreeWidget::setCodeStateIcon(const std::string& classname, QTreeWidgetItem* item) const {
-    tgtAssert(ProcessorFactory::getInstance()->getProcessor(classname), "unknown class name");
-    switch (ProcessorFactory::getInstance()->getProcessor(classname)->getCodeState()) {
+    tgtAssert(dynamic_cast<const Processor*>(VoreenApplication::app()->getSerializableType(classname)), "unknown class name");
+    switch (dynamic_cast<const Processor*>(VoreenApplication::app()->getSerializableType(classname))->getCodeState()) {
         case Processor::CODE_STATE_BROKEN:
             item->setIcon(1, QIcon(":/qt/icons/processor-broken.png"));
             item->setToolTip(1, "Code state: broken");

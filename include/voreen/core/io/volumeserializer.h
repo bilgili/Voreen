@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -34,7 +34,7 @@
 
 #include "voreen/core/voreencoreapi.h"
 #include "voreen/core/datastructures/volume/volume.h"
-#include "voreen/core/datastructures/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumelist.h"
 
 namespace voreen {
 
@@ -99,28 +99,28 @@ public:
      *      This may be a file path, e.g. /file/to/volume.dat,
      *      or a complete URL with resource type and inner path, e.g.
      *      zip://path/to/archive.zip/volume.dat
-     * @return VolumeCollection containing all volumes read from the url.
+     * @return VolumeList containing all volumes read from the url.
      *      the caller is responsible for freeing the memory.
      */
-    VolumeCollection* read(const std::string& url) const
+    VolumeList* read(const std::string& url) const
         throw (tgt::FileException, std::bad_alloc);
 
     /**
      * Instead of reading the whole dataset, only some slices are read from file and written
      * to the newly built volume. This isn't supported by all file formats.
      *
-     * @return new VolumeCollection, the caller is responsible for freeing the memory.
+     * @return new VolumeList, the caller is responsible for freeing the memory.
      */
-    VolumeCollection* readSlices(const std::string& url, size_t firstSlice, size_t lastSlice) const
+    VolumeList* readSlices(const std::string& url, size_t firstSlice, size_t lastSlice) const
         throw (tgt::FileException, std::bad_alloc);
 
     /**
      * Instead of reading the whole dataset, only a brick of volume data, specified by
      * its starting location and its dimensions, is read. This isn't supported by all file formats.
      *
-     * @return new VolumeCollection, the caller is responsible for freeing the memory.
+     * @return new VolumeList, the caller is responsible for freeing the memory.
      */
-    VolumeCollection* readBrick(const std::string& url, tgt::ivec3 brickStartPos, int brickSize)  const
+    VolumeList* readBrick(const std::string& url, tgt::ivec3 brickStartPos, int brickSize)  const
         throw (tgt::FileException, std::bad_alloc);
 
     /**
@@ -180,7 +180,7 @@ public:
     void setProgressBar(ProgressBar* progressBar);
 
 private:
-    void appendPreferredReaderToOriginURLs(const VolumeCollection* collection, const VolumeReader* volumeReader) const;
+    void appendPreferredReaderToOriginURLs(const VolumeList* collection, const VolumeReader* volumeReader) const;
     void appendPreferredReaderToOriginURLs(VolumeBase* handle, const VolumeReader* volumeReader) const;
 
     /// all registered readers

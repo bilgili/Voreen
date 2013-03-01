@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -87,9 +87,10 @@ float getDepthValue(float t, float tEnd, float entryPointsDepth, float exitPoint
  * length as well as the depth of the entry and exit points.
  */
 float getDepthValue(float t, float tEnd, sampler2D entryPointsDepth, TextureParameters entryParameters, sampler2D exitPointsDepth, TextureParameters exitParameters) {
-    if (t >= 0.0)
-        return calculateDepthValue(t/tEnd, textureLookup2D(entryPointsDepth, entryParameters, gl_FragCoord.xy).z,
-                                           textureLookup2D(exitPointsDepth, exitParameters, gl_FragCoord.xy).z);
+    if (t >= 0.0) {
+        return calculateDepthValue(t/tEnd, textureLookup2Dnormalized(entryPointsDepth, entryParameters, gl_FragCoord.xy * screenDimRCP_).z,
+                                           textureLookup2Dnormalized(exitPointsDepth, exitParameters, gl_FragCoord.xy * screenDimRCP_).z);
+    }
     else
         return 1.0;
 }

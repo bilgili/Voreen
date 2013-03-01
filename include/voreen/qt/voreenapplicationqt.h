@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -28,6 +28,11 @@
 
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/properties/buttonproperty.h"
+
+//includes for networkeditor
+#include "voreen/qt/networkeditor/editor_settings.h"
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/optionproperty.h"
 
 #include "voreen/qt/progressdialog.h"
 
@@ -92,6 +97,10 @@ public:
      */
     virtual void resetApplicationSettings();
 
+    /**
+     * Returns the the scaleProcessorFontSizeProperty value.
+     */
+    virtual int getProcessorFontScale() const;
 protected:
     virtual void loadModules() throw (VoreenException);
 
@@ -104,6 +113,10 @@ private:
 
     /// Button for resetting the Qt application settings (displayed by the VoreenVE settings dialog).
     ButtonProperty resetApplicationSettingsButton_;
+
+    ///Properties for the network editor
+    IntProperty scaleProcessorFontSizeProperty_;
+    OptionProperty<NetworkEditorStyles> networkEditorStyleProperty_;
 
     static VoreenApplicationQt* qtApp_;
     QMainWindow* mainWindow_;

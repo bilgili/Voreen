@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -70,6 +70,7 @@
 #include "voreen/qt/widgets/property/stringpropertywidget.h"
 #include "voreen/qt/widgets/property/grouppropertywidget.h"
 #include "voreen/qt/widgets/property/transfuncpropertywidget.h"
+#include "voreen/qt/widgets/property/volumeinfopropertywidget.h"
 #include "voreen/qt/widgets/property/volumeurllistpropertywidget.h"
 #include "voreen/qt/widgets/property/volumeurlpropertywidget.h"
 #include "voreen/qt/widgets/property/voxeltypepropertywidget.h"
@@ -167,6 +168,9 @@ PropertyWidget* CorePropertyWidgetFactory::createWidget(Property* prop) const {
 
     if (typeid(*prop) == typeid(TransFuncProperty))
         return new TransFuncPropertyWidget(static_cast<TransFuncProperty*>(prop), 0);
+
+    if (typeid(*prop) == typeid(VolumeInfoProperty))
+        return new VolumeInfoPropertyWidget(static_cast<VolumeInfoProperty*>(prop), 0);
 
     if (typeid(*prop) == typeid(VolumeURLProperty))
         return new VolumeURLPropertyWidget(static_cast<VolumeURLProperty*>(prop), 0);

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -163,13 +163,13 @@ TemplatePropertyTimelineWidget<T>::TemplatePropertyTimelineWidget(std::string na
 
 template <class T>
 void TemplatePropertyTimelineWidget<T>::populateInterpolationMenus() {
-    InterpolationFunctionFactory<T>* iff = new InterpolationFunctionFactory<T>();
-    std::vector<InterpolationFunction<T>*> listOfFunctions = iff->getListOfFunctions();
+    InterpolationFunctionFactory* iff = new InterpolationFunctionFactory();
+    std::vector<InterpolationFunction<T>*> listOfFunctions = iff->getListOfFunctions<T>();
     typename std::vector<InterpolationFunction<T>*>::iterator it;
     std::map<std::string, QMenu*> categories;
     it = listOfFunctions.begin();
     while(it != listOfFunctions.end()) {
-        std::string id = (*it)->getIdentifier();
+        std::string id = (*it)->getCategory();
         if (categories.find(id) == categories.end()) {
             QMenu* categoryMenu = new QMenu(QString::fromStdString(id), this);
             categories[id] = categoryMenu;
@@ -181,10 +181,10 @@ void TemplatePropertyTimelineWidget<T>::populateInterpolationMenus() {
 
     it = listOfFunctions.begin();
     while(it != listOfFunctions.end()) {
-        QMenu* categoryMenu = (*categories.find((*it)->getIdentifier())).second;
-        QAction* action  = new QAction(QString::fromStdString((*it)->getMode()), this);
+        QMenu* categoryMenu = (*categories.find((*it)->getCategory())).second;
+        QAction* action  = new QAction(QString::fromStdString((*it)->getGuiName()), this);
         categoryMenu->addAction(action);
-        QActionInterpolationFunctionMap_[action] = (*it)->clone();
+        QActionInterpolationFunctionMap_[action] = (*it)->create();
         it++;
     }
     delete iff;
@@ -247,8 +247,8 @@ void TemplatePropertyTimelineWidget<T>::addTemplateKeyframeCore(KeyframeGraphics
     timelineChange_ = false;
 
     if (!templatePropertyTimeline_->getKeyValues().empty()) {
-                keyframes_[kfgi] = kValue;
-                generateToolTips();
+        keyframes_[kfgi] = kValue;
+        generateToolTips();
     }
 }
 
@@ -270,7 +270,7 @@ void TemplatePropertyTimelineWidget<TransFunc*>::templateItemClicked(KeyframeGra
     currentItem_ = kfgi;
     smoothGroup_->hide();
     if (keyframes_[currentItem_]->getForegoingInterpolationFunction() != 0) {
-        inInterpolationSelector_->setToolTip(QString::fromStdString(keyframes_[kfgi]->getForegoingInterpolationFunction()->getMode()));
+        inInterpolationSelector_->setToolTip(QString::fromStdString(keyframes_[kfgi]->getForegoingInterpolationFunction()->getGuiName()));
         if (dynamic_cast<const MultiPointInterpolationFunction<TransFunc*>*>(keyframes_[currentItem_]->getForegoingInterpolationFunction())) {
             smoothGroup_->show();
         }
@@ -278,7 +278,7 @@ void TemplatePropertyTimelineWidget<TransFunc*>::templateItemClicked(KeyframeGra
         changeSmoothnessColor();
     }
     if (keyframes_[currentItem_]->getFollowingInterpolationFunction() != 0) {
-        outInterpolationSelector_->setToolTip(QString::fromStdString(keyframes_[kfgi]->getFollowingInterpolationFunction()->getMode()));
+        outInterpolationSelector_->setToolTip(QString::fromStdString(keyframes_[kfgi]->getFollowingInterpolationFunction()->getGuiName()));
         if (dynamic_cast<const MultiPointInterpolationFunction<TransFunc*>*>(keyframes_[currentItem_]->getForegoingInterpolationFunction())) {
             smoothGroup_->show();
         }
@@ -301,7 +301,7 @@ void TemplatePropertyTimelineWidget<Camera>::templateItemClicked(KeyframeGraphic
 
     currentItem_ = kfgi;
     if (keyframes_[currentItem_]->getForegoingInterpolationFunction() != 0) {
-        inInterpolationSelector_->setToolTip(QString::fromStdString(keyframes_[kfgi]->getForegoingInterpolationFunction()->getMode()));
+        inInterpolationSelector_->setToolTip(QString::fromStdString(keyframes_[kfgi]->getForegoingInterpolationFunction()->getGuiName()));
         if (dynamic_cast<const MultiPointInterpolationFunction<Camera>*>(keyframes_[currentItem_]->getForegoingInterpolationFunction())) {
             smoothGroup_->show();
         }
@@ -309,7 +309,7 @@ void TemplatePropertyTimelineWidget<Camera>::templateItemClicked(KeyframeGraphic
         changeSmoothnessColor();
     }
     if (keyframes_[currentItem_]->getFollowingInterpolationFunction() != 0) {
-        outInterpolationSelector_->setToolTip(QString::fromStdString(keyframes_[kfgi]->getFollowingInterpolationFunction()->getMode()));
+        outInterpolationSelector_->setToolTip(QString::fromStdString(keyframes_[kfgi]->getFollowingInterpolationFunction()->getGuiName()));
         if (dynamic_cast<const MultiPointInterpolationFunction<Camera>*>(keyframes_[currentItem_]->getForegoingInterpolationFunction())) {
             smoothGroup_->show();
         }
@@ -332,7 +332,7 @@ void TemplatePropertyTimelineWidget<T>::templateItemClicked(KeyframeGraphicsItem
     currentItem_ = kfgi;
     smoothGroup_->hide();
     if (keyframes_[currentItem_]->getForegoingInterpolationFunction() != 0) {
-        inInterpolationSelector_->setToolTip(QString::fromStdString(keyframes_[kfgi]->getForegoingInterpolationFunction()->getMode()));
+        inInterpolationSelector_->setToolTip(QString::fromStdString(keyframes_[kfgi]->getForegoingInterpolationFunction()->getGuiName()));
         if (dynamic_cast<const MultiPointInterpolationFunction<T>*>(keyframes_[currentItem_]->getForegoingInterpolationFunction())) {
             smoothGroup_->show();
         }
@@ -340,7 +340,7 @@ void TemplatePropertyTimelineWidget<T>::templateItemClicked(KeyframeGraphicsItem
         changeSmoothnessColor();
     }
     if (keyframes_[currentItem_]->getFollowingInterpolationFunction() != 0) {
-        outInterpolationSelector_->setToolTip(QString::fromStdString(keyframes_[kfgi]->getFollowingInterpolationFunction()->getMode()));
+        outInterpolationSelector_->setToolTip(QString::fromStdString(keyframes_[kfgi]->getFollowingInterpolationFunction()->getGuiName()));
         if (dynamic_cast<const MultiPointInterpolationFunction<T>*>(keyframes_[currentItem_]->getForegoingInterpolationFunction())) {
             smoothGroup_->show();
         }
@@ -400,6 +400,23 @@ void TemplatePropertyTimelineWidget<T>::updateTemplateKeyframePosition(float x, 
 }
 
 template <class T>
+void TemplatePropertyTimelineWidget<T>::shiftTemplateKeyframePosition(float x, KeyframeGraphicsItem* kfgi) {
+    timelineChange_ = true;
+    templatePropertyTimeline_->setNewUndoState();
+    PropertyKeyValue<T>* keyValue = const_cast<PropertyKeyValue<T>*>(keyframes_[kfgi]);
+    if (x > 0) {
+        int test = templatePropertyTimeline_->shiftKeyValue(x, keyValue);
+        generateKeyframeItems();
+    }
+    else {
+        templatePropertyTimeline_->changeTimeOfKeyValue(0, keyValue);
+    }
+    visualize();
+    emitKeyframeAdded();
+    timelineChange_ = false;
+}
+
+template <class T>
 void TemplatePropertyTimelineWidget<T>::deleteTemplateKeyframe() {
     timelineChange_ = false;        // in most cases the deletion of a keyvalue will change other values
     if (currentItem_ != 0) {
@@ -426,10 +443,10 @@ void TemplatePropertyTimelineWidget<T>::generateToolTips() {
             out << keyframes_[item]->getTime();
             itemToolTip = "Time: "+out.str();
             if (keyframes_[item]->getForegoingInterpolationFunction() != 0) {
-                itemToolTip += "<br>Foregoing Interpolation Function: "+keyframes_[item]->getForegoingInterpolationFunction()->getMode();
+                itemToolTip += "<br>Foregoing Interpolation Function: "+keyframes_[item]->getForegoingInterpolationFunction()->getGuiName();
             }
             if (keyframes_[item]->getFollowingInterpolationFunction() != 0) {
-                itemToolTip += "<br>Following Interpolation Function: "+keyframes_[item]->getFollowingInterpolationFunction()->getMode();
+                itemToolTip += "<br>Following Interpolation Function: "+keyframes_[item]->getFollowingInterpolationFunction()->getGuiName();
             }
             item->setToolTip(QString::fromStdString(itemToolTip));
         }
@@ -465,7 +482,7 @@ template <class T>
 void TemplatePropertyTimelineWidget<T>::setTemplateOutInterpolation(QAction* action) {
     timelineChange_ = true;
     PropertyKeyValue<T>* keyValue = const_cast<PropertyKeyValue<T>*>(keyframes_[currentItem_]);
-    templatePropertyTimeline_->setInterpolationFunctionAfter(QActionInterpolationFunctionMap_[action]->clone(), keyValue);
+    templatePropertyTimeline_->setInterpolationFunctionAfter(QActionInterpolationFunctionMap_[action]->create(), keyValue);
     updateKeyframe();
     timelineChange_ = false;
     if (dynamic_cast<MultiPointInterpolationFunction<T>*>(QActionInterpolationFunctionMap_[action])) {
@@ -479,7 +496,7 @@ template <class T>
 void TemplatePropertyTimelineWidget<T>::setTemplateInInterpolation(QAction* action) {
     timelineChange_ = true;
     PropertyKeyValue<T>* keyValue = const_cast<PropertyKeyValue<T>*>(keyframes_[currentItem_]);
-    templatePropertyTimeline_->setInterpolationFunctionBefore(QActionInterpolationFunctionMap_[action]->clone(), keyValue);
+    templatePropertyTimeline_->setInterpolationFunctionBefore(QActionInterpolationFunctionMap_[action]->create(), keyValue);
     updateKeyframe();
     timelineChange_ = false;
     if (dynamic_cast<MultiPointInterpolationFunction<T>*>(QActionInterpolationFunctionMap_[action])) {

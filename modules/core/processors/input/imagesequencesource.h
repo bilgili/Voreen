@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -41,7 +41,7 @@ namespace voreen {
  * Loads all image files from a directory and puts them out as ImageSequence
  * containing one OpenGL texture per image.
  */
-class ImageSequenceSource : public RenderProcessor {
+class VRN_CORE_API ImageSequenceSource : public RenderProcessor {
 
 public:
     ImageSequenceSource();

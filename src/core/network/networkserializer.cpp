@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -27,7 +27,6 @@
 #include "voreen/core/network/processornetwork.h"
 #include "voreen/core/network/networkconverter.h"
 
-#include "voreen/core/processors/processorfactory.h"
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
 
 #include "voreen/core/datastructures/volume/volume.h"
@@ -113,6 +112,10 @@ void NetworkSerializer::process(TiXmlDocument& document) {
         case 12:
             NetworkConverter12to13().convert(processorNetworkNode);
         case 13:
+            NetworkConverter13to14().convert(processorNetworkNode);
+        case 14:
+            NetworkConverter14to15().convert(processorNetworkNode);
+        case 15:
             break;
 
         default:

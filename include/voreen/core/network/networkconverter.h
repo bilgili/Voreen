@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -49,8 +49,7 @@ public:
 
     /**
      * <b>The</b> method of this class. It takes the whole document and manipulates it, so it is viable for the new version it is
-     * intended for. At the end of this method you have to call NetworkConverter::changeVersion(TiXmlNode*, int, int) with the
-     * correct parameters, so the TiXmlElement will be consistent
+     * intended for. Increase the counter 'NETWORK_VERSION' in processornetwork.cpp to the new version, so the TiXmlElement will be consistent
      * \param elem The TiXmlElement which should be converted to a new version
      */
     virtual void convert(TiXmlElement* elem) = 0;
@@ -155,6 +154,22 @@ public:
  * Converts unary- and binaryimageprocessor to use shader property in parent classe.
  */
 class NetworkConverter12to13 : public NetworkConverter {
+public:
+    virtual void convert(TiXmlElement* elem);
+};
+
+/**
+ * PropertyOwner uses attribute 'mapKey' and not 'name' as before.
+ */
+class NetworkConverter13to14 : public NetworkConverter {
+public:
+    virtual void convert(TiXmlElement* elem);
+};
+
+/**
+ * VolumeCollection -> VolumeList renaming.
+ */
+class NetworkConverter14to15 : public NetworkConverter {
 public:
     virtual void convert(TiXmlElement* elem);
 };

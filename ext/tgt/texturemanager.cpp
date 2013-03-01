@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -31,6 +31,7 @@
 
 #include "tgt/gpucapabilities.h"
 #include "tgt/texturereader.h"
+#include "tgt/filesystem.h"
 
 
 namespace {
@@ -84,7 +85,7 @@ Texture* TextureManager::loadIgnorePath(const std::string& completeFilename, Tex
     }
 
     Texture* t = 0;
-    std::string ending = getEnding(filename);
+    std::string ending = FileSys.fileExtension(filename);
     std::transform (ending.begin(), ending.end(), ending.begin(), lower_case);
 
     if (readers_.size() == 0)
@@ -119,7 +120,7 @@ Texture* TextureManager::load(const std::string& filename, Texture::Filter filte
     }
 
     Texture* t = 0;
-    std::string ending = getEnding(filename);
+    std::string ending = FileSys.fileExtension(filename);
     std::transform (ending.begin(), ending.end(), ending.begin(), lower_case);
 
     if (readers_.size() == 0)
@@ -149,61 +150,6 @@ Texture* TextureManager::load(const std::string& filename, Texture::Filter filte
     }
 
     return t;
-}
-
-/*
- * TODO: it only loads 3D and 16bit textures for now
- */
-Texture* TextureManager::loadFromMemory(Texture* t, Texture::Filter filter, bool compress,
-                                        bool createOGLTex)
-{
-    t->bpp_ = 2;
-
-    switch (t->bpp_) {
-        case 1:
-            t->internalformat_ = GL_INTENSITY;
-            break;
-        case 2:
-            t->internalformat_ = GL_INTENSITY16;
-            break;
-        case 3:
-            t->format_ = GL_RGB;
-            compress ? t->internalformat_ = GL_COMPRESSED_RGB_ARB : t->internalformat_ = GL_RGB;
-            break;
-        case 4:
-            t->format_ = GL_RGBA;
-            compress ? t->internalformat_ = GL_COMPRESSED_RGBA_ARB : t->internalformat_ = GL_RGBA;
-            break;
-        default:
-            LERROR(static_cast<int>(t->bpp_) << " bits per pixel...error!");
-            return 0;
-    }
-
-    if (createOGLTex) {
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glGenTextures(1, &t->id_);
-        glBindTexture(GL_TEXTURE_3D, t->id_);
-
-        if (!GpuCaps.isAnisotropicFilteringSupported() && filter == Texture::ANISOTROPIC)
-            filter = Texture::MIPMAP;
-
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP);
-        t->setFilter(filter);
-        t->uploadTexture();
-    }
-
-    return t;
-}
-
-std::string TextureManager::getEnding(const std::string& filename) const {
-    std::string ending = "";
-    size_t pos = filename.find_last_of('.');
-    if (pos != std::string::npos)
-        ending = filename.substr(pos + 1);
-
-    return ending;
 }
 
 void TextureManager::registerReader(TextureReader* r) {

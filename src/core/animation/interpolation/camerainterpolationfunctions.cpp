@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -24,6 +24,7 @@
  ***********************************************************************************/
 
 #include "voreen/core/animation/interpolation/camerainterpolationfunctions.h"
+#include "voreen/core/animation/interpolation/basicfloatinterpolation.h"
 
 #include "voreen/core/animation/interpolation/vec3interpolationfunctions.h"
 #include "tgt/quaternion.h"
@@ -37,39 +38,227 @@ namespace voreen {
 
 CameraLinearInterpolationFunction::CameraLinearInterpolationFunction() {}
 
-std::string CameraLinearInterpolationFunction::getMode() const {
+std::string CameraLinearInterpolationFunction::getGuiName() const {
     return "linear interpolation";
 }
 
-std::string CameraLinearInterpolationFunction::getIdentifier() const {
+std::string CameraLinearInterpolationFunction::getCategory() const {
     return "linear";
 }
 
 Camera CameraLinearInterpolationFunction::interpolate(Camera startvalue, Camera endvalue, float time) const {
+    return interpolateInternal(startvalue, endvalue, time);
+}
+
+Camera CameraLinearInterpolationFunction::interpolateInternal(Camera startvalue, Camera endvalue, float time) {
     Vec3LinearInterpolationFunction* intfunc = new Vec3LinearInterpolationFunction();
     Vec3SphericalLinearInterpolationFunction* intfunc2 = new Vec3SphericalLinearInterpolationFunction();
     vec3 posvec = intfunc->interpolate(startvalue.getPosition(), endvalue.getPosition(), time);
     vec3 focvec = intfunc->interpolate(startvalue.getFocus(), endvalue.getFocus(), time);
     vec3 upvec = normalize(intfunc2->interpolate(startvalue.getUpVector(), endvalue.getUpVector(), time));
     //vec3 direction = normalize(endvalue.getPosition() - startvalue.getPosition());
-    Camera node = Camera(posvec, focvec, upvec);
+    Camera node = Camera(startvalue);
+    node.positionCamera(posvec, focvec, upvec);
 /*    Camera node = new Camera(posvec, focvec, upvec, direction);
     if (startvalue->isTangential() && endvalue->isTangential())
         node->setTangential(true); */
     return node;
 }
 
-InterpolationFunction<Camera>* CameraLinearInterpolationFunction::clone() const {
-        return new CameraLinearInterpolationFunction();
+InterpolationFunction<Camera>* CameraLinearInterpolationFunction::create() const {
+    return new CameraLinearInterpolationFunction();
 }
+
+//-----------------------------------------------------------------------------
+
+CameraSmoothLinearInterpolationFunction::CameraSmoothLinearInterpolationFunction() {}
+
+std::string CameraSmoothLinearInterpolationFunction::getGuiName() const {
+    return "smooth linear interpolation";
+}
+
+std::string CameraSmoothLinearInterpolationFunction::getCategory() const {
+    return "linear";
+}
+
+Camera CameraSmoothLinearInterpolationFunction::interpolate(Camera startvalue, Camera endvalue, float time) const {
+    float smoothTime = BasicFloatInterpolation::inOutQuadInterpolation(0.0f, 1.0f, time);
+    return CameraLinearInterpolationFunction::interpolateInternal(startvalue, endvalue, smoothTime);
+}
+
+InterpolationFunction<Camera>* CameraSmoothLinearInterpolationFunction::create() const {
+    return new CameraSmoothLinearInterpolationFunction();
+}
+
+//-----------------------------------------------------------------------------
+
+CameraRightRotationInterpolationFunction::CameraRightRotationInterpolationFunction() {}
+
+std::string CameraRightRotationInterpolationFunction::getGuiName() const {
+    return "rotation (right)";
+}
+
+std::string CameraRightRotationInterpolationFunction::getCategory() const {
+    return "rotation";
+}
+
+Camera CameraRightRotationInterpolationFunction::interpolate(Camera startvalue, Camera endvalue, float time) const {
+    return interpolateInternal(startvalue, endvalue, time);
+}
+
+Camera CameraRightRotationInterpolationFunction::interpolateInternal(Camera startvalue, Camera endvalue, float time) {
+    vec3 focus = startvalue.getFocus();
+    if(length(focus - endvalue.getFocus()) > 0.01f) {
+        LERROR("focus mismatch!");
+        return Camera();
+    }
+
+    vec3 up = startvalue.getUpVector();
+    if(length(up - endvalue.getUpVector()) > 0.01f) {
+        LERROR("upvector mismatch!");
+        return Camera();
+    }
+
+    float r1 = length(focus - startvalue.getPosition());
+    float r2 = length(focus - endvalue.getPosition());
+
+    vec3 xVec = normalize(startvalue.getPosition() - focus);
+    vec3 yVec = normalize(cross(xVec, up));
+
+    float maxAngle = 2.0f * tgt::PIf;
+    if(length(startvalue.getPosition() - endvalue.getPosition()) > 0.0001f) {
+        bool smallAngle = dot(yVec, endvalue.getPosition() - focus) >= 0.0f;
+        vec3 toEnd = normalize(endvalue.getPosition() - focus);
+
+        if(smallAngle)
+            maxAngle = acosf(dot(xVec, toEnd));
+        else
+            maxAngle = tgt::PIf + acosf(dot(-xVec, toEnd));
+    }
+
+    float angle = time * maxAngle;
+
+    vec3 pos = focus + (sinf(angle) * yVec + cosf(angle) * xVec) * (time * r2 + (1.0f - time) * r1);
+
+    Camera node = Camera(startvalue);
+    node.positionCamera(pos, focus, up);
+    return node;
+}
+
+InterpolationFunction<Camera>* CameraRightRotationInterpolationFunction::create() const {
+        return new CameraRightRotationInterpolationFunction();
+}
+
+//-----------------------------------------------------------------------------
+
+CameraLeftRotationInterpolationFunction::CameraLeftRotationInterpolationFunction() {}
+
+std::string CameraLeftRotationInterpolationFunction::getGuiName() const {
+    return "rotation (left)";
+}
+
+std::string CameraLeftRotationInterpolationFunction::getCategory() const {
+    return "rotation";
+}
+
+Camera CameraLeftRotationInterpolationFunction::interpolate(Camera startvalue, Camera endvalue, float time) const {
+    return interpolateInternal(startvalue, endvalue, time);
+}
+
+Camera CameraLeftRotationInterpolationFunction::interpolateInternal(Camera startvalue, Camera endvalue, float time) {
+    vec3 focus = startvalue.getFocus();
+    if(length(focus - endvalue.getFocus()) > 0.01f) {
+        LERROR("focus mismatch!");
+        return Camera();
+    }
+
+    vec3 up = startvalue.getUpVector();
+    if(length(up - endvalue.getUpVector()) > 0.01f) {
+        LERROR("upvector mismatch!");
+        return Camera();
+    }
+
+    float r1 = length(focus - startvalue.getPosition());
+    float r2 = length(focus - endvalue.getPosition());
+
+    vec3 xVec = normalize(startvalue.getPosition() - focus);
+    vec3 yVec = normalize(cross(xVec, up));
+
+    float maxAngle = 2.0f * tgt::PIf;
+    if(length(startvalue.getPosition() - endvalue.getPosition()) > 0.0001f) {
+        bool smallAngle = dot(yVec, endvalue.getPosition() - focus) <= 0.0f;
+        vec3 toEnd = normalize(endvalue.getPosition() - focus);
+
+        if(smallAngle)
+            maxAngle = acosf(dot(xVec, toEnd));
+        else
+            maxAngle = tgt::PIf + acosf(dot(-xVec, toEnd));
+    }
+
+    float angle = time * -maxAngle;
+
+    vec3 pos = focus + (sinf(angle) * yVec + cosf(angle) * xVec) * (time * r2 + (1.0f - time) * r1);
+
+    Camera node = Camera(startvalue);
+    node.positionCamera(pos, focus, up);
+    return node;
+}
+
+InterpolationFunction<Camera>* CameraLeftRotationInterpolationFunction::create() const {
+        return new CameraLeftRotationInterpolationFunction();
+}
+
+//-----------------------------------------------------------------------------
+
+CameraSmoothLeftRotationInterpolationFunction::CameraSmoothLeftRotationInterpolationFunction() {}
+
+std::string CameraSmoothLeftRotationInterpolationFunction::getGuiName() const {
+    return "smooth rotation (left)";
+}
+
+std::string CameraSmoothLeftRotationInterpolationFunction::getCategory() const {
+    return "rotation";
+}
+
+Camera CameraSmoothLeftRotationInterpolationFunction::interpolate(Camera startvalue, Camera endvalue, float time) const {
+    float smoothTime = BasicFloatInterpolation::inOutQuadInterpolation(0.0f, 1.0f, time);
+    return CameraLeftRotationInterpolationFunction::interpolateInternal(startvalue, endvalue, smoothTime);
+}
+
+InterpolationFunction<Camera>* CameraSmoothLeftRotationInterpolationFunction::create() const {
+    return new CameraSmoothLeftRotationInterpolationFunction();
+}
+
+//-----------------------------------------------------------------------------
+
+CameraSmoothRightRotationInterpolationFunction::CameraSmoothRightRotationInterpolationFunction() {}
+
+std::string CameraSmoothRightRotationInterpolationFunction::getGuiName() const {
+    return "smooth rotation (right)";
+}
+
+std::string CameraSmoothRightRotationInterpolationFunction::getCategory() const {
+    return "rotation";
+}
+
+Camera CameraSmoothRightRotationInterpolationFunction::interpolate(Camera startvalue, Camera endvalue, float time) const {
+    float smoothTime = BasicFloatInterpolation::inOutQuadInterpolation(0.0f, 1.0f, time);
+    return CameraRightRotationInterpolationFunction::interpolateInternal(startvalue, endvalue, smoothTime);
+}
+
+InterpolationFunction<Camera>* CameraSmoothRightRotationInterpolationFunction::create() const {
+    return new CameraSmoothRightRotationInterpolationFunction();
+}
+
+//-----------------------------------------------------------------------------
 
 CameraSphericalLinearInterpolationFunction::CameraSphericalLinearInterpolationFunction() {}
 
-std::string CameraSphericalLinearInterpolationFunction::getMode() const {
+std::string CameraSphericalLinearInterpolationFunction::getGuiName() const {
     return "spherical linear interpolation";
 }
 
-std::string CameraSphericalLinearInterpolationFunction::getIdentifier() const {
+std::string CameraSphericalLinearInterpolationFunction::getCategory() const {
     return "linear";
 }
 
@@ -98,17 +287,17 @@ Camera CameraSphericalLinearInterpolationFunction::interpolate(Camera startvalue
     return node;
 }
 
-InterpolationFunction<Camera>* CameraSphericalLinearInterpolationFunction::clone() const {
+InterpolationFunction<Camera>* CameraSphericalLinearInterpolationFunction::create() const {
     return new CameraSphericalLinearInterpolationFunction();
 }
 
 CameraCubicSplineInterpolationFunction::CameraCubicSplineInterpolationFunction() {}
 
-std::string CameraCubicSplineInterpolationFunction::getMode() const{
+std::string CameraCubicSplineInterpolationFunction::getGuiName() const{
     return "cubic Bezier spline";
 }
 
-std::string CameraCubicSplineInterpolationFunction::getIdentifier() const{
+std::string CameraCubicSplineInterpolationFunction::getCategory() const{
     return "spline";
 }
 
@@ -189,17 +378,17 @@ Camera CameraCubicSplineInterpolationFunction::interpolate(std::vector<PropertyK
         node->setTangential(true); */
     return node;
 }
-MultiPointInterpolationFunction<Camera>* CameraCubicSplineInterpolationFunction::clone() const {
+MultiPointInterpolationFunction<Camera>* CameraCubicSplineInterpolationFunction::create() const {
     return new CameraCubicSplineInterpolationFunction();
 }
 
 CameraStartInterpolationFunction::CameraStartInterpolationFunction() {}
 
-std::string CameraStartInterpolationFunction::getMode() const {
+std::string CameraStartInterpolationFunction::getGuiName() const {
     return "focus on startvalue";
 }
 
-std::string CameraStartInterpolationFunction::getIdentifier() const {
+std::string CameraStartInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -210,16 +399,16 @@ Camera CameraStartInterpolationFunction::interpolate(Camera startvalue, Camera e
         return endvalue;
 }
 
-InterpolationFunction<Camera>* CameraStartInterpolationFunction::clone() const {
+InterpolationFunction<Camera>* CameraStartInterpolationFunction::create() const {
     return new CameraStartInterpolationFunction();
 }
 
 CameraEndInterpolationFunction::CameraEndInterpolationFunction() {}
 
-std::string CameraEndInterpolationFunction::getMode() const {
+std::string CameraEndInterpolationFunction::getGuiName() const {
     return "focus on endvalue";
 }
-std::string CameraEndInterpolationFunction::getIdentifier() const {
+std::string CameraEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 Camera CameraEndInterpolationFunction::interpolate(Camera startvalue, Camera endvalue, float time) const {
@@ -228,17 +417,17 @@ Camera CameraEndInterpolationFunction::interpolate(Camera startvalue, Camera end
     else
         return startvalue;
 }
-InterpolationFunction<Camera>* CameraEndInterpolationFunction::clone() const {
+InterpolationFunction<Camera>* CameraEndInterpolationFunction::create() const {
     return new CameraEndInterpolationFunction();
 }
 
 CameraStartEndInterpolationFunction::CameraStartEndInterpolationFunction() {}
 
-std::string CameraStartEndInterpolationFunction::getMode() const {
+std::string CameraStartEndInterpolationFunction::getGuiName() const {
     return "bisection";
 }
 
-std::string CameraStartEndInterpolationFunction::getIdentifier() const {
+std::string CameraStartEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -249,17 +438,17 @@ Camera CameraStartEndInterpolationFunction::interpolate(Camera startvalue, Camer
         return endvalue;
 }
 
-InterpolationFunction<Camera>* CameraStartEndInterpolationFunction::clone() const {
+InterpolationFunction<Camera>* CameraStartEndInterpolationFunction::create() const {
     return new CameraStartEndInterpolationFunction();
 }
 
 CameraCatmullRomInterpolationFunction::CameraCatmullRomInterpolationFunction() {}
 
-std::string CameraCatmullRomInterpolationFunction::getMode() const {
+std::string CameraCatmullRomInterpolationFunction::getGuiName() const {
     return "Catmull-Rom spline";
 }
 
-std::string CameraCatmullRomInterpolationFunction::getIdentifier() const {
+std::string CameraCatmullRomInterpolationFunction::getCategory() const {
     return "spline";
 }
 
@@ -343,17 +532,17 @@ Camera CameraCatmullRomInterpolationFunction::interpolate(std::vector<PropertyKe
     return node;
 }
 
-MultiPointInterpolationFunction<Camera>* CameraCatmullRomInterpolationFunction::clone() const {
+MultiPointInterpolationFunction<Camera>* CameraCatmullRomInterpolationFunction::create() const {
     return new CameraCatmullRomInterpolationFunction();
 }
 
 CameraSquadInterpolationFunction::CameraSquadInterpolationFunction() {}
 
-std::string CameraSquadInterpolationFunction::getMode() const {
+std::string CameraSquadInterpolationFunction::getGuiName() const {
     return "spherical cubic interpolation";
 }
 
-std::string CameraSquadInterpolationFunction::getIdentifier() const {
+std::string CameraSquadInterpolationFunction::getCategory() const {
     return "spline";
 }
 
@@ -433,7 +622,7 @@ Camera CameraSquadInterpolationFunction::interpolate(std::vector<PropertyKeyValu
         node->setTangential(true); */
     return node;
 }
-MultiPointInterpolationFunction<Camera>* CameraSquadInterpolationFunction::clone() const {
+MultiPointInterpolationFunction<Camera>* CameraSquadInterpolationFunction::create() const {
     return new CameraSquadInterpolationFunction();
 }
 

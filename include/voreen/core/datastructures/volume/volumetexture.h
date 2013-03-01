@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,6 +26,8 @@
 #ifndef VRN_VOLUMETEXTURE_H
 #define VRN_VOLUMETEXTURE_H
 
+#include "voreen/core/voreencoreapi.h"
+
 #include "tgt/matrix.h"
 #include "tgt/texturemanager.h"
 
@@ -34,7 +36,7 @@ namespace voreen {
 /**
  * This class is basically a tgt::Texture.
   */
-class VolumeTexture : public tgt::Texture {
+class VRN_CORE_API VolumeTexture : public tgt::Texture {
 public:
     /**
      * With data and internalformat argument, type_ is set to GL_TEXTURE_3D

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -50,6 +50,7 @@ protected:
     LightWidget* light_;
     QCheckBox* followCam_;
     bool noUpdateFromProp_;
+    tgt::vec3 curCenter_;
 
     CameraProperty* getCamera();
     void cameraUpdate();    // on property change of the cameraproperty this is invoked by calling
@@ -60,12 +61,6 @@ protected:
 
 protected slots:
     void changeWidgetLight(tgt::vec4);
-
-signals:
-    void changeLightWidget(tgt::vec4);
-
-private:
-    FloatVec4PropertyWidget* floatVec4_;
 };
 
 } // namespace voreen

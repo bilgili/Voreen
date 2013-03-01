@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -45,7 +45,7 @@ class VolumeBase;
  *  results. The inheritance from TemplateProperty is for technical reasons only, so do not use set()/get().
  *
  */
-class VRN_CORE_API VoxelTypeProperty : public TemplateProperty<void*>, protected PropertyOwner {
+class VRN_CORE_API VoxelTypeProperty : protected PropertyOwner, public TemplateProperty<void*> {
 public:
     VoxelTypeProperty(const std::string& id, const std::string& guiText,
         int invalidationLevel=Processor::INVALID_RESULT);
@@ -56,7 +56,9 @@ public:
     virtual std::string getClassName() const       { return "VoxelTypeProperty"; }
     virtual std::string getTypeDescription() const { return "VoxelType"; }
 
-    virtual std::string getName() const;
+    virtual std::string getGuiName() const;
+    virtual std::string getID() const;
+    virtual void setGuiName(const std::string& guiName);
 
     /**
      * Causes the property to adapt to the voxel type of the passed volume.
@@ -106,8 +108,8 @@ protected:
     /// Updates valid range according to the current voxel type.
     void updateMinMaxRange();
 
-    /// The volume handle the property is currently adapted to.
-    const VolumeBase* volumeHandle_;
+    /// The volume the property is currently adapted to.
+    const VolumeBase* volume_;
 
     /*
      * The following members are used as replacement for dynamic typing:

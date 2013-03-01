@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -29,6 +29,7 @@
 #include <cmath>
 #include <vector>
 #include "voreen/core/voreencoreapi.h"
+#include "voreen/core/voreenobject.h"
 #include "tgt/camera.h"
 
 namespace voreen {
@@ -39,14 +40,14 @@ class CameraProperty;
  *  This class implements a Trackball which can be used to freely rotate an object
  *  around a given center.
  */
-class VRN_CORE_API VoreenTrackball {
+class VRN_CORE_API VoreenTrackball : public VoreenSerializableObject {
 
 public:
-
     VoreenTrackball(CameraProperty* camera);
-
-    /// Destructor
     virtual ~VoreenTrackball();
+    virtual VoreenSerializableObject* create() const;
+
+    virtual std::string getClassName() const  { return "VoreenTrackball"; };
 
     /// Resets the trackball to the initial configuration of the canvas' camera.
     //void reset();
@@ -116,9 +117,13 @@ public:
     /// with respect to the camera's look vector.
     float getCenterDistance();
 
+    virtual void serialize(XmlSerializer& s) const;
+
+    virtual void deserialize(XmlDeserializer& s);
+
 protected:
 
-    CameraProperty* camera_;
+    CameraProperty* cameraProperty_;
 
     /// this holds the center around which the camera will be rotated
     tgt::vec3 center_;

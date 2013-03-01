@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -50,7 +50,7 @@ MultiplanarSliceRenderer::MultiplanarSliceRenderer()
     sliceNumberXY_("sliceNumber.XY", "XY Slice Number", 0, 0, 10000),
     sliceNumberXZ_("sliceNumber.XZ", "XZ Slice Number", 0, 0, 10000),
     sliceNumberYZ_("sliceNumber.YZ", "YZ Slice Number", 0, 0, 10000),
-    camProp_("camera", "Camera", tgt::Camera(tgt::vec3(0.0f, 0.0f, 3.5f), tgt::vec3(0.0f, 0.0f, 0.0f), tgt::vec3(0.0f, 1.0f, 0.0f))),
+    camProp_("camera", "Camera", tgt::Camera(tgt::vec3(0.0f, 0.0f, 3.5f), tgt::vec3(0.0f, 0.0f, 0.0f), tgt::vec3(0.0f, 1.0f, 0.0f)), true),
     cameraHandler_(0)
 {
     addProperty(renderXYSlice_);
@@ -73,15 +73,21 @@ Processor* MultiplanarSliceRenderer::create() const {
     return new MultiplanarSliceRenderer();
 }
 
-void MultiplanarSliceRenderer::process() {
-
-    tgtAssert(inport_.isReady(), "Inport not ready");
-    tgtAssert(inport_.getData()->getRepresentation<VolumeRAM>(), "No volume");
+void MultiplanarSliceRenderer::beforeProcess() {
+    SliceRendererBase::beforeProcess();
 
     if (inport_.hasChanged()) {
         updateNumSlices();  // validate the currently set values and adjust them if necessary
         transferFunc_.setVolumeHandle(inport_.getData());
+        if(inport_.getData())
+            camProp_.adaptInteractionToScene(inport_.getData()->getBoundingBox().getBoundingBox());
     }
+}
+
+void MultiplanarSliceRenderer::process() {
+
+    tgtAssert(inport_.isReady(), "Inport not ready");
+    tgtAssert(inport_.getData()->getRepresentation<VolumeRAM>(), "No volume");
 
     outport_.activateTarget("OrthogonalSliceRenderer::process()");
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -258,6 +264,5 @@ void MultiplanarSliceRenderer::updateNumSlices() {
         sliceNumberYZ_.set(volDim.x / 2);
     sliceNumberYZ_.updateWidgets();
 }
-
 
 }   // namespace

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -39,7 +39,7 @@ namespace voreen {
  *
  * @see http://www.cg.tuwien.ac.at/research/datasets/
  */
-class TUVVolumeReader : public VolumeReader {
+class VRN_CORE_API TUVVolumeReader : public VolumeReader {
 public:
     TUVVolumeReader() {
          extensions_.push_back("tuv");
@@ -50,7 +50,7 @@ public:
 
     virtual VolumeReader* create(ProgressBar* progress = 0) const;
 
-    virtual VolumeCollection* read(const std::string& url)
+    virtual VolumeList* read(const std::string& url)
         throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
 private:

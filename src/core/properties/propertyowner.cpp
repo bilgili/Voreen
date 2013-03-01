@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -25,7 +25,8 @@
 
 #include "voreen/core/properties/propertyowner.h"
 #include "voreen/core/properties/property.h"
-//#include "voreen/core/properties/propertywidget.h"
+
+#include "tgt/logmanager.h"
 
 #include <fstream>
 
@@ -36,7 +37,13 @@ void PropertyOwnerObserver::preparePropertyRemoval(Property*) {}
 const std::string PropertyOwner::loggerCat_("voreen.PropertyOwner");
 
 PropertyOwner::PropertyOwner()
-    : invalidationLevel_(50)
+    : VoreenSerializableObject()
+    , invalidationLevel_(50)
+{}
+
+PropertyOwner::PropertyOwner(const std::string& id, const std::string& guiName)
+    : VoreenSerializableObject(id, guiName)
+    , invalidationLevel_(50)
 {}
 
 PropertyOwner::~PropertyOwner() {
@@ -45,11 +52,13 @@ PropertyOwner::~PropertyOwner() {
 void PropertyOwner::addProperty(Property* prop) {
     tgtAssert(prop, "Null pointer passed");
     if (prop->getID().empty()) {
-        LERROR(getName() << ": Property with empty id (type: " << prop->getClassName() << ")");
+        if (tgt::Singleton<tgt::LogManager>::isInited())
+            LERROR(getID() << ": Property with empty id (type: " << prop->getClassName() << ")");
         return;
     }
     if (getProperty(prop->getID())) {
-        LERROR(getName() << ": Duplicate property id '" << prop->getID() << "'");
+        if (tgt::Singleton<tgt::LogManager>::isInited())
+            LERROR(getID() << ": Duplicate property id '" << prop->getID() << "'");
         return;
     }
     properties_.push_back(prop);
@@ -63,7 +72,7 @@ void PropertyOwner::addProperty(Property& prop) {
 void PropertyOwner::removeProperty(Property* prop) {
     tgtAssert(prop, "Null pointer passed");
     if (!getProperty(prop->getID())) {
-        LERROR(getName() << ": Property '" << prop->getID() << "' cannot be removed, it does not exist");
+        LERROR(getID() << ": Property '" << prop->getID() << "' cannot be removed, it does not exist");
     }
     // inform the observers to prepare property removal
     // thus all links can be removed in the processornetwork
@@ -190,7 +199,7 @@ void PropertyOwner::serialize(XmlSerializer& s) const {
     const bool usePointerContentSerialization = s.getUsePointerContentSerialization();
     s.setUsePointerContentSerialization(true);
     try {
-        s.serialize("Properties", propertyMap, "Property", "name");
+        s.serialize("Properties", propertyMap, "Property", "mapKey");
     }
     catch (SerializationException& e) {
         LWARNING(e.what());
@@ -208,7 +217,7 @@ void PropertyOwner::deserialize(XmlDeserializer& s) {
     const bool usePointerContentSerialization = s.getUsePointerContentSerialization();
     s.setUsePointerContentSerialization(true);
     try {
-        s.deserialize("Properties", propertyMap, "Property", "name");
+        s.deserialize("Properties", propertyMap, "Property", "mapKey");
     }
     catch (SerializationException& e) {
         LWARNING(e.what());

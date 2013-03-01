@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -77,7 +77,7 @@ protected:
 
 private:
     void renderSlices();
-    void renderVolume(tgt::TextureUnit* lightUnit);
+    void renderVolume(tgt::TextureUnit* lightUnit, const tgt::ivec2& renderSize);
 
     VolumeBase* currentVolumeHandleBase_;
 
@@ -95,6 +95,7 @@ private:
     RenderPort entryPort_;
     RenderPort exitPort_;
     RenderPort outport_;
+    RenderPort internalRenderPort_;
 };
 
 //---------------------------------------------------------------------------
@@ -343,7 +344,7 @@ private:
      */
     void updateTextureDimensions();
 
-    const VolumeBase* currentVolumeHandle_;
+    const VolumeBase* currentVolume_;
 
     tgt::FramebufferObject* fbo_; ///< the framebufferobject that is used for rendering to a 3d texture
 

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -88,6 +88,21 @@ private:
     // initializes the segmentation transfunc texture from the segmentation transfer functions
     void initializeSegmentationTransFuncTex();
 
+    VolumePort volumeInport_;
+    VolumePort segmentationInport_;
+    RenderPort entryPort_;
+    RenderPort exitPort_;
+
+    RenderPort outport_;
+    RenderPort outport1_;
+    RenderPort outport2_;
+
+    // we render into internal buffers, which allows to reduce rendering size in interaction mode (coarseness)
+    RenderPort internalRenderPort_;
+    RenderPort internalRenderPort1_;
+    RenderPort internalRenderPort2_;
+    PortGroup internalPortGroup_;
+
     CameraProperty camera_;
 
     // The transfer function property used in non-segmentation mode
@@ -116,15 +131,6 @@ private:
 
     bool destActive_[2];
 
-    VolumePort volumeInport_;
-    VolumePort segmentationInport_;
-    RenderPort entryPort_;
-    RenderPort exitPort_;
-
-    RenderPort outport1_;
-    RenderPort outport2_;
-    RenderPort outport3_;
-    PortGroup portGroup_;
 };
 
 } // namespace

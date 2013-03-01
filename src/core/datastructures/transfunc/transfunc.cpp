@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -45,8 +45,10 @@ TransFunc::TransFunc(int width, int height, int depth,
 }
 
 TransFunc::~TransFunc() {
-    delete tex_;
-    LGL_ERROR;
+    if (tex_) {
+        delete tex_;
+        LGL_ERROR;
+    }
 }
 
 const std::vector<std::string>& TransFunc::getLoadFileFormats() const {
@@ -89,6 +91,13 @@ void TransFunc::updateTexture() {
 
     tex_->uploadTexture();
     textureInvalid_ = false;
+}
+
+void TransFunc::deleteTexture() {
+    delete tex_;
+    tex_ = 0;
+    textureInvalid_ = true;
+    LGL_ERROR;
 }
 
 void TransFunc::createTex() {

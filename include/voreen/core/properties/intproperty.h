@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -38,7 +38,8 @@ class VRN_CORE_API IntProperty : public NumericProperty<int> {
 public:
     IntProperty(const std::string& id, const std::string& guiText,
         int value = 0, int minValue = 0, int maxValue = 100,
-        int invalidationLevel=Processor::INVALID_RESULT);
+        int invalidationLevel=Processor::INVALID_RESULT,
+        NumericProperty<int>::BoundaryUpdatePolicy bup = NumericProperty<int>::STATIC);
     IntProperty();
 
     virtual Property* create() const;

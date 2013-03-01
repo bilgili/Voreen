@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -44,11 +44,11 @@ VolumeSerializerPopulator::VolumeSerializerPopulator(ProgressBar* progressBar)
         // retrieve volume readers/writers from modules
         std::vector<VoreenModule*> modules = VoreenApplication::app()->getModules();
         for (size_t i=0; i<modules.size(); i++) {
-            for (size_t j=0; j<modules.at(i)->getVolumeReaders().size(); j++) {
-                readers_.push_back(modules.at(i)->getVolumeReaders().at(j)->create(progressBar_));
+            for (size_t j=0; j<modules.at(i)->getRegisteredVolumeReaders().size(); j++) {
+                readers_.push_back(modules.at(i)->getRegisteredVolumeReaders().at(j)->create(progressBar_));
             }
-            for (size_t j=0; j<modules.at(i)->getVolumeWriters().size(); j++) {
-                writers_.push_back(modules.at(i)->getVolumeWriters().at(j)->create(progressBar_));
+            for (size_t j=0; j<modules.at(i)->getRegisteredVolumeWriters().size(); j++) {
+                writers_.push_back(modules.at(i)->getRegisteredVolumeWriters().at(j)->create(progressBar_));
             }
         }
     }

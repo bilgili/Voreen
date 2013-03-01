@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -25,6 +25,7 @@
 
 #include "sliceproxygeometry.h"
 
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 #include "tgt/glmath.h"
 
 using tgt::ivec2;
@@ -74,20 +75,15 @@ void SliceProxyGeometry::process() {
 
     vec3 base = n * position_.get();
 
-    FaceGeometry slice;
-    slice.addVertex(VertexGeometry(base + inPlaneA + inPlaneB, base + inPlaneA + inPlaneB, tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-    slice.addVertex(VertexGeometry(base - inPlaneA + inPlaneB, base - inPlaneA + inPlaneB, tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-    slice.addVertex(VertexGeometry(base - inPlaneA - inPlaneB, base - inPlaneA - inPlaneB, tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-    slice.addVertex(VertexGeometry(base + inPlaneA - inPlaneB, base + inPlaneA - inPlaneB, tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+    TriangleMeshGeometryVec3* slice = new TriangleMeshGeometryVec3();
+    slice->addQuad(VertexVec3(base + inPlaneA + inPlaneB, base + inPlaneA + inPlaneB),
+                  VertexVec3(base - inPlaneA + inPlaneB, base - inPlaneA + inPlaneB),
+                  VertexVec3(base - inPlaneA - inPlaneB, base - inPlaneA - inPlaneB),
+                  VertexVec3(base + inPlaneA - inPlaneB, base + inPlaneA - inPlaneB));
 
     LGL_ERROR;
 
-    MeshGeometry mesh;
-    mesh.addFace(slice);
-
-    geometry_.clear();
-    geometry_.addMesh(mesh);
-    geomPort_.setData(&geometry_, false);
+    geomPort_.setData(slice);
 }
 
 } // namespace voreen

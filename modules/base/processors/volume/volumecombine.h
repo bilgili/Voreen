@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,7 +33,7 @@
 
 namespace voreen {
 
-class VolumeCombine : public CachingVolumeProcessor {
+class VRN_CORE_API VolumeCombine : public CachingVolumeProcessor {
 public:
     VolumeCombine();
     ~VolumeCombine();
@@ -71,6 +71,7 @@ private:
         OP_TAKE_FIRST,
         OP_TAKE_SECOND
     };
+    friend class OptionProperty<CombineOperation>;
 
     /**
      * Combines the input volumes and writes the result to combinedVolume (which is assumed to be already created),

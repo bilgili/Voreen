@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -60,7 +60,7 @@ VolumeReader* MultiVolumeReader::create(ProgressBar* progress) const {
     return new MultiVolumeReader(0, progress);
 }
 
-VolumeCollection* MultiVolumeReader::read(const std::string& url)
+VolumeList* MultiVolumeReader::read(const std::string& url)
     throw (tgt::FileException, std::bad_alloc)
 {
     LINFO("Loading multi volume file " << url);
@@ -70,7 +70,7 @@ VolumeCollection* MultiVolumeReader::read(const std::string& url)
     if (origins.empty())
         throw tgt::FileException("No volumes listed in multi-volume file", url);
 
-    VolumeCollection* volumeCollection = new VolumeCollection();
+    VolumeList* volumeList = new VolumeList();
 
     std::string refFile = urlOrigin.getSearchParameter("file");
     if (refFile == "") {
@@ -78,7 +78,7 @@ VolumeCollection* MultiVolumeReader::read(const std::string& url)
         for (size_t i=0; i<origins.size(); i++) {
             VolumeBase* handle = read(origins.at(i));
             if (handle)
-                volumeCollection->add(handle);
+                volumeList->add(handle);
         }
     }
     else {
@@ -87,19 +87,19 @@ VolumeCollection* MultiVolumeReader::read(const std::string& url)
             if (origins.at(i).getSearchParameter("file") == refFile) {
                 VolumeBase* handle = read(origins.at(i));
                 if (handle) {
-                    volumeCollection->add(handle);
+                    volumeList->add(handle);
                     break;
                 }
             }
         }
 
-        if (volumeCollection->empty()) {
-            delete volumeCollection;
+        if (volumeList->empty()) {
+            delete volumeList;
             throw tgt::FileException("File '" + refFile + "' not listed in multi-volume file", urlOrigin.getPath());
         }
     }
 
-    return volumeCollection;
+    return volumeList;
 }
 
 VolumeBase* MultiVolumeReader::read(const VolumeURL& origin)

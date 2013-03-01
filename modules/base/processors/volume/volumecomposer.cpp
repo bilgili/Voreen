@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -27,7 +27,7 @@
 
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "voreen/core/datastructures/imagesequence.h"
-#include "voreen/core/datastructures/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumelist.h"
 #include "tgt/texturemanager.h"
 #include "tgt/gpucapabilities.h"
 
@@ -40,12 +40,14 @@ VolumeComposer::VolumeComposer()
       inportImages_(Port::INPORT, "imagesequence.in", "ImageSequence Input"),
       inportVolumes_(Port::INPORT, "volumecollection.in", "VolumeColletion Input"),
       outport_(Port::OUTPORT, "volume.out", "Volume Output"),
+      convertMultiChannelTexToGrayscale_("convertMultiChanneltexToGrayscale", "Convert Multi-Channel Textures to Grayscale"),
       voxelSpacing_("voxelSpacing", "Voxel Spacing", tgt::vec3(1.f), tgt::vec3(0.0001f), tgt::vec3(10.f))
 {
     addPort(inportImages_);
     addPort(inportVolumes_);
     addPort(outport_);
 
+    addProperty(convertMultiChannelTexToGrayscale_);
     voxelSpacing_.setNumDecimals(8);
     addProperty(voxelSpacing_);
 }
@@ -92,7 +94,6 @@ void VolumeComposer::stackImages() {
     }
 
     tgt::ivec2 texDims = sequence->front()->getDimensions().xy();
-    LINFO("Constructing volume from " << sequence->size() << " slices of dimensions " << texDims);
 
     // check that textures have the same dimension
     bool dimsMatch = true;
@@ -106,38 +107,100 @@ void VolumeComposer::stackImages() {
         return;
     }
 
+    VolumeRAM* outputVolume = 0;
+    if (convertMultiChannelTexToGrayscale_.get()) { //< convert input color textures to grayscale
+        // download texture data to 16 bit uint buffer and concat frames
+        LINFO("Constructing grayscale/uint16 volume from " << sequence->size() << " slices with dimensions " << texDims);
+        int numFramePixels = tgt::hmul(texDims);
+        uint16_t* dataBuffer = 0;
+        setProgress(0.f);
+        try {
+            dataBuffer = new uint16_t[numFramePixels * sequence->size()];
+            for (size_t i=0; i<sequence->size(); i++) {
+                setProgress(static_cast<float>(i) / sequence->size());
+                uint16_t* frameData = (uint16_t*)sequence->at(i)->downloadTextureToBuffer(GL_LUMINANCE, GL_UNSIGNED_SHORT);
+                memcpy(dataBuffer+numFramePixels*i, frameData, numFramePixels*2);
+                delete[] frameData;
+            }
+        }
+        catch (std::bad_alloc&) {
+            LERROR("Bad allocation during construction of output volume");
+            delete[] dataBuffer;
+            outport_.setData(0);
+            return;
+        }
+        setProgress(1.f);
+        LGL_ERROR;
 
-    // download texture data to 16 bit uint buffer and concat frames
-    int numFramePixels = tgt::hmul(texDims);
-    uint16_t* dataBuffer = 0;
-    setProgress(0.f);
-    try {
-        dataBuffer = new uint16_t[numFramePixels * sequence->size()];
+        // construct volume from buffer and write it to outport
+        outputVolume = new VolumeRAM_UInt16(dataBuffer, tgt::ivec3(texDims, static_cast<int>(sequence->size())));
+        LGL_ERROR;
+    }
+    else { //< copy input textures channel-wise
+        // make sure, that all input textures have equal channel count
+        tgtAssert(!sequence->empty(), "sequence is empty"); //< checked above
+        const size_t numChannels =  sequence->at(0)->getNumChannels();
+        for (size_t i=1; i<sequence->size(); i++) {
+            if (sequence->at(i)->getNumChannels() != numChannels) {
+                LWARNING("Images of input sequence differ in channel count. Enable multi-channel to single-channel conversion!");
+                outport_.setData(0);
+                return;
+            }
+        }
+
+        // derive format of input texture from channel count; and create appropriate output volume
+        GLint inputTextureFormat;
+        try {
+            switch (numChannels) {
+            case 1:
+                outputVolume = new VolumeRAM_UInt16(tgt::ivec3(texDims, static_cast<int>(sequence->size())), true);
+                inputTextureFormat = GL_LUMINANCE;
+                LINFO("Constructing grayscale/uint16 volume from " << sequence->size() << " slices with dimensions " << texDims);
+                break;
+            case 2:
+                outputVolume = new VolumeRAM_2xUInt16(tgt::ivec3(texDims, static_cast<int>(sequence->size())), true);
+                inputTextureFormat = GL_LUMINANCE_ALPHA;
+                LINFO("Constructing luminance-alpha/uint16 volume from " << sequence->size() << " slices with dimensions " << texDims);
+                break;
+            case 3:
+                outputVolume = new VolumeRAM_3xUInt16(tgt::ivec3(texDims, static_cast<int>(sequence->size())), true);
+                inputTextureFormat = GL_RGB;
+                LINFO("Constructing rgb/uint16 volume from " << sequence->size() << " slices with dimensions " << texDims);
+                break;
+            case 4:
+                outputVolume = new VolumeRAM_4xUInt16(tgt::ivec3(texDims, static_cast<int>(sequence->size())), true);
+                inputTextureFormat = GL_RGBA;
+                LINFO("Constructing rgba/uint16 volume from " << sequence->size() << " slices with dimensions " << texDims);
+                break;
+            }
+        }
+        catch (std::bad_alloc&) {
+            LERROR("Bad allocation during construction of output volume");
+            outport_.setData(0);
+            return;
+        }
+        LGL_ERROR;
+
+        // download texture data and copy it to volume data buffer
+        uint16_t* dataBuffer = reinterpret_cast<uint16_t*>(outputVolume->getData());
+        const size_t numFramePixels = tgt::hmul(texDims)*numChannels;
         for (size_t i=0; i<sequence->size(); i++) {
             setProgress(static_cast<float>(i) / sequence->size());
-            uint16_t* frameData = (uint16_t*)sequence->at(i)->downloadTextureToBuffer(GL_LUMINANCE, GL_UNSIGNED_SHORT);
+            uint16_t* frameData = (uint16_t*)sequence->at(i)->downloadTextureToBuffer(inputTextureFormat, GL_UNSIGNED_SHORT);
             memcpy(dataBuffer+numFramePixels*i, frameData, numFramePixels*2);
             delete[] frameData;
         }
+        LGL_ERROR;
     }
-    catch (std::bad_alloc&) {
-        LERROR("Bad allocation during construction of output volume");
-        delete[] dataBuffer;
-        outport_.setData(0);
-        return;
-    }
-    setProgress(1.f);
+    tgtAssert(outputVolume, "no output volume");
 
-    // construct volume from buffer and write it to outport
-    VolumeRAM_UInt16* outputVol = new VolumeRAM_UInt16(dataBuffer, tgt::ivec3(texDims, static_cast<int>(sequence->size())));
-    Volume* handle = new Volume(outputVol, voxelSpacing_.get(), tgt::vec3(0.0f)); //TODO: offset prop?
+    // wrap atomic output volume and write to output
+    Volume* handle = new Volume(outputVolume, voxelSpacing_.get(), tgt::vec3(0.0f)); //TODO: offset prop?
     outport_.setData(handle);
-
-    LGL_ERROR;
 }
 
 void VolumeComposer::stackVolumes() {
-    const VolumeCollection* inputCollection = inportVolumes_.getData();
+    const VolumeList* inputCollection = inportVolumes_.getData();
     if (!inputCollection || inputCollection->empty()) {
         outport_.setData(0);
         return;
@@ -256,7 +319,7 @@ void VolumeComposer::stackVolumes() {
         }
     }
 
-    // create volume handle (take spacing and transformation from first volume)
+    // create volume (take spacing and transformation from first volume)
     Volume* handle = new Volume(outputVolume, inputCollection->first());
 
     // put out result volume

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -38,7 +38,7 @@ namespace voreen {
  * Furthermore, the input image is stored in a persistent render target and can therefore be accessed at any time,
  * not necessarily during a rendering pass.
  */
-class RenderStore : public RenderProcessor {
+class VRN_CORE_API RenderStore : public RenderProcessor {
 public:
     RenderStore();
     virtual Processor* create() const;

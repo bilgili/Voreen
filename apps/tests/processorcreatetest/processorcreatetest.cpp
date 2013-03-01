@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -28,7 +28,6 @@
 #endif
 
 #include "voreen/core/voreenapplication.h"
-#include "voreen/core/processors/processorfactory.h"
 
 using namespace voreen;
 
@@ -37,7 +36,6 @@ int main(int argc, char** argv) {
         "Creates all registered processors by instantiating the ProcessorFactory (without OpenGL).",
         argc, argv, VoreenApplication::APP_ALL);
     app.initialize();
-    ProcessorFactory::getInstance();
     app.deinitialize();
     return 0;
 }

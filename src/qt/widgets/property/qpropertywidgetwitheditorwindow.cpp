@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -84,7 +84,7 @@ void QPropertyWidgetWithEditorWindow::createEditorWindow(Qt::DockWidgetArea area
 
     QString title;
     if (getProperty()->getOwner()) {
-        title.append(getProperty()->getOwner()->getName().c_str());
+        title.append(getProperty()->getOwner()->getID().c_str());
         title.append(" - ");
     }
     title.append(QString::fromStdString(getProperty()->getGuiName()));

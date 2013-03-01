@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -25,7 +25,6 @@
 
 #include "voreen/core/properties/transfuncproperty.h"
 #include "voreen/core/properties/condition.h"
-#include "voreen/core/datastructures/transfunc/transfuncfactory.h"
 #include "voreen/core/datastructures/transfunc/transfunc1dkeys.h"
 #include "voreen/core/datastructures/transfunc/transfunc2dprimitives.h"
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
@@ -40,7 +39,7 @@ const std::string TransFuncProperty::loggerCat_("voreen.TransFuncProperty");
 TransFuncProperty::TransFuncProperty(const std::string& ident, const std::string& guiText, int invalidationLevel,
                              TransFuncProperty::Editors editors, bool lazyEditorInstantiation)
     : TemplateProperty<TransFunc*>(ident, guiText, 0, invalidationLevel)
-    , volumeHandle_(0)
+    , volume_(0)
     , editors_(editors)
     , lazyEditorInstantiation_(lazyEditorInstantiation)
     , alwaysFitDomain_(false)
@@ -48,13 +47,16 @@ TransFuncProperty::TransFuncProperty(const std::string& ident, const std::string
 
 TransFuncProperty::TransFuncProperty()
     : TemplateProperty<TransFunc*>("", "", 0, Processor::INVALID_RESULT)
-    , volumeHandle_(0)
+    , volume_(0)
 {}
 
 TransFuncProperty::~TransFuncProperty() {
 /*    if (value_) {
         LWARNING(getFullyQualifiedGuiName() << " has not been deinitialized before destruction.");
     } */
+
+    delete value_;
+    value_ = 0;
 }
 
 Property* TransFuncProperty::create() const {
@@ -133,13 +135,14 @@ void TransFuncProperty::set(TransFunc* tf) {
 
 void TransFuncProperty::setVolumeHandle(const VolumeBase* handle) {
 
-    if (volumeHandle_ != handle) {
+    if (volume_ != handle) {
 
-        volumeHandle_ = handle;
-        if (volumeHandle_) {
+        volume_ = handle;
+        if (volume_) {
+            handle->addObserver(this);
 
             // Resize texture of tf according to bitdepth of volume
-            int bits = volumeHandle_->getRepresentation<VolumeRAM>()->getBitsAllocated() / volumeHandle_->getRepresentation<VolumeRAM>()->getNumChannels();
+            int bits = volume_->getRepresentation<VolumeRAM>()->getBitsAllocated() / volume_->getRepresentation<VolumeRAM>()->getNumChannels();
             if (bits > 16)
                 bits = 16; // handle float data as if it was 16 bit to prevent overflow
 
@@ -147,7 +150,7 @@ void TransFuncProperty::setVolumeHandle(const VolumeBase* handle) {
 
             if (TransFunc1DKeys* tfi = dynamic_cast<TransFunc1DKeys*>(value_)) {
                 value_->resize(max);
-                RealWorldMapping rwm = volumeHandle_->getRealWorldMapping();
+                RealWorldMapping rwm = volume_->getRealWorldMapping();
                 if((((rwm.getOffset() != 0.0f) || (rwm.getScale() != 1.0f) || (rwm.getUnit() != "")) && *tfi == TransFunc1DKeys()) || alwaysFitDomain_)
                     fitDomainToData();
             } else if (dynamic_cast<TransFunc2DPrimitives*>(value_)) {
@@ -163,13 +166,13 @@ void TransFuncProperty::setVolumeHandle(const VolumeBase* handle) {
 }
 
 void TransFuncProperty::fitDomainToData() {
-    if(!volumeHandle_)
+    if(!volume_)
         return;
 
     if (TransFunc1DKeys* tfi = dynamic_cast<TransFunc1DKeys*>(value_)) {
-        RealWorldMapping rwm = volumeHandle_->getRealWorldMapping();
-        float min = rwm.normalizedToRealWorld(volumeHandle_->getDerivedData<VolumeMinMax>()->getMinNormalized());
-        float max = rwm.normalizedToRealWorld(volumeHandle_->getDerivedData<VolumeMinMax>()->getMaxNormalized());
+        RealWorldMapping rwm = volume_->getRealWorldMapping();
+        float min = rwm.normalizedToRealWorld(volume_->getDerivedData<VolumeMinMax>()->getMinNormalized());
+        float max = rwm.normalizedToRealWorld(volume_->getDerivedData<VolumeMinMax>()->getMaxNormalized());
         tfi->setDomain(tgt::vec2(min, max));
         //notifyChange();
         invalidateOwner();
@@ -177,7 +180,7 @@ void TransFuncProperty::fitDomainToData() {
 }
 
 const VolumeBase* TransFuncProperty::getVolumeHandle() const {
-    return volumeHandle_;
+    return volume_;
 }
 
 void TransFuncProperty::notifyChange() {
@@ -191,6 +194,18 @@ void TransFuncProperty::notifyChange() {
 
     // invalidate owner:
     invalidateOwner();
+}
+
+void TransFuncProperty::volumeDelete(const VolumeBase* source) {
+    if (volume_ == source) {
+        volume_ = 0;
+        updateWidgets();
+    }
+}
+
+void TransFuncProperty::volumeChange(const VolumeBase* source) {
+    if (volume_ == source)
+        updateWidgets();
 }
 
 void TransFuncProperty::serialize(XmlSerializer& s) const {
@@ -227,8 +242,7 @@ void TransFuncProperty::initialize() throw (tgt::Exception) {
 
 void TransFuncProperty::deinitialize() throw (tgt::Exception) {
     if (value_) {
-        delete value_;
-        value_ = 0;
+        value_->deleteTexture();
         LGL_ERROR;
     }
 

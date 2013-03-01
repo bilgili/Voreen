@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,7 +36,7 @@ namespace voreen {
 /**
  * Abstract base class for all primitives that are used in 2D transfer functions.
  */
-class VRN_CORE_API TransFuncPrimitive : public AbstractSerializable {
+class VRN_CORE_API TransFuncPrimitive : public VoreenSerializableObject {
 public:
     /**
      * Standard constructor
@@ -215,6 +215,9 @@ public:
      */
     ~TransFuncQuad();
 
+    virtual std::string getClassName() const   { return "TransFuncQuad";     }
+    virtual TransFuncPrimitive* create() const { return new TransFuncQuad(); }
+
     /**
      * Sets the scaleFactor of the primitive to the given value. The y coordinates
      * of the primitive are adjusted according to the scaleFactor.
@@ -322,6 +325,9 @@ public:
      * Destructor
      */
     ~TransFuncBanana();
+
+    virtual std::string getClassName() const   { return "TransFuncBanana";     }
+    virtual TransFuncPrimitive* create() const { return new TransFuncBanana(); }
 
     /**
      * Sets the scaleFactor of the primitive to the given value. The y coordinates

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -38,7 +38,6 @@
 #include "voreen/core/properties/transfuncproperty.h"
 #include "voreen/core/properties/volumeurllistproperty.h"
 
-#include "tgt/camera.h"
 #include "tgt/vector.h"
 #include "voreen/core/properties/shaderproperty.h"
 
@@ -60,10 +59,11 @@ namespace voreen {
 PropertyTimelineWidget::PropertyTimelineWidget(std::string name, PropertyTimeline* propertyTimeline, QWidget* parent)
         : QWidget(parent)
         , propertyTimeline_(propertyTimeline)
-        , name_(name)
         , inInterpolationMenu_(0)
         , outInterpolationMenu_(0)
         {
+    guiName_ = name;
+    id_ = name;
     mainLayout_ = new QHBoxLayout(this);
 
     mainLayout_->setMargin(0);
@@ -88,8 +88,8 @@ PropertyTimelineWidget::PropertyTimelineWidget(std::string name, PropertyTimelin
     propertyTimelineView_->setFixedHeight(40);
     connect(propertyTimelineView_, SIGNAL(mousePressedAt(QPointF, const QGraphicsItem*)), this, SLOT(interpolationSelectorPressed(QPointF, const QGraphicsItem*)));
 
-    inInterpolationSelector_ = new QGraphicsPixmapItem(QPixmap(":/icons/1leftarrow.png"));
-    outInterpolationSelector_ = new QGraphicsPixmapItem(QPixmap(":/icons/1rightarrow.png"));
+    inInterpolationSelector_ = new QGraphicsPixmapItem(QPixmap(":/qt/icons/1leftarrow.png"));
+    outInterpolationSelector_ = new QGraphicsPixmapItem(QPixmap(":/qt/icons/1rightarrow.png"));
     inInterpolationSelector_->setCursor(Qt::ArrowCursor);
     outInterpolationSelector_->setCursor(Qt::ArrowCursor);
 
@@ -187,6 +187,8 @@ void PropertyTimelineWidget::changeSmoothnessColor() {
 
 void PropertyTimelineWidget::initConnections() {
     connect(propertyTimelineView_, SIGNAL(addKeyframe(QPointF)), this, SLOT(addKeyframeCore(QPointF)));
+    connect(propertyTimelineView_, SIGNAL(clearTimeline()), this, SLOT(clearTimeline()));
+    connect(propertyTimelineView_, SIGNAL(removeTimeline()), this, SLOT(removeTimeline()));
     connect(propertyTimelineView_, SIGNAL(noItemPressed(bool)), this, SLOT(disablePropertyWidget(bool)));
     connect(propertyTimelineView_, SIGNAL(snapshot(int, bool)), this, SLOT(snapshot(int, bool)));
     if(propertyWidget_ != 0) {
@@ -202,12 +204,22 @@ KeyframeGraphicsItem* PropertyTimelineWidget::addKeyframeCore(QPointF pos) {    
     kfgi->setZValue(2.1);
     propertyTimelineScene_->addItem(kfgi);
     connect(kfgi, SIGNAL(itemClicked(KeyframeGraphicsItem*)), this, SLOT(itemClicked(KeyframeGraphicsItem*)));
-    connect(kfgi, SIGNAL(itemReleased(KeyframeGraphicsItem*)), this, SLOT(itemReleased(KeyframeGraphicsItem*)));
+    connect(kfgi, SIGNAL(itemReleased(KeyframeGraphicsItem*, bool)), this, SLOT(itemReleased(KeyframeGraphicsItem*, bool)));
     connect(kfgi, SIGNAL(itemMoving(KeyframeGraphicsItem*)), this, SLOT(itemMoving(KeyframeGraphicsItem*)));
 
     // Adds Keyframe to Animation core and puts it into map<graphicsitem, keyvalue>
     addTemplateKeyframeCore(kfgi, pos);
     return kfgi;
+}
+
+void PropertyTimelineWidget::clearTimeline() {
+    propertyTimeline_->resetTimeline();
+    timelineChange_ = true;
+    timelineChanged();
+}
+
+void PropertyTimelineWidget::removeTimeline() {
+    emit removeTimeline(propertyTimeline_->getProperty());
 }
 
 KeyframeGraphicsItem* PropertyTimelineWidget::addKeyframeScene(PropertyKeyValueBase* key) {
@@ -217,7 +229,7 @@ KeyframeGraphicsItem* PropertyTimelineWidget::addKeyframeScene(PropertyKeyValueB
     kfgi->setZValue(1.0);
     propertyTimelineScene_->addItem(kfgi);
     connect(kfgi, SIGNAL(itemClicked(KeyframeGraphicsItem*)), this, SLOT(itemClicked(KeyframeGraphicsItem*)));
-    connect(kfgi, SIGNAL(itemReleased(KeyframeGraphicsItem*)), this, SLOT(itemReleased(KeyframeGraphicsItem*)));
+    connect(kfgi, SIGNAL(itemReleased(KeyframeGraphicsItem*, bool)), this, SLOT(itemReleased(KeyframeGraphicsItem*, bool)));
     connect(kfgi, SIGNAL(itemMoving(KeyframeGraphicsItem*)), this, SLOT(itemMoving(KeyframeGraphicsItem*)));
     // adds keyframe to propertytimelinescene and puts it into map<graphicsitem, keyvalue>
     addTemplateKeyframeScene(kfgi, key);
@@ -289,9 +301,13 @@ QString PropertyTimelineWidget::getTimeString(int frame) {
     return ret;
 }
 
-void PropertyTimelineWidget::itemReleased(KeyframeGraphicsItem* kfgi) {
+void PropertyTimelineWidget::itemReleased(KeyframeGraphicsItem* kfgi, bool shift) {
     float x = (float)kfgi->pos().x()/30;
-    updateTemplateKeyframePosition(x, kfgi);
+
+    if(shift)
+        shiftTemplateKeyframePosition(x, kfgi);
+    else
+        updateTemplateKeyframePosition(x, kfgi);
 }
 
 void PropertyTimelineWidget::itemMoving(KeyframeGraphicsItem* kfgi) {
@@ -301,6 +317,7 @@ void PropertyTimelineWidget::itemMoving(KeyframeGraphicsItem* kfgi) {
 
 void PropertyTimelineWidget::updateKeyframe() {
     updateTemplateKeyframe();
+    emit keyframeChanged();
 }
 
 void PropertyTimelineWidget::keyPressEvent(QKeyEvent* e) {
@@ -323,10 +340,6 @@ void PropertyTimelineWidget::showOutInterpolationMenu() {
         if(action != 0)
             setTemplateOutInterpolation(action);
     }
-}
-
-std::string PropertyTimelineWidget::getName() const{
-    return name_;
 }
 
 void PropertyTimelineWidget::setFps(int fps) {

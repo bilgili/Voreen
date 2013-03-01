@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -44,7 +44,7 @@ namespace voreen {
 /**
  * Thrown by a VolumeOperator is the type of the passed Volume is not supported.
  */
-class VolumeOperatorUnsupportedTypeException : public VoreenException {
+class VRN_CORE_API VolumeOperatorUnsupportedTypeException : public VoreenException {
 public:
     VolumeOperatorUnsupportedTypeException(const std::string& type = "unknown")
         : VoreenException("Volume type '" + type + "'not supported by this VolumeOperator")

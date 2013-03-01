@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -135,7 +135,7 @@ void PlotLibrarySvg::beforeRender() {
         << "  voreen:version=\"" << VoreenVersion::getVersion() << "\"\n"
         << "  voreen:copyright=\"" << VoreenVersion::getCopyright() << "\""
         << " >\n"
-        << "<title id=\"title\">" << VoreenApplication::app()->getDisplayName() << " " << outputFile_ << " </title>\n"
+        << "<title id=\"title\">" << VoreenApplication::app()->getGuiName() << " " << outputFile_ << " </title>\n"
         << "<desc>Voreen PlotSVG-Output-File</desc>\n"
         << "<defs>\n"
         << "  <clipPath id=\"cp0\">\n"

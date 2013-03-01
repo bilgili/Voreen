@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -115,7 +115,7 @@ void VoreenBlasCL::sAXPY(size_t vecSize, const float* vecx, const float* vecy, f
 
     queue_->enqueue(kernel, workSize);
 
-    queue_->enqueueRead(&resultBuffer, (void*)(result), true);
+    queue_->enqueueReadBuffer(&resultBuffer, (void*)(result), true);
     queue_->finish();
 }
 
@@ -153,7 +153,7 @@ float VoreenBlasCL::sDOT(size_t vecSize, const float* vecx, const float* vecy) c
     queue_->enqueue(kernel, workSize, localWorkSize);
 
     float result;
-    queue_->enqueueRead(&resultBuffer, (void*)(&result), true);
+    queue_->enqueueReadBuffer(&resultBuffer, (void*)(&result), true);
     queue_->finish();
 
     return result;
@@ -191,7 +191,7 @@ float VoreenBlasCL::sNRM2(size_t vecSize, const float* vecx) const {
     queue_->enqueue(kernel, workSize, localWorkSize);
 
     float result;
-    queue_->enqueueRead(&resultBuffer, (void*)(&result), true);
+    queue_->enqueueReadBuffer(&resultBuffer, (void*)(&result), true);
     queue_->finish();
 
     return result;
@@ -227,7 +227,7 @@ void VoreenBlasCL::sSpMVEll(const EllpackMatrix<float>& mat, const float* vec, f
 
     queue_->enqueue(kernel, workSize);
 
-    queue_->enqueueRead(&resultBuffer, (void*)(result), true);
+    queue_->enqueueReadBuffer(&resultBuffer, (void*)(result), true);
     queue_->finish();
 }
 
@@ -261,7 +261,7 @@ void VoreenBlasCL::hSpMVEll(const EllpackMatrix<int16_t>& mat, const float* vec,
 
     queue_->enqueue(kernel, workSize);
 
-    queue_->enqueueRead(&resultBuffer, (void*)(result), true);
+    queue_->enqueueReadBuffer(&resultBuffer, (void*)(result), true);
     queue_->finish();
 }
 
@@ -303,7 +303,7 @@ float VoreenBlasCL::sSpInnerProductEll(const EllpackMatrix<float>& mat, const fl
     queue_->enqueue(kernel, workSize, localWorkSize);
 
     float result;
-    queue_->enqueueRead(&resultBuffer, (void*)(&result), true);
+    queue_->enqueueReadBuffer(&resultBuffer, (void*)(&result), true);
     queue_->finish();
 
     return result;
@@ -457,7 +457,7 @@ int VoreenBlasCL::sSpConjGradEll(const EllpackMatrix<float>& mat, const float* v
         kernelSdot->setArg(4, mutexBuf);
         kernelSdot->setArg(5, sizeof(float)*localWorksize, 0);
         mutex = 0;
-        queue_->enqueueWrite(&mutexBuf, &mutex, true);    //< initialize mutex
+        queue_->enqueueWriteBuffer(&mutexBuf, &mutex, true);    //< initialize mutex
         queue_->enqueue(kernelSdot, workSize, localWorksize);
 
         // tmp <= A * p_k
@@ -478,13 +478,13 @@ int VoreenBlasCL::sSpConjGradEll(const EllpackMatrix<float>& mat, const float* v
         kernelSdot->setArg(4, mutexBuf);
         kernelSdot->setArg(5, sizeof(float)*localWorksize, 0);
         mutex = 0;
-        queue_->enqueueWrite(&mutexBuf, &mutex, true);
+        queue_->enqueueWriteBuffer(&mutexBuf, &mutex, true);
         queue_->enqueue(kernelSdot, workSize, localWorksize);
 
         float denominator;
         float nominator;
-        queue_->enqueueRead(&nominatorBuf, (void*)(&nominator), true);
-        queue_->enqueueRead(&denominatorBuf, (void*)(&denominator), true);
+        queue_->enqueueReadBuffer(&nominatorBuf, (void*)(&nominator), true);
+        queue_->enqueueReadBuffer(&denominatorBuf, (void*)(&denominator), true);
         float alpha = nominator / denominator;
 
         // x <= alpha*p + x
@@ -522,9 +522,9 @@ int VoreenBlasCL::sSpConjGradEll(const EllpackMatrix<float>& mat, const float* v
             kernelSdot->setArg(4, mutexBuf);
             kernelSdot->setArg(5, sizeof(float)*localWorksize, 0);
             mutex = 0;
-            queue_->enqueueWrite(&mutexBuf, &mutex, true);
+            queue_->enqueueWriteBuffer(&mutexBuf, &mutex, true);
             queue_->enqueue(kernelSdot, workSize, localWorksize);
-            queue_->enqueueRead(&scalarBuf, (void*)(&beta), true);
+            queue_->enqueueReadBuffer(&scalarBuf, (void*)(&beta), true);
         }
         else {
             kernelSdot->setArg(0, vecSize);
@@ -534,9 +534,9 @@ int VoreenBlasCL::sSpConjGradEll(const EllpackMatrix<float>& mat, const float* v
             kernelSdot->setArg(4, mutexBuf);
             kernelSdot->setArg(5, sizeof(float)*localWorksize, 0);
             mutex = 0;
-            queue_->enqueueWrite(&mutexBuf, &mutex, true);
+            queue_->enqueueWriteBuffer(&mutexBuf, &mutex, true);
             queue_->enqueue(kernelSdot, workSize, localWorksize);
-            queue_->enqueueRead(&scalarBuf, (void*)(&beta), true);
+            queue_->enqueueReadBuffer(&scalarBuf, (void*)(&beta), true);
         }
 
         if (sqrt(beta) < threshold)
@@ -556,7 +556,7 @@ int VoreenBlasCL::sSpConjGradEll(const EllpackMatrix<float>& mat, const float* v
         queue_->enqueue(kernelSapxy, workSize);
     }
 
-    queue_->enqueueRead(&xBuf, (void*)(result), true);
+    queue_->enqueueReadBuffer(&xBuf, (void*)(result), true);
     queue_->finish();
 
     if (initialAllocated)
@@ -671,7 +671,7 @@ int VoreenBlasCL::hSpConjGradEll(const EllpackMatrix<int16_t>& mat, const float*
         kernelSdot->setArg(4, mutexBuf);
         kernelSdot->setArg(5, sizeof(float)*localWorksize, 0);
         mutex = 0;
-        queue_->enqueueWrite(&mutexBuf, &mutex, true);    //< initialize mutex
+        queue_->enqueueWriteBuffer(&mutexBuf, &mutex, true);    //< initialize mutex
         queue_->enqueue(kernelSdot, workSize, localWorksize);
 
         // tmp <= A * p_k
@@ -692,13 +692,13 @@ int VoreenBlasCL::hSpConjGradEll(const EllpackMatrix<int16_t>& mat, const float*
         kernelSdot->setArg(4, mutexBuf);
         kernelSdot->setArg(5, sizeof(float)*localWorksize, 0);
         mutex = 0;
-        queue_->enqueueWrite(&mutexBuf, &mutex, true);
+        queue_->enqueueWriteBuffer(&mutexBuf, &mutex, true);
         queue_->enqueue(kernelSdot, workSize, localWorksize);
 
         float denominator;
         float nominator;
-        queue_->enqueueRead(&nominatorBuf, (void*)(&nominator), true);
-        queue_->enqueueRead(&denominatorBuf, (void*)(&denominator), true);
+        queue_->enqueueReadBuffer(&nominatorBuf, (void*)(&nominator), true);
+        queue_->enqueueReadBuffer(&denominatorBuf, (void*)(&denominator), true);
         float alpha = nominator / denominator;
 
         // x <= alpha*p + x
@@ -725,10 +725,10 @@ int VoreenBlasCL::hSpConjGradEll(const EllpackMatrix<int16_t>& mat, const float*
         kernelSdot->setArg(4, mutexBuf);
         kernelSdot->setArg(5, sizeof(float)*localWorksize, 0);
         mutex = 0;
-        queue_->enqueueWrite(&mutexBuf, &mutex, true);
+        queue_->enqueueWriteBuffer(&mutexBuf, &mutex, true);
         queue_->enqueue(kernelSdot, workSize, localWorksize);
         float beta;
-        queue_->enqueueRead(&scalarBuf, (void*)(&beta), true);
+        queue_->enqueueReadBuffer(&scalarBuf, (void*)(&beta), true);
 
         if (sqrt(beta) < threshold)
             break;
@@ -744,7 +744,7 @@ int VoreenBlasCL::hSpConjGradEll(const EllpackMatrix<int16_t>& mat, const float*
         queue_->enqueue(kernelSapxy, workSize);
     }
 
-    queue_->enqueueRead(&xBuf, (void*)(result), true);
+    queue_->enqueueReadBuffer(&xBuf, (void*)(result), true);
     queue_->finish();
 
     if (initialAllocated)

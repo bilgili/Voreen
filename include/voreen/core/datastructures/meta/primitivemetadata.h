@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -77,7 +77,7 @@ public:
     BoolMetaData(bool value) : PrimitiveMetaDataBase<bool>(value) {}
 
     virtual std::string getClassName() const { return "BoolMetaData"; }
-    virtual Serializable* create() const     { return new BoolMetaData(); }
+    virtual MetaDataBase* create() const     { return new BoolMetaData(); }
     virtual MetaDataBase* clone() const      { return new BoolMetaData(getValue()); }
 
     virtual std::string toString() const {
@@ -102,7 +102,7 @@ public:
     StringMetaData(std::string value) : PrimitiveMetaDataBase<std::string>(value) {}
 
     virtual std::string getClassName() const { return "StringMetaData"; }
-    virtual Serializable* create() const     { return new StringMetaData(); }
+    virtual MetaDataBase* create() const     { return new StringMetaData(); }
     virtual MetaDataBase* clone() const      { return new StringMetaData(getValue()); }
     virtual std::string toString() const { return getValue();}
 
@@ -121,7 +121,7 @@ public:
     IntMetaData(int value) : PrimitiveMetaDataBase<int>(value) {}
 
     virtual std::string getClassName() const { return "IntMetaData"; }
-    virtual Serializable* create() const     { return new IntMetaData(); }
+    virtual MetaDataBase* create() const     { return new IntMetaData(); }
     virtual MetaDataBase* clone() const      { return new IntMetaData(getValue()); }
     virtual std::string toString() const { return itos(getValue());}
 
@@ -140,7 +140,7 @@ public:
     SizeTMetaData(size_t value) : PrimitiveMetaDataBase<size_t>(value) {}
 
     virtual std::string getClassName() const { return "SizeTMetaData"; }
-    virtual Serializable* create() const     { return new SizeTMetaData(); }
+    virtual MetaDataBase* create() const     { return new SizeTMetaData(); }
     virtual MetaDataBase* clone() const      { return new SizeTMetaData(getValue()); }
     virtual std::string toString() const { return itos(getValue()); }
 
@@ -159,7 +159,7 @@ public:
     FloatMetaData(float value) : PrimitiveMetaDataBase<float>(value) {}
 
     virtual std::string getClassName() const { return "FloatMetaData"; }
-    virtual Serializable* create() const     { return new FloatMetaData(); }
+    virtual MetaDataBase* create() const     { return new FloatMetaData(); }
     virtual MetaDataBase* clone() const      { return new FloatMetaData(getValue()); }
     virtual std::string toString() const { return ftos(getValue());}
 
@@ -178,7 +178,7 @@ public:
     DoubleMetaData(double value) : PrimitiveMetaDataBase<double>(value) {}
 
     virtual std::string getClassName() const { return "DoubleMetaData"; }
-    virtual Serializable* create() const     { return new DoubleMetaData(); }
+    virtual MetaDataBase* create() const     { return new DoubleMetaData(); }
     virtual MetaDataBase* clone() const      { return new DoubleMetaData(getValue()); }
     virtual std::string toString() const { return dtos(getValue());}
 
@@ -197,7 +197,7 @@ public:
     Vec2MetaData(tgt::vec2 value) : PrimitiveMetaDataBase<tgt::vec2>(value) {}
 
     virtual std::string getClassName() const { return "Vec2MetaData"; }
-    virtual Serializable* create() const     { return new Vec2MetaData(); }
+    virtual MetaDataBase* create() const     { return new Vec2MetaData(); }
     virtual MetaDataBase* clone() const      { return new Vec2MetaData(getValue()); }
     virtual std::string toString() const {
         std::stringstream s;
@@ -228,7 +228,7 @@ public:
     IVec2MetaData(tgt::ivec2 value) : PrimitiveMetaDataBase<tgt::ivec2>(value) {}
 
     virtual std::string getClassName() const { return "IVec2MetaData"; }
-    virtual Serializable* create() const     { return new IVec2MetaData(); }
+    virtual MetaDataBase* create() const     { return new IVec2MetaData(); }
     virtual MetaDataBase* clone() const      { return new IVec2MetaData(getValue()); }
     virtual std::string toString() const {
         std::stringstream s;
@@ -259,7 +259,7 @@ public:
     Vec3MetaData(tgt::vec3 value) : PrimitiveMetaDataBase<tgt::vec3>(value) {}
 
     virtual std::string getClassName() const { return "Vec3MetaData"; }
-    virtual Serializable* create() const     { return new Vec3MetaData(); }
+    virtual MetaDataBase* create() const     { return new Vec3MetaData(); }
     virtual MetaDataBase* clone() const      { return new Vec3MetaData(getValue()); }
     virtual std::string toString() const {
         std::stringstream s;
@@ -292,7 +292,7 @@ public:
     DVec2MetaData(tgt::dvec2 value) : PrimitiveMetaDataBase<tgt::dvec2>(value) {}
 
     virtual std::string getClassName() const { return "DVec2MetaData"; }
-    virtual Serializable* create() const     { return new DVec2MetaData(); }
+    virtual MetaDataBase* create() const     { return new DVec2MetaData(); }
     virtual MetaDataBase* clone() const      { return new DVec2MetaData(getValue()); }
     virtual std::string toString() const {
         std::stringstream s;
@@ -325,7 +325,7 @@ public:
     DVec3MetaData(tgt::dvec3 value) : PrimitiveMetaDataBase<tgt::dvec3>(value) {}
 
     virtual std::string getClassName() const { return "DVec3MetaData"; }
-    virtual Serializable* create() const     { return new DVec3MetaData(); }
+    virtual MetaDataBase* create() const     { return new DVec3MetaData(); }
     virtual MetaDataBase* clone() const      { return new DVec3MetaData(getValue()); }
     virtual std::string toString() const {
         std::stringstream s;
@@ -358,7 +358,7 @@ public:
     IVec3MetaData(tgt::ivec3 value) : PrimitiveMetaDataBase<tgt::ivec3>(value) {}
 
     virtual std::string getClassName() const { return "IVec3MetaData"; }
-    virtual Serializable* create() const     { return new IVec3MetaData(); }
+    virtual MetaDataBase* create() const     { return new IVec3MetaData(); }
     virtual MetaDataBase* clone() const      { return new IVec3MetaData(getValue()); }
     virtual std::string toString() const {
         std::stringstream s;
@@ -391,7 +391,7 @@ public:
     Vec4MetaData(tgt::vec4 value) : PrimitiveMetaDataBase<tgt::vec4>(value) {}
 
     virtual std::string getClassName() const { return "Vec4MetaData"; }
-    virtual Serializable* create() const     { return new Vec4MetaData(); }
+    virtual MetaDataBase* create() const     { return new Vec4MetaData(); }
     virtual MetaDataBase* clone() const      { return new Vec4MetaData(getValue()); }
     virtual std::string toString() const {
         std::stringstream s;
@@ -426,7 +426,7 @@ public:
     IVec4MetaData(tgt::ivec4 value) : PrimitiveMetaDataBase<tgt::ivec4>(value) {}
 
     virtual std::string getClassName() const { return "IVec4MetaData"; }
-    virtual Serializable* create() const     { return new IVec4MetaData(); }
+    virtual MetaDataBase* create() const     { return new IVec4MetaData(); }
     virtual MetaDataBase* clone() const      { return new IVec4MetaData(getValue()); }
     virtual std::string toString() const {
         std::stringstream s;
@@ -461,7 +461,7 @@ public:
     DVec4MetaData(tgt::dvec4 value) : PrimitiveMetaDataBase<tgt::dvec4>(value) {}
 
     virtual std::string getClassName() const { return "DVec4MetaData"; }
-    virtual Serializable* create() const     { return new DVec4MetaData(); }
+    virtual MetaDataBase* create() const     { return new DVec4MetaData(); }
     virtual MetaDataBase* clone() const      { return new DVec4MetaData(getValue()); }
     virtual std::string toString() const {
         std::stringstream s;
@@ -496,7 +496,7 @@ public:
     Mat2MetaData(tgt::mat2 value) : PrimitiveMetaDataBase<tgt::mat2>(value) {}
 
     virtual std::string getClassName() const { return "Mat2MetaData"; }
-    virtual Serializable* create() const     { return new Mat2MetaData(); }
+    virtual MetaDataBase* create() const     { return new Mat2MetaData(); }
     virtual MetaDataBase* clone() const      { return new Mat2MetaData(getValue()); }
     virtual std::string toString() const {
         std::stringstream s;
@@ -519,7 +519,7 @@ public:
     Mat3MetaData(tgt::mat3 value) : PrimitiveMetaDataBase<tgt::mat3>(value) {}
 
     virtual std::string getClassName() const { return "Mat3MetaData"; }
-    virtual Serializable* create() const     { return new Mat3MetaData(); }
+    virtual MetaDataBase* create() const     { return new Mat3MetaData(); }
     virtual MetaDataBase* clone() const      { return new Mat3MetaData(getValue()); }
     virtual std::string toString() const {
         std::stringstream s;
@@ -542,7 +542,7 @@ public:
     Mat4MetaData(tgt::mat4 value) : PrimitiveMetaDataBase<tgt::mat4>(value) {}
 
     virtual std::string getClassName() const { return "Mat4MetaData"; }
-    virtual Serializable* create() const     { return new Mat4MetaData(); }
+    virtual MetaDataBase* create() const     { return new Mat4MetaData(); }
     virtual MetaDataBase* clone() const      { return new Mat4MetaData(getValue()); }
     virtual std::string toString() const {
         std::stringstream s;
@@ -565,7 +565,7 @@ public:
     DateTimeMetaData(DateTime value) : PrimitiveMetaDataBase<DateTime>(value) {}
 
     virtual std::string getClassName() const { return "DateTimeMetaData"; }
-    virtual Serializable* create() const     { return new DateTimeMetaData(); }
+    virtual MetaDataBase* create() const     { return new DateTimeMetaData(); }
     virtual MetaDataBase* clone() const      { return new DateTimeMetaData(getValue()); }
 
     virtual std::string toString() const {

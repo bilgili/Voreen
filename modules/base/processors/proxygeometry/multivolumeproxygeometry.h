@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -27,9 +27,8 @@
 #define VRN_MULTIVOLUMEPROXYGEOMETRY_H
 
 #include "voreen/core/processors/processor.h"
-#include "voreen/core/ports/allports.h"
-
-#include "voreen/core/datastructures/geometry/meshlistgeometry.h"
+#include "voreen/core/ports/volumeport.h"
+#include "voreen/core/ports/geometryport.h"
 
 namespace voreen {
 
@@ -40,7 +39,7 @@ namespace voreen {
  * @see MeshClipping
  * @see MultiVolumeRaycaster
  */
-class MultiVolumeProxyGeometry : public Processor {
+class VRN_CORE_API MultiVolumeProxyGeometry : public Processor {
 
 public:
     MultiVolumeProxyGeometry();

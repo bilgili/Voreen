@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -35,42 +35,45 @@ template class VRN_CORE_API InterpolationFunction<bool>;
 #endif
 
 /**
- * This class VRN_CORE_API offers an interpolation function for bool-values. Interpolation: focus on startvalue.
+ * This class offers an interpolation function for bool-values. Interpolation: focus on startvalue.
  */
 class VRN_CORE_API BoolStartInterpolationFunction : public InterpolationFunction<bool> {
 public:
     BoolStartInterpolationFunction();
-    InterpolationFunction<bool>* clone() const;
+    virtual std::string getClassName() const { return "BoolStartInterpolationFunction"; }
+    InterpolationFunction<bool>* create() const;
     bool interpolate(bool startvalue, bool endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for bool-values. Interpolation: focus on endvalue.
+ * This class offers an interpolation function for bool-values. Interpolation: focus on endvalue.
  */
 class VRN_CORE_API BoolEndInterpolationFunction : public InterpolationFunction<bool> {
 public:
     BoolEndInterpolationFunction();
-    InterpolationFunction<bool>* clone() const;
+    virtual std::string getClassName() const { return "BoolEndInterpolationFunction"; }
+    InterpolationFunction<bool>* create() const;
     bool interpolate(bool startvalue, bool endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for bool-values. Interpolation: bisection.
+ * This class offers an interpolation function for bool-values. Interpolation: bisection.
  */
 class VRN_CORE_API BoolStartEndInterpolationFunction : public InterpolationFunction<bool> {
 public:
     BoolStartEndInterpolationFunction();
-    InterpolationFunction<bool>* clone() const;
+    virtual std::string getClassName() const { return "BoolStartEndInterpolationFunction"; }
+    InterpolationFunction<bool>* create() const;
     bool interpolate(bool startvalue, bool endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 } // namespace voreen

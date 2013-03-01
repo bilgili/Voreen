@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -45,9 +45,15 @@ template<typename> friend class NumericPropertyValidation;
 public:
     typedef T ElemType;
 
+    enum BoundaryUpdatePolicy {
+        CONSTANT,
+        STATIC,
+        DYNAMIC
+    };
+
     NumericProperty(const std::string& id, const std::string& guiText, const T& value,
                     const T& minValue, const T& maxValue, const T& stepping,
-                    int invalidationLevel=Processor::INVALID_RESULT);
+                    int invalidationLevel=Processor::INVALID_RESULT, BoundaryUpdatePolicy boundPol = STATIC);
 
     /**
      * Sets the minimum value the variable can take.
@@ -118,18 +124,20 @@ protected:
     T stepping_;
     bool tracking_;
     int numDecimals_;
+    BoundaryUpdatePolicy boundaryPolicy_;
 };
 
 template<typename T>
 NumericProperty<T>::NumericProperty(const std::string& id, const std::string& guiText, const T& value,
                                     const T& minValue, const T& maxValue, const T& stepping,
-                                    int invalidationLevel)
+                                    int invalidationLevel, BoundaryUpdatePolicy boundPol)
                                     : TemplateProperty<T>(id, guiText, value, invalidationLevel),
                                     minValue_(minValue),
                                     maxValue_(maxValue),
                                     stepping_(stepping),
                                     tracking_(true),
-                                    numDecimals_(2)
+                                    numDecimals_(2),
+                                    boundaryPolicy_(boundPol)
 {
     this->addValidation(NumericPropertyValidation<T>(this));
     std::string errorMsg;
@@ -140,6 +148,11 @@ NumericProperty<T>::NumericProperty(const std::string& id, const std::string& gu
 
 template<typename T>
 void NumericProperty<T>::setMaxValue( const T& maxValue ) {
+    if(boundaryPolicy_ == CONSTANT) {
+        LWARNINGC("voreen.TemplateProperty", "Tried setting max value on numeric property with constant boundaries.");
+        return;
+    }
+
     if(maxValue_ != maxValue) {
         maxValue_ = maxValue;
         //check if min < max
@@ -166,6 +179,11 @@ const T& NumericProperty<T>::getMaxValue() const {
 
 template<typename T>
 void NumericProperty<T>::setMinValue(const T& minValue) {
+    if(boundaryPolicy_ == CONSTANT) {
+        LWARNINGC("voreen.TemplateProperty", "Tried setting min value on numeric property with constant boundaries.");
+        return;
+    }
+
     if(minValue_ != minValue) {
         minValue_ = minValue;
         //check if min < max
@@ -240,6 +258,11 @@ void NumericProperty<T>::serialize(XmlSerializer& s) const {
 
     s.serialize("value", value_);
 
+    if(boundaryPolicy_ == DYNAMIC) {
+        s.serialize("minValue", minValue_);
+        s.serialize("maxValue", maxValue_);
+    }
+
     // serialize tracking mode, if it differs from default value
     if (!tracking_)
         s.serialize("tracking", tracking_);
@@ -252,6 +275,17 @@ void NumericProperty<T>::deserialize(XmlDeserializer& s) {
     // deserialize value
     T value;
     s.deserialize("value", value);
+
+    try {
+        if(boundaryPolicy_ == DYNAMIC) {
+            s.deserialize("minValue", minValue_);
+            s.deserialize("maxValue", maxValue_);
+        }
+    }
+    catch (XmlSerializationNoSuchDataException&) {
+        s.removeLastError();
+    }
+
     try {
         this->set(value);
     }

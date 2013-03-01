@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -46,6 +46,7 @@ class PortCondition;
  */
 class VRN_CORE_API Port : public PropertyOwner {
 
+    friend class Aggregation;
     friend class PortCondition;
     friend class Processor;
     friend class ProcessorNetwork;
@@ -54,7 +55,7 @@ class VRN_CORE_API Port : public PropertyOwner {
 public:
     enum PortDirection {
         OUTPORT = 0,
-        INPORT
+        INPORT  = 1
     };
 
     /**
@@ -62,7 +63,6 @@ public:
      *
      * @param id The id of the port, must be unique per processor.
      * @param guiName The name of the port to be used in the user interface.
-     * @param processor The processor this port belongs to.
      * @param direction Is this port an inport or outport?
      * @param allowMultipleConnections  Can this port handle multiple connections? (Outports always can)
      * @param invalidationLevel For inports: The Processor is invalidated with this invalidationlevel when the data on this port changes.
@@ -77,12 +77,18 @@ public:
     virtual ~Port();
 
     /**
-     * Returns the name of this class as a string.
-     * Necessary due to the lack of code reflection in C++.
-     *
-     * This method is expected to be re-implemented by each concrete subclass.
+     * Virtual constructor: supposed to return an instance of the concrete Port class.
      */
-    virtual std::string getClassName() const { return "Port"; };
+    virtual Port* create(PortDirection direction, const std::string& id, const std::string& guiName = "") const = 0;
+
+    /**
+     * Returns an instance of the concrete port type with direction OUTPORT and empty id/gui name.
+     *
+     * @note Do not call this function directly, but use the constructor or create(direction, id, guiName) instead!
+     *  This function has only been added to fulfill the interface requirements of VoreenSerializableObject
+     *  and should be exclusively used by the serialization framework!
+     */
+    virtual Port* create() const;
 
     /**
      * Adds a port condition for checking the validity of the assigned port data.
@@ -193,21 +199,6 @@ public:
      * @return True if the data has changed since Processor::process() [and setValid()] call of the processor this port belongs to.
      */
     bool hasChanged() const;
-
-    /**
-     * Returns the id of the port, must be unique per processor.
-     */
-    std::string getID() const;
-
-    /**
-     * Returns the port's id.
-     */
-    virtual std::string getName() const;
-
-    /**
-     * Returns the GUI name of the port.
-     */
-    std::string getGuiName() const;
 
     /**
      * Returns aktuell content of the port
@@ -340,7 +331,39 @@ public:
      */
     virtual tgt::col3 getColorHint() const;
 
+    /**
+     * Adds the port to the forwardPortList_. If this gets new data, it will forward
+     * it to all ports in the list.
+     *
+     * @see forwardData
+     *
+     * @param Port that will be added to list.
+     */
+    virtual void addForwardPort(Port* port);
+
+    /**
+     * Removes the port from the forwardPortList_.
+     *
+     * @see forwardData
+     *
+     * @param Port that will be removed from list.
+     */
+    virtual bool removeForwardPort(Port* port);
+
+    virtual void serialize(XmlSerializer& s) const;
+
+    virtual void deserialize(XmlDeserializer& s);
+
 protected:
+    /**
+     * If this gets new data, it will forward it to all ports in the list.
+     * Ports in the list must have the same type as this. An example implementation
+     * can be found in GenericPort.
+     *
+     * @see invalidatePort, GenericPort
+     */
+    virtual void forwardData() const = 0;
+
     /**
      * Performs OpenGL dependent and expensive initializations,
      * which are not allowed to be done in the constructor.
@@ -387,11 +410,9 @@ protected:
 
     virtual void setProcessor(Processor* p);
 
-    std::string id_;
-    std::string guiName_;
     std::vector<Port*> connectedPorts_; ///< The ports connected to this one
     Processor* processor_;                ///< The processor this port belongs to
-    const PortDirection direction_;       ///< Is this port an outport or not
+    PortDirection direction_;       ///< Is this port an outport or not
     bool allowMultipleConnections_;       ///< Is this port allowed to have multiple connections?
     bool hasChanged_;
 
@@ -400,6 +421,8 @@ protected:
     std::vector<PortCondition*> conditions_;
 
     Processor::InvalidationLevel invalidationLevel_;
+
+    std::vector<Port*> forwardPorts_;
 
     /// category used in logging
     static const std::string loggerCat_;
@@ -424,13 +447,6 @@ private:
 
     /// Description for display in GUI etc.
     std::string description_;
-};
-
-//help class to have a non virtual port class
-class LoopPort : public Port {
-public:
-    LoopPort(PortDirection direction, const std::string& name, const std::string& guiName = "") : Port(direction, name, guiName) {}
-    virtual std::string getClassName() const {return "LoopPort";}
 };
 
 }   // namespace voreen

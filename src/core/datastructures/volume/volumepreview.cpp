@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -24,6 +24,7 @@
  ***********************************************************************************/
 
 #include "voreen/core/datastructures/volume/volumepreview.h"
+#include "voreen/core/datastructures/volume/volumedisk.h"
 
 namespace voreen {
 
@@ -38,11 +39,12 @@ VolumePreview::VolumePreview(int height, const std::vector<unsigned char>& data)
     , prevData_(data)
 {}
 
-VolumeDerivedData* VolumePreview::createFrom(const VolumeBase* handle) const {
-    tgtAssert(handle, "no volume handle");
+VolumeDerivedData* VolumePreview::create() const {
+    return new VolumePreview();
+}
 
-    const VolumeRAM* volume = handle->getRepresentation<VolumeRAM>();
-    tgtAssert(volume, "no volume");
+VolumeDerivedData* VolumePreview::createFrom(const VolumeBase* handle) const {
+    tgtAssert(handle, "no volume");
 
     int internHeight = 64;
 
@@ -51,8 +53,8 @@ VolumeDerivedData* VolumePreview::createFrom(const VolumeBase* handle) const {
 
     float xSpacing = handle->getSpacing()[0];
     float ySpacing = handle->getSpacing()[1];
-    float xDimension = static_cast<float>(volume->getDimensions()[0]);
-    float yDimension = static_cast<float>(volume->getDimensions()[1]);
+    float xDimension = static_cast<float>(handle->getDimensions()[0]);
+    float yDimension = static_cast<float>(handle->getDimensions()[1]);
 
     // determine offsets and scale factors for non-uniform aspect ratios
     float aspectRatio = (yDimension * ySpacing) / (xDimension * xSpacing);
@@ -71,35 +73,53 @@ VolumeDerivedData* VolumePreview::createFrom(const VolumeBase* handle) const {
     }
 
     float maxVal, minVal;
-    int numTries = 1;
-    int maxTries = 1 << static_cast<int>(std::log(static_cast<float>(volume->getDimensions().z)) / std::log(2.f));
     std::vector<float> prevData = std::vector<float>(internHeight * internHeight);
 
-    do {
-        prevData = std::vector<float>(internHeight * internHeight);
-        tgt::vec3 position;
-        int exp2 = 1 << static_cast<int>(std::log(static_cast<float>(numTries)) / std::log(2.f));
-        int offset = static_cast<int>(volume->getDimensions().z) / exp2;
-        position.z = static_cast<float>(std::min(offset * (numTries - exp2) + offset / 2, static_cast<int>(volume->getDimensions().z - 1)));
+    const VolumeRAM* volumeRam = 0;
+    const VolumeDisk* volumeDisk = 0;
+    if(handle->hasRepresentation<VolumeRAM>()) {
+        volumeRam = handle->getRepresentation<VolumeRAM>();
+        tgtAssert(volumeRam, "no volume");
+    } else if(handle->hasRepresentation<VolumeDisk>()) {
+        volumeDisk = handle->getRepresentation<VolumeDisk>();
+        tgtAssert(volumeDisk, "no volume");
+    }
 
-        // generate preview in float buffer
-        minVal = volume->elementRange().y;
-        maxVal = volume->elementRange().x;
-        for (int y = 0; y < internHeight; y++){
-            for (int x = 0; x < internHeight; x++){
-                position.x = ((x-xOffset) / (internHeight -1)) * xScale * (xDimension-1.f);
-                position.y = ((y-yOffset) / (internHeight -1)) * yScale * (yDimension-1.f);
-                int previewIndex = y*internHeight + x;
-                float val = 0.f;
-                if (position.x >= 0 && position.y >= 0 && position.x < xDimension && position.y < yDimension)
-                    val = volume->getVoxelNormalizedLinear(position);
-                prevData[previewIndex] = val;
-                minVal = std::min(minVal, val);
-                maxVal = std::max(maxVal, val);
-            }
+    tgt::vec3 position;
+    int offset = static_cast<int>(handle->getDimensions().z - 1) / 2;
+
+    if(volumeRam)
+        position.z = static_cast<float>(offset);
+    else if (volumeDisk){
+            volumeRam = volumeDisk->loadSlices(offset,offset);
+            tgtAssert(volumeRam, "no volume");
+            position.z = 0;
+        } else {
+            LERROR("No VolumeRAM or VolumeDisk!");
+            return 0;
         }
-        numTries++;
-    } while (maxVal < 0.1f && numTries <= maxTries);
+
+    // generate preview in float buffer
+    minVal = volumeRam->elementRange().y;
+    maxVal = volumeRam->elementRange().x;
+    for (int y = 0; y < internHeight; y++){
+        for (int x = 0; x < internHeight; x++){
+            position.x = ((x-xOffset) / (internHeight -1)) * xScale * (xDimension-1.f);
+            position.y = ((y-yOffset) / (internHeight -1)) * yScale * (yDimension-1.f);
+            int previewIndex = y*internHeight + x;
+            float val = 0.f;
+            if (position.x >= 0 && position.y >= 0 && position.x < xDimension && position.y < yDimension)
+                val = volumeRam->getVoxelNormalizedLinear(position);
+            prevData[previewIndex] = val;
+            minVal = std::min(minVal, val);
+            maxVal = std::max(maxVal, val);
+        }
+    }
+
+    if(volumeDisk) {
+        delete volumeRam;
+        volumeRam = 0;
+    }
 
     float valOffset = minVal;
     float valScale = maxVal - minVal;

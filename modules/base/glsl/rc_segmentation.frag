@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -94,7 +94,7 @@ vec4 applySegmentationClassification(vec3 sampleVal, vec4 voxel, VolumeParameter
  * Performs the ray traversal
  * returns the final fragment color.
  ***/
-void rayTraversal(in vec3 first, in vec3 last) {
+void rayTraversal(in vec3 first, in vec3 last, float entryDepth, float exitDepth) {
 
     // calculate the required ray parameters
     float t     = 0.0;
@@ -109,12 +109,6 @@ void rayTraversal(in vec3 first, in vec3 last) {
         vec3 samplePos = first + t * rayDirection;
         vec4 voxel = getVoxel(volume_, volumeStruct_, samplePos);
 
-        // calculate gradients
-        if(t == 0.0)
-            voxel.xyz = fixClipBorderGradient(samplePos, rayDirection, entryPoints_, entryParameters_);
-        else
-            voxel.xyz = CALC_GRADIENT(volume_, volumeStruct_, samplePos);
-
         #ifdef MOD_APPLY_SEGMENTATION
             // apply segmentation
             vec4 color = applySegmentationClassification(samplePos, voxel, segmentationParameters_);
@@ -123,11 +117,17 @@ void rayTraversal(in vec3 first, in vec3 last) {
             vec4 color = RC_APPLY_CLASSIFICATION(transferFunc_, transferFuncTex_, voxel);
         #endif
 
-        // apply standard shading
-        color.rgb = APPLY_SHADING(voxel.xyz, texToPhysical(samplePos, volumeStruct_), volumeStruct_.lightPositionPhysical_, volumeStruct_.cameraPositionPhysical_, color.rgb, color.rgb, color.rgb);
-
         // if opacity greater zero, apply compositing
         if (color.a > 0.0) {
+            // calculate gradients
+            if(t == 0.0)
+                voxel.xyz = fixClipBorderGradient(samplePos, rayDirection, entryPoints_, entryParameters_);
+            else
+                voxel.xyz = CALC_GRADIENT(volume_, volumeStruct_, samplePos);
+
+            // apply standard shading
+            color.rgb = APPLY_SHADING(voxel.xyz, texToPhysical(samplePos, volumeStruct_), volumeStruct_.lightPositionPhysical_, volumeStruct_.cameraPositionPhysical_, color.rgb, color.rgb, color.rgb);
+
             result = RC_APPLY_COMPOSITING(result, color, samplePos, voxel.xyz, t, samplingStepSize_, tDepth);
             result1 = RC_APPLY_COMPOSITING_1(result1, color, samplePos, voxel.xyz, t, samplingStepSize_, tDepth);
             result2 = RC_APPLY_COMPOSITING_2(result2, color, samplePos, voxel.xyz, t, samplingStepSize_, tDepth);
@@ -137,16 +137,19 @@ void rayTraversal(in vec3 first, in vec3 last) {
         t += tIncr;
         finished = finished || (t > tEnd);
     } END_WHILE
-    gl_FragDepth = getDepthValue(tDepth, tEnd, entryPointsDepth_, entryParameters_, exitPointsDepth_, exitParameters_);
+    gl_FragDepth = getDepthValue(tDepth, tEnd, entryDepth, exitDepth);
 }
 
 /***
  * The main method.
  ***/
 void main() {
+    // fetch entry/exit points
     vec2 p = gl_FragCoord.xy * screenDimRCP_;
     vec3 frontPos = textureLookup2Dnormalized(entryPoints_, entryParameters_, p).rgb;
     vec3 backPos = textureLookup2Dnormalized(exitPoints_, exitParameters_, p).rgb;
+    float entryDepth = textureLookup2Dnormalized(entryPointsDepth_, entryParameters_, p).z;
+    float exitDepth = textureLookup2Dnormalized(exitPointsDepth_, exitParameters_, p).z;
 
     // determine whether the ray has to be casted
     if (frontPos == backPos)
@@ -154,15 +157,15 @@ void main() {
         discard;
     else
         // fragCoords are lying inside the bounding box
-        rayTraversal(frontPos, backPos);
+        rayTraversal(frontPos, backPos, entryDepth, exitDepth);
 
     #ifdef OP0
         FragData0 = result;
     #endif
     #ifdef OP1
-        fragData1 = result1;
+        FragData1 = result1;
     #endif
     #ifdef OP2
-        fragData2 = result2;
+        FragData2 = result2;
     #endif
 }

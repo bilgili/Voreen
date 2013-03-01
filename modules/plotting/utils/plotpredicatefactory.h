@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -66,12 +66,12 @@ public:
     /**
      * @see SerializableFactory::getTypeString
      */
-    virtual const std::string getTypeString(const std::type_info& type) const;
+    virtual std::string getSerializableTypeString(const std::type_info& type) const;
 
     /**
      * @see SerializableFactory::createType
      */
-    virtual Serializable* createType(const std::string& typeString);
+    virtual Serializable* createSerializableType(const std::string& typeString) const;
 
 private:
     /**

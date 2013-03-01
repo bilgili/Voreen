@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -48,7 +48,7 @@ namespace voreen {
  * @note The dest volume has to be instantiated by the caller
  *       and must match the source volume in dimension and channel count.
  */
-class VolumeOperatorConvert  {
+class VRN_CORE_API VolumeOperatorConvert  {
 public:
     /**
      * @param srcVolume The volume to be converted. Must not be null.

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -67,7 +67,7 @@ ProcessorPropertiesWidget::ProcessorPropertiesWidget(QWidget* parent, const Proc
 
     setUpdatesEnabled(false);
 
-    header_ = new ExpandableHeaderButton(processor_->getName().c_str(), this,
+    header_ = new ExpandableHeaderButton(processor_->getGuiName().c_str(), this,
             expanded_, userExpandable_);
     connect(header_, SIGNAL(toggled(bool)), this, SLOT(updateState()));
     connect(header_, SIGNAL(toggled(bool)), this, SLOT(widgetInstantiation()));
@@ -244,7 +244,7 @@ void ProcessorPropertiesWidget::setUserExpandable(bool expandable) {
 }
 
 void ProcessorPropertiesWidget::updateHeaderTitle() {
-    header_->updateNameLabel(processor_->getName());
+    header_->updateNameLabel(processor_->getGuiName());
 }
 
 void ProcessorPropertiesWidget::propertyModified() {

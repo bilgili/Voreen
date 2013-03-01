@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -35,465 +35,498 @@ template class VRN_CORE_API InterpolationFunction<float>;
 #endif
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: focus on startvalue.
+ * This class offers an interpolation function for float-values. Interpolation: focus on startvalue.
  */
 class VRN_CORE_API FloatStartInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatStartInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatStartInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: focus on endvalue.
+ * This class offers an interpolation function for float-values. Interpolation: focus on endvalue.
  */
 class VRN_CORE_API FloatEndInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatEndInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatEndInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: bisection.
+ * This class offers an interpolation function for float-values. Interpolation: bisection.
  */
 class VRN_CORE_API FloatStartEndInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatStartEndInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatStartEndInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: linear.
+ * This class offers an interpolation function for float-values. Interpolation: linear.
  */
 class VRN_CORE_API FloatLinearInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatLinearInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatLinearInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: Catmull-Rom spline.
+ * This class offers an interpolation function for float-values. Interpolation: Catmull-Rom spline.
  */
 class VRN_CORE_API FloatCatmullRomInterpolationFunction : public MultiPointInterpolationFunction<float> {
 
 public:
-        FloatCatmullRomInterpolationFunction();
-        MultiPointInterpolationFunction<float>* clone() const;
-        float interpolate(std::vector<PropertyKeyValue<float>*> controlpoints, float time) const;
+    FloatCatmullRomInterpolationFunction();
+    virtual std::string getClassName() const { return "FloatCatmullRomInterpolationFunction"; }
+    MultiPointInterpolationFunction<float>* create() const;
+    float interpolate(std::vector<PropertyKeyValue<float>*> controlpoints, float time) const;
 
-        std::string getMode() const;
-        std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: quadratic (easing in).
+ * This class offers an interpolation function for float-values. Interpolation: quadratic (easing in).
  */
 class VRN_CORE_API FloatInQuadInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatInQuadInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatInQuadInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: cubicular (easing in).
+ * This class offers an interpolation function for float-values. Interpolation: cubicular (easing in).
  */
 class VRN_CORE_API FloatInCubicInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatInCubicInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatInCubicInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: quartetic (easing in).
+ * This class offers an interpolation function for float-values. Interpolation: quartetic (easing in).
  */
 class VRN_CORE_API FloatInQuartInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatInQuartInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatInQuartInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: quintic (easing in).
+ * This class offers an interpolation function for float-values. Interpolation: quintic (easing in).
  */
 class VRN_CORE_API FloatInQuintInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatInQuintInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatInQuintInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: sineousidal (easing in).
+ * This class offers an interpolation function for float-values. Interpolation: sineousidal (easing in).
  */
 class VRN_CORE_API FloatInSineInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatInSineInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatInSineInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: exponential (easing in).
+ * This class offers an interpolation function for float-values. Interpolation: exponential (easing in).
  */
 class VRN_CORE_API FloatInExponentInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatInExponentInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatInExponentInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: circular (easing in).
+ * This class offers an interpolation function for float-values. Interpolation: circular (easing in).
  */
 class VRN_CORE_API FloatInCircInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatInCircInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatInCircInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: quadratic (easing out).
+ * This class offers an interpolation function for float-values. Interpolation: quadratic (easing out).
  */
 class VRN_CORE_API FloatOutQuadInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatOutQuadInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatOutQuadInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: cubicular (easing out).
+ * This class offers an interpolation function for float-values. Interpolation: cubicular (easing out).
  */
 class VRN_CORE_API FloatOutCubicInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatOutCubicInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatOutCubicInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: quartetic (easing out).
+ * This class offers an interpolation function for float-values. Interpolation: quartetic (easing out).
  */
 class VRN_CORE_API FloatOutQuartInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatOutQuartInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatOutQuartInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: quintic (easing out).
+ * This class offers an interpolation function for float-values. Interpolation: quintic (easing out).
  */
 class VRN_CORE_API FloatOutQuintInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatOutQuintInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatOutQuintInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: sineousidal (easing out).
+ * This class offers an interpolation function for float-values. Interpolation: sineousidal (easing out).
  */
 class VRN_CORE_API FloatOutSineInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatOutSineInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatOutSineInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: exponential (easing out).
+ * This class offers an interpolation function for float-values. Interpolation: exponential (easing out).
  */
 class VRN_CORE_API FloatOutExponentInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatOutExponentInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatOutExponentInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: circular (easing out).
+ * This class offers an interpolation function for float-values. Interpolation: circular (easing out).
  */
 class VRN_CORE_API FloatOutCircInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatOutCircInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatOutCircInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: quadratic (first easing in, then easing out).
+ * This class offers an interpolation function for float-values. Interpolation: quadratic (first easing in, then easing out).
  */
 class VRN_CORE_API FloatInOutQuadInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatInOutQuadInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatInOutQuadInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: cubicular (first easing in, then easing out).
+ * This class offers an interpolation function for float-values. Interpolation: cubicular (first easing in, then easing out).
  */
 class VRN_CORE_API FloatInOutCubicInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatInOutCubicInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatInOutCubicInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: quartetic (first easing in, then easing out).
+ * This class offers an interpolation function for float-values. Interpolation: quartetic (first easing in, then easing out).
  */
 class VRN_CORE_API FloatInOutQuartInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatInOutQuartInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatInOutQuartInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: quintic (first easing in, then easing out).
+ * This class offers an interpolation function for float-values. Interpolation: quintic (first easing in, then easing out).
  */
 class VRN_CORE_API FloatInOutQuintInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatInOutQuintInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatInOutQuintInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: sineousidal (first easing in, then easing out).
+ * This class offers an interpolation function for float-values. Interpolation: sineousidal (first easing in, then easing out).
  */
 class VRN_CORE_API FloatInOutSineInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatInOutSineInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatInOutSineInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: exponential (first easing in, then easing out).
+ * This class offers an interpolation function for float-values. Interpolation: exponential (first easing in, then easing out).
  */
 class VRN_CORE_API FloatInOutExponentInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatInOutExponentInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatInOutExponentInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: circular (first easing in, then easing out).
+ * This class offers an interpolation function for float-values. Interpolation: circular (first easing in, then easing out).
  */
 class VRN_CORE_API FloatInOutCircInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatInOutCircInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatInOutCircInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: quadratic (first easing out, then easing in).
+ * This class offers an interpolation function for float-values. Interpolation: quadratic (first easing out, then easing in).
  */
 class VRN_CORE_API FloatOutInQuadInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatOutInQuadInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatOutInQuadInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: cubicular (first easing out, then easing in).
+ * This class offers an interpolation function for float-values. Interpolation: cubicular (first easing out, then easing in).
  */
 class VRN_CORE_API FloatOutInCubicInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatOutInCubicInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatOutInCubicInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: quartetic (first easing out, then easing in).
+ * This class offers an interpolation function for float-values. Interpolation: quartetic (first easing out, then easing in).
  */
 class VRN_CORE_API FloatOutInQuartInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatOutInQuartInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatOutInQuartInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: quintic (first easing out, then easing in).
+ * This class offers an interpolation function for float-values. Interpolation: quintic (first easing out, then easing in).
  */
 class VRN_CORE_API FloatOutInQuintInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatOutInQuintInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatOutInQuintInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: sineousidal (first easing out, then easing in).
+ * This class offers an interpolation function for float-values. Interpolation: sineousidal (first easing out, then easing in).
  */
 class VRN_CORE_API FloatOutInSineInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatOutInSineInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatOutInSineInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: exponential (first easing out, then easing in).
+ * This class offers an interpolation function for float-values. Interpolation: exponential (first easing out, then easing in).
  */
 class VRN_CORE_API FloatOutInExponentInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatOutInExponentInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatOutInExponentInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 /**
- * This class VRN_CORE_API offers an interpolation function for float-values. Interpolation: circular (first easing out, then easing in).
+ * This class offers an interpolation function for float-values. Interpolation: circular (first easing out, then easing in).
  */
 class VRN_CORE_API FloatOutInCircInterpolationFunction : public InterpolationFunction<float> {
 
 public:
     FloatOutInCircInterpolationFunction();
-    InterpolationFunction<float>* clone() const;
+    virtual std::string getClassName() const { return "FloatOutInCircInterpolationFunction"; }
+    InterpolationFunction<float>* create() const;
     float interpolate(float startvalue, float endvalue, float time) const;
 
-    std::string getMode() const;
-    std::string getIdentifier() const;
+    std::string getGuiName() const;
+    std::string getCategory() const;
 };
 
 } // namespace voreen

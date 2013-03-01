@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -24,6 +24,8 @@
  ***********************************************************************************/
 
 #include "explosionproxygeometry.h"
+#include "voreen/core/datastructures/geometry/meshlistgeometry.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 #include "tgt/glmath.h"
 #include <vector>
 
@@ -232,7 +234,7 @@ void ExplosionProxyGeometry::process() {
     int iteration = loopInport_.getLoopIteration();
 
     /////////////////////////////Bricking process beginning/////////////////////////////////////
-    MeshListGeometry* proxyGeometry = new MeshListGeometry();
+    TriangleMeshGeometryVec3* proxyGeometry = new TriangleMeshGeometryVec3();
     MeshListGeometry* renderGeometry = new MeshListGeometry();
 
     //regularGrid bricking
@@ -245,11 +247,8 @@ void ExplosionProxyGeometry::process() {
             outputBricklist_ = sortBricklist(regularBricklist_);
         }
 
-        proxyGeometry->addMesh(MeshGeometry::createCube(
-             outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation,
-             outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation,
-             outputBricklist_.at(iteration).texLlf,
-             outputBricklist_.at(iteration).texUrb));
+        proxyGeometry->addCube(VertexVec3(outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texLlf),
+                               VertexVec3(outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texUrb));
 
         if (showBoundingBoxes_.get() == "all" || showBoundingBoxes_.get() == "selected") {
             renderGeometry->addMesh(MeshGeometry::createCube(
@@ -271,11 +270,8 @@ void ExplosionProxyGeometry::process() {
             outputBricklist_ = sortBricklist(manualBricklist_);
         }
 
-        proxyGeometry->addMesh(MeshGeometry::createCube(
-            outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation,
-            outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation,
-            outputBricklist_.at(iteration).texLlf,
-            outputBricklist_.at(iteration).texUrb));
+        proxyGeometry->addCube(VertexVec3(outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texLlf),
+                               VertexVec3(outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texUrb));
 
         if (showBoundingBoxes_.get() == "all" || showBoundingBoxes_.get() == "selected") {
             renderGeometry->addMesh(MeshGeometry::createCube(
@@ -309,11 +305,8 @@ void ExplosionProxyGeometry::process() {
                     selectedBrickColor_.get().xyz()));
 
             }
-            proxyGeometry->addMesh(MeshGeometry::createCube(
-                outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation,
-                outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation,
-                outputBricklist_.at(iteration).texLlf,
-                outputBricklist_.at(iteration).texUrb));
+            proxyGeometry->addCube(VertexVec3(outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texLlf),
+                                   VertexVec3(outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texUrb));
         }
         else {
             if (!outputBricklist_.at(iteration).hidden) {
@@ -326,11 +319,8 @@ void ExplosionProxyGeometry::process() {
                         brickColor_.get().xyz(),
                         brickColor_.get().xyz()));
                 }
-                proxyGeometry->addMesh(MeshGeometry::createCube(
-                    outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation,
-                    outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation,
-                    outputBricklist_.at(iteration).texLlf,
-                    outputBricklist_.at(iteration).texUrb));
+                proxyGeometry->addCube(VertexVec3(outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texLlf),
+                    VertexVec3(outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texUrb));
             }
         }
 
@@ -1300,7 +1290,7 @@ void ExplosionProxyGeometry::registerForSelecting(std::vector<Brick> bricklist) 
     size_t i;
 
     idManager_.clearRegisteredObjects();
-    idManager_.activateTarget(getName());
+    idManager_.activateTarget(getID());
     idManager_.clearTarget();
 
     for (i = 0; i < bricklist.size(); ++i) {

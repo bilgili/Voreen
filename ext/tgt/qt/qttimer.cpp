@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -24,6 +24,9 @@
 
 #include "tgt/qt/qttimer.h"
 #include "tgt/event/timeevent.h"
+
+#include <QCoreApplication>
+#include <QThread>
 #include <QObject>
 
 namespace tgt {
@@ -37,6 +40,11 @@ QtTimer::~QtTimer() {
 }
 
 void QtTimer::start(const int msec, const int limit) {
+    // timer operations are only allowed in the GUI thread
+    bool isGuiThread = (QThread::currentThread() == QCoreApplication::instance()->thread());
+    if (!isGuiThread)
+        return;
+
     if (stopped_) {
         count_ = 0;
         limit_ = limit;
@@ -47,6 +55,11 @@ void QtTimer::start(const int msec, const int limit) {
 }
 
 void QtTimer::stop() {
+    // timer operations are only allowed in the GUI thread
+    bool isGuiThread = (QThread::currentThread() == QCoreApplication::instance()->thread());
+    if (!isGuiThread)
+        return;
+
     if (!stopped_) {
         stopped_ = true;
         QObject::killTimer( id_ );

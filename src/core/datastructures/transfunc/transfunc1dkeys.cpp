@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -25,7 +25,6 @@
 
 #include "voreen/core/datastructures/transfunc/transfunc1dkeys.h"
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
-#include "voreen/core/datastructures/transfunc/transfuncfactory.h"
 
 #include "voreen/core/datastructures/transfunc/preintegrationtable.h"
 
@@ -45,6 +44,72 @@ using tgt::ivec4;
 
 namespace voreen {
 
+PreIntegrationTableMap::PreIntegrationTableMap(const TransFunc1DKeys* tf, size_t maxSize) : tf_(tf) {
+    //maxSize_ must be >= 1
+    if (maxSize == 0)
+        maxSize_ = 1;
+    else
+        maxSize_ = maxSize;
+}
+
+PreIntegrationTableMap::~PreIntegrationTableMap() {
+    clear();
+}
+
+void PreIntegrationTableMap::setTransFunc(const TransFunc1DKeys* tf) {
+    tf_ = tf;
+}
+
+void PreIntegrationTableMap::clear() {
+    //delete all pre-integration tables, then clear map and queue
+    std::map<PreIntegrationTableAttributes, PreIntegrationTable*>::iterator it = tableMap_.begin();
+    for (; it!=tableMap_.end(); ++it)
+        delete it->second;
+
+    tableMap_.clear();
+    queue_ = std::queue<PreIntegrationTableAttributes>();
+}
+
+const PreIntegrationTable* PreIntegrationTableMap::getPreIntegrationTable(float samplingStepSize, size_t dimension, bool useIntegral) {
+
+    if (!tf_)
+        return 0;
+
+    size_t dim;
+
+    if (dimension == 0)
+        dim = static_cast<size_t>(std::min(tf_->getDimensions().x, 1024));
+    else
+        dim = dimension;
+
+    //create key to pre-integration table map
+    PreIntegrationTableAttributes attributes;
+    attributes.samplingStepSize_ = samplingStepSize;
+    attributes.dimension_ = dim;
+    attributes.useIntegral_ = useIntegral;
+
+    //try to find the right pre-integration table
+    std::map<PreIntegrationTableAttributes, PreIntegrationTable*>::iterator it = tableMap_.find(attributes);
+    if (it != tableMap_.end())
+        return (it->second);
+    else {
+        //if size == max: delete the first
+        if (tableMap_.size() == maxSize_) {
+            it = tableMap_.find(queue_.front());
+            delete it->second;
+            tableMap_.erase(it);
+            queue_.pop();
+        }
+        //create new pre-integration table and add it to the map
+        PreIntegrationTable* table = new PreIntegrationTable(tf_, dim, samplingStepSize, useIntegral);
+        tableMap_.insert(std::make_pair(attributes,table));
+        queue_.push(attributes);
+        it = tableMap_.find(attributes);
+        return (it->second);
+    }
+}
+
+
 // some stream helper functions
 inline int readInt(std::ifstream& stream);
 inline short readShort(std::ifstream& stream);
@@ -57,7 +122,7 @@ TransFunc1DKeys::TransFunc1DKeys(int width)
     , lowerThreshold_(0.f)
     , upperThreshold_(1.f)
     , domain_(0.0, 1.0f)
-    , preIntegrationTable_(NULL)
+    , preIntegrationTableMap_(NULL, 10)
 {
     loadFileFormats_.push_back("tfi");
     loadFileFormats_.push_back("lut");
@@ -75,22 +140,25 @@ TransFunc1DKeys::TransFunc1DKeys(int width)
 #endif
 
     setToStandardFunc();
+
+    preIntegrationTableMap_.setTransFunc(this);
 }
 
 TransFunc1DKeys::TransFunc1DKeys(const TransFunc1DKeys& tf)
     : TransFunc(tf.dimensions_.x, tf.dimensions_.y, tf.dimensions_.z,
-                tf.format_, tf.dataType_, tf.filter_)
+                tf.format_, tf.dataType_, tf.filter_),
+    preIntegrationTableMap_(NULL,10)
 {
     updateFrom(tf);
-    //pre-integration table is not copied
-    preIntegrationTable_ = 0;
+    //pre-integration table map is not copied
+    preIntegrationTableMap_.setTransFunc(this);
 }
 
 TransFunc1DKeys::~TransFunc1DKeys() {
     for (size_t i = 0; i < keys_.size(); ++i)
         delete keys_[i];
 
-    delete preIntegrationTable_;
+    preIntegrationTableMap_.clear();
 }
 
 bool TransFunc1DKeys::operator==(const TransFunc1DKeys& tf) {
@@ -121,7 +189,7 @@ void TransFunc1DKeys::setToStandardFunc() {
     keys_.push_back(new TransFuncMappingKey(1.f, col4(255)));
 
     textureInvalid_ = true;
-    clearPreIntegrationTable();
+    preIntegrationTableMap_.clear();
 }
 
 tgt::vec4 TransFunc1DKeys::getMeanValue(float segStart, float segEnd) const {
@@ -174,10 +242,11 @@ void TransFunc1DKeys::updateTexture() {
         createTex();
     tgtAssert(tex_, "No texture");
 
+    //get tresholds of the transfer function
     int front_end = tgt::iround(lowerThreshold_*dimensions_.x);
     int back_start = tgt::iround(upperThreshold_*dimensions_.x);
     //all values before front_end and after back_start are set to zero
-    //all other values remain the same
+    //all other values are taken from the TF
     for (int x = 0; x < front_end; ++x)
         tex_->texel<col4>(x) = col4(0, 0, 0, 0);
 
@@ -197,7 +266,7 @@ void TransFunc1DKeys::setThresholds(float lower, float upper) {
     lowerThreshold_ = lower;
     upperThreshold_ = upper;
     textureInvalid_ = true;
-    clearPreIntegrationTable();
+    preIntegrationTableMap_.clear();
 }
 
 void TransFunc1DKeys::setThresholds(const tgt::vec2& thresholds) {
@@ -223,7 +292,7 @@ const std::vector<TransFuncMappingKey*> TransFunc1DKeys::getKeys() const {
 void TransFunc1DKeys::setKeys(std::vector<TransFuncMappingKey*> keys) {
     keys_ = keys;
     textureInvalid_ = true;
-    clearPreIntegrationTable();
+    preIntegrationTableMap_.clear();
 }
 
 void TransFunc1DKeys::reset(){
@@ -243,7 +312,7 @@ void TransFunc1DKeys::addKey(TransFuncMappingKey* key) {
     keys_.insert(keyIterator, key);
 
     textureInvalid_ = true;
-    clearPreIntegrationTable();
+    preIntegrationTableMap_.clear();
 }
 
 bool sortFunction(TransFuncMappingKey* a, TransFuncMappingKey* b) {
@@ -254,7 +323,7 @@ void TransFunc1DKeys::updateKey(TransFuncMappingKey* /*key*/) {
     std::sort(keys_.begin(), keys_.end(), sortFunction);
 
     textureInvalid_ = true;
-    clearPreIntegrationTable();
+    preIntegrationTableMap_.clear();
 }
 
 void TransFunc1DKeys::removeKey(TransFuncMappingKey* key) {
@@ -264,7 +333,7 @@ void TransFunc1DKeys::removeKey(TransFuncMappingKey* key) {
     delete key;
 
     textureInvalid_ = true;
-    clearPreIntegrationTable();
+    preIntegrationTableMap_.clear();
 }
 
 void TransFunc1DKeys::clearKeys() {
@@ -278,7 +347,7 @@ void TransFunc1DKeys::clearKeys() {
     keys_.clear();
 
     textureInvalid_ = true;
-    clearPreIntegrationTable();
+    preIntegrationTableMap_.clear();
 }
 
 bool TransFunc1DKeys::isEmpty() const {
@@ -509,7 +578,7 @@ bool TransFunc1DKeys::loadTfi(const std::string& filename) {
         LWARNING("Loading transfer function failed.");
 
     invalidateTexture();
-    clearPreIntegrationTable();
+    preIntegrationTableMap_.clear();
     return success;
 }
 
@@ -978,29 +1047,38 @@ void TransFunc1DKeys::setDomain(tgt::vec2 domain, int dimension) {
         domain_ = domain;
 }
 
-void TransFunc1DKeys::clearPreIntegrationTable() {
-    delete preIntegrationTable_;
-    preIntegrationTable_ = 0;
-}
-
 const PreIntegrationTable* TransFunc1DKeys::getPreIntegrationTable(float samplingStepSize, size_t dimension, bool useIntegral) {
-    size_t dim;
+
+    /*size_t dim;
 
     if (dimension == 0)
         dim = static_cast<size_t>(std::min(dimensions_.x, 1024));
     else
         dim = dimension;
 
-    if (!preIntegrationTable_ || (dim != preIntegrationTable_->getDimension()) || (samplingStepSize != preIntegrationTable_->getSamplingStepSize()) || useIntegral != preIntegrationTable_->usesIntegral()) {
-        delete preIntegrationTable_;
-        preIntegrationTable_ = 0;
+    //create key to pre-integration table map
+    PreIntegrationTableAttributes attributes;
+    attributes.samplingStepSize_ = samplingStepSize;
+    attributes.dimension_ = dim;
+    attributes.useIntegral_ = useIntegral;
 
-        preIntegrationTable_ = new PreIntegrationTable(const_cast<TransFunc1DKeys*>(this), dim, samplingStepSize, useIntegral);
+    //try to find the right pre-integration table
+    std::map<PreIntegrationTableAttributes, PreIntegrationTable*>::iterator it = tableMap_.find(attributes);
+    if (it != preIntegrationTableMap_.end())
+        return (it->second);
+    else {
+        PreIntegrationTable* table = new PreIntegrationTable(const_cast<TransFunc1DKeys*>(this), dim, samplingStepSize, useIntegral);
+        preIntegrationTableMap_.insert(std::make_pair(attributes,table));
+        it = preIntegrationTableMap_.find(attributes);
+        return (it->second);
+    }*/
 
-        //preIntegrationTable_->computeTable();
-    }
+    return preIntegrationTableMap_.getPreIntegrationTable(samplingStepSize,dimension,useIntegral);
+}
 
-    return preIntegrationTable_;
+void TransFunc1DKeys::deleteTexture() {
+    TransFunc::deleteTexture();
+    preIntegrationTableMap_.clear();
 }
 
 // --------------------------------------------------------------------------------

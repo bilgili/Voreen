@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,7 +30,7 @@
 
 namespace voreen {
 
-struct Synth2DVolumeHeader {
+struct VRN_CORE_API Synth2DVolumeHeader {
     char magic[4];
     int version;
     char texName[256];
@@ -43,7 +43,7 @@ struct Synth2DVolumeHeader {
 /**
  * Reader for .vol files by Johann Kopf
  */
-class Synth2DReader : public VolumeReader {
+class VRN_CORE_API Synth2DReader : public VolumeReader {
 public:
 
     Synth2DReader(ProgressBar* progress = 0);
@@ -52,7 +52,7 @@ public:
     virtual std::string getClassName() const   { return "Synth2DReader"; }
     virtual std::string getFormatDescription() const { return "Synth2D .vol format by Johann Kopf"; }
 
-    virtual VolumeCollection* read(const std::string& url)
+    virtual VolumeList* read(const std::string& url)
         throw (tgt::FileException, std::bad_alloc);
 
 private:

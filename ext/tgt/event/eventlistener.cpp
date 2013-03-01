@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,6 +28,8 @@
 #include "tgt/event/keyevent.h"
 #include "tgt/event/mouseevent.h"
 #include "tgt/event/timeevent.h"
+#include "tgt/event/touchevent.h"
+#include "tgt/event/touchpoint.h"
 #include <typeinfo>
 
 namespace tgt {
@@ -62,6 +64,11 @@ void EventListener::onEvent(Event* e) {
     }
     else if (typeid(*e) == typeid(TimeEvent)) {
         timerEvent(static_cast<TimeEvent*>(e));
+    }
+    else if (typeid(*e) == typeid(TouchEvent)) {
+        //TODO TouchEvent* te = static_cast<TouchEvent*>(e);
+        //if (te->action() == TouchEvent::PRESSED)
+           //TODO TouchEvent(te);
     }
 }
 
@@ -100,5 +107,10 @@ void EventListener::timerEvent(TimeEvent* e) {
 void EventListener::keyEvent(KeyEvent* e) {
     e->ignore();
 }
+
+void EventListener::touchEvent(TouchEvent* e) {
+    e->ignore();
+}
+
 
 } // namespace tgt

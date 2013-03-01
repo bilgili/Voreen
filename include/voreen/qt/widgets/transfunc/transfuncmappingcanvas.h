@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -79,7 +79,7 @@ private:
  * down left mouse button. Furthermore keys can be splitted, merged and deleted. The color of a key
  * can also be changed.
  */
-class VRN_QT_API TransFuncMappingCanvas : public QWidget, public VolumeHandleObserver {
+class VRN_QT_API TransFuncMappingCanvas : public QWidget {
     Q_OBJECT
 public:
     /**
@@ -159,21 +159,9 @@ public:
      * shown in this widget changes. It calculates the new histogram and propagates it
      * to the histogram painter.
      *
-     * @param volumeHandle volume that is associated with this transfer function
+     * @param volume volume that is associated with this transfer function
      */
-    void volumeChanged(const VolumeBase* volumeHandle);
-
-    /**
-     * Implementation of the VolumeHandleObserver interface.
-     * Causes calculations to be performed on new handle.
-     */
-    virtual void volumeChange(const VolumeBase* source);
-
-    /**
-     * Implementation of the VolumeHandleObserver interface.
-     * Clears the currently assigned volume handle.
-     */
-    virtual void volumeHandleDelete(const VolumeBase* source);
+    void volumeChanged(const VolumeBase* volume);
 
     /**
      * Sets the lower and upper threshold to the given values.
@@ -475,7 +463,7 @@ protected:
     HistogramThread* histogramThread_; ///< thread for calcultating the histogram in the background
     bool histogramNeedsUpdate_;        ///< volume was changed, histogram must be re-calculated
 
-    const VolumeBase* volumeHandle_; ///< the currently assigned volume handle
+    const VolumeBase* volume_; ///< the currently assigned volume
 
 protected slots:
     void setHistogram(VolumeHistogramIntensity* histogram);

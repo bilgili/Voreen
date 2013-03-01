@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -35,7 +35,7 @@ TextSave::TextSave()
     : Processor()
     ,  inport_(Port::INPORT, "inport", "Text Input")
     ,  fileProp_("file", "Text File", "Select text file...", "./",
-            "Text files (*.txt)", FileDialogProperty::SAVE_FILE)
+            "Text files (*.txt)", FileDialogProperty::SAVE_FILE, Processor::INVALID_PATH)
     , saveButton_("save", "Save")
     , continuousSave_("continousSave", "Save continuously", false)
 {
@@ -49,6 +49,13 @@ TextSave::TextSave()
 
 Processor* TextSave::create() const {
     return new TextSave();
+}
+
+void TextSave::invalidate(int inv) {
+    Processor::invalidate(inv);
+    //auto save on path change
+    if(inv == Processor::INVALID_PATH && isInitialized())
+        saveFile();
 }
 
 void TextSave::process() {

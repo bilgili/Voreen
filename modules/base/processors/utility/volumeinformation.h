@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -38,7 +38,7 @@ namespace voreen {
  * Computes some properties such as the min, max, average voxel intensity
  * of the input volume and displays them by read-only properties.
  */
-class VolumeInformation : public VolumeProcessor {
+class VRN_CORE_API VolumeInformation : public VolumeProcessor {
 public:
     VolumeInformation();
     Processor* create() const;

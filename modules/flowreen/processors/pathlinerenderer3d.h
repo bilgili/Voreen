@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -113,6 +113,7 @@ private:
         STYLE_ARROWS,
         STYLE_SEGMENTS
     };
+    friend class OptionProperty<LineStyle>;
 
     enum SeedingStrategy {
         SEED_RANDOM,
@@ -120,6 +121,7 @@ private:
         SEED_SLICES_RANDOM,
         SEED_SLICES_GRID
     };
+    friend class OptionProperty<SeedingStrategy>;
 
     enum Thresholding {
         THRESHOLDING_NONE,
@@ -128,6 +130,7 @@ private:
         THRESHOLDING_OR,
         THRESHOLDING_AND
     };
+    friend class OptionProperty<Thresholding>;
 
     OptionProperty<SeedingStrategy>* seedingStrategyProp_;
     IntProperty numSeedpointsProp_;
@@ -149,8 +152,8 @@ private:
 
     /** All flow volumes */
     std::vector<const Flow3D*> flows_;
-    const VolumeCollection* contextCollection_;
-    const VolumeCollection* flowCollection_;
+    const VolumeList* contextCollection_;
+    const VolumeList* flowCollection_;
 
     /** Bool Volumes holding "true" if the intensity at the location in the volume is
      * within the threshold range or "false" otherwise. */
@@ -169,8 +172,8 @@ private:
 
     GenericCoProcessorPort<FlowOrthogonalSliceRenderer> coInport_;
     RenderPort imgOutport_;
-    VolumeCollectionPort inportContext_;
-    VolumeCollectionPort inportFlows_;
+    VolumeListPort inportContext_;
+    VolumeListPort inportFlows_;
 };
 
 }   // namespace

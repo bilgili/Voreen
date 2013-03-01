@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -49,7 +49,7 @@ ScreenshotPlugin::ScreenshotPlugin(QWidget* parent, CanvasRenderer* canvasRender
       canvasRenderer_(canvasRenderer)
 {
     if (canvasRenderer_)
-        setWindowTitle(tr("Screenshot: ") + QString::fromStdString(canvasRenderer_->getName()));
+        setWindowTitle(tr("Screenshot: ") + QString::fromStdString(canvasRenderer_->getGuiName()));
 
     setObjectName(tr("Screenshot"));
 
@@ -81,6 +81,8 @@ ScreenshotPlugin::ScreenshotPlugin(QWidget* parent, CanvasRenderer* canvasRender
         resolution << resolutions_[i];
 
     sizeCombo_->addItems(resolution);
+    if(canvasRenderer_)
+        sizeCombo_->setCurrentIndex(static_cast<int>(resolutions_.size()) - 2); // default to canvas size
     gridLayout->addWidget(sizeCombo_, 0, 1, 1, 3);
 
     spWidth_ = new QSpinBox();

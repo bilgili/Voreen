@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -35,8 +35,8 @@ using tgt::vec3;
 
 std::string ClassificationModes::getShaderDefineSamplerType(const std::string mode, const TransFunc* tf) {
     if(startsWith(mode, "pre-integrated") && dynamic_cast<const TransFunc1DKeys*>(tf) )
-        return "#define TF_SAMPLER_TYPE sampler2D\n"; 
-    else if (mode == "transfer-function") 
+        return "#define TF_SAMPLER_TYPE sampler2D\n";
+    else if (mode == "transfer-function")
         return tf->getShaderDefines();
     else
         return "";
@@ -59,9 +59,9 @@ void ClassificationModes::bindTexture(const std::string mode, TransFunc* tf, flo
     if (tf) {
         TransFunc1DKeys* tf1d = dynamic_cast<TransFunc1DKeys*>(tf);
 
-        if(mode == "pre-integrated-fast") 
+        if(mode == "pre-integrated-fast")
             tf1d->getPreIntegrationTable(samplingStepSize, 0, true)->getTexture()->bind();
-        else if(mode == "pre-integrated") 
+        else if(mode == "pre-integrated")
             tf1d->getPreIntegrationTable(samplingStepSize, 0, false)->getTexture()->bind();
         else
             tf->bind();
@@ -72,10 +72,10 @@ bool ClassificationModes::usesTransferFunction(const std::string mode) {
     if(mode == "none")
         return false;
     else if(startsWith(mode, "pre-integrated"))
-        return true; 
-    else if (mode == "transfer-function") 
         return true;
-    else 
+    else if (mode == "transfer-function")
+        return true;
+    else
         return false;
 }
 

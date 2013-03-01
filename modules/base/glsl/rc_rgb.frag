@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -77,7 +77,7 @@ vec3 rgb2hsv(vec3 colorRGB) {
  * Performs direct volume rendering and
  * returns the final fragment color.
  ***/
-vec4 directRendering(in vec3 first, in vec3 last, vec2 p) {
+vec4 directRendering(vec2 p, in vec3 first, in vec3 last, float entryDepth, float exitDepth) {
 
     vec4 result = vec4(0.0);
     float depthT = -1.0;
@@ -133,8 +133,7 @@ vec4 directRendering(in vec3 first, in vec3 last, vec2 p) {
     // calculate depth value from ray parameter
     gl_FragDepth = 1.0;
     if (depthT >= 0.0)
-        gl_FragDepth = calculateDepthValue(depthT/tend, textureLookup2Dnormalized(entryPointsDepth_, entryParameters_, p).z,
-                                                        textureLookup2Dnormalized(exitPointsDepth_, exitParameters_, p).z);
+        gl_FragDepth = getDepthValue(depthT, tend, entryDepth, exitDepth);
 
 
     return result;
@@ -144,9 +143,12 @@ vec4 directRendering(in vec3 first, in vec3 last, vec2 p) {
  * The main method.
  ***/
 void main() {
+    // fetch entry/exit points
     vec2 p = gl_FragCoord.xy * screenDimRCP_;
     vec3 frontPos = textureLookup2Dnormalized(entryPoints_, entryParameters_, p).rgb;
     vec3 backPos = textureLookup2Dnormalized(exitPoints_, exitParameters_, p).rgb;
+    float entryDepth = textureLookup2Dnormalized(entryPointsDepth_, entryParameters_, p).z;
+    float exitDepth = textureLookup2Dnormalized(exitPointsDepth_, exitParameters_, p).z;
 
     //determine whether the ray has to be casted
     if (frontPos == backPos) {
@@ -154,6 +156,6 @@ void main() {
         discard;
     } else {
         //fragCoords are lying inside the boundingbox
-        FragData0 = directRendering(frontPos, backPos, p);
+        FragData0 = directRendering(p, frontPos, backPos, entryDepth, exitDepth);
     }
 }

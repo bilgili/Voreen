@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,7 +33,7 @@ namespace voreen {
 /**
  * Calculates the root mean square error between the two volumes.
  */
-class VolumeOperatorCalcErrorBase : public BinaryVolumeOperatorBase {
+class VRN_CORE_API VolumeOperatorCalcErrorBase : public BinaryVolumeOperatorBase {
 public:
     virtual float apply(const VolumeBase* vh1, const VolumeBase* vh2) const = 0;
 };

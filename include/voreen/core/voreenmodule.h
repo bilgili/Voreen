@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -27,6 +27,7 @@
 #define VRN_VOREENMODULE_H
 
 #include "voreen/core/voreencoreapi.h"
+#include "voreen/core/io/serialization/voreenserializableobjectfactory.h"
 #include "voreen/core/properties/propertyowner.h"
 #include "voreen/core/utils/exception.h"
 
@@ -44,7 +45,6 @@ class ProcessorWidgetFactory;
 class Property;
 class PropertyWidget;
 class PropertyWidgetFactory;
-class LinkEvaluatorFactory;
 
 class Port;
 class SerializableFactory;
@@ -57,6 +57,8 @@ class VolumeWriter;
  * A module class is responsible for registering the
  * module's resources at runtime:
  *  - Processors
+ *  - Properties
+ *  - Ports
  *  - VolumeReaders and VolumeWriters
  *  - SerializableFactories
  *  - Shader search path
@@ -64,7 +66,7 @@ class VolumeWriter;
  * The registration is to be done in the constructor.
  *
  */
-class VRN_CORE_API VoreenModule : public PropertyOwner {
+class VRN_CORE_API VoreenModule : public PropertyOwner, public VoreenSerializableObjectFactory {
 
     friend class VoreenApplication;
 
@@ -82,12 +84,9 @@ public:
      */
     virtual ~VoreenModule();
 
-    /**
-     * Returns the module's name.
-     *
-     * @see setName
-     */
-    std::string getName() const;
+    virtual std::string getClassName() const { return "VoreenModule"; }
+    /// Do not use!
+    virtual VoreenModule* create() const { return 0; }
 
     /**
      * Returns the name of the module's base directory (without parent dir).
@@ -124,108 +123,51 @@ public:
     /**
      * Returns the module's processors.
      *
-     * @see registerProcessor
+     * @see registerType
      */
-    const std::vector<Processor*>& getProcessors() const;
+    std::vector<const Processor*> getRegisteredProcessors() const;
 
     /**
      * Returns the module's properties.
      *
-     * @see registerProperty
+     * @see registerType
      */
-    const std::vector<Property*>& getRegisteredProperties() const;
+    std::vector<const Property*> getRegisteredProperties() const;
 
     /**
      * Returns the module's VolumeReaders.
      *
      * @see registerVolumeReader
      */
-    const std::vector<VolumeReader*>& getVolumeReaders() const;
+    const std::vector<VolumeReader*>& getRegisteredVolumeReaders() const;
 
     /**
      * Returns the module's VolumeWriters.
      *
      * @see registerVolumeWriter
      */
-    const std::vector<VolumeWriter*>& getVolumeWriters() const;
-
-    /**
-     * Returns the module's SerializerFactories.
-     *
-     * @see registerSerializerFactory
-     */
-    const std::vector<SerializableFactory*>& getSerializerFactories() const;
+    const std::vector<VolumeWriter*>& getRegisteredVolumeWriters() const;
 
     /**
      * Returns the module's ProcessorWidgetFactories.
      *
      * @see registerProcessorWidgetFactory
      */
-    const std::vector<ProcessorWidgetFactory*>& getProcessorWidgetFactories() const;
+    const std::vector<ProcessorWidgetFactory*>& getRegisteredProcessorWidgetFactories() const;
 
     /**
      * Returns the module's PropertyWidgetFactories.
      *
      * @see registerPropertyWidgetFactory
      */
-    const std::vector<PropertyWidgetFactory*>& getPropertyWidgetFactories() const;
-
-    /**
-     * Returns the module's LinkEvaluatorFactories.
-     *
-     * @see registerLinkEvaluatorFactory
-     */
-    const std::vector<LinkEvaluatorFactory*>& getLinkEvaluatorFactories() const;
+    const std::vector<PropertyWidgetFactory*>& getRegisteredPropertyWidgetFactories() const;
 
     /**
      * Returns the GLSL shader search used by the module.
      *
      * @see registerShaderPath
      */
-    const std::vector<std::string>& getShaderPaths() const;
-
-    // --- Documentation ---
-
-    /**
-     * Returns the description of the passed \sa Processor.
-     * \param className The processor class whose description is wanted
-     * \return The description of the processor
-     */
-    std::string getDocumentationDescription(const std::string& className) const;
-
-    /**
-     * Returns the descriptions for the \sa Ports of the passed class. The return will be of the form
-     * <portname,description> and the vector will contain only those ports which actually do have a
-     * description.
-     * \param className The class name of the \sa Processor for which the documentation is wanted
-     */
-    std::vector<std::pair<std::string, std::string> > getDocumentationPorts(const std::string& className) const;
-
-    /**
-     * Returns the description for a specific \sa Port of the given \sa Processor. The return value will be the
-     * description of the port.
-     * \param className The class name of the processor which has the port
-     * \param portName The name of the port
-     * \return The description of the port
-     */
-    std::string getDocumentationPort(const std::string& className, const std::string& portName) const;
-
-    /**
-     * Returns the descriptions for the \sa Properties of the passed class. The return will be of the form
-     * <propertyname,description> and the vector will contain only those properties which actually do have a
-     * description.
-     * \param className The class name of the \sa Processor for which the documentation is wanted
-     */
-    std::vector<std::pair<std::string, std::string> > getDocumentationProperties(const std::string& className) const;
-
-    /**
-     * Returns the description for a specific \sa Property of the given \sa Processor. The return value will be the
-     * description of the Property.
-     * \param className The class name of the processor which has the property
-     * \param propertyID The ID of the property
-     * \return The description of the property
-     */
-    std::string getDocumentationProperty(const std::string& className, const std::string& propertyID) const;
+    const std::vector<std::string>& getRegisteredShaderPaths() const;
 
 protected:
     /**
@@ -269,21 +211,49 @@ protected:
     /**
      * Specifies the module's name. To be called in the
      * derived class's constructor.
+     * GuiName and ID are the same!!!
      *
      * @note Setting a name is mandatory.
      */
-    void setName(const std::string& name);
+    void setGuiName(const std::string& guiName);
+
+    /**
+     * Specifies the module's name. To be called in the
+     * derived class's constructor.
+     * GuiName and ID are the same!!!
+     *
+     * @note Setting a name is mandatory.
+     */
+    void setID(const std::string& id);
+
+    /**
+     * Registers the passed VoreenSerializableObject at the module, using its class name as type name.
+     *
+     * @note The modules takes ownership of the passed object.
+     */
+    virtual void registerSerializableType(const VoreenSerializableObject* type);
+
+    /**
+     * Registers the passed VoreenSerializableObject at the module.
+     *
+     * @note The module takes ownership of the passed object.
+     */
+    virtual void registerSerializableType(const std::string& typeName, const VoreenSerializableObject* type);
 
     /**
      * Registers the passed processor. To be called in the
      * derived class's constructor.
+     *
+     * @deprecated Use registerSerializableType() instead!
      */
     void registerProcessor(Processor* processor);
 
     /**
      * Registers the passed property. To be called in the
      * derived class's constructor.
-     */
+     *
+     * @deprecated Use registerSerializableType() instead!
+*/
     void registerProperty(Property* property);
 
     /**
@@ -299,12 +269,6 @@ protected:
     void registerVolumeWriter(VolumeWriter* writer);
 
     /**
-     * Registers the passed SerializableFactory. To be called in the
-     * derived class's constructor.
-     */
-    void registerSerializerFactory(SerializableFactory* factory);
-
-    /**
      * Registers the passed ProcessorWidgetFactory. To be called in the
      * derived class's constructor.
      */
@@ -315,12 +279,6 @@ protected:
      * derived class's constructor.
      */
     void registerPropertyWidgetFactory(PropertyWidgetFactory* factory);
-
-    /**
-     * Registers the passed LinkEvaluatorFactory. To be called in the
-     * derived class's constructor.
-     */
-    void registerLinkEvaluatorFactory(LinkEvaluatorFactory* factory);
 
     /**
      * Adds the passed directory to the shader search path.
@@ -336,19 +294,15 @@ protected:
     static const std::string loggerCat_;
 
 private:
-    std::string name_;          //< unique identifier of the module
     std::string dirName_;       //< name of the module's base directory (without parent dir)
     std::string modulePath_;    //< absolute path to module directory (set by registration header)
-    std::vector<Processor*> processors_;
-    std::vector<Property*> properties_;
+
     std::vector<VolumeReader*> volumeReaders_;
     std::vector<VolumeWriter*> volumeWriters_;
-    std::vector<SerializableFactory*> serializerFactories_;
     std::vector<std::string> shaderPaths_;
 
     std::vector<ProcessorWidgetFactory*> processorWidgetFactories_;
     std::vector<PropertyWidgetFactory*> propertyWidgetFactories_;
-    std::vector<LinkEvaluatorFactory*> linkEvaluatorFactories_;
 };
 
 } // namespace

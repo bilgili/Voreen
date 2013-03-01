@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -96,6 +96,11 @@ public:
      */
     time_t getTimestamp() const;
 
+    /**
+     * Returns the difference to dt in seconds (the return value may be negative)
+     */
+    double diffSeconds(const DateTime& dt) const;
+
     virtual void serialize(XmlSerializer& s) const;
     virtual void deserialize(XmlDeserializer& s);
 
@@ -107,7 +112,7 @@ public:
     bool operator==(const DateTime& dt) const;
 
     bool operator>(const DateTime& dt) const;
-    
+
     bool operator<(const DateTime& dt) const;
 
 protected:

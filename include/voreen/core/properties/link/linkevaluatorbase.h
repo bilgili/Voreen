@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,6 +30,7 @@
  * ATTENTION: Do not include voreen/core/properties/property.h due to circular
  *            header-file inclusion. Keep the Property forward declaration instead.
  */
+#include "voreen/core/voreenobject.h"
 #include "voreen/core/io/serialization/serialization.h"
 
 namespace voreen {
@@ -40,20 +41,9 @@ class Property;
  * An object of this type is assigned to each PropertyLink, which uses
  * it for the actual link execution.
  */
-class VRN_CORE_API LinkEvaluatorBase : public AbstractSerializable {
+class VRN_CORE_API LinkEvaluatorBase : public VoreenSerializableObject {
 public:
     virtual ~LinkEvaluatorBase() {}
-
-    /**
-     * Returns the name of this class as a string.
-     * Necessary due to the lack of code reflection in C++.
-     *
-     * This method is expected to be re-implemented by each concrete subclass.
-     */
-    virtual std::string getClassName() const = 0;
-
-    ///Returns the evaluator's GUI name.
-    virtual std::string getGuiName() const = 0;
 
     ///Called by PropertyLink for executing the link.
     virtual void eval(Property* src, Property* dst) throw (VoreenException) = 0;
@@ -62,9 +52,6 @@ public:
 
     //Returns true if the LinkEvaluator can link the two properties.
     virtual bool arePropertiesLinkable(const Property* src, const Property* dst) const = 0;
-
-    ///Virtual constructor: supposed to return an instance of the concrete LinkEvaluator class.
-    virtual LinkEvaluatorBase* create() const = 0;
 
     /// @see Serializable::serialize
     virtual void serialize(XmlSerializer&) const {}

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -43,7 +43,7 @@ VvdVolumeWriter::VvdVolumeWriter() {
 void VvdVolumeWriter::write(const std::string& filename, const VolumeBase* volumeHandle)
     throw (tgt::IOException)
 {
-    tgtAssert(volumeHandle, "No volume handle");
+    tgtAssert(volumeHandle, "No volume");
     const VolumeRAM* volume = volumeHandle->getRepresentation<VolumeRAM>();
     if (!volume) {
         LWARNING("No volume");

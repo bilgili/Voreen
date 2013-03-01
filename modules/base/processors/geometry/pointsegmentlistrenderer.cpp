@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -145,7 +145,7 @@ void PointSegmentListRenderer::render() {
         // cast geometry to PointListGeometry and generate display list
         const PointSegmentListGeometry<vec3>* segmentList = dynamic_cast<const  PointSegmentListGeometry<vec3>* >(geometryInport_.getData());
         if (segmentList)
-            generateDisplayList(segmentList->getData());
+            generateDisplayList(segmentList->getData(), segmentList->getTransformationMatrix());
         else
             LWARNING("Invalid geometry. PointSegmentListGeometry<vec3> expected.");
     }
@@ -156,7 +156,7 @@ void PointSegmentListRenderer::render() {
     }
 }
 
-void PointSegmentListRenderer::generateDisplayList(const std::vector<std::vector<vec3> >& segmentList) {
+void PointSegmentListRenderer::generateDisplayList(const std::vector<std::vector<vec3> >& segmentList, const tgt::mat4 m) {
 
     if (glIsList(displayList_))
         glDeleteLists(displayList_, 1);
@@ -198,6 +198,10 @@ void PointSegmentListRenderer::generateDisplayList(const std::vector<std::vector
         glLightfv(GL_LIGHT0, GL_POSITION, vec4(1.f, 1.f, 10.f, 1.f).elem);
         glPopMatrix();
     }
+
+    glMatrixMode(GL_MODELVIEW_MATRIX);
+    glPushMatrix();
+    tgt::multMatrix(m);
 
     // render: point primitives
     if (renderingPrimitiveProp_.get() == "points") {
@@ -287,6 +291,7 @@ void PointSegmentListRenderer::generateDisplayList(const std::vector<std::vector
         gluDeleteQuadric(quadric);
 
     }
+    glPopMatrix();
 
     if (coordinateSystem_.get() != "world") {
         glMatrixMode(GL_PROJECTION);

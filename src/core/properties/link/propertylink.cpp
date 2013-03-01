@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -28,70 +28,14 @@
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/voreenmodule.h"
 #include "voreen/core/properties/link/linkevaluatorbase.h"
-#include "voreen/core/properties/link/linkevaluatorfactory.h"
+#include "voreen/core/properties/link/linkevaluatorhelper.h"
 #include "voreen/core/properties/link/linkevaluatorid.h"
 #include "voreen/core/properties/property.h"
+#include "voreen/core/properties/link/linkevaluatorhelper.h"
 #include "voreen/core/datastructures/transfunc/transfunc1dkeys.h"
 #include <vector>
 #include <map>
 #include <typeinfo>
-
-
-namespace {
-
-/*
- * Helper function: Collects compatible link evaluators for the passed property pair
- * by iterating over all linkevaluatorfactories of all modules.
- */
-std::vector<std::pair<std::string, std::string> > getCompatibleEvaluators(
-    voreen::Property* src, voreen::Property* dest) {
-
-    std::vector<std::pair<std::string, std::string> > result;
-
-    if (!voreen::VoreenApplication::app()) {
-        LERRORC("voreen.PropertyLink", "VoreenApplication not instantiated");
-        return result;
-    }
-    const std::vector<voreen::VoreenModule*>& modules = voreen::VoreenApplication::app()->getModules();
-
-    for (size_t m=0; m<modules.size(); m++) {
-        const std::vector<voreen::LinkEvaluatorFactory*>& factories = modules.at(m)->getLinkEvaluatorFactories();
-        for (size_t i=0; i<factories.size(); i++) {
-            std::vector<std::pair<std::string, std::string> > evaluators =
-                factories.at(i)->getCompatibleLinkEvaluators(src, dest);
-            result.insert(result.end(), evaluators.begin(), evaluators.end());
-        }
-    }
-
-    return result;
-}
-
-/*
- * Helper function: Creates a link evaluator for the passed type string
- * by iterating over all linkevaluatorfactories of all modules.
- */
-voreen::LinkEvaluatorBase* createLinkEvaluator(const std::string& typeString) {
-
-    if (!voreen::VoreenApplication::app()) {
-        LERRORC("voreen.PropertyLink", "VoreenApplication not instantiated");
-        return 0;
-    }
-    const std::vector<voreen::VoreenModule*>& modules = voreen::VoreenApplication::app()->getModules();
-
-    for (size_t m=0; m<modules.size(); m++) {
-        const std::vector<voreen::LinkEvaluatorFactory*>& factories = modules.at(m)->getLinkEvaluatorFactories();
-        for (size_t i=0; i<factories.size(); i++) {
-            voreen::LinkEvaluatorBase* evaluator = factories.at(i)->createEvaluator(typeString);
-            if (evaluator)
-                return evaluator;
-        }
-    }
-
-    return 0;
-}
-
-} // namespace anonymous
-
 
 namespace voreen {
 
@@ -110,7 +54,7 @@ PropertyLink::PropertyLink(Property* src, Property* dest, LinkEvaluatorBase* lin
     if (linkEvaluator)
         evaluator_ = linkEvaluator;
     else {
-        std::vector<std::pair<std::string, std::string> > availableFunctions = getCompatibleEvaluators(src, dest);
+        std::vector<std::pair<std::string, std::string> > availableFunctions = LinkEvaluatorHelper::getCompatibleLinkEvaluators(src, dest);
         std::string evalType;
         for(std::vector<std::pair<std::string, std::string> >::iterator i=availableFunctions.begin(); i!=availableFunctions.end(); i++) {
             if(evalType == "")
@@ -120,7 +64,7 @@ PropertyLink::PropertyLink(Property* src, Property* dest, LinkEvaluatorBase* lin
                     evalType = i->first;
             }
         }
-        evaluator_ = createLinkEvaluator(evalType);
+        evaluator_ = LinkEvaluatorHelper::createEvaluator(evalType);
     }
 
     evaluator_->propertiesChanged(src_, dest_);
@@ -257,13 +201,13 @@ void PropertyLink::deserialize(XmlDeserializer& s) {
         else if (src_) {
             addOn = "Link source: '";
             if (src_->getOwner())
-                addOn += src_->getOwner()->getName() + "::";
+                addOn += src_->getOwner()->getID() + "::";
             addOn += src_->getGuiName() + "'";
         }
         else if (dest_) {
             addOn = "Link dest: '";
             if (dest_->getOwner())
-                addOn += dest_->getOwner()->getName() + "::";
+                addOn += dest_->getOwner()->getID() + "::";
             addOn += dest_->getGuiName() + "'";
         }
         s.raise(XmlSerializationMemoryAllocationException("Property link could not be established. " + addOn));
@@ -278,13 +222,18 @@ void PropertyLink::deserialize(XmlDeserializer& s) {
         // this should never happen, but if it does, replace evaluator with fresh instance
         LWARNING("deserialize(): link has been assigned the same evaluator as its reverse link: "
             << "src=" << src_->getFullyQualifiedID() << ", dest=" << dest_->getFullyQualifiedID());
-        evaluator_ = evaluator_->create();
+        evaluator_ = dynamic_cast<LinkEvaluatorBase*>(evaluator_->create());
+        if (evaluator_) {
+            LERROR(evaluator_->getClassName() << "::create() " << " did not return a LinkEvaluatorBase");
+            delete evaluator_;
+            evaluator_ = 0;
+        }
     }
 
     if (evaluator_) {
         // auto-convert old LinkEvaluatorId:
         if (evaluator_->getClassName() == "LinkEvaluatorId") {
-            std::vector<std::pair<std::string, std::string> > availableFunctions = getCompatibleEvaluators(src_, dest_);
+            std::vector<std::pair<std::string, std::string> > availableFunctions = LinkEvaluatorHelper::getCompatibleLinkEvaluators(src_, dest_);
             std::string evalType = "";
             for(std::vector<std::pair<std::string, std::string> >::iterator i=availableFunctions.begin(); i!=availableFunctions.end(); i++) {
                 if(i->second == "id")
@@ -292,7 +241,7 @@ void PropertyLink::deserialize(XmlDeserializer& s) {
             }
             if(!evalType.empty()) {
                 //delete evaluator_;
-                evaluator_ = createLinkEvaluator(evalType);
+                evaluator_ = LinkEvaluatorHelper::createEvaluator(evalType);
                 LINFO("Replaced deprecated link evaluator with " << evaluator_->getClassName());
             }
             else {
@@ -302,7 +251,7 @@ void PropertyLink::deserialize(XmlDeserializer& s) {
         // --------------------------------
         // auto-convert old LinkEvaluatorIdNormalized:
         if (evaluator_->getClassName() == "LinkEvaluatorIdNormalized") {
-            std::vector<std::pair<std::string, std::string> > availableFunctions = getCompatibleEvaluators(src_, dest_);
+            std::vector<std::pair<std::string, std::string> > availableFunctions = LinkEvaluatorHelper::getCompatibleLinkEvaluators(src_, dest_);
             std::string evalType = "";
             for(std::vector<std::pair<std::string, std::string> >::iterator i=availableFunctions.begin(); i!=availableFunctions.end(); i++) {
                 if(i->second == "id normalized")
@@ -310,7 +259,7 @@ void PropertyLink::deserialize(XmlDeserializer& s) {
             }
             if(!evalType.empty()) {
                 //delete evaluator_;
-                evaluator_ = createLinkEvaluator(evalType);
+                evaluator_ = LinkEvaluatorHelper::createEvaluator(evalType);
                 LINFO("Replaced deprecated link evaluator with " << evaluator_->getClassName());
             }
             else {

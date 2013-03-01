@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -31,16 +31,18 @@
 
 namespace voreen {
 
-class TextPort : public Port {
+class VRN_CORE_API TextPort : public Port {
 public:
     explicit TextPort(PortDirection direction, const std::string& name, const std::string& guiName = "",
                         bool allowMultipleConnections = false,
                         Processor::InvalidationLevel invalidationLevel = Processor::INVALID_PARAMETERS);
     ~TextPort();
 
+    virtual Port* create(PortDirection direction, const std::string& id, const std::string& guiName = "") const {return new TextPort(direction,id,guiName);}
     virtual std::string getClassName() const {return "TextPort";}
     virtual std::string getContentDescription() const;
     virtual std::string getContentDescriptionHTML() const;
+    virtual void forwardData() const;
 
     virtual void setData(const std::string& str);
 

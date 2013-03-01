@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -32,7 +32,6 @@
 #include "voreen/core/utils/stringutils.h"
 #include "voreen/qt/voreenapplicationqt.h"
 #include "voreenmoduleve.h"
-#include "voreenvemetadatafactory.h"
 
 #include "gen_moduleregistration_ve.h"
 
@@ -52,8 +51,6 @@ VoreenVEApplication::VoreenVEApplication(int& argc, char** argv)
 #endif
 {
     veApp_ = this;
-
-    registerSerializerFactory(new VoreenVEMetaDataFactory());
 }
 
 VoreenVEApplication::~VoreenVEApplication() {
@@ -171,7 +168,7 @@ void VoreenVEApplication::registerVEModule(VoreenModuleVE* module) {
     if (std::find(veModules_.begin(), veModules_.end(), module) == veModules_.end())
         veModules_.push_back(module);
     else
-        LWARNING("VoreenVE module '" << module->getName() << "' has already been registered. Skipping.");
+        LWARNING("VoreenVE module '" << module->getID() << "' has already been registered. Skipping.");
 }
 
 const std::vector<VoreenModuleVE*>& VoreenVEApplication::getVEModules() const {

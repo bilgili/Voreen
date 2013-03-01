@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -448,7 +448,7 @@ VolumeBase* ECAT7VolumeReader::read(const VolumeURL& origin)
     if (! tmp.empty())
         volumeId = stoi(tmp);
 
-    VolumeCollection* collection = read(origin.getPath(), volumeId);
+    VolumeList* collection = read(origin.getPath(), volumeId);
 
     if (collection && collection->size() == 1) {
         result = collection->first();
@@ -468,7 +468,7 @@ VolumeBase* ECAT7VolumeReader::read(const VolumeURL& origin)
     return result;
 }
 
-VolumeCollection* ECAT7VolumeReader::read(const std::string &url)
+VolumeList* ECAT7VolumeReader::read(const std::string &url)
     throw (tgt::FileException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -481,7 +481,7 @@ VolumeCollection* ECAT7VolumeReader::read(const std::string &url)
     return read(url, volumeId);
 }
 
-VolumeCollection* ECAT7VolumeReader::read(const std::string &url, int volumeId)
+VolumeList* ECAT7VolumeReader::read(const std::string &url, int volumeId)
     throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     LINFO("Loading dataset " << url << " vid: " << volumeId);
@@ -496,7 +496,7 @@ VolumeCollection* ECAT7VolumeReader::read(const std::string &url, int volumeId)
 
     ECAT7VolumeReader::ECAT7Structure s = readStructure(fileName);
 
-    VolumeCollection* vc = new VolumeCollection();
+    VolumeList* vc = new VolumeList();
 
     for(size_t i=0; i<s.subVolumes_.size(); i++) {
         fseek(fin, s.subVolumes_[i].de_.startBlock_ * 512, SEEK_SET);

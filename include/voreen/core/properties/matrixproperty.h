@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -41,7 +41,7 @@ class VRN_CORE_API FloatMat2Property : public NumericProperty<tgt::mat2> {
 public:
     FloatMat2Property(const std::string& id, const std::string& guiText, const tgt::mat2& value,
         const tgt::mat2& minimum = tgt::mat2(-10.0f), const tgt::mat2& maximum = tgt::mat2(10.0f),
-        int invalidationLevel=Processor::INVALID_RESULT);
+        int invalidationLevel=Processor::INVALID_RESULT, NumericProperty<tgt::mat2>::BoundaryUpdatePolicy bup = NumericProperty<tgt::mat2>::STATIC);
     FloatMat2Property();
     virtual ~FloatMat2Property() {}
 
@@ -61,7 +61,7 @@ class VRN_CORE_API FloatMat3Property : public NumericProperty<tgt::mat3> {
 public:
     FloatMat3Property(const std::string& id, const std::string& guiText, const tgt::mat3& value,
         const tgt::mat3& minimum = tgt::mat3(-10.0f), const tgt::mat3& maximum = tgt::mat3(10.0f),
-        int invalidationLevel=Processor::INVALID_RESULT);
+        int invalidationLevel=Processor::INVALID_RESULT, NumericProperty<tgt::mat3>::BoundaryUpdatePolicy bup = NumericProperty<tgt::mat3>::STATIC);
     FloatMat3Property();
     virtual ~FloatMat3Property() {}
 
@@ -81,7 +81,7 @@ class VRN_CORE_API FloatMat4Property : public NumericProperty<tgt::mat4> {
 public:
     FloatMat4Property(const std::string& id, const std::string& guiText, const tgt::mat4& value,
         const tgt::mat4& minimum = tgt::mat4(-10.0f), const tgt::mat4& maximum = tgt::mat4(10.0f),
-        int invalidationLevel=Processor::INVALID_RESULT);
+        int invalidationLevel=Processor::INVALID_RESULT, NumericProperty<tgt::mat4>::BoundaryUpdatePolicy bup = NumericProperty<tgt::mat4>::STATIC);
     FloatMat4Property();
     virtual ~FloatMat4Property() {}
 

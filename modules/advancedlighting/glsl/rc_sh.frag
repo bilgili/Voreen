@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -77,21 +77,22 @@ void rayTraversal(in vec3 first, in vec3 last) {
         vec4 voxel = getVoxel(volume_, volumeStruct_, samplePos);
         //vec4 voxel = getVoxel(shcoeffsI0_, volumeStruct_, samplePos);
 
-         //calculate gradients
-        if(t == 0.0)
-            voxel.xyz = fixClipBorderGradient(samplePos, rayDirection, entryPoints_, entryParameters_);
-        else
-            voxel.xyz = CALC_GRADIENT(volume_, volumeStruct_, samplePos);
-
         // apply classification (if BRDFs are not enabled, this uses normal TF classification)
         vec4 color = applyTF(transferFunc_, transferFuncTex_, voxel.a);
 
-        // apply shading
-        color.rgb = shShading(voxel.xyz, samplePos, -rayDirection, color.rgb);
-
         // if opacity greater zero, apply compositing
-        if (color.a > 0.0)
+        if (color.a > 0.0) {
+            //calculate gradients
+            if(t == 0.0)
+                voxel.xyz = fixClipBorderGradient(samplePos, rayDirection, entryPoints_, entryParameters_);
+            else
+                voxel.xyz = CALC_GRADIENT(volume_, volumeStruct_, samplePos);
+
+            // apply shading
+            color.rgb = shShading(voxel.xyz, samplePos, -rayDirection, color.rgb);
+
             result = compositeDVR(result, color, t, samplingStepSize_, tDepth);
+        }
 
         finished = earlyRayTermination(result.a, EARLY_RAY_TERMINATION_OPACITY);
         t += tIncr;
@@ -108,8 +109,9 @@ void rayTraversal(in vec3 first, in vec3 last) {
  ***/
 void main() {
 
-    vec3 frontPos = textureLookup2D(entryPoints_, entryParameters_, gl_FragCoord.xy).rgb;
-    vec3 backPos = textureLookup2D(exitPoints_, exitParameters_, gl_FragCoord.xy).rgb;
+    vec2 p = gl_FragCoord.xy * screenDimRCP_;
+    vec3 frontPos = textureLookup2Dnormalized(entryPoints_, entryParameters_, p).rgb;
+    vec3 backPos = textureLookup2Dnormalized(exitPoints_, exitParameters_, p).rgb;
 
     // determine whether the ray has to be casted
     if (frontPos == backPos)
@@ -120,8 +122,6 @@ void main() {
         rayTraversal(frontPos, backPos);
 
     //result = vec4(0.0, 1.0, 0.0, 1.0);
-    #ifdef OP0
-        FragData0 = result;
-    #endif
+    FragData0 = result;
 }
 

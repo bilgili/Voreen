@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -31,11 +31,11 @@ namespace voreen {
 
 FloatStartInterpolationFunction::FloatStartInterpolationFunction() {}
 
-std::string FloatStartInterpolationFunction::getMode() const {
+std::string FloatStartInterpolationFunction::getGuiName() const {
     return "focus on startvalue";
 }
 
-std::string FloatStartInterpolationFunction::getIdentifier() const {
+std::string FloatStartInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -45,17 +45,17 @@ float FloatStartInterpolationFunction::interpolate(float startvalue, float endva
     else
         return endvalue;
 }
-InterpolationFunction<float>* FloatStartInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatStartInterpolationFunction::create() const {
     return new FloatStartInterpolationFunction();
 }
 
 FloatEndInterpolationFunction::FloatEndInterpolationFunction() {}
 
-std::string FloatEndInterpolationFunction::getMode() const {
+std::string FloatEndInterpolationFunction::getGuiName() const {
     return "focus on endvalue";
 }
 
-std::string FloatEndInterpolationFunction::getIdentifier() const {
+std::string FloatEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -66,17 +66,17 @@ float FloatEndInterpolationFunction::interpolate(float startvalue, float endvalu
         return startvalue;
 }
 
-InterpolationFunction<float>* FloatEndInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatEndInterpolationFunction::create() const {
     return new FloatEndInterpolationFunction();
 }
 
 FloatStartEndInterpolationFunction::FloatStartEndInterpolationFunction() {}
 
-std::string FloatStartEndInterpolationFunction::getMode() const {
+std::string FloatStartEndInterpolationFunction::getGuiName() const {
     return "bisection";
 }
 
-std::string FloatStartEndInterpolationFunction::getIdentifier() const {
+std::string FloatStartEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -89,17 +89,17 @@ float FloatStartEndInterpolationFunction::interpolate(float startvalue, float en
     }
 }
 
-InterpolationFunction<float>* FloatStartEndInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatStartEndInterpolationFunction::create() const {
     return new FloatStartEndInterpolationFunction();
 }
 
 FloatLinearInterpolationFunction::FloatLinearInterpolationFunction() {}
 
-std::string FloatLinearInterpolationFunction::getMode() const {
+std::string FloatLinearInterpolationFunction::getGuiName() const {
     return "linear interpolation";
 }
 
-std::string FloatLinearInterpolationFunction::getIdentifier() const {
+std::string FloatLinearInterpolationFunction::getCategory() const {
     return "linear";
 }
 
@@ -107,17 +107,17 @@ float FloatLinearInterpolationFunction::interpolate(float startvalue,float endva
     return BasicFloatInterpolation::linearInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatLinearInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatLinearInterpolationFunction::create() const {
     return new FloatLinearInterpolationFunction();
 }
 
 FloatCatmullRomInterpolationFunction::FloatCatmullRomInterpolationFunction() {}
 
-std::string FloatCatmullRomInterpolationFunction::getMode() const {
+std::string FloatCatmullRomInterpolationFunction::getGuiName() const {
         return "Catmull-Rom spline interpolation";
 }
 
-std::string FloatCatmullRomInterpolationFunction::getIdentifier() const {
+std::string FloatCatmullRomInterpolationFunction::getCategory() const {
         return "spline";
 }
 
@@ -158,17 +158,17 @@ float FloatCatmullRomInterpolationFunction::interpolate(std::vector<PropertyKeyV
     return h00*p1 + h10*m1 + h01*p2 + h11*m2;
 }
 
-MultiPointInterpolationFunction<float>* FloatCatmullRomInterpolationFunction::clone() const{
+MultiPointInterpolationFunction<float>* FloatCatmullRomInterpolationFunction::create() const {
     return new FloatCatmullRomInterpolationFunction();
 }
 
 FloatInQuadInterpolationFunction::FloatInQuadInterpolationFunction() {}
 
-std::string FloatInQuadInterpolationFunction::getMode() const {
+std::string FloatInQuadInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string FloatInQuadInterpolationFunction::getIdentifier() const {
+std::string FloatInQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -176,17 +176,17 @@ float FloatInQuadInterpolationFunction::interpolate(float startvalue,float endva
     return BasicFloatInterpolation::inQuadInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatInQuadInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatInQuadInterpolationFunction::create() const {
     return new FloatInQuadInterpolationFunction();
 }
 
 FloatInCubicInterpolationFunction::FloatInCubicInterpolationFunction() {}
 
-std::string FloatInCubicInterpolationFunction::getMode() const {
+std::string FloatInCubicInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string FloatInCubicInterpolationFunction::getIdentifier() const {
+std::string FloatInCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -194,17 +194,17 @@ float FloatInCubicInterpolationFunction::interpolate(float startvalue,float endv
     return BasicFloatInterpolation::inCubicInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatInCubicInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatInCubicInterpolationFunction::create() const {
     return new FloatInCubicInterpolationFunction();
 }
 
 FloatInQuartInterpolationFunction::FloatInQuartInterpolationFunction() {}
 
-std::string FloatInQuartInterpolationFunction::getMode() const {
+std::string FloatInQuartInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string FloatInQuartInterpolationFunction::getIdentifier() const {
+std::string FloatInQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -212,17 +212,17 @@ float FloatInQuartInterpolationFunction::interpolate(float startvalue,float endv
     return BasicFloatInterpolation::inQuartInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatInQuartInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatInQuartInterpolationFunction::create() const {
     return new FloatInQuartInterpolationFunction();
 }
 
 FloatInQuintInterpolationFunction::FloatInQuintInterpolationFunction() {}
 
-std::string FloatInQuintInterpolationFunction::getMode() const {
+std::string FloatInQuintInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string FloatInQuintInterpolationFunction::getIdentifier() const {
+std::string FloatInQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -230,17 +230,17 @@ float FloatInQuintInterpolationFunction::interpolate(float startvalue,float endv
     return BasicFloatInterpolation::inQuintInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatInQuintInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatInQuintInterpolationFunction::create() const {
     return new FloatInQuintInterpolationFunction();
 }
 
 FloatInSineInterpolationFunction::FloatInSineInterpolationFunction() {}
 
-std::string FloatInSineInterpolationFunction::getMode() const {
+std::string FloatInSineInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string FloatInSineInterpolationFunction::getIdentifier() const {
+std::string FloatInSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -248,17 +248,17 @@ float FloatInSineInterpolationFunction::interpolate(float startvalue,float endva
     return BasicFloatInterpolation::inSineInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatInSineInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatInSineInterpolationFunction::create() const {
     return new FloatInSineInterpolationFunction();
 }
 
 FloatInExponentInterpolationFunction::FloatInExponentInterpolationFunction() {}
 
-std::string FloatInExponentInterpolationFunction::getMode() const {
+std::string FloatInExponentInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string FloatInExponentInterpolationFunction::getIdentifier() const {
+std::string FloatInExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -266,17 +266,17 @@ float FloatInExponentInterpolationFunction::interpolate(float startvalue,float e
     return BasicFloatInterpolation::inExponentInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatInExponentInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatInExponentInterpolationFunction::create() const {
     return new FloatInExponentInterpolationFunction();
 }
 
 FloatInCircInterpolationFunction::FloatInCircInterpolationFunction() {}
 
-std::string FloatInCircInterpolationFunction::getMode() const {
+std::string FloatInCircInterpolationFunction::getGuiName() const {
     return "easing in";
 }
 
-std::string FloatInCircInterpolationFunction::getIdentifier() const {
+std::string FloatInCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -284,17 +284,17 @@ float FloatInCircInterpolationFunction::interpolate(float startvalue,float endva
     return BasicFloatInterpolation::inCircInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatInCircInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatInCircInterpolationFunction::create() const {
     return new FloatInCircInterpolationFunction();
 }
 
 FloatOutQuadInterpolationFunction::FloatOutQuadInterpolationFunction() {}
 
-std::string FloatOutQuadInterpolationFunction::getMode() const {
+std::string FloatOutQuadInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string FloatOutQuadInterpolationFunction::getIdentifier() const {
+std::string FloatOutQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -302,17 +302,17 @@ float FloatOutQuadInterpolationFunction::interpolate(float startvalue,float endv
     return BasicFloatInterpolation::outQuadInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatOutQuadInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatOutQuadInterpolationFunction::create() const {
     return new FloatOutQuadInterpolationFunction();
 }
 
 FloatOutCubicInterpolationFunction::FloatOutCubicInterpolationFunction() {}
 
-std::string FloatOutCubicInterpolationFunction::getMode() const {
+std::string FloatOutCubicInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string FloatOutCubicInterpolationFunction::getIdentifier() const {
+std::string FloatOutCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -320,17 +320,17 @@ float FloatOutCubicInterpolationFunction::interpolate(float startvalue,float end
     return BasicFloatInterpolation::outCubicInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatOutCubicInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatOutCubicInterpolationFunction::create() const {
     return new FloatOutCubicInterpolationFunction();
 }
 
 FloatOutQuartInterpolationFunction::FloatOutQuartInterpolationFunction() {}
 
-std::string FloatOutQuartInterpolationFunction::getMode() const {
+std::string FloatOutQuartInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string FloatOutQuartInterpolationFunction::getIdentifier() const {
+std::string FloatOutQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -338,17 +338,17 @@ float FloatOutQuartInterpolationFunction::interpolate(float startvalue,float end
     return BasicFloatInterpolation::outQuartInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatOutQuartInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatOutQuartInterpolationFunction::create() const {
     return new FloatOutQuartInterpolationFunction();
 }
 
 FloatOutQuintInterpolationFunction::FloatOutQuintInterpolationFunction() {}
 
-std::string FloatOutQuintInterpolationFunction::getMode() const {
+std::string FloatOutQuintInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string FloatOutQuintInterpolationFunction::getIdentifier() const {
+std::string FloatOutQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -356,17 +356,17 @@ float FloatOutQuintInterpolationFunction::interpolate(float startvalue,float end
     return BasicFloatInterpolation::outQuintInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatOutQuintInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatOutQuintInterpolationFunction::create() const {
     return new FloatOutQuintInterpolationFunction();
 }
 
 FloatOutSineInterpolationFunction::FloatOutSineInterpolationFunction() {}
 
-std::string FloatOutSineInterpolationFunction::getMode() const {
+std::string FloatOutSineInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string FloatOutSineInterpolationFunction::getIdentifier() const {
+std::string FloatOutSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -374,17 +374,17 @@ float FloatOutSineInterpolationFunction::interpolate(float startvalue,float endv
     return BasicFloatInterpolation::outSineInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatOutSineInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatOutSineInterpolationFunction::create() const {
     return new FloatOutSineInterpolationFunction();
 }
 
 FloatOutExponentInterpolationFunction::FloatOutExponentInterpolationFunction() {}
 
-std::string FloatOutExponentInterpolationFunction::getMode() const {
+std::string FloatOutExponentInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string FloatOutExponentInterpolationFunction::getIdentifier() const {
+std::string FloatOutExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -392,17 +392,17 @@ float FloatOutExponentInterpolationFunction::interpolate(float startvalue,float 
     return BasicFloatInterpolation::outExponentInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatOutExponentInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatOutExponentInterpolationFunction::create() const {
     return new FloatOutExponentInterpolationFunction();
 }
 
 FloatOutCircInterpolationFunction::FloatOutCircInterpolationFunction() {}
 
-std::string FloatOutCircInterpolationFunction::getMode() const {
+std::string FloatOutCircInterpolationFunction::getGuiName() const {
     return "easing out";
 }
 
-std::string FloatOutCircInterpolationFunction::getIdentifier() const {
+std::string FloatOutCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -410,17 +410,17 @@ float FloatOutCircInterpolationFunction::interpolate(float startvalue,float endv
     return BasicFloatInterpolation::outCircInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatOutCircInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatOutCircInterpolationFunction::create() const {
     return new FloatOutCircInterpolationFunction();
 }
 
 FloatInOutQuadInterpolationFunction::FloatInOutQuadInterpolationFunction() {}
 
-std::string FloatInOutQuadInterpolationFunction::getMode() const {
+std::string FloatInOutQuadInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string FloatInOutQuadInterpolationFunction::getIdentifier() const {
+std::string FloatInOutQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -428,17 +428,17 @@ float FloatInOutQuadInterpolationFunction::interpolate(float startvalue,float en
     return BasicFloatInterpolation::inOutQuadInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatInOutQuadInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatInOutQuadInterpolationFunction::create() const {
     return new FloatInOutQuadInterpolationFunction();
 }
 
 FloatInOutCubicInterpolationFunction::FloatInOutCubicInterpolationFunction() {}
 
-std::string FloatInOutCubicInterpolationFunction::getMode() const {
+std::string FloatInOutCubicInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string FloatInOutCubicInterpolationFunction::getIdentifier() const {
+std::string FloatInOutCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -446,17 +446,17 @@ float FloatInOutCubicInterpolationFunction::interpolate(float startvalue,float e
     return BasicFloatInterpolation::inOutCubicInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatInOutCubicInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatInOutCubicInterpolationFunction::create() const {
     return new FloatInOutCubicInterpolationFunction();
 }
 
 FloatInOutQuartInterpolationFunction::FloatInOutQuartInterpolationFunction() {}
 
-std::string FloatInOutQuartInterpolationFunction::getMode() const {
+std::string FloatInOutQuartInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string FloatInOutQuartInterpolationFunction::getIdentifier() const {
+std::string FloatInOutQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -464,17 +464,17 @@ float FloatInOutQuartInterpolationFunction::interpolate(float startvalue,float e
     return BasicFloatInterpolation::inOutQuartInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatInOutQuartInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatInOutQuartInterpolationFunction::create() const {
     return new FloatInOutQuartInterpolationFunction();
 }
 
 FloatInOutQuintInterpolationFunction::FloatInOutQuintInterpolationFunction() {}
 
-std::string FloatInOutQuintInterpolationFunction::getMode() const {
+std::string FloatInOutQuintInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string FloatInOutQuintInterpolationFunction::getIdentifier() const {
+std::string FloatInOutQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -482,17 +482,17 @@ float FloatInOutQuintInterpolationFunction::interpolate(float startvalue,float e
     return BasicFloatInterpolation::inOutQuintInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatInOutQuintInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatInOutQuintInterpolationFunction::create() const {
     return new FloatInOutQuintInterpolationFunction();
 }
 
 FloatInOutSineInterpolationFunction::FloatInOutSineInterpolationFunction() {}
 
-std::string FloatInOutSineInterpolationFunction::getMode() const {
+std::string FloatInOutSineInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string FloatInOutSineInterpolationFunction::getIdentifier() const {
+std::string FloatInOutSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -500,17 +500,17 @@ float FloatInOutSineInterpolationFunction::interpolate(float startvalue,float en
     return BasicFloatInterpolation::inOutSineInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatInOutSineInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatInOutSineInterpolationFunction::create() const {
     return new FloatInOutSineInterpolationFunction();
 }
 
 FloatInOutExponentInterpolationFunction::FloatInOutExponentInterpolationFunction() {}
 
-std::string FloatInOutExponentInterpolationFunction::getMode() const {
+std::string FloatInOutExponentInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string FloatInOutExponentInterpolationFunction::getIdentifier() const {
+std::string FloatInOutExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -518,17 +518,17 @@ float FloatInOutExponentInterpolationFunction::interpolate(float startvalue,floa
     return BasicFloatInterpolation::inOutExponentInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatInOutExponentInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatInOutExponentInterpolationFunction::create() const {
     return new FloatInOutExponentInterpolationFunction();
 }
 
 FloatInOutCircInterpolationFunction::FloatInOutCircInterpolationFunction() {}
 
-std::string FloatInOutCircInterpolationFunction::getMode() const {
+std::string FloatInOutCircInterpolationFunction::getGuiName() const {
     return "first easing in, then easing out";
 }
 
-std::string FloatInOutCircInterpolationFunction::getIdentifier() const {
+std::string FloatInOutCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -536,17 +536,17 @@ float FloatInOutCircInterpolationFunction::interpolate(float startvalue,float en
     return BasicFloatInterpolation::inOutCircInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatInOutCircInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatInOutCircInterpolationFunction::create() const {
     return new FloatInOutCircInterpolationFunction();
 }
 
 FloatOutInQuadInterpolationFunction::FloatOutInQuadInterpolationFunction() {}
 
-std::string FloatOutInQuadInterpolationFunction::getMode() const {
+std::string FloatOutInQuadInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string FloatOutInQuadInterpolationFunction::getIdentifier() const {
+std::string FloatOutInQuadInterpolationFunction::getCategory() const {
     return "quadratic";
 }
 
@@ -554,17 +554,17 @@ float FloatOutInQuadInterpolationFunction::interpolate(float startvalue,float en
     return BasicFloatInterpolation::outInQuadInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatOutInQuadInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatOutInQuadInterpolationFunction::create() const {
     return new FloatOutInQuadInterpolationFunction();
 }
 
 FloatOutInCubicInterpolationFunction::FloatOutInCubicInterpolationFunction() {}
 
-std::string FloatOutInCubicInterpolationFunction::getMode() const {
+std::string FloatOutInCubicInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string FloatOutInCubicInterpolationFunction::getIdentifier() const {
+std::string FloatOutInCubicInterpolationFunction::getCategory() const {
     return "cubic";
 }
 
@@ -572,17 +572,17 @@ float FloatOutInCubicInterpolationFunction::interpolate(float startvalue,float e
     return BasicFloatInterpolation::outInCubicInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatOutInCubicInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatOutInCubicInterpolationFunction::create() const {
     return new FloatOutInCubicInterpolationFunction();
 }
 
 FloatOutInQuartInterpolationFunction::FloatOutInQuartInterpolationFunction() {}
 
-std::string FloatOutInQuartInterpolationFunction::getMode() const {
+std::string FloatOutInQuartInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string FloatOutInQuartInterpolationFunction::getIdentifier() const {
+std::string FloatOutInQuartInterpolationFunction::getCategory() const {
     return "quartetic";
 }
 
@@ -590,17 +590,17 @@ float FloatOutInQuartInterpolationFunction::interpolate(float startvalue,float e
     return BasicFloatInterpolation::outInQuartInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatOutInQuartInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatOutInQuartInterpolationFunction::create() const {
     return new FloatOutInQuartInterpolationFunction();
 }
 
 FloatOutInQuintInterpolationFunction::FloatOutInQuintInterpolationFunction() {}
 
-std::string FloatOutInQuintInterpolationFunction::getMode() const {
+std::string FloatOutInQuintInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string FloatOutInQuintInterpolationFunction::getIdentifier() const {
+std::string FloatOutInQuintInterpolationFunction::getCategory() const {
     return "quintic";
 }
 
@@ -608,17 +608,17 @@ float FloatOutInQuintInterpolationFunction::interpolate(float startvalue,float e
     return BasicFloatInterpolation::outInQuintInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatOutInQuintInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatOutInQuintInterpolationFunction::create() const {
     return new FloatOutInQuintInterpolationFunction();
 }
 
 FloatOutInSineInterpolationFunction::FloatOutInSineInterpolationFunction() {}
 
-std::string FloatOutInSineInterpolationFunction::getMode() const {
+std::string FloatOutInSineInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string FloatOutInSineInterpolationFunction::getIdentifier() const {
+std::string FloatOutInSineInterpolationFunction::getCategory() const {
     return "sineousidal";
 }
 
@@ -626,17 +626,17 @@ float FloatOutInSineInterpolationFunction::interpolate(float startvalue,float en
     return BasicFloatInterpolation::outInSineInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatOutInSineInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatOutInSineInterpolationFunction::create() const {
     return new FloatOutInSineInterpolationFunction();
 }
 
 FloatOutInExponentInterpolationFunction::FloatOutInExponentInterpolationFunction() {}
 
-std::string FloatOutInExponentInterpolationFunction::getMode() const {
+std::string FloatOutInExponentInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string FloatOutInExponentInterpolationFunction::getIdentifier() const {
+std::string FloatOutInExponentInterpolationFunction::getCategory() const {
     return "exponential";
 }
 
@@ -644,17 +644,17 @@ float FloatOutInExponentInterpolationFunction::interpolate(float startvalue,floa
     return BasicFloatInterpolation::outInExponentInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatOutInExponentInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatOutInExponentInterpolationFunction::create() const {
     return new FloatOutInExponentInterpolationFunction();
 }
 
 FloatOutInCircInterpolationFunction::FloatOutInCircInterpolationFunction() {}
 
-std::string FloatOutInCircInterpolationFunction::getMode() const {
+std::string FloatOutInCircInterpolationFunction::getGuiName() const {
     return "first easing out, then easing in";
 }
 
-std::string FloatOutInCircInterpolationFunction::getIdentifier() const {
+std::string FloatOutInCircInterpolationFunction::getCategory() const {
     return "circular";
 }
 
@@ -662,7 +662,7 @@ float FloatOutInCircInterpolationFunction::interpolate(float startvalue,float en
     return BasicFloatInterpolation::outInCircInterpolation(startvalue,endvalue,time);
 }
 
-InterpolationFunction<float>* FloatOutInCircInterpolationFunction::clone() const {
+InterpolationFunction<float>* FloatOutInCircInterpolationFunction::create() const {
     return new FloatOutInCircInterpolationFunction();
 }
 

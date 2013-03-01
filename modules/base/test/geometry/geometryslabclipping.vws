@@ -37,8 +37,8 @@
                         <Property name="slabNormal">
                             <value x="0.22499999" y="0.35100001" z="0.11090852" />
                         </Property>
-                        <Property name="slabPosition" value="-0.03413032" />
-                        <Property name="slabThickness" value="0.5" />
+                        <Property name="slabPosition" value="-0.03413032" minValue="-2.71740389" maxValue="2.71740389" />
+                        <Property name="slabThickness" value="0.5" minValue="0.01358702" maxValue="5.43480778" />
                     </Properties>
                     <InteractionHandlers>
                         <Handler name="wheelInteractionHandler">
@@ -57,8 +57,8 @@
                         <Property name="slabNormal">
                             <value x="0.22499999" y="0.35100001" z="0.11090852" />
                         </Property>
-                        <Property name="slabPosition" value="-0.03413032" />
-                        <Property name="slabThickness" value="0.5" />
+                        <Property name="slabPosition" value="-0.03413032" minValue="-2.71740389" maxValue="2.71740389" />
+                        <Property name="slabThickness" value="0.5" minValue="0.01358702" maxValue="5.43480778" />
                     </Properties>
                     <InteractionHandlers>
                         <Handler name="wheelInteractionHandler">

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,8 +33,9 @@ namespace voreen {
 const std::string PropertyVector::loggerCat_("voreen.PropertyVector");
 
 PropertyVector::PropertyVector(const std::string& id, const std::string& guiText, std::vector<Property*> properties)
-    : Property(id, guiText),
-      properties_(properties)
+    : Property(id, guiText)
+    , PropertyOwner(id, guiText)
+    , properties_(properties)
 {}
 
 PropertyVector::PropertyVector()
@@ -46,8 +47,16 @@ PropertyVector::~PropertyVector() {
         delete properties_[i];
 }
 
-std::string PropertyVector::getName() const {
-    return "PropertyVector";
+std::string PropertyVector::getGuiName() const {
+    return Property::getGuiName();
+}
+
+std::string PropertyVector::getID() const {
+    return Property::getID();
+}
+
+void PropertyVector::setGuiName(const std::string& guiname) {
+    Property::setGuiName(guiname);
 }
 
 void PropertyVector::reset() {

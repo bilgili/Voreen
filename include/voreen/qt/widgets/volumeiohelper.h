@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -42,7 +42,7 @@ class ProgressBar;
 class VolumeSerializerPopulator;
 class VolumeReaderSelectionDialog;
 class VolumeListingDialog;
-class VolumeCollection;
+class VolumeList;
 
 /**
  * Helper class for loading and saving volumes.
@@ -65,14 +65,14 @@ signals:
     /**
      * Is emitted after a volume has been loaded.
      *
-     * @param handle the loaded volume handle
+     * @param handle the loaded volume
      */
     void volumeLoaded(const VolumeBase* handle);
 
     /**
      * Is emitted after a volume has been written to disk.
      *
-     * @param handle the save volume handle
+     * @param handle the save volume
      * @param exportPath the file path the volume has been written to
      */
     void volumeSaved(const VolumeBase* handle, const std::string& exportPath);

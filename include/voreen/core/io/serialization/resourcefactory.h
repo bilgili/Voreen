@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -38,7 +38,7 @@
 
 namespace voreen {
 
-class Serializable;
+class VRN_CORE_API Serializable;
 
 /**
  * Implementation of SerializeFactory that handles types based on their class name.
@@ -63,7 +63,7 @@ public:
      * @returns either the string corresponding to the given @c type_info object,
      *          or an empty string, if the type has not been registered at this factory.
      */
-    virtual const std::string getTypeString(const std::type_info& type) const;
+    virtual std::string getSerializableTypeString(const std::type_info& type) const;
 
     /**
      * Returns a new instance of the class corresponding to the given @c typeString.
@@ -73,7 +73,7 @@ public:
      * @returns either the new instance or @c 0, if no class with this type string
      *  has been registered at this factory.
      */
-    virtual Serializable* createType(const std::string& typeString);
+    virtual Serializable* createSerializableType(const std::string& typeString) const;
 
     /**
      * Registers the passed type at the factory, using its class name as type name.
@@ -123,7 +123,7 @@ ResourceFactory<T>::~ResourceFactory() {
 }
 
 template<class T>
-const std::string ResourceFactory<T>::getTypeString(const std::type_info& type) const {
+std::string ResourceFactory<T>::getSerializableTypeString(const std::type_info& type) const {
     typename std::map<std::string, const T*>::const_iterator it;
     for (it = typeMap_.begin(); it != typeMap_.end(); ++it) {
         if (type == typeid(*(it->second)))
@@ -133,12 +133,12 @@ const std::string ResourceFactory<T>::getTypeString(const std::type_info& type) 
 }
 
 template<class T>
-Serializable* ResourceFactory<T>::createType(const std::string& typeString) {
-    typename std::map<std::string, const T*>::iterator it = typeMap_.find(typeString);
+Serializable* ResourceFactory<T>::createSerializableType(const std::string& typeString) const {
+    typename std::map<std::string, const T*>::const_iterator it = typeMap_.find(typeString);
     if (it == typeMap_.end())
         return 0;
     else
-        return it->second->create();
+        return dynamic_cast<T*>(it->second->create());
 }
 
 template<class T>

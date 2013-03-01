@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -125,7 +125,7 @@ bool NetworkEvaluator::initializeNetwork()  {
                 if (glMode_ && sharedContext_)
                     sharedContext_->getGLFocus();
                 processor->initialize();
-                processor->initialized_ = true;
+                processor->processorState_ = Processor::PROCESSOR_STATE_NOT_READY;
                 processor->invalidate();
                 if (glMode_ ) {
                     if (sharedContext_)
@@ -134,18 +134,18 @@ bool NetworkEvaluator::initializeNetwork()  {
                 }
             }
             catch (const tgt::Exception& e) {
-                LERROR("Failed to initialize processor '" << processor->getName()
+                LERROR("Failed to initialize processor '" << processor->getID()
                         << "' (" << processor->getClassName() << "): ");
                 LERROR(" - " << e.what());
 
                 // deinitialize processor, in order to make sure that all resources are freed
-                LINFO("Deinitializing '" << processor->getName()
+                LINFO("Deinitializing '" << processor->getID()
                     << "' (" << processor->getClassName() << ") ...");
                 if (glMode_ && sharedContext_)
                     sharedContext_->getGLFocus();
-                processor->initialized_ = true;
+                processor->processorState_ = Processor::PROCESSOR_STATE_NOT_READY;
                 processor->deinitialize();
-                processor->initialized_ = false;
+                processor->processorState_ = Processor::PROCESSOR_STATE_NOT_INITIALIZED;
 
                 // don't break, try to initialize the other processors even if one failed
                 failed = true;
@@ -197,7 +197,7 @@ bool NetworkEvaluator::deinitializeNetwork() {
                 if (glMode_ && sharedContext_)
                     sharedContext_->getGLFocus();
                 processor->deinitialize();
-                processor->initialized_ = false;
+                processor->processorState_ = Processor::PROCESSOR_STATE_NOT_INITIALIZED;
                 if (glMode_) {
                     if (sharedContext_)
                         sharedContext_->getGLFocus();
@@ -205,7 +205,7 @@ bool NetworkEvaluator::deinitializeNetwork() {
                 }
             }
             catch (const tgt::Exception& e) {
-                LERROR("Failed to deinitialize processor '" << processor->getName()
+                LERROR("Failed to deinitialize processor '" << processor->getID()
                     << "' (" << processor->getClassName() << "): ");
                 LERROR(" - " << e.what());
                 // don't break, try to deinitialize the other processors even if one failed
@@ -313,7 +313,7 @@ void NetworkEvaluator::process() {
 
         // all processors should have been initialized at this point
         if (!currentProcessor->isInitialized()) {
-            LWARNING("process(): Skipping uninitialized processor '" << currentProcessor->getName()
+            LWARNING("process(): Skipping uninitialized processor '" << currentProcessor->getID()
                      << "' (" << currentProcessor->getClassName() << ")");
             continue;
         }
@@ -340,7 +340,7 @@ void NetworkEvaluator::process() {
                     LGL_ERROR;
 
                 try {
-                    currentProcessor->performanceRecord_.setName(currentProcessor->getName());
+                    currentProcessor->performanceRecord_.setName(currentProcessor->getID());
                     currentProcessor->lockMutex();
 
                     if (glMode_ && sharedContext_)
@@ -355,7 +355,7 @@ void NetworkEvaluator::process() {
                         LGL_ERROR;
                     }
 #ifdef VRN_PRINT_PROFILING
-                    currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getName()+".");
+                    currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getID()+".");
 #endif
                     if (!currentProcessor->isValid())
                     {
@@ -365,7 +365,7 @@ void NetworkEvaluator::process() {
                     if (glMode_ && sharedContext_)
                         sharedContext_->getGLFocus();
 #ifdef VRN_PRINT_PROFILING
-                    currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getName()+".");
+                    currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getID()+".");
 #endif
                     if (glMode_)
                         LGL_ERROR;
@@ -374,7 +374,7 @@ void NetworkEvaluator::process() {
                         currentProcessor->afterProcess();
                     }
 #ifdef VRN_PRINT_PROFILING
-                    currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getName()+".");
+                    currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getID()+".");
 #endif
                     if (glMode_)
                         LGL_ERROR;
@@ -385,12 +385,12 @@ void NetworkEvaluator::process() {
                 catch (VoreenException& e) {
                     LERROR("process(): VoreenException from "
                             << currentProcessor->getClassName()
-                            << " (" << currentProcessor->getName() << "): " << e.what());
+                            << " (" << currentProcessor->getID() << "): " << e.what());
                 }
                 catch (std::exception& e) {
                     LERROR("process(): Exception from "
                             << currentProcessor->getClassName()
-                            << " (" << currentProcessor->getName() << "): " << e.what());
+                            << " (" << currentProcessor->getID() << "): " << e.what());
                 }
 
                 if (glMode_ && sharedContext_)
@@ -417,6 +417,9 @@ void NetworkEvaluator::process() {
             else {
                 // Processor isn't ready, clear outports:
                 currentProcessor->clearOutports();
+                // set Processor valid, as it should not be processed while not ready
+                // TODO: rename "invalid" to "needsProcessing"
+                currentProcessor->setValid();
             }
         }
 
@@ -785,7 +788,7 @@ void NetworkEvaluator::processorRemoved(const Processor* processor) {
             if (glMode_ && sharedContext_)
                 sharedContext_->getGLFocus();
             const_cast<Processor*>(processor)->deinitialize();
-            const_cast<Processor*>(processor)->initialized_ = false;
+            const_cast<Processor*>(processor)->processorState_ = Processor::PROCESSOR_STATE_NOT_INITIALIZED;
             if (glMode_ && sharedContext_) {
                 if (sharedContext_)
                     sharedContext_->getGLFocus();
@@ -793,7 +796,7 @@ void NetworkEvaluator::processorRemoved(const Processor* processor) {
             }
          }
          catch (const VoreenException& e) {
-            LERROR("Failed to deinitialize '" << processor->getName()
+            LERROR("Failed to deinitialize '" << processor->getID()
                     << "' (" << processor->getClassName() << "): ");
             LERROR(" - " << e.what());
          }
@@ -946,7 +949,7 @@ void NetworkEvaluator::CheckOpenGLStateProcessWrapper::checkState(Processor* p) 
 
 void NetworkEvaluator::CheckOpenGLStateProcessWrapper::warn(Processor* p, const std::string& message) {
     if (p) {
-        LWARNING(p->getClassName() << " (" << p->getName()
+        LWARNING(p->getClassName() << " (" << p->getID()
                  << "): invalid OpenGL state after processing: " << message);
     }
     else {

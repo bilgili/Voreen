@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,10 +33,10 @@ namespace voreen {
 
 FlowStreamlinesTexture3D::FlowStreamlinesTexture3D()
     : Processor(),
-    processedVolumeHandle_(0),
+    processedVolume_(0),
     voxelSamplingProp_("voxelSampling", "voxel sampling: ", 10, 1, 100000),
     volInport_(Port::INPORT, "volumehandle.input"),
-    volOutport_(Port::OUTPORT, "volumehandle.output", "volumehandle.output", processedVolumeHandle_)
+    volOutport_(Port::OUTPORT, "volumehandle.output", "volumehandle.output", processedVolume_)
 {
 
     CallMemberAction<FlowStreamlinesTexture3D> cma(this, &FlowStreamlinesTexture3D::calculateStreamlines);
@@ -53,8 +53,8 @@ FlowStreamlinesTexture3D::FlowStreamlinesTexture3D()
 }
 
 FlowStreamlinesTexture3D::~FlowStreamlinesTexture3D() {
-    if ((processedVolumeHandle_ != 0) && (processedVolumeHandle_ != currentVolumeHandle_))
-        delete processedVolumeHandle_;
+    if ((processedVolume_ != 0) && (processedVolume_ != currentVolume_))
+        delete processedVolume_;
 }
 
 void FlowStreamlinesTexture3D::process() {
@@ -66,11 +66,11 @@ void FlowStreamlinesTexture3D::process() {
 //
 
 void FlowStreamlinesTexture3D::calculateStreamlines() {
-    currentVolumeHandle_ = volInport_.getData();
-    if (currentVolumeHandle_ == 0)
+    currentVolume_ = volInport_.getData();
+    if (currentVolume_ == 0)
         return;
 
-    const VolumeFlow3D* input = dynamic_cast<const VolumeFlow3D*>(currentVolumeHandle_->getRepresentation<VolumeRAM>());
+    const VolumeFlow3D* input = dynamic_cast<const VolumeFlow3D*>(currentVolume_->getRepresentation<VolumeRAM>());
     if (input == 0) {
         LERROR("process(): supplied Volume seems to contain no flow data! Cannot proceed.");
         return;
@@ -85,17 +85,17 @@ void FlowStreamlinesTexture3D::calculateStreamlines() {
         StreamlineTexture<unsigned char>::integrateDraw(flow, textureScaling, voxelSampling, thresholds);
 
     VolumeRAM* output = new VolumeRAM_UInt8(streamlineTexture, flow.dimensions_ * textureScaling);
-    if ((processedVolumeHandle_ != 0)
-        && (processedVolumeHandle_ != currentVolumeHandle_)) {
-            delete processedVolumeHandle_;
+    if ((processedVolume_ != 0)
+        && (processedVolume_ != currentVolume_)) {
+            delete processedVolume_;
     }
 
     if (output != 0)
-        processedVolumeHandle_ = new Volume(output, currentVolumeHandle_);
+        processedVolume_ = new Volume(output, currentVolume_);
     else
-        processedVolumeHandle_ = 0;
+        processedVolume_ = 0;
 
-    volOutport_.setData(processedVolumeHandle_);
+    volOutport_.setData(processedVolume_);
 }
 
 }   // namespace

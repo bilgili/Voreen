@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -125,7 +125,7 @@ public slots:
 protected:
     TransFuncProperty* property_; ///< the transfer function property that belongs to this plugin
 
-    const VolumeBase* volumeHandle_; ///< the volume handle that is associated with the transfer function this widget belongs to
+    const VolumeBase* volume_; ///< the volume that is associated with the transfer function this widget belongs to
 
     QString title_; ///< name of the editor that is displayed in the gui
 };

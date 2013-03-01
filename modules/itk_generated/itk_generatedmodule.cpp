@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -177,7 +177,8 @@ namespace voreen {
 ITK_GENERATEDModule::ITK_GENERATEDModule(const std::string& modulePath)
     : VoreenModule(modulePath)
 {
-    setName("ITK_GENERATED");
+    setID("ITK_GENERATED");
+    setGuiName("ITK_GENERATED");
 
     registerProcessor(new CurvatureAnisotropicDiffusionImageFilterITK());
     registerProcessor(new GradientAnisotropicDiffusionImageFilterITK());

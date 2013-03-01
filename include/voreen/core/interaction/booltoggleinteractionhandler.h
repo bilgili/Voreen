@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,7 +33,7 @@
 
 namespace voreen {
 
-class BoolToggleInteractionHandler: public InteractionHandler {
+class VRN_CORE_API BoolToggleInteractionHandler: public InteractionHandler {
 
 public:
     /// Default constructor needed for serialization. Do not call it directly!
@@ -54,6 +54,9 @@ public:
         tgt::Event::Modifier modifier = tgt::Event::MODIFIER_NONE, bool sharing = false, bool enabled = true);
 
     virtual ~BoolToggleInteractionHandler() {}
+
+    virtual std::string getClassName() const   { return "BoolToggleInteractionHandler";     }
+    virtual InteractionHandler* create() const { return new BoolToggleInteractionHandler(); }
 
 private:
     virtual void onEvent(tgt::Event* e);

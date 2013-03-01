@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -54,6 +54,8 @@ VoreenApplicationQt::VoreenApplicationQt(const std::string& name, const std::str
                                          int argc, char** argv, ApplicationFeatures appType)
     : VoreenApplication(name, displayName, description, argc, argv, appType)
     , resetApplicationSettingsButton_("resetApplicationSettings", "Reset Window Settings")
+    , scaleProcessorFontSizeProperty_("scaleProcessorFontSize","Scale Processor Fonts:",100,50,150)
+    , networkEditorStyleProperty_("networkEditorStyleProperty","Style:")
     , mainWindow_(0)
     , clearSettings_(false)
 {
@@ -65,6 +67,14 @@ VoreenApplicationQt::VoreenApplicationQt(const std::string& name, const std::str
     resetApplicationSettingsButton_.onClick(
         CallMemberAction<VoreenApplicationQt>(this, &VoreenApplicationQt::queryResetApplicationSettings));
     resetApplicationSettingsButton_.setGroupID("user-interface");
+    //network editor properties
+    addProperty(scaleProcessorFontSizeProperty_);
+        scaleProcessorFontSizeProperty_.setGroupID("nwe");
+    addProperty(networkEditorStyleProperty_);
+        networkEditorStyleProperty_.addOption("first","Classic",NWESTYLE_CLASSIC);
+        networkEditorStyleProperty_.addOption("second","Classic Print",NWESTYLE_CLASSIC_PRINT);
+        networkEditorStyleProperty_.setGroupID("nwe");
+    setPropertyGroupGuiName("nwe","Network Editor");
 
     qtApp_ = this;
 }
@@ -143,7 +153,7 @@ void VoreenApplicationQt::registerQtModule(VoreenModuleQt* qtModule) {
     if (std::find(qtModules_.begin(), qtModules_.end(), qtModule) == qtModules_.end())
         qtModules_.push_back(qtModule);
     else
-        LWARNING("Qt Module '" << qtModule->getName() << "' has already been registered. Skipping.");
+        LWARNING("Qt Module '" << qtModule->getID() << "' has already been registered. Skipping.");
 }
 
 const std::vector<VoreenModuleQt*>& VoreenApplicationQt::getQtModules() const {
@@ -153,7 +163,7 @@ const std::vector<VoreenModuleQt*>& VoreenApplicationQt::getQtModules() const {
 VoreenModuleQt* VoreenApplicationQt::getQtModule(const std::string& moduleName) const {
     for (size_t i = 0 ; i < qtModules_.size() ; ++i) {
         VoreenModuleQt* qtModule = qtModules_.at(i);
-        if (qtModule->getName() == moduleName)
+        if (qtModule->getID() == moduleName)
             return qtModule;
     }
     return 0;
@@ -163,6 +173,10 @@ void VoreenApplicationQt::resetApplicationSettings() {
     QSettings settings;
     settings.clear();
     clearSettings_ = true;
+}
+
+int VoreenApplicationQt::getProcessorFontScale() const {
+    return scaleProcessorFontSizeProperty_.get();
 }
 
 void VoreenApplicationQt::queryResetApplicationSettings() {

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -37,14 +37,14 @@ namespace voreen {
 /**
  * Simple color to grayscale image processor using OpenCL.
  */
-class GrayscaleCL : public RenderProcessor {
+class VRN_CORE_API GrayscaleCL : public RenderProcessor {
 public:
     GrayscaleCL();
     virtual Processor* create() const;
 
     virtual std::string getCategory() const  { return "Image Processing"; }
-    virtual std::string getClassName() const { return "GrayscaleCL"; }
-    virtual CodeState getCodeState() const   { return CODE_STATE_TESTING; }
+    virtual std::string getClassName() const { return "GrayscaleCL";      }
+    virtual CodeState getCodeState() const   { return CODE_STATE_STABLE;  }
 
 protected:
     virtual void setDescriptions() {

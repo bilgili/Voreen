@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -24,7 +24,7 @@
  ***********************************************************************************/
 
 #include "voreen/core/datastructures/roi/roicube.h"
-#include "voreen/core/datastructures/geometry/meshlistgeometry.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 
 #include "voreen/core/io/serialization/xmlserializer.h"
 #include "voreen/core/io/serialization/xmldeserializer.h"
@@ -52,37 +52,28 @@ bool ROICube::inROINormalized(tgt::vec3 p) const {
         return false;
 }
 
-MeshListGeometry* ROICube::generateNormalizedMesh() const {
-    MeshListGeometry* geometry = new MeshListGeometry();
-    geometry->addMesh(MeshGeometry::createCube(vec3(-1.0f), vec3(1.0f), vec3(0.0f), vec3(1.0f), getColor().xyz(), getColor().xyz()));
-    return geometry;
+Geometry* ROICube::generateNormalizedMesh() const {
+    return TriangleMeshGeometrySimple::createCube(vec3(-1.0f), vec3(1.0f));
 }
 
-MeshListGeometry* ROICube::generateNormalizedMesh(tgt::plane pl) const {
-    FaceGeometry planeFace = createQuad(pl, getColor());
+Geometry* ROICube::generateNormalizedMesh(tgt::plane pl) const {
+    TriangleMeshGeometrySimple* planeFace = createQuad(pl);
 
-    vec4 xm(-1.0f, 0.0f, 0.0f, 1.0f);
-    vec4 xp(1.0f, 0.0f, 0.0f, 1.0f);
-    vec4 ym(0.0f, -1.0f, 0.0f, 1.0f);
-    vec4 yp(0.0f, 1.0f, 0.0f, 1.0f);
-    vec4 zm(0.0f, 0.0f, -1.0f, 1.0f);
-    vec4 zp(0.0f, 0.0f, 1.0f, 1.0f);
+    tgt::plane xm(-1.0f, 0.0f, 0.0f, 1.0f);
+    tgt::plane xp(1.0f, 0.0f, 0.0f, 1.0f);
+    tgt::plane ym(0.0f, -1.0f, 0.0f, 1.0f);
+    tgt::plane yp(0.0f, 1.0f, 0.0f, 1.0f);
+    tgt::plane zm(0.0f, 0.0f, -1.0f, 1.0f);
+    tgt::plane zp(0.0f, 0.0f, 1.0f, 1.0f);
 
-    planeFace.clip(xm);
-    planeFace.clip(xp);
-    planeFace.clip(ym);
-    planeFace.clip(yp);
-    planeFace.clip(zm);
-    planeFace.clip(zp);
+    planeFace->clip(xm);
+    planeFace->clip(xp);
+    planeFace->clip(ym);
+    planeFace->clip(yp);
+    planeFace->clip(zm);
+    planeFace->clip(zp);
 
-    MeshGeometry mg;
-
-    if(planeFace.getVertexCount() > 2)
-        mg.addFace(planeFace);
-
-    MeshListGeometry* mlg = new MeshListGeometry();
-    mlg->addMesh(mg);
-    return mlg;
+    return planeFace;
 }
 
 } // namespace

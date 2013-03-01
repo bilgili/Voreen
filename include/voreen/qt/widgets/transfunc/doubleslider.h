@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -27,6 +27,7 @@
 #define VRN_DOUBLESLIDER_H
 
 #include <QWidget>
+#include "voreen/qt/voreenqtapi.h"
 
 class QMouseEvent;
 
@@ -38,7 +39,7 @@ namespace voreen {
  * method. The range of the values is from 0.0 to 1.0 and stored in float variables.
  * To avoid an overlay of the two sliders the active one shunts the inactive slider.
  */
-class DoubleSlider : public QWidget {
+class VRN_QT_API DoubleSlider : public QWidget {
     Q_OBJECT
 public:
     /**

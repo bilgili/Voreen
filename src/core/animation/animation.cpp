@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,7 +26,6 @@
 #include "voreen/core/animation/animation.h"
 #include "voreen/core/animation/animatedprocessor.h"
 #include "voreen/core/animation/propertytimeline.h"
-#include "voreen/core/animation/undoableanimation.h"
 #include "voreen/core/properties/shaderproperty.h"
 #include "voreen/core/animation/serializationfactories.h"
 #include "voreen/core/animation/interpolationfunctionfactory.h"
@@ -111,8 +110,8 @@ void Animation::renderAt(float time) {
     isRendering_ = false;
 }
 
-void Animation::animationChanged(UndoableAnimation* changedObject) {
-    std::deque<UndoableAnimation*>::iterator it;
+void Animation::animationChanged(PropertyTimeline* changedObject) {
+    std::deque<PropertyTimeline*>::iterator it;
     // change made -> delete all redostates
     for (it = lastUndos_.begin(); it != lastUndos_.end(); ++it) {
         (*it)->clearRedoStates();
@@ -124,7 +123,7 @@ void Animation::animationChanged(UndoableAnimation* changedObject) {
 
     // if there are already too many undosteps -> delete oldest states
     while (lastChanges_.size() > static_cast<size_t>(undoSteps_)) {
-        UndoableAnimation* tmp = lastChanges_.front();
+        PropertyTimeline* tmp = lastChanges_.front();
         tmp->removeOldestUndoState();
         lastChanges_.pop_front();
     }
@@ -133,7 +132,7 @@ void Animation::animationChanged(UndoableAnimation* changedObject) {
 void Animation::undoLastChange() {
     if (lastChanges_.size() > 0) {
         //call the undo-function of the last registered changed propertytimeline
-        UndoableAnimation* temp = lastChanges_.back();
+        PropertyTimeline* temp = lastChanges_.back();
         lastChanges_.pop_back();
         lastUndos_.push_back(temp);
         temp->undo();
@@ -145,7 +144,7 @@ void Animation::undoLastChange() {
 void Animation::redoLastUndo() {
     if (lastUndos_.size() > 0) {
         // call the redo-function of the last undid-propertytimeline
-        UndoableAnimation* temp = lastUndos_.back();
+        PropertyTimeline* temp = lastUndos_.back();
         lastUndos_.pop_back();
         lastChanges_.push_back(temp);
         temp->redo();
@@ -170,7 +169,7 @@ void Animation::setUndoSteps(int steps) {
 
     // if the new value is smaller than the number of undostates -> delete oldest states
     while (lastChanges_.size() > static_cast<size_t>(undoSteps_)) {
-        UndoableAnimation* tmp = lastChanges_.front();
+        PropertyTimeline* tmp = lastChanges_.front();
         tmp->removeOldestUndoState();
         lastChanges_.pop_front();
     }
@@ -218,8 +217,8 @@ void Animation::processorRemoved(const voreen::Processor* processor) {
             }
 
             // remove corresponding undos
-            std::deque<UndoableAnimation*> newLastChanges;
-            std::deque<UndoableAnimation*>::iterator undoIt;
+            std::deque<PropertyTimeline*> newLastChanges;
+            std::deque<PropertyTimeline*>::iterator undoIt;
             std::vector<PropertyTimeline*>::const_iterator tlIt;
             for (undoIt = lastChanges_.begin(); undoIt != lastChanges_.end(); ++undoIt) {
                 PropertyTimeline* tl = dynamic_cast<PropertyTimeline*>(*undoIt);
@@ -241,7 +240,7 @@ void Animation::processorRemoved(const voreen::Processor* processor) {
 
 
             //remove corresponding redos
-            std::deque<UndoableAnimation*> newLastUndos;
+            std::deque<PropertyTimeline*> newLastUndos;
             for (undoIt = lastUndos_.begin(); undoIt != lastUndos_.end(); ++undoIt) {
                 PropertyTimeline* tl = dynamic_cast<PropertyTimeline*>(*undoIt);
                 if (tl) {
@@ -342,25 +341,7 @@ void Animation::deserialize(XmlDeserializer& s) {
 std::vector<SerializableFactory*> Animation::getSerializerFactories() {
     if (factories_.empty()) {
         factories_.push_back(new PropertyTimelineFactory());
-        factories_.push_back(new TemplatePropertyTimelineStateFactory());
-        factories_.push_back(new KeyValueFactory());
-
-        factories_.push_back(new InterpolationFunctionFactory<int>());
-        factories_.push_back(new InterpolationFunctionFactory<float>());
-        factories_.push_back(new InterpolationFunctionFactory<bool>());
-        factories_.push_back(new InterpolationFunctionFactory<tgt::ivec2>());
-        factories_.push_back(new InterpolationFunctionFactory<tgt::ivec3>());
-        factories_.push_back(new InterpolationFunctionFactory<tgt::ivec4>());
-        factories_.push_back(new InterpolationFunctionFactory<tgt::vec2>());
-        factories_.push_back(new InterpolationFunctionFactory<tgt::vec3>());
-        factories_.push_back(new InterpolationFunctionFactory<tgt::vec4>());
-        factories_.push_back(new InterpolationFunctionFactory<tgt::mat2>());
-        factories_.push_back(new InterpolationFunctionFactory<tgt::mat3>());
-        factories_.push_back(new InterpolationFunctionFactory<tgt::mat4>());
-        factories_.push_back(new InterpolationFunctionFactory<tgt::Camera>());
-        factories_.push_back(new InterpolationFunctionFactory<ShaderSource>());
-        factories_.push_back(new InterpolationFunctionFactory<std::string>());
-        factories_.push_back(new InterpolationFunctionFactory<TransFunc*>());
+        factories_.push_back(new InterpolationFunctionFactory());
     }
 
     return factories_;

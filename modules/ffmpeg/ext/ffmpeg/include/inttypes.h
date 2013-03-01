@@ -30,7 +30,10 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef _MSC_VER // [
-#error "Use this header only with Microsoft Visual C++ compilers!"
+    #ifndef __INTTYPES_H_
+    #define __INTTYPES_H_
+   /* Undefined error for using this under *nix OS */
+    #endif
 #endif // _MSC_VER ]
 
 #ifndef _MSC_INTTYPES_H_ // [
@@ -40,7 +43,7 @@
 #pragma once
 #endif
 
-#include <stdint.h>
+#include "stdint.h"
 
 // 7.8 Format conversion of integer types
 
@@ -272,6 +275,9 @@ typedef struct {
 
 // This is modified version of div() function from Microsoft's div.c found
 // in %MSVC.NET%\crt\src\div.c
+
+/* _MSC_VER for running the Server under *inx! */
+#ifdef _MSC_VER // [
 #ifdef STATIC_IMAXDIV // [
 static
 #else // STATIC_IMAXDIV ][
@@ -301,5 +307,5 @@ imaxdiv_t __cdecl imaxdiv(intmax_t numer, intmax_t denom)
 #define wcstoimax _wcstoi64
 #define wcstoumax _wcstoui64
 
-
+#endif // _MSC_VER ]
 #endif // _MSC_INTTYPES_H_ ]

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,9 +30,10 @@
 
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/vectorproperty.h"
+#include "voreen/core/properties/boolproperty.h"
 
 #include "voreen/core/ports/volumeport.h"
-#include "voreen/core/datastructures/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumelist.h"
 
 namespace voreen {
 
@@ -41,7 +42,7 @@ class ImageSequence;
 /**
  * Constructs a volume from a sequence of 2D images.
  */
-class VolumeComposer : public VolumeProcessor {
+class VRN_CORE_API VolumeComposer : public VolumeProcessor {
 public:
     VolumeComposer();
     virtual Processor* create() const;
@@ -56,7 +57,9 @@ public:
 
 protected:
     virtual void setDescriptions() {
-        setDescription("Constructs a volume by stacking either the input image sequence or the input volume collection in z-direction.");
+        setDescription("Constructs a volume by stacking either the input image sequence or the input volume collection in z-direction. "
+                       "Multi-channel input images are either copied channel-wise or converted to grayscale, depending on the respective property setting. "
+                       "If the volume is constructed from an image stack, the voxel spacing of the resulting volume has to be specified via property. ");
     }
 
     virtual void process();
@@ -67,9 +70,10 @@ protected:
     void stackVolumes();
 
     ImageSequencePort inportImages_;
-    VolumeCollectionPort inportVolumes_;
+    VolumeListPort inportVolumes_;
     VolumePort outport_;
 
+    BoolProperty convertMultiChannelTexToGrayscale_;
     FloatVec3Property voxelSpacing_;
 
     static const std::string loggerCat_; ///< category used in logging

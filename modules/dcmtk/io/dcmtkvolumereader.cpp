@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -876,7 +876,7 @@ bool pathIsDir(const string &path) {
 } // namespace
 
 
-VolumeCollection* DcmtkVolumeReader::read(const string &url)
+VolumeList* DcmtkVolumeReader::read(const string &url)
     throw (tgt::FileException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -946,10 +946,10 @@ VolumeCollection* DcmtkVolumeReader::read(const string &url)
     }
 
     if (volume) {
-        VolumeCollection* volumeCollection = new VolumeCollection();
+        VolumeList* volumeList = new VolumeList();
         volume->setOrigin(VolumeURL("dicom", fileName, (!seriesInstanceUID.empty() ? "SeriesInstanceUID=" + seriesInstanceUID : "")));
-        volumeCollection->add(volume);
-        return volumeCollection;
+        volumeList->add(volume);
+        return volumeList;
     }
     else {
         LERROR("Failed to load from URL: " << origin.getURL());
@@ -965,7 +965,7 @@ Volume* DcmtkVolumeReader::read(const std::vector<std::string> &fileNames) {
 VolumeBase* DcmtkVolumeReader::read(const VolumeURL& origin)
     throw (tgt::FileException, std::bad_alloc)
 {
-    VolumeCollection* collection = read(origin.getURL());
+    VolumeList* collection = read(origin.getURL());
     tgtAssert(collection && !collection->empty(), "exception expected");
     VolumeBase* result = collection->first();
     delete collection;

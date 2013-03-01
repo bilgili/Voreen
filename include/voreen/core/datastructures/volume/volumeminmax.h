@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -41,6 +41,9 @@ public:
     /// Empty default constructor required by VolumeDerivedData interface.
     VolumeMinMax();
     VolumeMinMax(float min, float max, float minNorm, float maxNorm);
+    virtual std::string getClassName() const { return "VolumeMinMax"; }
+
+    virtual VolumeDerivedData* create() const;
 
     virtual VolumeDerivedData* createFrom(const VolumeBase* handle) const;
 

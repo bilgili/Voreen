@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="" readonly="true">
-        <ProcessorNetwork version="13">
+        <ProcessorNetwork version="15">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
@@ -15,18 +15,18 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-295" y="-201" />
                     </MetaData>
                     <Properties>
-                        <Property name="Separator" value=";" />
-                        <Property name="constantOrder" value="false" />
-                        <Property name="countKeyColumn" value="1" />
-                        <Property name="countLine" value="1" />
-                        <Property name="inputFile" noPathSet="false" value="../../modules/plotting/data/data_sincos.csv" />
-                        <Property name="recalculate" />
+                        <Property mapKey="Separator" name="Separator" value=";" />
+                        <Property mapKey="constantOrder" name="constantOrder" value="false" />
+                        <Property mapKey="countKeyColumn" name="countKeyColumn" value="1" />
+                        <Property mapKey="countLine" name="countLine" value="1" />
+                        <Property mapKey="inputFile" name="inputFile" noPathSet="false" value="../../modules/plotting/data/data_sincos.csv" />
+                        <Property mapKey="recalculate" name="recalculate" />
                     </Properties>
                     <Inports />
                     <Outports>
-                        <Port name="PlotDataOutPort">
+                        <Port name="PlotDataOutPort" direction="0" portID="PlotDataOutPort" guiName="" allowMultipleConnections="true" invalidationLevel="1">
                             <Properties>
-                                <Property name="blockEvents" value="false" />
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
                             </Properties>
                         </Port>
                     </Outports>
@@ -37,35 +37,40 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-286" y="-108" />
                     </MetaData>
                     <Properties>
-                        <Property name="axesWidth" value="1.5" />
-                        <Property name="camera" projectionMode="1" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="50" fovy="45" eyeMode="1" eyeSeparation="1" axisMode="0">
+                        <Property mapKey="axesWidth" name="axesWidth" value="1.5" />
+                        <Property mapKey="camera" name="camera" projectionMode="1" maxValue="500" frustLeft="-0.04142136" frustRight="0.04142136" frustBottom="-0.04142136" frustTop="0.04142136" frustNear="0.1" frustFar="50" fovy="45" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="867" y="368" />
                             </MetaData>
                             <position x="-0.82960832" y="0.42912757" z="0.35721084" />
                             <focus x="0" y="0" z="0" />
                             <upVector x="0" y="0" z="1" />
+                            <trackball moveCenter="false">
+                                <center x="0" y="0" z="0" />
+                            </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
-                        <Property name="descreteStep" value="50" tracking="false" />
-                        <Property name="enablePicking" value="true" />
-                        <Property name="enterExitEvent" lod="1" enabled="true" mouseAction="96" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
-                        <Property name="fileProp" noPathSet="true" value="" />
-                        <Property name="highlight" lod="1" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
-                        <Property name="highlightAdditive" lod="1" enabled="true" mouseAction="7" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
-                        <Property name="highlightColor">
+                        <Property mapKey="descreteStep" name="descreteStep" value="50" tracking="false" />
+                        <Property mapKey="enablePicking" name="enablePicking" value="true" />
+                        <Property mapKey="enterExitEvent" name="enterExitEvent" lod="1" enabled="true" mouseAction="96" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
+                        <Property mapKey="fileProp" name="fileProp" noPathSet="true" value="" />
+                        <Property mapKey="highlight" name="highlight" lod="1" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                        <Property mapKey="highlightAdditive" name="highlightAdditive" lod="1" enabled="true" mouseAction="7" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
+                        <Property mapKey="highlightColor" name="highlightColor">
                             <value x="1" y="0.89999998" z="0.80000001" w="1" />
                         </Property>
-                        <Property name="label" lod="1" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
-                        <Property name="labelAdditive" lod="1" enabled="true" mouseAction="7" mouseButtons="4" keyCode="0" modifier="2" shareEvents="false" />
-                        <Property name="mousePositionUpdate" lod="1" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
-                        <Property name="orthographicCamera" value="true" />
-                        <Property name="pLVPC" value="true" />
-                        <Property name="plotDataTable">
+                        <Property mapKey="label" name="label" lod="1" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
+                        <Property mapKey="labelAdditive" name="labelAdditive" lod="1" enabled="true" mouseAction="7" mouseButtons="4" keyCode="0" modifier="2" shareEvents="false" />
+                        <Property mapKey="mousePositionUpdate" name="mousePositionUpdate" lod="1" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
+                        <Property mapKey="orthographicCamera" name="orthographicCamera" value="true" />
+                        <Property mapKey="pLVPC" name="pLVPC" value="true" />
+                        <Property mapKey="plotDataTable" name="plotDataTable">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-970" y="417" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="830" y="432" />
                             </MetaData>
                         </Property>
-                        <Property name="plotEntitiesProperty" guiName="Surface Data" entities="2" xCI="0" yCI="1" loadStrategy="2">
+                        <Property mapKey="plotEntitiesProperty" name="plotEntitiesProperty" guiName="Surface Data" entities="2" xCI="0" yCI="1" loadStrategy="2">
                             <colorMap name="Visifire 1">
                                 <colors>
                                     <item x="0.26171875" y="0.5234375" z="0.84375" w="1" />
@@ -134,47 +139,47 @@
                                 </plotEntitySettings>
                             </plotEntitySettingsVector>
                         </Property>
-                        <Property name="plotLabel" value="" />
-                        <Property name="plotLabelColor">
+                        <Property mapKey="plotLabel" name="plotLabel" value="" />
+                        <Property mapKey="plotLabelColor" name="plotLabelColor">
                             <value x="0" y="0" z="1" w="1" />
                         </Property>
-                        <Property name="plotLabelSize" value="18" />
-                        <Property name="renderAxes" value="true" />
-                        <Property name="renderLegend" value="true" />
-                        <Property name="renderMousePosition" value="true" />
-                        <Property name="renderScales" value="true" />
-                        <Property name="renderXHelperLines" value="true" />
-                        <Property name="renderYHelperLines" value="true" />
-                        <Property name="renderZHelperLines" value="true" />
-                        <Property name="selectionPlaneColor">
+                        <Property mapKey="plotLabelSize" name="plotLabelSize" value="18" />
+                        <Property mapKey="renderAxes" name="renderAxes" value="true" />
+                        <Property mapKey="renderLegend" name="renderLegend" value="true" />
+                        <Property mapKey="renderMousePosition" name="renderMousePosition" value="true" />
+                        <Property mapKey="renderScales" name="renderScales" value="true" />
+                        <Property mapKey="renderXHelperLines" name="renderXHelperLines" value="true" />
+                        <Property mapKey="renderYHelperLines" name="renderYHelperLines" value="true" />
+                        <Property mapKey="renderZHelperLines" name="renderZHelperLines" value="true" />
+                        <Property mapKey="selectionPlaneColor" name="selectionPlaneColor">
                             <value x="0.40000001" y="0.40000001" z="0.40000001" w="0.40000001" />
                         </Property>
-                        <Property name="selectionProperty" threeDimensional="true">
+                        <Property mapKey="selectionProperty" name="selectionProperty" threeDimensional="true">
                             <values />
                         </Property>
-                        <Property name="updateFile" />
-                        <Property name="xLabel" value="x axis" />
-                        <Property name="xLabelOption" value="data" />
-                        <Property name="xScaleStep" value="40" />
-                        <Property name="yLabel" value="y axis" />
-                        <Property name="yLabelOption" value="data" />
-                        <Property name="yScaleStep" value="40" />
-                        <Property name="zLabel" value="z axis" />
-                        <Property name="zLabelOption" value="data" />
-                        <Property name="zScaleStep" value="40" />
-                        <Property name="zoom" lod="1" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
-                        <Property name="zoomAdditive" lod="1" enabled="true" mouseAction="7" mouseButtons="4" keyCode="0" modifier="1" shareEvents="false" />
+                        <Property mapKey="updateFile" name="updateFile" />
+                        <Property mapKey="xLabel" name="xLabel" value="x axis" />
+                        <Property mapKey="xLabelOption" name="xLabelOption" value="data" />
+                        <Property mapKey="xScaleStep" name="xScaleStep" value="40" />
+                        <Property mapKey="yLabel" name="yLabel" value="y axis" />
+                        <Property mapKey="yLabelOption" name="yLabelOption" value="data" />
+                        <Property mapKey="yScaleStep" name="yScaleStep" value="40" />
+                        <Property mapKey="zLabel" name="zLabel" value="z axis" />
+                        <Property mapKey="zLabelOption" name="zLabelOption" value="data" />
+                        <Property mapKey="zScaleStep" name="zScaleStep" value="40" />
+                        <Property mapKey="zoom" name="zoom" lod="1" enabled="true" mouseAction="7" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
+                        <Property mapKey="zoomAdditive" name="zoomAdditive" lod="1" enabled="true" mouseAction="7" mouseButtons="4" keyCode="0" modifier="1" shareEvents="false" />
                     </Properties>
                     <Inports>
-                        <Port name="inport">
+                        <Port name="inport" direction="1" portID="inport" guiName="" allowMultipleConnections="false" invalidationLevel="1">
                             <Properties />
                         </Port>
                     </Inports>
                     <Outports>
-                        <Port name="outport">
+                        <Port name="outport" direction="0" portID="outport" guiName="outport" allowMultipleConnections="true" invalidationLevel="1">
                             <Properties>
-                                <Property name="blockEvents" value="false" />
-                                <Property name="outport.renderSizeReceive" id="ref4">
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                                <Property mapKey="outport.renderSizeReceive" name="outport.renderSizeReceive" id="ref4">
                                     <value x="621" y="470" />
                                 </Property>
                             </Properties>
@@ -183,25 +188,22 @@
                     <InteractionHandlers>
                         <Handler name="cameraHandler">
                             <Properties>
-                                <Property name="cameraHandler.adjustCamera" value="bigsizechange" />
-                                <Property name="cameraHandler.interactionMetaphor" value="trackball" />
-                                <Property name="cameraHandler.moveBackward" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
-                                <Property name="cameraHandler.moveDown" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
-                                <Property name="cameraHandler.moveForward" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="119" modifier="0" shareEvents="false" />
-                                <Property name="cameraHandler.moveLeft" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
-                                <Property name="cameraHandler.moveRight" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
-                                <Property name="cameraHandler.moveUp" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
-                                <Property name="cameraHandler.resetTrackballCenter" />
-                                <Property name="cameraHandler.rotate" lod="1" enabled="false" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
-                                <Property name="cameraHandler.shift" lod="1" enabled="false" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
-                                <Property name="cameraHandler.shiftTrackballCenter" value="scenecenter" />
-                                <Property name="cameraHandler.wheelZoom" lod="1" enabled="false" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
-                                <Property name="cameraHandler.zoom" lod="1" enabled="false" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.interactionMetaphor" name="cameraHandler.interactionMetaphor" value="trackball" />
+                                <Property mapKey="cameraHandler.moveBackward" name="cameraHandler.moveBackward" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="115" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.moveDown" name="cameraHandler.moveDown" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="102" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.moveForward" name="cameraHandler.moveForward" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="119" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="false" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="false" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
+                                <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="false" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="false" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
                             </Properties>
                         </Handler>
                         <Handler name="plotCameraHandler">
                             <Properties>
-                                <Property name="plotCameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="plotCameraHandler.rotate" name="plotCameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                             </Properties>
                         </Handler>
                     </InteractionHandlers>
@@ -219,18 +221,18 @@
                         </MetaItem>
                     </MetaData>
                     <Properties>
-                        <Property name="canvasSize">
+                        <Property mapKey="canvasSize" name="canvasSize">
                             <value x="621" y="470" />
                         </Property>
-                        <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" noPathSet="true" value="" />
-                        <Property name="showCursor" value="true" />
-                        <Property name="showFullScreen" value="false" />
+                        <Property mapKey="saveScreenshot" name="saveScreenshot" />
+                        <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="true" value="" />
+                        <Property mapKey="showCursor" name="showCursor" value="true" />
+                        <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
                     <Inports>
-                        <Port name="image.input">
+                        <Port name="image.input" direction="1" portID="image.input" guiName="Image Input" allowMultipleConnections="false" invalidationLevel="1">
                             <Properties>
-                                <Property name="image.input.renderSizeOrigin" id="ref3">
+                                <Property mapKey="image.input.renderSizeOrigin" name="image.input.renderSizeOrigin" id="ref3">
                                     <value x="621" y="470" />
                                 </Property>
                             </Properties>

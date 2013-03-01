@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -50,7 +50,7 @@ PlotDataFitFunctionWidget::PlotDataFitFunctionWidget(QWidget* parent, PlotDataFi
 {
     tgtAssert(PlotDataFitFunction, "No PlotDataFitFunction processor");
     proxyModel_ = new PlotDataExtendedTableModel(NULL, std::vector<std::pair<int,std::string> >(0), this);
-    setWindowTitle(QString::fromStdString(PlotDataFitFunction->getName()));
+    setWindowTitle(QString::fromStdString(PlotDataFitFunction->getGuiName()));
     contextMenuTable_ = new QMenu(this);
     fittingFunctionMenu_ = new QMenu(tr("Fitting Functions",0),this);
     multiRegessionMenu_ = new QMenu(tr("Multidimensional Regession",0),this);

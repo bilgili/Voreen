@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -34,12 +34,13 @@ namespace voreen {
 VolumeLabelingModule::VolumeLabelingModule(const std::string& modulePath)
     : VoreenModule(modulePath)
 {
-    setName("VolumeLabeling");
+    setID("VolumeLabeling");
+    setGuiName("VolumeLabeling");
 
     addShaderPath(getModulePath("glsl"));
 
-    registerProcessor(new IDRaycaster());
-    registerProcessor(new VolumeLabeling());
+    registerSerializableType(new IDRaycaster());
+    registerSerializableType(new VolumeLabeling());
 
 }
 

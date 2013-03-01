@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -55,7 +55,6 @@ protected:
 
     virtual void process();
     virtual void initialize() throw (tgt::Exception);
-    virtual void deinitialize() throw (tgt::Exception);
     virtual void beforeProcess();
 
     SHClass* getSHClass() const { return sh_; }
@@ -77,8 +76,7 @@ private:
     RenderPort exitPort_;
 
     RenderPort outport_;
-
-    PortGroup portGroup_;
+    RenderPort internalRenderPort_;
 };
 
 

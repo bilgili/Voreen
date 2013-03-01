@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -41,7 +41,7 @@ namespace voreen {
  *
  * The detected edge is then colored.
  */
-class EdgeDetect : public ImageProcessorBypassable {
+class VRN_CORE_API EdgeDetect : public ImageProcessorBypassable {
 
 public:
     EdgeDetect();
@@ -58,13 +58,16 @@ protected:
     }
 
     void process();
+    void adjustPropVisibility();
 
     FloatProperty edgeThreshold_; ///< Threshold value for the gradient length to be considered as an edge
     FloatVec4Property backgroundColor_; ///< the color of the background
     BoolProperty showImage_; ///< Whether to show the original image or just the edge
     IntOptionProperty blendMode_; ///< Specifies how the edge is colored
-    IntOptionProperty edgeStyle_; ///< The edge style can be: contour, silhouette, depth-dependent contour
+    IntOptionProperty edgeStyle_; ///< The edge style can be: contour, silhouette, depth-dependent contour, color-based contour
+    IntOptionProperty colorChannel_; ///< In case of color-based contours, which color channel should be used
     FloatVec4Property edgeColor_; ///< The color used for drawing the edges
+    FloatProperty edgeThickness_; ///< the offset used to detect edges, in pixels (affects thickness of contours and silhouettes)
 
     RenderPort inport_;
     RenderPort outport_;

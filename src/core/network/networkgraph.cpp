@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -291,7 +291,7 @@ bool NetworkGraph::isSuccessor(Processor* predecessor, Port* successorPort) cons
     tgtAssert(predecessor, "null pointer passed");
     tgtAssert(successorPort, "null pointer passed");
 
-    if (successorPort->isInport()) 
+    if (successorPort->isInport())
         return (getPredecessors(successorPort).count(predecessor) > 0);
     else if (successorPort->isOutport())
         return (isSuccessor(predecessor, successorPort->getProcessor()));
@@ -458,7 +458,7 @@ std::set<Processor*> NetworkGraph::getPredecessors(Port* inport) const {
             ++it;
         }
     }
-    
+
     // get predecessors of remaining direct port predecessors
     return getPredecessors(directPortPredecessors);
 }
@@ -689,10 +689,10 @@ void NetworkGraph::connectNodes(const PortTypeCheck& ptc) {
                 Processor* p2 = outport->getProcessor();
                 std::set<GraphNode*> nodes2 = findNodes(p2);
                 if (nodes2.empty())
-                    LERROR("buildGraph(): processor '" << p2->getName() << "' should already have a node, too!");
+                    LERROR("buildGraph(): processor '" << p2->getID() << "' should already have a node, too!");
                 else {
                     if (nodes2.size() > 1)
-                        LWARNING("connect nodes: more than one graph node for processor \"" << p2->getName() << "\"");
+                        LWARNING("connect nodes: more than one graph node for processor \"" << p2->getID() << "\"");
                     std::set<GraphNode*>::iterator iter;
                     for (iter = nodes2.begin(); iter != nodes2.end(); ++iter)
                         n1->addSuccessor(*iter);
@@ -743,12 +743,12 @@ void NetworkGraph::unrollLoops(const PortTypeCheck& loopType) {
             // check loop ports for multiple connections
             if (destPort->getConnected().size() > 1) {
                 LWARNING("Loop port \"" << destPort->getID() << "\" of processor \"" <<
-                         destProc->getName() << "\" has multiple connections. Skipping.");
+                         destProc->getID() << "\" has multiple connections. Skipping.");
                 continue;
             }
             if (srcPort->getConnected().size() > 1) {
                 LWARNING("Loop port \"" << srcPort->getID() << "\" of processor \"" <<
-                         srcProc->getName() << "\" has multiple connections. Skipping.");
+                         srcProc->getID() << "\" has multiple connections. Skipping.");
                 continue;
             }
 
@@ -756,21 +756,21 @@ void NetworkGraph::unrollLoops(const PortTypeCheck& loopType) {
             std::vector<Port*> srcPorts = srcProc->getPorts();
             for (size_t i=0; i<srcPorts.size(); ++i) {
                 if (loopType.isA(srcPorts[i]) && (srcPorts[i] != srcPort)) {
-                    LWARNING("Processor \"" << srcProc->getName() << "\" has multiple loop ports. Skipping.");
+                    LWARNING("Processor \"" << srcProc->getID() << "\" has multiple loop ports. Skipping.");
                     continue;
                 }
             }
             std::vector<Port*> destPorts = destProc->getPorts();
             for (size_t i=0; i<destPorts.size(); ++i) {
                 if (loopType.isA(destPorts[i]) && (destPorts[i] != destPort)) {
-                    LWARNING("Processor \"" << destProc->getName() << "\" has multiple loop ports. Skipping.");
+                    LWARNING("Processor \"" << destProc->getID() << "\" has multiple loop ports. Skipping.");
                     continue;
                 }
             }
 
             // check whether loop end proc is successor of loop start proc
             if (!isSuccessor(srcProc, destProc)) {
-                LWARNING("Skipping loop: \"" << destProc->getName() << "\" is not a successor of \"" << srcProc->getName() << "\"");
+                LWARNING("Skipping loop: \"" << destProc->getID() << "\" is not a successor of \"" << srcProc->getID() << "\"");
                 continue;
             }
 
@@ -789,8 +789,8 @@ void NetworkGraph::unrollLoops(const PortTypeCheck& loopType) {
                 continue;
             if (isPathElement(loops[j].first->getProcessor(), loops[i].first->getProcessor(), loops[i].second->getProcessor()) !=
                 isPathElement(loops[j].second->getProcessor(), loops[i].first->getProcessor(), loops[i].second->getProcessor())  ) {
-                LWARNING("Loops \"" << loops[i].first->getProcessor()->getName() << "\" -> \"" << loops[i].second->getProcessor()->getName() << "\" and \"" <<
-                          loops[j].first->getProcessor()->getName() << "\" -> \"" << loops[j].second->getProcessor()->getName() << "\" overlap. Skipping.");
+                LWARNING("Loops \"" << loops[i].first->getProcessor()->getID() << "\" -> \"" << loops[i].second->getProcessor()->getID() << "\" and \"" <<
+                          loops[j].first->getProcessor()->getID() << "\" -> \"" << loops[j].second->getProcessor()->getID() << "\" overlap. Skipping.");
                 overlappings.insert(static_cast<int>(i));
                 overlappings.insert(static_cast<int>(j));
             }
@@ -826,7 +826,7 @@ void NetworkGraph::unrollLoops(const PortTypeCheck& loopType) {
 
             int numIterations = loopType.getNumIterations(validLoops[i].second);
 
-            LDEBUG("Unrolling loop \"" << loopSrc->getName() << "\" -> \"" << loopDest->getName() << "\" (" << numIterations << " iterations)");
+            LDEBUG("Unrolling loop \"" << loopSrc->getID() << "\" -> \"" << loopDest->getID() << "\" (" << numIterations << " iterations)");
             validLoops.erase(validLoops.begin() + i);
 
             // detect path nodes

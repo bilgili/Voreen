@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -59,10 +59,9 @@ namespace voreen {
 const std::string Processor::loggerCat_("voreen.Processor");
 
 Processor::Processor()
-    : PropertyOwner()
-    , initialized_(false)
+    : PropertyOwner("<unknown>", "<unknown>")
+    , processorState_(PROCESSOR_STATE_NOT_INITIALIZED)
     , progressBar_(0)
-    , name_("Processor")
     , moduleName_("undefined")
     , processorWidget_(0)
     , invalidationVisited_(false)
@@ -74,7 +73,7 @@ Processor::Processor()
 
 Processor::~Processor() {
     if (isInitialized()) {
-        LERROR("~Processor(): '" << getName() << "' has not been deinitialized");
+        LERROR("~Processor(): '" << getID() << "' has not been deinitialized");
         return;
     }
 }
@@ -98,7 +97,7 @@ Processor* Processor::clone() const {
         return proc;
     }
     catch (std::exception& e) {
-        LERROR("Failed to clone processor '" << getName() << "': " << e.what());
+        LERROR("Failed to clone processor '" << getID() << "': " << e.what());
         return 0;
     }
 }
@@ -114,7 +113,7 @@ void Processor::initialize() throw (tgt::Exception) {
     }
 
     if (isInitialized()) {
-        LWARNING("initialize(): '" << getName() << "' already initialized");
+        LWARNING("initialize(): '" << getID() << "' already initialized");
         return;
     }
 
@@ -155,7 +154,7 @@ void Processor::initialize() throw (tgt::Exception) {
 
 void Processor::deinitialize() throw (tgt::Exception) {
     if (!isInitialized()) {
-        LWARNING("deinitialize(): '" << getName() << "' (" << getClassName() << ") not initialized");
+        LWARNING("deinitialize(): '" << getID() << "' (" << getClassName() << ") not initialized");
         return;
     }
 
@@ -211,7 +210,7 @@ void Processor::unlockMutex() {
 }
 
 bool Processor::isInitialized() const {
-    return initialized_;
+    return (processorState_ != PROCESSOR_STATE_NOT_INITIALIZED);
 }
 
 void Processor::addPort(Port* port) {
@@ -238,6 +237,7 @@ void Processor::addPort(Port* port) {
         LERROR("Port with name " << port->getID() << " has already been inserted!");
         tgtAssert(false, std::string("Port with name " + port->getID() + " has already been inserted").c_str());
     }
+    notifyPortsChanged();
 }
 
 void Processor::addPort(Port& port) {
@@ -248,7 +248,7 @@ void Processor::removePort(Port* port) {
     tgtAssert(port, "Null pointer passed");
 
     if (port->isInitialized()) {
-        LWARNING("removePort() Port '" << getName() << "." << port->getID() << "' "
+        LWARNING("removePort() Port '" << getID() << "." << port->getID() << "' "
             << "has not been deinitialized");
     }
 
@@ -274,6 +274,7 @@ void Processor::removePort(Port* port) {
         LERROR("Port with name " << port->getID() << " was not found in port map!");
         tgtAssert(false, std::string("Port with name " + port->getID() + " was not found in port map!").c_str());
     }
+    notifyPortsChanged();
 }
 
 void Processor::removePort(Port& port) {
@@ -284,14 +285,19 @@ Processor::CodeState Processor::getCodeState() const {
     return Processor::CODE_STATE_EXPERIMENTAL;
 }
 
-void Processor::setName(const std::string& name) {
-    name_ = name;
+Processor::ProcessorState Processor::getProcessorState() const {
+    return processorState_;
+}
+
+void Processor::setGuiName(const std::string& guiName) {
+    guiName_ = guiName;
+    id_ = guiName;
     if (processorWidget_)
         processorWidget_->processorNameChanged();
 }
 
-std::string Processor::getName() const {
-    return name_;
+void Processor::setID(const std::string& id) {
+    setGuiName(id);
 }
 
 void Processor::setModuleName(const std::string& moduleName) {
@@ -348,7 +354,7 @@ Port* Processor::getPort(const std::string& name) const {
     const std::vector<Port*> ports = getPorts();
 
     for (size_t i=0; i < ports.size(); i++) {
-        if (ports[i]->getName() == name)
+        if (ports[i]->getID() == name)
             return ports[i];
     }
 
@@ -382,6 +388,15 @@ void Processor::invalidate(int inv) {
 
         tgtAssert(VoreenApplication::app(), "VoreenApplication not instantiated");
         VoreenApplication::app()->scheduleNetworkProcessing();
+    }
+    //check, if is ready (isInitialized)
+    bool ready = isReady();
+    if(ready && (processorState_ == PROCESSOR_STATE_NOT_READY)){
+        processorState_ = PROCESSOR_STATE_READY;
+        notifyStateChanged();
+    } else if(!ready && (processorState_ == PROCESSOR_STATE_READY)) {
+        processorState_ = PROCESSOR_STATE_NOT_READY;
+        notifyStateChanged();
     }
 }
 
@@ -438,9 +453,9 @@ void Processor::toggleInteractionMode(bool interactionMode, void* source) {
 
 void Processor::interactionModeToggled() {
     if (interactionMode())
-        LDEBUG(getName() << " interactionModeSwitched  on");
+        LDEBUG(getID() << " interactionModeSwitched  on");
     else
-        LDEBUG(getName() << " interactionModeSwitched  off");
+        LDEBUG(getID() << " interactionModeSwitched  off");
 }
 
 bool Processor::isValid() const {
@@ -466,15 +481,15 @@ void Processor::serialize(XmlSerializer& s) const {
     metaDataContainer_.serialize(s);
 
     // misc settings
-    s.serialize("name", name_);
+    s.serialize("name", id_);
 
     // serialize properties
     PropertyOwner::serialize(s);
 
 
     // ---
-    // the following entities are static resources (i.e. already existing at this point) 
-    // that should therefore not be dynamically created by the serializer 
+    // the following entities are static resources (i.e. already existing at this point)
+    // that should therefore not be dynamically created by the serializer
     //
     const bool usePointerContentSerialization = s.getUsePointerContentSerialization();
     s.setUsePointerContentSerialization(true);
@@ -523,14 +538,15 @@ void Processor::deserialize(XmlDeserializer& s) {
     metaDataContainer_.deserialize(s);
 
     // misc settings
-    s.deserialize("name", name_);
+    s.deserialize("name", id_);
+    guiName_ = id_;
 
     // deserialize properties
     PropertyOwner::deserialize(s);
 
 
     // ---
-    // the following entities are static resources that should not be dynamically created by the serializer 
+    // the following entities are static resources that should not be dynamically created by the serializer
     //
     const bool usePointerContentSerialization = s.getUsePointerContentSerialization();
     s.setUsePointerContentSerialization(true);
@@ -538,7 +554,7 @@ void Processor::deserialize(XmlDeserializer& s) {
     // deserialize inports using a temporary map
     map<string, Port*> inportMap;
     for (vector<Port*>::const_iterator it = inports_.begin(); it != inports_.end(); ++it)
-        inportMap[(*it)->getName()] = *it;
+        inportMap[(*it)->getID()] = *it;
     try {
         s.deserialize("Inports", inportMap, "Port", "name");
     }
@@ -550,7 +566,7 @@ void Processor::deserialize(XmlDeserializer& s) {
     // deserialize outports using a temporary map
     map<string, Port*> outportMap;
     for (vector<Port*>::const_iterator it = outports_.begin(); it != outports_.end(); ++it)
-        outportMap[(*it)->getName()] = *it;
+        outportMap[(*it)->getID()] = *it;
     try {
         s.deserialize("Outports", outportMap, "Port", "name");
     }
@@ -652,7 +668,7 @@ void Processor::addInteractionHandler(InteractionHandler* handler) {
     interactionHandlers_.push_back(handler);
 
     if (handler->getEventProperties().empty())
-        LWARNING("Interaction handler '" << handler->getName() << "' has no event property.");
+        LWARNING("Interaction handler '" << handler->getID() << "' has no event property.");
 }
 
 void Processor::addInteractionHandler(InteractionHandler& handler) {
@@ -703,6 +719,10 @@ void Processor::onEvent(tgt::Event* e) {
     eventVisited_ = false;
 }
 
+void Processor::onPortEvent(tgt::Event* e, Port* p) {
+    onEvent(e);
+}
+
 void Processor::deregisterWidget() {
     processorWidget_ = 0;
 }
@@ -710,7 +730,7 @@ void Processor::deregisterWidget() {
 void Processor::initializePort(Port* port) throw (tgt::Exception) {
     tgtAssert(port, "Null pointer passed");
     if (port->isInitialized()) {
-        LWARNING("initializePort() port '" << getName() << "." << port->getID()
+        LWARNING("initializePort() port '" << getID() << "." << port->getID()
             << "' already initialized");
         return;
     }
@@ -721,7 +741,7 @@ void Processor::initializePort(Port* port) throw (tgt::Exception) {
 void Processor::deinitializePort(Port* port) throw (tgt::Exception) {
     tgtAssert(port, "Null pointer passed");
     if (!port->isInitialized()) {
-        LWARNING("deinitializePort() port '" << getName() << "." << port->getID()
+        LWARNING("deinitializePort() port '" << getID() << "." << port->getID()
             << "' not initialized");
         return;
     }
@@ -733,6 +753,12 @@ void Processor::notifyPortsChanged() const {
     std::vector<ProcessorObserver*> procObservers = Observable<ProcessorObserver>::getObservers();
     for (size_t i = 0; i < procObservers.size(); ++i)
         procObservers[i]->portsChanged(this);
+}
+
+void Processor::notifyStateChanged() const {
+    std::vector<ProcessorObserver*> procObservers = Observable<ProcessorObserver>::getObservers();
+    for (size_t i = 0; i < procObservers.size(); ++i)
+        procObservers[i]->stateChanged(this);
 }
 
 bool Processor::usesExpensiveComputation() const {

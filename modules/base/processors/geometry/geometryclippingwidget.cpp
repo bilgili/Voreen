@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -34,7 +34,7 @@ GeometryClippingWidget::GeometryClippingWidget()
     , inport_(Port::INPORT, "geometry", "Geometry Input")
     , renderGeometry_("renderGeometry", "Render Geometry", true)
     , planeNormal_("planeNormal", "Plane Normal", tgt::vec3(0, 1, 0), tgt::vec3(-1), tgt::vec3(1))
-    , planePosition_("planePosition", "Plane Position", 0.0f, -10.0f, 10.0f)
+    , planePosition_("planePosition", "Plane Position", 0.0f, -10000.0f, 10000.0f, Processor::INVALID_RESULT, NumericProperty<float>::DYNAMIC)
     , lightPosition_("lightPosition", "Light source position", tgt::vec4(2.3f, 1.5f, 1.5f, 1.f),
                      tgt::vec4(-10), tgt::vec4(10))
     , planeColor_("planeColor", "Plane Color", tgt::vec4(0.0f, 0.0f, 1.0f, 0.05f))
@@ -134,6 +134,7 @@ void GeometryClippingWidget::planeManipulation(tgt::MouseEvent* e) {
                 tgt::vec3 planeNormal = tgt::normalize(planeNormal_.get());
                 tgt::vec3 normal = tgt::normalize(tgt::cross(grabbedSecondAnchor_ - grabbedAnchor_, grabbedSecondAnchor_ - grabbedThirdAnchor_));
                 if (std::abs(tgt::length(planeNormal - normal)) < EPS)
+                //if (tgt::dot(planeNormal, normal) >= 0.f)
                     crossNewAnchorFirst_ = true;
                 else
                     crossNewAnchorFirst_ = false;
@@ -328,6 +329,7 @@ void GeometryClippingWidget::planeManipulation(tgt::MouseEvent* e) {
 
                     // Determine new position of grabbed anchor...
                     Anchor newAnchor = edgeStart + t * edgeDirection;
+
                     grabbedAnchor_ = newAnchor;
 
                     // Determine new clipping plane equation...
@@ -344,10 +346,9 @@ void GeometryClippingWidget::planeManipulation(tgt::MouseEvent* e) {
                     if (std::abs(tgt::length(planeNormal)) >= EPS) {
                         // Manipulate clipping plane equation...
                         planeNormal = tgt::normalize(planeNormal);
-                        tgt::vec4 plane = tgt::vec4(planeNormal_.get(), 1.f);
-                        plane.w = tgt::dot(planeNormal, newAnchor);
+                        float dist = tgt::dot(planeNormal, newAnchor - inport_.getData()->getBoundingBox().center());
                         planeNormal_.set(planeNormal);
-                        planePosition_.set(plane.w);
+                        planePosition_.set(dist);
                     }
                 }
             }
@@ -585,7 +586,7 @@ void GeometryClippingWidget::updateAnchorsAndLines() {
     tgt::vec3 lrf = tgt::vec3(urb.x, llf.y, llf.z);
 
     float length = tgt::length(planeNormal_.get());
-    tgt::vec4 plane = tgt::vec4(planeNormal_.get() / length, planePosition_.get());
+    tgt::vec4 plane = tgt::vec4(planeNormal_.get() / length, planePosition_.get() + dot(planeNormal_.get(), inport_.getData()->getBoundingBox().center()));
 
     // Determine and add all anchors...
     addAnchor(llf, tgt::vec3( 1.0f,  0.0f,  0.0f), plane);
@@ -606,12 +607,12 @@ void GeometryClippingWidget::updateAnchorsAndLines() {
         anchors_.clear();
 
     // Determine and add all lines according to connect the former determined anchors...
-    addLine(tgt::vec4( 1.0f,  0.0f,  0.0f,  std::abs(urb.x)));
-    addLine(tgt::vec4(-1.0f,  0.0f,  0.0f,  std::abs(llf.x)));
-    addLine(tgt::vec4( 0.0f,  1.0f,  0.0f,  std::abs(urb.y)));
-    addLine(tgt::vec4( 0.0f, -1.0f,  0.0f,  std::abs(llf.y)));
-    addLine(tgt::vec4( 0.0f,  0.0f,  1.0f,  std::abs(urb.z)));
-    addLine(tgt::vec4( 0.0f,  0.0f, -1.0f,  std::abs(llf.z)));
+    addLine(tgt::vec4( 1.0f,  0.0f,  0.0f,  urb.x));
+    addLine(tgt::vec4( 1.0f,  0.0f,  0.0f,  llf.x));
+    addLine(tgt::vec4( 0.0f,  1.0f,  0.0f,  urb.y));
+    addLine(tgt::vec4( 0.0f,  1.0f,  0.0f,  llf.y));
+    addLine(tgt::vec4( 0.0f,  0.0f,  1.0f,  urb.z));
+    addLine(tgt::vec4( 0.0f,  0.0f,  1.0f,  llf.z));
 
     // Reigster all new anchors and lines at the ID manager...
     if (idManager_) {

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,19 +33,22 @@ namespace voreen {
 using tgt::Camera;
 
 CameraProperty::CameraProperty(const std::string& id, const std::string& guiText,
-                       tgt::Camera const value, bool adjustProjectionToViewport,
+                       tgt::Camera const value, bool sceneAdjuster, bool adjustProjectionToViewport,
                        float maxValue,
                        int invalidationLevel)
         : TemplateProperty<Camera>(id, guiText, value, invalidationLevel)
-        , track_(0)
+        , sceneAdjuster_(sceneAdjuster)
+        , trackball_(this)
         , maxValue_(maxValue)
+        , currentSceneBounds_(tgt::Bounds(tgt::vec3(0.f), tgt::vec3(0.f)))
+        , centerOption_(SCENE)
+        , adaptOnChange_(true)
 {}
 
-CameraProperty::CameraProperty() : track_(0) {
+CameraProperty::CameraProperty() : trackball_(this) {
 }
 
 CameraProperty::~CameraProperty() {
-    delete track_;
 }
 
 Property* CameraProperty::create() const {
@@ -108,13 +111,15 @@ bool CameraProperty::setStereoEyeMode(tgt::Camera::StereoEyeMode mode) {
     //return result;
 //}
 
-void CameraProperty::setStereoAxisMode(tgt::Camera::StereoAxisMode mode) {
-    value_.setStereoAxisMode(mode);
+bool CameraProperty::setStereoAxisMode(tgt::Camera::StereoAxisMode mode) {
+    bool result = value_.setStereoAxisMode(mode);
+    if(result)
+        notifyChange();
+    return result;
 }
 
 void CameraProperty::setMaxValue(float val) {
     maxValue_ = val;
-    notifyChange();
 }
 
 float CameraProperty::getMaxValue() const {
@@ -144,6 +149,8 @@ void CameraProperty::serialize(XmlSerializer& s) const {
     s.serialize("focus", value_.getFocus());
     s.serialize("upVector", value_.getUpVector());
 
+    s.serialize("maxValue", maxValue_);
+
     s.serialize("frustLeft", value_.getFrustLeft());
     s.serialize("frustRight", value_.getFrustRight());
     s.serialize("frustBottom", value_.getFrustBottom());
@@ -156,6 +163,13 @@ void CameraProperty::serialize(XmlSerializer& s) const {
     s.serialize("eyeMode", (int)value_.getStereoEyeMode());
     s.serialize("eyeSeparation", value_.getStereoEyeSeparation());
     s.serialize("axisMode", (int)value_.getStereoAxisMode());
+
+    s.serialize("trackball", trackball_);
+
+    s.serialize("centerOption", (int)centerOption_);
+    s.serialize("adaptOnChange", adaptOnChange_);
+    s.serialize("sceneLLF", currentSceneBounds_.getLLF());
+    s.serialize("sceneURB", currentSceneBounds_.getURB());
 }
 
 void CameraProperty::deserialize(XmlDeserializer& s) {
@@ -193,6 +207,15 @@ void CameraProperty::deserialize(XmlDeserializer& s) {
     value_.setUpVector(vector);
 
     try {
+        float maxValue;
+        s.deserialize("maxValue", maxValue);
+        maxValue_ = maxValue;
+    }
+    catch(SerializationException&) {
+        s.removeLastError();
+    }
+
+    try {
         float fovy;
         s.deserialize("fovy", fovy);
         value_.setFovy(fovy);
@@ -209,7 +232,28 @@ void CameraProperty::deserialize(XmlDeserializer& s) {
         s.deserialize("axisMode", axisMode);
         value_.setStereoEyeMode((tgt::Camera::StereoEyeMode)eyeMode, false);
         value_.setStereoEyeSeparation(eyeSep, false);
-        value_.setStereoAxisMode((tgt::Camera::StereoAxisMode)axisMode);
+        value_.setStereoAxisMode((tgt::Camera::StereoAxisMode)axisMode, false);
+    }
+    catch(SerializationException&) {
+        s.removeLastError();
+    }
+
+    try {
+        s.deserialize("trackball", trackball_);
+    }
+    catch (SerializationException&) {
+        s.removeLastError();
+    }
+
+    try {
+        int centerOption;
+        s.deserialize("centerOption", centerOption);
+        s.deserialize("adaptOnChange", adaptOnChange_);
+        tgt::vec3 llf, urb;
+        s.deserialize("sceneLLF", llf);
+        s.deserialize("sceneURB", urb);
+        currentSceneBounds_ = tgt::Bounds(llf, urb);
+        setTrackballCenterBehaviour((TrackballCenter)centerOption);
     }
     catch(SerializationException&) {
         s.removeLastError();
@@ -220,10 +264,116 @@ void CameraProperty::look(tgt::ivec2 viewportSize) {
     value_.look(viewportSize);
 }
 
-VoreenTrackball* CameraProperty::getTrackball() {
-    if(!track_)
-        track_ = new VoreenTrackball(this);
-    return track_;
+VoreenTrackball& CameraProperty::getTrackball() {
+    return trackball_;
+}
+
+const VoreenTrackball& CameraProperty::getTrackball() const {
+    return trackball_;
+}
+
+void CameraProperty::adaptInteractionToScene(const tgt::Bounds& bounds) {
+    if(!adaptOnChange_ || (bounds.center() == currentSceneBounds_.center() && bounds.diagonal() == currentSceneBounds_.diagonal()))
+        return;
+
+    if(bounds.volume() == 0.f) {
+        LWARNING("Tried to set scene bounds with extent 0, not adapting to scene.");
+        return;
+    }
+
+    LINFOC("voreen.CameraProperty", "Adapting camera handling to new scene size...");
+
+    tgt::vec3 extentOld = currentSceneBounds_.diagonal();
+    currentSceneBounds_ = bounds;
+    tgt::Camera cam = get();
+
+    if(hmul(extentOld) == 0.f) {
+        // adapt only maxValue, far plane and trackball center if there was no previous scene geometry
+        float newMaxDist = 250.f * tgt::max(currentSceneBounds_.diagonal());
+        setMaxValue(newMaxDist);
+        cam.setFarDist(std::max(cam.getFarDist(), newMaxDist + tgt::max(currentSceneBounds_.diagonal())));
+        if(centerOption_ == SCENE)
+            trackball_.setCenter(currentSceneBounds_.center());
+        set(cam);
+        return;
+    }
+
+    float oldRelCamDist = cam.getFocalLength() / getMaxValue();
+    float maxSideLength = tgt::max(currentSceneBounds_.diagonal());
+
+    // The factor 250 is derived from an earlier constant maxDist of 500 and a constant maximum cubeSize element of 2
+    float newMaxDist = 250.f * maxSideLength;
+    float newAbsCamDist = oldRelCamDist * newMaxDist;
+
+    if(centerOption_ == CAMSHIFT) {
+        tgt::vec3 newFocus = cam.getFocus() * (newAbsCamDist / cam.getFocalLength());
+        tgt::vec3 newPos   = cam.getPosition() * (newAbsCamDist / cam.getFocalLength());
+        cam.setFocus(newFocus);
+        cam.setPosition(newPos);
+    } else if(centerOption_ == SCENE) {
+        trackball_.setCenter(currentSceneBounds_.center());
+        tgt::vec3 newFocus = currentSceneBounds_.center();
+        tgt::vec3 newPos   = currentSceneBounds_.center() - cam.getLook() * newAbsCamDist;
+        cam.setFocus(newFocus);
+        cam.setPosition(newPos);
+    }
+
+    setMaxValue(newMaxDist);
+    cam.setFarDist(std::max(cam.getFarDist(), newMaxDist + maxSideLength));
+
+    set(cam);
+}
+
+void CameraProperty::resetCameraFocusToTrackballCenter() {
+    tgt::Camera cam = get();
+    tgt::vec3 center = trackball_.getCenter();
+    cam.setPosition(center - cam.getFocalLength() * cam.getLook());
+    cam.setFocus(center);
+    set(cam);
+}
+
+void CameraProperty::setAdaptOnChange(bool b) {
+    adaptOnChange_ = b;
+}
+
+bool CameraProperty::getAdaptOnChange() const {
+    return adaptOnChange_;
+}
+
+void CameraProperty::setTrackballCenterBehaviour(TrackballCenter t) {
+    switch(t) {
+        case SCENE:
+            trackball_.setMoveCenter(false);
+            trackball_.setCenter(currentSceneBounds_.center());
+            break;
+        case WORLD:
+            trackball_.setMoveCenter(false);
+            trackball_.setCenter(tgt::vec3(0.f));
+            break;
+        case CAMSHIFT:
+            trackball_.setMoveCenter(true);
+            // trackball center is updated by the trackball internally if setMoveCenter is set to true
+            break;
+        default:
+            tgtAssert(false, "Unknown trackball center option");
+    }
+    centerOption_ = t;
+}
+
+CameraProperty::TrackballCenter CameraProperty::getTrackballCenterBehaviour() const {
+    return centerOption_;
+}
+
+bool CameraProperty::isSceneAdjuster() const {
+    return sceneAdjuster_;
+}
+
+const tgt::Bounds& CameraProperty::getSceneBounds() const {
+    return currentSceneBounds_;
+}
+
+void CameraProperty::setSceneBounds(const tgt::Bounds& b) {
+    currentSceneBounds_ = b;
 }
 
 } // namespace voreen

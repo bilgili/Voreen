@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,6 +30,7 @@
 namespace voreen {
 
 using tgt::vec3;
+using std::string;
 
 void setUniform(tgt::Shader* shader, const std::string& volumeUniform, const std::string& structUniform, const VolumeBase* vh, const tgt::TextureUnit* texUnit, const tgt::Camera* camera, const tgt::vec4& lightPosition) {
     if(texUnit)
@@ -258,5 +259,46 @@ std::string generateStandardShaderHeader(const tgt::GpuCapabilities::GlVersion* 
     return header;
 }
 
+void fillShadingModesProperty(StringOptionProperty& shadeMode) {
+    shadeMode.addOption("none",                   "none"                   );
+    shadeMode.addOption("phong-diffuse",          "Phong (Diffuse)"        );
+    shadeMode.addOption("phong-specular",         "Phong (Specular)"       );
+    shadeMode.addOption("phong-diffuse-ambient",  "Phong (Diffuse+Amb.)"   );
+    shadeMode.addOption("phong-diffuse-specular", "Phong (Diffuse+Spec.)"  );
+    shadeMode.addOption("phong",                  "Phong (Full)"           );
+    shadeMode.addOption("toon",                   "Toon"                   );
+    shadeMode.addOption("cook-torrance",          "Cook-Torrance"          );
+    shadeMode.addOption("oren-nayar",             "Oren-Nayar"             );
+    shadeMode.addOption("ward",                   "Ward (Isotropic)"       );
+    shadeMode.select("phong");
+}
+
+string getShaderDefine(string shadeMode, string functionName, string n, string pos, string lPos, string cPos, string ka, string kd, string ks) {
+    string headerSource = "#define " + functionName + "(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ") ";
+    if (shadeMode == "none")
+        headerSource += "" + ka + ";\n";
+    else if (shadeMode == "phong-diffuse")
+        headerSource += "phongShadingD(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + kd + ");\n";
+    else if (shadeMode == "phong-specular")
+        headerSource += "phongShadingS(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ks + ");\n";
+    else if (shadeMode == "phong-diffuse-ambient")
+        headerSource += "phongShadingDA(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + kd + ", " + ka + ");\n";
+    else if (shadeMode == "phong-diffuse-specular")
+        headerSource += "phongShadingDS(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + kd + ", " + ks + ");\n";
+    else if (shadeMode == "phong")
+        headerSource += "phongShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ");\n";
+    else if (shadeMode == "toon")
+        headerSource += "toonShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + kd + ", 3);\n";
+    else if (shadeMode == "cook-torrance")
+        headerSource += "cookTorranceShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ");\n";
+    else if (shadeMode == "oren-nayar")
+        headerSource += "orenNayarShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ");\n";
+    else if (shadeMode == "lafortune")
+        headerSource += "lafortuneShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ");\n";
+    else if (shadeMode == "ward")
+        headerSource += "wardShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ");\n";
+
+    return headerSource;
+}
 
 } // namespace

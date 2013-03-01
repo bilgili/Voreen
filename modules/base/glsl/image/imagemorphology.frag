@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -31,12 +31,15 @@ uniform sampler2D depthTex_;
 uniform TextureParameters textureParameters_;
 uniform int kernelRadius_;
 uniform int mode_; //0: dilation, 1: erosion
+uniform int shape_; //0: square, 1: circle
 
 void main() {
     vec2 fragCoord = gl_FragCoord.xy;
 
-    if (mode_ == 0) FragData0 = dilation(colorTex_, textureParameters_, fragCoord, kernelRadius_);
-    else FragData0 = erosion(colorTex_, textureParameters_, fragCoord, kernelRadius_);
+    if (mode_ == 0 && shape_ == 0) FragData0 = dilation(colorTex_, textureParameters_, fragCoord, kernelRadius_);
+    else if (mode_ == 0 && shape_ == 1) FragData0 = dilation_circle(colorTex_, textureParameters_, fragCoord, kernelRadius_);
+    else if (mode_ == 1 && shape_ == 0) FragData0 = erosion(colorTex_, textureParameters_, fragCoord, kernelRadius_);
+    else if (mode_ == 1 && shape_ == 1) FragData0 = erosion_circle(colorTex_, textureParameters_, fragCoord, kernelRadius_);
 
     gl_FragDepth = textureLookup2Dscreen(depthTex_, textureParameters_, fragCoord).z;
 }

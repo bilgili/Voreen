@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -29,15 +29,7 @@
 
 namespace voreen {
 
-/*
-    init statics
-*/
-
 const std::string VolumeSlicer::loggerCat_("voreen.VolumeSlicer");
-
-/*
-    constructor and destructor
-*/
 
 VolumeSlicer::VolumeSlicer()
     : VolumeRenderer()
@@ -124,20 +116,15 @@ void VolumeSlicer::setupUniforms(tgt::Shader* slicingPrg) {
         MeshGeometry meshGeometry = volumeInport_.getData()->getBoundingBox(false);
         FaceGeometry f1 = meshGeometry[0];
         FaceGeometry f2 = meshGeometry[1];
-        urb = f1[0].getCoords();
-        llf = f2[0].getCoords();
+        urb = meshGeometry.getTransformationMatrix() * f1[0].getCoords();
+        llf = meshGeometry.getTransformationMatrix() * f2[0].getCoords();
 
     } else {
-        MeshGeometry meshGeometry;
-        if(const MeshListGeometry* meshListGeometry = dynamic_cast<const MeshListGeometry*>(geometryInport_.getData()))
-            meshGeometry = (*meshListGeometry)[0];
-        else if(const MeshGeometry* meshGeomPtr = dynamic_cast<const MeshGeometry*>(geometryInport_.getData()))
-            meshGeometry = *meshGeomPtr;
-
-        FaceGeometry f1 = meshGeometry[0];
-        FaceGeometry f2 = meshGeometry[1];
-        urb = f1[0].getCoords();
-        llf = f2[0].getCoords();
+        //tgt::Bounds b = geometryInport_.getData()->getBoundingBox(true);
+        tgt::Bounds b = geometryInport_.getData()->getBoundingBox(false);
+        tgt::mat4 m = geometryInport_.getData()->getTransformationMatrix();
+        urb = m * b.getURB();
+        llf = m * b.getLLF();
 
         urb = (invTransMat * tgt::vec4(urb, 1.0)).xyz();
         llf = (invTransMat * tgt::vec4(llf, 1.0)).xyz();

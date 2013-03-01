@@ -5,7 +5,7 @@
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
-                        <item type="Canvas" ref="ref4" />
+                        <item type="VolumeSource" ref="ref5" />
                     </values>
                 </MetaItem>
                 <MetaItem name="Zoom" type="ZoomMetaData">
@@ -14,9 +14,9 @@
                     <transform.row2 x="118.696746826171875" y="551.6341552734375" z="1" />
                 </MetaItem>
                 <MetaItem name="ZoomCenter" type="Vec2MetaData">
-                    <value x="204.3049469" y="-9.1479826" />
+                    <value x="230.51472473" y="85.80270386" />
                 </MetaItem>
-                <MetaItem name="ZoomFactor" type="FloatMetaData" value="0.98382348" />
+                <MetaItem name="ZoomFactor" type="FloatMetaData" value="0.7808612" />
                 <MetaItem name="autoLinkCameras" type="BoolMetaData" value="false" />
             </MetaData>
             <Processors>
@@ -25,7 +25,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="0" y="-418" />
                     </MetaData>
                     <Properties>
-                        <Property name="volumeURL" url="../../voreen-conv/voreen/data/volumes/walnut_uint8.vvd?preferredReader=VvdVolumeReader" />
+                        <Property name="volumeURL" url="input/walnut_uint8.vvd?preferredReader=VvdVolumeReader" />
                     </Properties>
                     <Inports />
                     <Outports>
@@ -95,9 +95,9 @@
                         </Property>
                         <Property name="mainInport" value="1" id="ref19" />
                         <Property name="plane">
-                            <value x="0.76501387" y="-0" z="-0.64401388" />
+                            <value x="0.76501381" y="-0" z="-0.64401382" />
                         </Property>
-                        <Property name="planeDist" value="-0.31763107" />
+                        <Property name="planeDist" value="-0.31763101" />
                         <Property name="restrictToMainVolume" value="false" />
                         <Property name="samplingRate" value="3.18000007" />
                         <Property name="sliceAlignmentProp" value="yz-plane" id="ref9" />
@@ -284,9 +284,9 @@
                         </Property>
                         <Property name="mainInport" value="1" id="ref18" />
                         <Property name="plane">
-                            <value x="0.76501387" y="-0" z="-0.64401388" />
+                            <value x="0.76501381" y="-0" z="-0.64401382" />
                         </Property>
-                        <Property name="planeDist" value="-0.31763107" />
+                        <Property name="planeDist" value="-0.31763101" />
                         <Property name="restrictToMainVolume" value="false" />
                         <Property name="samplingRate" value="4" />
                         <Property name="sliceAlignmentProp" value="yz-plane" id="ref8" />
@@ -453,7 +453,7 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-159" y="-421" />
                     </MetaData>
                     <Properties>
-                        <Property name="volumeURL" url="../../voreen-conv/voreen/resource/volumes/nucleon.vvd?preferredReader=VvdVolumeReader" />
+                        <Property name="volumeURL" url="input/nucleon.vvd?preferredReader=VvdVolumeReader" />
                     </Properties>
                     <Inports />
                     <Outports>

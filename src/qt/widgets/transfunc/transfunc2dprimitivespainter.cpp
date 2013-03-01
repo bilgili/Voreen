@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -354,7 +354,7 @@ void TransFunc2DPrimitivesPainter::paint() {
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     tf_->paintInEditor();
-    
+
     glBlendFunc(GL_ONE, GL_ZERO);
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);

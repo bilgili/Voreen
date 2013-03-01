@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -66,12 +66,14 @@ public:
     */
     void animatedProcessorRemoved(const AnimatedProcessor* processor);
 
+    Animation* getAnimation() { return animation_; }
+
 public slots:
     /// setWorkspace
     void rebuildAnimation(Animation*);
     /// performed when the record signal is triggered to check for changes. If none are made pops up an infodialog
     void checkForChanges();
-
+    void removeProcessorTimelineWidget(ProcessorTimelineWidget* ptlw);
 
 protected:
     /// takes all present timelines from the core and initializes templatepropertytimelinewidgets for them
@@ -95,6 +97,7 @@ protected:
     QScrollArea* scrollArea_;
     /// layout for the Scrollarea
     QVBoxLayout* scrollAreaLayout_;
+    QWidget* containerWidget_;
     OverviewWidget* overviewTimeline_;
     QGroupBox* timeBox_;
     // indicates wether there was a change once
@@ -139,6 +142,7 @@ signals:
     void setAnimationEditorDuration(int);
 
     void autoPreview(bool);
+    void updatePreviews();
 };
 
 } // namespace voreen

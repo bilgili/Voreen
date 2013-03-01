@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -40,7 +40,7 @@ namespace voreen {
 /**
  * Performs raycasting of an RGB volume by applying a hue-based transfer function.
  */
-class RGBRaycaster : public VolumeRaycaster {
+class VRN_CORE_API RGBRaycaster : public VolumeRaycaster {
 public:
     RGBRaycaster();
     virtual Processor* create() const;
@@ -65,6 +65,8 @@ private:
     RenderPort entryPort_;      ///< entry points texture
     RenderPort exitPort_;       ///< exit points texture
     RenderPort outport_;        ///< output rendering
+
+    RenderPort internalRenderPort_; ///< actual render destination
 
     ShaderProperty shaderProp_;
     TransFuncProperty transferFunc_;     ///< the property that controls the transfer-function

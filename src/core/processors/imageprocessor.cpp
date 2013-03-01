@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -29,13 +29,22 @@ namespace voreen {
 
 const std::string ImageProcessor::loggerCat_("voreen.ImageProcessor");
 
-ImageProcessor::ImageProcessor(const std::string& shaderFilename)
+ImageProcessor::ImageProcessor(const std::string& shaderFilename, bool enableCoarsenessAdaptation)
     : RenderProcessor()
     , shaderProp_("shader.program", "Image shader", shaderFilename.empty() ? "" : shaderFilename + ".frag", shaderFilename.empty() ? "" : "passthrough.vert")
+    , interactionAdapt_("iamode.adapt", "Adapt to interaction coarseness", false)
+    , interactionFactor_("iamode.factor", "Interaction coarseness", 1, 1, 16, Processor::VALID)
     , program_(0)
     , shaderFilename_(shaderFilename)
 {
     addProperty(shaderProp_);
+    if(enableCoarsenessAdaptation) {
+        addProperty(interactionAdapt_);
+        addProperty(interactionFactor_);
+        interactionAdapt_.setGroupID("coarseness");
+        interactionFactor_.setGroupID("coarseness");
+        setPropertyGroupGuiName("coarseness", "Interaction coarseness adaptation");
+    }
 }
 
 ImageProcessor::~ImageProcessor() {

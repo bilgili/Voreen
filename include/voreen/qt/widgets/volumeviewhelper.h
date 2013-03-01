@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -88,6 +88,7 @@ public:
      * that is actually occupied by the volume.
      */
     static std::string getVolumeMemorySize(const VolumeRAM*);
+    static std::string getVolumeMemorySize(const VolumeBase*);
 
     static size_t getVolumeMemorySizeByte(const VolumeRAM*);
 

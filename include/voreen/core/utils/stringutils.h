@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,17 +36,27 @@
 
 namespace voreen {
 
-/// Converts an int to a string using a stringstream.
-VRN_CORE_API std::string itos(int i);
+/// Converts an int to a string.
+VRN_CORE_API std::string itos(int i, int stringLength = -1, char fillChar = '0');
 
-/// Converts an size_t to a string using a stringstream.
-VRN_CORE_API std::string itos(size_t i);
+/// Converts an size_t to a string.
+VRN_CORE_API std::string itos(size_t i, int stringLength = -1, char fillChar = '0');
 
-/// Converts a float to a string using a stringstream.
-VRN_CORE_API std::string ftos(float f);
+/**
+ * Converts a float to a string.
+ *
+ * @param precision number of decimals to print.
+ *  For precision=-1, sprintf's standard floating point formatting is used (%f).
+ */
+VRN_CORE_API std::string ftos(float f, int precision = -1);
 
-/// Converts a double to a string using a stringstream.
-VRN_CORE_API std::string dtos(double d);
+/**
+ * Converts a double to a string.
+ *
+ * @param precision number of decimals to print.
+ *  For precision=-1, sprintf's standard floating point formatting is used (%f).
+ */
+VRN_CORE_API std::string dtos(double d, int precision = -1);
 
 /**
  * Converts the string to a null-terminated char array with length s.size()+1.
@@ -77,7 +87,7 @@ VRN_CORE_API float stof(const std::string& s);
 
 /// Converts a string to a double using stringstreams
 VRN_CORE_API double stod(const std::string& s);
-#endif
+#endif // !defined(_MSC_VER) || (_MSC_VER < 1600)
 
 /**
  * Returns a copy of \p str where all occurrences of \p from have been replaced by \p to.
@@ -108,6 +118,8 @@ VRN_CORE_API std::string toUpper(const std::string& str);
  * Splits a string by the specified delimiter and returns the items in a vector.
  */
 VRN_CORE_API std::vector<std::string> strSplit(const std::string& str, char delim);
+/// @overload
+VRN_CORE_API std::vector<std::string> strSplit(const std::string& str, const std::string& delim);
 
 /**
  * Joins a sequence of tokens to a string. The converted tokens
@@ -121,6 +133,7 @@ VRN_CORE_API bool endsWith(const std::string& input, const std::string& ending);
 
 /// Returns true if \p input starts with \p ending
 VRN_CORE_API bool startsWith(const std::string& input, const std::string& start);
+
 
 // ----------------------------------------------------------------------------
 // template definitions
@@ -137,7 +150,7 @@ T genericFromString(const std::string& str) throw (VoreenException) {
     T result;
     std::istringstream stream;
     stream.str(str);
-    if ((stream >> result) == false)
+    if ((stream >> result) == 0)
         throw VoreenException("failed to convert string '" + str + "'");
     return result;
 }

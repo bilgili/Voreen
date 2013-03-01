@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -86,7 +86,7 @@ SHCoeffTrans::SHCoeffTrans(int sampleNumSqrt, int numBands, TransFuncProperty* t
                            const VolumeBase* vol, BleedingMode bm, float sizefac, bool considerNormals, bool eri, float dataScale)
     : SHCoeffCalc(sampleNumSqrt, numBands)
     , tfProp_(tfprop)
-    , volumeHandle_(vol)
+    , volume_(vol)
     , bm_(bm)
     , sizefac_(sizefac)
     , considerNormals_(considerNormals)
@@ -237,7 +237,7 @@ void SHCoeffTrans::init() {
     // The computation time sinks linearly with the coefficient-volume-size; I think a size of 1/4th of the orignial still
     // delivers good-looking results.
     float fac = std::pow(sizefac_, 0.3333f);
-    tgt::ivec3 dims = tgt::ivec3(tgt::vec3(volumeHandle_->getDimensions()) * fac);
+    tgt::ivec3 dims = tgt::ivec3(tgt::vec3(volume_->getDimensions()) * fac);
 
     if(!(bm_ & SH_BLEEDING)) {
         transCoeffsI0_ = new CoeffVolume(dims, "shcoeffsI0_");
@@ -253,8 +253,8 @@ void SHCoeffTrans::init() {
     }
 
     if(bm_ & SH_SUBSURFACE) {
-        //tgt::ivec3 sssDims = tgt::ivec3(tgt::vec3(volumeHandle_->getRepresentation<VolumeRAM>()->getDimensions()) * float(std::pow(0.15f, 0.3333f)));
-        //tgt::ivec3 sssDims = tgt::ivec3(tgt::vec3(volumeHandle_->getRepresentation<VolumeRAM>()->getDimensions()) * float(std::pow(0.30, 0.3333f)));
+        //tgt::ivec3 sssDims = tgt::ivec3(tgt::vec3(volume_->getRepresentation<VolumeRAM>()->getDimensions()) * float(std::pow(0.15f, 0.3333f)));
+        //tgt::ivec3 sssDims = tgt::ivec3(tgt::vec3(volume_->getRepresentation<VolumeRAM>()->getDimensions()) * float(std::pow(0.30, 0.3333f)));
         tgt::ivec3 sssDims = dims;
 
         sssCoeffs0_ = new CoeffVolume(sssDims, "sssCoeffs0_");
@@ -281,7 +281,7 @@ void SHCoeffTrans::init() {
         transCoeffsB3_ = new CoeffVolume(dims, "shcoeffsB3_");
     }
 
-    dims = volumeHandle_->getRepresentation<VolumeRAM>()->getDimensions();
+    dims = volume_->getRepresentation<VolumeRAM>()->getDimensions();
     tfVolume_ = new CoeffVolume(dims, "tfVolume_");
 
     if(considerNormals_)
@@ -761,7 +761,7 @@ void SHCoeffTrans::generateNormals() {
     // bind volume texture and pass sampler to the shader
     TextureUnit volUnit;
     volUnit.activate();
-    volumeHandle_->getRepresentation<VolumeGL>()->getTexture()->bind();
+    volume_->getRepresentation<VolumeGL>()->getTexture()->bind();
     //set clamp method for volume texture
     glTexParameteriv(GL_TEXTURE_3D, GL_TEXTURE_BORDER_COLOR, tgt::ivec4(0).elem);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -838,7 +838,7 @@ void SHCoeffTrans::generateTfVolume() {
         if(c == 0) {
             // bind volume texture and pass sampler to the shader
             volUnit.activate();
-            volumeHandle_->getRepresentation<VolumeGL>()->getTexture()->bind();
+            volume_->getRepresentation<VolumeGL>()->getTexture()->bind();
             //set clamp method for volume texture
             glTexParameteriv(GL_TEXTURE_3D, GL_TEXTURE_BORDER_COLOR, tgt::ivec4(0).elem);
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);

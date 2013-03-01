@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -42,7 +42,7 @@ namespace voreen {
  * This class is the OpenGL interface for volume objects.
  * One or several 3D textures, which hold the complete data set, are created.
  */
-class VolumeGL : public VolumeRepresentation {
+class VRN_CORE_API VolumeGL : public VolumeRepresentation {
 public:
 
     /**
@@ -71,6 +71,8 @@ public:
     /// @overload
     VolumeTexture* getTexture();
 
+    virtual std::string getFormat() const;
+    virtual std::string getBaseType() const;
     virtual int getNumChannels() const;
     virtual int getBytesPerVoxel() const;
 
@@ -96,6 +98,8 @@ protected:
         throw (VoreenException, std::bad_alloc);
 
     VolumeTexture* texture_;
+    std::string format_;
+    std::string baseType_;
 
     /// scale factor and offset used during texture upload (GL_*_SCALE, GL_*_BIAS)
     RealWorldMapping pixelTransferMapping_;

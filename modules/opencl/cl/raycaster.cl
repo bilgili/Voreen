@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -49,20 +49,23 @@ float4 simpleRaycast(read_only image3d_t volumeTex, read_only image2d_t tfData, 
         float4 sample = entryPoint + t * direction;
         float4 color = read_imagef(tfData, smpNorm, (float2)(read_imagef(volumeTex, smpNorm, sample).x, 0.0));
 
-        // apply opacity correction to accomodate for variable sampling intervals
-        color.w = 1.f - pow(1.f - color.w, stepSize * SAMPLING_BASE_INTERVAL_RCP);
+        if(color.w > 0.0) {
 
-        // Add a little shading.  calcGradient is declared in mod_gradients.cl
-        float4 norm = normalize(calcGradient(sample, volumeTex));
-        color *= fabs(dot(norm, direction));
+            // apply opacity correction to accomodate for variable sampling intervals
+            color.w = 1.f - pow(1.f - color.w, stepSize * SAMPLING_BASE_INTERVAL_RCP);
 
-        //calculate ray integral
-        result.xyz = result.xyz + (1.0 - result.w) * color.w * color.xyz;
-        result.w = result.w + (1.0 - result.w) * color.w;
+            // Add a little shading.  calcGradient is declared in mod_gradients.cl
+            float4 norm = normalize(calcGradient(sample, volumeTex));
+            color *= fabs(dot(norm, direction));
 
-        // early ray termination
-        if(result.w > 0.95)
-            break;
+            //calculate ray integral
+            result.xyz = result.xyz + (1.0 - result.w) * color.w * color.xyz;
+            result.w = result.w + (1.0 - result.w) * color.w;
+
+            // early ray termination
+            if(result.w > 0.95)
+                break;
+        }
 
         //raise position on ray
         t += stepSize;

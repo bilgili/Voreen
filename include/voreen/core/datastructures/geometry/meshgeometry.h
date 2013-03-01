@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -40,13 +40,6 @@ namespace voreen {
  *
  * @note The following assumption has to be fulfilled:
  *       (1) the face list represents a closed convex polyhedron.
- *
- * @attention Each function which possibly change the mesh geometry sets the @c hasChanged flag
- *            to @c true, even if nothing has changed at all.
- *
- * @attention If the mesh geometry is changed by using the @c operator[]
- *            or the @c getFace function then @c setHasChanged(true)
- *            has to be called manually.
  *
  * @par
  * Here is a short example of using the @c MeshGeometry:
@@ -184,10 +177,6 @@ public:
     /**
      * Returns the face geometry at the given @c index.
      *
-     * @attention If the mesh geometry is changed by using the @c operator[]
-     *            or the @c getFace function then @c setHasChanged(true)
-     *            has to be called manually.
-     *
      * @param index the face geometry index
      *
      * @returns the face geometry at the given @c index
@@ -230,10 +219,6 @@ public:
     /**
      * Returns the face geometry at the given @c index.
      *
-     * @attention If the mesh geometry is changed by using the @c operator[]
-     *            or the @c getFace function then @c setHasChanged(true)
-     *            has to be called manually.
-     *
      * @param index the face geometry index
      *
      * @returns the face geometry at the given @c index
@@ -244,13 +229,6 @@ public:
      * @see Geometry::render
      */
     virtual void render() const;
-
-    /**
-     * Transforms the mesh geometry using the given transformation matrix.
-     *
-     * @param transformation the transformation matrix
-     */
-    virtual void transform(const tgt::mat4& transformation);
 
     /**
      * Clips the mesh geometry by the given arbitrary clipping plane.
@@ -276,10 +254,10 @@ public:
      * @param closingMesh the clipping face generated for closing the clipped mesh
      * @param epsilon the accuracy for vertex geometry comparison
      */
-    void clip(const tgt::vec4& clipPlane, MeshGeometry& closingMesh, double epsilon = 1e-5);
+    void clip(const tgt::plane& clipPlane, MeshGeometry& closingMesh, double epsilon = 1e-5);
 
     /// @overload
-    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-5);
+    virtual void clip(const tgt::plane& clipPlane, double epsilon = 1e-5);
 
     /**
      * Returns true, if all faces of the passed MeshGeometry are equal to this one's.
@@ -301,7 +279,7 @@ public:
      * Returns the axis-aligned bounding box of the union
      * of the bounding boxes of the mesh's faces.
      */
-    virtual tgt::Bounds getBoundingBox() const;
+    virtual tgt::Bounds getBoundingBox(bool transformed = true) const;
 
     virtual void serialize(XmlSerializer& s) const;
 

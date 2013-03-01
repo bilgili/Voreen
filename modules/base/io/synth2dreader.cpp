@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -46,7 +46,7 @@ Synth2DReader::Synth2DReader(ProgressBar* progress)
     extensions_.push_back("vol");
 }
 
-VolumeCollection* Synth2DReader::read(const std::string &fileName) throw (tgt::FileException, std::bad_alloc) {
+VolumeList* Synth2DReader::read(const std::string &fileName) throw (tgt::FileException, std::bad_alloc) {
     RawVolumeReader rawReader(getProgressBar());
 
     FILE* fin = fopen(fileName.c_str(), "rb");
@@ -73,9 +73,9 @@ VolumeCollection* Synth2DReader::read(const std::string &fileName) throw (tgt::F
                            1,                        // number of time frames
                            4096);                    // header skip
 
-    VolumeCollection* volumeCollection = rawReader.read(fileName);
+    VolumeList* volumeList = rawReader.read(fileName);
 
-    return volumeCollection;
+    return volumeList;
 }
 
 VolumeReader* Synth2DReader::create(ProgressBar* progress) const {

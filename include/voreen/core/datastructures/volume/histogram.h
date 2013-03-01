@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -284,6 +284,8 @@ public:
 
     /// Empty default constructor required by VolumeDerivedData interface.
     VolumeHistogramIntensity();
+    virtual std::string getClassName() const { return "VolumeHistogramIntensity"; }
+    virtual VolumeDerivedData* create() const;
 
     /**
      * Creates a histogram with a bucket count of 256.
@@ -347,6 +349,9 @@ public:
 
     /// Empty default constructor required by VolumeDerivedData interface.
     VolumeHistogramIntensityGradient();
+
+    virtual std::string getClassName() const { return "VolumeHistogramIntensityGradient"; }
+    virtual VolumeDerivedData* create() const;
 
     /**
      * Returns 0, since histogram construction requires an additional gradient volume.

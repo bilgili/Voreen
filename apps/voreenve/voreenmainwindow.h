@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -59,11 +59,13 @@ public:
     ~VoreenSplashScreen();
 
     void drawContents(QPainter* painter);
-    void showMessage(const QString& message);
+    void showMessage(const QString& message, qreal progress);
+    void setProgress(qreal progress);
 
 protected:
     QPixmap* pixmap_;
     QString message_;
+    qreal progress_;
 };
 
 //---------------------------------------------------------------------------
@@ -129,8 +131,9 @@ public slots:
 
     // help menu
     void helpFirstSteps();
-    void helpTutorialSlides();
+    void helpNetworkEditor();
     void helpAnimation();
+    void helpTutorialSlides();
     void helpWebsite();
     void helpAbout();
 
@@ -244,8 +247,9 @@ private:
 
     QAction* aboutAction_;
     QAction* helpFirstStepsAct_;
-    QAction* helpTutorialSlidesAct_;
+    QAction* helpNetworkEditorAct_;
     QAction* helpAnimationAct_;
+    QAction* helpTutorialSlidesAct_;
     QAction* importNetworkAction_;
     QAction* exportNetworkAction_;
     QAction* showShortcutPreferencesAction_;

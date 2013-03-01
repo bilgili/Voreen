@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -398,8 +398,8 @@ Volume* VolumeCombine::createCombinedVolume(const VolumeBase* refVolume, const V
     tgt::vec3 combinedURB = refURB;
     for (MeshGeometry::const_iterator face = secondBB.begin(); face != secondBB.end(); ++face) {
         for (FaceGeometry::const_iterator vertex = face->begin(); vertex != face->end(); ++vertex) {
-            combinedLLF = tgt::min(combinedLLF, vertex->getCoords());
-            combinedURB = tgt::max(combinedURB, vertex->getCoords());
+            combinedLLF = tgt::min(combinedLLF, transformToRef * vertex->getCoords());
+            combinedURB = tgt::max(combinedURB, transformToRef * vertex->getCoords());
         }
     }
     std::pair<vec3, vec3> combinedBB = std::pair<vec3, vec3>(combinedLLF, combinedURB);

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -160,7 +160,8 @@ TemplateProperty<T>::TemplateProperty(const std::string& id, const std::string& 
 {}
 
 template<class T>
-TemplateProperty<T>::TemplateProperty()
+TemplateProperty<T>::TemplateProperty() :
+    Property()
 {}
 
 template<class T>

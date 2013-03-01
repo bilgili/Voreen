@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -24,6 +24,7 @@
  ***********************************************************************************/
 
 #include "voreen/core/datastructures/roi/roigraph.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 #include "voreen/core/datastructures/geometry/meshlistgeometry.h"
 #include "voreen/core/datastructures/geometry/pointlistgeometry.h"
 
@@ -145,7 +146,7 @@ Graph& ROIGraph::getGraph() {
     return g_;
 }
 
-MeshListGeometry* ROIGraph::generateMesh() const {
+Geometry* ROIGraph::generateMesh() const {
     MeshListGeometry* mlg = new MeshListGeometry();
 
     MeshGeometry mg;
@@ -163,10 +164,6 @@ MeshListGeometry* ROIGraph::generateMesh() const {
                     fg.addVertex(VertexGeometry(last, vec3(0.0f), getColor()));
                     mg.addFace(fg);
                 }
-                //FaceGeometry fg;
-                //fg.addVertex(VertexGeometry(p, vec3(0.0f), getColor()));
-                //fg.addVertex(VertexGeometry(n->getNeighbor(j)->getPosition(), vec3(0.0f), getColor()));
-                //mg.addFace(fg);
             }
         }
     }
@@ -176,10 +173,10 @@ MeshListGeometry* ROIGraph::generateMesh() const {
     return mlg;
 }
 
-MeshListGeometry* ROIGraph::generateMesh(tgt::plane pl) const {
+Geometry* ROIGraph::generateMesh(tgt::plane pl) const {
     // Transform plane to grid coordinates:
     mat4 m = getGrid().getWorldToPhysicalMatrix();
-    const tgt::plane physicalPlane = transform(pl, m);
+    const tgt::plane physicalPlane = pl.transform(m);
 
     MeshListGeometry* mlg = new MeshListGeometry();
 
@@ -209,8 +206,8 @@ MeshListGeometry* ROIGraph::generateMesh(tgt::plane pl) const {
                     fg.addVertex(VertexGeometry(p1, vec3(0.0f), getColor()));
                     fg.addVertex(VertexGeometry(p2, vec3(0.0f), getColor()));
 
-                    fg.clip(clipA.toVec4());
-                    fg.clip(clipB.toVec4());
+                    fg.clip(clipA);
+                    fg.clip(clipB);
 
                     mg.addFace(fg);
                 }
@@ -223,7 +220,7 @@ MeshListGeometry* ROIGraph::generateMesh(tgt::plane pl) const {
     return mlg;
 }
 
-MeshListGeometry* ROIGraph::generateRasterMesh(const tgt::plane& /*pl*/, Grid /*g*/) const {
+Geometry* ROIGraph::generateRasterMesh(const tgt::plane& /*pl*/, Grid /*g*/) const {
     return 0;
 }
 
@@ -250,7 +247,7 @@ std::vector<const ControlPoint*> ROIGraph::getControlPoints(tgt::plane pl) const
 
     // Transform plane to grid coordinates:
     mat4 m = getGrid().getWorldToPhysicalMatrix();
-    const tgt::plane physicalPlane = transform(pl, m);
+    const tgt::plane physicalPlane = pl.transform(m);
 
     size_t maxComp = tgt::maxElem(physicalPlane.n);
     float d = getGrid().getSpacing()[maxComp] * 0.5f;

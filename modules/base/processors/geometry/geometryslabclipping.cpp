@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,8 +33,8 @@ GeometrySlabClipping::GeometrySlabClipping()
     , outport_(Port::OUTPORT, "geometry.clippedgeometry", "Clipped Geometry Output")
     , enabled_("enabled", "Enabled", true)
     , normal_("slabNormal", "Slab Normal", tgt::vec3(0, 1, 0), tgt::vec3(-1), tgt::vec3(1))
-    , position_("slabPosition", "Slab Position", 0.0f, -100.0f, 100.0f)
-    , thickness_("slabThickness", "Slab Thickness", 0.5f, 0.0f, 200.0f)
+    , position_("slabPosition", "Slab Position", 0.0f, -100.0f, 100.0f, Processor::INVALID_RESULT, NumericProperty<float>::DYNAMIC)
+    , thickness_("slabThickness", "Slab Thickness", 0.5f, 0.0f, 200.0f, Processor::INVALID_RESULT, NumericProperty<float>::DYNAMIC)
     , wheelInteractionHandler_("wheelInteractionHandler", "Slab Position", &position_,
         tgt::Event::MODIFIER_NONE, false, false)
 {
@@ -67,9 +67,9 @@ void GeometrySlabClipping::process() {
     }
 
     Geometry* outputGeometry = inputGeometry->clone();
-    double epsilon = static_cast<double>(tgt::length(outputGeometry->getBoundingBox().diagonal())) * 1e-6;
-    outputGeometry->clip(tgt::vec4(tgt::normalize( normal_.get()), position_.get() + thickness_.get()/2.f), epsilon);
-    outputGeometry->clip(tgt::vec4(tgt::normalize(-normal_.get()), -position_.get() + thickness_.get()/2.f), epsilon);
+    double epsilon = static_cast<double>(tgt::length(outputGeometry->getBoundingBox(false).diagonal())) * 1e-6;
+    outputGeometry->clip(tgt::plane(tgt::normalize( normal_.get()),  position_.get()), epsilon);
+    outputGeometry->clip(tgt::plane(tgt::normalize(-normal_.get()), -position_.get()), epsilon);
 
     outport_.setData(outputGeometry);
 }

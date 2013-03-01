@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -35,7 +35,7 @@ class ProgressBar;
 /**
  * Reads a volume dataset from a file in Stefan Roettger's PVM file format.
  */
-class PVMVolumeReader : public VolumeReader {
+class VRN_CORE_API PVMVolumeReader : public VolumeReader {
 public:
     PVMVolumeReader(ProgressBar* progress);
     virtual VolumeReader* create(ProgressBar* progress = 0) const;
@@ -43,7 +43,7 @@ public:
     virtual std::string getClassName() const   { return "PVMVolumeReader"; }
     virtual std::string getFormatDescription() const { return "PVM format"; }
 
-    virtual VolumeCollection* read(const std::string& url)
+    virtual VolumeList* read(const std::string& url)
         throw (tgt::FileException, tgt::IOException, std::bad_alloc);
 
 private:

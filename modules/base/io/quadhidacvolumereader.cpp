@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -313,7 +313,7 @@ Volume* QuadHidacVolumeReader::loadVolume(const std::string& filename, int i, co
     return vh;
 }
 
-VolumeCollection* QuadHidacVolumeReader::read(const std::string &url)
+VolumeList* QuadHidacVolumeReader::read(const std::string &url)
     throw (tgt::FileException, std::bad_alloc)
 {
     const VolumeURL origin(url);
@@ -330,7 +330,7 @@ VolumeCollection* QuadHidacVolumeReader::read(const std::string &url)
     int maxFrame = header.ntf-1;
 
     // result collection
-    VolumeCollection* volumeCollection = new VolumeCollection();
+    VolumeList* volumeList = new VolumeList();
 
     if (getProgressBar()) {
         getProgressBar()->setTitle("Quad-HIDAC Reader");
@@ -347,7 +347,7 @@ VolumeCollection* QuadHidacVolumeReader::read(const std::string &url)
         }
 
         Volume* vh = loadVolume(filename, frame, header);
-        volumeCollection->add(vh);
+        volumeList->add(vh);
     }
 
     if (getProgressBar())
@@ -356,7 +356,7 @@ VolumeCollection* QuadHidacVolumeReader::read(const std::string &url)
     // clean up
     file.close();
 
-    return volumeCollection;
+    return volumeList;
 }
 
 VolumeBase* QuadHidacVolumeReader::read(const VolumeURL& origin)

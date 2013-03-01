@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -949,7 +949,7 @@ inline tgt::Matrix3<T> VolumeElement<tgt::Matrix3<T> >::swapEndianness(tgt::Matr
 */
 template<class T>
 double VolumeElement<tgt::Matrix3<T> >::calcSquaredDifference(tgt::Matrix3<T> val1, tgt::Matrix3<T> val2) {
-    double result;
+    double result = 0.0;
     //FIXME
     //tgt::Vector3d difference;
 
@@ -1051,7 +1051,7 @@ inline tgt::Matrix4<T> VolumeElement<tgt::Matrix4<T> >::swapEndianness(tgt::Matr
 template<class T>
 double VolumeElement<tgt::Matrix4<T> >::calcSquaredDifference(tgt::Matrix4<T> val1, tgt::Matrix4<T> val2) {
     //FIXME
-    double result;
+    double result = 0.0;
     //tgt::Vector3d difference;
 
     //difference.x = (double)val1.x - (double)val2.x;

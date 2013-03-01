@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -113,6 +113,10 @@ void LightWidget::setMaxDist(double d) {
     distanceSlider_->setMaxValue(d);
 }
 
+float LightWidget::getMaxDist() const {
+    return distanceSlider_->getMaxValue();
+}
+
 void LightWidget::mousePressEvent(QMouseEvent *event) {
     mouseMoveEvent(event);
     update();
@@ -146,16 +150,18 @@ void LightWidget::updateDistance(double distance) {
 }
 
 void LightWidget::setLightPosition(const tgt::vec4& position) {
-
     hemisphere_ = position.z < 0.f ? true : false;
     distance_ = std::max((float)(distanceSlider_->getMinValue()), std::min((float)(distanceSlider_->getMaxValue()), length(position.xyz())));
 
     tgt::vec2 pos(0.f);
-    offset_ = position.xy() / length(position.xyz());
-    if(lengthSq(offset_) > 1.f)
-        offset_ = normalize(offset_);
+    if(length(position.xyz()) > 0.0001f) {
+        offset_ = position.xy() / length(position.xyz());
+        if(lengthSq(offset_) > 1.f)
+            offset_ = normalize(offset_);
+    }
+    else
+        offset_ = tgt::vec2(0.0f);
 
-    //offset_.y *= -1.f;
     lightPosition_ = QPointF((offset_.x + 1.f)*60.f, (1.f - offset_.y)*60.f);
 
     distanceSlider_->blockSignals(true);

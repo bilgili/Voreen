@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -247,9 +247,10 @@ namespace voreen{
     }
 
     void FirstPersonNavigation::rollCameraAroundUp(float angle){
-       tgt::vec3 look=normalize(tgt::quat::rotate(camera_->get().getLook(), angle, camera_->get().getUpVector()));
+        float currentFocusDist = tgt::length(camera_->get().getPosition() - camera_->get().getFocus());
+        tgt::vec3 look=normalize(tgt::quat::rotate(camera_->get().getLook(), angle, camera_->get().getUpVector()));
         tgt::Camera cam = camera_->get();
-        cam.setFocus(cam.getPosition() + look);
+        cam.setFocus(cam.getPosition() + look*currentFocusDist);
         camera_->set(cam);
     }
 
@@ -261,11 +262,12 @@ namespace voreen{
     }
 
     void FirstPersonNavigation::rollCameraAroundStrafe(float angle){
+        float currentFocusDist = tgt::length(camera_->get().getPosition() - camera_->get().getFocus());
         tgt::vec3 up = normalize(tgt::quat::rotate(camera_->get().getUpVector(), angle, camera_->get().getStrafe()) );
         tgt::Camera cam = camera_->get();
         cam.setUpVector(up);
         tgt::vec3 look = cross(up, camera_->get().getStrafe());
-        cam.setFocus(cam.getPosition() + look);
+        cam.setFocus(cam.getPosition() + look*currentFocusDist);
         camera_->set(cam);
     }
 

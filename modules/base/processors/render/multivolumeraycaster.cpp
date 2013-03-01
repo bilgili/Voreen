@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -27,6 +27,7 @@
 
 #include "tgt/textureunit.h"
 #include "voreen/core/ports/conditions/portconditionvolumetype.h"
+#include "voreen/core/utils/glsl.h"
 
 #include <sstream>
 
@@ -41,11 +42,15 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     , volumeInport2_(Port::INPORT, "volume2", "Volume2 Input", false, Processor::INVALID_PROGRAM)
     , volumeInport3_(Port::INPORT, "volume3", "Volume3 Input", false, Processor::INVALID_PROGRAM)
     , volumeInport4_(Port::INPORT, "volume4", "Volume4 Input", false, Processor::INVALID_PROGRAM)
-    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_ORIGIN)
-    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_ORIGIN)
-    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER, GL_RGBA16F_ARB)
-    , outport1_(Port::OUTPORT, "image.output1", "Image1 Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER, GL_RGBA16F_ARB)
-    , outport2_(Port::OUTPORT, "image.output2", "Image2 Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER, GL_RGBA16F_ARB)
+    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_PROGRAM)
+    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_PROGRAM)
+    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB)
+    , outport1_(Port::OUTPORT, "image.output1", "Image1 Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB)
+    , outport2_(Port::OUTPORT, "image.output2", "Image2 Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB)
+    , internalRenderPort_(Port::OUTPORT, "internalRenderPort", "Internal Render Port", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB)
+    , internalRenderPort1_(Port::OUTPORT, "internalRenderPort1", "Internal Render Port 1", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB)
+    , internalRenderPort2_(Port::OUTPORT, "internalRenderPort2", "Internal Render Port 2", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB)
+    , internalPortGroup_(true)
     , shaderProp_("raycast.prg", "Raycasting Shader", "rc_multivolume.frag", "passthrough.vert")
     , shadeMode1_("shading1", "Shading 1", Processor::INVALID_PROGRAM)
     , shadeMode2_("shading2", "Shading 2", Processor::INVALID_PROGRAM)
@@ -55,7 +60,7 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     , transferFunc2_("transferFunction2", "Transfer Function 2")
     , transferFunc3_("transferFunction3", "Transfer Function 3")
     , transferFunc4_("transferFunction4", "Transfer Function 4")
-    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)), true)
     , compositingMode1_("compositing1", "Compositing (OP2)", Processor::INVALID_PROGRAM)
     , compositingMode2_("compositing2", "Compositing (OP3)", Processor::INVALID_PROGRAM)
 {
@@ -78,6 +83,11 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     addPort(outport1_);
     addPort(outport2_);
 
+    // internal render destinations
+    addPrivateRenderPort(internalRenderPort_);
+    addPrivateRenderPort(internalRenderPort1_);
+    addPrivateRenderPort(internalRenderPort2_);
+
     // shader property
     addProperty(shaderProp_);
 
@@ -90,41 +100,13 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
 
     // shading properties
     addProperty(gradientMode_);
-    shadeMode1_.addOption("none", "none");
-    shadeMode1_.addOption("phong-diffuse", "Phong (Diffuse)");
-    shadeMode1_.addOption("phong-specular", "Phong (Specular)");
-    shadeMode1_.addOption("phong-diffuse-ambient", "Phong (Diffuse+Amb.)");
-    shadeMode1_.addOption("phong-diffuse-specular", "Phong (Diffuse+Spec.)");
-    shadeMode1_.addOption("phong", "Phong (Full)");
-    shadeMode1_.addOption("toon", "Toon");
-    shadeMode1_.select("phong");
+    fillShadingModesProperty(shadeMode1_);
     addProperty(shadeMode1_);
-    shadeMode2_.addOption("none", "none");
-    shadeMode2_.addOption("phong-diffuse", "Phong (Diffuse)");
-    shadeMode2_.addOption("phong-specular", "Phong (Specular)");
-    shadeMode2_.addOption("phong-diffuse-ambient", "Phong (Diffuse+Amb.)");
-    shadeMode2_.addOption("phong-diffuse-specular", "Phong (Diffuse+Spec.)");
-    shadeMode2_.addOption("phong", "Phong (Full)");
-    shadeMode2_.addOption("toon", "Toon");
-    shadeMode2_.select("phong");
+    fillShadingModesProperty(shadeMode2_);
     addProperty(shadeMode2_);
-    shadeMode3_.addOption("none", "none");
-    shadeMode3_.addOption("phong-diffuse", "Phong (Diffuse)");
-    shadeMode3_.addOption("phong-specular", "Phong (Specular)");
-    shadeMode3_.addOption("phong-diffuse-ambient", "Phong (Diffuse+Amb.)");
-    shadeMode3_.addOption("phong-diffuse-specular", "Phong (Diffuse+Spec.)");
-    shadeMode3_.addOption("phong", "Phong (Full)");
-    shadeMode3_.addOption("toon", "Toon");
-    shadeMode3_.select("phong");
+    fillShadingModesProperty(shadeMode3_);
     addProperty(shadeMode3_);
-    shadeMode4_.addOption("none", "none");
-    shadeMode4_.addOption("phong-diffuse", "Phong (Diffuse)");
-    shadeMode4_.addOption("phong-specular", "Phong (Specular)");
-    shadeMode4_.addOption("phong-diffuse-ambient", "Phong (Diffuse+Amb.)");
-    shadeMode4_.addOption("phong-diffuse-specular", "Phong (Diffuse+Spec.)");
-    shadeMode4_.addOption("phong", "Phong (Full)");
-    shadeMode4_.addOption("toon", "Toon");
-    shadeMode4_.select("phong");
+    fillShadingModesProperty(shadeMode4_);
     addProperty(shadeMode4_);
 
     // compositing modes
@@ -179,17 +161,23 @@ void MultiVolumeRaycaster::initialize() throw (tgt::Exception) {
     VolumeRaycaster::initialize();
     compile();
 
-    portGroup_.initialize();
-    portGroup_.addPort(outport_);
-    portGroup_.addPort(outport1_);
-    portGroup_.addPort(outport2_);
-    portGroup_.deactivateTargets();
+    internalPortGroup_.initialize();
+    internalPortGroup_.addPort(internalRenderPort_);
+    internalPortGroup_.addPort(internalRenderPort1_);
+    internalPortGroup_.addPort(internalRenderPort2_);
+    internalPortGroup_.deactivateTargets();
+    LGL_ERROR;
 
     adjustPropertyVisibilities();
 }
 
 void MultiVolumeRaycaster::deinitialize() throw (tgt::Exception) {
-    portGroup_.deinitialize();
+    internalPortGroup_.removePort(internalRenderPort_);
+    internalPortGroup_.removePort(internalRenderPort1_);
+    internalPortGroup_.removePort(internalRenderPort2_);
+    internalPortGroup_.deinitialize();
+    LGL_ERROR;
+
     VolumeRaycaster::deinitialize();
 }
 
@@ -199,7 +187,6 @@ void MultiVolumeRaycaster::compile() {
 }
 
 bool MultiVolumeRaycaster::isReady() const {
-    //check if all inports are connected:
     if(!entryPort_.isReady() || !exitPort_.isReady() || !volumeInport1_.isReady())
         return false;
 
@@ -210,13 +197,118 @@ bool MultiVolumeRaycaster::isReady() const {
     return true;
 }
 
-void MultiVolumeRaycaster::process() {
+void MultiVolumeRaycaster::beforeProcess() {
+    VolumeRaycaster::beforeProcess();
+
     // compile program if needed
-    if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
+    if (getInvalidationLevel() >= Processor::INVALID_PROGRAM) {
+        PROFILING_BLOCK("compile");
         compile();
+    }
     LGL_ERROR;
 
-    // bind transfer function
+    transferFunc1_.setVolumeHandle(volumeInport1_.getData());
+    transferFunc2_.setVolumeHandle(volumeInport2_.getData());
+    transferFunc3_.setVolumeHandle(volumeInport3_.getData());
+    transferFunc4_.setVolumeHandle(volumeInport4_.getData());
+
+    if(volumeInport1_.hasChanged() || volumeInport2_.hasChanged() || volumeInport3_.hasChanged() || volumeInport4_.hasChanged()) {
+        tgt::Bounds b;
+        if(volumeInport1_.hasData())
+            b.addVolume(volumeInport1_.getData()->getBoundingBox().getBoundingBox());
+        if(volumeInport2_.hasData())
+            b.addVolume(volumeInport2_.getData()->getBoundingBox().getBoundingBox());
+        if(volumeInport3_.hasData())
+            b.addVolume(volumeInport3_.getData()->getBoundingBox().getBoundingBox());
+        if(volumeInport4_.hasData())
+            b.addVolume(volumeInport4_.getData()->getBoundingBox().getBoundingBox());
+        if(length(b.diagonal()) != 0.0)
+            camera_.adaptInteractionToScene(b);
+    }
+}
+
+void MultiVolumeRaycaster::process() {
+    // determine render size and activate internal port group
+    const bool renderCoarse = interactionMode() && interactionCoarseness_.get() > 1;
+    const tgt::svec2 renderSize = (renderCoarse ? (outport_.getSize() / interactionCoarseness_.get()) : outport_.getSize());
+    internalPortGroup_.resize(renderSize);
+    internalPortGroup_.activateTargets();
+    internalPortGroup_.clearTargets();
+    LGL_ERROR;
+
+    // initialize shader
+    tgt::Shader* raycastPrg = shaderProp_.getShader();
+    raycastPrg->activate();
+
+    // set common uniforms used by all shaders
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(raycastPrg, &cam, renderSize);
+    LGL_ERROR;
+
+    // bind entry/exit param textures
+    TextureUnit entryUnit, entryDepthUnit, exitUnit, exitDepthUnit;
+    entryPort_.bindTextures(entryUnit, entryDepthUnit, GL_NEAREST);
+    raycastPrg->setUniform("entryPoints_", entryUnit.getUnitNumber());
+    raycastPrg->setUniform("entryPointsDepth_", entryDepthUnit.getUnitNumber());
+    entryPort_.setTextureParameters(raycastPrg, "entryParameters_");
+    exitPort_.bindTextures(exitUnit, exitDepthUnit, GL_NEAREST);
+    raycastPrg->setUniform("exitPoints_", exitUnit.getUnitNumber());
+    raycastPrg->setUniform("exitPointsDepth_", exitDepthUnit.getUnitNumber());
+    exitPort_.setTextureParameters(raycastPrg, "exitParameters_");
+    LGL_ERROR;
+
+    // bind the volumes and pass the necessary information to the shader
+    TextureUnit volUnit1, volUnit2, volUnit3, volUnit4;
+    std::vector<const VolumeBase*> volumes;
+    std::vector<VolumeStruct> volumeTextures;
+    if (volumeInport1_.isReady()) {
+        volumeTextures.push_back(VolumeStruct(
+                    volumeInport1_.getData(),
+                    &volUnit1,
+                    "volume1_","volumeStruct1_",
+                    volumeInport1_.getTextureClampModeProperty().getValue(),
+                    tgt::vec4(volumeInport1_.getTextureBorderIntensityProperty().get()),
+                    volumeInport1_.getTextureFilterModeProperty().getValue())
+                );
+        volumes.push_back(volumeInport1_.getData());
+    }
+    if (volumeInport2_.isReady()) {
+        volumeTextures.push_back(VolumeStruct(
+                    volumeInport2_.getData(),
+                    &volUnit2,
+                    "volume2_","volumeStruct2_",
+                    volumeInport2_.getTextureClampModeProperty().getValue(),
+                    tgt::vec4(volumeInport2_.getTextureBorderIntensityProperty().get()),
+                    volumeInport2_.getTextureFilterModeProperty().getValue())
+                );
+        volumes.push_back(volumeInport2_.getData());
+    }
+    if (volumeInport3_.isReady()) {
+        volumeTextures.push_back(VolumeStruct(
+                    volumeInport3_.getData(),
+                    &volUnit3,
+                    "volume3_","volumeStruct3_",
+                    volumeInport3_.getTextureClampModeProperty().getValue(),
+                    tgt::vec4(volumeInport3_.getTextureBorderIntensityProperty().get()),
+                    volumeInport3_.getTextureFilterModeProperty().getValue())
+                );
+        volumes.push_back(volumeInport3_.getData());
+    }
+    if (volumeInport4_.isReady()) {
+        volumeTextures.push_back(VolumeStruct(
+                    volumeInport4_.getData(),
+                    &volUnit4,
+                    "volume4_","volumeStruct4_",
+                    volumeInport4_.getTextureClampModeProperty().getValue(),
+                    tgt::vec4(volumeInport4_.getTextureBorderIntensityProperty().get()),
+                    volumeInport4_.getTextureFilterModeProperty().getValue())
+                );
+        volumes.push_back(volumeInport4_.getData());
+    }
+    bindVolumes(raycastPrg, volumeTextures, &cam, lightPosition_.get());
+    LGL_ERROR;
+
+    // bind transfer functions
     TextureUnit transferUnit1, transferUnit2, transferUnit3, transferUnit4;
     transferUnit1.activate();
     if (transferFunc1_.get())
@@ -234,93 +326,9 @@ void MultiVolumeRaycaster::process() {
     if (transferFunc4_.get())
         transferFunc4_.get()->bind();
 
-    portGroup_.activateTargets();
-    portGroup_.clearTargets();
     LGL_ERROR;
 
-    transferFunc1_.setVolumeHandle(volumeInport1_.getData());
-    transferFunc2_.setVolumeHandle(volumeInport2_.getData());
-    transferFunc3_.setVolumeHandle(volumeInport3_.getData());
-    transferFunc4_.setVolumeHandle(volumeInport4_.getData());
-
-    TextureUnit entryUnit, entryDepthUnit, exitUnit, exitDepthUnit;
-    // bind entry params
-    entryPort_.bindTextures(entryUnit.getEnum(), entryDepthUnit.getEnum());
-    LGL_ERROR;
-
-    // bind exit params
-    exitPort_.bindTextures(exitUnit.getEnum(), exitDepthUnit.getEnum());
-    LGL_ERROR;
-
-    // vector containing the volumes to bind; is passed to bindVolumes()
-    std::vector<VolumeStruct> volumeTextures;
-    std::vector<const VolumeBase*> volumeHandles;
-
-    // bind volumes
-    TextureUnit volUnit1, volUnit2, volUnit3, volUnit4;
-    if (volumeInport1_.isReady()) {
-        volumeTextures.push_back(VolumeStruct(
-                    volumeInport1_.getData(),
-                    &volUnit1,
-                    "volume1_","volumeStruct1_",
-                    volumeInport1_.getTextureClampModeProperty().getValue(),
-                    tgt::vec4(volumeInport1_.getTextureBorderIntensityProperty().get()),
-                    volumeInport1_.getTextureFilterModeProperty().getValue())
-                );
-        volumeHandles.push_back(volumeInport1_.getData());
-    }
-    if (volumeInport2_.isReady()) {
-        volumeTextures.push_back(VolumeStruct(
-                    volumeInport2_.getData(),
-                    &volUnit2,
-                    "volume2_","volumeStruct2_",
-                    volumeInport2_.getTextureClampModeProperty().getValue(),
-                    tgt::vec4(volumeInport2_.getTextureBorderIntensityProperty().get()),
-                    volumeInport2_.getTextureFilterModeProperty().getValue())
-                );
-        volumeHandles.push_back(volumeInport2_.getData());
-    }
-    if (volumeInport3_.isReady()) {
-        volumeTextures.push_back(VolumeStruct(
-                    volumeInport3_.getData(),
-                    &volUnit3,
-                    "volume3_","volumeStruct3_",
-                    volumeInport3_.getTextureClampModeProperty().getValue(),
-                    tgt::vec4(volumeInport3_.getTextureBorderIntensityProperty().get()),
-                    volumeInport3_.getTextureFilterModeProperty().getValue())
-                );
-        volumeHandles.push_back(volumeInport3_.getData());
-    }
-    if (volumeInport4_.isReady()) {
-        volumeTextures.push_back(VolumeStruct(
-                    volumeInport4_.getData(),
-                    &volUnit4,
-                    "volume4_","volumeStruct4_",
-                    volumeInport4_.getTextureClampModeProperty().getValue(),
-                    tgt::vec4(volumeInport4_.getTextureBorderIntensityProperty().get()),
-                    volumeInport4_.getTextureFilterModeProperty().getValue())
-                );
-        volumeHandles.push_back(volumeInport4_.getData());
-    }
-
-    // initialize shader
-    tgt::Shader* raycastPrg = shaderProp_.getShader();
-    raycastPrg->activate();
-
-    // set common uniforms used by all shaders
-    tgt::Camera cam = camera_.get();
-    setGlobalShaderParameters(raycastPrg, &cam);
-    // bind the volumes and pass the necessary information to the shader
-    bindVolumes(raycastPrg, volumeTextures, &cam, lightPosition_.get());
-
-    // pass the remaining uniforms to the shader
-    raycastPrg->setUniform("entryPoints_", entryUnit.getUnitNumber());
-    raycastPrg->setUniform("entryPointsDepth_", entryDepthUnit.getUnitNumber());
-    entryPort_.setTextureParameters(raycastPrg, "entryParameters_");
-    raycastPrg->setUniform("exitPoints_", exitUnit.getUnitNumber());
-    raycastPrg->setUniform("exitPointsDepth_", exitDepthUnit.getUnitNumber());
-    exitPort_.setTextureParameters(raycastPrg, "exitParameters_");
-
+    // pass raycaster specific uniforms to the shader
     if (compositingMode_.get() ==  "iso" ||
         compositingMode1_.get() == "iso" ||
         compositingMode2_.get() == "iso")
@@ -334,13 +342,14 @@ void MultiVolumeRaycaster::process() {
         transferFunc3_.get()->setUniform(raycastPrg, "transferFunc3_", "transferFuncTex3_", transferUnit3.getUnitNumber());
     if(volumeInport4_.isReady())
         transferFunc4_.get()->setUniform(raycastPrg, "transferFunc4_", "transferFuncTex4_", transferUnit4.getUnitNumber());
+    LGL_ERROR;
 
     // determine ray step length in world coords
     if (volumeTextures.size() > 0) {
         float voxelSizeWorld = 999.f;
         float voxelSizeTexture = 999.f;
-        for(size_t i=0; i<volumeHandles.size(); ++i) {
-            const VolumeBase* volume = volumeHandles[i];
+        for(size_t i=0; i<volumes.size(); ++i) {
+            const VolumeBase* volume = volumes[i];
             tgtAssert(volume, "No volume");
             tgt::ivec3 volDim = volume->getDimensions();
             tgt::vec3 cubeSizeWorld = volume->getCubeSize() * volume->getPhysicalToWorldMatrix().getScalingPart();
@@ -371,12 +380,23 @@ void MultiVolumeRaycaster::process() {
     }
     LGL_ERROR;
 
+    // perform the actual raycasting by drawing a screen-aligned quad
     renderQuad();
 
     raycastPrg->deactivate();
-    portGroup_.deactivateTargets();
+    internalPortGroup_.deactivateTargets();
+    LGL_ERROR;
 
-    glActiveTexture(GL_TEXTURE0);
+    // copy over rendered images from internal port group to outports,
+    // thereby rescaling them to outport dimensions
+    if (outport_.isConnected())
+        rescaleRendering(internalRenderPort_, outport_);
+    if (outport1_.isConnected())
+        rescaleRendering(internalRenderPort1_, outport1_);
+    if (outport2_.isConnected())
+        rescaleRendering(internalRenderPort2_, outport2_);
+
+    TextureUnit::setZeroUnit();
     LGL_ERROR;
 }
 
@@ -398,101 +418,10 @@ std::string MultiVolumeRaycaster::generateHeader() {
     headerSource += "#define TF_SAMPLER_TYPE_4 " + transferFunc4_.get()->getSamplerType() + "\n";
 
     // configure shading mode
-    headerSource += "#define APPLY_SHADING_1(n, pos, lPos, cPos, ka, kd, ks) ";
-    if (shadeMode1_.isSelected("none"))
-        headerSource += "ka;\n";
-    else if (shadeMode1_.isSelected("phong-diffuse"))
-        headerSource += "phongShadingD(n, pos, lPos, cPos, kd);\n";
-    else if (shadeMode1_.isSelected("phong-specular"))
-        headerSource += "phongShadingS(n, pos, lPos, cPos, ks);\n";
-    else if (shadeMode1_.isSelected("phong-diffuse-ambient"))
-        headerSource += "phongShadingDA(n, pos, lPos, cPos, kd, ka);\n";
-    else if (shadeMode1_.isSelected("phong-diffuse-specular"))
-        headerSource += "phongShadingDS(n, pos, lPos, cPos, kd, ks);\n";
-    else if (shadeMode1_.isSelected("phong"))
-        headerSource += "phongShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-    else if (shadeMode1_.isSelected("toon"))
-        headerSource += "toonShading(n, pos, lPos, cPos, kd, 3);\n";
-    else if (shadeMode1_.isSelected("cook-torrance"))
-        headerSource += "cookTorranceShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-    else if (shadeMode1_.isSelected("oren-nayar"))
-        headerSource += "orenNayarShading(n, pos, lPos, cPos, ka, kd);\n";
-    else if (shadeMode1_.isSelected("lafortune"))
-        headerSource += "lafortuneShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-    else if (shadeMode1_.isSelected("ward"))
-        headerSource += "wardShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-
-    headerSource += "#define APPLY_SHADING_2(n, pos, lPos, cPos, ka, kd, ks) ";
-    if (shadeMode2_.isSelected("none"))
-        headerSource += "ka;\n";
-    else if (shadeMode2_.isSelected("phong-diffuse"))
-        headerSource += "phongShadingD(n, pos, lPos, cPos, kd);\n";
-    else if (shadeMode2_.isSelected("phong-specular"))
-        headerSource += "phongShadingS(n, pos, lPos, cPos, ks);\n";
-    else if (shadeMode2_.isSelected("phong-diffuse-ambient"))
-        headerSource += "phongShadingDA(n, pos, lPos, cPos, kd, ka);\n";
-    else if (shadeMode2_.isSelected("phong-diffuse-specular"))
-        headerSource += "phongShadingDS(n, pos, lPos, cPos, kd, ks);\n";
-    else if (shadeMode2_.isSelected("phong"))
-        headerSource += "phongShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-    else if (shadeMode2_.isSelected("toon"))
-        headerSource += "toonShading(n, pos, lPos, cPos, kd, 3);\n";
-    else if (shadeMode2_.isSelected("cook-torrance"))
-        headerSource += "cookTorranceShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-    else if (shadeMode2_.isSelected("oren-nayar"))
-        headerSource += "orenNayarShading(n, pos, lPos, cPos, ka, kd);\n";
-    else if (shadeMode2_.isSelected("lafortune"))
-        headerSource += "lafortuneShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-    else if (shadeMode2_.isSelected("ward"))
-        headerSource += "wardShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-
-    headerSource += "#define APPLY_SHADING_3(n, pos, lPos, cPos, ka, kd, ks) ";
-    if (shadeMode3_.isSelected("none"))
-        headerSource += "ka;\n";
-    else if (shadeMode3_.isSelected("phong-diffuse"))
-        headerSource += "phongShadingD(n, pos, lPos, cPos, kd);\n";
-    else if (shadeMode3_.isSelected("phong-specular"))
-        headerSource += "phongShadingS(n, pos, lPos, cPos, ks);\n";
-    else if (shadeMode3_.isSelected("phong-diffuse-ambient"))
-        headerSource += "phongShadingDA(n, pos, lPos, cPos, kd, ka);\n";
-    else if (shadeMode3_.isSelected("phong-diffuse-specular"))
-        headerSource += "phongShadingDS(n, pos, lPos, cPos, kd, ks);\n";
-    else if (shadeMode3_.isSelected("phong"))
-        headerSource += "phongShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-    else if (shadeMode3_.isSelected("toon"))
-        headerSource += "toonShading(n, pos, lPos, cPos, kd, 3);\n";
-    else if (shadeMode3_.isSelected("cook-torrance"))
-        headerSource += "cookTorranceShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-    else if (shadeMode3_.isSelected("oren-nayar"))
-        headerSource += "orenNayarShading(n, pos, lPos, cPos, ka, kd);\n";
-    else if (shadeMode3_.isSelected("lafortune"))
-        headerSource += "lafortuneShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-    else if (shadeMode3_.isSelected("ward"))
-        headerSource += "wardShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-
-    headerSource += "#define APPLY_SHADING_4(n, pos, lPos, cPos, ka, kd, ks) ";
-    if (shadeMode4_.isSelected("none"))
-        headerSource += "ka;\n";
-    else if (shadeMode4_.isSelected("phong-diffuse"))
-        headerSource += "phongShadingD(n, pos, lPos, cPos, kd);\n";
-    else if (shadeMode4_.isSelected("phong-specular"))
-        headerSource += "phongShadingS(n, pos, lPos, cPos, ks);\n";
-    else if (shadeMode4_.isSelected("phong-diffuse-ambient"))
-        headerSource += "phongShadingDA(n, pos, lPos, cPos, kd, ka);\n";
-    else if (shadeMode4_.isSelected("phong-diffuse-specular"))
-        headerSource += "phongShadingDS(n, pos, lPos, cPos, kd, ks);\n";
-    else if (shadeMode4_.isSelected("phong"))
-        headerSource += "phongShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-    else if (shadeMode4_.isSelected("toon"))
-        headerSource += "toonShading(n, pos, lPos, cPos, kd, 3);\n";
-    else if (shadeMode4_.isSelected("cook-torrance"))
-        headerSource += "cookTorranceShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-    else if (shadeMode4_.isSelected("oren-nayar"))
-        headerSource += "orenNayarShading(n, pos, lPos, cPos, ka, kd);\n";
-    else if (shadeMode4_.isSelected("lafortune"))
-        headerSource += "lafortuneShading(n, pos, lPos, cPos, ka, kd, ks);\n";
-    else if (shadeMode4_.isSelected("ward"))
-        headerSource += "wardShading(n, pos, lPos, cPos, ka, kd, ks);\n";
+    headerSource += getShaderDefine(shadeMode1_.get(), "APPLY_SHADING_1");
+    headerSource += getShaderDefine(shadeMode2_.get(), "APPLY_SHADING_2");
+    headerSource += getShaderDefine(shadeMode3_.get(), "APPLY_SHADING_3");
+    headerSource += getShaderDefine(shadeMode4_.get(), "APPLY_SHADING_4");
 
     // DVR opacity correction function adapting the MV compositing to the SVRC compositing,
     // used by the compositing macros below.
@@ -544,8 +473,8 @@ std::string MultiVolumeRaycaster::generateHeader() {
     else if (compositingMode2_.isSelected("fhn"))
         headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
 
-    portGroup_.reattachTargets();
-    headerSource += portGroup_.generateHeader(shaderProp_.getShader());
+    internalPortGroup_.reattachTargets();
+    headerSource += internalPortGroup_.generateHeader(shaderProp_.getShader());
     return headerSource;
 }
 

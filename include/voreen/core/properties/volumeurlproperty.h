@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -71,7 +71,7 @@ public:
     std::string getURL() const;
 
     /**
-     * Assigns the passed volume handle to the property
+     * Assigns the passed volume to the property
      * and updates the source URL accordingly.
      *
      * @param handle the volume to assign
@@ -81,7 +81,7 @@ public:
     void setVolume(VolumeBase* handle, bool owner = false);
 
     /**
-     * Returns the referenced volume handle, may be null.
+     * Returns the referenced volume, may be null.
      */
     VolumeBase* getVolume() const;
 
@@ -91,7 +91,7 @@ public:
      * @see setURL
      *
      * @note The property takes ownership of the loaded
-     *       volume handle and deletes it on its own
+     *       volume and deletes it on its own
      *       destruction or when a new handle is assigned.
      *
      * @throws FileException, bad_alloc if the volume could not be loaded
@@ -119,8 +119,8 @@ private:
     /// Returns the property's progress bar and generates it on first access.
     ProgressBar* getProgressBar();
 
-    VolumeBase* volumeHandle_; ///< the volume handle belonging to the assigned URL
-    bool volumeOwner_;               ///< determines, if the property owns the volumeHandle_
+    VolumeBase* volume_; ///< the volume belonging to the assigned URL
+    bool volumeOwner_;               ///< determines, if the property owns the volume_
 
     ProgressBar* progressBar_;
 

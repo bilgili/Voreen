@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -29,11 +29,11 @@ namespace voreen {
 
 StringStartInterpolationFunction::StringStartInterpolationFunction() {}
 
-std::string StringStartInterpolationFunction::getMode() const {
+std::string StringStartInterpolationFunction::getGuiName() const {
     return "focus on startvalue";
 }
 
-std::string StringStartInterpolationFunction::getIdentifier() const {
+std::string StringStartInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -44,17 +44,17 @@ std::string StringStartInterpolationFunction::interpolate(std::string startvalue
         return endvalue;
 }
 
-InterpolationFunction<std::string>* StringStartInterpolationFunction::clone() const {
+InterpolationFunction<std::string>* StringStartInterpolationFunction::create() const {
     return new StringStartInterpolationFunction();
 }
 
 StringEndInterpolationFunction::StringEndInterpolationFunction() {}
 
-std::string StringEndInterpolationFunction::getMode() const {
+std::string StringEndInterpolationFunction::getGuiName() const {
     return "focus on endvalue";
 }
 
-std::string StringEndInterpolationFunction::getIdentifier() const {
+std::string StringEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -65,17 +65,17 @@ std::string StringEndInterpolationFunction::interpolate(std::string startvalue, 
         return startvalue;
 }
 
-InterpolationFunction<std::string>* StringEndInterpolationFunction::clone() const {
+InterpolationFunction<std::string>* StringEndInterpolationFunction::create() const {
     return new StringEndInterpolationFunction();
 }
 
 StringStartEndInterpolationFunction::StringStartEndInterpolationFunction() {}
 
-std::string StringStartEndInterpolationFunction::getMode() const {
+std::string StringStartEndInterpolationFunction::getGuiName() const {
     return "bisection";
 }
 
-std::string StringStartEndInterpolationFunction::getIdentifier() const {
+std::string StringStartEndInterpolationFunction::getCategory() const {
     return "boolean";
 }
 
@@ -86,7 +86,7 @@ std::string StringStartEndInterpolationFunction::interpolate(std::string startva
         return endvalue;
 }
 
-InterpolationFunction<std::string>* StringStartEndInterpolationFunction::clone() const {
+InterpolationFunction<std::string>* StringStartEndInterpolationFunction::create() const {
     return new StringStartEndInterpolationFunction();
 }
 

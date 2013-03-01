@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,7 +36,7 @@ class VolumeSerializerPopulator;
  * Reader for simple text files (<tt>.mv</tt>) that specify multiple volume files to load, one
  * file per line.
  */
-class MultiVolumeReader : public VolumeReader {
+class VRN_CORE_API MultiVolumeReader : public VolumeReader {
 public:
     MultiVolumeReader(VolumeSerializerPopulator* populator, ProgressBar* progress = 0);
     virtual VolumeReader* create(ProgressBar* progress = 0) const;
@@ -44,7 +44,7 @@ public:
     virtual std::string getClassName() const   { return "MultiVolumeReader"; }
     virtual std::string getFormatDescription() const { return "Voreen multi-volume format"; }
 
-    virtual VolumeCollection* read(const std::string& url)
+    virtual VolumeList* read(const std::string& url)
         throw (tgt::FileException, std::bad_alloc);
 
     virtual VolumeBase* read(const VolumeURL& origin)

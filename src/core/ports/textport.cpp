@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -42,7 +42,7 @@ TextPort::~TextPort() {
 
 std::string TextPort::getContentDescription() const {
     std::stringstream strstr;
-    strstr  << getGuiName() << std::endl 
+    strstr  << getGuiName() << std::endl
             << "Type: " << getClassName() << std::endl
             << "Content: " << getData();
     return strstr.str();
@@ -54,6 +54,12 @@ std::string TextPort::getContentDescriptionHTML() const {
             << "Type: " << getClassName() << "<br>"
             << "Content: " << getData();
     return strstr.str();
+}
+
+void TextPort::forwardData() const{
+    for(std::vector<Port*>::const_iterator it = forwardPorts_.begin(); it != forwardPorts_.end(); ++it){
+        dynamic_cast<TextPort*>(*it)->setData(getData());
+    }
 }
 
 void TextPort::setData(const std::string& data) {

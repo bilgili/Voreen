@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -48,7 +48,7 @@ PlotDataGroupWidget::PlotDataGroupWidget(QWidget* parent, PlotDataGroup* plotDat
 {
     tgtAssert(plotDataGroup, "No PlotDataGroup processor");
     proxyModel_ = new PlotDataExtendedTableModel(NULL, std::vector<std::pair<int,std::string> >(0), this);
-    setWindowTitle(QString::fromStdString(plotDataGroup->getName()));
+    setWindowTitle(QString::fromStdString(plotDataGroup->getGuiName()));
     contextMenuTable_ = new QMenu(this);
     addFunctionMenu_ = new QMenu(tr("Add Function",0),this);
     averageFunctionMenu_ = new QMenu(tr("Average/Mean",0),this);

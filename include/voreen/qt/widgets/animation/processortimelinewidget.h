@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -34,6 +34,7 @@
 #include "voreen/qt/widgets/animation/propertytimelinewidget.h"
 
 class AnimatedProcessor;
+class Animation;
 class QComboBox;
 class QPushButton;
 class QMenu;
@@ -44,7 +45,7 @@ namespace voreen {
 class ProcessorTimelineWidget : public QWidget {
     Q_OBJECT
 public:
-    ProcessorTimelineWidget(std::string, AnimatedProcessor*, int, QWidget* = 0);
+    ProcessorTimelineWidget(std::string name, AnimatedProcessor* animatedProcessor, Animation* animation, int position, QWidget* = 0);
 
     const AnimatedProcessor* getAnimatedProcessor() const;
     int getTimelineCount();
@@ -52,17 +53,21 @@ public:
 public slots:
     /// for setting the fixed width. Sadly there ssems to be no easy way to do the correct resizing within qscrollareas
     void setFixedWidthSlot(int);
+    void removeTimeline(Property* prop);
 
 protected:
+    PropertyTimelineWidget* getPropertyTimelineWidget(PropertyTimeline* ptl);
+
     /// contains all propertytimelines for visiblility switching
     QWidget* timelineWidget_;
     /// contains propertywidgets for visiblility switching
     QWidget* propertyContainer_;
     /// the coresponding animated processor
     AnimatedProcessor* animatedProcessor_;
+    Animation* animation_;
     QVBoxLayout* timelineLayout_;
     /// contains which propertyTimelines are instantiated
-    std::map<PropertyTimeline*, bool> propertyTimelines_;
+    std::map<PropertyTimeline*, PropertyTimelineWidget*> propertyTimelines_;
     QPushButton* hidePropertyTimelines_;
     /// shows all not yet instantiated properties
     QMenu* availablePropertiesMenu_;
@@ -70,19 +75,14 @@ protected:
     bool hiddenTimelines_;
     int currentFrame_;
 
-    /// initializes all PropertyTimelines of the Processor
-    void initPropertyTimelines();
     /// populates the PropertyMenu
     void populatePropertyMenu();
     void createPropertyTimelineWidget(PropertyTimeline* tl);
     QSize sizeHint();
-    int timelineCount_;
 
 protected slots:
     /// hides all timelines of a processor
     void hideTimelines();
-    /// show the propertytimeline corresponding to the given QString
-    void showPropertyTimeline(QString);
     /// shows all Available Properties
     void showAvailableProperties();
     /// show all AnimatedPropertyTimelines
@@ -103,8 +103,10 @@ signals:
     void fpsChanged(int);
     void viewResizeSignal(int);
     void keyframeAdded();
+    void keyframeChanged();
     void barMovement(int);
     void viewFrameChange(int);
+    void removeProcessorTimelineWidget(ProcessorTimelineWidget*);
 };
 
 } // namespace voreen

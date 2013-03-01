@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,13 +26,14 @@
 #include "stagingmodule.h"
 
 #include "processors/alignedsliceproxygeometry.h"
-#include "processors/fhptransformation.h"
+#include "processors/arbitraryvolumeclipping.h"
+#include "processors/samplingpositiontransformation.h"
 #include "processors/multislicerenderer.h"
 #include "processors/multisliceviewer.h"
 #include "processors/tabbedview.h"
 #include "processors/transfuncoverlay.h"
 #include "processors/sliceproxygeometry.h"
-#include "processors/optimizedproxygeometry.h"
+#include "processors/screenspaceambientocclusion.h"
 #include "processors/interactiveregistrationwidget.h"
 #include "processors/registrationinitializer.h"
 
@@ -41,18 +42,20 @@ namespace voreen {
 StagingModule::StagingModule(const std::string& modulePath)
     : VoreenModule(modulePath)
 {
-    setName("Staging");
+    setID("Staging");
+    setGuiName("Staging");
 
-    registerProcessor(new AlignedSliceProxyGeometry());
-    registerProcessor(new FhpTransformation());
-    registerProcessor(new InteractiveRegistrationWidget());
-    registerProcessor(new OptimizedProxyGeometry());
-    registerProcessor(new MultiSliceRenderer());
-    registerProcessor(new MultiSliceViewer());
-    registerProcessor(new SliceProxyGeometry());
-    registerProcessor(new TabbedView());
-    registerProcessor(new TransFuncOverlay());
-    registerProcessor(new RegistrationInitializer());
+    registerSerializableType(new AlignedSliceProxyGeometry());
+    registerSerializableType(new ArbitraryVolumeClipping());
+    registerSerializableType(new SamplingPositionTransformation());
+    registerSerializableType(new InteractiveRegistrationWidget());
+    registerSerializableType(new MultiSliceRenderer());
+    registerSerializableType(new MultiSliceViewer());
+    registerSerializableType(new SliceProxyGeometry());
+    registerSerializableType(new ScreenSpaceAmbientOcclusion());
+    registerSerializableType(new TabbedView());
+    registerSerializableType(new TransFuncOverlay());
+    registerSerializableType(new RegistrationInitializer());
 
     addShaderPath(getModulePath("glsl"));
 }

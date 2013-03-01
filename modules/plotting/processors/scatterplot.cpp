@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -73,6 +73,10 @@ ScatterPlot::ScatterPlot()
     addInteractionHandler(cameraHandler_);
     addInteractionHandler(plotCameraHandler_);
     orthographicCamera_.onChange(CallMemberAction<ScatterPlot>(this, &ScatterPlot::toggleProperties));
+}
+
+Processor* ScatterPlot::create() const {
+    return new ScatterPlot();
 }
 
 void ScatterPlot::render() {
@@ -248,6 +252,7 @@ void ScatterPlot::loadTextures(std::string path) {
 #else
 void ScatterPlot::loadTextures(std::string /*path*/) {
 }
+
 #endif //VRN_MODULE_DEVIL
 
 } // namespace voreen

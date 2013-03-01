@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -108,13 +108,16 @@ public:
     void setDefines(std::string defs);
     std::string getDefines() const;
 
-    cl::Program* getProgram();
+    cl::Program* getProgram() const;
     void rebuild();
 
     void setProgramSource(const std::string& programSource);
     void resetProgramSource();
     void setProgramFilename(const std::string& programFilename);
     void resetProgramFilename();
+
+    /// Deletes the OpenCL program.
+    void clearProgram();
 
 private:
     std::string getProgramAsString(std::string filename);

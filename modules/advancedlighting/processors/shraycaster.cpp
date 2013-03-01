@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -37,11 +37,12 @@ SHRaycaster::SHRaycaster()
     : VolumeRaycaster()
     , shaderProp_("shader.prop", "Shader program", "rc_sh.frag", "passthrough.vert")
     , transferFunc_("transferFunction", "Transfer function")
-    , camera_("camera", "Camera", tgt::Camera(tgt::vec3(0.f, 0.f, 3.5f), tgt::vec3(0.f, 0.f, 0.f), tgt::vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(tgt::vec3(0.f, 0.f, 3.5f), tgt::vec3(0.f, 0.f, 0.f), tgt::vec3(0.f, 1.f, 0.f)), true)
     , volumeInport_(Port::INPORT, "volumehandle.volumehandle", "volumehandle.volumehandle", false, Processor::INVALID_PROGRAM)
-    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
-    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
-    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER)
+    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_RESULT)
+    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_RESULT)
+    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_PROGRAM)
+    , internalRenderPort_(Port::OUTPORT, "internalRenderPort", "Internal Render Port")
 {
 
     addProperty(shaderProp_);
@@ -60,10 +61,12 @@ SHRaycaster::SHRaycaster()
 
     addInteractionHandler(sh_->getLightHandler());
 
-    addPort(&volumeInport_);
-    addPort(&entryPort_);
-    addPort(&exitPort_);
-    addPort(&outport_);
+    addPort(volumeInport_);
+    addPort(entryPort_);
+    addPort(exitPort_);
+    addPort(outport_);
+
+    addPrivateRenderPort(internalRenderPort_);
 }
 
 SHRaycaster::~SHRaycaster() {
@@ -78,19 +81,9 @@ void SHRaycaster::initialize() throw (tgt::Exception) {
 
     if(!shaderProp_.getShader()) {
         LERROR("Failed to load shaders!");
-        initialized_ = false;
+        processorState_ = PROCESSOR_STATE_NOT_INITIALIZED;
         throw VoreenException(getClassName() + ": Failed to load shaders!");
     }
-
-    portGroup_.initialize();
-    portGroup_.addPort(&outport_);
-}
-
-void SHRaycaster::deinitialize() throw (tgt::Exception) {
-    portGroup_.deinitialize();
-    LGL_ERROR;
-
-    VolumeRaycaster::deinitialize();
 }
 
 void SHRaycaster::compile() {
@@ -103,7 +96,7 @@ bool SHRaycaster::isReady() const {
     if(!entryPort_.isReady() || !exitPort_.isReady() || !volumeInport_.isReady())
         return false;
 
-    //check if at least one outport is connected:
+    //check if at outport is connected
     if(!outport_.isReady())
         return false;
 
@@ -130,29 +123,38 @@ void SHRaycaster::beforeProcess() {
     LGL_ERROR;
 
     transferFunc_.setVolumeHandle(volumeInport_.getData());
+
+    if(volumeInport_.hasChanged() && volumeInport_.hasData())
+        camera_.adaptInteractionToScene(volumeInport_.getData()->getBoundingBox().getBoundingBox());
 }
 
 void SHRaycaster::process() {
 
-    // bind transfer function
-    TextureUnit transferUnit;
-    transferUnit.activate();
-    if (transferFunc_.get())
-        transferFunc_.get()->bind();
+    const bool renderCoarse = interactionMode() && interactionCoarseness_.get() > 1;
+    tgt::svec2 renderSize;
+    if (renderCoarse) {
+        renderSize = outport_.getSize() / interactionCoarseness_.get();
+        internalRenderPort_.resize(renderSize);
+    }
+    else {
+        renderSize = outport_.getSize();
+    }
 
-    portGroup_.activateTargets();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    RenderPort& renderDestination = (renderCoarse ? internalRenderPort_ : outport_);
+    renderDestination.activateTarget();
+    renderDestination.clearTarget();
+
     LGL_ERROR;
 
     //transferFunc_.setVolumeHandle(volumeInport_.getData());
 
     TextureUnit entryUnit, entryDepthUnit, exitUnit, exitDepthUnit;
     // bind entry params
-    entryPort_.bindTextures(entryUnit.getEnum(), entryDepthUnit.getEnum());
+    entryPort_.bindTextures(entryUnit.getEnum(), entryDepthUnit.getEnum(), GL_NEAREST);
     LGL_ERROR;
 
     // bind exit params
-    exitPort_.bindTextures(exitUnit.getEnum(), exitDepthUnit.getEnum());
+    exitPort_.bindTextures(exitUnit.getEnum(), exitDepthUnit.getEnum(), GL_NEAREST);
     LGL_ERROR;
 
     // vector containing the volumes to bind; is passed to bindVolumes()
@@ -171,7 +173,7 @@ void SHRaycaster::process() {
     raycastPrg->activate();
 
     // set common uniforms used by all shaders
-    setGlobalShaderParameters(raycastPrg);
+    setGlobalShaderParameters(raycastPrg, 0, renderSize);
 
     // bind the volumes and pass the necessary information to the shader
     tgt::Camera cam = camera_.get();
@@ -188,15 +190,30 @@ void SHRaycaster::process() {
     //raycastPrg->setUniform("exitPointsDepth_", exitDepthUnit.getUnitNumber());
     exitPort_.setTextureParameters(raycastPrg, "exitParameters_");
 
-    if (classificationMode_.get() != "none")
+    TextureUnit transferUnit;
+    if (classificationMode_.get() != "none") {
+        // bind transfer function
+        transferUnit.activate();
+        if (transferFunc_.get())
+            transferFunc_.get()->bind();
+
         transferFunc_.get()->setUniform(raycastPrg, "transferFunc_", "transferFuncTex_", transferUnit.getUnitNumber());
+    }
 
     LGL_ERROR;
 
     renderQuad();
 
     raycastPrg->deactivate();
-    portGroup_.deactivateTargets();
+    renderDestination.deactivateTarget();
+
+    // copy over rendered image from internal port to outport,
+    // thereby rescaling it to outport dimensions
+    if (renderCoarse && outport_.isConnected())
+        rescaleRendering(internalRenderPort_, outport_);
+
+    TextureUnit::setZeroUnit();
+    LGL_ERROR;
 
     TextureUnit::setZeroUnit();
     LGL_ERROR;
@@ -209,9 +226,6 @@ std::string SHRaycaster::generateHeader() {
 
     // line needed for sh
     headerSource += sh_->getShaderDefines();
-
-    portGroup_.reattachTargets();
-    headerSource += portGroup_.generateHeader(shaderProp_.getShader());
     return headerSource;
 }
 

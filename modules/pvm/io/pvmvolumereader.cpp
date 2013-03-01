@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -57,7 +57,7 @@ inline void endian_swap(uint16_t& x) {
 
 } // namespace
 
-VolumeCollection* PVMVolumeReader::read(const std::string &url)
+VolumeList* PVMVolumeReader::read(const std::string &url)
     throw (tgt::FileException, tgt::IOException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -138,15 +138,15 @@ VolumeCollection* PVMVolumeReader::read(const std::string &url)
     // TODO now it is safe to free
     free(tmpData);
 
-    VolumeCollection* volumeCollection = new VolumeCollection();
+    VolumeList* volumeList = new VolumeList();
     if (dataset) {
         Volume* volumeHandle = new Volume(dataset, tgt::vec3(scalex, scaley, scalez), tgt::vec3(0.0f));
         oldVolumePosition(volumeHandle);
         volumeHandle->setOrigin(VolumeURL(fileName));
-        volumeCollection->add(volumeHandle);
+        volumeList->add(volumeHandle);
     }
 
-    return volumeCollection;
+    return volumeList;
 }
 
 VolumeReader* PVMVolumeReader::create(ProgressBar* progress) const {

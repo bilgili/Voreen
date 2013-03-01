@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -33,7 +33,7 @@ namespace tgt {
 using std::min;
 using std::max;
 
-void Bounds::addPoint(const Vector& v) {
+void Bounds::addPoint(const vec3& v) {
     if (points_ < 2) {
         ++points_;
         if (points_ == 1) {
@@ -44,6 +44,10 @@ void Bounds::addPoint(const Vector& v) {
 
     llf_ = min(llf_, v);
     urb_ = max(urb_, v);
+}
+
+void Bounds::addPoint(const vec4& v) {
+    addPoint(v.xyz());
 }
 
 bool Bounds::insideXZ(const Bounds& bounds) const {
@@ -118,6 +122,30 @@ Bounds Bounds::transform(const mat4& m) const {
     b.addPoint(m * vec3(urb_.x, llf_.y, urb_.z));
     b.addPoint(m * vec3(urb_.x, urb_.y, urb_.z));
     return b;
+}
+
+bool Bounds::intersects(const plane& p) const {
+    bool pointsNeg = false;
+    bool pointsPos = false;
+
+    float d = p.distance(vec3(llf_.x, llf_.y, llf_.z));
+    if(d < 0.0f) pointsNeg = true; else if(d > 0.0f) pointsPos = true;
+    d = p.distance(vec3(urb_.x, llf_.y, llf_.z));
+    if(d < 0.0f) pointsNeg = true; else if(d > 0.0f) pointsPos = true;
+    d = p.distance(vec3(llf_.x, urb_.y, llf_.z));
+    if(d < 0.0f) pointsNeg = true; else if(d > 0.0f) pointsPos = true;
+    d = p.distance(vec3(llf_.x, llf_.y, urb_.z));
+    if(d < 0.0f) pointsNeg = true; else if(d > 0.0f) pointsPos = true;
+    d = p.distance(vec3(urb_.x, urb_.y, llf_.z));
+    if(d < 0.0f) pointsNeg = true; else if(d > 0.0f) pointsPos = true;
+    d = p.distance(vec3(llf_.x, urb_.y, urb_.z));
+    if(d < 0.0f) pointsNeg = true; else if(d > 0.0f) pointsPos = true;
+    d = p.distance(vec3(urb_.x, llf_.y, urb_.z));
+    if(d < 0.0f) pointsNeg = true; else if(d > 0.0f) pointsPos = true;
+    d = p.distance(vec3(urb_.x, urb_.y, urb_.z));
+    if(d < 0.0f) pointsNeg = true; else if(d > 0.0f) pointsPos = true;
+
+    return (pointsNeg && pointsPos);
 }
 
 /// ostream-operator

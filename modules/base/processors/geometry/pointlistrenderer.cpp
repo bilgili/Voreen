@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -40,9 +40,6 @@ using tgt::vec4;
 
 const std::string PointListRenderer::loggerCat_("voreen.PointListRenderer");
 
-/*
-    constructor
-*/
 PointListRenderer::PointListRenderer()
     : GeometryRendererBase()
     , displayList_(0)
@@ -126,9 +123,9 @@ void PointListRenderer::render() {
         const PointListGeometry<vec3>* pointList = dynamic_cast<const  PointListGeometry<vec3>* >(geometryInport_.getData());
         const PointSegmentListGeometry<vec3>* segmentList = dynamic_cast<const  PointSegmentListGeometry<vec3>* >(geometryInport_.getData());
         if (pointList)
-            generateDisplayList(pointList->getData());
+            generateDisplayList(pointList->getData(), pointList->getTransformationMatrix());
         else if (segmentList)
-            generateDisplayList(segmentList->getPoints());
+            generateDisplayList(segmentList->getPoints(), segmentList->getTransformationMatrix());
 
         // message on invalid geometry
         if (!pointList && !segmentList) {
@@ -153,7 +150,7 @@ void PointListRenderer::render() {
 
 }
 
-void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList) {
+void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList, const tgt::mat4 m) {
 
     if (glIsList(displayList_))
         glDeleteLists(displayList_, 1);
@@ -199,8 +196,13 @@ void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList) 
         glPopMatrix();
     }
 
+
     // render: point primitives
     if (renderingPrimitiveProp_.get() == "points") {
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        tgt::multMatrix(m);
+
         glColor4fv(color_.get().elem);
         glPointSize(pointSize_.get());
         if (pointSmooth_.get())
@@ -210,10 +212,16 @@ void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList) 
             tgt::vertex(pointList[i]);
         }
         glEnd();
+
+        glPopMatrix();
     }
 
     // render: line strip
     if (renderingPrimitiveProp_.get() == "line-strip") {
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        tgt::multMatrix(m);
+
         glColor4fv(color_.get().elem);
         glLineWidth(pointSize_.get());
         if (pointSmooth_.get())
@@ -223,6 +231,8 @@ void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList) 
             tgt::vertex(pointList[i]);
         }
         glEnd();
+
+        glPopMatrix();
     }
 
     // render: spheres
@@ -231,7 +241,7 @@ void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList) 
         glColor4fv(color_.get().elem);
         for (size_t i=0; i<pointList.size(); ++i) {
             glPushMatrix();
-            tgt::translate(pointList[i]);
+            tgt::translate(m * pointList[i]);
             gluSphere(quadric, sphereDiameter_.get(), sphereSlicesStacks_.get(), sphereSlicesStacks_.get());
             glPopMatrix();
         }

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -209,6 +209,9 @@ RenderTargetViewer::RenderTargetViewer(const QGLWidget* sharedContext)
 
 RenderTargetViewer::~RenderTargetViewer() {
     deinit();
+#ifdef VRN_MODULE_FONTRENDERING
+    delete font_;
+#endif
 }
 
 void RenderTargetViewer::processorsSelected(const QList<Processor*>& processors) {
@@ -249,13 +252,19 @@ void RenderTargetViewer::afterNetworkProcess() {
 
 std::vector<RenderPort*> RenderTargetViewer::collectRenderPorts() {
     std::vector<RenderPort*> collectedRenderPorts = evaluator_->collectRenderPorts();
-    if(selectedProcessors_.empty() || !filterPortyBySelectedProcessorsACT_->isChecked())
+
+    if(collectedRenderPorts.empty() || !filterPortyBySelectedProcessorsACT_->isChecked()) {
+        std::sort(collectedRenderPorts.begin(), collectedRenderPorts.end(), CompProcID());
         return collectedRenderPorts;
+    }
+
     std::vector<RenderPort*> selectedPorts;
     for(unsigned int i=0; i<collectedRenderPorts.size(); i++) {
         if(std::find(selectedProcessors_.begin(), selectedProcessors_.end(), collectedRenderPorts[i]->getProcessor()) != selectedProcessors_.end())
             selectedPorts.push_back(collectedRenderPorts[i]);
     }
+    std::sort(selectedPorts.begin(), selectedPorts.end(), CompProcID());
+
     return selectedPorts;
 }
 
@@ -266,7 +275,7 @@ void RenderTargetViewer::updateSelected() {
     }
     std::vector<RenderPort*> renderPorts = collectRenderPorts();
 
-    size_t index = mouseX_/scaledWidth_ + mouseY_/scaledHeight_ * dimX_;
+    size_t index = mouseX_/scaledWidth_ + (dimY_ - 1 - mouseY_/scaledHeight_) * dimX_;
     if (index >= renderPorts.size())
         selected_ = -1;
     else
@@ -683,7 +692,7 @@ void RenderTargetViewer::paintGL() {
                     break;
 
                 glPushMatrix();
-                glTranslatef(scaledWidth_ * x, scaledHeight_ * y, 0.0);
+                glTranslatef(scaledWidth_ * x, scaledHeight_ * (dimY_ - 1 - y), 0.0);
                 paintPort(renderPorts[index], static_cast<int>(index));
                 glPopMatrix();
             }

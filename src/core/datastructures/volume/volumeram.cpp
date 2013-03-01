@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -25,6 +25,7 @@
 
 #include "voreen/core/datastructures/volume/volumeram.h"
 
+#include "voreen/core/datastructures/volume/volumefactory.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "voreen/core/utils/hashing.h"
 
@@ -46,6 +47,16 @@ VolumeRAM::VolumeRAM(const svec3& dimensions)
 VolumeRAM::VolumeRAM(const VolumeRAM* vol)
     : VolumeRepresentation(vol->getDimensions())
 {}
+
+std::string VolumeRAM::getFormat() const {
+    VolumeFactory vf;
+    return vf.getFormat(this);
+}
+
+std::string VolumeRAM::getBaseType() const {
+    VolumeFactory vf;
+    return vf.getBaseType(getFormat());
+}
 
 /*
  * getters and setters

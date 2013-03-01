@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -23,8 +23,8 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#ifndef DICOMDICT_H
-#define DICOMDICT_H
+#ifndef VRN_DICOMDICT_H
+#define VRN_DICOMDICT_H
 
 #include "voreen/core/io/serialization/serializable.h"
 #include "voreen/core/io/serialization/xmlserializer.h"
@@ -40,7 +40,7 @@ namespace voreen {
 /**
  * Class to represent a Dicom Dictionary, containing DicomDictEntry-Objects
  */
-class DicomDict : public Serializable
+class VRN_CORE_API DicomDict : public Serializable
 {
 public:
     DicomDict();

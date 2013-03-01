@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -110,6 +110,7 @@ public slots:
     void renderPreviews();
     void setStandardRenderport();
     void autoPreview(bool);
+    void updatePreviews();
 
 protected:
     QGraphicsScene* overviewScene_;
@@ -134,7 +135,6 @@ protected:
 
 protected slots:
     void selectCanvasRenderer();
-
 
 signals:
     /// signals a change of the current frame

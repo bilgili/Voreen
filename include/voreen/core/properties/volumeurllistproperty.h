@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -34,7 +34,7 @@
 
 namespace voreen {
 
-class VolumeCollection;
+class VolumeList;
 class VolumeBase;
 class ProgressBar;
 
@@ -94,7 +94,7 @@ public:
     void addURL(const std::string& url, bool selected = false);
 
     /**
-     * Removes the passed URL and deletes the corresponding volume handle,
+     * Removes the passed URL and deletes the corresponding volume,
      * if the handle is owned by the property.
      */
     void removeURL(const std::string& url);
@@ -111,17 +111,17 @@ public:
 
     /**
      * Adds the passed handle's URL to the property and stores the handle.
-     * If the handle's URL is already registered and has a volume handle assigned,
-     * the volume handle is replaced by the passed one.
+     * If the handle's URL is already registered and has a volume assigned,
+     * the volume is replaced by the passed one.
      *
-     * @param handle the volume handle to add to the property
-     * @param owner if true, the property takes ownership of the volume handle
+     * @param handle the volume to add to the property
+     * @param owner if true, the property takes ownership of the volume
      * @param selected if true, the handle's URL is marked as selected
      */
     void addVolume(VolumeBase* handle, bool owner = false, bool selected = false);
 
     /**
-     * Removes the passed volume handle and deletes it, if it is owned by the property.
+     * Removes the passed volume and deletes it, if it is owned by the property.
      * The volume's URL is not removed from the property.
      *
      * @see removeURL
@@ -133,9 +133,9 @@ public:
      * been loaded from the assigned source URLs.
      *
      * @param selectedOnly if true, only the selected volumes are returned
-     * @return a new VolumeCollection, deleting it is up to the caller
+     * @return a new VolumeList, deleting it is up to the caller
      */
-    VolumeCollection* getVolumes(bool selectedOnly = false) const;
+    VolumeList* getVolumes(bool selectedOnly = false) const;
 
     /**
      * Returns the volume corresponding to the passed URL,
@@ -158,7 +158,7 @@ public:
      *
      * @note The passed URL must be contained by the property.
      *
-     * @note The property takes ownership of the loaded volume handle
+     * @note The property takes ownership of the loaded volume
      *       and deletes it when the URL is removed from the property
      *       or the property is destructed.
      *
@@ -175,7 +175,7 @@ public:
      * @param removeOnFailure if true, URLs of volumes that could not be loaded are removed
      *
      * @note The property takes ownership of the loaded
-     *       volume handles and deletes them on its own
+     *       volumes and deletes them on its own
      *       destruction or when the corresponding URL is removed.
      */
     void loadVolumes(bool selectedOnly = false, bool removeOnFailure = false);
@@ -192,6 +192,9 @@ public:
     /// @see Property::deserialize
     virtual void deserialize(XmlDeserializer& s);
 
+    bool getPreviewsVisible();
+    void setPreviewsVisible(bool previewsVisible);
+
 protected:
     /// Clears the property, thereby deleting all volume that are owned by it.
     virtual void deinitialize() throw (tgt::Exception);
@@ -203,9 +206,11 @@ private:
     /// Returns the property's progress bar and generates it on first access.
     ProgressBar* getProgressBar();
 
-    std::map<std::string, VolumeBase*> handleMap_; ///< maps from URL to volume handle (transient)
+    std::map<std::string, VolumeBase*> handleMap_; ///< maps from URL to volume (transient)
     std::map<std::string, bool> selectionMap_; ///< maps from URL to selection state (persisted)
     std::map<std::string, bool> ownerMap_;     ///< maps from URL to owner state
+
+    bool previewsVisible_;
 
     ProgressBar* progressBar_;
 

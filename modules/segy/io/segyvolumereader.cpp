@@ -52,7 +52,7 @@ namespace voreen {
      * ::::::: Overriding Functions from VolumeReader ::::::: *
      **********************************************************/
 
-    VolumeCollection* SEGYVolumeReader::read(const std::string& fileName)
+    VolumeList* SEGYVolumeReader::read(const std::string& fileName)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
     {
         return readSlices(fileName, 0, 0);
@@ -65,7 +65,7 @@ namespace voreen {
     // >>>>>>> TO DO: check if slice order need change >>>>>>>>>>>>>>>>
     // >>>>>>> assumming identity matrix for transformation >>>>>>>>>>>
     // --------------------------------------------------------------
-    VolumeCollection* SEGYVolumeReader::readSlices(const std::string& fileName, size_t firstSlice, size_t lastSlice)
+    VolumeList* SEGYVolumeReader::readSlices(const std::string& fileName, size_t firstSlice, size_t lastSlice)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
     {
         // retrieve header info:
@@ -218,7 +218,7 @@ namespace voreen {
 
         // --------------------------------------------------------------------
 
-        VolumeCollection* volumeCollection = new VolumeCollection();
+        VolumeList* volumeList = new VolumeList();
         Volume* volumeHandle = new Volume(volume, spacing_, vec3(0.0f));
 
         // encode raw parameters into search string
@@ -235,14 +235,14 @@ namespace voreen {
         volumeHandle->setOrigin(VolumeURL("segy", fileName, searchStream.str()));
         oldVolumePosition(volumeHandle);
 
-        volumeCollection->add(volumeHandle);
+        volumeList->add(volumeHandle);
 
-        return volumeCollection;
+        return volumeList;
 
 
     } // readSlices
 
-    VolumeCollection* SEGYVolumeReader::readBrick(const std::string& /*fileName*/, tgt::ivec3 /*brickStartPos*/, int /*brickSize*/)
+    VolumeList* SEGYVolumeReader::readBrick(const std::string& /*fileName*/, tgt::ivec3 /*brickStartPos*/, int /*brickSize*/)
         throw(tgt::FileException, std::bad_alloc)
     {
         std::cout << ">>>>>>>>>>>>> ops! requested readBrick()!!! Not ready yet. \n"; // >>>>>>>>>>>>> TESTING >>>>>>>>>>>

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -39,7 +39,7 @@ public:
 
     virtual MetaDataBase* clone() const      { return new FileListMetaData(getValue()); }
     virtual std::string getClassName() const { return "FileListMetaData"; }
-    virtual Serializable* create() const { return new FileListMetaData(); }
+    virtual MetaDataBase* create() const { return new FileListMetaData(); }
 
     virtual std::string toString() const {
         std::vector<std::string>::const_iterator i;

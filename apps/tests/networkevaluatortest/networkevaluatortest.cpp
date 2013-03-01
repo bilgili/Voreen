@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -61,11 +61,24 @@ bool beforeInVector(const vector<Processor*>& vec, const Processor* first, const
     return (secondPos < vec.end()) && (firstPos < secondPos);
 }
 
+class BasicPort : public Port {
+public:
+    BasicPort(PortDirection direction, const std::string& id, const std::string& guiName = "", bool allowMultipleConnections = false,
+                Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT)
+        : Port(direction, id, guiName, allowMultipleConnections, invalidationLevel)
+    {}
+
+
+    Port* create(PortDirection direction, const std::string& id, const std::string& guiName = "") const{return new BasicPort(direction,id,guiName);}
+    std::string getClassName() const { return "BasicPort";}
+    void forwardData() const {};
+};
+
 //
 // Processor Mocks
 //
 
-/** 
+/**
  * Default behaviour of MockProcessor:
  * - is invalid
  * - is ready
@@ -73,7 +86,7 @@ bool beforeInVector(const vector<Processor*>& vec, const Processor* first, const
  */
 class MockProcessor : public Processor {
 public:
-    MockProcessor() 
+    MockProcessor()
         : Processor()
     {
         invalidate();
@@ -98,7 +111,7 @@ public:
 
 /// Processor with two outports
 class StartProcessor : public MockProcessor {
-public: 
+public:
     StartProcessor() :
         MockProcessor(),
         outport_(Port::OUTPORT, "outport"),
@@ -110,13 +123,13 @@ public:
     Processor* create() const        { return new StartProcessor(); }
     std::string getClassName() const { return "StartProcessor";     }
 
-    Port outport_;
-    Port outport2_;
+    BasicPort outport_;
+    BasicPort outport2_;
 };
 
 /// Processor with two inports and two outports
 class MiddleProcessor : public MockProcessor {
-public: 
+public:
     MiddleProcessor() :
         MockProcessor(),
         inport_(Port::INPORT, "inport"),
@@ -132,16 +145,16 @@ public:
     Processor* create() const        { return new MiddleProcessor(); }
     std::string getClassName() const { return "MiddleProcessor";     }
 
-    Port inport_;
-    Port inport2_;
+    BasicPort inport_;
+    BasicPort inport2_;
 
-    Port outport_;
-    Port outport2_;
+    BasicPort outport_;
+    BasicPort outport2_;
 };
 
 /// Processor with two inports, marked as end processor
 class EndProcessor : public MockProcessor {
-public: 
+public:
     EndProcessor() :
         MockProcessor(),
         inport_(Port::INPORT, "inport"),
@@ -153,13 +166,13 @@ public:
     Processor* create() const        { return new EndProcessor(); }
     std::string getClassName() const { return "EndProcessor";     }
 
-    Port inport_;
-    Port inport2_;
+    BasicPort inport_;
+    BasicPort inport2_;
 };
 
 /// Processor with one normal inport, one loop inport, and one outport
 class LoopInitiator : public MockProcessor {
-public: 
+public:
     LoopInitiator() :
         MockProcessor(),
         inport_(Port::INPORT, "inport"),
@@ -174,14 +187,14 @@ public:
     Processor* create() const        { return new LoopInitiator(); }
     std::string getClassName() const { return "LoopInitiator";     }
 
-    Port inport_;
-    Port loopInport_;
-    Port outport_;
+    BasicPort inport_;
+    BasicPort loopInport_;
+    BasicPort outport_;
 };
 
 /// Processor with one normal inport, one normal outport, and one loop outport
 class LoopFinalizer : public MockProcessor {
-public: 
+public:
     LoopFinalizer() :
         MockProcessor(),
         inport_(Port::INPORT, "inport"),
@@ -196,9 +209,9 @@ public:
     Processor* create() const        { return new LoopFinalizer(); }
     std::string getClassName() const { return "LoopFinalizer";     }
 
-    Port inport_;
-    Port outport_;
-    Port loopOutport_;
+    BasicPort inport_;
+    BasicPort outport_;
+    BasicPort loopOutport_;
 };
 
 
@@ -228,7 +241,7 @@ public:
 struct GlobalFixture {
     GlobalFixture() {
         tgt::Singleton<tgt::LogManager>::init();
-        new VoreenApplication("networkevaluatortest", "networkevaluatortest", "NetworkEvaluatorTest", 
+        new VoreenApplication("networkevaluatortest", "networkevaluatortest", "NetworkEvaluatorTest",
             0, 0, VoreenApplication::APP_NONE);
         //VoreenApplication::app()->initialize();
     }
@@ -302,7 +315,7 @@ BOOST_GLOBAL_FIXTURE(GlobalFixture);
 //
 BOOST_FIXTURE_TEST_SUITE(NetworkGraphTests, TestFixture)
 
-BOOST_AUTO_TEST_CASE(emptyGraph) 
+BOOST_AUTO_TEST_CASE(emptyGraph)
 {
     vector<Processor*> processors;
     NetworkGraph graph(processors);
@@ -324,7 +337,7 @@ BOOST_AUTO_TEST_CASE(emptyGraph)
 }
 
 // Network = (StartProcessor)
-BOOST_AUTO_TEST_CASE(singleProcessor) 
+BOOST_AUTO_TEST_CASE(singleProcessor)
 {
     vector<Processor*> processors;
     processors.push_back(startProcessor);
@@ -352,7 +365,7 @@ BOOST_AUTO_TEST_CASE(singleProcessor)
 }
 
 // Network = (StartProcessor,MiddleProcessor,EndProcessor)
-BOOST_AUTO_TEST_CASE(unconnectedGraph) 
+BOOST_AUTO_TEST_CASE(unconnectedGraph)
 {
     vector<Processor*> processors;
     processors.push_back(startProcessor);
@@ -362,7 +375,7 @@ BOOST_AUTO_TEST_CASE(unconnectedGraph)
 
     BOOST_CHECK(graph.getProcessors().size() == 3);
     BOOST_CHECK(graph.containsProcessor(startProcessor));
-    BOOST_CHECK(graph.containsProcessor(middleProcessor));    
+    BOOST_CHECK(graph.containsProcessor(middleProcessor));
     BOOST_CHECK(graph.containsProcessor(endProcessor));
 
     // unconnected graph => processors have no predecessors/successors
@@ -396,7 +409,7 @@ BOOST_AUTO_TEST_CASE(unconnectedGraph)
 }
 
 // Network = (StartProcessor->MiddleProcessor->MiddleProcessor2->EndProcessor)
-BOOST_AUTO_TEST_CASE(linearPipeline) 
+BOOST_AUTO_TEST_CASE(linearPipeline)
 {
     vector<Processor*> processors;
     processors.push_back(endProcessor);
@@ -417,12 +430,12 @@ BOOST_AUTO_TEST_CASE(linearPipeline)
     BOOST_CHECK(graph.containsProcessor(endProcessor));
 
     // processors are connected => processors are predecessors/successors of each other
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   &&
                 graph.getPredecessors(endProcessor).count(middleProcessor)  &&
                 graph.getPredecessors(endProcessor).count(middleProcessor2) &&
                 graph.getPredecessors(endProcessor).count(endProcessor)
         );
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)  &&
                 graph.getSuccessors(startProcessor).count(middleProcessor2) &&
                 graph.getSuccessors(startProcessor).count(endProcessor)
@@ -431,20 +444,20 @@ BOOST_AUTO_TEST_CASE(linearPipeline)
     BOOST_CHECK(graph.isPathElement(middleProcessor, startProcessor, endProcessor));
 
     // port predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(&endProcessor->inport_).count(startProcessor)     && 
+    BOOST_CHECK(graph.getPredecessors(&endProcessor->inport_).count(startProcessor)     &&
                 graph.getPredecessors(&endProcessor->inport_).count(middleProcessor)    &&
                 graph.getPredecessors(&endProcessor->inport_).count(middleProcessor2)   &&
                 !graph.getPredecessors(&endProcessor->inport_).count(endProcessor)
         );
     BOOST_CHECK(graph.getPredecessors(&endProcessor->inport2_).empty());
 
-    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport_).count(startProcessor)   && 
+    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport_).count(startProcessor)   &&
                 graph.getSuccessors(&startProcessor->outport_).count(middleProcessor)   &&
                 graph.getSuccessors(&startProcessor->outport_).count(middleProcessor2)  &&
                 graph.getSuccessors(&startProcessor->outport_).count(endProcessor)
         );
     BOOST_CHECK(graph.getSuccessors(&startProcessor->outport2_).empty());
-    
+
     BOOST_CHECK(graph.isSuccessor(&startProcessor->outport_, endProcessor));
     BOOST_CHECK(!graph.isSuccessor(&startProcessor->outport2_, endProcessor));
 
@@ -489,7 +502,7 @@ BOOST_AUTO_TEST_CASE(linearPipeline)
 }
 
 // Network = (StartProcessor->EndProcessor,MiddleProcessor)
-BOOST_AUTO_TEST_CASE(skip) 
+BOOST_AUTO_TEST_CASE(skip)
 {
     vector<Processor*> processors;
     processors.push_back(endProcessor);
@@ -506,28 +519,28 @@ BOOST_AUTO_TEST_CASE(skip)
     BOOST_CHECK(graph.containsProcessor(endProcessor));
 
     // start/end processor are predecessors/successors or each other, but middleProcessor is unconnected
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   &&
                 graph.getPredecessors(endProcessor).count(endProcessor)     &&
-                !graph.getPredecessors(endProcessor).count(middleProcessor) 
+                !graph.getPredecessors(endProcessor).count(middleProcessor)
         );
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   &&
                 graph.getSuccessors(startProcessor).count(endProcessor)     &&
-                !graph.getSuccessors(startProcessor).count(middleProcessor) 
+                !graph.getSuccessors(startProcessor).count(middleProcessor)
         );
     BOOST_CHECK(graph.isSuccessor(startProcessor, endProcessor));
     BOOST_CHECK(!graph.isPathElement(middleProcessor, startProcessor, endProcessor));
 
     // port predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(&endProcessor->inport_).count(startProcessor)     && 
+    BOOST_CHECK(graph.getPredecessors(&endProcessor->inport_).count(startProcessor)     &&
                 !graph.getPredecessors(&endProcessor->inport_).count(endProcessor)      &&
-                !graph.getPredecessors(&endProcessor->inport_).count(middleProcessor) 
+                !graph.getPredecessors(&endProcessor->inport_).count(middleProcessor)
     );
     BOOST_CHECK(graph.getPredecessors(&endProcessor->inport2_).empty());
     BOOST_CHECK(graph.getPredecessors(&middleProcessor->inport_).empty());
 
-    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport_).count(startProcessor)   && 
+    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport_).count(startProcessor)   &&
                 graph.getSuccessors(&startProcessor->outport_).count(endProcessor)      &&
-                !graph.getSuccessors(&startProcessor->outport_).count(middleProcessor) 
+                !graph.getSuccessors(&startProcessor->outport_).count(middleProcessor)
         );
     BOOST_CHECK(graph.getSuccessors(&startProcessor->outport2_).empty());
     BOOST_CHECK(graph.getSuccessors(&middleProcessor->outport_).empty());
@@ -564,19 +577,19 @@ BOOST_AUTO_TEST_CASE(halfSkip)
     BOOST_CHECK(graph.containsProcessor(endProcessor2));
 
     // check predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)    && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)    &&
                 graph.getPredecessors(endProcessor).count(middleProcessor)   &&
                 graph.getPredecessors(endProcessor).count(endProcessor)      &&
                 !graph.getPredecessors(endProcessor).count(endProcessor2)
         );
 
-    BOOST_CHECK(graph.getPredecessors(endProcessor2).count(startProcessor)   && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor2).count(startProcessor)   &&
                 !graph.getPredecessors(endProcessor2).count(middleProcessor) &&
                 graph.getPredecessors(endProcessor2).count(endProcessor2)    &&
                 !graph.getPredecessors(endProcessor2).count(endProcessor)
         );
 
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)    && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)    &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)   &&
                 graph.getSuccessors(startProcessor).count(endProcessor)      &&
                 graph.getSuccessors(startProcessor).count(endProcessor2)
@@ -587,26 +600,26 @@ BOOST_AUTO_TEST_CASE(halfSkip)
     BOOST_CHECK(!graph.isPathElement(middleProcessor, startProcessor, endProcessor2));
 
     // port predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(&endProcessor->inport_).count(startProcessor)    && 
+    BOOST_CHECK(graph.getPredecessors(&endProcessor->inport_).count(startProcessor)    &&
                 graph.getPredecessors(&endProcessor->inport_).count(middleProcessor)   &&
                 !graph.getPredecessors(&endProcessor->inport_).count(endProcessor)     &&
                 !graph.getPredecessors(&endProcessor->inport_).count(endProcessor2)
         );
     BOOST_CHECK(graph.getPredecessors(&endProcessor->inport2_).empty());
 
-    BOOST_CHECK(graph.getPredecessors(&endProcessor2->inport_).count(startProcessor)   && 
+    BOOST_CHECK(graph.getPredecessors(&endProcessor2->inport_).count(startProcessor)   &&
                 !graph.getPredecessors(&endProcessor2->inport_).count(middleProcessor) &&
                 !graph.getPredecessors(&endProcessor2->inport_).count(endProcessor2)   &&
                 !graph.getPredecessors(&endProcessor2->inport_).count(endProcessor)
         );
     BOOST_CHECK(graph.getPredecessors(&endProcessor2->inport2_).empty());
 
-    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport_).count(startProcessor)  && 
+    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport_).count(startProcessor)  &&
                 graph.getSuccessors(&startProcessor->outport_).count(middleProcessor)  &&
                 graph.getSuccessors(&startProcessor->outport_).count(endProcessor)     &&
                 !graph.getSuccessors(&startProcessor->outport_).count(endProcessor2)
         );
-    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport2_).count(startProcessor)  && 
+    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport2_).count(startProcessor)  &&
                 !graph.getSuccessors(&startProcessor->outport2_).count(middleProcessor) &&
                 !graph.getSuccessors(&startProcessor->outport2_).count(endProcessor)    &&
                 graph.getSuccessors(&startProcessor->outport2_).count(endProcessor2)
@@ -624,8 +637,8 @@ BOOST_AUTO_TEST_CASE(halfSkip)
     BOOST_CHECK(!graph.isSuccessor(&startProcessor->outport2_, &endProcessor->inport_));
 
     BOOST_CHECK(graph.isPathElement(middleProcessor, &startProcessor->outport_, &endProcessor->inport_));
-    BOOST_CHECK(!graph.isPathElement(middleProcessor, &startProcessor->outport2_, &endProcessor->inport_));    
-    BOOST_CHECK(!graph.isPathElement(middleProcessor, &startProcessor->outport2_, &endProcessor2->inport_));    
+    BOOST_CHECK(!graph.isPathElement(middleProcessor, &startProcessor->outport2_, &endProcessor->inport_));
+    BOOST_CHECK(!graph.isPathElement(middleProcessor, &startProcessor->outport2_, &endProcessor2->inport_));
 
     // check topological sorting
     std::vector<Processor*> sorted = graph.sortTopologically();
@@ -658,18 +671,18 @@ BOOST_AUTO_TEST_CASE(merge)
     BOOST_CHECK(graph.containsProcessor(endProcessor));
 
     // check predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)    && 
-                graph.getPredecessors(endProcessor).count(startProcessor2)   && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)    &&
+                graph.getPredecessors(endProcessor).count(startProcessor2)   &&
                 graph.getPredecessors(endProcessor).count(middleProcessor)   &&
                 graph.getPredecessors(endProcessor).count(endProcessor)
         );
 
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)    && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)    &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)   &&
                 graph.getSuccessors(startProcessor).count(endProcessor)      &&
                 !graph.getSuccessors(startProcessor).count(startProcessor2)
         );
-    BOOST_CHECK(graph.getSuccessors(startProcessor2).count(startProcessor2)  && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor2).count(startProcessor2)  &&
                 graph.getSuccessors(startProcessor2).count(middleProcessor)  &&
                 graph.getSuccessors(startProcessor2).count(endProcessor)     &&
                 !graph.getSuccessors(startProcessor2).count(startProcessor)
@@ -677,7 +690,7 @@ BOOST_AUTO_TEST_CASE(merge)
     std::set<Processor*> startProcessors;
     startProcessors.insert(startProcessor);
     startProcessors.insert(startProcessor2);
-    BOOST_CHECK(graph.getSuccessors(startProcessors).count(startProcessor2)  && 
+    BOOST_CHECK(graph.getSuccessors(startProcessors).count(startProcessor2)  &&
                 graph.getSuccessors(startProcessors).count(middleProcessor)  &&
                 graph.getSuccessors(startProcessors).count(endProcessor)     &&
                 graph.getSuccessors(startProcessors).count(startProcessor)
@@ -689,31 +702,31 @@ BOOST_AUTO_TEST_CASE(merge)
     BOOST_CHECK(graph.isPathElement(middleProcessor, startProcessor2, endProcessor));
 
     // port predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(&endProcessor->inport_).count(startProcessor)   && 
-                graph.getPredecessors(&endProcessor->inport_).count(startProcessor2)  && 
+    BOOST_CHECK(graph.getPredecessors(&endProcessor->inport_).count(startProcessor)   &&
+                graph.getPredecessors(&endProcessor->inport_).count(startProcessor2)  &&
                 graph.getPredecessors(&endProcessor->inport_).count(middleProcessor)  &&
                 !graph.getPredecessors(&endProcessor->inport_).count(endProcessor)
         );
     BOOST_CHECK(graph.getPredecessors(&endProcessor->inport2_).empty());
-    BOOST_CHECK(graph.getPredecessors(&middleProcessor->inport_).count(startProcessor)    && 
-                !graph.getPredecessors(&middleProcessor->inport_).count(startProcessor2)  && 
+    BOOST_CHECK(graph.getPredecessors(&middleProcessor->inport_).count(startProcessor)    &&
+                !graph.getPredecessors(&middleProcessor->inport_).count(startProcessor2)  &&
                 !graph.getPredecessors(&middleProcessor->inport_).count(middleProcessor)  &&
                 !graph.getPredecessors(&middleProcessor->inport_).count(endProcessor)
         );
-    BOOST_CHECK(!graph.getPredecessors(&middleProcessor->inport2_).count(startProcessor)  && 
-                graph.getPredecessors(&middleProcessor->inport2_).count(startProcessor2)  && 
+    BOOST_CHECK(!graph.getPredecessors(&middleProcessor->inport2_).count(startProcessor)  &&
+                graph.getPredecessors(&middleProcessor->inport2_).count(startProcessor2)  &&
                 !graph.getPredecessors(&middleProcessor->inport2_).count(middleProcessor) &&
                 !graph.getPredecessors(&middleProcessor->inport2_).count(endProcessor)
         );
 
 
-    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport_).count(startProcessor)   && 
+    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport_).count(startProcessor)   &&
                 graph.getSuccessors(&startProcessor->outport_).count(middleProcessor)   &&
                 graph.getSuccessors(&startProcessor->outport_).count(endProcessor)      &&
                 !graph.getSuccessors(&startProcessor->outport_).count(startProcessor2)
         );
     BOOST_CHECK(graph.getSuccessors(&startProcessor->outport2_).empty());
-    BOOST_CHECK(!graph.getSuccessors(&startProcessor2->outport_).count(startProcessor2) && 
+    BOOST_CHECK(!graph.getSuccessors(&startProcessor2->outport_).count(startProcessor2) &&
                 graph.getSuccessors(&startProcessor2->outport_).count(middleProcessor)  &&
                 graph.getSuccessors(&startProcessor2->outport_).count(endProcessor)     &&
                 !graph.getSuccessors(&startProcessor2->outport_).count(startProcessor)
@@ -730,7 +743,7 @@ BOOST_AUTO_TEST_CASE(merge)
 
     BOOST_CHECK(graph.isSuccessor(&startProcessor2->outport_, endProcessor));
     BOOST_CHECK(!graph.isSuccessor(&startProcessor2->outport2_, endProcessor));
-    
+
     BOOST_CHECK(graph.isPathElement(middleProcessor, &startProcessor->outport_, &endProcessor->inport_));
     BOOST_CHECK(!graph.isPathElement(middleProcessor, &startProcessor->outport2_, &endProcessor->inport_));
     BOOST_CHECK(!graph.isPathElement(middleProcessor, &startProcessor->outport_, &endProcessor->inport2_));
@@ -769,12 +782,12 @@ BOOST_AUTO_TEST_CASE(split)
     BOOST_CHECK(graph.containsProcessor(endProcessor2));
 
     // check predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   &&
                 graph.getPredecessors(endProcessor).count(middleProcessor)  &&
                 graph.getPredecessors(endProcessor).count(endProcessor)     &&
                 !graph.getPredecessors(endProcessor).count(endProcessor2)
         );
-    BOOST_CHECK(graph.getPredecessors(endProcessor2).count(startProcessor)  && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor2).count(startProcessor)  &&
                 graph.getPredecessors(endProcessor2).count(middleProcessor) &&
                 graph.getPredecessors(endProcessor2).count(endProcessor2)   &&
                 !graph.getPredecessors(endProcessor2).count(endProcessor)
@@ -782,13 +795,13 @@ BOOST_AUTO_TEST_CASE(split)
     std::set<Processor*> endProcessors;
     endProcessors.insert(endProcessor);
     endProcessors.insert(endProcessor2);
-    BOOST_CHECK(graph.getPredecessors(endProcessors).count(startProcessor)  && 
+    BOOST_CHECK(graph.getPredecessors(endProcessors).count(startProcessor)  &&
                 graph.getPredecessors(endProcessors).count(middleProcessor) &&
                 graph.getPredecessors(endProcessors).count(endProcessor)    &&
                 graph.getPredecessors(endProcessors).count(endProcessor2)
         );
 
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)  &&
                 graph.getSuccessors(startProcessor).count(endProcessor)     &&
                 graph.getSuccessors(startProcessor).count(endProcessor2)
@@ -800,31 +813,31 @@ BOOST_AUTO_TEST_CASE(split)
     BOOST_CHECK(graph.isPathElement(middleProcessor, startProcessor, endProcessor2));
 
     // port predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(&endProcessor->inport_).count(startProcessor)   && 
+    BOOST_CHECK(graph.getPredecessors(&endProcessor->inport_).count(startProcessor)   &&
                 graph.getPredecessors(&endProcessor->inport_).count(middleProcessor)  &&
                 !graph.getPredecessors(&endProcessor->inport_).count(endProcessor)    &&
                 !graph.getPredecessors(&endProcessor->inport_).count(endProcessor2)
         );
     BOOST_CHECK(graph.getPredecessors(&endProcessor->inport2_).empty());
-    BOOST_CHECK(graph.getPredecessors(&endProcessor2->inport_).count(startProcessor)  && 
+    BOOST_CHECK(graph.getPredecessors(&endProcessor2->inport_).count(startProcessor)  &&
                 graph.getPredecessors(&endProcessor2->inport_).count(middleProcessor) &&
                 !graph.getPredecessors(&endProcessor2->inport_).count(endProcessor2)  &&
                 !graph.getPredecessors(&endProcessor2->inport_).count(endProcessor)
         );
     BOOST_CHECK(graph.getPredecessors(&endProcessor2->inport2_).empty());
 
-    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport_).count(startProcessor) && 
+    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport_).count(startProcessor) &&
                 graph.getSuccessors(&startProcessor->outport_).count(middleProcessor) &&
                 graph.getSuccessors(&startProcessor->outport_).count(endProcessor)    &&
                 graph.getSuccessors(&startProcessor->outport_).count(endProcessor2)
         );
     BOOST_CHECK(graph.getSuccessors(&startProcessor->outport2_).empty());
-    BOOST_CHECK(!graph.getSuccessors(&middleProcessor->outport_).count(startProcessor)  && 
+    BOOST_CHECK(!graph.getSuccessors(&middleProcessor->outport_).count(startProcessor)  &&
                 !graph.getSuccessors(&middleProcessor->outport_).count(middleProcessor) &&
                 graph.getSuccessors(&middleProcessor->outport_).count(endProcessor)     &&
                 !graph.getSuccessors(&middleProcessor->outport_).count(endProcessor2)
         );
-    BOOST_CHECK(!graph.getSuccessors(&middleProcessor->outport2_).count(startProcessor)  && 
+    BOOST_CHECK(!graph.getSuccessors(&middleProcessor->outport2_).count(startProcessor)  &&
                 !graph.getSuccessors(&middleProcessor->outport2_).count(middleProcessor) &&
                 !graph.getSuccessors(&middleProcessor->outport2_).count(endProcessor)    &&
                 graph.getSuccessors(&middleProcessor->outport2_).count(endProcessor2)
@@ -880,16 +893,16 @@ BOOST_AUTO_TEST_CASE(splitMerge)
     BOOST_CHECK(graph.containsProcessor(endProcessor));
 
     // check predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   &&
                 graph.getPredecessors(endProcessor).count(middleProcessor)  &&
                 graph.getPredecessors(endProcessor).count(middleProcessor2) &&
                 graph.getPredecessors(endProcessor).count(endProcessor)
         );
 
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)  &&
                 graph.getSuccessors(startProcessor).count(middleProcessor2) &&
-                graph.getSuccessors(startProcessor).count(endProcessor)    
+                graph.getSuccessors(startProcessor).count(endProcessor)
         );
 
     BOOST_CHECK(graph.isSuccessor(startProcessor, endProcessor));
@@ -897,26 +910,26 @@ BOOST_AUTO_TEST_CASE(splitMerge)
     BOOST_CHECK(graph.isPathElement(middleProcessor2, startProcessor, endProcessor));
 
     // port predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(&endProcessor->inport_).count(startProcessor)    && 
+    BOOST_CHECK(graph.getPredecessors(&endProcessor->inport_).count(startProcessor)    &&
                 graph.getPredecessors(&endProcessor->inport_).count(middleProcessor)   &&
                 !graph.getPredecessors(&endProcessor->inport_).count(middleProcessor2) &&
                 !graph.getPredecessors(&endProcessor->inport_).count(endProcessor)
         );
-    BOOST_CHECK(graph.getPredecessors(&endProcessor->inport2_).count(startProcessor)   && 
+    BOOST_CHECK(graph.getPredecessors(&endProcessor->inport2_).count(startProcessor)   &&
                 !graph.getPredecessors(&endProcessor->inport2_).count(middleProcessor) &&
                 graph.getPredecessors(&endProcessor->inport2_).count(middleProcessor2) &&
                 !graph.getPredecessors(&endProcessor->inport2_).count(endProcessor)
         );
 
-    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport_).count(startProcessor)   && 
+    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport_).count(startProcessor)   &&
                 graph.getSuccessors(&startProcessor->outport_).count(middleProcessor)   &&
                 !graph.getSuccessors(&startProcessor->outport_).count(middleProcessor2) &&
-                graph.getSuccessors(&startProcessor->outport_).count(endProcessor)    
+                graph.getSuccessors(&startProcessor->outport_).count(endProcessor)
         );
-    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport2_).count(startProcessor)  && 
+    BOOST_CHECK(!graph.getSuccessors(&startProcessor->outport2_).count(startProcessor)  &&
                 !graph.getSuccessors(&startProcessor->outport2_).count(middleProcessor) &&
                 graph.getSuccessors(&startProcessor->outport2_).count(middleProcessor2) &&
-                graph.getSuccessors(&startProcessor->outport2_).count(endProcessor)    
+                graph.getSuccessors(&startProcessor->outport2_).count(endProcessor)
         );
 
     BOOST_CHECK(graph.isSuccessor(startProcessor, &endProcessor->inport_));
@@ -976,52 +989,52 @@ BOOST_AUTO_TEST_CASE(separatePipelines)
     BOOST_CHECK(graph.containsProcessor(endProcessor));
     BOOST_CHECK(graph.containsProcessor(endProcessor2));
 
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)     && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)     &&
                 graph.getPredecessors(endProcessor).count(middleProcessor)    &&
                 graph.getPredecessors(endProcessor).count(endProcessor)       &&
-                !graph.getPredecessors(endProcessor).count(startProcessor2)   && 
+                !graph.getPredecessors(endProcessor).count(startProcessor2)   &&
                 !graph.getPredecessors(endProcessor).count(middleProcessor2)  &&
                 !graph.getPredecessors(endProcessor).count(endProcessor2)
         );
-    BOOST_CHECK(!graph.getPredecessors(endProcessor2).count(startProcessor)   && 
+    BOOST_CHECK(!graph.getPredecessors(endProcessor2).count(startProcessor)   &&
                 !graph.getPredecessors(endProcessor2).count(middleProcessor)  &&
                 !graph.getPredecessors(endProcessor2).count(endProcessor)     &&
-                graph.getPredecessors(endProcessor2).count(startProcessor2)   && 
+                graph.getPredecessors(endProcessor2).count(startProcessor2)   &&
                 graph.getPredecessors(endProcessor2).count(middleProcessor2)  &&
                 graph.getPredecessors(endProcessor2).count(endProcessor2)
         );
     std::set<Processor*> endProcessors;
     endProcessors.insert(endProcessor);
     endProcessors.insert(endProcessor2);
-    BOOST_CHECK(graph.getPredecessors(endProcessors).count(startProcessor)    && 
+    BOOST_CHECK(graph.getPredecessors(endProcessors).count(startProcessor)    &&
                 graph.getPredecessors(endProcessors).count(middleProcessor)   &&
                 graph.getPredecessors(endProcessors).count(endProcessor)      &&
-                graph.getPredecessors(endProcessors).count(startProcessor2)   && 
+                graph.getPredecessors(endProcessors).count(startProcessor2)   &&
                 graph.getPredecessors(endProcessors).count(middleProcessor2)  &&
                 graph.getPredecessors(endProcessors).count(endProcessor2)
         );
 
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)     && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)     &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)    &&
                 graph.getSuccessors(startProcessor).count(endProcessor)       &&
-                !graph.getSuccessors(startProcessor).count(startProcessor2)   && 
+                !graph.getSuccessors(startProcessor).count(startProcessor2)   &&
                 !graph.getSuccessors(startProcessor).count(middleProcessor2)  &&
                 !graph.getSuccessors(startProcessor).count(endProcessor2)
         );
-    BOOST_CHECK(!graph.getSuccessors(startProcessor2).count(startProcessor)   && 
+    BOOST_CHECK(!graph.getSuccessors(startProcessor2).count(startProcessor)   &&
                 !graph.getSuccessors(startProcessor2).count(middleProcessor)  &&
                 !graph.getSuccessors(startProcessor2).count(endProcessor)     &&
-                graph.getSuccessors(startProcessor2).count(startProcessor2)   && 
+                graph.getSuccessors(startProcessor2).count(startProcessor2)   &&
                 graph.getSuccessors(startProcessor2).count(middleProcessor2)  &&
                 graph.getSuccessors(startProcessor2).count(endProcessor2)
         );
     std::set<Processor*> startProcessors;
     startProcessors.insert(startProcessor);
     startProcessors.insert(startProcessor2);
-    BOOST_CHECK(graph.getSuccessors(startProcessors).count(startProcessor)    && 
+    BOOST_CHECK(graph.getSuccessors(startProcessors).count(startProcessor)    &&
                 graph.getSuccessors(startProcessors).count(middleProcessor)   &&
                 graph.getSuccessors(startProcessors).count(endProcessor)      &&
-                graph.getSuccessors(startProcessors).count(startProcessor2)   && 
+                graph.getSuccessors(startProcessors).count(startProcessor2)   &&
                 graph.getSuccessors(startProcessors).count(middleProcessor2)  &&
                 graph.getSuccessors(startProcessors).count(endProcessor2)
         );
@@ -1075,52 +1088,52 @@ BOOST_AUTO_TEST_CASE(connectedPipelines)
     BOOST_CHECK(graph.containsProcessor(endProcessor));
     BOOST_CHECK(graph.containsProcessor(endProcessor2));
 
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)     && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)     &&
                 graph.getPredecessors(endProcessor).count(middleProcessor)    &&
                 graph.getPredecessors(endProcessor).count(endProcessor)       &&
-                !graph.getPredecessors(endProcessor).count(startProcessor2)   && 
+                !graph.getPredecessors(endProcessor).count(startProcessor2)   &&
                 !graph.getPredecessors(endProcessor).count(middleProcessor2)  &&
                 !graph.getPredecessors(endProcessor).count(endProcessor2)
         );
-    BOOST_CHECK(graph.getPredecessors(endProcessor2).count(startProcessor)    && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor2).count(startProcessor)    &&
                 graph.getPredecessors(endProcessor2).count(middleProcessor)   &&
                 !graph.getPredecessors(endProcessor2).count(endProcessor)     &&
-                graph.getPredecessors(endProcessor2).count(startProcessor2)   && 
+                graph.getPredecessors(endProcessor2).count(startProcessor2)   &&
                 graph.getPredecessors(endProcessor2).count(middleProcessor2)  &&
                 graph.getPredecessors(endProcessor2).count(endProcessor2)
         );
     std::set<Processor*> endProcessors;
     endProcessors.insert(endProcessor);
     endProcessors.insert(endProcessor2);
-    BOOST_CHECK(graph.getPredecessors(endProcessors).count(startProcessor)    && 
+    BOOST_CHECK(graph.getPredecessors(endProcessors).count(startProcessor)    &&
                 graph.getPredecessors(endProcessors).count(middleProcessor)   &&
                 graph.getPredecessors(endProcessors).count(endProcessor)      &&
-                graph.getPredecessors(endProcessors).count(startProcessor2)   && 
+                graph.getPredecessors(endProcessors).count(startProcessor2)   &&
                 graph.getPredecessors(endProcessors).count(middleProcessor2)  &&
                 graph.getPredecessors(endProcessors).count(endProcessor2)
         );
 
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)     && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)     &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)    &&
                 graph.getSuccessors(startProcessor).count(endProcessor)       &&
-                !graph.getSuccessors(startProcessor).count(startProcessor2)   && 
+                !graph.getSuccessors(startProcessor).count(startProcessor2)   &&
                 graph.getSuccessors(startProcessor).count(middleProcessor2)   &&
                 graph.getSuccessors(startProcessor).count(endProcessor2)
         );
-    BOOST_CHECK(!graph.getSuccessors(startProcessor2).count(startProcessor)   && 
+    BOOST_CHECK(!graph.getSuccessors(startProcessor2).count(startProcessor)   &&
                 !graph.getSuccessors(startProcessor2).count(middleProcessor)  &&
                 !graph.getSuccessors(startProcessor2).count(endProcessor)     &&
-                graph.getSuccessors(startProcessor2).count(startProcessor2)   && 
+                graph.getSuccessors(startProcessor2).count(startProcessor2)   &&
                 graph.getSuccessors(startProcessor2).count(middleProcessor2)  &&
                 graph.getSuccessors(startProcessor2).count(endProcessor2)
         );
     std::set<Processor*> startProcessors;
     startProcessors.insert(startProcessor);
     startProcessors.insert(startProcessor2);
-    BOOST_CHECK(graph.getSuccessors(startProcessors).count(startProcessor)    && 
+    BOOST_CHECK(graph.getSuccessors(startProcessors).count(startProcessor)    &&
                 graph.getSuccessors(startProcessors).count(middleProcessor)   &&
                 graph.getSuccessors(startProcessors).count(endProcessor)      &&
-                graph.getSuccessors(startProcessors).count(startProcessor2)   && 
+                graph.getSuccessors(startProcessors).count(startProcessor2)   &&
                 graph.getSuccessors(startProcessors).count(middleProcessor2)  &&
                 graph.getSuccessors(startProcessors).count(endProcessor2)
         );
@@ -1136,41 +1149,41 @@ BOOST_AUTO_TEST_CASE(connectedPipelines)
     BOOST_CHECK(!graph.isPathElement(middleProcessor, startProcessor2, endProcessor2));
 
     // port predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(&middleProcessor->inport_).count(startProcessor)     && 
+    BOOST_CHECK(graph.getPredecessors(&middleProcessor->inport_).count(startProcessor)     &&
                 !graph.getPredecessors(&middleProcessor->inport_).count(middleProcessor)   &&
                 !graph.getPredecessors(&middleProcessor->inport_).count(endProcessor)      &&
-                !graph.getPredecessors(&middleProcessor->inport_).count(startProcessor2)   && 
+                !graph.getPredecessors(&middleProcessor->inport_).count(startProcessor2)   &&
                 !graph.getPredecessors(&middleProcessor->inport_).count(middleProcessor2)  &&
                 !graph.getPredecessors(&middleProcessor->inport_).count(endProcessor2)
         );
     BOOST_CHECK(graph.getPredecessors(&middleProcessor->inport2_).empty());
-    
-    BOOST_CHECK(!graph.getPredecessors(&middleProcessor2->inport_).count(startProcessor)   && 
+
+    BOOST_CHECK(!graph.getPredecessors(&middleProcessor2->inport_).count(startProcessor)   &&
                 !graph.getPredecessors(&middleProcessor2->inport_).count(middleProcessor)  &&
                 !graph.getPredecessors(&middleProcessor2->inport_).count(endProcessor)     &&
-                graph.getPredecessors(&middleProcessor2->inport_).count(startProcessor2)   && 
+                graph.getPredecessors(&middleProcessor2->inport_).count(startProcessor2)   &&
                 !graph.getPredecessors(&middleProcessor2->inport_).count(middleProcessor2) &&
                 !graph.getPredecessors(&middleProcessor2->inport_).count(endProcessor2)
         );
-    BOOST_CHECK(graph.getPredecessors(&middleProcessor2->inport2_).count(startProcessor)    && 
+    BOOST_CHECK(graph.getPredecessors(&middleProcessor2->inport2_).count(startProcessor)    &&
                 graph.getPredecessors(&middleProcessor2->inport2_).count(middleProcessor)   &&
                 !graph.getPredecessors(&middleProcessor2->inport2_).count(endProcessor)     &&
-                !graph.getPredecessors(&middleProcessor2->inport2_).count(startProcessor2)  && 
+                !graph.getPredecessors(&middleProcessor2->inport2_).count(startProcessor2)  &&
                 !graph.getPredecessors(&middleProcessor2->inport2_).count(middleProcessor2) &&
                 !graph.getPredecessors(&middleProcessor2->inport2_).count(endProcessor2)
         );
 
-    BOOST_CHECK(!graph.getSuccessors(&middleProcessor->outport_).count(startProcessor)    && 
+    BOOST_CHECK(!graph.getSuccessors(&middleProcessor->outport_).count(startProcessor)    &&
                 !graph.getSuccessors(&middleProcessor->outport_).count(middleProcessor)   &&
                 graph.getSuccessors(&middleProcessor->outport_).count(endProcessor)       &&
-                !graph.getSuccessors(&middleProcessor->outport_).count(startProcessor2)   && 
+                !graph.getSuccessors(&middleProcessor->outport_).count(startProcessor2)   &&
                 !graph.getSuccessors(&middleProcessor->outport_).count(middleProcessor2)  &&
                 !graph.getSuccessors(&middleProcessor->outport_).count(endProcessor2)
         );
-    BOOST_CHECK(!graph.getSuccessors(&middleProcessor->outport2_).count(startProcessor)   && 
+    BOOST_CHECK(!graph.getSuccessors(&middleProcessor->outport2_).count(startProcessor)   &&
                 !graph.getSuccessors(&middleProcessor->outport2_).count(middleProcessor)  &&
                 !graph.getSuccessors(&middleProcessor->outport2_).count(endProcessor)     &&
-                !graph.getSuccessors(&middleProcessor->outport2_).count(startProcessor2)  && 
+                !graph.getSuccessors(&middleProcessor->outport2_).count(startProcessor2)  &&
                 graph.getSuccessors(&middleProcessor->outport2_).count(middleProcessor2)  &&
                 graph.getSuccessors(&middleProcessor->outport2_).count(endProcessor2)
         );
@@ -1237,52 +1250,52 @@ BOOST_AUTO_TEST_CASE(crossconnectedPipelines)
     BOOST_CHECK(graph.containsProcessor(endProcessor));
     BOOST_CHECK(graph.containsProcessor(endProcessor2));
 
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)     && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)     &&
                 graph.getPredecessors(endProcessor).count(middleProcessor)    &&
                 graph.getPredecessors(endProcessor).count(endProcessor)       &&
-                graph.getPredecessors(endProcessor).count(startProcessor2)    && 
+                graph.getPredecessors(endProcessor).count(startProcessor2)    &&
                 graph.getPredecessors(endProcessor).count(middleProcessor2)   &&
                 !graph.getPredecessors(endProcessor).count(endProcessor2)
         );
-    BOOST_CHECK(graph.getPredecessors(endProcessor2).count(startProcessor)    && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor2).count(startProcessor)    &&
                 graph.getPredecessors(endProcessor2).count(middleProcessor)   &&
                 !graph.getPredecessors(endProcessor2).count(endProcessor)     &&
-                graph.getPredecessors(endProcessor2).count(startProcessor2)   && 
+                graph.getPredecessors(endProcessor2).count(startProcessor2)   &&
                 graph.getPredecessors(endProcessor2).count(middleProcessor2)  &&
                 graph.getPredecessors(endProcessor2).count(endProcessor2)
         );
     std::set<Processor*> endProcessors;
     endProcessors.insert(endProcessor);
     endProcessors.insert(endProcessor2);
-    BOOST_CHECK(graph.getPredecessors(endProcessors).count(startProcessor)    && 
+    BOOST_CHECK(graph.getPredecessors(endProcessors).count(startProcessor)    &&
                 graph.getPredecessors(endProcessors).count(middleProcessor)   &&
                 graph.getPredecessors(endProcessors).count(endProcessor)      &&
-                graph.getPredecessors(endProcessors).count(startProcessor2)   && 
+                graph.getPredecessors(endProcessors).count(startProcessor2)   &&
                 graph.getPredecessors(endProcessors).count(middleProcessor2)  &&
                 graph.getPredecessors(endProcessors).count(endProcessor2)
         );
 
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)     && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)     &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)    &&
                 graph.getSuccessors(startProcessor).count(endProcessor)       &&
-                !graph.getSuccessors(startProcessor).count(startProcessor2)   && 
+                !graph.getSuccessors(startProcessor).count(startProcessor2)   &&
                 graph.getSuccessors(startProcessor).count(middleProcessor2)   &&
                 graph.getSuccessors(startProcessor).count(endProcessor2)
         );
-    BOOST_CHECK(!graph.getSuccessors(startProcessor2).count(startProcessor)   && 
+    BOOST_CHECK(!graph.getSuccessors(startProcessor2).count(startProcessor)   &&
                 !graph.getSuccessors(startProcessor2).count(middleProcessor)  &&
                 graph.getSuccessors(startProcessor2).count(endProcessor)      &&
-                graph.getSuccessors(startProcessor2).count(startProcessor2)   && 
+                graph.getSuccessors(startProcessor2).count(startProcessor2)   &&
                 graph.getSuccessors(startProcessor2).count(middleProcessor2)  &&
                 graph.getSuccessors(startProcessor2).count(endProcessor2)
         );
     std::set<Processor*> startProcessors;
     startProcessors.insert(startProcessor);
     startProcessors.insert(startProcessor2);
-    BOOST_CHECK(graph.getSuccessors(startProcessors).count(startProcessor)    && 
+    BOOST_CHECK(graph.getSuccessors(startProcessors).count(startProcessor)    &&
                 graph.getSuccessors(startProcessors).count(middleProcessor)   &&
                 graph.getSuccessors(startProcessors).count(endProcessor)      &&
-                graph.getSuccessors(startProcessors).count(startProcessor2)   && 
+                graph.getSuccessors(startProcessors).count(startProcessor2)   &&
                 graph.getSuccessors(startProcessors).count(middleProcessor2)  &&
                 graph.getSuccessors(startProcessors).count(endProcessor2)
         );
@@ -1301,43 +1314,43 @@ BOOST_AUTO_TEST_CASE(crossconnectedPipelines)
     BOOST_CHECK(graph.isPathElement(middleProcessor2, startProcessor2, endProcessor));
     BOOST_CHECK(!graph.isPathElement(middleProcessor, startProcessor2, endProcessor2));
     BOOST_CHECK(graph.isPathElement(middleProcessor2, startProcessor2, endProcessor2));
-    
+
     // port predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(&middleProcessor->inport_).count(startProcessor)     && 
+    BOOST_CHECK(graph.getPredecessors(&middleProcessor->inport_).count(startProcessor)     &&
                 !graph.getPredecessors(&middleProcessor->inport_).count(middleProcessor)   &&
                 !graph.getPredecessors(&middleProcessor->inport_).count(endProcessor)      &&
-                !graph.getPredecessors(&middleProcessor->inport_).count(startProcessor2)   && 
+                !graph.getPredecessors(&middleProcessor->inport_).count(startProcessor2)   &&
                 !graph.getPredecessors(&middleProcessor->inport_).count(middleProcessor2)  &&
                 !graph.getPredecessors(&middleProcessor->inport_).count(endProcessor2)
         );
     BOOST_CHECK(graph.getPredecessors(&middleProcessor->inport2_).empty());
 
-    BOOST_CHECK(!graph.getPredecessors(&middleProcessor2->inport_).count(startProcessor)   && 
+    BOOST_CHECK(!graph.getPredecessors(&middleProcessor2->inport_).count(startProcessor)   &&
                 !graph.getPredecessors(&middleProcessor2->inport_).count(middleProcessor)  &&
                 !graph.getPredecessors(&middleProcessor2->inport_).count(endProcessor)     &&
-                graph.getPredecessors(&middleProcessor2->inport_).count(startProcessor2)   && 
+                graph.getPredecessors(&middleProcessor2->inport_).count(startProcessor2)   &&
                 !graph.getPredecessors(&middleProcessor2->inport_).count(middleProcessor2) &&
                 !graph.getPredecessors(&middleProcessor2->inport_).count(endProcessor2)
         );
-    BOOST_CHECK(graph.getPredecessors(&middleProcessor2->inport2_).count(startProcessor)    && 
+    BOOST_CHECK(graph.getPredecessors(&middleProcessor2->inport2_).count(startProcessor)    &&
                 graph.getPredecessors(&middleProcessor2->inport2_).count(middleProcessor)   &&
                 !graph.getPredecessors(&middleProcessor2->inport2_).count(endProcessor)     &&
-                !graph.getPredecessors(&middleProcessor2->inport2_).count(startProcessor2)  && 
+                !graph.getPredecessors(&middleProcessor2->inport2_).count(startProcessor2)  &&
                 !graph.getPredecessors(&middleProcessor2->inport2_).count(middleProcessor2) &&
                 !graph.getPredecessors(&middleProcessor2->inport2_).count(endProcessor2)
         );
 
-    BOOST_CHECK(!graph.getSuccessors(&middleProcessor->outport_).count(startProcessor)    && 
+    BOOST_CHECK(!graph.getSuccessors(&middleProcessor->outport_).count(startProcessor)    &&
                 !graph.getSuccessors(&middleProcessor->outport_).count(middleProcessor)   &&
                 graph.getSuccessors(&middleProcessor->outport_).count(endProcessor)       &&
-                !graph.getSuccessors(&middleProcessor->outport_).count(startProcessor2)   && 
+                !graph.getSuccessors(&middleProcessor->outport_).count(startProcessor2)   &&
                 !graph.getSuccessors(&middleProcessor->outport_).count(middleProcessor2)  &&
                 !graph.getSuccessors(&middleProcessor->outport_).count(endProcessor2)
         );
-    BOOST_CHECK(!graph.getSuccessors(&middleProcessor->outport2_).count(startProcessor)   && 
+    BOOST_CHECK(!graph.getSuccessors(&middleProcessor->outport2_).count(startProcessor)   &&
                 !graph.getSuccessors(&middleProcessor->outport2_).count(middleProcessor)  &&
                 graph.getSuccessors(&middleProcessor->outport2_).count(endProcessor)     &&
-                !graph.getSuccessors(&middleProcessor->outport2_).count(startProcessor2)  && 
+                !graph.getSuccessors(&middleProcessor->outport2_).count(startProcessor2)  &&
                 graph.getSuccessors(&middleProcessor->outport2_).count(middleProcessor2)  &&
                 graph.getSuccessors(&middleProcessor->outport2_).count(endProcessor2)
         );
@@ -1397,52 +1410,52 @@ BOOST_AUTO_TEST_CASE(crossconnectedPipelinesMultiConnections)
     BOOST_CHECK(graph.containsProcessor(endProcessor));
     BOOST_CHECK(graph.containsProcessor(endProcessor2));
 
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)     && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)     &&
                 graph.getPredecessors(endProcessor).count(middleProcessor)    &&
                 graph.getPredecessors(endProcessor).count(endProcessor)       &&
-                graph.getPredecessors(endProcessor).count(startProcessor2)    && 
+                graph.getPredecessors(endProcessor).count(startProcessor2)    &&
                 graph.getPredecessors(endProcessor).count(middleProcessor2)   &&
                 !graph.getPredecessors(endProcessor).count(endProcessor2)
         );
-    BOOST_CHECK(graph.getPredecessors(endProcessor2).count(startProcessor)    && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor2).count(startProcessor)    &&
                 graph.getPredecessors(endProcessor2).count(middleProcessor)   &&
                 !graph.getPredecessors(endProcessor2).count(endProcessor)     &&
-                graph.getPredecessors(endProcessor2).count(startProcessor2)   && 
+                graph.getPredecessors(endProcessor2).count(startProcessor2)   &&
                 graph.getPredecessors(endProcessor2).count(middleProcessor2)  &&
                 graph.getPredecessors(endProcessor2).count(endProcessor2)
         );
     std::set<Processor*> endProcessors;
     endProcessors.insert(endProcessor);
     endProcessors.insert(endProcessor2);
-    BOOST_CHECK(graph.getPredecessors(endProcessors).count(startProcessor)    && 
+    BOOST_CHECK(graph.getPredecessors(endProcessors).count(startProcessor)    &&
                 graph.getPredecessors(endProcessors).count(middleProcessor)   &&
                 graph.getPredecessors(endProcessors).count(endProcessor)      &&
-                graph.getPredecessors(endProcessors).count(startProcessor2)   && 
+                graph.getPredecessors(endProcessors).count(startProcessor2)   &&
                 graph.getPredecessors(endProcessors).count(middleProcessor2)  &&
                 graph.getPredecessors(endProcessors).count(endProcessor2)
         );
 
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)     && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)     &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)    &&
                 graph.getSuccessors(startProcessor).count(endProcessor)       &&
-                !graph.getSuccessors(startProcessor).count(startProcessor2)   && 
+                !graph.getSuccessors(startProcessor).count(startProcessor2)   &&
                 graph.getSuccessors(startProcessor).count(middleProcessor2)   &&
                 graph.getSuccessors(startProcessor).count(endProcessor2)
         );
-    BOOST_CHECK(!graph.getSuccessors(startProcessor2).count(startProcessor)   && 
+    BOOST_CHECK(!graph.getSuccessors(startProcessor2).count(startProcessor)   &&
                 !graph.getSuccessors(startProcessor2).count(middleProcessor)  &&
                 graph.getSuccessors(startProcessor2).count(endProcessor)      &&
-                graph.getSuccessors(startProcessor2).count(startProcessor2)   && 
+                graph.getSuccessors(startProcessor2).count(startProcessor2)   &&
                 graph.getSuccessors(startProcessor2).count(middleProcessor2)  &&
                 graph.getSuccessors(startProcessor2).count(endProcessor2)
         );
     std::set<Processor*> startProcessors;
     startProcessors.insert(startProcessor);
     startProcessors.insert(startProcessor2);
-    BOOST_CHECK(graph.getSuccessors(startProcessors).count(startProcessor)    && 
+    BOOST_CHECK(graph.getSuccessors(startProcessors).count(startProcessor)    &&
                 graph.getSuccessors(startProcessors).count(middleProcessor)   &&
                 graph.getSuccessors(startProcessors).count(endProcessor)      &&
-                graph.getSuccessors(startProcessors).count(startProcessor2)   && 
+                graph.getSuccessors(startProcessors).count(startProcessor2)   &&
                 graph.getSuccessors(startProcessors).count(middleProcessor2)  &&
                 graph.getSuccessors(startProcessors).count(endProcessor2)
         );
@@ -1461,50 +1474,50 @@ BOOST_AUTO_TEST_CASE(crossconnectedPipelinesMultiConnections)
     BOOST_CHECK(graph.isPathElement(middleProcessor2, startProcessor2, endProcessor));
     BOOST_CHECK(!graph.isPathElement(middleProcessor, startProcessor2, endProcessor2));
     BOOST_CHECK(graph.isPathElement(middleProcessor2, startProcessor2, endProcessor2));
-    
+
     // port predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(&middleProcessor->inport_).count(startProcessor)     && 
+    BOOST_CHECK(graph.getPredecessors(&middleProcessor->inport_).count(startProcessor)     &&
                 !graph.getPredecessors(&middleProcessor->inport_).count(middleProcessor)   &&
                 !graph.getPredecessors(&middleProcessor->inport_).count(endProcessor)      &&
-                !graph.getPredecessors(&middleProcessor->inport_).count(startProcessor2)   && 
+                !graph.getPredecessors(&middleProcessor->inport_).count(startProcessor2)   &&
                 !graph.getPredecessors(&middleProcessor->inport_).count(middleProcessor2)  &&
                 !graph.getPredecessors(&middleProcessor->inport_).count(endProcessor2)
         );
     BOOST_CHECK(graph.getPredecessors(&middleProcessor->inport2_).empty());
 
-    BOOST_CHECK(!graph.getPredecessors(&middleProcessor2->inport_).count(startProcessor)   && 
+    BOOST_CHECK(!graph.getPredecessors(&middleProcessor2->inport_).count(startProcessor)   &&
                 !graph.getPredecessors(&middleProcessor2->inport_).count(middleProcessor)  &&
                 !graph.getPredecessors(&middleProcessor2->inport_).count(endProcessor)     &&
-                graph.getPredecessors(&middleProcessor2->inport_).count(startProcessor2)   && 
+                graph.getPredecessors(&middleProcessor2->inport_).count(startProcessor2)   &&
                 !graph.getPredecessors(&middleProcessor2->inport_).count(middleProcessor2) &&
                 !graph.getPredecessors(&middleProcessor2->inport_).count(endProcessor2)
         );
-    BOOST_CHECK(graph.getPredecessors(&middleProcessor2->inport2_).count(startProcessor)    && 
+    BOOST_CHECK(graph.getPredecessors(&middleProcessor2->inport2_).count(startProcessor)    &&
                 graph.getPredecessors(&middleProcessor2->inport2_).count(middleProcessor)   &&
                 !graph.getPredecessors(&middleProcessor2->inport2_).count(endProcessor)     &&
-                !graph.getPredecessors(&middleProcessor2->inport2_).count(startProcessor2)  && 
+                !graph.getPredecessors(&middleProcessor2->inport2_).count(startProcessor2)  &&
                 !graph.getPredecessors(&middleProcessor2->inport2_).count(middleProcessor2) &&
                 !graph.getPredecessors(&middleProcessor2->inport2_).count(endProcessor2)
         );
 
-    BOOST_CHECK(!graph.getSuccessors(&middleProcessor->outport_).count(startProcessor)    && 
+    BOOST_CHECK(!graph.getSuccessors(&middleProcessor->outport_).count(startProcessor)    &&
                 !graph.getSuccessors(&middleProcessor->outport_).count(middleProcessor)   &&
                 graph.getSuccessors(&middleProcessor->outport_).count(endProcessor)       &&
-                !graph.getSuccessors(&middleProcessor->outport_).count(startProcessor2)   && 
+                !graph.getSuccessors(&middleProcessor->outport_).count(startProcessor2)   &&
                 graph.getSuccessors(&middleProcessor->outport_).count(middleProcessor2)   &&
                 graph.getSuccessors(&middleProcessor->outport_).count(endProcessor2)
         );
     BOOST_CHECK(graph.getSuccessors(&middleProcessor->outport2_).empty());
 
-    BOOST_CHECK(!graph.getSuccessors(&middleProcessor2->outport_).count(startProcessor)    && 
+    BOOST_CHECK(!graph.getSuccessors(&middleProcessor2->outport_).count(startProcessor)    &&
                 !graph.getSuccessors(&middleProcessor2->outport_).count(middleProcessor)   &&
                 graph.getSuccessors(&middleProcessor2->outport_).count(endProcessor)       &&
-                !graph.getSuccessors(&middleProcessor2->outport_).count(startProcessor2)   && 
+                !graph.getSuccessors(&middleProcessor2->outport_).count(startProcessor2)   &&
                 !graph.getSuccessors(&middleProcessor2->outport_).count(middleProcessor2)  &&
                 graph.getSuccessors(&middleProcessor2->outport_).count(endProcessor2)
         );
     BOOST_CHECK(graph.getSuccessors(&middleProcessor2->outport2_).empty());
-    
+
     BOOST_CHECK(graph.isSuccessor(startProcessor, &middleProcessor->inport_));
     BOOST_CHECK(!graph.isSuccessor(startProcessor2, &middleProcessor->inport_));
     BOOST_CHECK(!graph.isSuccessor(startProcessor, &middleProcessor->inport2_));
@@ -1529,7 +1542,7 @@ BOOST_AUTO_TEST_CASE(crossconnectedPipelinesMultiConnections)
     BOOST_CHECK(!graph.isSuccessor(&middleProcessor->outport_, &middleProcessor->inport_));
     BOOST_CHECK(!graph.isSuccessor(&middleProcessor->outport_, &middleProcessor2->inport_));
     BOOST_CHECK(graph.isSuccessor(&middleProcessor->outport_, &middleProcessor2->inport2_));
-    
+
     BOOST_CHECK(graph.isPathElement(middleProcessor2, &middleProcessor->outport_, &endProcessor->inport2_));
     BOOST_CHECK(!graph.isPathElement(middleProcessor2, &middleProcessor->outport_, &endProcessor->inport_));
     BOOST_CHECK(!graph.isPathElement(middleProcessor2, &middleProcessor->outport2_, &endProcessor->inport_));
@@ -1548,7 +1561,7 @@ BOOST_AUTO_TEST_CASE(crossconnectedPipelinesMultiConnections)
 }
 
 // Network = (StartProcessor->(LoopInitiator->MiddleProcessor->LoopFinalizer)x3->EndProcessor)
-BOOST_AUTO_TEST_CASE(simpleLoop) 
+BOOST_AUTO_TEST_CASE(simpleLoop)
 {
     vector<Processor*> processors;
     processors.push_back(endProcessor);
@@ -1574,13 +1587,13 @@ BOOST_AUTO_TEST_CASE(simpleLoop)
     BOOST_CHECK(graph.containsProcessor(endProcessor));
 
     // processors are connected => processors are predecessors/successors of each other
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   &&
                 graph.getPredecessors(endProcessor).count(loopInitiator)    &&
                 graph.getPredecessors(endProcessor).count(middleProcessor)  &&
                 graph.getPredecessors(endProcessor).count(loopFinalizer)    &&
                 graph.getPredecessors(endProcessor).count(endProcessor)
         );
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   &&
                 graph.getSuccessors(startProcessor).count(loopInitiator)    &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)  &&
                 graph.getSuccessors(startProcessor).count(loopFinalizer)    &&
@@ -1611,7 +1624,7 @@ BOOST_AUTO_TEST_CASE(simpleLoop)
 }
 
 // Network = (StartProcessor->(LoopInitiator->MiddleProcessor LoopFinalizer)x3->EndProcessor)
-BOOST_AUTO_TEST_CASE(unconnectedLoop) 
+BOOST_AUTO_TEST_CASE(unconnectedLoop)
 {
     vector<Processor*> processors;
     processors.push_back(endProcessor);
@@ -1637,13 +1650,13 @@ BOOST_AUTO_TEST_CASE(unconnectedLoop)
     BOOST_CHECK(graph.containsProcessor(endProcessor));
 
     // check predecessors/successors
-    BOOST_CHECK(!graph.getPredecessors(endProcessor).count(startProcessor)  && 
+    BOOST_CHECK(!graph.getPredecessors(endProcessor).count(startProcessor)  &&
                 !graph.getPredecessors(endProcessor).count(loopInitiator)   &&
                 !graph.getPredecessors(endProcessor).count(middleProcessor) &&
                 graph.getPredecessors(endProcessor).count(loopFinalizer)    &&
                 graph.getPredecessors(endProcessor).count(endProcessor)
         );
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   &&
                 graph.getSuccessors(startProcessor).count(loopInitiator)    &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)  &&
                 !graph.getSuccessors(startProcessor).count(loopFinalizer)   &&
@@ -1666,7 +1679,7 @@ BOOST_AUTO_TEST_CASE(unconnectedLoop)
 }
 
 // Network = (StartProcessor->LoopInitiator->MiddleProcessor->LoopFinalizer->EndProcessor)
-BOOST_AUTO_TEST_CASE(inactiveLoop) 
+BOOST_AUTO_TEST_CASE(inactiveLoop)
 {
     vector<Processor*> processors;
     processors.push_back(endProcessor);
@@ -1690,13 +1703,13 @@ BOOST_AUTO_TEST_CASE(inactiveLoop)
     BOOST_CHECK(graph.containsProcessor(endProcessor));
 
     // processors are connected => processors are predecessors/successors of each other
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   &&
                 graph.getPredecessors(endProcessor).count(loopInitiator)    &&
                 graph.getPredecessors(endProcessor).count(middleProcessor)  &&
                 graph.getPredecessors(endProcessor).count(loopFinalizer)    &&
                 graph.getPredecessors(endProcessor).count(endProcessor)
         );
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   &&
                 graph.getSuccessors(startProcessor).count(loopInitiator)    &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)  &&
                 graph.getSuccessors(startProcessor).count(loopFinalizer)    &&
@@ -1721,7 +1734,7 @@ BOOST_AUTO_TEST_CASE(inactiveLoop)
 }
 
 // Network = (StartProcessor->(LoopInitiator->LoopFinalizer)x3->EndProcessor)
-BOOST_AUTO_TEST_CASE(emptyLoop) 
+BOOST_AUTO_TEST_CASE(emptyLoop)
 {
     vector<Processor*> processors;
     processors.push_back(endProcessor);
@@ -1744,12 +1757,12 @@ BOOST_AUTO_TEST_CASE(emptyLoop)
     BOOST_CHECK(graph.containsProcessor(endProcessor));
 
     // processors are connected => processors are predecessors/successors of each other
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   &&
                 graph.getPredecessors(endProcessor).count(loopInitiator)    &&
                 graph.getPredecessors(endProcessor).count(loopFinalizer)    &&
                 graph.getPredecessors(endProcessor).count(endProcessor)
         );
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   &&
                 graph.getSuccessors(startProcessor).count(loopInitiator)    &&
                 graph.getSuccessors(startProcessor).count(loopFinalizer)    &&
                 graph.getSuccessors(startProcessor).count(endProcessor)
@@ -1773,7 +1786,7 @@ BOOST_AUTO_TEST_CASE(emptyLoop)
 }
 
 // Network = (StartProcessor->(LoopInitiator->(LoopInitiator2->MiddleProcessor2->LoopFinalizer2)x3->MiddleProcessor->LoopFinalizer)x2->EndProcessor)
-BOOST_AUTO_TEST_CASE(nestedLoops) 
+BOOST_AUTO_TEST_CASE(nestedLoops)
 {
     vector<Processor*> processors;
     processors.push_back(endProcessor);
@@ -1812,7 +1825,7 @@ BOOST_AUTO_TEST_CASE(nestedLoops)
     BOOST_CHECK(graph.containsProcessor(endProcessor));
 
     // check predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   &&
                 graph.getPredecessors(endProcessor).count(loopInitiator)    &&
                 graph.getPredecessors(endProcessor).count(loopInitiator2)   &&
                 graph.getPredecessors(endProcessor).count(middleProcessor)  &&
@@ -1821,7 +1834,7 @@ BOOST_AUTO_TEST_CASE(nestedLoops)
                 graph.getPredecessors(endProcessor).count(loopFinalizer2)   &&
                 graph.getPredecessors(endProcessor).count(endProcessor)
         );
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   &&
                 graph.getSuccessors(startProcessor).count(loopInitiator)    &&
                 graph.getSuccessors(startProcessor).count(loopInitiator2)   &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)  &&
@@ -1850,7 +1863,7 @@ BOOST_AUTO_TEST_CASE(nestedLoops)
     std::vector<Processor*> sorted = graph.sortTopologically();
     BOOST_CHECK(sorted.size() == 26);
     BOOST_CHECK(sorted.at(0) == startProcessor);
-        // outer loop    
+        // outer loop
         BOOST_CHECK(sorted.at(1) == loopInitiator);
             // inner loop
             BOOST_CHECK(sorted.at(2) == loopInitiator2);
@@ -1877,7 +1890,7 @@ BOOST_AUTO_TEST_CASE(nestedLoops)
             BOOST_CHECK(sorted.at(22) == loopFinalizer2);
         BOOST_CHECK(sorted.at(23) == middleProcessor);
         BOOST_CHECK(sorted.at(24) == loopFinalizer);
-    BOOST_CHECK(sorted.at(25) == endProcessor); 
+    BOOST_CHECK(sorted.at(25) == endProcessor);
 }
 
 // Network = (StartProcessor->{LoopInitiator->(LoopInitiator2->MiddleProcessor2->LoopFinalizer2}x3->MiddleProcessor->LoopFinalizer)x2->EndProcessor)
@@ -1921,7 +1934,7 @@ BOOST_AUTO_TEST_CASE(crossedLoops)
     BOOST_CHECK(graph.containsProcessor(endProcessor));
 
     // check predecessors/successors
-    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getPredecessors(endProcessor).count(startProcessor)   &&
                 graph.getPredecessors(endProcessor).count(loopInitiator)    &&
                 graph.getPredecessors(endProcessor).count(loopInitiator2)   &&
                 graph.getPredecessors(endProcessor).count(middleProcessor)  &&
@@ -1930,7 +1943,7 @@ BOOST_AUTO_TEST_CASE(crossedLoops)
                 graph.getPredecessors(endProcessor).count(loopFinalizer2)   &&
                 graph.getPredecessors(endProcessor).count(endProcessor)
         );
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   &&
                 graph.getSuccessors(startProcessor).count(loopInitiator)    &&
                 graph.getSuccessors(startProcessor).count(loopInitiator2)   &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)  &&
@@ -1967,12 +1980,12 @@ BOOST_AUTO_TEST_CASE(crossedLoops)
     BOOST_CHECK(sorted.at(4) == loopFinalizer2);
     BOOST_CHECK(sorted.at(5) == middleProcessor);
     BOOST_CHECK(sorted.at(6) == loopFinalizer);
-    BOOST_CHECK(sorted.at(7) == endProcessor); 
+    BOOST_CHECK(sorted.at(7) == endProcessor);
 }
 
 // Network = (StartProcessor->(LoopInitiator->MiddleProcessor->LoopFinalizer)x2->EndProcessor)
 //           (StartProcessor2------------------^                                             )
-BOOST_AUTO_TEST_CASE(loopExternalDataInflow) 
+BOOST_AUTO_TEST_CASE(loopExternalDataInflow)
 {
     vector<Processor*> processors;
     processors.push_back(endProcessor);
@@ -2010,14 +2023,14 @@ BOOST_AUTO_TEST_CASE(loopExternalDataInflow)
                 graph.getPredecessors(endProcessor).count(endProcessor)
         );
 
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   &&
                 !graph.getSuccessors(startProcessor).count(startProcessor2) &&
                 graph.getSuccessors(startProcessor).count(loopInitiator)    &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)  &&
                 graph.getSuccessors(startProcessor).count(loopFinalizer)    &&
                 graph.getSuccessors(startProcessor).count(endProcessor)
         );
-    BOOST_CHECK(!graph.getSuccessors(startProcessor2).count(startProcessor) && 
+    BOOST_CHECK(!graph.getSuccessors(startProcessor2).count(startProcessor) &&
                 graph.getSuccessors(startProcessor2).count(startProcessor2) &&
                 graph.getSuccessors(startProcessor2).count(loopInitiator)   &&
                 graph.getSuccessors(startProcessor2).count(middleProcessor) &&
@@ -2049,7 +2062,7 @@ BOOST_AUTO_TEST_CASE(loopExternalDataInflow)
 
 // Network = (StartProcessor->(LoopInitiator->MiddleProcessor->LoopFinalizer)x2->EndProcessor )
 //           (                                             \-------------------->EndProcessor2)
-BOOST_AUTO_TEST_CASE(loopExternalDataOutflow) 
+BOOST_AUTO_TEST_CASE(loopExternalDataOutflow)
 {
     vector<Processor*> processors;
     processors.push_back(endProcessor2);
@@ -2084,22 +2097,22 @@ BOOST_AUTO_TEST_CASE(loopExternalDataOutflow)
                 graph.getPredecessors(endProcessor).count(middleProcessor)  &&
                 graph.getPredecessors(endProcessor).count(loopFinalizer)    &&
                 graph.getPredecessors(endProcessor).count(endProcessor)     &&
-                !graph.getPredecessors(endProcessor).count(endProcessor2)  
+                !graph.getPredecessors(endProcessor).count(endProcessor2)
         );
     BOOST_CHECK(graph.getPredecessors(endProcessor2).count(startProcessor)  &&
                 graph.getPredecessors(endProcessor2).count(loopInitiator)   &&
                 graph.getPredecessors(endProcessor2).count(middleProcessor) &&
                 graph.getPredecessors(endProcessor2).count(loopFinalizer)   &&
                 !graph.getPredecessors(endProcessor2).count(endProcessor)   &&
-                graph.getPredecessors(endProcessor2).count(endProcessor2)  
+                graph.getPredecessors(endProcessor2).count(endProcessor2)
         );
 
-    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   && 
+    BOOST_CHECK(graph.getSuccessors(startProcessor).count(startProcessor)   &&
                 graph.getSuccessors(startProcessor).count(loopInitiator)    &&
                 graph.getSuccessors(startProcessor).count(middleProcessor)  &&
                 graph.getSuccessors(startProcessor).count(loopFinalizer)    &&
                 graph.getSuccessors(startProcessor).count(endProcessor)     &&
-                graph.getSuccessors(startProcessor).count(endProcessor2) 
+                graph.getSuccessors(startProcessor).count(endProcessor2)
         );
 
     BOOST_CHECK(graph.isSuccessor(startProcessor, endProcessor));
@@ -2109,7 +2122,7 @@ BOOST_AUTO_TEST_CASE(loopExternalDataOutflow)
     BOOST_CHECK(graph.isPathElement(middleProcessor, startProcessor, endProcessor2));
     BOOST_CHECK(graph.isSuccessor(middleProcessor, loopInitiator));                     //< loop unrolling
     BOOST_CHECK(graph.isPathElement(loopFinalizer, middleProcessor, loopInitiator));    //< loop unrolling
-    BOOST_CHECK(!graph.isPathElement(endProcessor, middleProcessor, loopInitiator));    
+    BOOST_CHECK(!graph.isPathElement(endProcessor, middleProcessor, loopInitiator));
 
     // check topological sorting
     std::vector<Processor*> sorted = graph.sortTopologically();
@@ -2135,7 +2148,7 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_FIXTURE_TEST_SUITE(NetworkEvaluatorTests, TestFixture)
 
 // Checks that processors are initialized by the evaluator
-BOOST_AUTO_TEST_CASE(networkInitialize) 
+BOOST_AUTO_TEST_CASE(networkInitialize)
 {
     BOOST_CHECK(!startProcessor->isInitialized());
     BOOST_CHECK(!startProcessor2->isInitialized());
@@ -2145,10 +2158,10 @@ BOOST_AUTO_TEST_CASE(networkInitialize)
     BOOST_CHECK(!endProcessor2->isInitialized());
     BOOST_CHECK(!loopInitiator->isInitialized());
     BOOST_CHECK(!loopInitiator2->isInitialized());
-    BOOST_CHECK(!loopFinalizer->isInitialized()); 
+    BOOST_CHECK(!loopFinalizer->isInitialized());
     BOOST_CHECK(!loopFinalizer2->isInitialized());
 
-    evaluator->setProcessorNetwork(network); 
+    evaluator->setProcessorNetwork(network);
 
     BOOST_CHECK(startProcessor->isInitialized());
     BOOST_CHECK(startProcessor2->isInitialized());
@@ -2163,9 +2176,9 @@ BOOST_AUTO_TEST_CASE(networkInitialize)
 }
 
 // Checks that processors are deinitialized by the evaluator on network removal
-BOOST_AUTO_TEST_CASE(networkDeinitialize) 
+BOOST_AUTO_TEST_CASE(networkDeinitialize)
 {
-    evaluator->setProcessorNetwork(network); 
+    evaluator->setProcessorNetwork(network);
     evaluator->setProcessorNetwork(0, true);
 
     BOOST_CHECK(!startProcessor->isInitialized());
@@ -2181,34 +2194,34 @@ BOOST_AUTO_TEST_CASE(networkDeinitialize)
 }
 
 // Checks evaluation order of an unconnected network
-BOOST_AUTO_TEST_CASE(unconnectedNetworkEvaluation) 
+BOOST_AUTO_TEST_CASE(unconnectedNetworkEvaluation)
 {
-    evaluator->setProcessorNetwork(network); 
+    evaluator->setProcessorNetwork(network);
     BOOST_CHECK(evalOrderRec->evalOrder.empty());
-    
+
     evaluator->process();
 
-    // expected: 
+    // expected:
     // - only end processors have been evaluated
     BOOST_CHECK(evalOrderRec->evalOrder.size() == 2);
     BOOST_CHECK(inVector(evalOrderRec->evalOrder, endProcessor));
     BOOST_CHECK(inVector(evalOrderRec->evalOrder, endProcessor2));
 }
-    
+
 // Checks evaluation order of a linear pipeline
 // Network = (StartProcessor->MiddleProcessor->MiddleProcessor2->EndProcessor;EndProcessor2)
-BOOST_AUTO_TEST_CASE(linearPipelineEvaluation) 
+BOOST_AUTO_TEST_CASE(linearPipelineEvaluation)
 {
     BOOST_CHECK(network->connectPorts(startProcessor->outport_, middleProcessor->inport_));
     BOOST_CHECK(network->connectPorts(middleProcessor->outport_, middleProcessor2->inport_));
     BOOST_CHECK(network->connectPorts(middleProcessor2->outport_, endProcessor->inport_));
-    
-    evaluator->setProcessorNetwork(network); 
+
+    evaluator->setProcessorNetwork(network);
     BOOST_CHECK(evalOrderRec->evalOrder.empty());
 
     evaluator->process();
 
-    // expected network evaluation: 
+    // expected network evaluation:
     // - only processors in the pipeline and the endProcessor2 have been evaluated
     // - evaluated processors are valid
     BOOST_CHECK(evalOrderRec->evalOrder.size() == 5);
@@ -2226,11 +2239,11 @@ BOOST_AUTO_TEST_CASE(linearPipelineEvaluation)
 
 // Checks evaluation order of a simple (linear, non-nested) loop
 // Network = (StartProcessor->(LoopInitiator->MiddleProcessor->LoopFinalizer)x3->EndProcessor)
-BOOST_AUTO_TEST_CASE(simpleLoopEvaluation) 
+BOOST_AUTO_TEST_CASE(simpleLoopEvaluation)
 {
     // remove endProcessor2 from network for being able to precisely check the evaluation order
     network->removeProcessor(endProcessor2);
-    
+
     BOOST_CHECK(network->connectPorts(startProcessor->outport_, loopInitiator->inport_));
     BOOST_CHECK(network->connectPorts(loopInitiator->outport_, middleProcessor->inport_));
     BOOST_CHECK(network->connectPorts(middleProcessor->outport_, loopFinalizer->inport_));
@@ -2238,7 +2251,7 @@ BOOST_AUTO_TEST_CASE(simpleLoopEvaluation)
     BOOST_CHECK(network->connectPorts(loopFinalizer->loopOutport_, loopInitiator->loopInport_));
     loopInitiator->loopInport_.setNumLoopIterations(3);
 
-    evaluator->setProcessorNetwork(network); 
+    evaluator->setProcessorNetwork(network);
     BOOST_CHECK(evalOrderRec->evalOrder.empty());
 
     evaluator->process();
@@ -2278,7 +2291,7 @@ BOOST_AUTO_TEST_CASE(simpleLoopEvaluation)
 
 // Checks evaluation order of a nested loop
 // Network = (StartProcessor->(LoopInitiator->(LoopInitiator2->MiddleProcessor2->LoopFinalizer2)x3->MiddleProcessor->LoopFinalizer)x2->EndProcessor)
-BOOST_AUTO_TEST_CASE(nestedLoopEvaluation) 
+BOOST_AUTO_TEST_CASE(nestedLoopEvaluation)
 {
     // remove endProcessor2 from network for being able to precisely check the evaluation order
     network->removeProcessor(endProcessor2);
@@ -2297,7 +2310,7 @@ BOOST_AUTO_TEST_CASE(nestedLoopEvaluation)
     loopInitiator2->loopInport_.setNumLoopIterations(3);
     loopInitiator->loopInport_.setNumLoopIterations(2);
 
-    evaluator->setProcessorNetwork(network); 
+    evaluator->setProcessorNetwork(network);
     BOOST_CHECK(evalOrderRec->evalOrder.empty());
 
     evaluator->process();
@@ -2306,7 +2319,7 @@ BOOST_AUTO_TEST_CASE(nestedLoopEvaluation)
     BOOST_CHECK(evalOrderRec->evalOrder.size() == 26);
     BOOST_CHECK(evalOrderRec->loopIterations.size() == 26);
     BOOST_CHECK(evalOrderRec->evalOrder.at(0) == startProcessor);
-    // outer loop    
+    // outer loop
     BOOST_CHECK(evalOrderRec->evalOrder.at(1) == loopInitiator);
     BOOST_CHECK(evalOrderRec->loopIterations.at(1) == 0);
 
@@ -2332,7 +2345,7 @@ BOOST_AUTO_TEST_CASE(nestedLoopEvaluation)
     BOOST_CHECK(evalOrderRec->loopIterations.at(12) == 0);
     BOOST_CHECK(evalOrderRec->evalOrder.at(13) == loopInitiator);
     BOOST_CHECK(evalOrderRec->loopIterations.at(13) == 1);
-        
+
         // inner loop
         BOOST_CHECK(evalOrderRec->evalOrder.at(14) == loopInitiator2);
         BOOST_CHECK(evalOrderRec->loopIterations.at(14) == 0);
@@ -2349,7 +2362,7 @@ BOOST_AUTO_TEST_CASE(nestedLoopEvaluation)
         BOOST_CHECK(evalOrderRec->evalOrder.at(21) == middleProcessor2);
         BOOST_CHECK(evalOrderRec->evalOrder.at(22) == loopFinalizer2);
         BOOST_CHECK(evalOrderRec->loopIterations.at(22) == 2);
-    
+
     BOOST_CHECK(evalOrderRec->evalOrder.at(23) == middleProcessor);
     BOOST_CHECK(evalOrderRec->evalOrder.at(24) == loopFinalizer);
     BOOST_CHECK(evalOrderRec->loopIterations.at(24) == 1);
@@ -2369,13 +2382,13 @@ BOOST_AUTO_TEST_CASE(nestedLoopEvaluation)
 
 // Checks evaluation of linear pipeline with valid processors (which should not be processed)
 // Network = (StartProcessor->MiddleProcessor->MiddleProcessor2->EndProcessor;EndProcessor2)
-BOOST_AUTO_TEST_CASE(validProcessorEvaluation) 
+BOOST_AUTO_TEST_CASE(validProcessorEvaluation)
 {
     BOOST_CHECK(network->connectPorts(startProcessor->outport_, middleProcessor->inport_));
     BOOST_CHECK(network->connectPorts(middleProcessor->outport_, middleProcessor2->inport_));
     BOOST_CHECK(network->connectPorts(middleProcessor2->outport_, endProcessor->inport_));
 
-    evaluator->setProcessorNetwork(network); 
+    evaluator->setProcessorNetwork(network);
     BOOST_CHECK(evalOrderRec->evalOrder.empty());
 
     // set start and middle processor valid
@@ -2384,7 +2397,7 @@ BOOST_AUTO_TEST_CASE(validProcessorEvaluation)
 
     evaluator->process();
 
-    // expected network evaluation: 
+    // expected network evaluation:
     // - only invalid! processors in the pipeline and the endProcessor2 have been evaluated
     // - evaluated processors are valid
     BOOST_CHECK(evalOrderRec->evalOrder.size() == 3);

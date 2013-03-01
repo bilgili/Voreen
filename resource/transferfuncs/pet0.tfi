@@ -1,59 +1,59 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
-    <TransFuncIntensity>
+    <TransFuncIntensity type="TransFuncIntensity">
         <Keys>
-            <key>
+            <key type="TransFuncMappingKey">
                 <intensity value="0.000000" />
                 <split value="true" />
                 <colorL r="255" g="255" b="255" a="0" />
                 <colorR r="0" g="0" b="0" a="255" />
             </key>
-            <key>
+            <key type="TransFuncMappingKey">
                 <intensity value="0.100000" />
                 <split value="false" />
                 <colorL r="43" g="0" b="141" a="255" />
             </key>
-            <key>
+            <key type="TransFuncMappingKey">
                 <intensity value="0.200000" />
                 <split value="false" />
                 <colorL r="92" g="2" b="250" a="255" />
             </key>
-            <key>
+            <key type="TransFuncMappingKey">
                 <intensity value="0.300000" />
                 <split value="false" />
                 <colorL r="146" g="0" b="170" a="255" />
             </key>
-            <key>
+            <key type="TransFuncMappingKey">
                 <intensity value="0.400000" />
                 <split value="false" />
                 <colorL r="196" g="7" b="87" a="255" />
             </key>
-            <key>
+            <key type="TransFuncMappingKey">
                 <intensity value="0.500000" />
                 <split value="false" />
                 <colorL r="250" g="64" b="5" a="255" />
             </key>
-            <key>
+            <key type="TransFuncMappingKey">
                 <intensity value="0.600000" />
                 <split value="false" />
                 <colorL r="255" g="121" b="0" a="255" />
             </key>
-            <key>
+            <key type="TransFuncMappingKey">
                 <intensity value="0.700000" />
                 <split value="false" />
                 <colorL r="254" g="177" b="3" a="255" />
             </key>
-            <key>
+            <key type="TransFuncMappingKey">
                 <intensity value="0.800000" />
                 <split value="false" />
                 <colorL r="252" g="234" b="2" a="255" />
             </key>
-            <key>
+            <key type="TransFuncMappingKey">
                 <intensity value="0.900000" />
                 <split value="false" />
                 <colorL r="253" g="246" b="33" a="255" />
             </key>
-            <key>
+            <key type="TransFuncMappingKey">
                 <intensity value="1.000000" />
                 <split value="true" />
                 <colorL r="255" g="255" b="255" a="255" />

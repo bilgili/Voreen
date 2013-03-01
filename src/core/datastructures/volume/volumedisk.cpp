@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -65,6 +65,11 @@ VolumeDisk::VolumeDisk(const VolumeDisk* diskrep)
 VolumeDisk::~VolumeDisk() {
 }
 
+std::string VolumeDisk::getBaseType() const {
+    VolumeFactory vf;
+    return vf.getBaseType(getFormat());
+}
+
 int VolumeDisk::getNumChannels() const {
     VolumeFactory vf;
     return vf.getNumChannels(getFormat());
@@ -73,6 +78,140 @@ int VolumeDisk::getNumChannels() const {
 int VolumeDisk::getBytesPerVoxel() const {
     VolumeFactory vf;
     return vf.getBytesPerVoxel(getFormat());
+}
+
+VolumeRAM* VolumeDisk::loadSlices(const size_t firstSlice, const size_t lastSlice) const {
+    //check for wrong parameter
+    tgtAssert(getDimensions().z > lastSlice, "lastSlice is out of volume dimension!!!");
+    tgtAssert(firstSlice <= lastSlice, "firstSlice has to be less or equal lastSlice!!!");
+
+    //create new VolumeRam
+    VolumeFactory vf;
+    VolumeRAM* vr = vf.create(getFormat(), tgt::svec3(getDimensions().x,getDimensions().y,lastSlice-firstSlice+1));
+    //return if something went wrong
+    if(!vr) return 0;
+
+    //open file
+    FILE* fin;
+    fin = fopen(getFileName().c_str(),"rb");
+
+    if (fin == 0) return 0;
+
+    size_t bytesPerVoxel = static_cast<size_t>(vr->getBitsAllocated() / 8);
+    size_t numVoxels = getDimensions().x*getDimensions().y*(lastSlice-firstSlice+1);
+    size_t numBytes = numVoxels * bytesPerVoxel;
+
+    int64_t offset = getOffset();
+    if(offset < 0) {
+        //Assume data is aligned to end of file.
+
+        // get file size:
+        fseek(fin, 0, SEEK_END);
+        int64_t fileSize = ftell(fin);
+        rewind(fin);
+
+        //calculate real offset:
+        offset = fileSize - hmul(getDimensions())*bytesPerVoxel;
+    }
+
+    //modify offset to start at first slice
+    offset += getDimensions().x*getDimensions().y*firstSlice*bytesPerVoxel;
+
+    fseek(fin, static_cast<long>(offset), SEEK_SET);
+
+    //read into ram
+    if(fread(reinterpret_cast<char*>(vr->getData()), numBytes, 1, fin) != 1) {
+        LERRORC("voreen.RepresentationConverterLoadFromDisk", "fread() failed");
+        fclose(fin);
+        delete vr;
+        return 0;
+    }
+
+    fclose(fin);
+
+    //swap endian
+    if(getSwapEndian()) {
+        Volume* tempHandle = new Volume(vr, vec3(1.0f), vec3(0.0f));
+        VolumeOperatorSwapEndianness::APPLY_OP(tempHandle);
+        tempHandle->releaseAllRepresentations();
+        delete tempHandle;
+    }
+
+    return vr;
+}
+
+VolumeRAM* VolumeDisk::loadBrick(const tgt::svec3 pOffset, const tgt::svec3 pDimensions) const {
+    //check for wrong parameter
+    tgtAssert(tgt::min(tgt::lessThanEqual(pOffset+pDimensions,getDimensions())) == 1, "Requested brick is outside of the volume!!!");
+
+    //create new VolumeRam
+    VolumeFactory vf;
+    VolumeRAM* vr = vf.create(getFormat(), pDimensions);
+    //return if something went wrong
+    if(!vr) return 0;
+
+    //open file
+    FILE* fin;
+    fin = fopen(getFileName().c_str(),"rb");
+
+    if (fin == 0) return 0;
+
+    size_t bytesPerVoxel = static_cast<size_t>(vr->getBitsAllocated() / 8);
+    size_t numVoxels = pDimensions.x;
+    size_t numBytes = numVoxels * bytesPerVoxel;
+
+    int64_t offset = getOffset();
+    if(offset < 0) {
+        //Assume data is aligned to end of file.
+
+        // get file size:
+        fseek(fin, 0, SEEK_END);
+        int64_t fileSize = ftell(fin);
+        rewind(fin);
+
+        //calculate real offset:
+        offset = fileSize - hmul(getDimensions())*bytesPerVoxel;
+    }
+
+    //modify offset to start at first slice
+    offset += getDimensions().x,getDimensions().y*pOffset.z*bytesPerVoxel;
+
+    fseek(fin, static_cast<long>(offset), SEEK_SET);
+
+    //read into ram
+    size_t pointerOffset = 0;
+    for(size_t z = 0; z < pDimensions.z; z++){
+        for(size_t y = 0; y < pDimensions.y; y++) {
+            //read into ram
+            if(fread(reinterpret_cast<char*>(vr->getData())+pointerOffset, numBytes, 1, fin) != 1) {
+                LERRORC("voreen.RepresentationConverterLoadFromDisk", "fread() failed");
+                fclose(fin);
+                delete vr;
+                return 0;
+            }
+            //move offset
+            pointerOffset += numBytes;
+
+            //move to next read
+            if(y < pDimensions.y)
+                fseek(fin, static_cast<long>(getDimensions().x-pDimensions.x),SEEK_SET);
+        }
+        //move to next read
+        if(z < pDimensions.z)
+            fseek(fin,static_cast<long>((getDimensions().x*getDimensions().y)-(pDimensions.x*pDimensions.y)),SEEK_SET);
+    }
+
+    fclose(fin);
+
+    //swap endian
+    if(getSwapEndian()) {
+        Volume* tempHandle = new Volume(vr, vec3(1.0f), vec3(0.0f));
+        VolumeOperatorSwapEndianness::APPLY_OP(tempHandle);
+        tempHandle->releaseAllRepresentations();
+        delete tempHandle;
+    }
+
+    return vr;
 }
 
 VolumeDisk* VolumeDisk::getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset) const throw (std::bad_alloc){
@@ -121,8 +260,11 @@ VolumeRepresentation* RepresentationConverterLoadFromDisk::convert(const VolumeR
         FILE* fin;
         fin = fopen(dr->getFileName().c_str(),"rb");
 
-        if (fin == 0)
-            throw tgt::IOException("Unable to open raw file for reading", dr->getFileName());
+        if (fin == 0) {
+            //throw tgt::IOException("Unable to open raw file for reading", dr->getFileName());
+            LERRORC("voreen.RepresentationConverterLoadFromDisk", "Unable to open raw file for reading");
+            return 0;
+        }
 
         size_t bytesPerVoxel = static_cast<size_t>(volume->getBitsAllocated() / 8);
         size_t numVoxels = hmul(dr->getDimensions());
@@ -159,6 +301,7 @@ VolumeRepresentation* RepresentationConverterLoadFromDisk::convert(const VolumeR
             Volume* tempHandle = new Volume(volume, vec3(1.0f), vec3(0.0f));
             VolumeOperatorSwapEndianness::APPLY_OP(tempHandle);
             tempHandle->releaseAllRepresentations();
+            delete tempHandle;
         }
 
         return volume;
@@ -168,6 +311,37 @@ VolumeRepresentation* RepresentationConverterLoadFromDisk::convert(const VolumeR
         //LERROR("Failed to convert!");
         return 0;
     }
+}
+
+bool RepresentationConverterLoadFromDiskToGL::canConvert(const VolumeRepresentation* source) const {
+    if(dynamic_cast<const VolumeDisk*>(source))
+        return true;
+    else
+        return false;
+}
+
+VolumeRepresentation* RepresentationConverterLoadFromDiskToGL::convert(const VolumeRepresentation* source) const {
+    //convert from disk to ram
+    RepresentationConverterLoadFromDisk diskToRam;
+    VolumeRepresentation* volumeRam = 0;
+    if(diskToRam.canConvert(source))
+        volumeRam = diskToRam.convert(source);
+    else {
+        LERRORC("voreen.RepresentationConverterLoadFromDiskToGL","Source volume is no disk volume!!!");
+        return 0;
+    }
+    //convert from ram to disk
+    RepresentationConverterUploadGL ramToGL;
+    VolumeRepresentation* volumeGL = 0;
+    if(ramToGL.canConvert(volumeRam))
+        volumeGL = ramToGL.convert(volumeRam);
+    else {
+        LERRORC("voreen.RepresentationConverterLoadFromDiskToGL","volumeRam is a null pointer!!!");
+        return 0;
+    }
+    //clean volumeRam and return
+    delete volumeRam;
+    return volumeGL;
 }
 
 } // namespace voreen

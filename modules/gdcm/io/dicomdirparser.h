@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -23,8 +23,10 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#ifndef DICOMDIRPARSER_H
-#define DICOMDIRPARSER_H
+#ifndef VRN_DICOMDIRPARSER_H
+#define VRN_DICOMDIRPARSER_H
+
+#include "voreen/core/voreencoreapi.h"
 
 // include this before any GDCM header in order to make sure that C99 types are defined
 #include "tgt/types.h"
@@ -43,7 +45,7 @@ namespace voreen {
 /**
  * Provides functionality to parse the Items in a DirectoryRecordSequence, identify their type and extract values.
  */
-class DirectoryRecordSequenceIterator {
+class VRN_CORE_API DirectoryRecordSequenceIterator {
 
 public:
     DirectoryRecordSequenceIterator();

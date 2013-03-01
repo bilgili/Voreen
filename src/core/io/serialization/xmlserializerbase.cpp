@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -78,7 +78,7 @@ std::vector<std::string> XmlSerializerBase::getErrors() const {
 
 std::string XmlSerializerBase::getTypeString(const std::type_info& type) {
     for (FactoryListType::iterator it = factories_.begin(); it != factories_.end(); ++it) {
-        std::string typeString = (*it)->getTypeString(type);
+        std::string typeString = (*it)->getSerializableTypeString(type);
         if (!typeString.empty())
             return typeString;
     }

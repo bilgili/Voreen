@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,7 +26,9 @@
 #ifndef VRN_COLORMAPPROPERTY_H
 #define VRN_COLORMAPPROPERTY_H
 
+#include "voreen/core/voreencoreapi.h"
 #include "voreen/core/properties/templateproperty.h"
+
 #include "../datastructures/colormap.h"
 
 namespace voreen {
@@ -35,7 +37,7 @@ namespace voreen {
  * This Property holds a ColorMap.
  *
  */
-class ColorMapProperty : public TemplateProperty<ColorMap> {
+class VRN_CORE_API ColorMapProperty : public TemplateProperty<ColorMap> {
 public:
     ColorMapProperty(const std::string& id, const std::string& guiText, ColorMap value = ColorMap::createColdHot(),
         Processor::InvalidationLevel invalidationLevel=Processor::INVALID_RESULT);

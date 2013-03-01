@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -581,8 +581,8 @@ public:
 
     /**
      * Returns true, if \p port lies on a path between \p pathRootPort and \p pathEndPort.
-     * All passed ports may either be an inport or an outport. 
-     * If \p port is identical to \p pathRootPort or \p pathEndPort and a path between root and end exists, 
+     * All passed ports may either be an inport or an outport.
+     * If \p port is identical to \p pathRootPort or \p pathEndPort and a path between root and end exists,
      * \p port is defined to be an path element.
 .    */
     bool isPathElement(Port* port, Port* pathRootPort, Port* pathEndPort) const;
@@ -599,7 +599,7 @@ public:
     std::set<Processor*> getPredecessors(Processor* processor) const;
 
     /**
-     * Returns all predecessing processors of the passed port, 
+     * Returns all predecessing processors of the passed port,
      * which must be an inport.
      *
      * @param port The port whose predecessors are to be determined.
@@ -619,7 +619,7 @@ public:
     std::set<Processor*> getSuccessors(Processor* processor) const;
 
     /**
-     * Returns all successing processors of the passed port, 
+     * Returns all successing processors of the passed port,
      * which must be an outport.
      *
      * @param port The port whose successors are to be determined.

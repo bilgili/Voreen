@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -68,7 +68,7 @@ protected:
 /**
  * Widget that traverses the network and displays all contained volumes in a tree.
  */
-class VRN_QT_API VolumeViewer : public QWidget, public VolumeHandleObserver, public NetworkEvaluator::ProcessWrapper {
+class VRN_QT_API VolumeViewer : public QWidget, public VolumeObserver, public NetworkEvaluator::ProcessWrapper {
 Q_OBJECT
 public:
 
@@ -77,10 +77,10 @@ public:
 
     void setNetworkEvaluator(NetworkEvaluator* evaluator);
 
-    /// @see VolumeHandleObserver
-    virtual void volumeHandleDelete(const VolumeBase* source);
+    /// @see VolumeObserver
+    virtual void volumeDelete(const VolumeBase* source);
 
-    /// @see VolumeHandleObserver
+    /// @see VolumeObserver
     virtual void volumeChange(const VolumeBase* source);
 
     /// @see NetworkEvaluator::ProcessWrapper

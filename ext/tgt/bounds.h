@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -28,6 +28,7 @@
 #include "tgt/types.h"
 #include "tgt/vector.h"
 #include "tgt/matrix.h"
+#include "tgt/plane.h"
 
 namespace tgt {
 
@@ -48,7 +49,7 @@ class TGT_API Bounds {
     /**
     *   Constructs an undefined boundingbox containing v
     */
-    Bounds(const Vector& v)
+    Bounds(const vec3& v)
       : points_(1),
         llf_(v),
         urb_(v)
@@ -57,7 +58,7 @@ class TGT_API Bounds {
     /**
     *   Constructs a bounding box containing v1 and v2
     */
-    Bounds(const Vector& v1, const Vector& v2)
+    Bounds(const vec3& v1, const vec3& v2)
       : points_(1),
         llf_(v1),
         urb_(v1) {
@@ -68,7 +69,8 @@ class TGT_API Bounds {
     /**
     *   Enlarges the box (if necessary) to contain v
     */
-    void addPoint(const Vector& v);
+    void addPoint(const vec3& v);
+    void addPoint(const vec4& v);
 
     /**
     *   Enlarges the box (if necessary) to contain b
@@ -149,6 +151,8 @@ class TGT_API Bounds {
         // No separating axis ... they must intersect
         return true;
    }
+
+    bool intersects(const plane& p) const;
 
     bool insideXZ(const Bounds& bounds) const;
     bool insideXZ(const vec3& v) const;

@@ -7,11 +7,12 @@ INCLUDE(../../cmake/commonconf.cmake)
 
 MESSAGE(STATUS "Configuring voreen_core Library")
 
-# please insert new files in alphabetically order!
+# please insert new files in alphabetical order
 SET(VRN_CORE_SOURCES 
     version.cpp
     voreenapplication.cpp
     voreenmodule.cpp
+    voreenobject.cpp
     
     animation/animatedprocessor.cpp
     animation/animation.cpp
@@ -47,12 +48,13 @@ SET(VRN_CORE_SOURCES
     datastructures/rendertarget.cpp
     datastructures/geometry/facegeometry.cpp
     datastructures/geometry/geometry.cpp
-    datastructures/geometry/geometryfactory.cpp
+    datastructures/geometry/geometrysequence.cpp
     datastructures/geometry/meshgeometry.cpp
+    datastructures/geometry/trianglemeshgeometry.cpp
     datastructures/geometry/meshlistgeometry.cpp
     datastructures/geometry/vertexgeometry.cpp
+    datastructures/geometry/vertex.cpp
     datastructures/meta/aggregationmetadata.cpp
-    datastructures/meta/coremetadatafactory.cpp
     datastructures/meta/metadatacontainer.cpp
     datastructures/meta/positionmetadata.cpp
     datastructures/meta/realworldmappingmetadata.cpp
@@ -64,8 +66,6 @@ SET(VRN_CORE_SOURCES
     datastructures/roi/roibase.cpp
     datastructures/roi/roinormalizedgeometry.cpp
     datastructures/roi/roicube.cpp
-    datastructures/roi/coreroifactory.cpp
-    datastructures/roi/roifactory.cpp
     datastructures/roi/roigraph.cpp
     datastructures/roi/roiraster.cpp
     datastructures/roi/roisphere.cpp
@@ -76,16 +76,13 @@ SET(VRN_CORE_SOURCES
     datastructures/transfunc/transfunc.cpp
     datastructures/transfunc/transfunc1dkeys.cpp
     datastructures/transfunc/transfunc2dprimitives.cpp
-    datastructures/transfunc/transfuncfactory.cpp
     datastructures/transfunc/transfuncmappingkey.cpp
     datastructures/transfunc/transfuncprimitive.cpp    
     datastructures/volume/histogram.cpp
     datastructures/volume/modality.cpp
     datastructures/volume/volumeram.cpp
-    datastructures/volume/volumecollection.cpp
     datastructures/volume/volumecontainer.cpp
     datastructures/volume/volumederiveddata.cpp
-    datastructures/volume/volumederiveddatafactory.cpp 
     datastructures/volume/volumeelement.cpp 
     datastructures/volume/volumefactory.cpp 
     datastructures/volume/volumegl.cpp
@@ -93,6 +90,7 @@ SET(VRN_CORE_SOURCES
     datastructures/volume/volume.cpp
     datastructures/volume/volumedecorator.cpp
     datastructures/volume/volumehash.cpp
+    datastructures/volume/volumelist.cpp
     datastructures/volume/volumeminmax.cpp
     datastructures/volume/volumepreview.cpp
     datastructures/volume/volumerepresentation.cpp
@@ -107,7 +105,6 @@ SET(VRN_CORE_SOURCES
     interaction/flythroughnavigation.cpp
     interaction/idmanager.cpp
     interaction/interactionhandler.cpp
-    interaction/interactionhandlerfactory.cpp
     interaction/pickingmanager.cpp
     interaction/slicecamerainteractionhandler.cpp
     interaction/trackballnavigation.cpp
@@ -119,11 +116,13 @@ SET(VRN_CORE_SOURCES
     io/volumeserializer.cpp
     io/volumeserializerpopulator.cpp
     io/volumewriter.cpp
+    io/serialization/voreenserializableobjectfactory.cpp
     io/serialization/xmldeserializer.cpp
     io/serialization/xmlserializationconstants.cpp
     io/serialization/xmlserializer.cpp
     io/serialization/xmlserializerbase.cpp
     
+    network/networkconfigurator.cpp
     network/networkconverter.cpp
     network/networkevaluator.cpp
     network/networkgraph.cpp 
@@ -136,6 +135,7 @@ SET(VRN_CORE_SOURCES
     ports/coprocessorport.cpp 
     ports/geometryport.cpp
     ports/port.cpp
+    ports/loopport.cpp
     ports/renderport.cpp
     ports/roiport.cpp
     ports/textport.cpp
@@ -148,7 +148,6 @@ SET(VRN_CORE_SOURCES
     processors/imageprocessor.cpp
     processors/imageprocessorbypassable.cpp
     processors/processor.cpp
-    processors/processorfactory.cpp
     processors/processorwidget.cpp
     processors/profiling.cpp
     processors/renderprocessor.cpp
@@ -170,7 +169,6 @@ SET(VRN_CORE_SOURCES
     properties/numericproperty.cpp
     properties/optionproperty.cpp
     properties/property.cpp
-    properties/propertyfactory.cpp
     properties/propertyowner.cpp
     properties/propertyvector.cpp
     properties/shaderproperty.cpp
@@ -179,17 +177,16 @@ SET(VRN_CORE_SOURCES
     properties/transfuncproperty.cpp
     properties/vectorproperty.cpp
     properties/voxeltypeproperty.cpp
+    properties/volumeinfoproperty.cpp
     properties/volumeurllistproperty.cpp
     properties/volumeurlproperty.cpp
-    properties/link/corelinkevaluatorfactory.cpp
-    properties/link/dependencylinkevaluator.cpp
-    # properties/link/dependencylinkevaluators.cpp
     properties/link/linkevaluatorbase.cpp
     properties/link/linkevaluatorboolinvert.cpp
-    properties/link/linkevaluatorfactory.cpp
+    properties/link/linkevaluatorhelper.cpp
     properties/link/linkevaluatorid.cpp
     properties/link/propertylink.cpp
     
+    utils/backgroundthread.cpp
     utils/classificationmodes.cpp
     utils/commandlineparser.cpp
     utils/glsl.cpp
@@ -225,6 +222,8 @@ SET(VRN_CORE_SOURCES
     utils/GLSLparser/preprocessor/ppstatement.cpp
     utils/GLSLparser/preprocessor/ppterminals.cpp
     utils/GLSLparser/preprocessor/ppvisitor.cpp
+    utils/regressiontest/filecomparators.cpp
+    utils/regressiontest/regressiontestcase.cpp
     utils/voreenblas/voreenblascpu.cpp
 )
 
@@ -233,6 +232,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/voreenapplication.h
     ../../include/voreen/core/voreencoreapi.h
     ../../include/voreen/core/voreenmodule.h
+    ../../include/voreen/core/voreenobject.h
 
     ../../include/voreen/core/animation/animatedprocessor.h
     ../../include/voreen/core/animation/animation.h
@@ -246,7 +246,6 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/animation/templatepropertytimeline.h
     ../../include/voreen/core/animation/templatepropertytimelinestate.h
     ../../include/voreen/core/animation/timelineobserver.h
-    ../../include/voreen/core/animation/undoableanimation.h
     ../../include/voreen/core/animation/interpolation/basicfloatinterpolation.h
     ../../include/voreen/core/animation/interpolation/basicintinterpolation.h
     ../../include/voreen/core/animation/interpolation/boolinterpolationfunctions.h
@@ -273,14 +272,15 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/datastructures/tensor.h
     ../../include/voreen/core/datastructures/geometry/facegeometry.h
     ../../include/voreen/core/datastructures/geometry/geometry.h
-    ../../include/voreen/core/datastructures/geometry/geometryfactory.h
+    ../../include/voreen/core/datastructures/geometry/geometrysequence.h
     ../../include/voreen/core/datastructures/geometry/meshgeometry.h
+    ../../include/voreen/core/datastructures/geometry/trianglemeshgeometry.h
     ../../include/voreen/core/datastructures/geometry/meshlistgeometry.h
     ../../include/voreen/core/datastructures/geometry/pointlistgeometry.h
     ../../include/voreen/core/datastructures/geometry/pointsegmentlistgeometry.h
     ../../include/voreen/core/datastructures/geometry/vertexgeometry.h
+    ../../include/voreen/core/datastructures/geometry/vertex.h
     ../../include/voreen/core/datastructures/meta/aggregationmetadata.h 
-    ../../include/voreen/core/datastructures/meta/coremetadatafactory.h
     ../../include/voreen/core/datastructures/meta/filelistmetadata.h
     ../../include/voreen/core/datastructures/meta/metadatabase.h
     ../../include/voreen/core/datastructures/meta/metadatacontainer.h
@@ -296,8 +296,6 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/datastructures/roi/roibase.h
     ../../include/voreen/core/datastructures/roi/roinormalizedgeometry.h
     ../../include/voreen/core/datastructures/roi/roicube.h
-    ../../include/voreen/core/datastructures/roi/coreroifactory.h
-    ../../include/voreen/core/datastructures/roi/roifactory.h
     ../../include/voreen/core/datastructures/roi/roigraph.h
     ../../include/voreen/core/datastructures/roi/roiraster.h
     ../../include/voreen/core/datastructures/roi/roisingle.h
@@ -308,18 +306,15 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/datastructures/transfunc/transfunc.h
     ../../include/voreen/core/datastructures/transfunc/transfunc1dkeys.h
     ../../include/voreen/core/datastructures/transfunc/transfunc2dprimitives.h    
-	../../include/voreen/core/datastructures/transfunc/transfuncfactory.h
     ../../include/voreen/core/datastructures/transfunc/transfuncmappingkey.h
     ../../include/voreen/core/datastructures/transfunc/transfuncprimitive.h   
     ../../include/voreen/core/datastructures/volume/histogram.h
     ../../include/voreen/core/datastructures/volume/modality.h
     ../../include/voreen/core/datastructures/volume/volumeram.h
     ../../include/voreen/core/datastructures/volume/volumeatomic.h
-    ../../include/voreen/core/datastructures/volume/volumecollection.h
     ../../include/voreen/core/datastructures/volume/volumecontainer.h
     ../../include/voreen/core/datastructures/volume/volumeelement.h
     ../../include/voreen/core/datastructures/volume/volumederiveddata.h
-    ../../include/voreen/core/datastructures/volume/volumederiveddatafactory.h
     ../../include/voreen/core/datastructures/volume/volumefactory.h
     ../../include/voreen/core/datastructures/volume/volumefusion.h
     ../../include/voreen/core/datastructures/volume/volumegl.h
@@ -327,6 +322,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/datastructures/volume/volume.h
     ../../include/voreen/core/datastructures/volume/volumedecorator.h
     ../../include/voreen/core/datastructures/volume/volumehash.h
+    ../../include/voreen/core/datastructures/volume/volumelist.h
     ../../include/voreen/core/datastructures/volume/volumeminmax.h
     ../../include/voreen/core/datastructures/volume/volumeoperator.h
     ../../include/voreen/core/datastructures/volume/volumepreview.h
@@ -338,6 +334,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/datastructures/volume/operators/volumeoperatorconvert.h
     ../../include/voreen/core/datastructures/volume/operators/volumeoperatorgradient.h
     ../../include/voreen/core/datastructures/volume/operators/volumeoperatorhalfsample.h
+    ../../include/voreen/core/datastructures/volume/operators/volumeoperatorequalize.h
     ../../include/voreen/core/datastructures/volume/operators/volumeoperatorinvert.h
     ../../include/voreen/core/datastructures/volume/operators/volumeoperatorisuniform.h
     ../../include/voreen/core/datastructures/volume/operators/volumeoperatormagnitude.h
@@ -349,10 +346,12 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/datastructures/volume/operators/volumeoperatorregiongrow.h
     ../../include/voreen/core/datastructures/volume/operators/volumeoperatorresample.h
     ../../include/voreen/core/datastructures/volume/operators/volumeoperatorresize.h
+    ../../include/voreen/core/datastructures/volume/operators/volumeoperatorresizepoweroftwo.h
     ../../include/voreen/core/datastructures/volume/operators/volumeoperatorsecondderivatives.h
     ../../include/voreen/core/datastructures/volume/operators/volumeoperatorsubset.h
     ../../include/voreen/core/datastructures/volume/operators/volumeoperatorswapendianness.h
     ../../include/voreen/core/datastructures/volume/operators/volumeoperatortranspose.h 
+    ../../include/voreen/core/datastructures/volume/operators/volumeoperatorvorticity.h 
 
     ../../include/voreen/core/interaction/booltoggleinteractionhandler.h
     ../../include/voreen/core/interaction/buttonpressinteractionhandler.h 
@@ -361,7 +360,6 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/interaction/flythroughnavigation.h
     ../../include/voreen/core/interaction/idmanager.h
     ../../include/voreen/core/interaction/interactionhandler.h
-    ../../include/voreen/core/interaction/interactionhandlerfactory.h
     ../../include/voreen/core/interaction/mwheelnumpropinteractionhandler.h
     ../../include/voreen/core/interaction/pickingmanager.h
     ../../include/voreen/core/interaction/slicecamerainteractionhandler.h
@@ -374,18 +372,21 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/io/volumeserializer.h
     ../../include/voreen/core/io/volumeserializerpopulator.h
     ../../include/voreen/core/io/volumewriter.h
+    
     ../../include/voreen/core/io/serialization/abstractserializable.h
     ../../include/voreen/core/io/serialization/resourcefactory.h
     ../../include/voreen/core/io/serialization/serializable.h
     ../../include/voreen/core/io/serialization/serializablefactory.h
     ../../include/voreen/core/io/serialization/serialization.h
     ../../include/voreen/core/io/serialization/serializationexceptions.h 
+    ../../include/voreen/core/io/serialization/voreenserializableobjectfactory.h
     ../../include/voreen/core/io/serialization/xmldeserializer.h
     ../../include/voreen/core/io/serialization/xmlprocessor.h
     ../../include/voreen/core/io/serialization/xmlserializationconstants.h
     ../../include/voreen/core/io/serialization/xmlserializer.h
     ../../include/voreen/core/io/serialization/xmlserializerbase.h
 
+    ../../include/voreen/core/network/networkconfigurator.h 
     ../../include/voreen/core/network/networkconverter.h 
     ../../include/voreen/core/network/networkevaluator.h
     ../../include/voreen/core/network/networkgraph.h
@@ -401,6 +402,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/ports/genericport.h
     ../../include/voreen/core/ports/geometryport.h
     ../../include/voreen/core/ports/port.h
+    ../../include/voreen/core/ports/loopport.h
     ../../include/voreen/core/ports/renderport.h
     ../../include/voreen/core/ports/roiport.h
     ../../include/voreen/core/ports/textport.h
@@ -414,7 +416,6 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/processors/imageprocessor.h
     ../../include/voreen/core/processors/imageprocessorbypassable.h
     ../../include/voreen/core/processors/processor.h 
-    ../../include/voreen/core/processors/processorfactory.h
     ../../include/voreen/core/processors/processorwidget.h
     ../../include/voreen/core/processors/processorwidgetfactory.h
     ../../include/voreen/core/processors/profiling.h
@@ -441,7 +442,6 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/properties/numericproperty.h
     ../../include/voreen/core/properties/optionproperty.h
     ../../include/voreen/core/properties/property.h
-    ../../include/voreen/core/properties/propertyfactory.h
     ../../include/voreen/core/properties/propertyowner.h
     ../../include/voreen/core/properties/propertyvector.h
     ../../include/voreen/core/properties/propertywidget.h
@@ -454,19 +454,18 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/properties/templatepropertycondition.h
     ../../include/voreen/core/properties/transfuncproperty.h
     ../../include/voreen/core/properties/vectorproperty.h
+    ../../include/voreen/core/properties/volumeinfoproperty.h
     ../../include/voreen/core/properties/volumeurlproperty.h
     ../../include/voreen/core/properties/volumeurllistproperty.h
     ../../include/voreen/core/properties/voxeltypeproperty.h
-    ../../include/voreen/core/properties/link/corelinkevaluatorfactory.h
-    ../../include/voreen/core/properties/link/dependencylinkevaluator.h
-    ../../include/voreen/core/properties/link/dependencylinkevaluators.h
     ../../include/voreen/core/properties/link/linkevaluatorbase.h
     ../../include/voreen/core/properties/link/linkevaluatorboolinvert.h
-    ../../include/voreen/core/properties/link/linkevaluatorfactory.h
+    ../../include/voreen/core/properties/link/linkevaluatorhelper.h
     ../../include/voreen/core/properties/link/linkevaluatorid.h
     ../../include/voreen/core/properties/link/linkevaluatoridgeneric.h
     ../../include/voreen/core/properties/link/propertylink.h
 
+    ../../include/voreen/core/utils/backgroundthread.h
     ../../include/voreen/core/utils/classificationmodes.h
     ../../include/voreen/core/utils/commandlineparser.h
     ../../include/voreen/core/utils/exception.h
@@ -527,6 +526,8 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/utils/GLSLparser/preprocessor/ppsymbol.h
     ../../include/voreen/core/utils/GLSLparser/preprocessor/ppterminals.h
     ../../include/voreen/core/utils/GLSLparser/preprocessor/ppvisitor.h
+    ../../include/voreen/core/utils/regressiontest/filecomparators.h
+    ../../include/voreen/core/utils/regressiontest/regressiontestcase.h
     ../../include/voreen/core/utils/voreenblas/voreenblas.h
     ../../include/voreen/core/utils/voreenblas/voreenblascpu.h
     ../../include/voreen/core/utils/voreenblas/ellpackmatrix.h    

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -24,7 +24,7 @@
  ***********************************************************************************/
 
 #include "voreen/core/datastructures/roi/roiunion.h"
-#include "voreen/core/datastructures/geometry/meshlistgeometry.h"
+#include "voreen/core/datastructures/geometry/geometrysequence.h"
 
 namespace voreen {
 
@@ -39,14 +39,12 @@ bool ROIUnion::inROI(tgt::vec3 p) const {
     return false;
 }
 
-MeshListGeometry* ROIUnion::generateMesh() const {
-    MeshListGeometry* mlg = new MeshListGeometry();
-    return mlg;
+Geometry* ROIUnion::generateMesh() const {
+    return new GeometrySequence();
 }
 
-MeshListGeometry* ROIUnion::generateMesh(tgt::plane /*pl*/) const {
-    MeshListGeometry* mlg = new MeshListGeometry();
-    return mlg;
+Geometry* ROIUnion::generateMesh(tgt::plane /*pl*/) const {
+    return new GeometrySequence();
 }
 
 tgt::Bounds ROIUnion::getBoundingBox() const {

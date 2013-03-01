@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -54,7 +54,7 @@ namespace voreen {
  * Base class for all SliceRendering sub classes.
  * Provides basic functionality.
  */
-class SliceRendererBase : public VolumeRenderer {
+class VRN_CORE_API SliceRendererBase : public VolumeRenderer {
 
 public:
     enum TextureMode {

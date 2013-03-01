@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,7 +33,7 @@ namespace voreen {
 
 
 ///Returns the minimum voxel value in the volume.
-class VolumeOperatorMinValue {
+class VRN_CORE_API VolumeOperatorMinValue {
 public:
     template<typename T>
     static T apply(const VolumeAtomic<T>* volume);
@@ -52,7 +52,7 @@ public:
 };
 
 ///Returns the maximum voxel value in the volume.
-class VolumeOperatorMaxValue {
+class VRN_CORE_API VolumeOperatorMaxValue {
 public:
     template<typename T>
     static T apply(const VolumeAtomic<T>* volume);
@@ -168,7 +168,7 @@ tgt::Vector2<S> VolumeOperatorMaxValue::apply(const VolumeAtomic<tgt::Vector2<S>
         if (voxelMax > max)
             max = voxelMax;
     }
-    return max;
+    return tgt::Vector2<S>(max);
 }
 
 template<typename S>

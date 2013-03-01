@@ -58,6 +58,7 @@ SET(MOD_CORE_SOURCES
     ${MOD_DIR}/processors/proxygeometry/explosionproxygeometry.cpp
     ${MOD_DIR}/processors/proxygeometry/multiplanarproxygeometry.cpp
     ${MOD_DIR}/processors/proxygeometry/multivolumeproxygeometry.cpp
+    ${MOD_DIR}/processors/proxygeometry/optimizedproxygeometry.cpp
     
     ${MOD_DIR}/processors/render/cpuraycaster.cpp
     ${MOD_DIR}/processors/render/multiplanarslicerenderer.cpp
@@ -82,7 +83,7 @@ SET(MOD_CORE_SOURCES
     ${MOD_DIR}/processors/utility/renderstore.cpp
     ${MOD_DIR}/processors/utility/scale.cpp
     ${MOD_DIR}/processors/utility/segmentationvalidation.cpp
-    ${MOD_DIR}/processors/utility/volumecollectionmodalityfilter.cpp
+    ${MOD_DIR}/processors/utility/volumelistmodalityfilter.cpp
     ${MOD_DIR}/processors/utility/volumeinformation.cpp
     ${MOD_DIR}/processors/utility/volumepicking.cpp
     
@@ -108,6 +109,7 @@ SET(MOD_CORE_SOURCES
     ${MOD_DIR}/processors/volume/volumespacing.cpp
     ${MOD_DIR}/processors/volume/volumetransformation.cpp
     ${MOD_DIR}/processors/volume/volumeoffset.cpp
+    ${MOD_DIR}/processors/volume/volumevorticity.cpp
 
     # Volume readers/writers sources
     ${MOD_DIR}/io/analyzevolumereader.cpp
@@ -178,6 +180,7 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/processors/proxygeometry/explosionproxygeometry.h
     ${MOD_DIR}/processors/proxygeometry/multiplanarproxygeometry.h
     ${MOD_DIR}/processors/proxygeometry/multivolumeproxygeometry.h
+    ${MOD_DIR}/processors/proxygeometry/optimizedproxygeometry.h
     
     ${MOD_DIR}/processors/render/cpuraycaster.h
     ${MOD_DIR}/processors/render/multiplanarslicerenderer.h
@@ -202,7 +205,7 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/processors/utility/renderstore.h
     ${MOD_DIR}/processors/utility/scale.h
     ${MOD_DIR}/processors/utility/segmentationvalidation.h
-    ${MOD_DIR}/processors/utility/volumecollectionmodalityfilter.h
+    ${MOD_DIR}/processors/utility/volumelistmodalityfilter.h
     ${MOD_DIR}/processors/utility/volumeinformation.h
     ${MOD_DIR}/processors/utility/volumepicking.h
     
@@ -228,6 +231,7 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/processors/volume/volumespacing.h
     ${MOD_DIR}/processors/volume/volumetransformation.h
     ${MOD_DIR}/processors/volume/volumeoffset.h 
+    ${MOD_DIR}/processors/volume/volumevorticity.h
 
     # Volume readers/writers headers
     ${MOD_DIR}/io/analyzevolumereader.h

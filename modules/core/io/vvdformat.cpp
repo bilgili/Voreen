@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,7 +36,7 @@ namespace voreen {
 
 VvdRawDataObject::VvdRawDataObject(const VolumeRAM* volume, std::string filename) : filename_(filename), dimensions_(volume->getDimensions()) {
     VolumeFactory vf;
-    format_ = vf.getType(volume);
+    format_ = vf.getFormat(volume);
     if(format_ == "")
         LERRORC("voreen.VvdRawDataObject", "Format currently not supported");
 }

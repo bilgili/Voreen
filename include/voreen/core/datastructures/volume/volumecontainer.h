@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,7 +26,7 @@
 #ifndef VRN_VOLUMECONTAINER_H
 #define VRN_VOLUMECONTAINER_H
 
-#include "voreen/core/datastructures/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumelist.h"
 #include "voreen/core/datastructures/volume/volume.h"
 
 #include <vector>
@@ -35,16 +35,16 @@
 namespace voreen {
 
 /**
- * Extension of the VolumeCollection that performs memory management,
- * i.e., the volume container takes ownership of passed volume handles and
+ * Extension of the VolumeList that performs memory management,
+ * i.e., the volume container takes ownership of passed volumes and
  * deletes them on removal or its own destruction.
  *
  * Additionally, this class provides convenience functions for
  * volume loading.
  *
- * @see VolumeCollection
+ * @see VolumeList
  */
-class VRN_CORE_API VolumeContainer : public VolumeCollection {
+class VRN_CORE_API VolumeContainer : public VolumeList {
 public:
 
     VolumeContainer();
@@ -60,21 +60,21 @@ public:
     * Adds the passed Volume to the container,
     * if it is not already contained.
     *
-    * In contrast to the base class VolumeCollection the VolumeContainer
+    * In contrast to the base class VolumeList the VolumeContainer
     * does take ownership of the added Volume and therefore
     * deletes it on its own destruction.
     */
     virtual void add(VolumeBase* volumeHandle);
 
    /**
-    * Adds VolumeHandles contained by the passed VolumeCollection
+    * Adds VolumeHandles contained by the passed VolumeList
     * to the collection, if they are not already contained.
     *
-    * In contrast to the base class VolumeCollection the VolumeContainer
+    * In contrast to the base class VolumeList the VolumeContainer
     * does take ownership of the added VolumeHandles and therefore
     * deletes them on its own destruction.
     */
-    virtual void add(const VolumeCollection* volumeCollection);
+    virtual void add(const VolumeList* volumeList);
 
     /**
      * Deletes the passed Volume and removes it
@@ -92,7 +92,7 @@ public:
      *
      * @see releaseVolume
      */
-    virtual void remove(const VolumeCollection* volumeCollection);
+    virtual void remove(const VolumeList* volumeList);
 
     /**
      * Removes all VolumeHandles objects from the container and deletes them.
@@ -102,13 +102,13 @@ public:
     virtual void clear();
 
     /**
-     * Removes the passed volume handle from the container
+     * Removes the passed volume from the container
      * without deleting it.
      */
     virtual void release(const VolumeBase* handle);
 
     /**
-     * Removes all contained volume handles from the container
+     * Removes all contained volumes from the container
      * without deleting them.
      */
     virtual void releaseAll();

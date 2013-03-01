@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -83,9 +83,7 @@ void OpenCLProperty::initialize() throw (tgt::Exception) {
 }
 
 void OpenCLProperty::deinitialize() throw (tgt::Exception) {
-    delete program_;
-    program_ = 0;
-    LGL_ERROR;
+    clearProgram();
 
     TemplateProperty<OpenCLSource>::deinitialize();
 }
@@ -193,7 +191,13 @@ void OpenCLProperty::rebuild() {
     updateWidgets();
 }
 
-cl::Program* OpenCLProperty::getProgram() {
+void OpenCLProperty::clearProgram() {
+    delete program_;
+    program_ = 0;
+    LGL_ERROR;
+}
+
+cl::Program* OpenCLProperty::getProgram() const {
    return program_;
 }
 

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -86,11 +86,11 @@ void RenderProcessor::invalidate(int inv) {
         return;
 
     // invalidate result of render ports
-    for (size_t i=0; i<getOutports().size(); ++i) {
+    /*for (size_t i=0; i<getOutports().size(); ++i) {
         RenderPort* renderPort = dynamic_cast<RenderPort*>(getOutports()[i]);
         if (renderPort)
             renderPort->invalidateResult();
-    }
+    }*/
 }
 
 void RenderProcessor::beforeProcess() {
@@ -112,9 +112,8 @@ void RenderProcessor::manageRenderTargets() {
                 }
             }
             else {
-                if (rp->hasRenderTarget()) {
+                if (rp->hasRenderTarget() && rp->getDeinitializeOnDisconnect())
                     rp->deinitialize();
-                }
             }
         }
     }
@@ -126,8 +125,10 @@ void RenderProcessor::adjustRenderOutportSizes() {
     const std::vector<Port*> inports = getInports();
     for (size_t i=0; i<inports.size() && inputDim == tgt::ivec2(-1); ++i) {
         RenderPort* rp = dynamic_cast<RenderPort*>(inports[i]);
-        if (rp && rp->hasRenderTarget())
+        if (rp && rp->hasRenderTarget()){
             inputDim = rp->getSize();
+            break;
+        }
     }
 
     // - assign inport dimension to all connected render outports, which are not size receivers
@@ -136,7 +137,7 @@ void RenderProcessor::adjustRenderOutportSizes() {
     const std::vector<Port*> outports = getOutports();
     for (size_t i=0; i<outports.size(); ++i) {
         RenderPort* rp = dynamic_cast<RenderPort*>(outports[i]);
-        if (!rp || !rp->isConnected())
+        if (!rp || !rp->hasRenderTarget())
             continue;
 
         if (rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_DEFAULT) {
@@ -155,16 +156,19 @@ void RenderProcessor::adjustRenderOutportSizes() {
                     resizeDim = receiveProp->get();
             }
         }
+        else if (rp->getRenderSizePropagation() == RenderPort::RENDERSIZE_STATIC) {
+            // nothing to do
+        }
         else {
-            LERROR("Render outport has invalid render size propgation mode (RENDERSIZE_REQUESTER): " << rp->getQualifiedName());
+            LERROR("Render outport has invalid render size propgation mode: " << rp->getQualifiedName());
         }
     }
 
     // resize private render ports to resizeDim
     if (resizeDim != tgt::ivec2(-1)) {
-        for (size_t i=0; i<privateRenderPorts_.size(); i++) 
+        for (size_t i=0; i<privateRenderPorts_.size(); i++)
             privateRenderPorts_.at(i)->resize(resizeDim);
-    } 
+    }
 }
 
 void RenderProcessor::addPrivateRenderPort(RenderPort* port) {

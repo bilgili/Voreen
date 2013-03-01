@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -54,7 +54,7 @@ VolumeBase* NrrdVolumeReader::read(const VolumeURL& origin)
     if (! tmp.empty())
         timeframe = stoi(tmp);
 
-    VolumeCollection* collection = read(origin.getPath(), timeframe);
+    VolumeList* collection = read(origin.getPath(), timeframe);
 
     if (collection && collection->size() == 1) {
         result = collection->first();
@@ -69,7 +69,7 @@ VolumeBase* NrrdVolumeReader::read(const VolumeURL& origin)
     return result;
 }
 
-VolumeCollection* NrrdVolumeReader::read(const std::string &url)
+VolumeList* NrrdVolumeReader::read(const std::string &url)
     throw (tgt::FileException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -81,7 +81,7 @@ VolumeCollection* NrrdVolumeReader::read(const std::string &url)
     return read(url, timeframe);
 }
 
-VolumeCollection* NrrdVolumeReader::read(const std::string &url, int timeframe)
+VolumeList* NrrdVolumeReader::read(const std::string &url, int timeframe)
     throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -237,12 +237,12 @@ VolumeCollection* NrrdVolumeReader::read(const std::string &url, int timeframe)
             end = timeframe+1;
         }
 
-        VolumeCollection* toReturn = new VolumeCollection();
+        VolumeList* toReturn = new VolumeList();
         for (int frame = start; frame < end; ++frame) {
             h.timeframe_ = frame;
             rawReader.setReadHints(h);
 
-            VolumeCollection* collection = rawReader.read(objectFilename);
+            VolumeList* collection = rawReader.read(objectFilename);
             if (!collection->empty()) {
                 VolumeURL origin(fileName);
                 origin.addSearchParameter("timeframe", itos(frame));

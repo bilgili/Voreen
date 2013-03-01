@@ -12,7 +12,7 @@ IF(WIN32)
     FIND_PATH(AMD_OPENCL_BASEDIR Cl/cl.h
               PATHS
               $ENV{AMDAPPSDKROOT}/include
-              $ENV{ATISTREAMSDKROOT}/include)   
+              $ENV{ATISTREAMSDKROOT}/include)
 
     IF(NVIDIA_OPENCL_BASEDIR)
         # Setup for NVIDIA CUDA SDK
@@ -39,7 +39,8 @@ IF(WIN32)
                    NAMES CL/cl.hpp OpenCL/cl.hpp CL/cl.h OpenCL/cl.h
                    PATHS
                    $ENV{AMDAPPSDKROOT}/include
-                   $ENV{ATISTREAMSDKROOT}/include )
+                   $ENV{ATISTREAMSDKROOT}/include 
+                   ${AMD_OPENCL_BASEDIR}/include)
 
         MESSAGE(STATUS "  - AMD/ATI Stream OpenCL include path: " ${OPENCL_INCLUDE_DIR})
 
@@ -47,14 +48,16 @@ IF(WIN32)
             FIND_LIBRARY(OPENCL_LIBRARY
                          NAMES OpenCL
                          PATHS 
-                         $ENV{AMDAPPSDKROOT}lib/x64_64
-                         $ENV{ATISTREAMSDKROOT}lib/x64_64)
+                         $ENV{AMDAPPSDKROOT}/lib/x86_64
+                         $ENV{ATISTREAMSDKROOT}/lib/x86_64
+                         ${AMD_OPENCL_BASEDIR}/lib/x86_64)
         ELSE()
             FIND_LIBRARY(OPENCL_LIBRARY
                          NAMES OpenCL
                          PATHS 
-                         $ENV{AMDAPPSDKROOT}lib/x64
-                         $ENV{ATISTREAMSDKROOT}lib/x64)
+                         $ENV{AMDAPPSDKROOT}/lib/x86
+                         $ENV{ATISTREAMSDKROOT}/lib/x86
+                         ${AMD_OPENCL_BASEDIR}/lib/x86)
         ENDIF()
         MESSAGE(STATUS "  - AMD/ATI Stream OpenCL library path: " ${OPENCL_LIBRARY})
  

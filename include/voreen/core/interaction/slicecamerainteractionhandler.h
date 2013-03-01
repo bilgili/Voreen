@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -38,7 +38,7 @@ namespace voreen {
 
 class CameraProperty;
 
-class SliceCameraInteractionHandler : public InteractionHandler {
+class VRN_CORE_API SliceCameraInteractionHandler : public InteractionHandler {
     friend class EventProperty<SliceCameraInteractionHandler>;
 
 public:
@@ -57,6 +57,9 @@ public:
         bool sharing = false, bool enabled = true);
 
     virtual ~SliceCameraInteractionHandler();
+
+    virtual std::string getClassName() const   { return "SliceCameraInteractionHandler";     }
+    virtual InteractionHandler* create() const { return new SliceCameraInteractionHandler(); }
 
 private:
     /// @see InteractionHandler::onEvent

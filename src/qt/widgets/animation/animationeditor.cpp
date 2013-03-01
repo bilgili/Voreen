@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -28,6 +28,9 @@
 #include "voreen/qt/widgets/animation/animationeditor.h"
 #include "voreen/qt/widgets/animation/processortimelinewidget.h"
 #include "voreen/qt/widgets/sliderspinboxwidget.h"
+
+#include "voreen/core/animation/animatedprocessor.h"
+#include "voreen/core/animation/serializationfactories.h"
 
 #include <QCheckBox>
 #include <QVBoxLayout>
@@ -79,12 +82,6 @@ AnimationEditor::AnimationEditor(NetworkEvaluator* eval, Workspace* workspace, Q
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     mainLayout->setMargin(0);
     mainLayout->setSpacing(0);
-    QCheckBox* interaction = new QCheckBox(this);
-    connect(interaction, SIGNAL(toggled(bool)), this, SLOT(setInteractionMode(bool)));
-    interaction->setText("Interaction Mode");
-    QCheckBox* autoPreview = new QCheckBox(this);
-    connect(autoPreview, SIGNAL(toggled(bool)), this, SIGNAL(autoPreview(bool)));
-    autoPreview->setText("Auto Preview");
 
     QToolBar* toolbar = new QToolBar(this);
     QToolBar* controlToolbar = new QToolBar(toolbar);
@@ -123,13 +120,28 @@ AnimationEditor::AnimationEditor(NetworkEvaluator* eval, Workspace* workspace, Q
     forward->setCheckable(true);
     connect(playerControlGroup, SIGNAL(triggered(QAction*)), this, SLOT(playerControl(QAction*)));
     QToolButton* endButton = new QToolButton(this);
-
     QToolButton* recordButton = new QToolButton(this);
+    QToolButton* addTimelineButton = new QToolButton(this);
+
+    QAction* interaction = new QAction("Use Interaction Mode", this);
+    interaction->setCheckable(true);
+    connect(interaction, SIGNAL(toggled(bool)), this, SLOT(setInteractionMode(bool)));
+    QAction* autoPreview = new QAction("Auto Previews", this);
+    autoPreview->setCheckable(true);
+    connect(autoPreview, SIGNAL(toggled(bool)), this, SIGNAL(autoPreview(bool)));
+    QAction* updatePreviews = new QAction("Update Previews", this);
+
+    addTimelineMenu_ = new QMenu();
+    connect(addTimelineMenu_, SIGNAL(aboutToShow()), this, SLOT(populateAddTimelineMenu()));
+    connect(addTimelineMenu_, SIGNAL(triggered(QAction*)), this, SLOT(addTimeline(QAction*)));
+
+    addTimelineButton->setMenu(addTimelineMenu_);
+    addTimelineButton->setPopupMode(QToolButton::InstantPopup);
 
     startButton->setIcon(QIcon(":/qt/icons/player_start.png"));
     endButton->setIcon(QIcon(":/qt/icons/player_end.png"));
-
     recordButton->setIcon(QIcon(":/qt/icons/player_record.png"));
+    addTimelineButton->setIcon(QIcon(":/qt/icons/edit_add.png"));
 
     toolbar->addWidget(newButton);
     toolbar->addWidget(settingsButton);
@@ -154,7 +166,6 @@ AnimationEditor::AnimationEditor(NetworkEvaluator* eval, Workspace* workspace, Q
     controlToolbar->addAction(stop);
     controlToolbar->addAction(forward);
     controlToolbar->addWidget(endButton);
-    controlToolbar->addWidget(recordButton);
 
     startButton->setToolTip(tr("Start"));
     rewind->setToolTip(tr("Rewind"));
@@ -164,30 +175,32 @@ AnimationEditor::AnimationEditor(NetworkEvaluator* eval, Workspace* workspace, Q
     forward->setToolTip(tr("Forward"));
     endButton->setToolTip(tr("End"));
     recordButton->setToolTip(tr("Take Snapshot"));
+    addTimelineButton->setToolTip(tr("Add Timeline"));
 
     toolbar->addWidget(controlToolbar);
 
+    toolbar->addSeparator();
+    toolbar->addWidget(recordButton);
+    toolbar->addWidget(addTimelineButton);
+    toolbar->addSeparator();
+    toolbar->addAction(interaction);
+    toolbar->addAction(updatePreviews);
+    toolbar->addAction(autoPreview);
+
     mainLayout->addWidget(toolbar);
 
-    QHBoxLayout* topLayout = new QHBoxLayout;
-    topLayout->addSpacing(8);
-    topLayout->addWidget(interaction);
-    topLayout->addSpacing(10);
-    topLayout->addWidget(autoPreview);
-    topLayout->addStretch();
-    mainLayout->addLayout(topLayout);
+    timelineWidget_ = new TimelineWidget(animation_, this, evaluator_);
+    mainLayout->addWidget(timelineWidget_);
 
-    TimelineWidget* timelineWidget = new TimelineWidget(animation_, this, evaluator_);
-    mainLayout->addWidget(timelineWidget);
+    connect(this, SIGNAL(currentFrameChanged(int)), timelineWidget_, SLOT(currentFrame(int)));
+    connect(this, SIGNAL(currentFrameChanged(int)), timelineWidget_, SIGNAL(currentFrameChanged(int)));
+    connect(this, SIGNAL(durationChanged(int)), timelineWidget_, SIGNAL(durationChanged(int)));
+    connect(this, SIGNAL(autoPreview(bool)), timelineWidget_, SIGNAL(autoPreview(bool)));
+    connect(updatePreviews, SIGNAL(triggered(bool)), timelineWidget_, SIGNAL(updatePreviews()));
 
-    connect(this, SIGNAL(currentFrameChanged(int)), timelineWidget, SLOT(currentFrame(int)));
-    connect(this, SIGNAL(currentFrameChanged(int)), timelineWidget, SIGNAL(currentFrameChanged(int)));
-    connect(this, SIGNAL(durationChanged(int)), timelineWidget, SIGNAL(durationChanged(int)));
-    connect(this, SIGNAL(autoPreview(bool)), timelineWidget, SIGNAL(autoPreview(bool)));
-
-    connect(this, SIGNAL(newAnimation(Animation*)), timelineWidget, SLOT(rebuildAnimation(Animation*)));
-    connect(timelineWidget, SIGNAL(recordAt(int)), this, SLOT(recordAt(int)));
-    connect(timelineWidget, SIGNAL(setAnimationEditorDuration(int)), this, SLOT(setDuration(int)));
+    connect(this, SIGNAL(newAnimation(Animation*)), timelineWidget_, SLOT(rebuildAnimation(Animation*)));
+    connect(timelineWidget_, SIGNAL(recordAt(int)), this, SLOT(recordAt(int)));
+    connect(timelineWidget_, SIGNAL(setAnimationEditorDuration(int)), this, SLOT(setDuration(int)));
 
     connect(newButton, SIGNAL(clicked()), this, SLOT(newAnimation()));
     connect(settingsButton, SIGNAL(clicked()), this, SLOT(settings()));
@@ -196,8 +209,8 @@ AnimationEditor::AnimationEditor(NetworkEvaluator* eval, Workspace* workspace, Q
     connect(startButton, SIGNAL(clicked()), this, SLOT(start()));
     connect(endButton, SIGNAL(clicked()), this, SLOT(end()));
     connect(recordButton, SIGNAL(clicked()), this, SLOT(record()));
-    connect(this, SIGNAL(recordSignal()), timelineWidget, SIGNAL(recordSignal()));
-    connect(this, SIGNAL(recordSignal()), timelineWidget, SLOT(checkForChanges()));
+    connect(this, SIGNAL(recordSignal()), timelineWidget_, SIGNAL(recordSignal()));
+    connect(this, SIGNAL(recordSignal()), timelineWidget_, SLOT(checkForChanges()));
     connect(undoButton, SIGNAL(clicked()), this, SLOT(undo()));
     connect(redoButton, SIGNAL(clicked()), this, SLOT(redo()));
 
@@ -409,6 +422,61 @@ void AnimationEditor::settings() {
 
 void AnimationEditor::timeStretchChanged(double stretch) {
     timeStretch_ = stretch;
+}
+
+void AnimationEditor::populateAddTimelineMenu() {
+    addTimelineMenu_->clear();
+
+    const std::vector<AnimatedProcessor*> procs = animation_->getAnimatedProcessors();
+    for(size_t i=0; i<procs.size();i++) {
+        AnimatedProcessor* animProc = procs[i];
+        const Processor* proc = animProc->getCorrespondingProcessor();
+
+        QMenu* procSubMenu = 0; // we only create the submenu when necessary
+        const std::vector<Property*>& props = proc->getProperties();
+        for(size_t i=0; i<props.size(); i++) {
+            Property* prop = props[i];
+
+            if(!animProc->isPropertyAnimated(prop)) {
+                if(PropertyTimelineFactory::getInstance()->canPropertyBeAnimated(prop)) {
+                    if(procSubMenu == 0)
+                        procSubMenu = addTimelineMenu_->addMenu(QString::fromStdString(proc->getGuiName()));
+
+                    QAction* propAction = new QAction(QString::fromStdString(prop->getGuiName()), procSubMenu);
+                    QStringList sl;
+                    sl << QString::fromStdString(proc->getID()) << QString::fromStdString(prop->getID());
+                    propAction->setData(QVariant(sl));
+                    procSubMenu->addAction(propAction);
+                }
+            }
+        }
+    }
+}
+
+void AnimationEditor::addTimeline(QAction* action) {
+    QStringList data = action->data().toStringList();
+    if(data.size() == 2) {
+        std::string procID = data.at(0).toStdString();
+        std::string propID = data.at(1).toStdString();
+
+        const std::vector<AnimatedProcessor*> procs = animation_->getAnimatedProcessors();
+        for(size_t i=0; i<procs.size();i++) {
+            AnimatedProcessor* animProc = procs[i];
+            if(animProc->getProcessorName() == procID) {
+                Processor* proc = animProc->getCorrespondingProcessor();
+                if(proc) {
+                    Property* prop = proc->getProperty(propID);
+                    if(prop) {
+                        PropertyTimeline* tl = animProc->addTimeline(prop);
+                        if(tl) {
+                            tl->registerUndoObserver(animation_);
+                            timelineWidget_->rebuildAnimation(animation_); //TODO call ProcessorTimelineWidget::showAnimatedProperties() instead
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 } // namespace voreen

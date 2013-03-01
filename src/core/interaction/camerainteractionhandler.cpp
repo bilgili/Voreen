@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -52,10 +52,6 @@ CameraInteractionHandler::CameraInteractionHandler(const std::string& id, const 
     : InteractionHandler(id, guiName)
     , cameraProp_(cameraProp)
     , navigationMetaphor_(id + ".interactionMetaphor", guiName + " Interaction", Processor::VALID)
-    , shiftTrackballCenter_(id + ".shiftTrackballCenter", "Rotate trackball around...", Processor::VALID)
-    , adjustCamera_(id + ".adjustCamera", "Adapt camera to scene size...", Processor::VALID)
-    , resetTrackballCenter_(id + ".resetTrackballCenter", "Reset Trackball Center")
-    , currentSceneMesh_(MeshListGeometry())
 {
     tgtAssert(cameraProp, "No camera property");
     cameraProp_ = cameraProp;
@@ -65,22 +61,6 @@ CameraInteractionHandler::CameraInteractionHandler(const std::string& id, const 
     navigationMetaphor_.select("trackball");
     navigationMetaphor_.onChange(CallMemberAction<CameraInteractionHandler>(this, &CameraInteractionHandler::adjustWidgetStates));
     addProperty(navigationMetaphor_);
-
-    shiftTrackballCenter_.addOption("origin",      "World origin");
-    shiftTrackballCenter_.addOption("scenecenter", "Scene center");
-    shiftTrackballCenter_.addOption("shift",       "Camera shift");
-    shiftTrackballCenter_.select("scenecenter");
-    shiftTrackballCenter_.onChange(CallMemberAction<CameraInteractionHandler>(this, &CameraInteractionHandler::adjustCenterShift));
-    addProperty(shiftTrackballCenter_);
-
-    adjustCamera_.addOption("never", "Never");
-    adjustCamera_.addOption("bigsizechange", "Only on large difference");
-    adjustCamera_.addOption("always", "Always");
-    adjustCamera_.select("bigsizechange");
-    addProperty(adjustCamera_);
-
-    resetTrackballCenter_.onChange(CallMemberAction<CameraInteractionHandler>(this, &CameraInteractionHandler::resetTrackballCenter));
-    addProperty(resetTrackballCenter_);
 
     // navigations
     tbNavi_ = new TrackballNavigation(cameraProp_, TrackballNavigation::ROTATE_MODE);
@@ -183,43 +163,53 @@ void CameraInteractionHandler::rotateEvent(tgt::MouseEvent* e) {
         tgtAssert(cameraProp_, "No camera property");
         tgtAssert(tbNavi_, "No trackball navigation");
 
-        //TODO: remove if it works (stefan)
-        //// assign new camera object to navigation, if it has changed
-        //if (tbNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
-            //tbNavi_->getTrackball()->setCamera(cameraProp_->get());
-        //}
-
         // propagate event to trackball navigation
         if (e->action() == MouseEvent::PRESSED) {
             cameraProp_->toggleInteractionMode(true, this);
             tbNavi_->mousePressEvent(e);
+            e->accept();
+            //cameraProp_->invalidate(); //< no need to issue an invalidation here, since camera has not changed yet
         }
         else if (e->action() == MouseEvent::RELEASED) {
             cameraProp_->toggleInteractionMode(false, this);
             tbNavi_->mouseReleaseEvent(e);
+            e->accept();
+            cameraProp_->invalidate(); //< necessary to cause processor to re-render without interaction mode
         }
-        else if (e->action() == MouseEvent::MOTION)
+        else if (e->action() == MouseEvent::MOTION) {
             tbNavi_->mouseMoveEvent(e);
-        else if (e->action() == MouseEvent::DOUBLECLICK)
+            e->accept();
+            cameraProp_->invalidate();
+        }
+        else if (e->action() == MouseEvent::DOUBLECLICK) {
             tbNavi_->mouseDoubleClickEvent(e);
-        else if (e->action() == MouseEvent::WHEEL)
+            e->accept();
+            cameraProp_->invalidate();
+        }
+        else if (e->action() == MouseEvent::WHEEL) {
             tbNavi_->wheelEvent(e);
+            e->accept();
+            cameraProp_->invalidate();
+        }
     }
     else if (navigationMetaphor_.isSelected("first-person")){
         if (e->action() == MouseEvent::PRESSED){
             cameraProp_->toggleInteractionMode(true, this);
             fpNavi_->mousePressEvent(e);
+            e->accept();
         }
         else if (e->action() == MouseEvent::RELEASED){
-            if (!fpNavi_->isMoving())
+            if (!fpNavi_->isMoving()) {
                 cameraProp_->toggleInteractionMode(false, this);
-
-            e->accept();
+                e->accept();
+                cameraProp_->invalidate();
+            }
         }
         else if (e->action() == MouseEvent::MOTION){
             motionTimer_->stop();
 
             fpNavi_->mouseMoveEvent(e);
+            cameraProp_->invalidate();
 
             // Restart motionTimer_, if necessary
             if (fpNavi_->isMoving())
@@ -227,10 +217,6 @@ void CameraInteractionHandler::rotateEvent(tgt::MouseEvent* e) {
         }
     }
 
-    // invalidate processor and update camera prop widgets, if event has been accepted
-    if (e->isAccepted()) {
-        cameraProp_->invalidate();
-    }
 }
 
 // TODO: right clicked mousedragging is catched by fpNavi, too. Maybe this method should get a proper name?!
@@ -239,54 +225,61 @@ void CameraInteractionHandler::zoomEvent(tgt::MouseEvent* e) {
         tgtAssert(cameraProp_, "No camera property");
         tgtAssert(tbNavi_, "No trackball navigation");
 
-        //TODO: remove if it works (stefan)
-        // assign new camera object to navigation, if it has changed
-        //if (tbNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
-            //tbNavi_->getTrackball()->setCamera(cameraProp_->get());
-        //}
         tbNavi_->setMode(TrackballNavigation::ZOOM_MODE);
 
         // propagate event to trackball navigation
         if (e->action() == MouseEvent::PRESSED) {
             cameraProp_->toggleInteractionMode(true, this);
             tbNavi_->mousePressEvent(e);
+            e->accept();
+            //cameraProp_->invalidate(); //< no need to issue an invalidation here, since camera has not changed yet
         }
         else if (e->action() == MouseEvent::RELEASED) {
             cameraProp_->toggleInteractionMode(false, this);
             tbNavi_->mouseReleaseEvent(e);
+            e->accept();
+            cameraProp_->invalidate(); //< necessary to cause processor to re-render without interaction mode
         }
-        else if (e->action() == MouseEvent::MOTION)
+        else if (e->action() == MouseEvent::MOTION) {
             tbNavi_->mouseMoveEvent(e);
-        else if (e->action() == MouseEvent::DOUBLECLICK)
+            e->accept();
+            cameraProp_->invalidate();
+        }
+        else if (e->action() == MouseEvent::DOUBLECLICK) {
             tbNavi_->mouseDoubleClickEvent(e);
-        else if (e->action() == MouseEvent::WHEEL)
+            e->accept();
+            cameraProp_->invalidate();
+        }
+        else if (e->action() == MouseEvent::WHEEL) {
             tbNavi_->wheelEvent(e);
-
+            e->accept();
+            cameraProp_->invalidate();
+        }
         tbNavi_->setMode(TrackballNavigation::ROTATE_MODE);
     }
     else if (navigationMetaphor_.isSelected("first-person")){
         if (e->action() == MouseEvent::PRESSED){
             cameraProp_->toggleInteractionMode(true, this);
             fpNavi_->mousePressEvent(e);
+            e->accept();
+            //cameraProp_->invalidate();
         }
         else if (e->action() == MouseEvent::RELEASED){
             cameraProp_->toggleInteractionMode(false, this);
             e->accept();
+            cameraProp_->invalidate();
         }
         else if (e->action() == MouseEvent::MOTION){
             motionTimer_->stop();
 
             fpNavi_->mouseMoveEvent(e);
+            e->accept();
+            cameraProp_->invalidate();
 
             // Restart motionTimer_, if necessary
             if (fpNavi_->isMoving())
                 motionTimer_->start(40, 0);
         }
-    }
-
-    // invalidate processor and update camera prop widgets, if event has been accepted
-    if (e->isAccepted()) {
-        cameraProp_->invalidate();
     }
 }
 
@@ -295,29 +288,36 @@ void CameraInteractionHandler::shiftEvent(tgt::MouseEvent* e) {
         tgtAssert(cameraProp_, "No camera property");
         tgtAssert(tbNavi_, "No trackball navigation");
 
-        //TODO: remove if it works (stefan)
-        // assign new camera object to navigation, if it has changed
-        //if (tbNavi_->getTrackball()->getCamera() != cameraProp_->get()) {
-            //tbNavi_->getTrackball()->setCamera(cameraProp_->get());
-        //}
-
         tbNavi_->setMode(TrackballNavigation::SHIFT_MODE);
 
         // propagate event to trackball navigation
         if (e->action() == MouseEvent::PRESSED) {
             cameraProp_->toggleInteractionMode(true, this);
             tbNavi_->mousePressEvent(e);
+            e->accept();
+            //cameraProp_->invalidate(); //< no need to issue an invalidation here, since camera has not changed yet
         }
         else if (e->action() == MouseEvent::RELEASED) {
             cameraProp_->toggleInteractionMode(false, this);
             tbNavi_->mouseReleaseEvent(e);
+            e->accept();
+            cameraProp_->invalidate(); //< necessary to cause processor to re-render without interaction mode
         }
-        else if (e->action() == MouseEvent::MOTION)
+        else if (e->action() == MouseEvent::MOTION) {
             tbNavi_->mouseMoveEvent(e);
-        else if (e->action() == MouseEvent::DOUBLECLICK)
+            e->accept();
+            cameraProp_->invalidate();
+        }
+        else if (e->action() == MouseEvent::DOUBLECLICK) {
             tbNavi_->mouseDoubleClickEvent(e);
-        else if (e->action() == MouseEvent::WHEEL)
+            e->accept();
+            cameraProp_->invalidate();
+        }
+        else if (e->action() == MouseEvent::WHEEL) {
             tbNavi_->wheelEvent(e);
+            e->accept();
+            cameraProp_->invalidate();
+        }
 
         tbNavi_->setMode(TrackballNavigation::ROTATE_MODE);
     }
@@ -326,10 +326,6 @@ void CameraInteractionHandler::shiftEvent(tgt::MouseEvent* e) {
         e->accept();
     }
 
-    // invalidate processor and update camera prop widgets, if event has been accepted
-    if (e->isAccepted()) {
-        cameraProp_->invalidate();
-    }
 }
 
 void CameraInteractionHandler::keyEvent(tgt::KeyEvent* e){
@@ -407,8 +403,6 @@ void CameraInteractionHandler::adjustWidgetStates() {
     bool firstPersonSelected = navigationMetaphor_.isSelected("first-person");
 
     // trackball properties
-    shiftTrackballCenter_.setVisible(trackballSelected);
-    resetTrackballCenter_.setVisible(trackballSelected);
     rotateEvent_->setVisible(trackballSelected);
     zoomEvent_->setVisible(trackballSelected);
     shiftEvent_->setVisible(trackballSelected);
@@ -423,108 +417,11 @@ void CameraInteractionHandler::adjustWidgetStates() {
     moveDownEvent_->setVisible(firstPersonSelected);
 }
 
-void CameraInteractionHandler::adjustCenterShift() {
-    if(shiftTrackballCenter_.isSelected("origin")) {
-        cameraProp_->getTrackball()->setMoveCenter(false);
-    } else if (shiftTrackballCenter_.isSelected("scenecenter")) {
-        cameraProp_->getTrackball()->setMoveCenter(false);
-        tgt::Bounds bBox(tgt::vec3(0.f));
-        if (!currentSceneMesh_.empty())
-            bBox = currentSceneMesh_.getBoundingBox();
-        cameraProp_->getTrackball()->setCenter(bBox.center());
-    } else if (shiftTrackballCenter_.isSelected("shift")) {
-        cameraProp_->getTrackball()->setMoveCenter(true);
-    }
-}
-
-void CameraInteractionHandler::resetTrackballCenter() {
-    tgt::Bounds bBox(tgt::vec3(0.f));
-    if (!currentSceneMesh_.empty())
-        bBox = currentSceneMesh_.getBoundingBox();
-    tgt::Camera cam = cameraProp_->get();
-    cam.setPosition(bBox.center() - cam.getFocalLength() * cam.getLook());
-    cam.setFocus(bBox.center());
-    cameraProp_->set(cam);
-    cameraProp_->getTrackball()->setCenter(bBox.center());
-}
-
 void CameraInteractionHandler::setVisible(bool state) {
     InteractionHandler::setVisible(state);
     navigationMetaphor_.setVisible(state);
     if (state)
         adjustWidgetStates();
-}
-
-void CameraInteractionHandler::adaptInteractionToScene(const MeshListGeometry& geometry) {
-    if(geometry.empty())
-        return;
-
-    tgt::Bounds bounds = geometry.getBoundingBox();
-
-    tgt::vec3 extentOld = tgt::vec3(0.f);
-    tgt::vec3 centerOld = tgt::vec3(0.f);
-    if (!currentSceneMesh_.empty()) {
-        extentOld = currentSceneMesh_.getBoundingBox().diagonal();
-        centerOld = currentSceneMesh_.getBoundingBox().center();
-    }
-
-    currentSceneMesh_ = geometry;
-
-    bool adaptMaxValues = true;
-    if(hmul(extentOld) != 0.f) {
-        if(adjustCamera_.isSelected("never"))
-            adaptMaxValues = false;
-        else if(adjustCamera_.isSelected("bigsizechange")) {
-            // resize only if the size of the scene has drastically changed
-            float relSize = hmul(extentOld) / hmul(bounds.diagonal());
-            if(relSize > 0.2f && relSize < 5.f)
-                adaptMaxValues = false;
-        }
-    } else {
-        // always adapt far distance if there was no previous scene geometry
-        tgt::Camera cam = cameraProp_->get();
-        float newMaxDist = 250.f * tgt::max(bounds.diagonal());
-        tbNavi_->setMaxDist(newMaxDist);
-        cameraProp_->setMaxValue(newMaxDist);
-        cam.setFarDist(std::max(cam.getFarDist(), newMaxDist + tgt::max(bounds.diagonal())));
-        cameraProp_->set(cam);
-        cameraProp_->getTrackball()->setCenter(currentSceneMesh_.getBoundingBox().center());
-        return;
-    }
-
-    tgt::Camera cam = cameraProp_->get();
-
-    if(adaptMaxValues) {
-        LINFOC("voreen.CameraInteractionHandler", "Adapting camera handling to new scene size...");
-        float oldRelCamDist = cam.getFocalLength() / tbNavi_->getMaxDist();
-        float maxSideLength = tgt::max(bounds.diagonal());
-
-        // The factor 250 is derived from an earlier constant maxDist of 500 and a constant maximum cubeSize element of 2
-        float newMaxDist = 250.f * maxSideLength;
-        float newAbsCamDist = oldRelCamDist * newMaxDist;
-
-        if(shiftTrackballCenter_.isSelected("shift")) {
-            tgt::vec3 newFocus = cam.getFocus() * (newAbsCamDist / cam.getFocalLength());
-            tgt::vec3 newPos   = cam.getPosition() * (newAbsCamDist / cam.getFocalLength());
-            cam.setFocus(newFocus);
-            cam.setPosition(newPos);
-        } else {
-            tgt::vec3 newFocus = geometry.getBoundingBox().center();
-            tgt::vec3 newPos   = geometry.getBoundingBox().center() - cam.getLook() * newAbsCamDist;
-            cam.setFocus(newFocus);
-            cam.setPosition(newPos);
-        }
-        tbNavi_->setMaxDist(newMaxDist);
-        cameraProp_->setMaxValue(newMaxDist);
-        cam.setFarDist(std::max(cam.getFarDist(), newMaxDist + maxSideLength));
-    }
-
-    if(centerOld != currentSceneMesh_.getBoundingBox().center()) {
-        // if the bounding box has shifted, reset the trackball center to the box center
-        cameraProp_->getTrackball()->setCenter(currentSceneMesh_.getBoundingBox().center());
-    }
-
-    cameraProp_->set(cam);
 }
 
 } // namespace

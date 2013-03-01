@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -44,7 +44,7 @@ float neighborStandardDeviationGradients(const tgt::ivec3& pos, const VolumeRAM*
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class VolumeOperatorRegionGrowBase : public UnaryVolumeOperatorBase {
+class VRN_CORE_API VolumeOperatorRegionGrowBase : public UnaryVolumeOperatorBase {
 public:
     enum FloodFillMode { FLOODFILL_INTENSITY, FLOODFILL_GRADMAG, FLOODFILL_WEIGHTED };
     enum FloodFillNeighborhood { c6 = 1, c18 = 2, c26 = 3};

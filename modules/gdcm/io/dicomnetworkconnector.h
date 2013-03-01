@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -23,8 +23,8 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#ifndef DICOMNETWORKCONNECTOR_H
-#define DICOMNETWORKCONNECTOR_H
+#ifndef VRN_DICOMNETWORKCONNECTOR_H
+#define VRN_DICOMNETWORKCONNECTOR_H
 
 // include this before any GDCM header in order to make sure that C99 types are defined
 #include "tgt/types.h"
@@ -82,7 +82,7 @@ typedef struct dicomPatientInfo_t {
  * DicomNetworkConnector implements the DICOM network functionality of GDCM that
  * is used in GdcmVolumeReader
  */
-class DicomNetworkConnector
+class VRN_CORE_API DicomNetworkConnector
 {
 public:
     DicomNetworkConnector(const DicomDict& dict);

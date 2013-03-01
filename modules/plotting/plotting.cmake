@@ -44,7 +44,6 @@ SET(MOD_CORE_SOURCES
     ${MOD_DIR}/properties/plotselectionproperty.cpp
     ${MOD_DIR}/properties/plotdataproperty.cpp
     ${MOD_DIR}/properties/link/linkevaluatorplotselection.cpp
-    ${MOD_DIR}/properties/link/plotlinkevaluatorfactory.cpp
     
     # Port sources
     ${MOD_DIR}/ports/plotport.cpp 
@@ -63,7 +62,6 @@ SET(MOD_CORE_SOURCES
     ${MOD_DIR}/datastructures/plotselection.cpp
 
     # Utils sources
-    ${MOD_DIR}/utils/aggregationfunctionfactory.cpp
     ${MOD_DIR}/utils/functionlibrary.cpp
     ${MOD_DIR}/utils/plotdatainserter.cpp
     ${MOD_DIR}/utils/plotlibrary/plotlibrary.cpp
@@ -121,7 +119,6 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/properties/link/linkevaluatorcolormapid.h
     ${MOD_DIR}/properties/link/linkevaluatorplotselection.h
     ${MOD_DIR}/properties/link/linkevaluatorplotentitiesid.h
-    ${MOD_DIR}/properties/link/plotlinkevaluatorfactory.h
    
     # Port headers
     ${MOD_DIR}/ports/plotport.h
@@ -142,7 +139,6 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/datastructures/plotzoomstate.h
 
     # Utils headers
-    ${MOD_DIR}/utils/aggregationfunctionfactory.h
     ${MOD_DIR}/utils/functionlibrary.h
     ${MOD_DIR}/utils/plotdatainserter.h
     ${MOD_DIR}/utils/plotlibrary/plotlibrarylatex.h

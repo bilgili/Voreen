@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -42,7 +42,7 @@ namespace voreen {
  * All \a voxel methods have an additonal parameter which specifies the channel.
  */
 template<class T, size_t N>
-class VolumeFusion : public VolumeRAM {
+class VRN_CORE_API VolumeFusion : public VolumeRAM {
 public:
     typedef T* VoxelType; ///< So that VolumeRAM::getData\< VolumeFusion\<T, N> will return T**.
 

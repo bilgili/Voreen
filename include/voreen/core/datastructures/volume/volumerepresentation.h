@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -32,6 +32,10 @@
 
 namespace voreen {
 
+/*
+ * A VolumeRepresentation is a class storing the volume data (the voxels) in some form.
+ * Code should generally work with Volumes instead of VolumeRepresentations.
+ */
 class VRN_CORE_API VolumeRepresentation {
 public:
     VolumeRepresentation(const tgt::svec3& dimensions);
@@ -45,6 +49,12 @@ public:
 
     virtual int getNumChannels() const = 0;
     virtual int getBytesPerVoxel() const = 0;
+
+    /// Returns the format of the volume as string (e.g., "uint8" or "Vector3(float)", @see VolumeFactory).
+    virtual std::string getFormat() const = 0;
+
+    /// Returns the base type (e.g., "float" for a representation of format "Vector3(float)").
+    virtual std::string getBaseType() const = 0;
 protected:
     // protected default constructor
     VolumeRepresentation() {}

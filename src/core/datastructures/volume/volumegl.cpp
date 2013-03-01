@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,6 +26,7 @@
 #include "voreen/core/datastructures/volume/volumegl.h"
 
 #include "voreen/core/datastructures/volume/volumeatomic.h"
+#include "voreen/core/datastructures/volume/volumefactory.h"
 #include "voreen/core/datastructures/volume/volumeoperator.h"
 #include "tgt/gpucapabilities.h"
 
@@ -83,6 +84,9 @@ VolumeGL::VolumeGL(const VolumeRAM* volume) throw (VoreenException, std::bad_all
   , texture_(0)
 {
     tgtAssert(volume, "No volume");
+    VolumeFactory vf;
+    format_ = vf.getFormat(volume);
+    baseType_ = vf.getBaseType(format_);
     generateTexture(volume);
 }
 
@@ -430,6 +434,14 @@ void VolumeGL::generateTexture(const VolumeRAM* volume)
     texture_ = vTex;
 
     LGL_ERROR;
+}
+
+std::string VolumeGL::getFormat() const {
+    return format_;
+}
+
+std::string VolumeGL::getBaseType() const {
+    return baseType_;
 }
 
 int VolumeGL::getNumChannels() const {

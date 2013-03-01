@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -25,7 +25,7 @@
 
 #include "voreen/core/properties/volumeurllistproperty.h"
 
-#include "voreen/core/datastructures/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumelist.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/progressbar.h"
@@ -115,8 +115,8 @@ void VolumeURLListProperty::removeURL(const std::string& url) {
     invalidate();
 }
 
-VolumeCollection* VolumeURLListProperty::getVolumes(bool selectedOnly /*= true*/) const {
-    VolumeCollection* collection = new VolumeCollection();
+VolumeList* VolumeURLListProperty::getVolumes(bool selectedOnly /*= true*/) const {
+    VolumeList* collection = new VolumeList();
     std::vector<std::string> urls = get();
     for (size_t i=0; i<urls.size(); i++) {
         std::string url = urls.at(i);
@@ -359,6 +359,14 @@ ProgressBar* VolumeURLListProperty::getProgressBar() {
     if (!progressBar_)
         progressBar_ = VoreenApplication::app()->createProgressDialog();
     return progressBar_;
+}
+
+bool VolumeURLListProperty::getPreviewsVisible() {
+    return previewsVisible_;
+}
+
+void VolumeURLListProperty::setPreviewsVisible(bool previewsVisible) {
+    previewsVisible_ = previewsVisible;
 }
 
 } // namespace voreen

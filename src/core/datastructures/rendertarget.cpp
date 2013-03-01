@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -77,6 +77,9 @@ void RenderTarget::initialize(GLint internalColorFormat, GLint internalDepthForm
             break;
         case GL_RGBA32F_ARB:
             colorTex_ = new Texture(0, size, GL_RGBA, GL_RGBA32F_ARB, GL_FLOAT, Texture::LINEAR);
+            break;
+        case GL_R32F:
+            colorTex_ = new Texture(0, size, GL_RED, GL_R32F, GL_FLOAT, Texture::LINEAR);
             break;
         default:
             LERROR("Unknown internal format!");
@@ -181,9 +184,21 @@ void RenderTarget::bindColorTexture() {
         colorTex_->bind();
 }
 
-void RenderTarget::bindColorTexture(GLint texUnit) {
+void RenderTarget::bindColorTexture(GLint texUnit, GLint filterMode/* = GL_LINEAR*/, GLint wrapMode /*= GL_CLAMP_TO_EDGE*/, tgt::vec4 borderColor /*= tgt::vec4(0.f)*/) {
     glActiveTexture(texUnit);
     bindColorTexture();
+
+    // texture filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filterMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filterMode);
+    LGL_ERROR;
+
+    // texture wrapping
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, wrapMode);
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, static_cast<tgt::Vector4<GLfloat> >(borderColor).elem);
+    LGL_ERROR;
 }
 
 void RenderTarget::bindDepthTexture() {
@@ -192,9 +207,21 @@ void RenderTarget::bindDepthTexture() {
         depthTex_->bind();
 }
 
-void RenderTarget::bindDepthTexture(GLint texUnit) {
+void RenderTarget::bindDepthTexture(GLint texUnit, GLint filterMode/* = GL_LINEAR*/, GLint wrapMode /*= GL_CLAMP_TO_EDGE*/, tgt::vec4 borderColor /*= tgt::vec4(0.f)*/) {
     glActiveTexture(texUnit);
     bindDepthTexture();
+
+    // texture filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filterMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filterMode);
+    LGL_ERROR;
+
+    // texture wrapping
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, wrapMode);
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, static_cast<tgt::Vector4<GLfloat> >(borderColor).elem);
+    LGL_ERROR;
 }
 
 tgt::ivec2 RenderTarget::getSize() const {

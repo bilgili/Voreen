@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -31,6 +31,7 @@
 #include "voreen/core/ports/genericport.h"
 #include "voreen/core/ports/geometryport.h"
 #include "voreen/core/ports/port.h"
+#include "voreen/core/ports/loopport.h"
 #include "voreen/core/ports/renderport.h"
 #include "voreen/core/ports/volumeport.h"
 #include "voreen/core/ports/textport.h"

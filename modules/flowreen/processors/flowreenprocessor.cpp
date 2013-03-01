@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -95,7 +95,7 @@ FlowreenProcessor::FlowreenProcessor()
     useBoundingBoxProp_("useBoundingBoxProp", "render bounding box:", true),
     boundingBoxColorProp_("boundingBoxColorProp", "bounding box color:", tgt::vec4(1.0f)),
     useCoordinateAxisProp_("useCoordinateAxisProp", "render coordinate axis:", true),
-    currentVolumeHandle_(0),
+    currentVolume_(0),
     flowDimensions_(1)
 {
     boundingBoxColorProp_.setViews(Property::COLOR);

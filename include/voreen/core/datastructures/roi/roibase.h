@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -29,7 +29,6 @@
 #include "tgt/bounds.h"
 #include "tgt/plane.h"
 #include "voreen/core/datastructures/volume/volume.h"
-#include "voreen/core/datastructures/geometry/facegeometry.h"
 #include "voreen/core/properties/propertyowner.h"
 #include "voreen/core/properties/stringproperty.h"
 #include "voreen/core/properties/boolproperty.h"
@@ -40,6 +39,8 @@
 namespace voreen {
 
 class ROIBase;
+class Geometry;
+class TriangleMeshGeometrySimple;
 
 class ControlPoint {
 public:
@@ -122,34 +123,34 @@ private:
 
 Grid gridFromVolume(const VolumeBase* vol);
 
-class MeshListGeometry;
+class Geometry;
 
 class ROIMeshCache {
     struct CacheEntry {
         tgt::plane plane_;
-        MeshListGeometry* mesh_;
-        CacheEntry(tgt::plane pl, MeshListGeometry* m) : plane_(pl), mesh_(m) {}
+        Geometry* mesh_;
+        CacheEntry(tgt::plane pl, Geometry* m) : plane_(pl), mesh_(m) {}
     };
 public:
     ROIMeshCache();
     ~ROIMeshCache();
 
-    MeshListGeometry* getMesh() const;
-    void setMesh(MeshListGeometry* m);
+    Geometry* getMesh() const;
+    void setMesh(Geometry* m);
 
-    MeshListGeometry* getRasterMesh() const;
-    void setRasterMesh(MeshListGeometry* m);
+    Geometry* getRasterMesh() const;
+    void setRasterMesh(Geometry* m);
 
-    MeshListGeometry* getMesh(tgt::plane pl) const;
-    void setMesh(MeshListGeometry* m, tgt::plane pl);
+    Geometry* getMesh(tgt::plane pl) const;
+    void setMesh(Geometry* m, tgt::plane pl);
 
-    MeshListGeometry* getRasterMesh(tgt::plane pl) const;
-    void setRasterMesh(MeshListGeometry* m, tgt::plane pl);
+    Geometry* getRasterMesh(tgt::plane pl) const;
+    void setRasterMesh(Geometry* m, tgt::plane pl);
 
     void clear();
 private:
-    MeshListGeometry* mesh3D_;
-    MeshListGeometry* rasterMesh3D_;
+    Geometry* mesh3D_;
+    Geometry* rasterMesh3D_;
     mutable std::list<CacheEntry> planeMeshes_;
     mutable std::list<CacheEntry> planeRasterMeshes_;
 };
@@ -163,9 +164,7 @@ class VRN_CORE_API ROIBase : public PropertyOwner {
         };
     ROIBase(Grid grid);
     ROIBase();
-    virtual std::string getClassName() const = 0;
     virtual ROIBase* clone() const;
-    virtual ROIBase* create() const = 0;
 
     virtual void invalidate(int inv = ROI_CHANGE);
 
@@ -175,17 +174,17 @@ class VRN_CORE_API ROIBase : public PropertyOwner {
     /// Test if p (in physical coordinates of the ROI) is inside this ROI.
     virtual bool inROI(tgt::vec3 p) const = 0;
 
-    MeshListGeometry* getMesh() const;
-    MeshListGeometry* getRasterMesh() const;
-    virtual MeshListGeometry* generateMesh() const = 0;
-    virtual MeshListGeometry* generateRasterMesh() const;
-    virtual MeshListGeometry* generateRasterMesh(Grid g) const;
+    Geometry* getMesh() const;
+    Geometry* getRasterMesh() const;
+    virtual Geometry* generateMesh() const = 0;
+    virtual Geometry* generateRasterMesh() const;
+    virtual Geometry* generateRasterMesh(Grid g) const;
 
-    MeshListGeometry* getMesh(tgt::plane pl) const;
-    MeshListGeometry* getRasterMesh(tgt::plane pl) const;
-    virtual MeshListGeometry* generateMesh(tgt::plane pl) const = 0;
-    virtual MeshListGeometry* generateRasterMesh(const tgt::plane& pl) const;
-    virtual MeshListGeometry* generateRasterMesh(const tgt::plane& pl, Grid g) const;
+    Geometry* getMesh(tgt::plane pl) const;
+    Geometry* getRasterMesh(tgt::plane pl) const;
+    virtual Geometry* generateMesh(tgt::plane pl) const = 0;
+    virtual Geometry* generateRasterMesh(const tgt::plane& pl) const;
+    virtual Geometry* generateRasterMesh(const tgt::plane& pl, Grid g) const;
 
     /// Rasterize in a given grid.
     virtual VolumeRAM* rasterize(Grid g) const; // TODO: implement, returns 0 //TODO: cropped?
@@ -209,8 +208,11 @@ class VRN_CORE_API ROIBase : public PropertyOwner {
     virtual void deserialize(XmlDeserializer& s);
 
     // Property getter/setter:
-    std::string getName() const { return name_.get(); }
-    void setName(const std::string& name) { return name_.set(name); }
+    std::string getID() const;
+    std::string getGuiName() const;
+    void setGuiName(const std::string& name);
+    void setID(const std::string& id);
+
     std::string getComment() const { return comment_.get(); }
     void setComment(const std::string& comment) { return comment_.set(comment); }
 
@@ -254,8 +256,7 @@ class VRN_CORE_API ROIBase : public PropertyOwner {
     static const std::string loggerCat_;
 };
 
-tgt::plane transform(const tgt::plane& pl, const tgt::mat4& m);
-FaceGeometry createQuad(const tgt::plane& pl, const tgt::vec4& color);
+TriangleMeshGeometrySimple* createQuad(const tgt::plane& pl);
 /// Return the BB of roi in voxel coordinates (llf, urb).
 std::pair<tgt::ivec3, tgt::ivec3> getVoxelBoundingBox(const VolumeBase* vh, const ROIBase* roi);
 

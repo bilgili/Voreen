@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -50,7 +50,7 @@ namespace voreen {
  * @author: Dirk Feldmann
  * @date:   2009/11/11
  */
-class ClockProcessor : public Processor {
+class VRN_CORE_API ClockProcessor : public Processor {
 public:
     ClockProcessor();
     virtual ~ClockProcessor();
@@ -81,9 +81,14 @@ public:
     void resetCounter();
 
 protected:
-    enum CounterStyle { COUNTER_LINEAR, COUNTER_CYCLIC, COUNTER_REVERSING };
+    virtual void setDescriptions() {
+        setDescription("Performs clocking for time-based manipulation of properties in the network."\
+                       "A counter represented by a property is increased on every time event."\
+                       "This counter is intended to be linked with other properties in order to propagate the clock tick."\
+                       "This processor has neither any ports nor does it require any connections, instead it is used as a"\
+                       "'floating' processor in the networks, solely connected by property links.");
+    }
 
-protected:
     virtual void process();
     virtual void initialize() throw (tgt::Exception);
 
@@ -91,29 +96,39 @@ protected:
     void toggleTimer();
     void onCounterStyleChange();
     void onIntervalChange();
-    void onPeriodChange();
+    void onBeginChange();
+    void onEndChange();
     void onResolutionChange();
     void onUseHighResCounterChange();
 
 protected:
-    virtual void setDescriptions() {
-        setDescription("Performs clocking for time-based manipulation of properties in the network. A counter represented by a property is increased on every time event. This counter is intended to be linked with other properties in order to propagate the clock tick. This processor has neither any ports nor does it require any connections, instead it is used as a 'floating' processor in the networks, solely connected by property links.");
-    }
+    enum CounterStyle {
+        COUNTER_LINEAR,
+        COUNTER_LINEAR_REVERSE,
+        COUNTER_CYCLIC,
+        COUNTER_CYCLIC_REVERSE
+    };
+    friend class OptionProperty<ClockProcessor::CounterStyle>;
 
     int counter_;
-    float highResCounter_;
-    int period_;
+    //int period_;
     bool timerIsActive_;                /** Indicates whether the timer is active. */
     tgt::Timer* timer_;                 /** Timer object. */
     tgt::EventHandler eventHandler_;    /** A local eventhanlde which is added to the timer. */
+    //enable
     BoolProperty enableTimerProp_;          /** Determines whether the clocking is active. */
-    IntProperty intervalProp_;              /** Determines the inveral for the clock. */
+    //general
+    IntProperty intervalProp_;              /** Determines the inveral for the clock in ms. */
     OptionProperty<ClockProcessor::CounterStyle> counterStyleProp_;
-    IntProperty periodProp_;                /** Period for cyclic and reversing counters. */
+    IntProperty beginProp_;
+    IntProperty endProp_;
+    //IntProperty periodProp_;                /** Period for cyclic and reversing counters. */
     IntProperty tickCounterProp_;           /** The counter which is modified on every timeEvent. */
+    //high res counter
     BoolProperty useHighResCounterProp_;
     FloatProperty resolutionProp_;
     FloatProperty highResCounterProp_;
+    //reset
     ButtonProperty resetProp_;
 };
 

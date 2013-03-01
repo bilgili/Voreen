@@ -1,3 +1,0 @@
-ffmpeg rev: 19251
-
-libs for visual studio are from revision 19254

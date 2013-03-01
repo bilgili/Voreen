@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -103,7 +103,7 @@ void RaytracingEntryExitPoints::initialize() throw (tgt::Exception) {
 
     prog_->build(devices.back());
 
-    initialized_ = true;
+    processorState_ = PROCESSOR_STATE_NOT_READY;
 }
 
 bool RaytracingEntryExitPoints::isReady() const {
@@ -215,7 +215,7 @@ void RaytracingEntryExitPoints::process() {
             k->setArg(6, camera_.get().getLook());
             k->setArg(7, strafe);
 
-            queue_->enqueueWrite(&inBuffer, &triangles[0]);
+            queue_->enqueueWriteBuffer(&inBuffer, &triangles[0]);
             queue_->enqueueAcquireGLObject(&entry);
             queue_->enqueueAcquireGLObject(&exit);
             queue_->enqueue(k, entryPort_.getSize());

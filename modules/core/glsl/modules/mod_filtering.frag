@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -87,6 +87,30 @@ vec4 dilation(in sampler2D texture, in TextureParameters texParams, in vec2 frag
         for (int y=-kernelRadius; y<=kernelRadius; y++) {
             vec4 curValue = textureLookup2Dscreen(texture, texParams,
                                                   vec2(fragCoord.x+float(x), fragCoord.y+float(y)));
+            result = max(curValue, result);
+        }
+    return result;
+}
+
+vec4 erosion_circle(in sampler2D texture, in TextureParameters texParams, in vec2 fragCoord, in int kernelRadius) {
+    vec4 result = vec4(1.0);
+    for (int x=-kernelRadius; x<=kernelRadius; x++)
+        for (int y=-kernelRadius; y<=kernelRadius; y++) {
+            if(length(vec2(x, y)) > kernelRadius + 0.5)
+                continue;
+            vec4 curValue = textureLookup2Dscreen(texture, texParams, vec2(fragCoord.x+float(x), fragCoord.y+float(y)));
+            result = min(curValue, result);
+        }
+    return result;
+}
+
+vec4 dilation_circle(in sampler2D texture, in TextureParameters texParams, in vec2 fragCoord, in int kernelRadius) {
+    vec4 result = vec4(0.0);
+    for (int x=-kernelRadius; x<=kernelRadius; x++)
+        for (int y=-kernelRadius; y<=kernelRadius; y++) {
+            if(length(vec2(x, y)) > kernelRadius + 0.5)
+                continue;
+            vec4 curValue = textureLookup2Dscreen(texture, texParams, vec2(fragCoord.x+float(x), fragCoord.y+float(y)));
             result = max(curValue, result);
         }
     return result;

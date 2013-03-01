@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -37,17 +37,23 @@ VolumeSave::VolumeSave()
     : VolumeProcessor()
     , inport_(Port::INPORT, "volumehandle.input", "Volume Input", false)
     , filename_("outputFilename", "File", "Select file...", "",
-            "Voreen Volume Data (*.vvd)", FileDialogProperty::SAVE_FILE)
+            "Voreen Volume Data (*.vvd)", FileDialogProperty::SAVE_FILE, Processor::INVALID_PATH)
     , saveButton_("save", "Save")
-    , continousSave_("continousSave", "Save continuously", false)
+    , saveOnPathChange_("saveOnPathChange","Save on path change",true)
+    , continousSave_("continousSave", "Save on inport change", false)
+    , volumeInfo_("volumeInfo","info")
+    , saveVolume_(false)
     , volSerializerPopulator_(0)
 {
     addPort(inport_);
 
     saveButton_.onChange(CallMemberAction<VolumeSave>(this, &VolumeSave::saveVolume));
+
     addProperty(filename_);
     addProperty(saveButton_);
+    addProperty(saveOnPathChange_);
     addProperty(continousSave_);
+    addProperty(volumeInfo_);
 }
 
 VolumeSave::~VolumeSave() {
@@ -69,13 +75,29 @@ void VolumeSave::initialize() throw (tgt::Exception) {
 void VolumeSave::deinitialize() throw (tgt::Exception) {
     delete volSerializerPopulator_;
     volSerializerPopulator_ = 0;
-
+    volumeInfo_.setVolume(0);
     VolumeProcessor::deinitialize();
 }
 
+void VolumeSave::invalidate(int inv) {
+    Processor::invalidate(inv);
+
+    if (inport_.hasChanged()) {
+        volumeInfo_.setVolume(inport_.getData());
+        if (continousSave_.get())
+            saveVolume_ = true;
+    }
+
+    if(inv == Processor::INVALID_PATH && saveOnPathChange_.get() && isInitialized()) {
+        saveVolume_ = true;
+    }
+}
+
 void VolumeSave::process() {
-    if (inport_.hasChanged() && continousSave_.get())
+    if (saveVolume_){
         saveVolume();
+        saveVolume_ = false;
+    }
 }
 
 void VolumeSave::saveVolume() {

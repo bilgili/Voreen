@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -37,14 +37,15 @@ namespace voreen {
 AdvancedLightingModule::AdvancedLightingModule(const std::string& modulePath)
     : VoreenModule(modulePath)
 {
-    setName("Advanced Lighting");
+    setID("Advanced Lighting");
+    setGuiName("Advanced Lighting");
 
     addShaderPath(getModulePath("glsl"));
 
-    registerProcessor(new OcclusionSlicer());
-    registerProcessor(new HalfAngleSlicer());
-    registerProcessor(new ShadowRaycaster());
-    registerProcessor(new SHRaycaster());
+    registerSerializableType(new OcclusionSlicer());
+    registerSerializableType(new HalfAngleSlicer());
+    registerSerializableType(new ShadowRaycaster());
+    registerSerializableType(new SHRaycaster());
 }
 
 } // namespace

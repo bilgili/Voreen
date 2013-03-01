@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -35,10 +35,11 @@ class QSlider;
 class QSpinBox;
 
 #include "voreen/core/properties/property.h"
+#include "voreen/qt/voreenqtapi.h"
 
 namespace voreen {
 
-class SliderSpinBoxWidget : public QWidget {
+class VRN_QT_API SliderSpinBoxWidget : public QWidget {
 Q_OBJECT
 Q_PROPERTY(int value READ getValue WRITE setValue)
 Q_PROPERTY(int minValue READ getMinValue WRITE setMinValue)
@@ -118,7 +119,7 @@ protected:
 // ---------------------------------------------------------------------------
 
 
-class DoubleSliderSpinBoxWidget : public QWidget {
+class VRN_QT_API DoubleSliderSpinBoxWidget : public QWidget {
 Q_OBJECT
 Q_PROPERTY(double value READ getValue WRITE setValue)
 Q_PROPERTY(double minValue READ getMinValue WRITE setMinValue)

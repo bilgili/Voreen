@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -33,7 +33,6 @@
 #include "voreen/core/animation/propertykeyvalue.h"
 #include "voreen/core/animation/interpolationfunction.h"
 #include "voreen/core/animation/propertytimeline.h"
-#include "voreen/core/animation/undoableanimation.h"
 #include "voreen/core/animation/templatepropertytimelinestate.h"
 #include "voreen/core/animation/timelineobserver.h"
 #include "voreen/core/animation/animation.h"
@@ -51,18 +50,16 @@ template <class T>
 class TemplatePropertyTimeline : public PropertyTimeline, public Observable<TimelineObserver> {
 public:
     /**
-     * Constructor of the class.
      * Parameter is the property object which should be animated.
      */
     TemplatePropertyTimeline(TemplateProperty<T>* prop);
 
-    /**
-     * Destructor.
-     */
     ~TemplatePropertyTimeline();
 
     /// returns true if the timeline is empty
     bool isEmpty();
+
+    virtual bool isCompatibleWith(const Property* p) const;
 
     /**
      * Returns a sorted vector of all keyvalues of the timeline.
@@ -118,6 +115,14 @@ public:
     virtual ChangeTimeOfKeyValueReturn changeTimeOfKeyValue(float time, const PropertyKeyValue<T>* keyvalue);
 
     /**
+     * Changes the time of a keyvalue and shifts following keyvalues by the same offset.
+     *
+     * returns KV_NOT_FOUND                   if the given keyvalue couldn't be found in the timeline
+     * returns KV_EQUAL_TO_OLD                if the new time is equal to the old one
+     */
+    virtual ChangeTimeOfKeyValueReturn shiftKeyValue(float time, const PropertyKeyValue<T>* keyvalue);
+
+    /**
      * Deletes the given keyvalue:
      * The two interpolationfunctions before and after the deleted keyvalue will be deleted too and replaced by one default interpolation.
      * returns KV_NOT_FOUND       if the given keyvalue couldn't be found in the timeline
@@ -155,11 +160,6 @@ public:
      * Returns a copy of the current timelinestate.
      */
     virtual TemplatePropertyTimelineState<T>* getCurrentTimelineState() const ;
-
-    /**
-     * Sets the current propertytimelinestate by cloning the given timelinestate.
-     */
-    virtual void setCurrentTimelineState(TemplatePropertyTimelineState<T>* timelinestate);
 
     /**
      * This function registers the given animation class as an utils/observer.
@@ -214,6 +214,11 @@ public:
 
     virtual Property* getProperty() const;
 
+    virtual void setProperty(Property* p);
+
+    virtual AbstractSerializable* create() const = 0;
+
+    virtual std::string getClassName() const = 0;
 protected:
     friend class PropertyTimelineFactory;
     friend class XmlDeserializer;
@@ -297,76 +302,35 @@ protected:
     Animation* undoObserver_;
 };
 
-template <>
-TemplatePropertyTimeline<TransFunc*>::TemplatePropertyTimeline(TemplateProperty<TransFunc*>* prop);
-
-template <>
-void TemplatePropertyTimeline<TransFunc*>::resetTimeline();
-
-template <>
-TransFunc* TemplatePropertyTimeline<TransFunc*>::privateGetPropertyAt(float time);
-
-template <>
-void TemplatePropertyTimeline<TransFunc*>::renderAt(float time);
-
-template <>
-TemplatePropertyTimeline<tgt::Camera>::TemplatePropertyTimeline(TemplateProperty<tgt::Camera>* prop);
-
-template <>
-void TemplatePropertyTimeline<tgt::Camera>::resetTimeline();
-
-template <>
-const PropertyKeyValue<tgt::Camera>* TemplatePropertyTimeline<tgt::Camera>::newKeyValue(float time);
-
-template <>
-tgt::Camera TemplatePropertyTimeline<tgt::Camera>::privateGetPropertyAt(float time);
-
-template <>
-void TemplatePropertyTimeline<tgt::Camera>::renderAt(float time);
-
-template <>
-bool TemplatePropertyTimeline<tgt::Camera>::changeValueOfKeyValue(tgt::Camera value, const PropertyKeyValue<tgt::Camera>* keyvalue);
-
-template <>
-const TemplateProperty<tgt::Camera>* TemplatePropertyTimeline<tgt::Camera>::getCorrespondingProperty() const;
-
-template <>
-std::string TemplatePropertyTimeline<tgt::Camera>::getPropertyName() const;
-
-template <>
-void TemplatePropertyTimeline<tgt::Camera>::setInteractionMode(bool interactionmode, void* source);
-
-template <>
-DeleteKeyValueReturn TemplatePropertyTimeline<tgt::Camera>::deleteKeyValue(const PropertyKeyValue<tgt::Camera>* keyvalue);
-
-template <>
-void TemplatePropertyTimeline<tgt::Camera>::serialize(XmlSerializer& s) const;
-
-template <>
-void TemplatePropertyTimeline<tgt::Camera>::deserialize(XmlDeserializer& s);
-
-template <>
-void TemplatePropertyTimeline<tgt::Camera>::undo();
-
-template <>
-void TemplatePropertyTimeline<tgt::Camera>::redo();
-
-template <>
-void TemplatePropertyTimeline<ShaderSource>::renderAt(float time);
-
 template <class T>
 TemplatePropertyTimeline<T>::TemplatePropertyTimeline(TemplateProperty<T>* prop)
 : property_(prop)
 , activeOnRendering_(true)
 , timelineChanged_(false)
+, undoObserver_(0)
 {
     duration_ = 60.f * 15.f;
 
     timeline_ = new TemplatePropertyTimelineState<T>(new PropertyKeyValue<T>(property_->get(),0));
 }
 
+template <>
+TemplatePropertyTimeline<TransFunc*>::TemplatePropertyTimeline(TemplateProperty<TransFunc*>* prop);
+
 template <class T>
-TemplatePropertyTimeline<T>::TemplatePropertyTimeline() {}
+TemplatePropertyTimeline<T>::TemplatePropertyTimeline()
+: property_(0)
+, activeOnRendering_(true)
+, timelineChanged_(false)
+, undoObserver_(0)
+{
+    duration_ = 60.f * 15.f;
+
+    timeline_ = new TemplatePropertyTimelineState<T>();
+}
+
+template <>
+TemplatePropertyTimeline<TransFunc*>::TemplatePropertyTimeline();
 
 template <class T>
 TemplatePropertyTimeline<T>::~TemplatePropertyTimeline() {
@@ -383,6 +347,11 @@ TemplatePropertyTimeline<T>::~TemplatePropertyTimeline() {
         lastUndos_.pop_back();
         delete temp;
     }
+}
+
+template <class T>
+bool TemplatePropertyTimeline<T>::isCompatibleWith(const Property* p) const {
+    return dynamic_cast<const TemplateProperty<T>*>(p);
 }
 
 template <class T>
@@ -407,6 +376,9 @@ void TemplatePropertyTimeline<T>::resetTimeline() {
         (*it)->timelineChanged();
 }
 
+template <>
+void TemplatePropertyTimeline<TransFunc*>::resetTimeline();
+
 template <class T>
 const T TemplatePropertyTimeline<T>::getPropertyAt(float time) {
     return privateGetPropertyAt(time);
@@ -416,6 +388,9 @@ template <class T>
 T TemplatePropertyTimeline<T>::privateGetPropertyAt(float time) {
     return timeline_->getPropertyAt(time);
 }
+
+template <>
+TransFunc* TemplatePropertyTimeline<TransFunc*>::privateGetPropertyAt(float time);
 
 template <class T>
 const std::map<float,PropertyKeyValue<T>*> TemplatePropertyTimeline<T>::getKeyValues() const{
@@ -436,6 +411,9 @@ const PropertyKeyValue<T>* TemplatePropertyTimeline<T>::newKeyValue(float time) 
 
     const PropertyKeyValue<T>* kv = timeline_->newKeyValue(time);
 
+    //setInterpolationFunctionAfter(, kv); //TODO
+    //setInterpolationFunctionBefore(, kv);
+
     const std::vector<TimelineObserver*> timelineObservers = getObservers();
     std::vector<TimelineObserver*>::const_iterator it;
     for (it = timelineObservers.begin(); it != timelineObservers.end(); ++it)
@@ -448,8 +426,10 @@ template <class T>
 bool TemplatePropertyTimeline<T>::changeValueOfKeyValue(T value, const PropertyKeyValue<T>* keyvalue) {
     timelineChanged_ = true;
     std::string errorMsg;
-    if (!(property_->isValidValue(value, errorMsg)))
+    if (!(property_->isValidValue(value, errorMsg))) {
+        LWARNINGC("voreen.TemplatePropertyTimeline", "Invalid property value");
         return false;
+    }
     bool temp = timeline_->changeValueOfKeyValue(value, keyvalue);
 
     const std::vector<TimelineObserver*> timelineObservers = getObservers();
@@ -484,6 +464,52 @@ ChangeTimeOfKeyValueReturn TemplatePropertyTimeline<T>::changeTimeOfKeyValue(flo
     timelineChanged_ = true;
 
     ChangeTimeOfKeyValueReturn temp = timeline_->changeTimeOfKeyValue(time,keyvalue);
+
+    const std::vector<TimelineObserver*> timelineObservers = getObservers();
+    std::vector<TimelineObserver*>::const_iterator it;
+    for (it = timelineObservers.begin(); it != timelineObservers.end(); ++it)
+        (*it)->timelineChanged();
+
+    return temp;
+}
+
+template <class T>
+ChangeTimeOfKeyValueReturn TemplatePropertyTimeline<T>::shiftKeyValue(float time, const PropertyKeyValue<T>* keyvalue) {
+    time = floor(time * 10000.f) / 10000.f;
+    const float oldTime = keyvalue->getTime();
+    const float diff = time - oldTime;
+    timelineChanged_ = true;
+
+    const std::map<float,PropertyKeyValue<T>*>& values = timeline_->getKeyValues();
+
+    {
+        typename std::map<float,PropertyKeyValue<T>*>::const_iterator it = values.find(oldTime);
+
+        // if the given keyvalue is not in the timeline
+        if (it == values.end())
+            return KV_NOT_FOUND;
+
+        // if the times are equal -> nothing to do
+        if (time == oldTime)
+            return KV_EQUAL_TO_OLD;
+
+        if(time > oldTime) {
+            typename std::map<float,PropertyKeyValue<T>*>::const_reverse_iterator last = values.rbegin();
+
+            if(((*last).second->getTime() + diff) > duration_)
+                return KV_TIME_AFTER_DURATION;
+        }
+        else {
+            if(it != values.begin()) {
+                it--; // check if movement would colide with predecessor
+
+                if(((*it).second->getTime() > time) )
+                    return KV_TIME_AFTER_DURATION;
+            }
+        }
+    }
+
+    ChangeTimeOfKeyValueReturn temp = timeline_->shiftKeyValue(time,keyvalue);
 
     const std::vector<TimelineObserver*> timelineObservers = getObservers();
     std::vector<TimelineObserver*>::const_iterator it;
@@ -544,6 +570,9 @@ void TemplatePropertyTimeline<T>::renderAt(float time) {
 
     property_->set(getPropertyAt(time));
 }
+
+template <>
+void TemplatePropertyTimeline<TransFunc*>::renderAt(float time);
 
 template <class T>
 bool TemplatePropertyTimeline<T>::propertyIsLinked() const {
@@ -657,21 +686,6 @@ TemplatePropertyTimelineState<T>* TemplatePropertyTimeline<T>::getCurrentTimelin
 }
 
 template <class T>
-void TemplatePropertyTimeline<T>::setCurrentTimelineState(TemplatePropertyTimelineState<T>* timelinestate) {
-    timelineChanged_ = true;
-    lastChanges_.push_back(timeline_->clone());
-    undoObserver_->animationChanged(this);
-
-    delete timeline_;
-    timeline_ = timelinestate->clone();
-
-    const std::vector<TimelineObserver*> timelineObservers = getObservers();
-    std::vector<TimelineObserver*>::const_iterator it;
-    for (it = timelineObservers.begin(); it != timelineObservers.end(); ++it)
-        (*it)->timelineChanged();
-}
-
-template <class T>
 void TemplatePropertyTimeline<T>::setDuration(float duration) {
     duration_ = duration;
 
@@ -683,50 +697,24 @@ void TemplatePropertyTimeline<T>::setDuration(float duration) {
         (*it)->timelineChanged();
 }
 
-template <>
-void TemplatePropertyTimeline<float>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
-
-template <>
-void TemplatePropertyTimeline<int>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
-
-template <>
-void TemplatePropertyTimeline<bool>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
-
-template <>
-void TemplatePropertyTimeline<tgt::ivec2>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
-
-template <>
-void TemplatePropertyTimeline<tgt::vec2>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
-
-template <>
-void TemplatePropertyTimeline<tgt::ivec3>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
-
-template <>
-void TemplatePropertyTimeline<tgt::vec3>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
-
-template <>
-void TemplatePropertyTimeline<tgt::ivec4>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
-
-template <>
-void TemplatePropertyTimeline<tgt::vec4>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
-
-template <>
-void TemplatePropertyTimeline<tgt::mat2>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
-
-template <>
-void TemplatePropertyTimeline<tgt::mat3>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
-
-template <>
-void TemplatePropertyTimeline<tgt::mat4>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
-
-template <>
-void TemplatePropertyTimeline<std::string>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
-
-template <>
-void TemplatePropertyTimeline<ShaderSource>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
-
-template <>
-void TemplatePropertyTimeline<tgt::Camera>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
+template <class T>
+void TemplatePropertyTimeline<T>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue) {
+    time = floor(time*10000)/10000;
+    T value = property_->get();
+    T animatedValue = getPropertyAt(time);
+    if (value != animatedValue) {
+        const PropertyKeyValue<T>* kv = timeline_->newKeyValue(time);
+        if (!kv) {
+            kv = new PropertyKeyValue<T>(value,time);
+        }
+        this->changeValueOfKeyValue(value,kv);
+    }
+    else {
+        if (forceKeyValue){
+            newKeyValue(time);
+        }
+    }
+}
 
 template <>
 void TemplatePropertyTimeline<TransFunc*>::setCurrentSettingAsKeyvalue(float time, bool forceKeyValue);
@@ -751,7 +739,7 @@ void TemplatePropertyTimeline<T>::deserialize(XmlDeserializer& s) {
     property_ = dynamic_cast<TemplateProperty<T>*>(propertyOwner->getProperty(propertyId));
     if (!property_)
         LWARNINGC("TemplatePropertyTimeline", "Property defined in animation timeline does not exist: "
-        << propertyOwner->getName() << "::" << propertyId);
+        << propertyOwner->getID() << "::" << propertyId);
 
     s.deserialize("duration", duration_);
     s.deserialize("timeline", timeline_);
@@ -762,6 +750,169 @@ template <class T>
 Property* TemplatePropertyTimeline<T>::getProperty() const {
     return property_;
 }
+
+template <class T>
+void TemplatePropertyTimeline<T>::setProperty(Property* p) {
+    TemplateProperty<T>* tp = dynamic_cast<TemplateProperty<T>*>(p);
+    if(tp) {
+        property_ = tp;
+        if(timeline_->getKeyValues().size() == 0) {
+            delete timeline_;
+            timeline_ = 0;
+            timeline_ = new TemplatePropertyTimelineState<T>(new PropertyKeyValue<T>(property_->get(),0));
+        }
+    }
+    else {
+        LERRORC("voreen.TemplatePropertyTimeline", "Property type mismatch!");
+    }
+}
+
+template <>
+void TemplatePropertyTimeline<TransFunc*>::setProperty(Property* p);
+
+class VRN_CORE_API PropertyTimelineFloat : public TemplatePropertyTimeline<float> {
+public:
+    PropertyTimelineFloat() : TemplatePropertyTimeline<float>() {}
+    PropertyTimelineFloat(TemplateProperty<float>* prop) : TemplatePropertyTimeline<float>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineFloat(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineFloat"; }
+};
+
+class VRN_CORE_API PropertyTimelineInt : public TemplatePropertyTimeline<int> {
+public:
+    PropertyTimelineInt() : TemplatePropertyTimeline<int>() {}
+    PropertyTimelineInt(TemplateProperty<int>* prop) : TemplatePropertyTimeline<int>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineInt(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineInt"; }
+};
+
+class VRN_CORE_API PropertyTimelineBool : public TemplatePropertyTimeline<bool> {
+public:
+    PropertyTimelineBool()  : TemplatePropertyTimeline<bool>() {}
+    PropertyTimelineBool(TemplateProperty<bool>* prop) : TemplatePropertyTimeline<bool>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineBool(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineBool"; }
+};
+
+class VRN_CORE_API PropertyTimelineIVec2 : public TemplatePropertyTimeline<tgt::ivec2> {
+public:
+    PropertyTimelineIVec2()  : TemplatePropertyTimeline<tgt::ivec2>() {}
+    PropertyTimelineIVec2(TemplateProperty<tgt::ivec2>* prop) : TemplatePropertyTimeline<tgt::ivec2>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineIVec2(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineIVec2"; }
+};
+
+class VRN_CORE_API PropertyTimelineIVec3 : public TemplatePropertyTimeline<tgt::ivec3> {
+public:
+    PropertyTimelineIVec3()  : TemplatePropertyTimeline<tgt::ivec3>() {}
+    PropertyTimelineIVec3(TemplateProperty<tgt::ivec3>* prop) : TemplatePropertyTimeline<tgt::ivec3>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineIVec3(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineIVec3"; }
+};
+
+class VRN_CORE_API PropertyTimelineIVec4 : public TemplatePropertyTimeline<tgt::ivec4> {
+public:
+    PropertyTimelineIVec4()  : TemplatePropertyTimeline<tgt::ivec4>() {}
+    PropertyTimelineIVec4(TemplateProperty<tgt::ivec4>* prop) : TemplatePropertyTimeline<tgt::ivec4>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineIVec4(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineIVec4"; }
+};
+
+class VRN_CORE_API PropertyTimelineVec2 : public TemplatePropertyTimeline<tgt::vec2> {
+public:
+    PropertyTimelineVec2()  : TemplatePropertyTimeline<tgt::vec2>() {}
+    PropertyTimelineVec2(TemplateProperty<tgt::vec2>* prop) : TemplatePropertyTimeline<tgt::vec2>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineVec2(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineVec2"; }
+};
+
+class VRN_CORE_API PropertyTimelineVec3 : public TemplatePropertyTimeline<tgt::vec3> {
+public:
+    PropertyTimelineVec3()  : TemplatePropertyTimeline<tgt::vec3>() {}
+    PropertyTimelineVec3(TemplateProperty<tgt::vec3>* prop) : TemplatePropertyTimeline<tgt::vec3>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineVec3(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineVec3"; }
+};
+
+class VRN_CORE_API PropertyTimelineVec4 : public TemplatePropertyTimeline<tgt::vec4> {
+public:
+    PropertyTimelineVec4()  : TemplatePropertyTimeline<tgt::vec4>() {}
+    PropertyTimelineVec4(TemplateProperty<tgt::vec4>* prop) : TemplatePropertyTimeline<tgt::vec4>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineVec4(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineVec4"; }
+};
+
+class VRN_CORE_API PropertyTimelineMat2 : public TemplatePropertyTimeline<tgt::mat2> {
+public:
+    PropertyTimelineMat2()  : TemplatePropertyTimeline<tgt::mat2>() {}
+    PropertyTimelineMat2(TemplateProperty<tgt::mat2>* prop) : TemplatePropertyTimeline<tgt::mat2>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineMat2(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineMat2"; }
+};
+
+class VRN_CORE_API PropertyTimelineMat3 : public TemplatePropertyTimeline<tgt::mat3> {
+public:
+    PropertyTimelineMat3()  : TemplatePropertyTimeline<tgt::mat3>() {}
+    PropertyTimelineMat3(TemplateProperty<tgt::mat3>* prop) : TemplatePropertyTimeline<tgt::mat3>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineMat3(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineMat3"; }
+};
+
+class VRN_CORE_API PropertyTimelineMat4 : public TemplatePropertyTimeline<tgt::mat4> {
+public:
+    PropertyTimelineMat4()  : TemplatePropertyTimeline<tgt::mat4>() {}
+    PropertyTimelineMat4(TemplateProperty<tgt::mat4>* prop) : TemplatePropertyTimeline<tgt::mat4>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineMat4(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineMat4"; }
+};
+
+class VRN_CORE_API PropertyTimelineCamera : public TemplatePropertyTimeline<tgt::Camera> {
+public:
+    PropertyTimelineCamera()  : TemplatePropertyTimeline<tgt::Camera>() {}
+    PropertyTimelineCamera(TemplateProperty<tgt::Camera>* prop) : TemplatePropertyTimeline<tgt::Camera>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineCamera(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineCamera"; }
+};
+
+class VRN_CORE_API PropertyTimelineString : public TemplatePropertyTimeline<std::string> {
+public:
+    PropertyTimelineString()  : TemplatePropertyTimeline<std::string>() {}
+    PropertyTimelineString(TemplateProperty<std::string>* prop) : TemplatePropertyTimeline<std::string>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineString(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineString"; }
+};
+
+class VRN_CORE_API PropertyTimelineShaderSource : public TemplatePropertyTimeline<ShaderSource> {
+public:
+    PropertyTimelineShaderSource()  : TemplatePropertyTimeline<ShaderSource>() {}
+    PropertyTimelineShaderSource(TemplateProperty<ShaderSource>* prop) : TemplatePropertyTimeline<ShaderSource>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineShaderSource(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineShaderSource"; }
+};
+
+class VRN_CORE_API PropertyTimelineTransFunc : public TemplatePropertyTimeline<TransFunc*> {
+public:
+    PropertyTimelineTransFunc()  : TemplatePropertyTimeline<TransFunc*>() {}
+    PropertyTimelineTransFunc(TemplateProperty<TransFunc*>* prop) : TemplatePropertyTimeline<TransFunc*>(prop) {}
+    virtual AbstractSerializable* create() const { return new PropertyTimelineTransFunc(); }
+
+    virtual std::string getClassName() const { return "PropertyTimelineTransFunc"; }
+};
 
 } // namespace voreen
 

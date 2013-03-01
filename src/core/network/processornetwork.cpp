@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -28,17 +28,15 @@
 #include "tgt/filesystem.h"
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/voreenmodule.h"
-#include "voreen/core/datastructures/transfunc/transfuncfactory.h"
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
 #include "voreen/core/network/portconnection.h"
 #include "voreen/core/network/networkgraph.h"
 #include "voreen/core/ports/allports.h"
-#include "voreen/core/processors/processorfactory.h"
 #include "voreen/core/processors/renderprocessor.h"
 #include "voreen/core/properties/eventproperty.h"
 #include "voreen/core/properties/link/propertylink.h"
 #include "voreen/core/properties/link/linkevaluatorbase.h"
-#include "voreen/core/properties/link/linkevaluatorfactory.h"
+#include "voreen/core/properties/link/linkevaluatorhelper.h"
 
 #include <vector>
 #include <map>
@@ -54,7 +52,7 @@ const std::string ProcessorNetwork::loggerCat_("voreen.ProcessorNetwork");
 namespace {
 
 // Increase this counter when incompatible changes are introduced into the serialization format
-const int NETWORK_VERSION = 13; //< introduction of render size linking
+const int NETWORK_VERSION = 15; //< Voreen 4.2
 
 std::string serializeProperty(Property* p) {
     XmlSerializer s;
@@ -100,7 +98,7 @@ void ProcessorNetwork::addProcessor(Processor* processor, const std::string& nam
     tgtAssert(!getProcessor(processorName), "Generated processor name should be unique here");
 
     // everything fine => rename and add processor
-    processor->setName(processorName);
+    processor->setID(processorName);
     processors_.push_back(processor);
 
     static_cast<Observable<PropertyOwnerObserver>* >(processor)->addObserver(this);
@@ -238,13 +236,13 @@ bool ProcessorNetwork::contains(const Processor* processor) const {
 
 void ProcessorNetwork::setProcessorName(Processor* processor, const std::string& name) const throw (VoreenException) {
     if (std::find(processors_.begin(), processors_.end(), processor) == processors_.end())
-        throw VoreenException("Passed processor is not part of the network: " + processor->getName());
+        throw VoreenException("Passed processor is not part of the network: " + processor->getID());
 
     if (name.empty())
         throw VoreenException("Passed processor name is empty");
 
     // processor already has the passed name => do nothing
-    if (processor->getName() == name)
+    if (processor->getID() == name)
         return;
 
     // check whether passed name is already assigned to a processor in the network
@@ -253,8 +251,8 @@ void ProcessorNetwork::setProcessorName(Processor* processor, const std::string&
     }
 
     // everything fine => rename processor
-    std::string prevName = processor->getName();
-    processor->setName(name);
+    std::string prevName = processor->getID();
+    processor->setID(name);
 
     // notify observers
     notifyProcessorRenamed(processor, prevName);
@@ -282,7 +280,7 @@ std::string ProcessorNetwork::generateUniqueProcessorName(const std::string& nam
 
 Processor* ProcessorNetwork::getProcessor(const std::string& name) const {
     for (size_t i=0; i<processors_.size(); ++i)
-        if (processors_[i]->getName() == name)
+        if (processors_[i]->getID() == name)
             return processors_[i];
 
     return 0;
@@ -325,7 +323,7 @@ ProcessorNetwork* ProcessorNetwork::cloneSubNetwork(std::vector<Processor*> vec)
                 for (size_t l = 0; l < vec.size(); ++l){ // each processor
                     if (vec[l] == inports[k]->getProcessor()){
                         result->connectPorts(result->processors_[i]->getOutports()[j],
-                            result->processors_[l]->getPort(inports[k]->getName()));
+                            result->processors_[l]->getPort(inports[k]->getID()));
                         break;
                     }
                 }
@@ -342,7 +340,7 @@ ProcessorNetwork* ProcessorNetwork::cloneSubNetwork(std::vector<Processor*> vec)
                 for (size_t l = 0; l < vec.size(); ++l){ //each processor
                     if (vec[l] == inports[k]->getProcessor()){
                         result->connectPorts(result->processors_[i]->getCoProcessorOutports()[j],
-                            result->processors_[l]->getPort(inports[k]->getName()));
+                            result->processors_[l]->getPort(inports[k]->getID()));
                         break;
                     }
                 }
@@ -362,8 +360,15 @@ ProcessorNetwork* ProcessorNetwork::cloneSubNetwork(std::vector<Processor*> vec)
                 src = result->getProcessors()[j]->getProperty(propertyLinks_[i]->getSourceProperty()->getID());
             }
         }
-        if (src && dest)
-            result->createPropertyLink(src, dest, propertyLinks_[i]->getLinkEvaluator()->create());
+        if (src && dest) {
+            LinkEvaluatorBase* eval = dynamic_cast<LinkEvaluatorBase*>(propertyLinks_[i]->getLinkEvaluator()->create());
+            if (eval)
+                result->createPropertyLink(src, dest, eval);
+            else {
+                LERROR(propertyLinks_[i]->getLinkEvaluator()->getClassName() << "::create() " << " did not return a LinkEvaluatorBase");
+                delete eval;
+            }
+        }
     }
 
     result->notifyNetworkChanged();
@@ -507,7 +512,7 @@ void ProcessorNetwork::addProcessorInConnection(Port* outport, Port* inport, Pro
 
 int ProcessorNetwork::removePropertyLinksFromProperty(Property* property) {
     tgtAssert(property, "null pointer passed");
-    tgtAssert(dynamic_cast<Processor*>(property->getOwner()) || dynamic_cast<Port*>(property->getOwner()), 
+    tgtAssert(dynamic_cast<Processor*>(property->getOwner()) || dynamic_cast<Port*>(property->getOwner()),
         "passed property is owned neither by a processor nor by a port");
     tgtAssert(contains(getOwningProcessor(property)), "passed property's owner is not part of the network");
 
@@ -530,14 +535,14 @@ int ProcessorNetwork::removePropertyLinksFromProcessor(Processor* processor) {
 PropertyLink* ProcessorNetwork::createPropertyLink(Property* src, Property* dest, LinkEvaluatorBase* linkEvaluator) {
     tgtAssert(src && dest, "null pointer passed");
     tgtAssert(src != dest, "source and destination property are equal");
-    
-    tgtAssert(dynamic_cast<Processor*>(src->getOwner()) || dynamic_cast<Port*>(src->getOwner()), 
+
+    tgtAssert(dynamic_cast<Processor*>(src->getOwner()) || dynamic_cast<Port*>(src->getOwner()),
         "passed src property is owned neither by a processor nor by a port");
     tgtAssert(contains(getOwningProcessor(src)), "passed src property's owner is not part of the network");
 
-    tgtAssert(dynamic_cast<Processor*>(dest->getOwner()) || dynamic_cast<Port*>(dest->getOwner()), 
+    tgtAssert(dynamic_cast<Processor*>(dest->getOwner()) || dynamic_cast<Port*>(dest->getOwner()),
         "passed dest property is owned neither by a processor nor by a port");
-    tgtAssert(contains(getOwningProcessor(dest)), "passed dest property's owner is not part of the network"); 
+    tgtAssert(contains(getOwningProcessor(dest)), "passed dest property's owner is not part of the network");
 
     // check whether the properties are already linked
     if (linkEvaluator && containsPropertyLink(src, dest, linkEvaluator)) {
@@ -569,16 +574,12 @@ PropertyLink* ProcessorNetwork::createPropertyLink(Property* src, Property* dest
     if (!linkEvaluator) {
         const std::vector<VoreenModule*>& modules = VoreenApplication::app()->getModules();
         for (size_t i=0; i<modules.size() && !linkEvaluator; i++) {
-            const std::vector<LinkEvaluatorFactory*>& factories = modules.at(i)->getLinkEvaluatorFactories();
-            for (size_t j=0; j<factories.size() && !linkEvaluator; j++) {
-                LinkEvaluatorFactory* factory = factories.at(j);
-                std::vector<std::pair<std::string, std::string> > compatibleEvals = factory->getCompatibleLinkEvaluators(src, dest);
-                if (!compatibleEvals.empty()) {
-                    LDEBUG("Creating LinkEvaluator: " << compatibleEvals.front().first);
-                    linkEvaluator = factory->createEvaluator(compatibleEvals.front().first);
-                    if (!linkEvaluator)
-                        LWARNING("Failed to create LinkEvaluator: " << compatibleEvals.front().first);
-                }
+            std::vector<std::pair<std::string, std::string> > compatibleEvals = LinkEvaluatorHelper::getCompatibleLinkEvaluators(src, dest);
+            if (!compatibleEvals.empty()) {
+                LDEBUG("Creating LinkEvaluator: " << compatibleEvals.front().first);
+                linkEvaluator = LinkEvaluatorHelper::createEvaluator(compatibleEvals.front().first);
+                if (!linkEvaluator)
+                    LWARNING("Failed to create LinkEvaluator: " << compatibleEvals.front().first);
             }
         }
 
@@ -700,22 +701,22 @@ int ProcessorNetwork::createPropertyLinksBetweenProperties(const std::vector<Pro
         // create a cyclic link chain, where each property is linked with its predecessor and successor
         for (size_t i=0; i<linkProperties.size()-1; ++i) {
             if (!linkProperties[i]->isLinkedWith(linkProperties[i+1])) {
-                if (createPropertyLink(linkProperties[i], linkProperties[i+1], linkEvaluator ? linkEvaluator->create() : 0))
+                if (createPropertyLink(linkProperties[i], linkProperties[i+1], linkEvaluator ? dynamic_cast<LinkEvaluatorBase*>(linkEvaluator->create()) : 0))
                     numLinks++;
             }
             if (!linkProperties[i+1]->isLinkedWith(linkProperties[i])) {
-                if (createPropertyLink(linkProperties[i+1], linkProperties[i], linkEvaluator ? linkEvaluator->create() : 0))
+                if (createPropertyLink(linkProperties[i+1], linkProperties[i], linkEvaluator ? dynamic_cast<LinkEvaluatorBase*>(linkEvaluator->create()) : 0))
                     numLinks++;
             }
         }
         // close cycle by linking last property with first
         if (linkProperties.size() > 2) {
             if (!linkProperties.back()->isLinkedWith(linkProperties.front())) {
-                if (createPropertyLink(linkProperties.back(), linkProperties.front(), linkEvaluator ? linkEvaluator->create() : 0))
+                if (createPropertyLink(linkProperties.back(), linkProperties.front(), linkEvaluator ? dynamic_cast<LinkEvaluatorBase*>(linkEvaluator->create()) : 0))
                     numLinks++;
             }
             if (!linkProperties.front()->isLinkedWith(linkProperties.back())) {
-                if (createPropertyLink(linkProperties.front(), linkProperties.back(), linkEvaluator ? linkEvaluator->create() : 0))
+                if (createPropertyLink(linkProperties.front(), linkProperties.back(), linkEvaluator ? dynamic_cast<LinkEvaluatorBase*>(linkEvaluator->create()) : 0))
                     numLinks++;
             }
         }
@@ -724,11 +725,11 @@ int ProcessorNetwork::createPropertyLinksBetweenProperties(const std::vector<Pro
         for (size_t i=0; i<linkProperties.size()-1; ++i) {
             for (size_t j=i+1; j<linkProperties.size(); ++j) {
                 if (!linkProperties[i]->isLinkedWith(linkProperties[j])) {
-                    if (createPropertyLink(linkProperties[i], linkProperties[j], linkEvaluator ? linkEvaluator->create() : 0))
+                    if (createPropertyLink(linkProperties[i], linkProperties[j], linkEvaluator ? dynamic_cast<LinkEvaluatorBase*>(linkEvaluator->create()) : 0))
                         numLinks++;
                 }
                 if (!linkProperties[j]->isLinkedWith(linkProperties[i])) {
-                    if (createPropertyLink(linkProperties[j], linkProperties[i], linkEvaluator ? linkEvaluator->create() : 0))
+                    if (createPropertyLink(linkProperties[j], linkProperties[i], linkEvaluator ? dynamic_cast<LinkEvaluatorBase*>(linkEvaluator->create()) : 0))
                         numLinks++;
                 }
             }
@@ -803,7 +804,7 @@ PropertyLink* ProcessorNetwork::createRenderSizeLink(RenderPort* source, RenderP
 
     tgtAssert(sourceProp && destProp, "unexpected null pointer");
     if (getRenderSizeLink(source, dest)) {
-        LWARNING("createRenderSizeLink(): size link from '" << source->getQualifiedName() << "' to '" << 
+        LWARNING("createRenderSizeLink(): size link from '" << source->getQualifiedName() << "' to '" <<
             dest->getQualifiedName() << "' already exists.");
         return 0;
     }
@@ -823,7 +824,7 @@ bool ProcessorNetwork::removeRenderSizeLink(RenderPort* source, RenderPort* dest
         removePropertyLink(link);
         return true;
     }
-    else 
+    else
         return false;
 }
 
@@ -866,12 +867,12 @@ int ProcessorNetwork::createRenderSizeLinksWithinSubNetwork(const std::vector<Pr
     // check, if all processors are part of this network
     for (size_t i=0; i < linkProcessors.size(); ++i){
         if (!contains(linkProcessors[i])){
-            LERROR("createRenderSizeLinksInSubNetwork(): processor '" << linkProcessors[i]->getName() << "' is not part of this network");
+            LERROR("createRenderSizeLinksInSubNetwork(): processor '" << linkProcessors[i]->getID() << "' is not part of this network");
             tgtAssert(false, "processor is not part of this network");
             return 0;
         }
-    }   
-       
+    }
+
     // create inverse map from render size receivers to linked origins for existing links
     std::map<RenderPort*, std::vector<RenderPort*> > receiverToOriginMapExisting =
         getRenderSizeReceiverToOriginsMap(processors_);
@@ -937,7 +938,7 @@ int ProcessorNetwork::createRenderSizeLinksWithinSubNetwork(const std::vector<Pr
             LWARNING("Multiple potential render size origins for render size receiver: " << receiver->getQualifiedName());
         }
     }
-    
+
     return numCreated;
 }
 
@@ -954,10 +955,10 @@ int ProcessorNetwork::createRenderSizeLinksOverConnection(RenderPort* outport, R
     else {
         std::vector<RenderPort*> originSuccessors = getSuccessingRenderSizeOrigins(inport, processors_);
         if (originSuccessors.size() == 1)
-            originPort = originSuccessors.front(); 
+            originPort = originSuccessors.front();
         else if (originSuccessors.size() > 1) {
             // multiple origins => no size link over connection possible
-            LWARNING("Multiple potential render size origins. No render size link created."); 
+            LWARNING("Multiple potential render size origins. No render size link created.");
             return 0;
         }
         else {
@@ -978,7 +979,7 @@ int ProcessorNetwork::createRenderSizeLinksOverConnection(RenderPort* outport, R
     else
         receiverPredecessors = getPredecessingRenderSizeReceivers(outport, processors_);
 
-    // determine for each size predecessor (receiver) its size successors (origins) 
+    // determine for each size predecessor (receiver) its size successors (origins)
     //std::map<RenderPort*, RenderPort*> receiverToOriginMap;
     std::vector<RenderPort*> receiverPortsToLink;
     for (size_t i=0; i<receiverPredecessors.size(); i++) {
@@ -989,9 +990,9 @@ int ProcessorNetwork::createRenderSizeLinksOverConnection(RenderPort* outport, R
         std::vector<RenderPort*> tOrigins = getSuccessingRenderSizeOrigins(receiverPort, processors_);
         // if receiver has only one potential origin, which equals the connection successor, create size link
         if (tOrigins.size() == 1 && tOrigins.front() == originPort)
-            receiverPortsToLink.push_back(receiverPort);  
+            receiverPortsToLink.push_back(receiverPort);
         else if (tOrigins.size() > 1) {
-            LWARNING("Multiple potential render size origins for render size receiver: " << receiverPort->getQualifiedName() 
+            LWARNING("Multiple potential render size origins for render size receiver: " << receiverPort->getQualifiedName()
                 << ". No render size link created.");
         }
     }
@@ -1036,7 +1037,7 @@ int ProcessorNetwork::createRenderSizeLinksForProcessor(Processor* processor, bo
 
     // call createRenderSizeLinksOverConnection() for all incoming and outgoing render port connections
     int numCreated = 0;
-    
+
     // render inports
     std::vector<Port*> inports = processor->getInports();
     for (size_t i=0; i<inports.size(); i++) {
@@ -1072,7 +1073,7 @@ int ProcessorNetwork::removeRenderSizeLinksFromSubNetwork(const std::vector<Proc
     // check, if all processors are part of this network
     for (size_t i=0; i < subNetwork.size(); ++i){
         if (!contains(subNetwork[i])){
-            LERROR("removeRenderSizeLinksFromSubNetwork(): processor '" << subNetwork[i]->getName() << "' is not part of this network");
+            LERROR("removeRenderSizeLinksFromSubNetwork(): processor '" << subNetwork[i]->getID() << "' is not part of this network");
             tgtAssert(false, "removeRenderSizeLinksFromSubNetwork(): processor is not part of this network");
             return 0;
         }
@@ -1091,7 +1092,7 @@ int ProcessorNetwork::removeRenderSizeLinksFromSubNetwork(const std::vector<Proc
                 tgtAssert(rp->getSizeReceiveProperty(), "render size receiver without receive property");
                 sizeReceivers.insert(rp->getSizeReceiveProperty());
             }
-                
+
         }
     }
 
@@ -1130,10 +1131,10 @@ int ProcessorNetwork::removeRenderSizeLinksOverConnection(RenderPort* outport, R
     else {
         std::vector<RenderPort*> originSuccessors = getSuccessingRenderSizeOrigins(inport, processors_);
         if (originSuccessors.size() == 1)
-            originPort = originSuccessors.front(); 
+            originPort = originSuccessors.front();
         else if (originSuccessors.size() > 1) {
             // multiple origins => no size link over connection possible
-            LWARNING("Multiple potential render size origins. No render size link removed."); 
+            LWARNING("Multiple potential render size origins. No render size link removed.");
             return 0;
         }
         else {
@@ -1282,13 +1283,13 @@ void ProcessorNetwork::deserialize(XmlDeserializer& s) {
             if (it->getOutport()) {
                 addOn += "Outport: '";
                 if (it->getOutport()->getProcessor())
-                    addOn += it->getOutport()->getProcessor()->getName() + "::";
+                    addOn += it->getOutport()->getProcessor()->getID() + "::";
                 addOn += it->getOutport()->getID() + "' ";
             }
             if (it->getInport()) {
                 addOn += "Inport: '";
                 if (it->getInport()->getProcessor())
-                    addOn += it->getInport()->getProcessor()->getName() + "::";
+                    addOn += it->getInport()->getProcessor()->getID() + "::";
                 addOn += it->getInport()->getID() + "'";
             }
             s.addError(SerializationException("Port connection could not be established. " + addOn));
@@ -1321,14 +1322,14 @@ void ProcessorNetwork::deserialize(XmlDeserializer& s) {
         Processor* processor = processors_[i];
         bool isDuplicate = false;
         for (size_t j=0; j<processors_.size() && !isDuplicate; ++j) {
-            if ((i != j) && (processor->getName() == processors_[j]->getName()))
+            if ((i != j) && (processor->getID() == processors_[j]->getID()))
                 isDuplicate = true;
         }
         if (isDuplicate) {
             // insert into duplicates vector
             bool newNameGroup = true;
             for (size_t j=0; j<duplicates.size(); ++j) {
-                if (duplicates[j][0]->getName() == processor->getName()) {
+                if (duplicates[j][0]->getID() == processor->getID()) {
                     duplicates[j].push_back(processor);
                     newNameGroup = false;
                     break;
@@ -1343,13 +1344,13 @@ void ProcessorNetwork::deserialize(XmlDeserializer& s) {
 
     // correct duplicate processor names
     for (size_t i=0; i<duplicates.size(); ++i) {
-        LWARNING("Duplicate processor name: \"" << duplicates[i][0]->getName() << "\" (" << duplicates[i].size() << " occurrences)");
+        LWARNING("Duplicate processor name: \"" << duplicates[i][0]->getID() << "\" (" << duplicates[i].size() << " occurrences)");
         for (size_t j=1; j<duplicates[i].size(); ++j) {
             std::ostringstream stream;
-            stream << duplicates[i][j]->getName() << " " << j+1;
+            stream << duplicates[i][j]->getID() << " " << j+1;
             std::string newName = stream.str();
-            LINFO("Renaming \"" << duplicates[i][j]->getName() << "\" to \"" << newName << "\"");
-            duplicates[i][j]->setName(newName);
+            LINFO("Renaming \"" << duplicates[i][j]->getID() << "\" to \"" << newName << "\"");
+            duplicates[i][j]->setID(newName);
         }
     }
 
@@ -1411,14 +1412,14 @@ std::vector<RenderPort*> ProcessorNetwork::getPredecessingRenderSizeReceivers(Re
                 continue;
             }
             tgtAssert(predecessorPort->isOutport(), "inport not connected to an outport");
-            if (predecessorPort->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER && 
+            if (predecessorPort->getRenderSizePropagation() == RenderPort::RENDERSIZE_RECEIVER &&
                 std::find(subNetwork.begin(), subNetwork.end(), predecessorProc) != subNetwork.end()  ) {
-                    // outport is size receiver and owning processor is to be linked 
-                    // => save outport as corresponding size receiver and stop traversal 
+                    // outport is size receiver and owning processor is to be linked
+                    // => save outport as corresponding size receiver and stop traversal
                     result.push_back(const_cast<RenderPort*>(predecessorPort));
             }
             else {
-                // outport is not a size receiver port or owning processor is not to be size linked 
+                // outport is not a size receiver port or owning processor is not to be size linked
                 // => add owning processor's render inports to worklist, unless they are size origins themselves
                 std::vector<Port*> predInports = predecessorProc->getInports();
                 for (size_t s=0; s<predInports.size(); s++) {
@@ -1453,7 +1454,7 @@ std::vector<RenderPort*> ProcessorNetwork::getSuccessingRenderSizeOrigins(Render
                 worklist.push(rp);
         }
     }
-    
+
     std::set<RenderPort*> processed; //< for cycle prevention
     while (!worklist.empty()) {
         RenderPort* curPort = worklist.front();
@@ -1472,14 +1473,14 @@ std::vector<RenderPort*> ProcessorNetwork::getSuccessingRenderSizeOrigins(Render
                 continue;
             }
             tgtAssert(successorPort->isInport(), "outport not connected to an inport");
-            if (successorPort->getRenderSizePropagation() == RenderPort::RENDERSIZE_ORIGIN && 
+            if (successorPort->getRenderSizePropagation() == RenderPort::RENDERSIZE_ORIGIN &&
                 std::find(subNetwork.begin(), subNetwork.end(), successorProc) != subNetwork.end()  ) {
-                    // inport is size origin and owning processor is to be linked 
-                    // => save inport as corresponding size origin for root port and stop traversal 
+                    // inport is size origin and owning processor is to be linked
+                    // => save inport as corresponding size origin for root port and stop traversal
                     result.push_back(const_cast<RenderPort*>(successorPort));
             }
             else {
-                // inport is not a size origin or owning processor is not to be size linked 
+                // inport is not a size origin or owning processor is not to be size linked
                 // => add owning processor's render outports to worklist, unless they are size receivers themselves
                 std::vector<Port*> succOutports = successorProc->getOutports();
                 for (size_t s=0; s<succOutports.size(); s++) {
@@ -1498,7 +1499,7 @@ std::vector<RenderPort*> ProcessorNetwork::getSuccessingRenderSizeOrigins(Render
 }
 
 std::map<RenderPort*, std::vector<RenderPort*> > ProcessorNetwork::getRenderSizeReceiverToOriginsMap(
-    const std::vector<Processor*> subNetwork) const 
+    const std::vector<Processor*> subNetwork) const
 {
     std::map<RenderPort*, std::vector<RenderPort*> > result;
     for (size_t i=0; i<subNetwork.size(); i++) {
@@ -1522,7 +1523,7 @@ std::map<RenderPort*, std::vector<RenderPort*> > ProcessorNetwork::getRenderSize
                 }
             }
         }
-    }          
+    }
 
     return result;
 }

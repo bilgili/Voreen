@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -31,7 +31,6 @@
 
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/network/processornetwork.h"
-#include "voreen/core/processors/processorfactory.h"
 
 #include "voreen/core/network/workspace.h"
 #include "voreen/core/network/networkevaluator.h"
@@ -53,7 +52,7 @@
 #include "voreen/qt/widgets/animation/animationeditor.h"
 #include "voreen/qt/widgets/processorlistwidget.h"
 #include "voreen/qt/widgets/propertylistwidget.h"
-#include "networkeditor/networkeditor.h"
+#include "voreen/qt/networkeditor/networkeditor.h"
 
 #include "voreen/core/voreenapplication.h"
 #include "voreen/qt/voreenapplicationqt.h"
@@ -85,6 +84,7 @@ VoreenSplashScreen::VoreenSplashScreen()
     pixmap_ = new QPixmap(":/voreenve/image/splash.png");
     setPixmap(*pixmap_);
     setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
+    progress_ = 0.f;
 }
 
 VoreenSplashScreen::~VoreenSplashScreen() {
@@ -92,22 +92,58 @@ VoreenSplashScreen::~VoreenSplashScreen() {
 }
 
 void VoreenSplashScreen::drawContents(QPainter* painter) {
-    painter->setPen(Qt::white);
+    // version
+    QPen pen( Qt::white );
     QRect r = rect();
-
-    r.setRect(r.x() + 21, r.y() + 95, r.width() - 10, r.height() - 10);
+    QFont font = painter->font();
+    font.setPointSize(11);
+    painter->setFont(font);
+    r.setRect(20, 94, r.width() - 10, r.height() - 10);
     std::string version = "Version " + VoreenVersion::getVersion();
+    painter->setPen(pen);
     painter->drawText(r, Qt::AlignLeft, version.c_str());
 
+    // progressbar
     r = rect();
-    //r.setRect(r.x() + 116, r.y(), r.x() + 300, r.height() - 13);
-    r.setRect(r.x() + 3, r.y(), r.x() + 300, r.height() - 2);
-    painter->drawText(r, Qt::AlignLeft | Qt::AlignBottom, message_);
+    r.setRect(219, 253, 255, 19);
+    pen.setColor(Qt::darkGray);
+    painter->setPen(pen);
+    painter->drawRect(r);
+    QLinearGradient gradient(220, 253, 180+254*progress_, 273);
+    gradient.setColorAt(0, QColor(255, 192, 0, 75));
+    gradient.setColorAt(1, QColor(255, 192, 0, 175));
+    painter->setBrush(gradient);
+    pen.setColor(QColor(0,0,0,0));
+    painter->setPen(pen);
+    r.setRect(220, 254, 254*progress_, 18);
+    painter->drawRect(r);
+    //r.setWidth(200);
+    r.setLeft(224);
+    font.setPointSize(9);
+    painter->setFont(font);
+    pen.setColor(Qt::white);
+    painter->setPen(pen);
+    painter->drawText(r, Qt::AlignLeft | Qt::AlignVCenter, message_);
+
+    // url
+    font.setPointSize(9);
+    painter->setFont(font);
+    pen.setColor(Qt::lightGray);
+    painter->setPen(pen);
+    r = rect();
+    r.setRect(3, 0, 300, r.height() - 2);
+    painter->drawText(r, Qt::AlignLeft | Qt::AlignBottom, QString("voreen.uni-muenster.de"));
 }
 
-void VoreenSplashScreen::showMessage(const QString& message) {
+void VoreenSplashScreen::showMessage(const QString& message, qreal progress) {
     message_ = message;
+    progress_ = progress;
     QSplashScreen::showMessage(message);
+}
+
+void VoreenSplashScreen::setProgress(qreal progress) {
+    progress_ = progress;
+    QSplashScreen::showMessage(message_);
 }
 
 ////////// VoreenMdiSubWindow //////////////////////////////////////////////////////////
@@ -280,7 +316,7 @@ VoreenMainWindow::~VoreenMainWindow() {
 
 void VoreenMainWindow::initialize(VoreenSplashScreen* splash) {
     if (splash)
-        splash->showMessage("Initializing OpenGL...");
+        splash->showMessage("Initializing OpenGL...", 0.50f);
 
     // initGL requires a valid OpenGL context
     sharedContext_ = new tgt::QtCanvas("Init Canvas", tgt::ivec2(32, 32), tgt::GLCanvas::RGBADD, this, true);
@@ -314,7 +350,7 @@ void VoreenMainWindow::initialize(VoreenSplashScreen* splash) {
         std::ostringstream glVersion;
         glVersion << GpuCaps.getGlVersion();
         QMessageBox::critical(this, tr("Incompatible OpenGL Version"),
-                              tr("Voreen requires OpenGL version 2.0 or higher, which does not seem be "
+                              tr("Voreen requires OpenGL version 2.0 or higher, which does not seem to be "
                                  "supported on this system (reported version: %1). Therefore, the application "
                                  "will most likely not work properly.").arg(glVersion.str().c_str()));
         qApp->processEvents();
@@ -325,7 +361,7 @@ void VoreenMainWindow::initialize(VoreenSplashScreen* splash) {
             splash->close();
         qApp->processEvents();
         QMessageBox::critical(this, tr("Incompatible Shader Model"),
-                              tr("Voreen requires Shader Model 3 or higher, which does not seem be "
+                              tr("Voreen requires Shader Model 3 or higher, which does not seem to be "
                                  "supported on this system. Therefore, the application will most likely not "
                                  "work properly."));
         qApp->processEvents();
@@ -335,19 +371,19 @@ void VoreenMainWindow::initialize(VoreenSplashScreen* splash) {
             splash->close();
         qApp->processEvents();
         QMessageBox::critical(this, tr("Framebuffer Objects Missing"),
-                              tr("Voreen uses OpenGL framebuffer objects, which do not seem be supported "
+                              tr("Voreen uses OpenGL framebuffer objects, which do not seem to be supported "
                                  "on this system. Therefore, the application will most likely not work properly."));
         qApp->processEvents();
     }
 
     if (splash)
-        splash->showMessage("Creating visualization...");
+        splash->showMessage("Creating visualization...", 0.60f);
 
     // create visualization object
     vis_ = new VoreenVisualization(sharedContext_);
 
     if (splash)
-        splash->showMessage("Creating GUI...");
+        splash->showMessage("Creating user interface...", 0.80f);
 
     // mdi area
     mdiArea_ = new QMdiArea(this);
@@ -384,7 +420,8 @@ void VoreenMainWindow::initialize(VoreenSplashScreen* splash) {
 
     // hide splash
     if (splash) {
-        splash->showMessage("Initialization complete.");
+        splash->showMessage("Initialization complete.", 1.0f);
+        qApp->processEvents();
         splash->close();
     }
 
@@ -596,16 +633,17 @@ void VoreenMainWindow::createMenus() {
     connect(helpFirstStepsAct_, SIGNAL(triggered()), this, SLOT(helpFirstSteps()));
     helpMenu_->addAction(helpFirstStepsAct_);
 
-    //enterWhatsThisAction_ = QWhatsThis::createAction();
-    //helpMenu_->addAction(enterWhatsThisAction_);
-
-    helpTutorialSlidesAct_ = new QAction(QIcon(":/qt/icons/pdf.png"), tr("&Tutorial Slides..."), this);
-    connect(helpTutorialSlidesAct_, SIGNAL(triggered()), this, SLOT(helpTutorialSlides()));
-    helpMenu_->addAction(helpTutorialSlidesAct_);
+    helpNetworkEditorAct_ = new QAction(QIcon(":/qt/icons/help.png"), tr("&Network Editor..."), this);
+    connect(helpNetworkEditorAct_, SIGNAL(triggered()), this, SLOT(helpNetworkEditor()));
+    helpMenu_->addAction(helpNetworkEditorAct_);
 
     helpAnimationAct_ = new QAction(QIcon(":/qt/icons/video_export.png"), tr("&Animation Manual..."), this);
     connect(helpAnimationAct_, SIGNAL(triggered()), this, SLOT(helpAnimation()));
     helpMenu_->addAction(helpAnimationAct_);
+
+    helpTutorialSlidesAct_ = new QAction(QIcon(":/qt/icons/pdf.png"), tr("&Tutorial Slides..."), this);
+    connect(helpTutorialSlidesAct_, SIGNAL(triggered()), this, SLOT(helpTutorialSlides()));
+    helpMenu_->addAction(helpTutorialSlidesAct_);
 
     helpMenu_->addSeparator();
 
@@ -1493,6 +1531,10 @@ void VoreenMainWindow::helpFirstSteps() {
     QDesktopServices::openUrl(QUrl("http://voreen.uni-muenster.de/?q=user-interface"));
 }
 
+void VoreenMainWindow::helpNetworkEditor() {
+    QDesktopServices::openUrl(QUrl("http://voreen.uni-muenster.de/?q=network-editor"));
+}
+
 void VoreenMainWindow::helpTutorialSlides() {
     QString path(VoreenApplication::app()->getBasePath("doc/vis2010-tutorial-slides.pdf").c_str());
     QDesktopServices::openUrl(QUrl(QString::fromStdString("file:///") + path, QUrl::TolerantMode));
@@ -1721,7 +1763,7 @@ void VoreenMainWindow::adjustScreenshotMenu() {
         = vis_->getWorkspace()->getProcessorNetwork()->getProcessorsByType<CanvasRenderer>();
 
     for (size_t i=0; i < canvasRenderers.size(); ++i) {
-        QAction* menuAction = new QAction(QString::fromStdString(canvasRenderers[i]->getName()), this);
+        QAction* menuAction = new QAction(QString::fromStdString(canvasRenderers[i]->getID()), this);
         // store index of canvasrenderer in action for identification
         // TODO: replace by name, when processors' names are unique
         menuAction->setData((int)i);

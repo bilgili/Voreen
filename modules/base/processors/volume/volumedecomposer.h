@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -29,6 +29,7 @@
 #include "voreen/core/processors/renderprocessor.h"
 
 #include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/boolproperty.h"
 
 #include "voreen/core/ports/volumeport.h"
 
@@ -39,7 +40,7 @@ class ImageSequence;
 /**
  * Decomposes a volume into slices that are put out as image sequence.
  */
-class VolumeDecomposer : public RenderProcessor {
+class VRN_CORE_API VolumeDecomposer : public RenderProcessor {
 public:
     VolumeDecomposer();
     ~VolumeDecomposer();
@@ -55,7 +56,9 @@ public:
 
 protected:
     virtual void setDescriptions() {
-        setDescription("Decomposes a volume into z-aligned slices and puts them out as image sequence of luminance-float textures. The slice range to be extracted is specified by the \"Start Slice\" and \"End Slice\" properties.");
+        setDescription("Decomposes a volume into z-aligned slices and puts them out as image sequence of float textures. "
+                       "Multi-channel volumes are either copied channel-wise or converted to single-channel (grayscale), depending on the respective property setting. "
+                       "The slice range to be extracted is specified by the \"Start Slice\" and \"End Slice\" properties. " );
     }
 
     virtual void process();
@@ -74,6 +77,7 @@ protected:
 
     IntProperty startSlice_;
     IntProperty endSlice_;
+    BoolProperty convertMultiChannelToGrayscale_;
 
     ImageSequence* sliceSequence_;
 

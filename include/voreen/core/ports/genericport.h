@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -28,7 +28,7 @@
 
 #include "voreen/core/ports/port.h"
 #include "voreen/core/datastructures/imagesequence.h"
-#include "voreen/core/datastructures/volume/volumecollection.h"
+#include "voreen/core/datastructures/volume/volumelist.h"
 
 namespace tgt {
     class Texture;
@@ -46,8 +46,9 @@ class GenericPort : public Port {
 public:
     GenericPort(PortDirection direction, const std::string& id, const std::string& guiName = "", bool allowMultipleConnections = false,
                          Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT);
-
     virtual ~GenericPort();
+
+    virtual void forwardData() const;
 
     /**
      * Set data stored in this port. Can only be called on outports.
@@ -84,16 +85,18 @@ protected:
 };
 
 #ifdef DLL_TEMPLATE_INST
-template class VRN_CORE_API GenericPort<VolumeCollection>;
+template class VRN_CORE_API GenericPort<VolumeList>;
 #endif
 
-class VRN_CORE_API VolumeCollectionPort : public GenericPort<VolumeCollection> {
+class VRN_CORE_API VolumeListPort : public GenericPort<VolumeList> {
 
 public:
 
-    VolumeCollectionPort(PortDirection direction, const std::string& id, const std::string& guiName = "", bool allowMultipleConnections = false, Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT)
-    : GenericPort<VolumeCollection>(direction, id, guiName, allowMultipleConnections, invalidationLevel) {}
-    virtual std::string getClassName() const {return "VolumeCollectionPort";}
+    VolumeListPort(PortDirection direction, const std::string& id, const std::string& guiName = "", bool allowMultipleConnections = false, Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT)
+    : GenericPort<VolumeList>(direction, id, guiName, allowMultipleConnections, invalidationLevel) {}
+
+    virtual std::string getClassName() const {return "VolumeListPort";}
+    virtual Port* create(PortDirection direction, const std::string& id, const std::string& guiName = "") const {return new VolumeListPort(direction,id,guiName);}
     virtual tgt::col3 getColorHint() const {
         return tgt::col3(255, 0, 255);
     }
@@ -109,7 +112,8 @@ public:
 
     ImageSequencePort(PortDirection direction, const std::string& id, const std::string& guiName = "", bool allowMultipleConnections = false, Processor::InvalidationLevel invalidationLevel = Processor::INVALID_RESULT)
     : GenericPort<ImageSequence>(direction, id, guiName, allowMultipleConnections, invalidationLevel) {}
-    
+
+    virtual Port* create(PortDirection direction, const std::string& id, const std::string& guiName = "") const {return new ImageSequencePort(direction,id,guiName);}
     virtual std::string getClassName() const { return "ImageSequencePort"; }
 };
 
@@ -128,6 +132,13 @@ template <typename T>
 GenericPort<T>::~GenericPort() {
     if(ownsData_)
         delete portData_;
+}
+
+template <typename T>
+void GenericPort<T>::forwardData() const{
+    for(std::vector<Port*>::const_iterator it = forwardPorts_.begin(); it != forwardPorts_.end(); ++it){
+        dynamic_cast<GenericPort<T>*>(*it)->setData(getData(), false);
+    }
 }
 
 template <typename T>

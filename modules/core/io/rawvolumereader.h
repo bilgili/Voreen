@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -104,13 +104,13 @@ public:
      */
     void setReadHints(const ReadHints& hints);
 
-    virtual VolumeCollection* read(const std::string& url)
+    virtual VolumeList* read(const std::string& url)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
-    virtual VolumeCollection* readSlices(const std::string& url, size_t firstSlice=0, size_t lastSlice=0)
+    virtual VolumeList* readSlices(const std::string& url, size_t firstSlice=0, size_t lastSlice=0)
         throw(tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
 
-    virtual VolumeCollection* readBrick(const std::string& url, tgt::ivec3 brickStartPos, int brickSize)
+    virtual VolumeList* readBrick(const std::string& url, tgt::ivec3 brickStartPos, int brickSize)
         throw(tgt::FileException, std::bad_alloc);
 
     /**

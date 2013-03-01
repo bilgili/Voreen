@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -39,7 +39,7 @@ VolumeReader::VolumeReader(ProgressBar* progress /*= 0*/)
   : progress_(progress)
 {}
 
-VolumeCollection* VolumeReader::readSlices(const std::string&, size_t, size_t)
+VolumeList* VolumeReader::readSlices(const std::string&, size_t, size_t)
     throw(tgt::FileException, std::bad_alloc)
 {
     throw tgt::FileException("This VolumeReader can not read slice wise.");
@@ -51,7 +51,7 @@ VolumeBase* VolumeReader::read(const VolumeURL& origin)
 
     VolumeBase* result = 0;
 
-    VolumeCollection* collection = read(origin.getPath());
+    VolumeList* collection = read(origin.getPath());
 
     if (collection && collection->size() == 1) {
         result = collection->first();
@@ -66,7 +66,7 @@ VolumeBase* VolumeReader::read(const VolumeURL& origin)
     return result;
 }
 
-VolumeCollection* VolumeReader::readBrick(const std::string& url, tgt::ivec3, int) throw(tgt::FileException, std::bad_alloc) {
+VolumeList* VolumeReader::readBrick(const std::string& url, tgt::ivec3, int) throw(tgt::FileException, std::bad_alloc) {
     throw(new tgt::FileException("This file format does not support brick-wise reading of volume data.", url));
 }
 

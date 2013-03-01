@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,6 +26,7 @@
 #ifndef VRN_COLORMAP_H
 #define VRN_COLORMAP_H
 
+#include "voreen/core/voreencoreapi.h"
 #include "voreen/core/io/serialization/serializable.h"
 #include "tgt/vector.h"
 
@@ -130,6 +131,11 @@ public:
     friend class InterpolationIterator;
     friend class GeneratingIterator;
 
+    /**
+     * Constructor is private as ColorMaps shall only be instantiated via static
+     * create Methods
+     **/
+    ColorMap();
 
     // predefined color maps
     // please change getColorMapLabels and createColorMap if you add a colormap
@@ -207,12 +213,6 @@ private:
     static tgt::vec4 rgbToHsv(tgt::Color rgb);
 
     static tgt::Color hsvToRgb(tgt::vec4 hsv);
-
-    /**
-     * Constructor is private as ColorMaps shall only be instantiated via static
-     * create Methods
-     **/
-    ColorMap();
 
     std::vector<tgt::Color> colors_;
     std::string name_;

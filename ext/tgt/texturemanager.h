@@ -2,7 +2,7 @@
  *                                                                    *
  * tgt - Tiny Graphics Toolbox                                        *
  *                                                                    *
- * Copyright (C) 2005-2012 Visualization and Computer Graphics Group, *
+ * Copyright (C) 2005-2013 Visualization and Computer Graphics Group, *
  * Department of Computer Science, University of Muenster, Germany.   *
  * <http://viscg.uni-muenster.de>                                     *
  *                                                                    *
@@ -38,8 +38,6 @@ namespace tgt {
 
 class TextureReader;
 
-class ContainerFile;
-
 class TextureManager;
 #ifdef DLL_TEMPLATE_INST
 template class TGT_API ResourceManager<Texture>;
@@ -57,10 +55,6 @@ private:
 
     std::map<std::string, TextureReader*> readers_;
     std::set<TextureReader*> readerSet_; // for easy destruction
-
-    std::string getEnding(const std::string& filename) const;
-
-    ContainerFile* container_;
 
 public:
 
@@ -83,8 +77,6 @@ public:
     *   @param keepPixels Should the pixels be kept in memory after creating the texture?
     *   @param createOGLTex Create a OpenGL texture from data?
     *   @param useCache Check if texture is already loaded and use old texture?
-    *   @param textureRectangle Should texture be loaded as texture rectangle (extension GL_ARB_texture_rectangle)?
-            (use only if available!)
     */
     Texture* load(const std::string& filename, Texture::Filter filter = Texture::LINEAR, bool compress = false,
         bool keepPixels = false, bool createOGLTex = true, bool useCache = true);
@@ -97,23 +89,10 @@ public:
     *   @param keepPixels Should the pixels be kept in memory after creating the texture?
     *   @param createOGLTex Create a OpenGL texture from data?
     *   @param useCache Check if texture is already loaded and use old texture?
-    *   @param textureRectangle Should texture be loaded as texture rectangle (extension GL_ARB_texture_rectangle)?
-            (use only if available!)
     */
     Texture* loadIgnorePath(const std::string& completeFilename, Texture::Filter filter = Texture::LINEAR,
         bool compress = false, bool keepPixels = false, bool createOGLTex = true,
         bool useCache = true);
-
-    /**
-    *   Loads a texture from supplied pointer.
-    *   supports only 16bit 3D textures for now.
-    *   @param filter Texture filter to be used for this texture (NEAREST, LINEAR, MIPMAP, ANISOTROPIC)
-    *   @param compress Should texture-compression be used on this texture (only if available)
-    */
-    Texture* loadFromMemory(Texture* t, Texture::Filter filter = Texture::LINEAR,
-                            bool compress = false, bool createOGLTex = true);
-
-    void setContainer(ContainerFile* container) { container_ = container; }
 };
 
 

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -54,7 +54,7 @@ struct RawVoxHeader {
     int32_t bitsPerVoxel_;
 };
 
-VolumeCollection* RawVoxVolumeReader::read(const std::string &url)
+VolumeList* RawVoxVolumeReader::read(const std::string &url)
     throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc)
 {
     VolumeURL origin(url);
@@ -102,13 +102,13 @@ VolumeCollection* RawVoxVolumeReader::read(const std::string &url)
 
     fin.close();
 
-    VolumeCollection* volumeCollection = new VolumeCollection();
+    VolumeList* volumeList = new VolumeList();
     Volume* volumeHandle = new Volume(dataset, vec3(1.0f), vec3(0.0f));
     oldVolumePosition(volumeHandle);
     volumeHandle->setOrigin(fileName);
-    volumeCollection->add(volumeHandle);
+    volumeList->add(volumeHandle);
 
-    return volumeCollection;
+    return volumeList;
 }
 
 VolumeReader* RawVoxVolumeReader::create(ProgressBar* /*progress*/) const {

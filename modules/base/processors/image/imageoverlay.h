@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -40,7 +40,7 @@ namespace voreen {
 /**
  * Overlays an image on top of the rendering.
  */
-class ImageOverlay : public ImageProcessor {
+class VRN_CORE_API ImageOverlay : public ImageProcessor {
 public:
     ImageOverlay();
     virtual Processor* create() const;

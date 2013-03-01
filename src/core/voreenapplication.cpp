@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,6 +30,7 @@
 #include "voreen/core/utils/commandlineparser.h"
 #include "voreen/core/utils/stringutils.h"
 #include "voreen/core/network/networkevaluator.h"
+#include "voreen/core/network/processornetwork.h"
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/processors/processorwidget.h"
 #include "voreen/core/processors/processorwidgetfactory.h"
@@ -41,7 +42,7 @@
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/floatproperty.h"
 #include "voreen/core/properties/filedialogproperty.h"
-#include "voreen/core/properties/link/linkevaluatorfactory.h"
+#include "voreen/core/properties/link/linkevaluatorhelper.h"
 #include "voreen/core/io/serialization/xmlserializer.h"
 #include "voreen/core/io/serialization/xmldeserializer.h"
 #include "voreen/core/processors/cache.h"
@@ -178,11 +179,11 @@ namespace voreen {
 VoreenApplication* VoreenApplication::app_ = 0;
 const std::string VoreenApplication::loggerCat_ = "voreen.VoreenApplication";
 
-VoreenApplication::VoreenApplication(const std::string& binaryName, const std::string& displayName, const std::string& description,
+VoreenApplication::VoreenApplication(const std::string& binaryName, const std::string& guiName, const std::string& description,
                                      int argc, char** argv, ApplicationFeatures appType)
-    : appFeatures_(appType)
+    : PropertyOwner(binaryName, guiName)
+    , appFeatures_(appType)
     , binaryName_(binaryName)
-    , displayName_(displayName)
     , enableLogging_(true)
     , logLevel_(tgt::Info)
     , enableFileLogging_(true)
@@ -195,7 +196,7 @@ VoreenApplication::VoreenApplication(const std::string& binaryName, const std::s
     , deploymentMode_(false)
 #endif
     , cmdParser_(new CommandLineParser(binaryName, description, po::command_line_style::default_style))
-    , networkEvaluator_(0)
+    , networkEvaluators_()
     , schedulingTimer_(0)
     , eventHandler_()
     , useCaching_(new BoolProperty("useCaching", "Use Caching", true))
@@ -208,7 +209,10 @@ VoreenApplication::VoreenApplication(const std::string& binaryName, const std::s
     , showSplashScreen_(new BoolProperty("showSplashScreen", "Show Splash Screen", true))
     , initialized_(false)
     , initializedGL_(false)
+    , networkEvaluationRequired_(false)
 {
+    id_ = guiName;
+    guiName_ = guiName;
     app_ = this;
     cmdParser_->setCommandLine(argc, argv);
 
@@ -271,14 +275,12 @@ VoreenApplication::VoreenApplication(const std::string& binaryName, const std::s
 
 VoreenApplication::~VoreenApplication() {
     if (initializedGL_) {
-        if (tgt::LogManager::isInited())
-            LWARNING("~VoreenApplication(): OpenGL deinitialization has not been performed. Call deinitializeGL() before destruction.");
+        std::cerr << "~VoreenApplication(): OpenGL deinitialization has not been performed. Call deinitializeGL() before destruction.\n";
         return;
     }
 
     if (initialized_) {
-        if (tgt::LogManager::isInited())
-            LWARNING("~VoreenApplication(): application has not been deinitialized. Call deinitialize() before destruction.");
+        std::cerr << "~VoreenApplication(): application has not been deinitialized. Call deinitialize() before destruction.\n";
         return;
     }
 
@@ -310,14 +312,6 @@ VoreenApplication* VoreenApplication::app() {
 
 const std::string& VoreenApplication::getBinaryName() const {
     return binaryName_;
-}
-
-const std::string& VoreenApplication::getDisplayName() const {
-    return displayName_;
-}
-
-std::string VoreenApplication::getName() const {
-    return getDisplayName();
 }
 
 VoreenApplication::ApplicationFeatures VoreenApplication::getApplicationType() const {
@@ -480,6 +474,14 @@ void VoreenApplication::initialize() throw (VoreenException) {
     if (appFeatures_ & APP_COMMAND_LINE) {
         tgtAssert(cmdParser_, "no command line parser");
 
+        // add remote control command line options (TODO: move to module)
+#ifdef VRN_MODULE_REMOTECONTROL
+        cmdParser_->addOption<bool>("enable-remote-control", CommandLineParser::AdditionalOption,
+            "Enable/disable remote control TCP interface (overrides application setting)");
+        cmdParser_->addOption<int>("remote-control-port", CommandLineParser::AdditionalOption,
+            "TCP port of remote control interface (overrides application setting)");
+#endif
+
         if (appFeatures_ & APP_CONFIG_FILE)
             cmdParser_->setConfigFile(getUserDataPath(tgt::FileSystem::baseName(binaryName_) + ".cfg"));
 
@@ -581,7 +583,7 @@ void VoreenApplication::initialize() throw (VoreenException) {
     else {
         std::vector<std::string> moduleNames;
         for (size_t i=0; i<modules_.size(); i++)
-            moduleNames.push_back(modules_[i]->getName());
+            moduleNames.push_back(modules_[i]->getID());
         LINFO("Modules: " << strJoin(moduleNames, ", "));
     }
 
@@ -620,20 +622,20 @@ void VoreenApplication::initialize() throw (VoreenException) {
     LINFO("Initializing modules");
     for (size_t i=0; i<modules_.size(); i++) {
         try {
-            LDEBUG("Initializing module '" << modules_.at(i)->getName() << "'");
+            LDEBUG("Initializing module '" << modules_.at(i)->getID() << "'");
             modules_.at(i)->initialize();
             modules_.at(i)->initialized_ = true;
         }
         catch (const VoreenException& e) {
-            LERROR("VoreenException during initialization of module '" << modules_.at(i)->getName() << "': " << e.what());
+            LERROR("VoreenException during initialization of module '" << modules_.at(i)->getID() << "': " << e.what());
             modules_.at(i)->initialized_ = false;
         }
         catch (const std::exception& e) {
-            LERROR("std::exception during initialization of module '" << modules_.at(i)->getName() << "': " << e.what());
+            LERROR("std::exception during initialization of module '" << modules_.at(i)->getID() << "': " << e.what());
             modules_.at(i)->initialized_ = false;
         }
         catch (...) {
-            LERROR("Unknown exception during initialization of module '" << modules_.at(i)->getName() << "'");
+            LERROR("Unknown exception during initialization of module '" << modules_.at(i)->getID() << "'");
             modules_.at(i)->initialized_ = false;
         }
     }
@@ -663,25 +665,25 @@ void VoreenApplication::deinitialize() throw (VoreenException) {
     LINFO("Deinitializing modules");
     for (int i=(int)modules_.size()-1; i>=0; i--) {
         try {
-            LDEBUG("Deinitializing module '" << modules_.at(i)->getName() << "'");
+            LDEBUG("Deinitializing module '" << modules_.at(i)->getID() << "'");
             modules_.at(i)->deinitialize();
             modules_.at(i)->initialized_ = false;
         }
         catch (const VoreenException& e) {
-            LERROR("VoreenException during deinitialization of module '" << modules_.at(i)->getName() << "': " << e.what());
+            LERROR("VoreenException during deinitialization of module '" << modules_.at(i)->getID() << "': " << e.what());
         }
         catch (const std::exception& e) {
-            LERROR("std::exception during deinitialization of module '" << modules_.at(i)->getName() << "': " << e.what());
+            LERROR("std::exception during deinitialization of module '" << modules_.at(i)->getID() << "': " << e.what());
         }
         catch (...) {
-            LERROR("Unknown exception during deinitialization of module '" << modules_.at(i)->getName() << "'");
+            LERROR("Unknown exception during deinitialization of module '" << modules_.at(i)->getID() << "'");
         }
     }
 
     // clear modules
     LDEBUG("Deleting modules");
     for (int i=(int)modules_.size()-1; i>=0; i--) {
-        LDEBUG("Deleting module '" << modules_.at(i)->getName() << "'");
+        LDEBUG("Deleting module '" << modules_.at(i)->getID() << "'");
         delete modules_.at(i);
     }
     modules_.clear();
@@ -717,25 +719,25 @@ void VoreenApplication::initializeGL() throw (VoreenException) {
     LINFO("OpenGL initializing modules");
     for (size_t i=0; i<modules_.size(); i++) {
         if (!modules_.at(i)->isInitialized()) {
-            LERROR("Module '" << modules_.at(i)->getName() << "' has not been initialized before OpenGL initialization");
+            LERROR("Module '" << modules_.at(i)->getID() << "' has not been initialized before OpenGL initialization");
             modules_.at(i)->initializedGL_ = false;
             continue;
         }
         try {
-            LDEBUG("OpenGL initialization of module '" << modules_.at(i)->getName() << "'");
+            LDEBUG("OpenGL initialization of module '" << modules_.at(i)->getID() << "'");
             modules_.at(i)->initializeGL();
             modules_.at(i)->initializedGL_ = true;
         }
         catch (const VoreenException& e) {
-            LERROR("VoreenException during OpenGL initialization of module '" << modules_.at(i)->getName() << "': " << e.what());
+            LERROR("VoreenException during OpenGL initialization of module '" << modules_.at(i)->getID() << "': " << e.what());
             modules_.at(i)->initializedGL_ = false;
         }
         catch (const std::exception& e) {
-            LERROR("std::exception during OpenGL initialization of module '" << modules_.at(i)->getName() << "': " << e.what());
+            LERROR("std::exception during OpenGL initialization of module '" << modules_.at(i)->getID() << "': " << e.what());
             modules_.at(i)->initializedGL_ = false;
         }
         catch (...) {
-            LERROR("Unknown exception during OpenGL initialization of module '" << modules_.at(i)->getName() << "'");
+            LERROR("Unknown exception during OpenGL initialization of module '" << modules_.at(i)->getID() << "'");
             modules_.at(i)->initializedGL_ = false;
         }
     }
@@ -755,22 +757,22 @@ void VoreenApplication::deinitializeGL() throw (VoreenException) {
 
         if (modules_.at(i)->isInitializedGL()) {
             try {
-                LDEBUG("OpenGL deinitialization of module '" << modules_.at(i)->getName() << "'");
+                LDEBUG("OpenGL deinitialization of module '" << modules_.at(i)->getID() << "'");
                 modules_.at(i)->deinitializeGL();
                 modules_.at(i)->initializedGL_ = false;
             }
             catch (const VoreenException& e) {
-                LERROR("VoreenException during OpenGL deinitialization of module '" << modules_.at(i)->getName() << "': " << e.what());
+                LERROR("VoreenException during OpenGL deinitialization of module '" << modules_.at(i)->getID() << "': " << e.what());
             }
             catch (const std::exception& e) {
-                LERROR("std::exception during OpenGL deinitialization of module '" << modules_.at(i)->getName() << "': " << e.what());
+                LERROR("std::exception during OpenGL deinitialization of module '" << modules_.at(i)->getID() << "': " << e.what());
             }
             catch (...) {
-                LERROR("unknown exception during OpenGL deinitialization of module '" << modules_.at(i)->getName() << "'");
+                LERROR("unknown exception during OpenGL deinitialization of module '" << modules_.at(i)->getID() << "'");
             }
         }
         else {
-            LWARNING("Skipping OpenGL deinitialization of module '" << modules_.at(i)->getName() << "': not OpenGL initialized");
+            LWARNING("Skipping OpenGL deinitialization of module '" << modules_.at(i)->getID() << "': not OpenGL initialized");
         }
     }
 
@@ -800,7 +802,7 @@ void VoreenApplication::registerModule(VoreenModule* module) {
     tgtAssert(module, "null pointer passed");
 
     // check if module's name and dirName have been set
-    if (module->getName().empty() || module->getName() == "undefined") {
+    if (module->getID().empty() || module->getID() == "undefined") {
         tgtAssert(false, "module has no name (set in constructor!)");
         LERROR("Module has no name (set in constructor!). Skipping.");
         return;
@@ -809,13 +811,13 @@ void VoreenApplication::registerModule(VoreenModule* module) {
     // check if module directory exists
     /*std::string moduleDir = module->getModulePath();
     if (!tgt::FileSystem::dirExists(moduleDir))
-        LWARNING("Module '" << module->getName() << "': module directory '" << moduleDir << "' does not exist"); */
+        LWARNING("Module '" << module->getID() << "': module directory '" << moduleDir << "' does not exist"); */
 
     // register module
     if (std::find(modules_.begin(), modules_.end(), module) == modules_.end())
         modules_.push_back(module);
     else
-        LWARNING("Module '" << module->getName() << "' has already been registered. Skipping.");
+        LWARNING("Module '" << module->getID() << "' has already been registered. Skipping.");
 }
 
 const std::vector<VoreenModule*>& VoreenApplication::getModules() const {
@@ -826,7 +828,7 @@ VoreenModule* VoreenApplication::getModule(const std::string& moduleName) const 
     // search by module name first
     for (size_t i = 0 ; i < modules_.size() ; ++i) {
         VoreenModule* module = modules_.at(i);
-        if (module->getName() == moduleName)
+        if (module->getID() == moduleName)
             return module;
     }
 
@@ -859,7 +861,7 @@ ProcessorWidget* VoreenApplication::createProcessorWidget(Processor* processor) 
 
     const std::vector<VoreenModule*>& modules = getModules();
     for (size_t m=0; m<modules.size(); m++) {
-        const std::vector<ProcessorWidgetFactory*>& factories = modules_.at(m)->getProcessorWidgetFactories();
+        const std::vector<ProcessorWidgetFactory*>& factories = modules_.at(m)->getRegisteredProcessorWidgetFactories();
         for (size_t f=0; f<factories.size(); f++) {
             ProcessorWidget* processorWidget = factories.at(f)->createWidget(processor);
             if (processorWidget)
@@ -876,23 +878,11 @@ PropertyWidget* VoreenApplication::createPropertyWidget(Property* property) cons
 
     const std::vector<VoreenModule*>& modules = getModules();
     for (size_t m=0; m<modules.size(); m++) {
-        const std::vector<PropertyWidgetFactory*>& factories = modules_.at(m)->getPropertyWidgetFactories();
+        const std::vector<PropertyWidgetFactory*>& factories = modules_.at(m)->getRegisteredPropertyWidgetFactories();
         for (size_t f=0; f<factories.size(); f++) {
             PropertyWidget* propertyWidget = factories.at(f)->createWidget(property);
             if (propertyWidget)
                 return propertyWidget;
-        }
-    }
-    return 0;
-}
-
-LinkEvaluatorBase* VoreenApplication::createLinkEvaluator(const std::string& typeString) const{
-    for (size_t m=0; m<getModules().size(); m++) {
-        const std::vector<LinkEvaluatorFactory*>& factories = getModules().at(m)->getLinkEvaluatorFactories();
-        for (size_t i=0; i<factories.size(); i++) {
-            LinkEvaluatorBase* evaluator = factories.at(i)->createEvaluator(typeString);
-            if (evaluator)
-                return evaluator;
         }
     }
     return 0;
@@ -903,7 +893,7 @@ bool VoreenApplication::lazyInstantiation(Property* property) const {
 
     const std::vector<VoreenModule*>& modules = getModules();
     for (size_t m=0; m<modules.size(); m++) {
-        const std::vector<PropertyWidgetFactory*>& factories = modules_.at(m)->getPropertyWidgetFactories();
+        const std::vector<PropertyWidgetFactory*>& factories = modules_.at(m)->getRegisteredPropertyWidgetFactories();
         for (size_t f=0; f<factories.size(); f++) {
             if(!factories.at(f)->lazyInstantiation(property))
                 return false;
@@ -994,8 +984,32 @@ std::string VoreenApplication::getAppBundleResourcesPath(const std::string& file
 #endif
 
 void VoreenApplication::scheduleNetworkProcessing() {
-    if (schedulingTimer_ && networkEvaluator_ && schedulingTimer_->isStopped()) {
+    if (schedulingTimer_ && !networkEvaluators_.empty() /*&& schedulingTimer_->isStopped()*/) {
+        // schedule network for immediate re-evaluation
+        networkEvaluationRequired_ = true;
+        if (!schedulingTimer_->isStopped())
+            schedulingTimer_->stop();
         schedulingTimer_->start(0, 1);
+    }
+}
+
+void VoreenApplication::timerEvent(tgt::TimeEvent* /*e*/) {
+    if (!isInitialized())
+        return;
+
+    if (networkEvaluationRequired_) {
+        for (std::set<NetworkEvaluator*>::iterator it = networkEvaluators_.begin(); it != networkEvaluators_.end(); it++) {
+            if(!(*it)->isLocked())
+                (*it)->process();
+        }
+    }
+    networkEvaluationRequired_ = false;
+
+    // check every 500 ms if the network has to be re-evaluated,
+    // unless a re-evaluation has been explicitly scheduled via scheduleNetworkProcessing
+    if (schedulingTimer_->isStopped() || schedulingTimer_->getTickTime() != 100) {
+        schedulingTimer_->stop();
+        schedulingTimer_->start(100, 0);
     }
 }
 
@@ -1013,24 +1027,47 @@ void VoreenApplication::queryAvailableGraphicsMemory() {
     }
 }
 
-void VoreenApplication::timerEvent(tgt::TimeEvent* /*e*/) {
-    if (networkEvaluator_ && !networkEvaluator_->isLocked())
-        networkEvaluator_->process();
+void VoreenApplication::registerNetworkEvaluator(NetworkEvaluator* evaluator) {
+    networkEvaluators_.insert(evaluator);
 }
 
-void VoreenApplication::setNetworkEvaluator(NetworkEvaluator* evaluator) {
-    networkEvaluator_ = evaluator;
+void VoreenApplication::deregisterNetworkEvaluator(NetworkEvaluator* evaluator) {
+    networkEvaluators_.erase(evaluator);
 }
 
 NetworkEvaluator* VoreenApplication::getNetworkEvaluator() const {
-    return networkEvaluator_;
+    if(networkEvaluators_.empty())
+        return 0;
+    else
+        return *(networkEvaluators_.begin());
+}
+
+NetworkEvaluator* VoreenApplication::getNetworkEvaluator(Processor* p) const {
+    tgtAssert(p, "null pointer passed");
+    for(std::set<NetworkEvaluator*>::iterator it = networkEvaluators_.begin(); it != networkEvaluators_.end(); it++) {
+        std::vector<Processor*> pv = (*it)->getProcessorNetwork()->getProcessors();
+        for(size_t i = 0; i < pv.size(); i++) {
+            if(pv.at(i) == p)
+                return *it;
+        }
+    }
+    return 0;
+}
+
+NetworkEvaluator* VoreenApplication::getNetworkEvaluator(ProcessorNetwork* network) const {
+    tgtAssert(network, "null pointer passed");
+    for(std::set<NetworkEvaluator*>::iterator it = networkEvaluators_.begin(); it != networkEvaluators_.end(); it++) {
+        if ((*it)->getProcessorNetwork() == network)
+            return (*it);
+    }
+    return 0;
 }
 
 void VoreenApplication::initApplicationSettings() {
 }
 
 void VoreenApplication::loadApplicationSettings() {
-    std::string filename = toLower(getUserDataPath(binaryName_ + "_settings.xml"));
+    std::string filename = getUserDataPath(toLower(binaryName_) + "_settings.xml");
     if (!deserializeSettings(this, filename)) {
         // try old voreensettings.xml
         if (!deserializeSettings(this, getUserDataPath("voreensettings.xml")))
@@ -1040,13 +1077,13 @@ void VoreenApplication::loadApplicationSettings() {
     const std::vector<VoreenModule*>& modules = getModules();
     for(size_t i=0; i<modules.size(); i++) {
         if(!modules[i]->getProperties().empty()) {
-            deserializeSettings(modules[i], getUserDataPath(toLower(modules[i]->getName()) + "_settings.xml"));
+            deserializeSettings(modules[i], getUserDataPath(toLower(modules[i]->getID()) + "_settings.xml"));
         }
     }
 }
 
 void VoreenApplication::saveApplicationSettings() {
-    std::string filename = toLower(getUserDataPath(binaryName_ + "_settings.xml"));
+    std::string filename = getUserDataPath(toLower(binaryName_) + "_settings.xml");
 
     if(!serializeSettings(this, filename))
         LWARNING("Failed to save application settings");
@@ -1054,7 +1091,7 @@ void VoreenApplication::saveApplicationSettings() {
     const std::vector<VoreenModule*>& modules = getModules();
     for(size_t i=0; i<modules.size(); i++) {
         if(!modules[i]->getProperties().empty()) {
-            serializeSettings(modules[i], getUserDataPath(toLower(modules[i]->getName()) + "_settings.xml"));
+            serializeSettings(modules[i], getUserDataPath(toLower(modules[i]->getID()) + "_settings.xml"));
         }
     }
 }
@@ -1065,6 +1102,32 @@ void VoreenApplication::serialize(XmlSerializer& s) const {
 
 void VoreenApplication::deserialize(XmlDeserializer& s) {
     PropertyOwner::deserialize(s);
+}
+
+std::string VoreenApplication::getSerializableTypeString(const std::type_info& type) const {
+    for (size_t i=0; i<modules_.size(); i++) {
+        std::string typeString = modules_[i]->getSerializableTypeString(type);
+        if (!typeString.empty())
+            return typeString;
+    }
+    return "";
+}
+
+VoreenSerializableObject* VoreenApplication::createSerializableType(const std::string& typeString) const {
+    const VoreenSerializableObject* type = getSerializableType(typeString);
+    if (type)
+        return type->create();
+    else
+        return 0;
+}
+
+const VoreenSerializableObject* VoreenApplication::getSerializableType(const std::string& typeString) const {
+    for (size_t i=0; i<modules_.size(); i++) {
+        const VoreenSerializableObject* instance = modules_[i]->getSerializableType(typeString);
+        if (instance)
+            return instance;
+    }
+    return 0;
 }
 
 } // namespace

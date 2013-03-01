@@ -7,9 +7,12 @@
     <file alias="alacarte.png">../../resource/icons/alacarte.png</file>
     <file alias="animation.png">../../resource/icons/animation.png</file>
     <file alias="apply.png">../../resource/icons/apply.png</file>
+    <file alias="arrow-down.png">../../resource/icons/arrow-down.png</file>
     <file alias="arrow-left.png">../../resource/icons/arrow-left.png</file>
     <file alias="arrow-leftright.png">../../resource/icons/arrow-leftright.png</file>
     <file alias="arrow-right.png">../../resource/icons/arrow-right.png</file>
+    <file alias="arrow-up.png">../../resource/icons/arrow-up.png</file>
+    <file alias="arrow-updown.png">../../resource/icons/arrow-updown.png</file>
     <file alias="banana.png">../../resource/icons/banana.png</file>
     <file alias="button_cancel.png">../../resource/icons/button_cancel.png</file>
     <file alias="cancel.png">../../resource/icons/cancel.png</file>
@@ -19,7 +22,7 @@
     <file alias="console.png">../../resource/icons/console.png</file>
     <file alias="cursor-minus.png">../../resource/icons/cursor-minus.png</file>
     <file alias="deformation.png">../../resource/icons/deformation.png</file>
-	<file alias="delete.png">../../resource/icons/delete.png</file>
+    <file alias="delete.png">../../resource/icons/delete.png</file>
     <file alias="document-new_22x22.png">../../resource/icons/document-new_22x22.png</file>
     <file alias="document-new_32x32.png">../../resource/icons/document-new_22x22.png</file>
     <file alias="document_open.png">../../resource/icons/document_open.png</file>
@@ -87,5 +90,35 @@
     <file alias="viewmag_.png">../../resource/icons/viewmag_.png</file>
     <file alias="volumes.png">../../resource/icons/volumes.png</file>
     <file alias="voreen-logo_64x64.png">../../resource/icons/voreen-logo_64x64.png</file>
-  </qresource>
+    <!--                        NetworkEditor                               --> 
+    <!-- ContextMenu -->
+    <file alias="aggregate.png">../../resource/icons/networkeditor/aggregate.png</file>
+    <file alias="deaggregate.png">../../resource/icons/networkeditor/deaggregate.png</file>
+    <!-- Evaluator -->
+    <file alias="player-start.png">../../resource/icons/networkeditor/player-start.png</file>
+    <file alias="player-pause.png">../../resource/icons/networkeditor/player-pause.png</file>
+    <!-- Layer -->
+    <file alias="dataflow-mode.png">../../resource/icons/networkeditor/dataflow-mode.png</file>  
+    <file alias="linking-general.png">../../resource/icons/networkeditor/linking-general.png</file>    
+    <file alias="no-linking-camera.png">../../resource/icons/networkeditor/no-linking-camera.png</file>
+    <file alias="hide-linking-camera.png">../../resource/icons/networkeditor/hide-linking-camera.png</file>
+    <file alias="linking-camera.png">../../resource/icons/networkeditor/linking-camera.png</file>
+    <file alias="linking-camera-auto.png">../../resource/icons/networkeditor/linking-camera-auto.png</file>
+    <file alias="linking-mode.png">../../resource/icons/networkeditor/linking-mode.png</file>
+    <file alias="linking-remove.png">../../resource/icons/networkeditor/linking-remove.png</file>
+    <file alias="no-linking-port.png">../../resource/icons/networkeditor/no-linking-port.png</file>
+    <file alias="hide-linking-port.png">../../resource/icons/networkeditor/hide-linking-port.png</file>
+    <file alias="linking-port.png">../../resource/icons/networkeditor/linking-port.png</file>
+    <file alias="linking-port-auto.png">../../resource/icons/networkeditor/linking-port-auto.png</file>
+    <!-- LinkingDialog -->
+    <file alias="chain.png">../../resource/icons/networkeditor/chain.png</file>
+    <file alias="unchain.png">../../resource/icons/networkeditor/unchain.png</file>
+    <!-- Navigation -->
+    <file alias="center.png">../../resource/icons/networkeditor/center-view.png</file>
+    <file alias="cursor_arrow.svg">../../resource/icons/networkeditor/cursor_arrow.svg</file>
+    <file alias="cursor_hand.svg">../../resource/icons/networkeditor/cursor_hand.svg</file>
+     <!-- Warnings (GraphicsItem)-->
+    <file alias="red-warning.svg">../../resource/icons/networkeditor/red-warning.svg</file>
+    <file alias="yellow-warning.svg">../../resource/icons/networkeditor/yellow-warning.svg</file>    
+    </qresource>
 </RCC>

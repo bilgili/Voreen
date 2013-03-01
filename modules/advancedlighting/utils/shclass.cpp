@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -41,7 +41,7 @@ namespace voreen {
 SHClass::SHClass(VolumeRaycaster* rc, TransFuncProperty* tf)
     : rc_(rc)
     , tf_(tf)
-    , currentVolumeHandle_(0) {
+    , currentVolume_(0) {
 
     tf_->onChange(CallMemberAction<SHClass>(this, &SHClass::onTransFuncChange));
 
@@ -118,16 +118,16 @@ void SHClass::initialize() throw (tgt::Exception) {
 
 void SHClass::initAndCalcCoeffs(const VolumeBase* handle) {
 
-    if(!handle || handle == currentVolumeHandle_)
+    if(!handle || handle == currentVolume_)
         return;
 
-    currentVolumeHandle_ = handle;
+    currentVolume_ = handle;
     onTransCoeffChange(); //-> includes call to calcCoeffs()
 }
 
 void SHClass::onTransFuncChange() {
 
-    if(!currentVolumeHandle_)
+    if(!currentVolume_)
         return;
 
     if(!interactiveMode_) {
@@ -142,7 +142,7 @@ void SHClass::onTransFuncChange() {
 
 void SHClass::onLightFuncChange() {
 
-    if(!currentVolumeHandle_)
+    if(!currentVolume_)
         return;
 
     std::string fn = lpFilename_->get();
@@ -177,7 +177,7 @@ void SHClass::onLightFuncChange() {
 
 void SHClass::onTransCoeffChange() {
 
-    if(!currentVolumeHandle_)
+    if(!currentVolume_)
         return;
 
     SHLightFunc* lf = 0;
@@ -202,7 +202,7 @@ void SHClass::onTransCoeffChange() {
     int rootNum = int(sqrt(static_cast<float>(numSampleProp_->get())));
     float sizefac = coeffSizeFactor_->get();
 
-    transCalc_ = new SHCoeffTrans(rootNum, 4, tf_, currentVolumeHandle_,
+    transCalc_ = new SHCoeffTrans(rootNum, 4, tf_, currentVolume_,
                                   bleedMode, sizefac, considerNormalsProp_->get(), eriProp_->get(), (float)scaleProp_->get());
 
     transCalc_->init();

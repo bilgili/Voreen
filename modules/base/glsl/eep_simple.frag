@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -23,6 +23,9 @@
  *                                                                                 *
  ***********************************************************************************/
 
+smooth in vec4 color;
+out vec4 outputColor;
+
 void main() {
-    FragData0 = gl_TexCoord[0];
+    outputColor = color;
 }

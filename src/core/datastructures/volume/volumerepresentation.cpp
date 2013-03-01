@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -51,9 +51,11 @@ size_t VolumeRepresentation::getNumVoxels() const {
 //---------------------------------------------------------------------------------
 
 ConverterFactory::ConverterFactory() {
+    addConverter(new RepresentationConverterLoadFromDisk());
+    addConverter(new RepresentationConverterLoadFromDiskToGL());
     addConverter(new RepresentationConverterUploadGL());
     addConverter(new RepresentationConverterDownloadGL());
-    addConverter(new RepresentationConverterLoadFromDisk());
+
 }
 
 ConverterFactory::~ConverterFactory() {

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,31 +26,45 @@
 #include "voreen/core/utils/stringutils.h"
 
 #include <algorithm>
+#include <cstdio>
+#include <iomanip>
 
 namespace voreen {
 
-std::string itos(int i) {
+std::string itos(int i, int stringLength /*= -1*/, char fillChar /*= '0'*/) {
     std::stringstream s;
-    s << i;
+    if(stringLength > 0)
+        s << std::setw(stringLength) << std::setfill(fillChar) << i;
+    else
+        s << i;
     return s.str();
 }
 
-std::string itos(size_t i) {
+std::string itos(size_t i, int stringLength /*= -1*/, char fillChar /*= '0'*/) {
     std::stringstream s;
-    s << i;
+    if(stringLength > 0)
+        s << std::setw(stringLength) << std::setfill(fillChar) << i;
+    else
+        s << i;
     return s.str();
 }
 
-std::string ftos(float f) {
-    std::stringstream s;
-    s << f;
-    return s.str();
+std::string ftos(float f, int precision /* =-1*/) {
+    char buffer[50];
+    if (precision > -1)
+        sprintf(buffer, "%.*f", precision, f);
+    else
+        sprintf(buffer, "%f", f);
+    return std::string(buffer);
 }
 
-std::string dtos(double d) {
-    std::stringstream s;
-    s << d;
-    return s.str();
+std::string dtos(double d, int precision /* = -1*/) {
+    char buffer[50];
+    if (precision > -1)
+        sprintf(buffer, "%.*f", precision, d);
+    else
+        sprintf(buffer, "%f", d);
+    return std::string(buffer);
 }
 
 #if !defined(_MSC_VER) || (_MSC_VER < 1600)
@@ -167,6 +181,24 @@ std::vector<std::string> strSplit(const std::string& str, char delim) {
         elems.push_back(item);
     }
     return elems;
+}
+
+std::vector<std::string> strSplit(const std::string& str, const std::string& delim) {
+    std::vector<std::string> result;
+    if (delim.length() == 0 || str.length() == 0) {
+        result.push_back(str);
+        return result;
+    }
+
+    size_t pos = 0;
+    while (pos != std::string::npos) {
+        size_t last = pos;
+        pos = str.find(delim, last);
+        result.push_back(str.substr(last, pos-last));
+        if (pos != std::string::npos)
+            pos += delim.size();
+    }
+    return result;
 }
 
 bool endsWith(const std::string& input, const std::string& ending) {

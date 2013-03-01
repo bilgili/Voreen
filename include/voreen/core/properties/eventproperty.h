@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,6 +30,7 @@
 #include "tgt/event/event.h"
 #include "tgt/event/keyevent.h"
 #include "tgt/event/mouseevent.h"
+#include "tgt/event/touchevent.h"
 
 namespace voreen {
 
@@ -338,6 +339,22 @@ public:
         tgt::Event::Modifier modifier = tgt::Event::MODIFIER_NONE,
         bool shareEvents = false, bool enabled = true);
 
+    /**
+     * Constructor creating an EventProperty that only listens to \e touch events.
+     *
+     * @param id property identifier. Must be unique among the
+     *  properties of a PropertyOwner and must not be empty.
+     * @param guiName string to be displayed in a user interface
+     * @param target the object whose member functions receives the matching events. Must not be null.
+     * @param fptTouchEvent function pointer of the function that receives the matching events. Must not be null.
+     * @param shareEvents if set to true, the property does ignore the event,
+     *  even if it matches and is passed to its owner. This causes the event
+     *  to be further propagated, even if the event property has accepted it. @see setEnabled
+     * @param enabled if set to false, the property does not react to any event
+     */
+    EventProperty(const std::string& id, const std::string& guiName,
+        T* target, void (T::*fptTouchEvent)(tgt::TouchEvent*),
+        bool shareEvents = false, bool enabled = true);
 
     /**
      * Default constructor. Needed for serialization. Do not use directly!
@@ -378,12 +395,13 @@ private:
     /// Actual generic notification implementation.
     void notifyChangeListenerImpl();
 
-    T* target_;                                  ///< The object matching events are relayed to
-    void (T::*fptMouseEvent_)(tgt::MouseEvent*); ///< Target function in case of an mouse-only property
-    void (T::*fptKeyEvent_)(tgt::KeyEvent*);     ///< Target function in case of an key-only property
-    void (T::*fptEvent_)(tgt::Event*);           ///< Target function in case of an property receiving both types
+    T* target_;                                   ///< The object matching events are relayed to
+    void (T::*fptMouseEvent_)(tgt::MouseEvent*);  ///< Target function in case of an mouse-only property
+    void (T::*fptKeyEvent_)(tgt::KeyEvent*);      ///< Target function in case of an key-only property
+    void (T::*fptTouchEvent_)(tgt::TouchEvent*);  ///< Target function in case of an touch-only property
+    void (T::*fptEvent_)(tgt::Event*);            ///< Target function in case of an property receiving all types
 
-    void (T::*fptOnChange_)();                   ///< Called in case the property state (keys/buttons) changes
+    void (T::*fptOnChange_)();                    ///< Called in case the property state (keys/buttons) changes
 };
 
 //-----------------------------------------------------------------------------------------------------------------------
@@ -403,6 +421,7 @@ EventProperty<T>::EventProperty(const std::string& id, const std::string& guiNam
     , target_(target)
     , fptMouseEvent_(fptMouseEvent)
     , fptKeyEvent_(0)
+    , fptTouchEvent_(0)
     , fptEvent_(0)
     , fptOnChange_(0)
 {
@@ -423,10 +442,27 @@ EventProperty<T>::EventProperty(const std::string& id, const std::string& guiNam
     , target_(target)
     , fptMouseEvent_(0)
     , fptKeyEvent_(fptKeyEvent)
+    , fptTouchEvent_(0)
     , fptEvent_(0)
     , fptOnChange_(0)
 {
     tgtAssert(target_ && fptKeyEvent_, "Passed target or function pointer invalid");
+}
+
+template<class T>
+EventProperty<T>::EventProperty(const std::string& id, const std::string& guiName,
+                                T* target, void (T::*fptTouchEvent)(tgt::TouchEvent*),
+                                bool shareEvents, bool enabled)
+    : EventPropertyBase(id, guiName,
+        true, true, shareEvents, enabled)
+    , target_(target)
+    , fptMouseEvent_(0)
+    , fptKeyEvent_(0)
+    , fptTouchEvent_(fptTouchEvent_)
+    , fptEvent_(0)
+    , fptOnChange_(0)
+{
+    tgtAssert(target_ && fptTouchEvent_, "Passed target or function pointer invalid");
 }
 
 template<class T>
@@ -444,12 +480,12 @@ EventProperty<T>::EventProperty(const std::string& id, const std::string& guiNam
     , target_(target)
     , fptMouseEvent_(0)
     , fptKeyEvent_(0)
+    , fptTouchEvent_(0)
     , fptEvent_(fptEvent)
     , fptOnChange_(0)
 {
     tgtAssert(target_ && fptEvent_, "Passed target or function pointer invalid");
 }
-
 
 template<class T>
 voreen::EventProperty<T>::EventProperty()
@@ -459,6 +495,7 @@ voreen::EventProperty<T>::EventProperty()
     , target_(0)
     , fptMouseEvent_(0)
     , fptKeyEvent_(0)
+    , fptTouchEvent_(0)
     , fptEvent_(0)
     , fptOnChange_(0)
 {}
@@ -492,6 +529,15 @@ void EventProperty<T>::execute(tgt::Event* e) {
             tgtAssert(fptKeyEvent_ || fptEvent_, "No valid function pointer");
             if (fptKeyEvent_)
                 (target_->*fptKeyEvent_)(keyEvent);
+            else if (fptEvent_)
+                (target_->*fptEvent_)(e);
+        }
+
+        // touch event
+        if (tgt::TouchEvent* touchEvent = dynamic_cast<tgt::TouchEvent*>(e)) {
+            tgtAssert(fptTouchEvent_ || fptEvent_, "No valid function pointer");
+            if (fptTouchEvent_)
+                (target_->*fptTouchEvent_)(touchEvent);
             else if (fptEvent_)
                 (target_->*fptEvent_)(e);
         }

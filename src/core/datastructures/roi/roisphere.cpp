@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -24,7 +24,7 @@
  ***********************************************************************************/
 
 #include "voreen/core/datastructures/roi/roisphere.h"
-#include "voreen/core/datastructures/geometry/meshlistgeometry.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 
 #include "voreen/core/io/serialization/xmlserializer.h"
 #include "voreen/core/io/serialization/xmldeserializer.h"
@@ -54,11 +54,10 @@ bool ROISphere::inROINormalized(tgt::vec3 p) const {
         return false;
 }
 
-MeshListGeometry* ROISphere::generateNormalizedMesh() const {
-    MeshListGeometry* geometry = new MeshListGeometry();
+Geometry* ROISphere::generateNormalizedMesh() const {
+    TriangleMeshGeometrySimple* geometry = new TriangleMeshGeometrySimple();
 
     int steps = 20;
-    MeshGeometry mg;
     for(int i=0; i<steps; i++) {
         for(int j=0; j<steps; j++) {
             float angleA1 = ((float)i / (float)steps) * 2.0f * tgt::PIf;
@@ -66,21 +65,18 @@ MeshListGeometry* ROISphere::generateNormalizedMesh() const {
             float angleB1 = ((float)j / (float)steps) * tgt::PIf;
             float angleB2 = ((float)(j+1) / (float)steps) * tgt::PIf;
 
-            FaceGeometry face;
-            face.addVertex(VertexGeometry(vec3(sin(angleB1)*cos(angleA1), sin(angleB1)*sin(angleA1), cosf(angleB1)), vec3(0.0f), getColor()));
-            face.addVertex(VertexGeometry(vec3(sin(angleB2)*cos(angleA1), sin(angleB2)*sin(angleA1), cosf(angleB2)), vec3(0.0f), getColor()));
-            face.addVertex(VertexGeometry(vec3(sin(angleB2)*cos(angleA2), sin(angleB2)*sin(angleA2), cosf(angleB2)), vec3(0.0f), getColor()));
-            face.addVertex(VertexGeometry(vec3(sin(angleB1)*cos(angleA2), sin(angleB1)*sin(angleA2), cosf(angleB1)), vec3(0.0f), getColor()));
-            mg.addFace(face);
+            geometry->addQuad(VertexBase(vec3(sin(angleB1)*cos(angleA1), sin(angleB1)*sin(angleA1), cosf(angleB1))),
+                              VertexBase(vec3(sin(angleB2)*cos(angleA1), sin(angleB2)*sin(angleA1), cosf(angleB2))),
+                              VertexBase(vec3(sin(angleB2)*cos(angleA2), sin(angleB2)*sin(angleA2), cosf(angleB2))),
+                              VertexBase(vec3(sin(angleB1)*cos(angleA2), sin(angleB1)*sin(angleA2), cosf(angleB1))));
         }
     }
 
-    geometry->addMesh(mg);
     return geometry;
 }
 
-MeshListGeometry* ROISphere::generateNormalizedMesh(tgt::plane pl) const {
-    MeshListGeometry* mlg = new MeshListGeometry();
+Geometry* ROISphere::generateNormalizedMesh(tgt::plane pl) const {
+    TriangleMeshGeometrySimple* mlg = new TriangleMeshGeometrySimple();
 
     vec3 temp(1.0f, 1.0f, 0.0f);
     if(dot(temp, pl.n) > 0.9f)
@@ -96,18 +92,13 @@ MeshListGeometry* ROISphere::generateNormalizedMesh(tgt::plane pl) const {
     t2 *= circleRadius;
     vec3 base = -(pl.d * pl.n);
 
-    FaceGeometry face;
     int steps = 40;
+    std::vector<VertexBase> vertices;
     for(int i=0; i<steps; i++) {
         float angle = ((float)i / (float)steps) * 2.0f * tgt::PIf;
-        face.addVertex(VertexGeometry(base + sinf(angle)*t1 + cosf(angle)*t2, vec3(0.0f), getColor()));
-        //TODO: add normals
+        vertices.push_back(VertexBase(base + sinf(angle)*t1 + cosf(angle)*t2));
     }
-
-    MeshGeometry mg;
-    mg.addFace(face);
-
-    mlg->addMesh(mg);
+    mlg->triangulate(vertices);
 
     return mlg;
 }

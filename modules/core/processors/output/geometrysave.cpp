@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -35,7 +35,7 @@ GeometrySave::GeometrySave()
     : Processor()
     ,  inport_(Port::INPORT, "inport", "Geometry Input")
     ,  fileProp_("file", "Geometry File", "Select Voreen geometry file...", "./",
-            "Voreen Geometry files (*.vge)", FileDialogProperty::SAVE_FILE)
+            "Voreen Geometry files (*.vge)", FileDialogProperty::SAVE_FILE, Processor::INVALID_PATH)
     ,  saveButton_("save", "Save")
     ,  continousSave_("continousSave", "Save continuously", false)
 {
@@ -49,6 +49,13 @@ GeometrySave::GeometrySave()
 
 Processor* GeometrySave::create() const {
     return new GeometrySave();
+}
+
+void GeometrySave::invalidate(int inv) {
+    Processor::invalidate(inv);
+    //auto save on path change
+    if(inv == Processor::INVALID_PATH && isInitialized())
+        saveFile();
 }
 
 void GeometrySave::process() {

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -201,7 +201,7 @@ std::string VolumeViewHelper::getVolumeDimension(const VolumeBase* volume) {
 
 std::string VolumeViewHelper::getVolumeSpacing(const VolumeBase* volume) {
     std::stringstream out;
-    out << volume->getSpacing()[0] << " x " << volume->getSpacing()[1] << " x " << volume->getSpacing()[2];
+    out << volume->getSpacing()[0] << " x " << volume->getSpacing()[1] << " x " << volume->getSpacing()[2] << " mm";
     return out.str();
 }
 
@@ -223,6 +223,23 @@ std::string VolumeViewHelper::getVolumeMemorySize(const VolumeRAM* volume) {
     return out.str();
 }
 
+std::string VolumeViewHelper::getVolumeMemorySize(const VolumeBase* volume) {
+    std::stringstream out;
+
+    size_t bytes = volume->getBytesPerVoxel()*tgt::hmul(volume->getDimensions());
+    float mb = tgt::round(bytes/104857.6f) / 10.f;    //calculate mb with 0.1f precision
+    float kb = tgt::round(bytes/102.4f) / 10.f;
+    if (mb >= 0.5f) {
+        out << mb << " MB";
+    }
+    else if (kb >= 0.5f) {
+        out << kb << " kB";
+    }
+    else {
+        out << bytes << " bytes";
+    }
+    return out.str();
+}
 
 size_t VolumeViewHelper::getVolumeMemorySizeByte(const VolumeRAM* volume) {
     size_t volumeBytes = 0;

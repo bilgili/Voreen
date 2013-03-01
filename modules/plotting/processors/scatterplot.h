@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -36,19 +36,18 @@ namespace voreen {
 /**
  * This processor is able to create 2D and 3D scatter plots.
  */
-class ScatterPlot : public PlotProcessor {
+class VRN_CORE_API ScatterPlot : public PlotProcessor {
 public:
     ScatterPlot();
+    virtual Processor* create() const;
 
-    virtual Processor* create() const { return new ScatterPlot(); }
-    virtual std::string getClassName() const { return "ScatterPlot"; }
-    virtual CodeState getCodeState() const { return Processor::CODE_STATE_TESTING; }
+    virtual std::string getClassName() const { return "ScatterPlot";     }
+    virtual CodeState getCodeState() const   { return CODE_STATE_STABLE; }
 
 private:
     virtual void setDescriptions() {
         setDescription("This processor is able to create 2D and 3D Scatterplots.");
     }
-
 
     // inherited methods
     virtual void render();

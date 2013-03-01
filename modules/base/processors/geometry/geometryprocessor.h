@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -42,18 +42,17 @@ class CameraInteractionHandler;
  * This processor renders all to it connected coprocessors. The projection and modelview matrices
  * are set according to the current viewing position.
  */
-class GeometryProcessor : public RenderProcessor {
+class VRN_CORE_API GeometryProcessor : public RenderProcessor {
 public:
     GeometryProcessor();
     ~GeometryProcessor();
-
-    virtual void initialize() throw (tgt::Exception);
-    virtual bool isReady() const;
-
-    virtual std::string getCategory() const { return "Geometry"; }
-    virtual std::string getClassName() const { return "GeometryProcessor"; }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
     virtual Processor* create() const;
+
+    virtual std::string getClassName() const { return "GeometryProcessor"; }
+    virtual std::string getCategory() const { return "Geometry"; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_STABLE; }
+
+    virtual bool isReady() const;
 
 protected:
     virtual void setDescriptions() {
@@ -61,6 +60,9 @@ protected:
     }
 
     virtual void process();
+    virtual void initialize() throw (tgt::Exception);
+    virtual void deinitialize() throw (tgt::Exception);
+
     virtual std::string generateHeader();
 
 private:

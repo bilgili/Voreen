@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -37,8 +37,7 @@ namespace voreen {
 const std::string Port::loggerCat_("voreen.Port");
 
 Port::Port(PortDirection direction, const std::string& id, const std::string& guiName, bool allowMultipleConnections, Processor::InvalidationLevel invalidationLevel)
-    : id_(id)
-    , guiName_(guiName)
+    : PropertyOwner(id, guiName)
     , connectedPorts_()
     , processor_(0)
     , direction_(direction)
@@ -51,9 +50,6 @@ Port::Port(PortDirection direction, const std::string& id, const std::string& gu
     , currentLoopIteration_(0)
     , initialized_(false)
 {
-    if (guiName_ == "") 
-        guiName_ = id_;
-
     if (isOutport()) {
         allowMultipleConnections_ = true;
 
@@ -73,6 +69,10 @@ Port::~Port() {
     }
 
     disconnectAll();
+}
+
+Port* Port::create() const {
+    return create(static_cast<PortDirection>(0), "", "");
 }
 
 void Port::addCondition(PortCondition* condition) {
@@ -252,6 +252,7 @@ void Port::invalidatePort() {
     }
     else {
         getProcessor()->invalidate(invalidationLevel_);
+        forwardData();
     }
 }
 
@@ -276,24 +277,11 @@ bool Port::isInport() const {
     return direction_ == INPORT;
 }
 
-std::string Port::getID() const {
-    return id_;
-}
-
-std::string Port::getName() const {
-    return getID();
-}
-
-std::string Port::getGuiName() const {
-    return guiName_;
-}
-
 std::string Port::getContentDescription() const {
     std::stringstream strstr;
     strstr << getGuiName() << std::endl << "Type: " << getClassName();
     return strstr.str();
 }
-
 
 std::string Port::getContentDescriptionHTML() const {
     std::stringstream strstr;
@@ -305,7 +293,7 @@ std::string Port::getContentDescriptionHTML() const {
 std::string Port::getQualifiedName() const {
     std::string id;
     if (getProcessor())
-        id = getProcessor()->getName() + ".";
+        id = getProcessor()->getID() + ".";
     id += getID();
     return id;
 }
@@ -351,12 +339,12 @@ void Port::loadData(const std::string& /*path*/) throw (VoreenException) {
 void Port::distributeEvent(tgt::Event* e) {
     if (isOutport()) {
         if (!blockEvents_.get())
-            getProcessor()->onEvent(e);
+            getProcessor()->onPortEvent(e,this);
     } else {
         for (size_t i = 0; i < connectedPorts_.size(); ++i) {
-            connectedPorts_[i]->distributeEvent(e);
             if (e->isAccepted())
                 return;
+            connectedPorts_[i]->distributeEvent(e);
         }
     }
 }
@@ -381,7 +369,7 @@ void Port::initialize() throw (tgt::Exception) {
     if (isInitialized()) {
         std::string id;
         if (getProcessor())
-            id = getProcessor()->getName() + ".";
+            id = getProcessor()->getID() + ".";
         id += getID();
         LWARNING("initialize(): '" << id << "' already initialized");
         return;
@@ -430,5 +418,59 @@ tgt::col3 Port::getColorHint() const {
     return tgt::col3(0, 0, 0);
 }
 
+void Port::addForwardPort(Port* port){
+    tgtAssert(port->isOutport(), "Only outports can get forwared data!");
+    tgtAssert(!port->getClassName().compare(getClassName()),"Forward ports have to be the same type as this class!");
+
+    forwardPorts_.push_back(port);
+}
+
+bool Port::removeForwardPort(Port* port){
+    for(std::vector<Port*>::iterator it = forwardPorts_.begin(); it != forwardPorts_.end(); it++){
+        if(*it == port){
+            forwardPorts_.erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
+void Port::serialize(XmlSerializer& s) const {
+    PropertyOwner::serialize(s);
+
+    s.serialize("direction", direction_);
+    s.serialize("portID", id_);
+    s.serialize("guiName", guiName_);
+    s.serialize("allowMultipleConnections", allowMultipleConnections_);
+    s.serialize("invalidationLevel", invalidationLevel_);
+}
+
+void Port::deserialize(XmlDeserializer& s) {
+    // only deserialize main data fields, if port has been created dynamically via create()
+    if (getID().empty()) {
+        try {
+            int dir;
+            s.deserialize("direction", dir);
+            direction_ = static_cast<PortDirection>(dir);
+            s.deserialize("portID", id_);
+            s.deserialize("allowMultipleConnections", allowMultipleConnections_);
+            int level;
+            s.deserialize("invalidationLevel", level);
+            invalidationLevel_ = static_cast<Processor::InvalidationLevel>(level);
+        }
+        catch (XmlSerializationNoSuchDataException&) {
+            s.removeLastError();
+        }
+    }
+
+    try {
+        s.deserialize("guiName", guiName_);
+    }
+    catch (XmlSerializationNoSuchDataException&) {
+        s.removeLastError();
+    }
+
+    PropertyOwner::deserialize(s);
+}
 
 } // namespace voreen

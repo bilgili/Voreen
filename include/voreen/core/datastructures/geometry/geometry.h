@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,8 +26,7 @@
 #ifndef VRN_GEOMETRY_H
 #define VRN_GEOMETRY_H
 
-#include "voreen/core/voreencoreapi.h"
-#include "voreen/core/io/serialization/abstractserializable.h"
+#include "voreen/core/voreenobject.h"
 
 #include "tgt/vector.h"
 #include "tgt/matrix.h"
@@ -48,23 +47,10 @@ namespace voreen {
  * @see GeometryFactory
  * @see VoreenModule::registerSerializerFactory
  */
-class VRN_CORE_API Geometry : public AbstractSerializable {
+class VRN_CORE_API Geometry : public VoreenSerializableObject {
 public:
     Geometry();
     virtual ~Geometry() {}
-
-    /**
-     * Virtual constructor: supposed to return an instance of the concrete subtype.
-     */
-    virtual Geometry* create() const = 0;
-
-    /**
-     * Returns the name of this class as a string.
-     * Necessary due to the lack of code reflection in C++.
-     *
-     * This method is expected to be re-implemented by each concrete subclass.
-     */
-    virtual std::string getClassName() const = 0;
 
     /**
      * Returns a copy of the geometry object.
@@ -86,13 +72,13 @@ public:
      */
     virtual bool equals(const Geometry* geometry, double epsilon = 1e-5) const;
 
-    /**
-     * Transforms the geometry by applying the given transformation matrix.
-     *
-     * This function is supposed to be overridden by subclasses.
-     * The default implementation is a no-op.
-     */
-    virtual void transform(const tgt::mat4& transformation);
+    /// Transforms the geometry by multiplying the given transformation matrix to the existing one.
+    virtual void transform(const tgt::mat4& m);
+
+    tgt::mat4 getTransformationMatrix() const;
+    tgt::mat4 getInvertedTransformationMatrix() const;
+
+    void setTransformationMatrix(const tgt::mat4& m);
 
     /**
      * Clips the geometry against the passed clipping plane.
@@ -112,7 +98,7 @@ public:
      * @param clipPlane an arbitrary clipping plane
      * @param epsilon maximum distance at which two vertices are to be considered equal
      */
-    virtual void clip(const tgt::vec4& clipPlane, double epsilon = 1e-5);
+    virtual void clip(const tgt::plane& clipPlane, double epsilon = 1e-5);
 
     /**
      * Renders the geometry.
@@ -127,8 +113,10 @@ public:
      *
      * This function is supposed to be overridden by subclasses.
      * The default implementation returns undefined bounds.
+     *
+     * @param transformed Apply transformation matrix?
      */
-    virtual tgt::Bounds getBoundingBox() const;
+    virtual tgt::Bounds getBoundingBox(bool transformed = true) const;
 
     /**
      * Returns a hash of the geometry object,
@@ -140,24 +128,17 @@ public:
      */
     virtual std::string getHash() const;
 
-    bool hasChanged() const;
-    void setHasChanged(bool changed);
-
     /**
-     * Dummy implementation of the AbstractSerializable interface.
      * Supposed to be overridden by each concrete subclass.
      */
     virtual void serialize(XmlSerializer& s) const;
 
     /**
-     * Dummy implementation of the AbstractSerializable interface.
      * Supposed to be overridden by each concrete subclass.
      */
     virtual void deserialize(XmlDeserializer& s);
-
-protected:
-    /// indicates whether the geometry has changed.
-    bool changed_;
+private:
+    tgt::mat4 transformationMatrix_;    ///< Usually model to world
 
     static const std::string loggerCat_;
 };

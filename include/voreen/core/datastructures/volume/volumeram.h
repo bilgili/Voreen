@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -93,6 +93,9 @@ public:
     /// Returns whether the volume's data type is an integer type.
     virtual bool isInteger() const = 0;
 
+    virtual std::string getFormat() const;
+    virtual std::string getBaseType() const;
+
     //------------------------------------------------------
 
     /**
@@ -104,6 +107,12 @@ public:
      * Returns the maximum value contained by the specified channel converted to float.
      */
     virtual float maxNormalizedValue(size_t channel = 0) const;
+
+    /**
+     * Returns the value with the largest magnitude (absolute value) contained in the volume;
+     * in case of multiple channels, this means that the maximum euclidian vector length is returned.
+     */
+    virtual float maxMagnitude() const = 0;
 
     //------------------------------------------------------
 

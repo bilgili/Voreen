@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -44,7 +44,6 @@ GeometryTransformationVolume::GeometryTransformationVolume()
   , targetCoordinateSystem_("targetCoordinateSystem", "Dest Coordinate System")
   , forceUpdate_(true)
 {
-
     addPort(geometryInport_);
     addPort(volumeInport_);
     addPort(geometryOutport_);
@@ -93,9 +92,9 @@ void GeometryTransformationVolume::process() {
     const Geometry* inputGeometry = geometryInport_.getData();
     tgtAssert(inputGeometry, "no input geometry");
 
-    // retrieve volume handle from inport
+    // retrieve volume from inport
     const VolumeBase* volumeHandle = volumeInport_.getData();
-    tgtAssert(volumeHandle, "No volume handle");
+    tgtAssert(volumeHandle, "No volume");
     tgtAssert(volumeHandle->getRepresentation<VolumeRAM>(), "No volume");
 
     //

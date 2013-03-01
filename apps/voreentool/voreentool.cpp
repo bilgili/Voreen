@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -28,9 +28,8 @@
 #include "modules/python/pythonmodule.h"
 #endif
 
-#include "networkconfigurator.h"
-
 #include "voreen/core/voreenapplication.h"
+#include "voreen/core/network/networkconfigurator.h"
 #include "voreen/core/utils/voreenpainter.h"
 #include "voreen/core/utils/commandlineparser.h"
 #include "voreen/core/io/serialization/serialization.h"
@@ -40,13 +39,15 @@
 #include "voreen/core/properties/buttonproperty.h"
 #include "voreen/core/utils/stringutils.h"
 
+#include "voreen/qt/voreenapplicationqt.h"
+
 // core module is always available
 #include "modules/core/processors/output/canvasrenderer.h"
 #include "modules/core/processors/output/imagesequencesave.h"
 #include "modules/core/processors/output/geometrysave.h"
 #include "modules/core/processors/output/textsave.h"
 #include "modules/core/processors/output/volumesave.h"
-#include "modules/core/processors/output/volumecollectionsave.h"
+#include "modules/core/processors/output/volumelistsave.h"
 
 #include "tgt/init.h"
 #include "tgt/logmanager.h"
@@ -63,24 +64,49 @@ const std::string APP_DESC    = "Command-line interface for the manipulation and
 
 const std::string loggerCat_  = "voreentool.main";
 
+
+/**
+ * Evaluates the passed network using the passed evaluator.
+ *
+ * @param network The network to execute.
+ * @param networkEvaluator The evaluator to use for executing the network.
+ * @param configurationOptions Property configuration to apply *before* executing the network (see command line option).
+ * @param actionOptions ButtonProperties that are to be triggered *after* the network has been evaluated (see command line option).
+ * @param triggerAllAction Triggers all ButtonProperties after the network has been evaluated.
+ * @param triggerImageSaves Triggers an 'image save' event on all Canvases and ImageSequenceSaves after network evaluation.
+ * @param triggerVolumeSaves Triggers an 'volume save' event on all VolumeSave and VolumeListSaves after network evaluation.
+ * @param triggerGeometrySaves Triggers an 'geometry save' event on all GeometrySave processors after network evaluation.
+ * @param pythonScriptFilename Runs the passed Python script after the network configuration has been applied.
+ *
+ * @throw VoreenException If network evaluation failed.
+ */
+void executeNetwork(ProcessorNetwork* network, NetworkEvaluator* networkEvaluator,
+    const std::vector<std::string>& configurationOptions, const std::vector<std::string>& actionOptions,
+    bool triggerAllActions, bool triggerImageSaves, bool triggerVolumeSaves, bool triggerGeometrySaves,
+    const std::string& pythonScriptFilename)
+    throw (VoreenException);
+
+/**
+ * Exits the application with state EXIT_FAILURE.
+ * Before application termination the passed error message is logged
+ * and the global resources are deleted.
+ */
 void exitFailure(const std::string& errorMsg);
 
-#ifdef VRN_MODULE_PYTHON
-void runScript(const std::string& filename) throw (VoreenException);
-#endif
-
+// global resources that are freed by exitFailure()
 NetworkEvaluator* networkEvaluator_ = 0;
-Workspace* workspace_ = 0;
-
-// Qt application and created canvases (only in OpenGL mode)
+tgt::QtCanvas* initContext_ = 0;
 QApplication* qtApp_ = 0;
-std::vector<tgt::QtCanvas*> canvases_;
+
+//-------------------------------------------------------------------------------------------------
 
 int main(int argc, char* argv[]) {
 
     // create Voreen application
-    VoreenApplication vrnApp(APP_BINARY, APP_NAME, APP_DESC, argc, argv,
-        VoreenApplication::ApplicationFeatures(VoreenApplication::APP_ALL &~ VoreenApplication::APP_WIDGETS));
+
+    VoreenApplicationQt vrnApp(APP_BINARY, APP_NAME, APP_DESC, argc, argv,
+        VoreenApplication::ApplicationFeatures(VoreenApplication::APP_ALL /*&~ VoreenApplication::APP_WIDGETS*/));
+    qtApp_ = new QApplication(argc, argv);
 
     // prepare command line parser
     CommandLineParser* cmdParser = vrnApp.getCommandLineParser();
@@ -89,8 +115,13 @@ int main(int argc, char* argv[]) {
     cmdParser->setCommandLineStyle(static_cast<po::command_line_style::style_t>(cmdStyle));
 
     std::string workspacePath;
-    cmdParser->addOption<std::string>("workspace,w", workspacePath, CommandLineParser::RequiredOption,
-        "The workspace to evaluate");
+    cmdParser->addOption<std::string>("workspace,w", workspacePath, CommandLineParser::MainOption,
+        "The workspace to evaluate.");
+
+    bool runEventLoop = false;
+    cmdParser->addFlagOption("run-event-loop", runEventLoop, CommandLineParser::MainOption,
+        "Do not terminate application after workspace execution. May be used for interacting with the workspace, "
+        "or for remote controlling.");
 
     std::vector<std::string> configurationOptions;
     cmdParser->addMultiOption<std::string>("configuration,c", configurationOptions, CommandLineParser::MainOption,
@@ -117,14 +148,14 @@ int main(int argc, char* argv[]) {
 
     bool triggerVolumeSaves = false;
     cmdParser->addFlagOption("trigger-volumesaves", triggerVolumeSaves, CommandLineParser::MainOption,
-        "Trigger a \"save file\" event on all VolumeSave and VolumeCollectionSave processors after the network has been evaluated.");
+        "Trigger a \"save file\" event on all VolumeSave and VolumeListSave processors after the network has been evaluated.");
 
     bool triggerGeometrySaves = false;
     cmdParser->addFlagOption("trigger-geometrysaves", triggerGeometrySaves, CommandLineParser::MainOption,
         "Trigger a \"save file\" event on all GeometrySave and TextSave processors after the network has been evaluated.");
 
-#ifdef VRN_MODULE_PYTHON
     std::string scriptFilename;
+#ifdef VRN_MODULE_PYTHON
     vrnApp.getCommandLineParser()->addOption("script", scriptFilename, CommandLineParser::MainOption,
         "Run a Python script after the network configuration has been applied.");
 #endif
@@ -141,75 +172,100 @@ int main(int argc, char* argv[]) {
         exitFailure("Failed to initialize application: " + std::string(e.what()));
     }
 
+    // check parameters
+    if (workspacePath.empty() && !runEventLoop) {
+        vrnApp.deinitialize();
+        std::cout << "\nUsage: either specify workspace path (-w) or activate event loop (--run-event-loop)\n\n";
+        return 0;
+    }
+
     // initialize OpenGL context and initializeGL VoreenApplication
     if (glMode) {
-        qtApp_ = new QApplication(argc, argv);
-        tgt::QtCanvas* initContext = new tgt::QtCanvas("Init Canvas", tgt::ivec2(32, 32), tgt::GLCanvas::RGBADD, 0, true);
-        canvases_.push_back(initContext);
-        initContext->show();
+        initContext_ = new tgt::QtCanvas("Init Canvas", tgt::ivec2(4, 4), tgt::GLCanvas::RGBADD, 0, true);
+        initContext_->show();
         try {
             vrnApp.initializeGL();
         }
         catch (VoreenException& e) {
             exitFailure("OpenGL initialization failed: " + std::string(e.what()));
         }
-        initContext->hide();
+        initContext_->hide();
     }
-
-    // load workspace
-    workspace_ = new Workspace();
-    workspacePath = tgt::FileSystem::absolutePath(workspacePath);
-    try {
-        LINFO("Loading workspace " << workspacePath);
-        if (!workingDirectory.empty()) {
-            workingDirectory = tgt::FileSystem::absolutePath(workingDirectory);
-            LINFO("Workspace working path: " << workingDirectory);
-        }
-        workspace_->load(workspacePath, workingDirectory);
-    }
-    catch (SerializationException& e) {
-        exitFailure(e.what());
-    }
-    // log errors occurred during workspace deserialization
-    for (size_t i=0; i<workspace_->getErrors().size(); i++)
-        LERROR(workspace_->getErrors().at(i));
-
-    ProcessorNetwork* network = workspace_->getProcessorNetwork();
-    tgtAssert(network, "no network");
 
     // create network evaluator
-    networkEvaluator_ = new NetworkEvaluator(glMode, (!canvases_.empty() ? canvases_.front() : 0));
-    VoreenApplication::app()->setNetworkEvaluator(networkEvaluator_);
+    networkEvaluator_ = new NetworkEvaluator(glMode, initContext_);
+    vrnApp.registerNetworkEvaluator(networkEvaluator_);
 
-    // create separate canvas for each CanvasRenderer in the network (only in OpenGL mode)
-    if (glMode) {
-        std::vector<CanvasRenderer*> canvasRenderers = network->getProcessorsByType<CanvasRenderer>();
-        if (!canvasRenderers.empty())
-            LINFO("Creating canvases ...");
-        for (size_t i=0; i<canvasRenderers.size(); i++) {
-            CanvasRenderer* canvasRenderer = canvasRenderers.at(i);
-            tgt::QtCanvas* canvas;
-            if (i == 0) {
-                // recycle init canvas for first CanvasRenderer
-                canvas = canvases_.front();
-                canvas->setWindowTitle(QString::fromStdString(canvasRenderer->getName()));
-                canvas->resize(canvasRenderer->getCanvasSize().x, canvasRenderer->getCanvasSize().y);
+    // load and execute workspace, if specified
+    Workspace* workspace = 0;
+    if (!workspacePath.empty()) {
+        workspace = new Workspace();
+        workspacePath = tgt::FileSystem::absolutePath(workspacePath);
+        try {
+            LINFO("Loading workspace " << workspacePath);
+            if (!workingDirectory.empty()) {
+                workingDirectory = tgt::FileSystem::absolutePath(workingDirectory);
+                LINFO("Workspace working path: " << workingDirectory);
             }
-            else {
-                // create new canvases for following CanvasRenderers
-                canvas = new tgt::QtCanvas(canvasRenderer->getName(), canvasRenderer->getCanvasSize(), tgt::GLCanvas::RGBADD, 0, true);
-                canvases_.push_back(canvas);
-            }
-            VoreenPainter* painter = new VoreenPainter(canvas, networkEvaluator_, canvasRenderer);
-            canvas->setPainter(painter);
-            canvas->show();
-            canvasRenderer->setCanvas(canvas);
+            workspace->load(workspacePath, workingDirectory);
+        }
+        catch (SerializationException& e) {
+            delete workspace;
+            exitFailure(e.what());
+        }
+        // log errors occurred during workspace deserialization
+        for (size_t i=0; i<workspace->getErrors().size(); i++)
+            LERROR(workspace->getErrors().at(i));
+
+        // execute network
+        try {
+            executeNetwork(workspace->getProcessorNetwork(), networkEvaluator_, configurationOptions, actionOptions,
+                triggerAllActions, triggerImageSaves && glMode, triggerVolumeSaves, triggerGeometrySaves,
+                scriptFilename);
+        }
+        catch (VoreenException& e) {
+            delete workspace;
+            exitFailure(e.what());
         }
     }
+
+    // start Qt main loop, if in interactive mode
+    if (runEventLoop) {
+        LINFO("Running event loop...");
+        qtApp_->exec();
+    }
+
+    // clean up
+    LINFO("Deinitializing network ...");
+    networkEvaluator_->deinitializeNetwork();
+    delete networkEvaluator_;
+    delete workspace;
+
+    if (glMode) {
+        LDEBUG("Deinitializing OpenGL ...");
+        vrnApp.deinitializeGL();
+        delete initContext_;
+    }
+
+    vrnApp.deinitialize();
+    delete qtApp_;
+    qtApp_ = 0;
+    return 0;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void executeNetwork(ProcessorNetwork* network, NetworkEvaluator* networkEvaluator,
+        const std::vector<std::string>& configurationOptions, const std::vector<std::string>& actionOptions,
+        bool triggerAllActions, bool triggerImageSaves, bool triggerVolumeSaves, bool triggerGeometrySaves,
+        const std::string& pythonScriptFilename) throw (VoreenException) {
+
+    tgtAssert(network, "no network passed (null pointer)");
+    tgtAssert(networkEvaluator, "no network evaluator passed (null pointer)") ;
 
     // initialize network evaluator and assign network to it, which also initializes the processors
     LINFO("Initializing network ...");
-    networkEvaluator_->setProcessorNetwork(network);
+    networkEvaluator->setProcessorNetwork(network);
 
     // apply network configuration
     NetworkConfigurator configurator(network);
@@ -221,29 +277,31 @@ int main(int argc, char* argv[]) {
             configurator.setPropertyValue(optionStr);
         }
         catch (VoreenException& e) {
-            exitFailure("in config option '" + optionStr + "': " + e.what());
+            throw VoreenException("in config option '" + optionStr + "': " + e.what());
         }
     }
 
+    // run Python script
 #ifdef VRN_MODULE_PYTHON
-    if (!scriptFilename.empty()) {
-        try {
-            runScript(scriptFilename);
-        }
-        catch (VoreenException& e) {
-            exitFailure(e.what());
-        }
+    if (!pythonScriptFilename.empty()) {
+        if (!PythonModule::getInstance())
+            throw VoreenException("Failed to run Python script: PythonModule not instantiated");
+        LINFO("Running Python script '" << pythonScriptFilename << "' ...");
+        PythonModule::getInstance()->runScript(pythonScriptFilename, false);  //< throws VoreenException on failure
+        LINFO("Python script finished.");
     }
-
 #endif
 
     // evaluate network
     LINFO("Evaluating network ...");
     try {
-        networkEvaluator_->process();
+        networkEvaluator->process();
+        //TODO: hack to test stereoscopy module. Has to be a loop until network is valid.
+        networkEvaluator->process();
+        networkEvaluator->process();
     }
     catch (std::exception& e) {
-        exitFailure("exception during network evaluation: " + std::string(e.what()));
+        throw VoreenException("exception during network evaluation: " + std::string(e.what()));
     }
 
     // trigger actions
@@ -263,21 +321,21 @@ int main(int argc, char* argv[]) {
                 configurator.triggerButtonProperty(optionStr);
             }
             catch (VoreenException& e) {
-                exitFailure("in action '" + optionStr + "': " + e.what());
+                throw VoreenException("in action '" + optionStr + "': " + e.what());
             }
         }
     }
 
-    // take Canvas screenshots and write out imagesequences (only in OpenGL mode)
-    if (glMode && triggerImageSaves) {
+    // take Canvas screenshots and write out imagesequences
+    if (triggerImageSaves) {
         std::vector<CanvasRenderer*> canvasRenderers = network->getProcessorsByType<CanvasRenderer>();
         for (size_t i=0; i<canvasRenderers.size(); i++) {
             ButtonProperty* screenshotProp = dynamic_cast<ButtonProperty*>(canvasRenderers.at(i)->getProperty("saveScreenshot"));
             if (!screenshotProp) {
-                LERROR("'saveScreenshot' property of CanvasRenderer '" << canvasRenderers.at(i)->getName() << "' not found");
+                LERROR("'saveScreenshot' property of CanvasRenderer '" << canvasRenderers.at(i)->getID() << "' not found");
                 continue;
             }
-            LDEBUG("triggering CanvasRenderer screenshot: " << canvasRenderers.at(i)->getName());
+            LDEBUG("triggering CanvasRenderer screenshot: " << canvasRenderers.at(i)->getID());
             screenshotProp->clicked();
         }
 
@@ -285,35 +343,35 @@ int main(int argc, char* argv[]) {
         for (size_t i=0; i<imageSequenceSaves.size(); i++) {
             ButtonProperty* screenshotProp = dynamic_cast<ButtonProperty*>(imageSequenceSaves.at(i)->getProperty("save"));
             if (!screenshotProp) {
-                LERROR("'save' property of ImageSequenceSave '" << imageSequenceSaves.at(i)->getName() << "' not found");
+                LERROR("'save' property of ImageSequenceSave '" << imageSequenceSaves.at(i)->getID() << "' not found");
                 continue;
             }
-            LDEBUG("triggering 'save' property of ImageSequenceSave: " << imageSequenceSaves.at(i)->getName());
+            LDEBUG("triggering 'save' property of ImageSequenceSave: " << imageSequenceSaves.at(i)->getID());
             screenshotProp->clicked();
         }
     }
 
-    // trigger VolumeSave and VolumeCollectionSave processors
+    // trigger VolumeSave and VolumeListSave processors
     if (triggerVolumeSaves) {
         std::vector<VolumeSave*> volumeSaves = network->getProcessorsByType<VolumeSave>();
         for (size_t i=0; i<volumeSaves.size(); i++) {
             ButtonProperty* saveProp = dynamic_cast<ButtonProperty*>(volumeSaves.at(i)->getProperty("save"));
             if (!saveProp) {
-                LERROR("'save' property of VolumeSave '" << volumeSaves.at(i)->getName() << "' not found");
+                LERROR("'save' property of VolumeSave '" << volumeSaves.at(i)->getID() << "' not found");
                 continue;
             }
-            LDEBUG("triggering 'save' property of VolumeSave: " << volumeSaves.at(i)->getName());
+            LDEBUG("triggering 'save' property of VolumeSave: " << volumeSaves.at(i)->getID());
             saveProp->clicked();
         }
 
-        std::vector<VolumeCollectionSave*> volumeCollectionSaves = network->getProcessorsByType<VolumeCollectionSave>();
-        for (size_t i=0; i<volumeCollectionSaves.size(); i++) {
-            ButtonProperty* saveProp = dynamic_cast<ButtonProperty*>(volumeCollectionSaves.at(i)->getProperty("save"));
+        std::vector<VolumeListSave*> volumeListSaves = network->getProcessorsByType<VolumeListSave>();
+        for (size_t i=0; i<volumeListSaves.size(); i++) {
+            ButtonProperty* saveProp = dynamic_cast<ButtonProperty*>(volumeListSaves.at(i)->getProperty("save"));
             if (!saveProp) {
-                LERROR("'save' property of VolumeCollectionSave '" << volumeCollectionSaves.at(i)->getName() << "' not found");
+                LERROR("'save' property of VolumeListSave '" << volumeListSaves.at(i)->getID() << "' not found");
                 continue;
             }
-            LDEBUG("triggering 'save' property of VolumeCollectionSave: " << volumeCollectionSaves.at(i)->getName());
+            LDEBUG("triggering 'save' property of VolumeListSave: " << volumeListSaves.at(i)->getID());
             saveProp->clicked();
         }
     }
@@ -324,10 +382,10 @@ int main(int argc, char* argv[]) {
         for (size_t i=0; i<geometrySaves.size(); i++) {
             ButtonProperty* saveProp = dynamic_cast<ButtonProperty*>(geometrySaves.at(i)->getProperty("save"));
             if (!saveProp) {
-                LERROR("'save' property of GeometrySave '" << geometrySaves.at(i)->getName() << "' not found");
+                LERROR("'save' property of GeometrySave '" << geometrySaves.at(i)->getID() << "' not found");
                 continue;
             }
-            LDEBUG("triggering 'save' property of GeometrySave: " << geometrySaves.at(i)->getName());
+            LDEBUG("triggering 'save' property of GeometrySave: " << geometrySaves.at(i)->getID());
             saveProp->clicked();
         }
 
@@ -335,33 +393,16 @@ int main(int argc, char* argv[]) {
         for (size_t i=0; i<textSaves.size(); i++) {
             ButtonProperty* saveProp = dynamic_cast<ButtonProperty*>(textSaves.at(i)->getProperty("save"));
             if (!saveProp) {
-                LERROR("'save' property of TextSave '" << textSaves.at(i)->getName() << "' not found");
+                LERROR("'save' property of TextSave '" << textSaves.at(i)->getID() << "' not found");
                 continue;
             }
-            LDEBUG("triggering 'save' property of TextSave: " << textSaves.at(i)->getName());
+            LDEBUG("triggering 'save' property of TextSave: " << textSaves.at(i)->getID());
             saveProp->clicked();
         }
     }
-
-    // clean up
-    LINFO("Deinitializing network ...");
-    networkEvaluator_->deinitializeNetwork();
-    delete networkEvaluator_;
-    delete workspace_;
-
-    if (glMode) {
-        LDEBUG("Deinitializing OpenGL ...");
-        vrnApp.deinitializeGL();
-        for (size_t i=0; i<canvases_.size(); i++)
-            delete canvases_.at(i);
-        canvases_.clear();
-        delete qtApp_;
-        qtApp_ = 0;
-    }
-
-    vrnApp.deinitialize();
-    return 0;
 }
+
+//-------------------------------------------------------------------------------------------------
 
 void exitFailure(const std::string& errorMsg) {
     LFATAL(errorMsg);
@@ -369,32 +410,17 @@ void exitFailure(const std::string& errorMsg) {
     if (networkEvaluator_)
         networkEvaluator_->deinitializeNetwork();
     delete networkEvaluator_;
-    delete workspace_;
 
     if (VoreenApplication::app()->isInitializedGL()) {
         LDEBUG("Deinitializing OpenGL ...");
         VoreenApplication::app()->deinitializeGL();
-        for (size_t i=0; i<canvases_.size(); i++)
-            delete canvases_.at(i);
-        canvases_.clear();
-        delete qtApp_;
-        qtApp_ = 0;
+        delete initContext_;
+        initContext_ = 0;
     }
 
     VoreenApplication::app()->deinitialize();
-
+    delete qtApp_;
+    qtApp_ = 0;
     std::cerr << std::endl << "FAILURE: " << errorMsg << std::endl;
     exit(EXIT_FAILURE);
 }
-
-#ifdef VRN_MODULE_PYTHON
-void runScript(const std::string& filename) throw (VoreenException) {
-    if (!PythonModule::getInstance())
-        throw VoreenException("Failed to run Python script: PythonModule not instantiated");
-
-    LINFO("Running Python script '" << filename << "' ...");
-    PythonModule::getInstance()->runScript(filename, false);  //< throws VoreenException on failure
-    LINFO("Python script finished.");
-}
-#endif
-

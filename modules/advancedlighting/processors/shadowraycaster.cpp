@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -49,13 +49,14 @@ ShadowRaycaster::ShadowRaycaster()
     : VolumeRaycaster()
     , shaderProp_("raycast.prg", "Raycasting shader", "rc_shadow.frag", "passthrough.vert")
     , transferFunc_("transferFunction", "Transfer function")
-    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)))
+    , camera_("camera", "Camera", tgt::Camera(vec3(0.f, 0.f, 3.5f), vec3(0.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f)), true)
     , shadowsActive_("shadowsActive", "Scattering+Shadowing", false, Processor::INVALID_PROGRAM)
     , zSlice_("setZslice", "Rendered z slice", 0, 0, 256)
     , volumeInport_(Port::INPORT, "volumehandle.volumehandle", "Volume Input", false, Processor::INVALID_PROGRAM)
-    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
-    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_ORIGIN)
-    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
+    , entryPort_(Port::INPORT, "image.entrypoints", "Entry-points Input", false, Processor::INVALID_RESULT)
+    , exitPort_(Port::INPORT, "image.exitpoints", "Exit-points Input", false, Processor::INVALID_RESULT)
+    , outport_(Port::OUTPORT, "image.output", "Image Output", true, Processor::INVALID_RESULT)
+    , internalRenderPort_(Port::OUTPORT, "internalRenderPort", "Internal Render Port")
 {
     addProperty(shaderProp_);
     addProperty(transferFunc_);
@@ -94,6 +95,8 @@ ShadowRaycaster::ShadowRaycaster()
     addPort(entryPort_);
     addPort(exitPort_);
     addPort(outport_);
+
+    addPrivateRenderPort(internalRenderPort_);
 }
 
 ShadowRaycaster::~ShadowRaycaster() {
@@ -112,12 +115,12 @@ void ShadowRaycaster::initialize() throw (tgt::Exception) {
 
     if(!shaderProp_.hasValidShader()) {
         LERROR("Failed to load shaders!");
-        initialized_ = false;
+        processorState_ = PROCESSOR_STATE_NOT_INITIALIZED;
         throw VoreenException(getClassName() + ": Failed to load shaders!");
     }
     lightVolumeGenerator_->initialize();
 
-    initialized_ = true;
+    processorState_ = PROCESSOR_STATE_NOT_READY;
 }
 
 void ShadowRaycaster::deinitialize() throw (tgt::Exception) {
@@ -126,7 +129,7 @@ void ShadowRaycaster::deinitialize() throw (tgt::Exception) {
 
     if (lightVolumeGenerator_) {
         lightVolumeGenerator_->deinitialize();
-        lightVolumeGenerator_->initialized_ = false;
+        lightVolumeGenerator_->processorState_ = PROCESSOR_STATE_NOT_INITIALIZED;
         delete lightVolumeGenerator_;
         lightVolumeGenerator_ = 0;
     }
@@ -159,6 +162,8 @@ void ShadowRaycaster::process() {
         invalidate(Processor::INVALID_PROGRAM);
         transferFunc_.setVolumeHandle(volumeInport_.getData());
         lightVolumeGenerator_->setVolumeHandle(volumeInport_.getData());
+        if(volumeInport_.hasData())
+            camera_.adaptInteractionToScene(volumeInport_.getData()->getBoundingBox().getBoundingBox());
     }
 
     TextureUnit lightUnit, blendUnit;
@@ -169,18 +174,34 @@ void ShadowRaycaster::process() {
     if (shadowsActive_.get())
         lightVolumeGenerator_->generateLightVolume(&lightUnit, &blendUnit);
 
-    outport_.activateTarget();
+    const bool renderCoarse = interactionMode() && interactionCoarseness_.get() > 1;
+    tgt::svec2 renderSize;
+    if (renderCoarse) {
+        renderSize = outport_.getSize() / interactionCoarseness_.get();
+        internalRenderPort_.resize(renderSize);
+    }
+    else {
+        renderSize = outport_.getSize();
+    }
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    RenderPort& renderDestination = (renderCoarse ? internalRenderPort_ : outport_);
+    renderDestination.activateTarget();
+    renderDestination.clearTarget();
 
     if (renderMode_->getValue())
         renderSlices();
     else
-        renderVolume(&lightUnit);
+        renderVolume(&lightUnit, renderSize);
 
     LGL_ERROR;
 
-    outport_.deactivateTarget();
+    renderDestination.deactivateTarget();
+
+    // copy over rendered image from internal port to outport,
+    // thereby rescaling it to outport dimensions
+    if (renderCoarse && outport_.isConnected())
+        rescaleRendering(internalRenderPort_, outport_);
+
     TextureUnit::setZeroUnit();
     glDisable(GL_TEXTURE_3D);
 
@@ -207,7 +228,7 @@ void ShadowRaycaster::renderSlices() {
 
 }
 
-void ShadowRaycaster::renderVolume(TextureUnit* lightUnit) {
+void ShadowRaycaster::renderVolume(TextureUnit* lightUnit, const tgt::ivec2& renderSize) {
 
     if (!volumeInport_.isReady())
         return;
@@ -215,11 +236,11 @@ void ShadowRaycaster::renderVolume(TextureUnit* lightUnit) {
     TextureUnit entryUnit, entryDepthUnit, exitUnit, exitDepthUnit;
 
     // bind entry params
-    entryPort_.bindTextures(entryUnit.getEnum(), entryDepthUnit.getEnum());
+    entryPort_.bindTextures(entryUnit.getEnum(), entryDepthUnit.getEnum(), GL_NEAREST);
     LGL_ERROR;
 
     // bind exit params
-    exitPort_.bindTextures(exitUnit.getEnum(), exitDepthUnit.getEnum());
+    exitPort_.bindTextures(exitUnit.getEnum(), exitDepthUnit.getEnum(), GL_NEAREST);
     LGL_ERROR;
 
 
@@ -251,7 +272,7 @@ void ShadowRaycaster::renderVolume(TextureUnit* lightUnit) {
 
     // set common uniforms used by all shaders
     tgt::Camera cam = camera_.get();
-    setGlobalShaderParameters(raycastPrg, &cam);
+    setGlobalShaderParameters(raycastPrg, &cam, renderSize);
     // bind the volumes and pass the necessary information to the shader
     bindVolumes(raycastPrg, volumeTextures, &cam, lightPosition_.get());
 
@@ -363,7 +384,7 @@ LightVolumeGenerator::LightVolumeGenerator()
     addProperty(recomputeOnEveryFrame_);
     addProperty(camera_);
 
-    currentVolumeHandle_ = 0;
+    currentVolume_ = 0;
 }
 
 LightVolumeGenerator::~LightVolumeGenerator() {
@@ -396,7 +417,7 @@ void LightVolumeGenerator::initialize() throw (tgt::Exception) {
         LERROR("Failed to initialize!");
         throw VoreenException(getClassName() + ": Failed to initialize!");
     }
-    initialized_ = true;
+    processorState_ = PROCESSOR_STATE_NOT_READY;
 }
 
 void LightVolumeGenerator::deinitialize() throw (tgt::Exception) {
@@ -525,9 +546,9 @@ void LightVolumeGenerator::renderSlice(int sliceNumber) {
         coords3D[i][indexing_.z] = coordZ;
 
         // scale according to cubesize
-        //tgt::vec3 cubeSize = currentVolumeHandle_->getCubeSize();
+        //tgt::vec3 cubeSize = currentVolume_->getCubeSize();
         //coords3D[i] = (coords3D[i] + 1.0f) / 2.f;
-        //coords3D[i] = currentVolumeHandle_->getTextureToWorldMatrix(false) * coords3D[i];
+        //coords3D[i] = currentVolume_->getTextureToWorldMatrix(false) * coords3D[i];
         //coords3D[i] = coords3D[i] * cubeSize / 2.f;
         coords3D[i] = coords3D[i];
     }
@@ -547,7 +568,7 @@ void LightVolumeGenerator::renderSlice(int sliceNumber) {
 }
 
 void LightVolumeGenerator::setVolumeHandle(const VolumeBase* handle) {
-    currentVolumeHandle_ = handle;
+    currentVolume_ = handle;
 
     cubeFace_ = -1;
     cubeFaceBlend_ = -1;
@@ -582,7 +603,7 @@ void LightVolumeGenerator::setLightPosition(FloatVec4Property* lightPosition) {
     lightPositionBlend_ = lightPosition->get().xyz();
 
     // return if no volume is present
-    if (!currentVolumeHandle_ || !currentVolumeHandle_->getRepresentation<VolumeRAM>())
+    if (!currentVolume_ || !currentVolume_->getRepresentation<VolumeRAM>())
         return;
 
     // return if viewpoint is camera
@@ -608,7 +629,7 @@ void LightVolumeGenerator::cameraChanged() {
     // return if viewpoint is lightsource
     //if (viewpointModes_->getValue() == LIGHTSOURCE_POSITION)
       //  return;
-    if (!currentVolumeHandle_)
+    if (!currentVolume_)
         return;
 
     verifyCubeFaces();
@@ -669,7 +690,7 @@ void LightVolumeGenerator::verifyCubeFaces() {
 }
 
 int LightVolumeGenerator::calculateCubeFace(bool calculateSecondBest) {
-    std::vector<tgt::vec3> cubeVertices = currentVolumeHandle_->getCubeVertices();
+    std::vector<tgt::vec3> cubeVertices = currentVolume_->getCubeVertices();
     int index[24] = { 0, 3, 4, 7,  // left
                       1, 2, 5, 6,  // right
                       0, 1, 4, 5,  // bottom
@@ -715,7 +736,7 @@ int LightVolumeGenerator::calculateCubeFace(bool calculateSecondBest) {
 }
 
 void LightVolumeGenerator::verifyLightPositions() {
-    if (!currentVolumeHandle_ || !currentVolumeHandle_->getRepresentation<VolumeRAM>())
+    if (!currentVolume_ || !currentVolume_->getRepresentation<VolumeRAM>())
         return;
 
     // return if viewpoint is camera
@@ -727,7 +748,7 @@ void LightVolumeGenerator::verifyLightPositions() {
     tgt::vec4 pos = lightPosition_.get();
     tgt::vec3* cubeVertices = new tgt::vec3[8];
     for (int i=0; i<8; i++) {
-        cubeVertices[i] = tgt::vec3(currentVolumeHandle_->getCubeVertices()[i]);
+        cubeVertices[i] = tgt::vec3(currentVolume_->getCubeVertices()[i]);
     }
     for (int i=0; i<4; i++)
         std::swap(cubeVertices[i].z, cubeVertices[i+4].z);
@@ -761,7 +782,7 @@ void LightVolumeGenerator::setupTextures() {
         fbo_->detachTexture(GL_COLOR_ATTACHMENT0_EXT);
         delete shadowTexture_;
     }
-    tgt::ivec3 dims = currentVolumeHandle_->getDimensions();
+    tgt::ivec3 dims = currentVolume_->getDimensions();
     shadowTexture_ = new tgt::Texture(0, dims, GL_RGBA, GL_RGBA16, GL_FLOAT, tgt::Texture::NEAREST);
     shadowTexture_->setWrapping(tgt::Texture::CLAMP_TO_BORDER);
     shadowTexture_->uploadTexture();
@@ -884,7 +905,7 @@ void LightVolumeGenerator::createBlendTexture(TextureUnit* blendUnit) {
     // add main volume
     TextureUnit volUnit;
     volumeTextures.push_back(VolumeStruct(
-        currentVolumeHandle_,
+        currentVolume_,
         &volUnit,
         "volume_","volumeStruct_")
     );
@@ -1132,7 +1153,7 @@ void LightVolumeGenerator::updateTextureDimensions() {
         signFactor_ =  1.f;
 
     // set new texture dimensions, so that we are looping over z coordinate
-    tgt::ivec3 datasetDimension = currentVolumeHandle_->getDimensions();
+    tgt::ivec3 datasetDimension = currentVolume_->getDimensions();
     datasetDimension.x = static_cast<int>(scalingMode_.getValue() * static_cast<float>(datasetDimension.x));
     datasetDimension.y = static_cast<int>(scalingMode_.getValue() * static_cast<float>(datasetDimension.y));
     datasetDimension.z = static_cast<int>(scalingMode_.getValue() * static_cast<float>(datasetDimension.z));

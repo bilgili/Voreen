@@ -6,12 +6,12 @@ import math
 
 # --- configuration ---
 frames    = 100
-canvasDim = (512, 512)
+canvasDim = (1024, 768)
 
 processor  = "SingleVolumeRaycaster"
 cameraProp = "camera"
 canvas     = "Canvas"
-initCam    = ((0.0, 0.0, 3.5), (0.0, 0.0, 0.0), (0.0, 1.0, 0.0))
+initCam    = ((0.0, 0.0, 2.75), (0.0, 0.0, 0.0), (0.0, 1.0, 0.0))
 rotAxis    = (0.0, 1.0, 0.0)
 # --- configuration ---
 

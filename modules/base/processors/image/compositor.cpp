@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -90,7 +90,26 @@ void Compositor::deinitialize() throw (tgt::Exception) {
 }
 
 bool Compositor::isReady() const {
-    bool ready = inport0_.isReady();
+    bool ready = false;
+    if((compositingMode_.get() == "depth-test") || (compositingMode_.get() == "alpha-compositing") ||
+       (compositingMode_.get() == "alpha-blending") || (compositingMode_.get() == "alpha-blending-b-over-a") ||
+       (compositingMode_.get() == "weighted-average") || (compositingMode_.get() == "maximum-alpha") ||
+       (compositingMode_.get() == "difference") || (compositingMode_.get() == "add") ||
+       (compositingMode_.get() == "first-has-priority") || (compositingMode_.get() == "second-has-priority")) {
+        if(pipeThroughIfSecondNotReady_.get())
+            ready = inport0_.isReady() || (inport0_.isReady() && inport1_.isReady());
+        else
+            ready = (inport0_.isReady() && inport1_.isReady());
+    } else if(compositingMode_.get() == "take-first") {
+        ready = inport0_.isReady();
+    } else if(compositingMode_.get() == "take-second") {
+        if(pipeThroughIfSecondNotReady_.get())
+            ready = inport0_.isReady() || inport1_.isReady();
+        else
+            ready = inport1_.isReady();
+    } else if(compositingMode_.get() == "take-second-if-ready") {
+        ready = inport0_.isReady() || inport1_.isReady();
+    }
     return ready;
 }
 
@@ -117,8 +136,6 @@ void Compositor::process() {
         LGL_ERROR;
         return;
     }
-    else if(!inport1_.isReady())
-        return;
 
     if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
         compile();

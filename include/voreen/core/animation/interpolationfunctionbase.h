@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -30,34 +30,27 @@
 #include "tgt/tgt_gl.h"
 #include "tgt/vector.h"
 #include "voreen/core/voreencoreapi.h"
+#include "voreen/core/voreenobject.h"
 
 namespace voreen {
 
-/**
- * This class is an non-templated interface for interpolation functions.
- */
-class VRN_CORE_API  InterpolationFunctionBase {
+/// This class is an non-templated interface for interpolation functions.
+class VRN_CORE_API InterpolationFunctionBase : public VoreenSerializableObject {
 public:
     virtual ~InterpolationFunctionBase() {}
 
-    /**
-     * Returns the name of the interpolation.
-     */
-    virtual std::string getName() const = 0;
+    /// Returns the category of the interpolation.
+    virtual std::string getCategory() const = 0;
 
-    /**
-     * Returns the identifier of the interpolation.
-     */
-    virtual std::string getIdentifier() const = 0;
+    /// Returns the name of the interpolation to be displayed in the GUI.
+    virtual std::string getGuiName() const = 0;
 
-    /**
-     * Returns the mode of the interpolation.
-     */
-    virtual std::string getMode() const = 0;
+    virtual std::string getClassName() const = 0;
+
+    virtual InterpolationFunctionBase* create() const = 0;
+    //virtual VoreenSerializableObject* create() const = 0;
 
 protected:
-    static GLubyte* convertTextureToRGBA(tgt::ivec3 dim, GLubyte* textur, GLuint inputformat);
-    static GLubyte* changeTextureDimension(tgt::ivec3 in_dim, tgt::ivec3 out_dim, GLubyte* indata);
 };
 
 } // namespace voreen

@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -57,14 +57,39 @@ void PreIntegrationTable::computeTable() {
     if (!transFunc_)
         return;
 
-    // retrieve tf texture
-    const tgt::Texture* tfTexture = const_cast<TransFunc1DKeys*>(transFunc_)->getTexture();
-    tfTexture->downloadTexture();
+    //buffer for TF values
+    tgt::vec4* tfBuffer = new tgt::vec4[resolution_];
+
+    int front_end = tgt::iround(transFunc_->getThresholds().x * resolution_);
+    int back_start = tgt::iround(transFunc_->getThresholds().y * resolution_);
+    //all values before front_end and after back_start are set to zero
+    //all other values remain the same
+    for (int i = 0; i < front_end; ++i)
+        tfBuffer[i] = tgt::vec4(0.f);
+
+    for (int i = front_end; i < back_start; ++i) {
+        //fetch current value from TF
+        float intensity = static_cast<float>(i) / static_cast<float>(resolution_ - 1);
+        tgt::vec4 value = tgt::vec4(transFunc_->getMappingForValue(intensity)) / 255.f;
+        tfBuffer[i] = value;
+    }
+
+    for (int i = back_start; i < static_cast<int>(resolution_); ++i)
+        tfBuffer[i] = tgt::vec4(0.f);
 
     if(!useIntegral_) { // Correct (but slow) calculation of PI-table:
+//do not use OpenMP for parallelizing computation of pre-integration table as it actually reduces performance :/
+//#ifndef VRN_MODULE_OPENMP
         int lookupindex = 0;
+//#endif
         for (int sb = 0; sb < static_cast<int>(resolution_); ++sb) {
+//#ifdef VRN_MODULE_OPENMP
+//#pragma omp parallel for schedule(dynamic) default(shared)
+//#endif
             for (int sf = 0; sf < static_cast<int>(resolution_); ++sf) {
+//#ifdef VRN_MODULE_OPENMP
+//                int lookupindex = sb * resolution_ + sf;
+//#endif
                 if (sb != sf) {
                     float scale = 1.0f / fabs(static_cast<float>(sf - sb));
 
@@ -74,8 +99,9 @@ void PreIntegrationTable::computeTable() {
 
                     vec4 result = vec4(0.0f);
                     for(int s = sb; (incr == 1 ? s<=sf : s>=sf); s += incr) {
-                        float nIndex = static_cast<float>(s) / static_cast<float>(resolution_ - 1);
-                        vec4 curCol = apply1DTF(tfTexture,nIndex);
+                        /*float nIndex = static_cast<float>(s) / static_cast<float>(resolution_ - 1);
+                        vec4 curCol = apply1DTF(nIndex);*/
+                        vec4 curCol = tfBuffer[s];
 
                         if (curCol.a > 0.0f) {
                             // apply opacity correction to accomodate for variable sampling intervals
@@ -93,11 +119,13 @@ void PreIntegrationTable::computeTable() {
                     result.a = 1.f - pow(1.f - result.a, 1.0f / (samplingStepSize_ * 200.0f));
                     table_[lookupindex] = tgt::clamp(result, 0.f, 1.f);
                 } else {
-                    float nIndex = static_cast<float>(sf) / static_cast<float>(resolution_ - 1);
-                    table_[lookupindex] = tgt::clamp(apply1DTF(tfTexture,nIndex), 0.f, 1.f);
+                    /*float nIndex = static_cast<float>(sf) / static_cast<float>(resolution_ - 1);
+                    table_[lookupindex] = tgt::clamp(apply1DTF(nIndex), 0.f, 1.f);*/
+                    table_[lookupindex] = tgt::clamp(tfBuffer[sf], 0.f, 1.f);
                 }
-
+//#ifndef VRN_MODULE_OPENMP
                 lookupindex++;
+//#endif
             }
         }
     }
@@ -110,8 +138,10 @@ void PreIntegrationTable::computeTable() {
 
         for (int i = 0; i < static_cast<int>(resolution_); ++i) {
             //fetch current value from TF
-            float nIndex = static_cast<float>(i) / static_cast<float>(resolution_ - 1);
-            vec4 curCol = apply1DTF(tfTexture,nIndex);
+            /*float nIndex = static_cast<float>(i) / static_cast<float>(resolution_ - 1);
+            vec4 curCol = apply1DTF(nIndex);*/
+            vec4 curCol = tfBuffer[i];
+
             //calculate new integral function
             if (curCol.a > 0.0f) {
                 //actual compositing
@@ -121,11 +151,19 @@ void PreIntegrationTable::computeTable() {
             intFunc[i] = accumResult;
         }
         float factor;
+
+//do not use OpenMP for parallelizing computation of pre-integration table as it actually reduces performance :/
+//#ifndef VRN_MODULE_OPENMP
         int lookupindex = 0;
+//#endif
+        int endIndex = static_cast<int>(resolution_);
 
         // compute look-up table from integral functions
-        for (int sb = 0; sb < static_cast<int>(resolution_); ++sb)
-            for (int sf = 0; sf < static_cast<int>(resolution_); ++sf) {
+        for (int sb = 0; sb < endIndex; ++sb)
+//#ifdef VRN_MODULE_OPENMP
+//#pragma omp parallel for schedule(dynamic) default(shared)
+//#endif
+            for (int sf = 0; sf < endIndex; ++sf) {
 
                 int smin = std::min(sb, sf);
                 int smax = std::max(sb, sf);
@@ -140,15 +178,22 @@ void PreIntegrationTable::computeTable() {
                     col.xyz() /= std::max(col.a, 0.001f);
                     col.a = 1.f - pow(1.f - col.a, 1.0f / (samplingStepSize_ * 200.0f));
                 } else {
-                    float nIndex = static_cast<float>(smin) / static_cast<float>(resolution_ - 1);
-                    col = apply1DTF(tfTexture,nIndex);
+                    /*float nIndex = static_cast<float>(smin) / static_cast<float>(resolution_ - 1);
+                    col = apply1DTF(nIndex);*/
+                    col = tfBuffer[smin];
                 }
-
+//#ifdef VRN_MODULE_OPENMP
+//                int lookupindex = sb * resolution_ + sf;
+//#endif
                 table_[lookupindex] = tgt::clamp(col, 0.f, 1.f);
+//#ifndef VRN_MODULE_OPENMP
                 lookupindex++;
+//#endif
             }
         delete[] intFunc;
     }
+
+    delete[] tfBuffer;
 }
 
 tgt::vec4 PreIntegrationTable::classify(float fs, float fe) const {
@@ -196,13 +241,6 @@ bool PreIntegrationTable::usesIntegral() const {
 
 size_t PreIntegrationTable::getDimension() const {
     return resolution_;
-}
-
-tgt::vec4 PreIntegrationTable::apply1DTF(const tgt::Texture* tfTexture, float intensity) {
-    int widthMinusOne = tfTexture->getWidth()-1;
-    tgt::vec4 value = tgt::vec4(tfTexture->texel<tgt::col4>(static_cast<size_t>(tgt::clamp(tgt::iround(intensity * widthMinusOne), 0, widthMinusOne)))) / 255.0f;
-
-    return value;
 }
 
 } //namespace

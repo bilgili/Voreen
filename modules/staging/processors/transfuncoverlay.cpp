@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -220,7 +220,7 @@ void TransFuncOverlay::process() {
                     glEnable(GL_TEXTURE_2D);
                 else
                     glEnable(GL_TEXTURE_1D);
-                
+
                 glEnable(GL_BLEND);
                     glBlendColor(0.0f,0.0f,0.0f,overlayOpacity_.get());
                     glBlendFuncSeparate(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO,GL_CONSTANT_ALPHA);

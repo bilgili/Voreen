@@ -1,12 +1,15 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="" readonly="true">
-        <ProcessorNetwork version="13">
+        <ProcessorNetwork version="15">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
                         <item type="SliceViewer" ref="ref1" />
                     </values>
+                </MetaItem>
+                <MetaItem name="ZoomCenter" type="Vec2MetaData">
+                    <value x="-61" y="-221" />
                 </MetaItem>
             </MetaData>
             <Processors>
@@ -15,13 +18,14 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-117" y="-360" />
                     </MetaData>
                     <Properties>
-                        <Property name="volumeURL" url="../volumes/walnut.vvd?preferredReader=VvdVolumeReader" />
+                        <Property mapKey="volumeInfo" name="volumeInfo" />
+                        <Property mapKey="volumeURL" name="volumeURL" url="../volumes/walnut.vvd?preferredReader=VvdVolumeReader" />
                     </Properties>
                     <Inports />
                     <Outports>
-                        <Port name="volumehandle.volumehandle">
+                        <Port name="volumehandle.volumehandle" direction="0" portID="volumehandle.volumehandle" guiName="Volume Output" allowMultipleConnections="true" invalidationLevel="1">
                             <Properties>
-                                <Property name="blockEvents" value="false" />
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
                             </Properties>
                         </Port>
                     </Outports>
@@ -32,38 +36,38 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-111" y="-253" />
                     </MetaData>
                     <Properties>
-                        <Property name="boundaryColor">
+                        <Property mapKey="boundaryColor" name="boundaryColor">
                             <value x="1" y="1" z="1" w="1" />
                         </Property>
-                        <Property name="distanceLegendColor">
+                        <Property mapKey="distanceLegendColor" name="distanceLegendColor">
                             <value x="1" y="1" z="1" w="1" />
                         </Property>
-                        <Property name="distanceLegendPos">
+                        <Property mapKey="distanceLegendPos" name="distanceLegendPos">
                             <value x="0.05" y="0.1" />
                         </Property>
-                        <Property name="fontSize" value="14" />
-                        <Property name="mouseEvent.Shift" lod="1" enabled="true" mouseAction="3" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
-                        <Property name="mouseEvent.cursorPositionMove" lod="1" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="true" />
-                        <Property name="mouseEvent.cursorPositionPress" lod="1" enabled="true" mouseAction="19" mouseButtons="3" keyCode="0" modifier="0" shareEvents="true" />
-                        <Property name="numSlicesPerCol" value="1" />
-                        <Property name="numSlicesPerRow" value="1" />
-                        <Property name="pickingMatrix">
+                        <Property mapKey="fontSize" name="fontSize" value="14" />
+                        <Property mapKey="mouseEvent.Shift" name="mouseEvent.Shift" lod="1" enabled="true" mouseAction="3" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
+                        <Property mapKey="mouseEvent.cursorPositionMove" name="mouseEvent.cursorPositionMove" lod="1" enabled="true" mouseAction="1" mouseButtons="0" keyCode="0" modifier="0" shareEvents="true" />
+                        <Property mapKey="mouseEvent.cursorPositionPress" name="mouseEvent.cursorPositionPress" lod="1" enabled="true" mouseAction="19" mouseButtons="3" keyCode="0" modifier="0" shareEvents="true" />
+                        <Property mapKey="numSlicesPerCol" name="numSlicesPerCol" value="1" />
+                        <Property mapKey="numSlicesPerRow" name="numSlicesPerRow" value="1" />
+                        <Property mapKey="pickingMatrix" name="pickingMatrix">
                             <value.row0 x="1" y="0" z="0" w="0" />
                             <value.row1 x="0" y="1" z="0" w="0" />
                             <value.row2 x="0" y="0" z="1" w="0" />
                             <value.row3 x="0" y="0" z="0" w="1" />
                         </Property>
-                        <Property name="renderDistanceLegend" value="false" />
-                        <Property name="renderSliceBoundaries" value="true" />
-                        <Property name="showCursorInformation" value="onMove" />
-                        <Property name="showSliceNumber" value="true" />
-                        <Property name="sliceAlignmentProp" value="xy-plane" />
-                        <Property name="sliceIndex" value="53" />
-                        <Property name="sliceX" value="27" />
-                        <Property name="sliceY" value="92" />
-                        <Property name="sliceZ" value="53" />
-                        <Property name="textureMode" value="3d-texture" />
-                        <Property name="transferFunction" AlwaysFitDomain="false">
+                        <Property mapKey="renderDistanceLegend" name="renderDistanceLegend" value="false" />
+                        <Property mapKey="renderSliceBoundaries" name="renderSliceBoundaries" value="true" />
+                        <Property mapKey="showCursorInformation" name="showCursorInformation" value="onMove" />
+                        <Property mapKey="showSliceNumber" name="showSliceNumber" value="true" />
+                        <Property mapKey="sliceAlignmentProp" name="sliceAlignmentProp" value="xy-plane" />
+                        <Property mapKey="sliceIndex" name="sliceIndex" value="53" />
+                        <Property mapKey="sliceX" name="sliceX" value="27" />
+                        <Property mapKey="sliceY" name="sliceY" value="92" />
+                        <Property mapKey="sliceZ" name="sliceZ" value="53" />
+                        <Property mapKey="textureMode" name="textureMode" value="3d-texture" />
+                        <Property mapKey="transferFunction" name="transferFunction" AlwaysFitDomain="false">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
@@ -79,25 +83,25 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property name="voxelOffset">
+                        <Property mapKey="voxelOffset" name="voxelOffset">
                             <value x="0" y="0" />
                         </Property>
-                        <Property name="zoomFactor" value="1" />
+                        <Property mapKey="zoomFactor" name="zoomFactor" value="1" />
                     </Properties>
                     <Inports>
-                        <Port name="volumehandle.volumehandle">
+                        <Port name="volumehandle.volumehandle" direction="1" portID="volumehandle.volumehandle" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
                             <Properties>
-                                <Property name="textureBorderIntensity" value="0" />
-                                <Property name="textureClampMode_" value="clamp-to-edge" />
-                                <Property name="textureFilterMode_" value="linear" />
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
                             </Properties>
                         </Port>
                     </Inports>
                     <Outports>
-                        <Port name="image.outport">
+                        <Port name="image.outport" direction="0" portID="image.outport" guiName="Image Output" allowMultipleConnections="true" invalidationLevel="1">
                             <Properties>
-                                <Property name="blockEvents" value="false" />
-                                <Property name="image.outport.renderSizeReceive" id="ref4">
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                                <Property mapKey="image.outport.renderSizeReceive" name="image.outport.renderSizeReceive" id="ref4">
                                     <value x="450" y="365" />
                                 </Property>
                             </Properties>
@@ -106,12 +110,12 @@
                     <InteractionHandlers>
                         <Handler name="mouseWheelHandler">
                             <Properties>
-                                <Property name="mouseWheelHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="98" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="mouseWheelHandler" name="mouseWheelHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="98" keyCode="0" modifier="0" shareEvents="false" />
                             </Properties>
                         </Handler>
                         <Handler name="zoomHandler">
                             <Properties>
-                                <Property name="zoomHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="2" keyCode="0" modifier="2" shareEvents="false" />
+                                <Property mapKey="zoomHandler" name="zoomHandler" lod="1" enabled="true" mouseAction="23" mouseButtons="2" keyCode="0" modifier="2" shareEvents="false" />
                             </Properties>
                         </Handler>
                     </InteractionHandlers>
@@ -129,18 +133,18 @@
                         </MetaItem>
                     </MetaData>
                     <Properties>
-                        <Property name="canvasSize">
+                        <Property mapKey="canvasSize" name="canvasSize">
                             <value x="450" y="365" />
                         </Property>
-                        <Property name="saveScreenshot" />
-                        <Property name="screenshotFilename" noPathSet="true" value="" />
-                        <Property name="showCursor" value="true" />
-                        <Property name="showFullScreen" value="false" />
+                        <Property mapKey="saveScreenshot" name="saveScreenshot" />
+                        <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="true" value="" />
+                        <Property mapKey="showCursor" name="showCursor" value="true" />
+                        <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
                     <Inports>
-                        <Port name="image.input">
+                        <Port name="image.input" direction="1" portID="image.input" guiName="Image Input" allowMultipleConnections="false" invalidationLevel="1">
                             <Properties>
-                                <Property name="image.input.renderSizeOrigin" id="ref3">
+                                <Property mapKey="image.input.renderSizeOrigin" name="image.input.renderSizeOrigin" id="ref3">
                                     <value x="450" y="365" />
                                 </Property>
                             </Properties>

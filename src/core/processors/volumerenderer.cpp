@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -41,7 +41,7 @@ const std::string VolumeRenderer::loggerCat_("voreen.VolumeRenderer");
 VolumeRenderer::VolumeRenderer()
     : RenderProcessor()
     , lightPosition_("lightPosition", "Light Source Position", tgt::vec4(2.3f, 1.5f, 1.5f, 1.f),
-                     tgt::vec4(-10), tgt::vec4(10))
+                     tgt::vec4(-10000.f), tgt::vec4(10000.f))
     , lightAmbient_("lightAmbient", "Ambient Light", tgt::vec4(0.4f, 0.4f, 0.4f, 1.f))
     , lightDiffuse_("lightDiffuse", "Diffuse Light", tgt::vec4(0.8f, 0.8f, 0.8f, 1.f))
     , lightSpecular_("lightSpecular", "Specular Light", tgt::vec4(0.6f, 0.6f, 0.6f, 1.f))
@@ -60,8 +60,8 @@ VolumeRenderer::VolumeRenderer()
     materialDiffuse_.setViews(Property::COLOR);
 }
 
-void VolumeRenderer::setGlobalShaderParameters(tgt::Shader* shader, const tgt::Camera* camera) {
-    RenderProcessor::setGlobalShaderParameters(shader, camera);
+void VolumeRenderer::setGlobalShaderParameters(tgt::Shader* shader, const tgt::Camera* camera, tgt::ivec2 screenDim) {
+    RenderProcessor::setGlobalShaderParameters(shader, camera, screenDim);
 
     shader->setIgnoreUniformLocationError(true);
 

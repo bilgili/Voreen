@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -26,7 +26,7 @@
 #ifndef VRN_PROPERTYOWNER_H
 #define VRN_PROPERTYOWNER_H
 
-#include "voreen/core/voreencoreapi.h"
+#include "voreen/core/voreenobject.h"
 #include "voreen/core/utils/observer.h"
 #include "voreen/core/io/serialization/serialization.h"
 
@@ -45,19 +45,15 @@ public:
 #ifdef DLL_TEMPLATE_INST
 template class VRN_CORE_API Observable<PropertyOwnerObserver>;
 #endif
-class VRN_CORE_API PropertyOwner : public AbstractSerializable, public Observable<PropertyOwnerObserver>  {
+class VRN_CORE_API PropertyOwner : public VoreenSerializableObject, public Observable<PropertyOwnerObserver>  {
 
     friend class Property;
 
 public:
     PropertyOwner();
-    virtual ~PropertyOwner();
+    PropertyOwner(const std::string& id, const std::string& guiName);
 
-    /**
-     * Returns the name of the PropertyOwner instance.
-     * This is supposed to be presentable to the user.
-     */
-    virtual std::string getName() const = 0;
+    virtual ~PropertyOwner();
 
     /**
      * Returns the properties assigned to this owner.

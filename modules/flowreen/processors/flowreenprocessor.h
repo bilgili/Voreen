@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -54,35 +54,35 @@ protected:
      * otherwise NULL will be returned.
      * Besides, this method assigns the passed Volume* (usually obtained from
      * a LocalPortMapping structure within a processor's proces() method) as the
-     * current one in the local attribute currentVolumeHandle_.
+     * current one in the local attribute currentVolume_.
      * The passed bool indicates, whether the passed Volume differs from the
-     * one being held previously by currentVolumeHandle_.
+     * one being held previously by currentVolume_.
      */
     template<class FlowVolume>
     const FlowVolume* checkVolumeHandleForFlowData(const VolumeBase* const candidate, bool& changed) {
 
-        if (currentVolumeHandle_ != 0) {
+        if (currentVolume_ != 0) {
             // If the given Volume* is not identical to the current one,
             // (that is especially if handle is 0!), set the given one as current.
             //
-            if (currentVolumeHandle_ != candidate) {
-                currentVolumeHandle_ = candidate;
+            if (currentVolume_ != candidate) {
+                currentVolume_ = candidate;
                 changed = true;
             } else {
                 changed = false;
             }
         } else {
-            currentVolumeHandle_ = candidate;
+            currentVolume_ = candidate;
             changed = true;
         }
 
         // As the current handle might have changed above and it may be NULL, perform
         // the NULL-check a second time and return the result.
         //
-        if (!currentVolumeHandle_)
+        if (!currentVolume_)
             return 0;
 
-        return dynamic_cast<const FlowVolume*>(currentVolumeHandle_->getRepresentation<VolumeRAM>());
+        return dynamic_cast<const FlowVolume*>(currentVolume_->getRepresentation<VolumeRAM>());
     }
 
     std::vector<tgt::vec3> getTransformedCircle(const tgt::mat4& transformation) const;
@@ -125,7 +125,7 @@ protected:
     FloatVec4Property boundingBoxColorProp_;
     BoolProperty useCoordinateAxisProp_;
 
-    const VolumeBase* currentVolumeHandle_;
+    const VolumeBase* currentVolume_;
     tgt::svec3 flowDimensions_;
 
 private:

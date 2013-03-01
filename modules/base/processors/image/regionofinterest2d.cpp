@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -79,6 +79,9 @@ namespace {
 }
 
 //---------------------------------------------------------------------------
+
+
+const std::string RegionOfInterest2D::RegionOfInterestGeometry::loggerCat_("voreen.RegionOfInterest2D.RegionOfInterestGeometry");
 
 RegionOfInterest2D::RegionOfInterestGeometry::RegionOfInterestGeometry()
     : Geometry()
@@ -316,20 +319,6 @@ void RegionOfInterest2D::RegionOfInterestGeometry::deserialize(XmlDeserializer& 
 
 Geometry* RegionOfInterest2D::RegionOfInterestGeometry::create() const {
     return new RegionOfInterestGeometry();
-}
-
-const std::string RegionOfInterest2D::RegionOfInterestGeometryFactory::getTypeString(const std::type_info& type) const {
-    if (type == typeid(RegionOfInterestGeometry))
-        return "RegionOfInterestGeometry";
-    else
-        return "";
-}
-
-Serializable* RegionOfInterest2D::RegionOfInterestGeometryFactory::createType(const std::string& typeString) {
-    if (typeString == "RegionOfInterestGeometry")
-        return new RegionOfInterestGeometry();
-    else
-        return 0;
 }
 
 //---------------------------------------------------------------------------
@@ -592,7 +581,7 @@ void RegionOfInterest2D::renderROIs(RoiMode roiMode) {
 
         if (roiMode == PICKING_MODE) {
             idManager_.clearRegisteredObjects();
-            idManager_.activateTarget(getName());
+            idManager_.activateTarget(getID());
             idManager_.clearTarget();
             LGL_ERROR;
         }

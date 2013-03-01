@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -54,6 +54,7 @@ public:
     virtual void processorWidgetDeleted(const Processor* processor) = 0;
 
     virtual void portsChanged(const Processor* processor) = 0;
+    virtual void stateChanged(const Processor* /*processor*/) {};
 };
 
 #ifdef DLL_TEMPLATE_INST
@@ -70,6 +71,7 @@ class VRN_CORE_API Processor : public PropertyOwner, public tgt::EventListener, 
     friend class ProcessorFactory;
     friend class Port;
     friend class ProcessorWidget;
+    template <class T> friend class ProcessorBackgroundThread;
 
 public:
     /**
@@ -80,6 +82,7 @@ public:
         VALID = 0,
         INVALID_RESULT = 1,         ///< invalid rendering, volumes => call process()
         INVALID_PARAMETERS = 10,    ///< invalid uniforms => set uniforms
+        INVALID_PATH = 15,          ///< path has been changed => update if necessary
         INVALID_PROGRAM = 20,       ///< invalid shaders, CUDA/OpenCL program => rebuild program
         INVALID_PORTS = 30,         ///< ports added/removed  => check connections, re-evaluate network
         INVALID_PROCESSOR = 40      ///< invalid python/matlab processor => re-create processor, re-connect ports (if possible)
@@ -97,27 +100,23 @@ public:
         CODE_STATE_STABLE
     };
 
+     /**
+     * @brief Identifies the state of this processor.
+     */
+    enum ProcessorState {
+        PROCESSOR_STATE_NOT_INITIALIZED,
+        PROCESSOR_STATE_NOT_READY,
+        PROCESSOR_STATE_READY
+    };
+
     Processor();
 
     virtual ~Processor();
 
     /**
-     * Virtual constructor: supposed to return an instance of the concrete Processor class.
-     */
-    virtual Processor* create() const = 0;
-
-    /**
      * Returns a copy of the processor.
      */
     virtual Processor* clone() const;
-
-    /**
-     * Returns the name of this class as a string.
-     * Necessary due to the lack of code reflection in C++.
-     *
-     * This method is expected to be re-implemented by each concrete subclass.
-     */
-    virtual std::string getClassName() const = 0;
 
     /**
      * Returns the general category the processor belongs to.
@@ -146,11 +145,11 @@ public:
     virtual bool isUtility() const;
 
     /**
-     * Returns the name of this processor instance.
+     * Sets the guiname of this processor instance.
      *
-     * @see PropertyOwner::getName
+     * @see PropertyOwner::setGuiName
      */
-    std::string getName() const;
+    void setGuiName();
 
     /**
      * Returns a string identifying the name of the module
@@ -208,7 +207,7 @@ public:
      *
      * @see getPorts
      */
-    const std::vector<Port*>& getInports() const;
+    virtual const std::vector<Port*>& getInports() const;
 
     /**
      * @brief Returns the processor's data flow outports.
@@ -216,32 +215,32 @@ public:
      *
      * @see getPorts
      */
-    const std::vector<Port*>& getOutports() const;
+    virtual const std::vector<Port*>& getOutports() const;
 
     /**
      * Returns the processor's co-processor inports.
      *
      * @see getPorts
      */
-    const std::vector<CoProcessorPort*>& getCoProcessorInports() const;
+    virtual const std::vector<CoProcessorPort*>& getCoProcessorInports() const;
 
     /**
      * Returns the processor's co-processor outports.
      *
      * @see getPorts
      */
-    const std::vector<CoProcessorPort*>& getCoProcessorOutports() const;
+    virtual const std::vector<CoProcessorPort*>& getCoProcessorOutports() const;
 
     /**
      * Convenience function collecting all of the processor's ports
      * and returning them in a single vector.
      */
-    std::vector<Port*> getPorts() const;
+    virtual std::vector<Port*> getPorts() const;
 
     /**
      * Returns the port with the given name, or null if such a port does not exist.
      */
-    Port* getPort(const std::string& name) const;
+    virtual Port* getPort(const std::string& name) const;
 
     /**
      * Returns the performance record of this processor.
@@ -267,6 +266,13 @@ public:
      * @see EventProperty
      */
     virtual void onEvent(tgt::Event* e);
+
+    /**
+     * Same function as onEvent with an extra parameter for the port distributing the event.
+     * This is used in Aggregation.
+     * @see onEvent
+     */
+    virtual void onPortEvent(tgt::Event* e, Port* p);
 
     /**
      * Returns the event properties owned by the processor.
@@ -344,6 +350,7 @@ public:
     std::string getPropertyDescription(const std::string& propId) const;
     std::string getPortDescription(const std::string& portId) const;
 
+    ProcessorState getProcessorState() const;
 protected:
     /**
      * @brief This method is called by the NetworkEvaluator when the processor should be processed.
@@ -401,7 +408,14 @@ protected:
     /// Calls clear() on all outports
     virtual void clearOutports();
 
+    /**
+     * Lock the processor-mutex.
+     * The processor-mutex is locked by the NetworkEvaluator before beforeProcess() and unlocked after afterProcess().
+     * When changing the state (invalidation level etc.) of a processor from a background thread
+     * make sure to lock the mutex to avoid parallel changes by the process() method.
+     */
     void lockMutex();
+    /// @look lockMutex()
     void unlockMutex();
 
     /**
@@ -411,18 +425,18 @@ protected:
      * Added ports will not be deleted in the destructor. Ports should
      * be registered in the processor's constructor.
      */
-    void addPort(Port* port);
+    virtual void addPort(Port* port);
 
     /// @overload
-    void addPort(Port& port);
+    virtual void addPort(Port& port);
 
     /**
      * Unregister a port.
      */
-    void removePort(Port* port);
+    virtual void removePort(Port* port);
 
     /// @overload
-    void removePort(Port& port);
+    virtual void removePort(Port& port);
 
     /**
      * Initializes the passed port.
@@ -479,6 +493,7 @@ protected:
     virtual void toggleInteractionMode(bool interactionMode, void* source);
 
     virtual void notifyPortsChanged() const;
+    virtual void notifyStateChanged() const;
 
     virtual void setDescriptions() = 0;
 
@@ -486,7 +501,7 @@ protected:
     void setDescription(std::string desc);
 
     /// Set to true after successful initialization.
-    bool initialized_;
+    ProcessorState processorState_;
 
     /// Used for the detection of duplicate port names.
     std::map<std::string, Port*> portMap_;
@@ -505,18 +520,24 @@ protected:
      */
     ProgressBar* progressBar_;
 
-private:
+protected:
     /**
      * Sets the name of the module the processor's class belongs to.
-     * To be called by VoreenModule and ProcessorFactory.
+     * To be called by VoreenModule.
      */
     void setModuleName(const std::string& moduleName);
 
     /**
-     * Set a name for this processor instance. To be called
+     * Set the guiname for this processor instance. To be called
      * by the owning processor network.
      */
-    void setName(const std::string& name);
+    void setGuiName(const std::string& guiName);
+
+    /**
+     * Set the id for this processor instance. To be called
+     * by the owning processor network.
+     */
+    void setID(const std::string& id);
 
     /**
      * Causes the processor to give up ownership of its GUI widget without deleting it.
@@ -524,9 +545,6 @@ private:
      * from double freeing its widget.
      */
     void deregisterWidget();
-
-    /// Name of the Processor instance.
-    std::string name_;
 
     /// Name of the module the Processor's class belongs to.
     std::string moduleName_;

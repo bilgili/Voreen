@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -73,7 +73,7 @@ VoreenSettingsDialog::VoreenSettingsDialog(QWidget* parent)
     for(size_t i=0; i<modules.size(); i++) {
         if(!modules[i]->getProperties().empty()) {
             widgetLayout->addSpacerItem(new QSpacerItem(1, 8));
-            PropertyOwnerWidget* modulePow = new PropertyOwnerWidget(this, modules[i], "Module: " + modules[i]->getName(), true, false);
+            PropertyOwnerWidget* modulePow = new PropertyOwnerWidget(this, modules[i], "Module: " + modules[i]->getID(), true, false);
             widgetLayout->addWidget(modulePow);
         }
     }

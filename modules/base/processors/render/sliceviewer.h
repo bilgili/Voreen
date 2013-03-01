@@ -2,7 +2,7 @@
  *                                                                                 *
  * Voreen - The Volume Rendering Engine                                            *
  *                                                                                 *
- * Copyright (C) 2005-2012 University of Muenster, Germany.                        *
+ * Copyright (C) 2005-2013 University of Muenster, Germany.                        *
  * Visualization and Computer Graphics Group <http://viscg.uni-muenster.de>        *
  * For a list of authors please refer to the file "CREDITS.txt".                   *
  *                                                                                 *
@@ -40,7 +40,7 @@ namespace voreen {
  * Performs slice rendering of a single or multiple slices
  * along one of the three main axis of the volume.
  */
-class SliceViewer : public SliceRendererBase {
+class VRN_CORE_API SliceViewer : public SliceRendererBase {
 
 public:
     SliceViewer();
