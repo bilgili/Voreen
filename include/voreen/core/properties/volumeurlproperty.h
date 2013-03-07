@@ -49,7 +49,7 @@ public:
      * @param guiText text that is shown in the gui
      * @param value the initial url to assign
      */
-    VolumeURLProperty(const std::string& id, const std::string& guiText, const std::string& url = 0,
+    VolumeURLProperty(const std::string& id, const std::string& guiText, const std::string& url = "",
        int invalidationLevel = Processor::INVALID_PARAMETERS);
     VolumeURLProperty();
 

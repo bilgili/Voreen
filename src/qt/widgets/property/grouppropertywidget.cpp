@@ -76,13 +76,21 @@ void GroupPropertyWidget::addWidget(QPropertyWidget* widget, QWidget* label, con
     if(tabbed_) {
         QWidget* container = new QWidget(this);
         QGridLayout* layout = new QGridLayout(container);
-        layout->addWidget(label, 0, 0);
-        layout->addWidget(widget, 0, 1);
+        if(label) { //handle widgets without label (e.g. volumeurlproperty)
+            layout->addWidget(label, 0, 0);
+            layout->addWidget(widget, 0, 1);
+        } else {
+            layout->addWidget(widget, 0, 0, 1, 2);
+        }
         tabWidget_->addTab(container, labelName);
     }
     else {
-        gridLayout_->addWidget(label, gridLayout_->rowCount(), 0);
-        gridLayout_->addWidget(widget, gridLayout_->rowCount()-1, 1);
+        if(label) { //handle widgets without label (e.g. volumeurlproperty)
+            gridLayout_->addWidget(label, gridLayout_->rowCount(), 0);
+            gridLayout_->addWidget(widget, gridLayout_->rowCount()-1, 1);
+        } else {
+           gridLayout_->addWidget(widget, gridLayout_->rowCount(), 0, 1, 2);
+        }
     }
     propertyWidgets_.push_back(widget);
 }

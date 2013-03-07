@@ -71,7 +71,7 @@ struct Triangle {
  * Template argument is the vertex (not triangle!) type.
  */
 template <class V>
-class VRN_CORE_API TriangleMeshGeometry : public TriangleMeshGeometryBase {
+class TriangleMeshGeometry : public TriangleMeshGeometryBase {
 public:
     typedef Triangle<V> TriangleType;
     typedef V VertexType;

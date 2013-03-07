@@ -305,7 +305,7 @@ void ProcessorPropertiesWidget::instantiateWidgets() {
                             }
                         }
                         propertyGroupsMap_[prop->getGroupID()]->addWidget(w, w->getNameLabel(), QString::fromStdString(w->getPropertyGuiName()));
-                        w->getNameLabel()->setMinimumWidth(60);
+                        if(w->getNameLabel())w->getNameLabel()->setMinimumWidth(60);
                         gridLayout->addWidget(propertyGroupsMap_[prop->getGroupID()], rows, 0, 1, 2);
                         propertyGroupsMap_[prop->getGroupID()]->setVisible(prop->getOwner()->isPropertyGroupVisible(prop->getGroupID()));
                     }
@@ -362,7 +362,7 @@ void ProcessorPropertiesWidget::instantiateWidgets() {
                             }
                         }
                         propertyGroupsMap_[prop->getGroupID()]->addWidget(w, w->getNameLabel(), QString::fromStdString(w->getPropertyGuiName()));
-                        w->getNameLabel()->setMinimumWidth(60);
+                        if(w->getNameLabel())w->getNameLabel()->setMinimumWidth(60);
                         gridLayout->addWidget(propertyGroupsMap_[prop->getGroupID()], rows, 0, 1, 2);
                         propertyGroupsMap_[prop->getGroupID()]->setVisible(prop->getOwner()->isPropertyGroupVisible(prop->getGroupID()));
                     }
