@@ -69,6 +69,15 @@ std::vector<VolumeReader*> VolumeSerializer::getReaders(const std::string& url) 
 
     // check if a reader for the filename extension is available
     std::string extension = tgt::FileSystem::fileExtension(origin.getPath(), true);
+    
+    // construct extension also from last two filename components, e.g. ome.tiff
+    std::string doubleExtension;
+    std::vector<std::string> filenameSplit = strSplit(origin.getFilename(), ".");
+    if (filenameSplit.size() > 2)  
+        doubleExtension = filenameSplit.at(filenameSplit.size()-2) + "." + filenameSplit.at(filenameSplit.size()-1);
+
+    if (readersExtensionMap_.find(doubleExtension) != readersExtensionMap_.end()) //< prefer double extension over single extension
+        return readersExtensionMap_.find(doubleExtension)->second;
     if (readersExtensionMap_.find(extension) != readersExtensionMap_.end())
         return readersExtensionMap_.find(extension)->second;
     else

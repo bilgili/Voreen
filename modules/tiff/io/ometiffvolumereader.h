@@ -30,117 +30,89 @@
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 
 #include <tiffio.h>
-#include <IL/il.h>
 
-class TiXmlDocument;
+class TiXmlNode;
+class TiXmlElement;
 
 namespace voreen {
 
-class IOProgress;
-
 /**
- * Reader for microscopy data stored in OME-TIFF format.
+ * Reader for microscopy data stored in the OME-TIFF format.
+ *
+ * A specific channel and timestep in the 5D OME stack can be selected in the URL
+ * via the "channel" and "timestep" search parameters, respectively. 
+ * If no channel/timestep is selected, the entire stack is loaded and put out as volume list.
+ *
+ * Supported extensions:
+ * - ome.tiff
+ * - ome.tif
+ *
+ * Used protocol: ome-tiff
  *
  * @note Requires the tiff library.
  */
 class OMETiffVolumeReader : public VolumeReader {
 public:
-
-    enum OMEDataType {
-        OME_INT8,
-        OME_INT16,
-        OME_INT32,
-        OME_UINT8,
-        OME_UINT16,
-        OME_UINT32,
-        OME_FLOAT,
-        OME_UNKNOWN
-    };
-
     OMETiffVolumeReader(ProgressBar* progress = 0);
     ~OMETiffVolumeReader() {}
     virtual VolumeReader* create(ProgressBar* progress = 0) const;
 
-    virtual std::string getClassName() const   { return "OMETiffVolumeReader"; }
+    virtual std::string getClassName() const         { return "OMETiffVolumeReader";      }
     virtual std::string getFormatDescription() const { return "OME-TIFF microscopy data"; }
 
     virtual VolumeList* read(const std::string& url)
-        throw (tgt::CorruptedFileException, tgt::IOException, std::bad_alloc);
+        throw (tgt::FileException, std::bad_alloc);
+
+    virtual VolumeBase* read(const VolumeURL& origin)
+        throw (tgt::FileException, std::bad_alloc);
+
+    virtual std::vector<VolumeURL> listVolumes(const std::string& url) const
+        throw (tgt::FileException);
 
 private:
-    void extractMetaData(TIFF* tiffFile, tgt::ivec3& dimensions, int& sizeC, int& sizeT, OMEDataType& dataType,
-        tgt::vec3& spacing, std::vector<std::string>& filenames) const
-        throw (tgt::CorruptedFileException);
+    /// Represents one tiff file on the disk.
+    struct OMETiffFile {
+        OMETiffFile(std::string filename, size_t numDirectories, size_t firstZ, size_t firstT, size_t firstC);
+        std::string toString() const;
 
-    template <class T>
-    void readTiffSlice(VolumeAtomic<T>* destVolume, ILint ilDataType, const std::string& filename, size_t sliceID) const
-        throw (tgt::CorruptedFileException);
+        std::string filename_;   //< absolute path to tiff file
+        size_t numDirectories_;  //< number of directories, i.e. slices, contained by the file
+        size_t firstZ_;          //< z coordinate of the first slice in the file
+        size_t firstT_;          //< t coordinate of the first slice in the file
+        size_t firstC_;          //< c coordinate of the first slice in the file
+    };
+
+    /// Extracts the OME-XML from the passed opened Tiff file and parses it for the dataset information.
+    void extractMetaData(TIFF* tiffFile, const std::string& path, std::string& dimensionOrder, tgt::svec3& dimensions, int& sizeC, int& sizeT, 
+        std::string& dataType, tgt::vec3& spacing, std::vector<OMETiffFile>& files) const
+        throw (tgt::Exception);
+
+    /** 
+     * Determines the number of directories of each of the passed tiff files.
+     * Note: Requires to open each file and iterate over its directories.
+     */
+    void determineDirectoryCount(std::vector<OMETiffFile>& files, size_t& totalNumberOfSlices)
+        throw (tgt::Exception);
+
+    /**
+     * Reads the pixel data from the current directory of the passed opened Tiff file 
+     * and copies it to the dest buffer.
+     */
+    void readTiffDirectory(TIFF* tiffFile, const std::string& dataType, const tgt::svec3& volumeDim, void* destBuffer) const
+        throw (tgt::Exception);
 
     // XPath-like XML helper functions
-    const TiXmlNode* getXMLNode(const TiXmlNode* parent, const std::string& path) const;
-    std::vector<const TiXmlNode*> getXMLNodeList(const TiXmlNode* parent, const std::string& path, const std::string& nodeName) const;
-
-    OMEDataType omeDataTypeFromStr(const std::string& pixelTypeStr) const;
-    std::string omeDataTypeToStr(OMEDataType type) const;
+    const TiXmlNode* getXMLNode(const TiXmlNode* parent, const std::string& path) const 
+        throw (tgt::Exception);
+    const TiXmlElement* getXMLElement(const TiXmlNode* parent, const std::string& path) const 
+        throw (tgt::Exception);
+    std::vector<const TiXmlNode*> getXMLNodeList(const TiXmlNode* parent, const std::string& path, const std::string& nodeName) const
+        throw (tgt::Exception);
+    std::vector<const TiXmlElement*> getXMLElementList(const TiXmlNode* parent, const std::string& path, const std::string& nodeName) const
+        throw (tgt::Exception);
 
     static const std::string loggerCat_;
 };
-
-// --------------------
-// template definitions
-
-template <class T>
-void voreen::OMETiffVolumeReader::readTiffSlice(VolumeAtomic<T>* destVolume, ILint ilDataType,
-        const std::string& filename, size_t sliceID) const throw (tgt::CorruptedFileException) {
-
-    tgtAssert(destVolume, "no dest volume");
-    tgtAssert(sliceID < destVolume->getDimensions().z, "invalid slice id");
-
-    ILuint ImageName;
-    ilGenImages(1, &ImageName);
-    ilBindImage(ImageName);
-
-    // open image
-    if (!ilLoad(IL_TIF, filename.c_str())) {
-        int errorCode = ilGetError();
-        ilDeleteImages(1, &ImageName);
-        throw tgt::CorruptedFileException("Failed to open tiff file (error code=" + itos(errorCode) + ")", filename);
-    }
-
-    tgt::svec2 sliceDim = destVolume->getDimensions().xy();
-
-    // check image properties
-    if (ilGetInteger(IL_IMAGE_FORMAT) != IL_LUMINANCE) {
-        ilDeleteImages(1, &ImageName);
-        throw tgt::CorruptedFileException("Expected tiff image format 'IL_LUMINANCE'", filename);
-    }
-    if (ilGetInteger(IL_IMAGE_TYPE) != ilDataType) {
-        ilDeleteImages(1, &ImageName);
-        throw tgt::CorruptedFileException("Data type of tiff file does not match data type specified in OME XML", filename);
-    }
-    if (ilGetInteger(IL_IMAGE_WIDTH) != sliceDim.x) {
-        ilDeleteImages(1, &ImageName);
-        throw tgt::CorruptedFileException("Image width of tiff file does not match image width specified in OME XML", filename);
-    }
-    if (ilGetInteger(IL_IMAGE_HEIGHT) != sliceDim.y) {
-        ilDeleteImages(1, &ImageName);
-        throw tgt::CorruptedFileException("Image height of tiff file does not match image width specified in OME XML", filename);
-    }
-    if (ilGetInteger(IL_IMAGE_DEPTH) != 1) {
-        ilDeleteImages(1, &ImageName);
-        throw tgt::CorruptedFileException("Image depth of tiff file is greater 1: " + ilGetInteger(IL_IMAGE_DEPTH), filename);
-    }
-
-    // copy image data to corresponding position within target data set
-    size_t offset = tgt::hmul(sliceDim) * sliceID /* * destVolume->getBytesPerVoxel()*/;
-    if (!ilCopyPixels(0, 0, 0, static_cast<ILuint>(sliceDim.x), static_cast<ILuint>(sliceDim.y), 1, IL_LUMINANCE, ilDataType, destVolume->voxel() + offset)) {
-        ilDeleteImages(1, &ImageName);
-        throw tgt::CorruptedFileException("Failed to copy pixel data: " + ilGetError(), filename);
-    }
-
-    ilDeleteImages(1, &ImageName);
-}
-
 
 } // namespace voreen
 
