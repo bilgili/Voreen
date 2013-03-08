@@ -92,7 +92,7 @@ public:
     //bool stereoShift(tgt::vec3 shift);
     bool setStereoAxisMode(tgt::Camera::StereoAxisMode mode);
 
-    void adaptInteractionToScene(const tgt::Bounds& bounds);
+    void adaptInteractionToScene(const tgt::Bounds& bounds, float nearDist = 0.f);
     void resetCameraFocusToTrackballCenter();
 
     void setAdaptOnChange(bool b);
@@ -100,6 +100,12 @@ public:
 
     void setTrackballCenterBehaviour(TrackballCenter t);
     TrackballCenter getTrackballCenterBehaviour() const;
+
+    /// Set the minimum absolute value that an element of the camera position vector can have
+    void setMinValue(float val);
+
+    /// \sa setMinValue
+    float getMinValue() const;
 
     /// Set the maximum absolute value that an element of the camera position vector can have
     void setMaxValue(float val);
@@ -136,6 +142,7 @@ private:
 
     bool sceneAdjuster_;
     VoreenTrackball trackball_;
+    float minValue_;
     float maxValue_;
 
     // Stores the current bounds of the scene (if present) to adapt interaction to the scene size

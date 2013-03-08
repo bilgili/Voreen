@@ -44,7 +44,7 @@ TrackballNavigation::TrackballNavigation(CameraProperty* cameraProperty, Trackba
     : cameraProperty_(cameraProperty)
     , trackball_(&cameraProperty->getTrackball())
     , mode_(mode)
-    , minDistance_(minDist)
+    //, minDistance_(minDist)
 {
     initializeEventHandling();
 
@@ -132,8 +132,8 @@ void TrackballNavigation::mouseMoveEvent(tgt::MouseEvent* e) {
         lastMousePosition_ = newMouse;
 
         // restrict distance within specified range
-        if (trackball_->getCenterDistance() < minDistance_)
-            trackball_->zoomAbsolute(minDistance_);
+        if (trackball_->getCenterDistance() < cameraProperty_->getMinValue())
+            trackball_->zoomAbsolute(cameraProperty_->getMinValue());
         if (trackball_->getCenterDistance() > cameraProperty_->getMaxValue())
             trackball_->zoomAbsolute(cameraProperty_->getMaxValue());
     }
@@ -181,8 +181,8 @@ void TrackballNavigation::wheelEvent(tgt::MouseEvent* e) {
 
 
         // restrict distance within specified range
-        if (trackball_->getCenterDistance() < minDistance_)
-            trackball_->zoomAbsolute(minDistance_);
+        if (trackball_->getCenterDistance() < cameraProperty_->getMinValue())
+            trackball_->zoomAbsolute(cameraProperty_->getMinValue());
         if (trackball_->getCenterDistance() > cameraProperty_->getMaxValue())
             trackball_->zoomAbsolute(cameraProperty_->getMaxValue());
     }

@@ -53,8 +53,8 @@ void LinkEvaluatorCameraId::eval(Property* src, Property* dst) throw (VoreenExce
     cam.setStereoEyeSeparation(srcCam.getStereoEyeSeparation(), false);
     cam.setStereoAxisMode(srcCam.getStereoAxisMode(), false);
 
-    // TODO setting max value is now only important for distance slider in cam widget, no real need to update this?
-    //dstCast->setMaxValue(srcCast->getMaxValue());
+    dstCast->setMinValue(srcCast->getMinValue());
+    dstCast->setMaxValue(srcCast->getMaxValue());
     dstCast->setAdaptOnChange(srcCast->getAdaptOnChange());
     dstCast->setTrackballCenterBehaviour(srcCast->getTrackballCenterBehaviour());
     dstCast->getTrackball().setCenter(srcCast->getTrackball().getCenter());

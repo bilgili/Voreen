@@ -203,8 +203,8 @@ void SingleVolumeRaycaster::beforeProcess() {
     transferFunc_.setVolumeHandle(volumeInport_.getData());
 
     // A new volume was loaded
-    if(volumeInport_.hasChanged() && volumeInport_.hasData())
-        camera_.adaptInteractionToScene(volumeInport_.getData()->getBoundingBox().getBoundingBox());
+    if (volumeInport_.hasChanged() && volumeInport_.hasData())
+        camera_.adaptInteractionToScene(volumeInport_.getData()->getBoundingBox().getBoundingBox(), tgt::min(volumeInport_.getData()->getSpacing()));
 }
 
 void SingleVolumeRaycaster::process() {

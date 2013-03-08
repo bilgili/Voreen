@@ -245,7 +245,7 @@ protected:
     /// Ought to be relative coordinates within range [-1, 1]x[-1, 1].
     tgt::vec2 lastMousePosition_;
 
-    float minDistance_;     ///< minimal allowed orthogonal distance to center of trackball
+    //float minDistance_;     ///< minimal allowed orthogonal distance to center of trackball
     //float maxDistance_;     ///< maximal allowed orthogonal distance to center of trackball (now retrieved from camera property)
 
     int wheelCounter_; ///< Counts how many time-ticks have passed since the mouse-wheel was used.

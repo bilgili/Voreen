@@ -40,6 +40,7 @@ CameraProperty::CameraProperty(const std::string& id, const std::string& guiText
         , sceneAdjuster_(sceneAdjuster)
         , trackball_(this)
         , maxValue_(maxValue)
+        , minValue_(maxValue / 50000.f)
         , currentSceneBounds_(tgt::Bounds(tgt::vec3(0.f), tgt::vec3(0.f)))
         , centerOption_(SCENE)
         , adaptOnChange_(true)
@@ -118,6 +119,14 @@ bool CameraProperty::setStereoAxisMode(tgt::Camera::StereoAxisMode mode) {
     return result;
 }
 
+void CameraProperty::setMinValue(float val) {
+    minValue_ = val;
+}
+
+float CameraProperty::getMinValue() const {
+    return minValue_;
+}
+
 void CameraProperty::setMaxValue(float val) {
     maxValue_ = val;
 }
@@ -150,6 +159,7 @@ void CameraProperty::serialize(XmlSerializer& s) const {
     s.serialize("upVector", value_.getUpVector());
 
     s.serialize("maxValue", maxValue_);
+    s.serialize("minValue", minValue_);
 
     s.serialize("frustLeft", value_.getFrustLeft());
     s.serialize("frustRight", value_.getFrustRight());
@@ -207,9 +217,11 @@ void CameraProperty::deserialize(XmlDeserializer& s) {
     value_.setUpVector(vector);
 
     try {
-        float maxValue;
+        float maxValue, minValue;
         s.deserialize("maxValue", maxValue);
         maxValue_ = maxValue;
+        s.deserialize("minValue", minValue);
+        minValue_ = minValue;
     }
     catch(SerializationException&) {
         s.removeLastError();
@@ -272,7 +284,7 @@ const VoreenTrackball& CameraProperty::getTrackball() const {
     return trackball_;
 }
 
-void CameraProperty::adaptInteractionToScene(const tgt::Bounds& bounds) {
+void CameraProperty::adaptInteractionToScene(const tgt::Bounds& bounds, float nearDist) {
     if(!adaptOnChange_ || (bounds.center() == currentSceneBounds_.center() && bounds.diagonal() == currentSceneBounds_.diagonal()))
         return;
 
@@ -291,19 +303,35 @@ void CameraProperty::adaptInteractionToScene(const tgt::Bounds& bounds) {
         // adapt only maxValue, far plane and trackball center if there was no previous scene geometry
         float newMaxDist = 250.f * tgt::max(currentSceneBounds_.diagonal());
         setMaxValue(newMaxDist);
-        cam.setFarDist(std::max(cam.getFarDist(), newMaxDist + tgt::max(currentSceneBounds_.diagonal())));
+        if(nearDist > 0.f) {
+            if(cam.getProjectionMode() != tgt::Camera::FRUSTUM)
+                cam.setNearDist(nearDist);
+            setMinValue(nearDist);
+        } else
+            setMinValue(newMaxDist / 50000.f);
+
+        cam.setFarDist(newMaxDist + tgt::max(currentSceneBounds_.diagonal()));
         if(centerOption_ == SCENE)
             trackball_.setCenter(currentSceneBounds_.center());
         set(cam);
         return;
     }
 
-    float oldRelCamDist = cam.getFocalLength() / getMaxValue();
+    float oldRelCamDist = (cam.getFocalLength() - getMinValue()) / (getMaxValue() - getMinValue());
     float maxSideLength = tgt::max(currentSceneBounds_.diagonal());
 
     // The factor 250 is derived from an earlier constant maxDist of 500 and a constant maximum cubeSize element of 2
     float newMaxDist = 250.f * maxSideLength;
-    float newAbsCamDist = oldRelCamDist * newMaxDist;
+    setMaxValue(newMaxDist);
+
+    if(nearDist > 0.f) {
+        if(cam.getProjectionMode() != tgt::Camera::FRUSTUM)
+            cam.setNearDist(nearDist);
+        setMinValue(nearDist);
+    } else
+        setMinValue(newMaxDist / 50000.f);
+
+    float newAbsCamDist = getMinValue() + oldRelCamDist * (getMaxValue() - getMinValue());
 
     if(centerOption_ == CAMSHIFT) {
         tgt::vec3 newFocus = cam.getFocus() * (newAbsCamDist / cam.getFocalLength());
@@ -318,8 +346,7 @@ void CameraProperty::adaptInteractionToScene(const tgt::Bounds& bounds) {
         cam.setPosition(newPos);
     }
 
-    setMaxValue(newMaxDist);
-    cam.setFarDist(std::max(cam.getFarDist(), newMaxDist + maxSideLength));
+    cam.setFarDist(newMaxDist + maxSideLength);
 
     set(cam);
 }
