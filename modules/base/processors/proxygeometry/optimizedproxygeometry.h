@@ -30,7 +30,9 @@
 //#define VRN_PROXY_DEBUG
 
 #include "voreen/core/processors/processor.h"
-#include "voreen/core/ports/allports.h"
+
+#include "voreen/core/ports/volumeport.h"
+#include "voreen/core/ports/geometryport.h"
 
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/floatproperty.h"
@@ -148,11 +150,7 @@ class ProxyGeometryBackgroundThread : public ProcessorBackgroundThread<Optimized
 
     public:
 
-#ifdef VRN_PROXY_DEBUG
         ProxyGeometryBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf = tgt::vec3(0.f), tgt::vec3 clipUrb = tgt::vec3(1.f));
-#else
-        ProxyGeometryBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, int stepSize, bool clippingEnabled, tgt::vec3 clipLlf = tgt::vec3(0.f), tgt::vec3 clipUrb = tgt::vec3(1.f));
-#endif
 
     protected:
 
@@ -176,10 +174,8 @@ class ProxyGeometryBackgroundThread : public ProcessorBackgroundThread<Optimized
         tgt::vec3 clipLlf_;             ///< clipping region boundaries (in voxel space)
         tgt::vec3 clipUrb_;             ///< clipping region boundaries (in voxel space)
 
-#ifdef VRN_PROXY_DEBUG
         bool debugOutput_;              ///< print out debug information?
         tgt::Stopwatch stopWatch_;      ///< for determining the building time of the data structures
-#endif
 };
 
 /**
@@ -188,11 +184,8 @@ class ProxyGeometryBackgroundThread : public ProcessorBackgroundThread<Optimized
 class StructureProxyGeometryBackgroundThread : public ProxyGeometryBackgroundThread {
 
     public:
-#ifdef VRN_PROXY_DEBUG
+        
         StructureProxyGeometryBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, std::vector<VolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf = tgt::vec3(0.f), tgt::vec3 clipUrb = tgt::vec3(1.f));
-#else
-        StructureProxyGeometryBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, std::vector<VolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize, int stepSize, bool clippingEnabled, tgt::vec3 clipLlf = tgt::vec3(0.f), tgt::vec3 clipUrb = tgt::vec3(1.f));
-#endif
 
     protected:
 
@@ -208,14 +201,11 @@ class StructureProxyGeometryBackgroundThread : public ProxyGeometryBackgroundThr
  */
 class MinCubeBackgroundThread : public StructureProxyGeometryBackgroundThread {
 
-    friend class OptimizedProxyGeometry;
-
     public:
-#ifdef VRN_PROXY_DEBUG
-        MinCubeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, std::vector<VolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf = tgt::vec3(0.f), tgt::vec3 clipUrb = tgt::vec3(1.f));
-#else
-        MinCubeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, std::vector<VolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize, int stepSize, bool clippingEnabled, tgt::vec3 clipLlf = tgt::vec3(0.f), tgt::vec3 clipUrb = tgt::vec3(1.f));
-#endif
+        
+    MinCubeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, std::vector<VolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf = tgt::vec3(0.f), tgt::vec3 clipUrb = tgt::vec3(1.f));
+
+    ~MinCubeBackgroundThread();
 
     protected:
 
@@ -230,14 +220,11 @@ class MinCubeBackgroundThread : public StructureProxyGeometryBackgroundThread {
  */
 class MaximalBricksBackgroundThread : public StructureProxyGeometryBackgroundThread {
 
-    friend class OptimizedProxyGeometry;
-
     public:
-#ifdef VRN_PROXY_DEBUG
-        MaximalBricksBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, std::vector<VolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf = tgt::vec3(0.f), tgt::vec3 clipUrb = tgt::vec3(1.f));
-#else
-        MaximalBricksBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, std::vector<VolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize, int stepSize, bool clippingEnabled, tgt::vec3 clipLlf = tgt::vec3(0.f), tgt::vec3 clipUrb = tgt::vec3(1.f));
-#endif
+        
+    MaximalBricksBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, std::vector<VolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf = tgt::vec3(0.f), tgt::vec3 clipUrb = tgt::vec3(1.f));
+
+    ~MaximalBricksBackgroundThread();
 
     protected:
 
@@ -267,14 +254,11 @@ class MaximalBricksBackgroundThread : public StructureProxyGeometryBackgroundThr
  */
 class OctreeBackgroundThread : public ProxyGeometryBackgroundThread {
 
-    friend class OptimizedProxyGeometry;
-
     public:
-#ifdef VRN_PROXY_DEBUG
-        OctreeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, OctreeNode** octreeRoot, bool checkHalfNodes, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf = tgt::vec3(0.f), tgt::vec3 clipUrb = tgt::vec3(1.f));
-#else
-        OctreeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, OctreeNode** octreeRoot, bool checkHalfNodes, int stepSize, bool clippingEnabled, tgt::vec3 clipLlf = tgt::vec3(0.f), tgt::vec3 clipUrb = tgt::vec3(1.f));
-#endif
+        
+    OctreeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, OctreeNode** octreeRoot, bool checkHalfNodes, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf = tgt::vec3(0.f), tgt::vec3 clipUrb = tgt::vec3(1.f));
+
+    ~OctreeBackgroundThread();
 
     protected:
 

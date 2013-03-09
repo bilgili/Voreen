@@ -33,7 +33,6 @@ namespace voreen {
  * ProxyGeometryBackgroundThread
  */
 
-#ifdef VRN_PROXY_DEBUG
 ProxyGeometryBackgroundThread::ProxyGeometryBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
         : ProcessorBackgroundThread<OptimizedProxyGeometry>(processor)
         , volume_(volume)
@@ -46,19 +45,6 @@ ProxyGeometryBackgroundThread::ProxyGeometryBackgroundThread(OptimizedProxyGeome
         , clipLlf_(clipLlf)
         , clipUrb_(clipUrb)
 {}
-#else
-ProxyGeometryBackgroundThread::ProxyGeometryBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, int stepSize, bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
-        : ProcessorBackgroundThread<OptimizedProxyGeometry>(processor)
-        , volume_(volume)
-        , tf_(tf)
-        , threshold_(threshold)
-        , geometry_(geometry)
-        , stepSize_(stepSize)
-        , clippingEnabled_(clippingEnabled)
-        , clipLlf_(clipLlf)
-        , clipUrb_(clipUrb)
-{}
-#endif
 
 void ProxyGeometryBackgroundThread::handleInterruption() {
     //nothing to handle
@@ -71,19 +57,11 @@ bool ProxyGeometryBackgroundThread::isRegionEmptyPi(float min, float max, const 
 /*
  * StructureProxyGeometryBackgroundThread
  */
-#ifdef VRN_PROXY_DEBUG
 StructureProxyGeometryBackgroundThread::StructureProxyGeometryBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, std::vector<VolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
         : ProxyGeometryBackgroundThread(processor, volume, tf, threshold, geometry, stepSize, debugOutput, clippingEnabled, clipLlf, clipUrb)
         , volumeStructure_(volumeStructure)
         , volStructureSize_(volStructureSize)
 {}
-#else
-StructureProxyGeometryBackgroundThread::StructureProxyGeometryBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, std::vector<VolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize, int stepSize, bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
-        : ProxyGeometryBackgroundThread(processor, volume, tf, threshold, geometry, stepSize, clippingEnabled, clipLlf, clipUrb)
-        , volumeStructure_(volumeStructure)
-        , volStructureSize_(volStructureSize)
-{}
-#endif
 
 void StructureProxyGeometryBackgroundThread::computeRegionStructure() {
 
@@ -91,10 +69,10 @@ void StructureProxyGeometryBackgroundThread::computeRegionStructure() {
 
     volumeStructure_->clear();
 
-#ifdef VRN_PROXY_DEBUG
-    stopWatch_.reset();
-    stopWatch_.start();
-#endif
+    if (debugOutput_) {
+        stopWatch_.reset();
+        stopWatch_.start();
+    }
 
     tgt::ivec3 dim = volume_->getDimensions();
 
@@ -161,27 +139,26 @@ void StructureProxyGeometryBackgroundThread::computeRegionStructure() {
         //add region
         volumeStructure_->push_back(VolumeRegion(regionBounds,tgt::vec2(minIntensity,maxIntensity)));
 
-    }
-#ifdef VRN_PROXY_DEBUG
-    stopWatch_.stop();
-    if (debugOutput_)
+    } 
+
+    if (debugOutput_) {
+        stopWatch_.stop();
         std::cout << "Computing region structure took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-#endif
+    }
 }
 
 
 /*
  * MinCubeBackgroundThread
  */
-#ifdef VRN_PROXY_DEBUG
 MinCubeBackgroundThread::MinCubeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, std::vector<VolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
         : StructureProxyGeometryBackgroundThread(processor, volume, tf, threshold, geometry, volumeStructure, volStructureSize, stepSize, debugOutput, clippingEnabled, clipLlf, clipUrb)
 {}
-#else
-MinCubeBackgroundThread::MinCubeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, std::vector<VolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize, int stepSize, bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
-        : StructureProxyGeometryBackgroundThread(processor, volume, tf, threshold, geometry, volumeStructure, volStructureSize, stepSize, clippingEnabled, clipLlf, clipUrb)
-{}
-#endif
+
+MinCubeBackgroundThread::~MinCubeBackgroundThread() {
+    //wait for internal thread to finish
+    join();
+}
 
 void MinCubeBackgroundThread::threadMain() {
     computeMinCube();
@@ -216,22 +193,20 @@ void MinCubeBackgroundThread::computeMinCube() {
 
         interruptionPoint();
 
-#ifdef VRN_PROXY_DEBUG
-        stopWatch_.reset();
-        stopWatch_.start();
-#endif
+        if (debugOutput_) {
+            stopWatch_.reset();
+            stopWatch_.start();
+        }
+
         const PreIntegrationTable* piTable = tf_->getPreIntegrationTable(1.f, 256);
-#ifdef VRN_PROXY_DEBUG
-        stopWatch_.stop();
-        if (debugOutput_)
+
+        if (debugOutput_) {
+            stopWatch_.stop();
             std::cout << "Fetching PreIntegration table took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-#endif
-
-
-#ifdef VRN_PROXY_DEBUG
-        stopWatch_.reset();
-        stopWatch_.start();
-#endif
+        
+            stopWatch_.reset();
+            stopWatch_.start();
+        }
 
         interruptionPoint();
 
@@ -248,11 +223,10 @@ void MinCubeBackgroundThread::computeMinCube() {
                 minBounds.addVolume(i->getBounds());
         }
 
-#ifdef VRN_PROXY_DEBUG
-        stopWatch_.stop();
-        if (debugOutput_)
+        if (debugOutput_) {
+            stopWatch_.stop();
             std::cout << "Determined (approximate) minimal cube bounds in " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-#endif
+        }
 
         interruptionPoint();
 
@@ -283,25 +257,22 @@ void MinCubeBackgroundThread::computeMinCube() {
 
         interruptionPoint();
 
-#ifdef VRN_PROXY_DEBUG
         if (debugOutput_)
             std::cout << "Created approximately minimal cube proxy geometry, volume " << ftos(minBounds.volume()) << " (before clipping)" << std::endl;
-#endif
     }
 }
 
 /*
  * MaximalBricksBackgroundThread
  */
-#ifdef VRN_PROXY_DEBUG
 MaximalBricksBackgroundThread::MaximalBricksBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, std::vector<VolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
         : StructureProxyGeometryBackgroundThread(processor, volume, tf, threshold, geometry, volumeStructure, volStructureSize, stepSize, debugOutput, clippingEnabled, clipLlf, clipUrb)
 {}
-#else
-MaximalBricksBackgroundThread::MaximalBricksBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, std::vector<VolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize, int stepSize, bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
-        : StructureProxyGeometryBackgroundThread(processor, volume, tf, threshold, geometry, volumeStructure, volStructureSize, stepSize, clippingEnabled, clipLlf, clipUrb)
-{}
-#endif
+
+MaximalBricksBackgroundThread::~MaximalBricksBackgroundThread() {
+    //wait for internal thread to finish
+    join();
+}
 
 void MaximalBricksBackgroundThread::threadMain() {
     computeMaximalBricks();
@@ -335,23 +306,20 @@ void MaximalBricksBackgroundThread::computeMaximalBricks() {
         geometry_->clear();
 
         interruptionPoint();
+        
+        if (debugOutput_) {
+            stopWatch_.reset();
+            stopWatch_.start();
+        }
 
-#ifdef VRN_PROXY_DEBUG
-        stopWatch_.reset();
-        stopWatch_.start();
-#endif
         const PreIntegrationTable* piTable = tf_->getPreIntegrationTable(1.f, 256);
 
-#ifdef VRN_PROXY_DEBUG
-        stopWatch_.stop();
-        if (debugOutput_)
+        if (debugOutput_) {
+            stopWatch_.stop();
             std::cout << "Fetching PreIntegration table took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-#endif
-
-#ifdef VRN_PROXY_DEBUG
-        stopWatch_.reset();
-        stopWatch_.start();
-#endif
+            stopWatch_.reset();
+            stopWatch_.start();
+        }
 
         setVolBound(tgt::ivec3(0),volStructureSize_-1,false);
 
@@ -383,23 +351,22 @@ void MaximalBricksBackgroundThread::computeMaximalBricks() {
                 }
                 else
                     OptimizedProxyGeometry::addCubeMesh(geometry_, cubeBounds,dim);
-#ifdef VRN_PROXY_DEBUG
+
                 if (debugOutput_) {
                     proxyVolume += cubeBounds.volume();
                     numberOfCubes++;
                 }
-#endif
+
             }
         }
-#ifdef VRN_PROXY_DEBUG
-        stopWatch_.stop();
 
         if (debugOutput_) {
+            stopWatch_.stop();
             std::cout << "Created maximal cubes proxy geometry in " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
             std::cout << "Created Proxy Geometry consisting of " << numberOfCubes << " cubes using maximal cubes mode," << std::endl;
             std::cout << " volume < " << proxyVolume << " (before clipping)" << std::endl;
         }
-#endif
+
         interruptionPoint();
 
         //if mesh list is empty: add first region (empty mesh geometry might lead to camera problem)
@@ -519,19 +486,16 @@ tgt::ivec3 MaximalBricksBackgroundThread::getUrbPi(tgt::ivec3 llf, TransFunc1DKe
 /*
  * OctreeBackgroundThread
  */
-#ifdef VRN_PROXY_DEBUG
 OctreeBackgroundThread::OctreeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, OctreeNode** octreeRoot, bool checkHalfNodes, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
         : ProxyGeometryBackgroundThread(processor, volume, tf, threshold, geometry, stepSize, debugOutput, clippingEnabled, clipLlf, clipUrb)
         , octreeRoot_(octreeRoot)
         , checkHalfNodes_(checkHalfNodes)
 {}
-#else
-OctreeBackgroundThread::OctreeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec3* geometry, OctreeNode** octreeRoot, bool checkHalfNodes, int stepSize, bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
-        : ProxyGeometryBackgroundThread(processor, volume, tf, threshold, geometry, stepSize, clippingEnabled, clipLlf, clipUrb)
-        , octreeRoot_(octreeRoot)
-        , checkHalfNodes_(checkHalfNodes)
-{}
-#endif
+
+OctreeBackgroundThread::~OctreeBackgroundThread() {
+    //wait for internal thread to finish
+    join();
+}
 
 void OctreeBackgroundThread::threadMain() {
     computeOctreeMaxBricks();
@@ -558,27 +522,29 @@ void OctreeBackgroundThread::computeOctreeMaxBricks() {
     if (processor_->geometryInvalid()) {
         geometry_->clear();
 
-#ifdef VRN_PROXY_DEBUG
-        stopWatch_.reset();
-        stopWatch_.start();
-#endif
+        if (debugOutput_) {
+            stopWatch_.reset();
+            stopWatch_.start();
+        }
+
         const PreIntegrationTable* piTable;
 
         interruptionPoint();
 
         piTable = tf_->getPreIntegrationTable(1.f, 256);
 
-#ifdef VRN_PROXY_DEBUG
-        stopWatch_.stop();
-        if (debugOutput_)
+        if (debugOutput_) {
+            stopWatch_.stop();
             std::cout << "Fetching PreIntegration table took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-#endif
+        }
 
         tgt::Bounds clipBounds(clipLlf_, clipUrb_);
-#ifdef VRN_PROXY_DEBUG
-        stopWatch_.reset();
-        stopWatch_.start();
-#endif
+
+        if (debugOutput_) {
+            stopWatch_.reset();
+            stopWatch_.start();
+        }
+
         //traverse octree for the first time and set visibility for each node
         traverseOctreeAndSetVisibility(*octreeRoot_, tf_, piTable);
 
@@ -586,14 +552,13 @@ void OctreeBackgroundThread::computeOctreeMaxBricks() {
 
         //traverse octree for the second time and create proxy geometry
         float proxyVolume = traverseOctreeAndCreateMaxCubeGeometry(*octreeRoot_, dim, clipBounds);
-#ifdef VRN_PROXY_DEBUG
-        stopWatch_.stop();
+
         if (debugOutput_) {
+            stopWatch_.stop();
             std::cout << "Traversing octree to create maximal cubes took " << stopWatch_.getRuntime() <<  " milliseconds" << std::endl;
             std::cout << "Created Proxy Geometry consisting of " << geometry_->getNumTriangles() << " triangles using octree max cubes mode." << std::endl;
             std::cout << "Volume < " << proxyVolume << " (before clipping)" << std::endl;
         }
-#endif
 
         interruptionPoint();
 
@@ -614,9 +579,10 @@ void OctreeBackgroundThread::computeOctreeMaxBricks() {
 
 void OctreeBackgroundThread::traverseOctreeAndSetVisibility(OctreeNode* node, TransFunc1DKeys* tfi, const PreIntegrationTable* piTable) {
     if (!node) {
-#ifdef VRN_PROXY_DEBUG
-        std::cout << "Encountered 0 pointer instead of valid node during octree traversal..." << std::endl;
-#endif
+
+        if (debugOutput_)
+            std::cout << "Encountered 0 pointer instead of valid node during octree traversal..." << std::endl;
+
         return;
     }
 
@@ -655,9 +621,10 @@ void OctreeBackgroundThread::traverseOctreeAndSetVisibility(OctreeNode* node, Tr
 float OctreeBackgroundThread::traverseOctreeAndCreateMaxCubeGeometry(OctreeNode* node, tgt::ivec3 dim, tgt::Bounds clipBounds) {
 
     if (!node) {
-#ifdef VRN_PROXY_DEBUG
-        std::cout << "Encountered 0 pointer instead of valid node during octree traversal...";
-#endif
+        
+        if (debugOutput_)
+            std::cout << "Encountered 0 pointer instead of valid node during octree traversal...";
+
         return 0.f;
     }
 
@@ -868,10 +835,10 @@ float OctreeBackgroundThread::traverseOctreeAndCreateMaxCubeGeometry(OctreeNode*
 
 void OctreeBackgroundThread::computeOctreeRecursively(const VolumeBase* inputVolume) {
 
-#ifdef VRN_PROXY_DEBUG
-    stopWatch_.reset();
-    stopWatch_.start();
-#endif
+    if (debugOutput_) {
+        stopWatch_.reset();
+        stopWatch_.start();
+    }
 
     interruptionPoint();
 
@@ -896,20 +863,20 @@ void OctreeBackgroundThread::computeOctreeRecursively(const VolumeBase* inputVol
     tgt::ivec3 pos(0);
     subdivideOctreeNodeRecursively(*octreeRoot_, pos, size, stepSize_, vol, dim, rwm);
 
-#ifdef VRN_PROXY_DEBUG
-    stopWatch_.stop();
-    if (debugOutput_)
+    if (debugOutput_) {
+        stopWatch_.stop();
         std::cout << "Recursive octree construction took " << stopWatch_.getRuntime() <<  " milliseconds" << std::endl;
-#endif
+    }
 }
 
 void OctreeBackgroundThread::subdivideOctreeNodeRecursively
     (OctreeNode* current, tgt::ivec3 pos, tgt::ivec3 size, int stepSize, const VolumeRAM* vol, tgt::ivec3 dim,  RealWorldMapping rwm)
 {
     if (!current) {
-#ifdef VRN_PROXY_DEBUG
-        std::cout << "Encounter node 0 during octree creation..." << std::endl;
-#endif
+
+        if (debugOutput_)
+            std::cout << "Encounter node 0 during octree creation..." << std::endl;
+
         return;
     }
 
@@ -1154,7 +1121,6 @@ OptimizedProxyGeometry::OptimizedProxyGeometry()
     resolution_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onResolutionChange));
     resolutionVoxels_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onResolutionVoxelChange));
 
-    //onVolumeChange();
     tfCopy_ = 0;
 }
 
@@ -1204,6 +1170,16 @@ void OptimizedProxyGeometry::process() {
 
     // adjust some properties, e.g. ranges for voxel subdivision
     if (volumeHasChanged() || inport_.hasChanged()) {
+
+        // interrupt background thread
+        if (backgroundThread_) {
+            backgroundThread_->interrupt();
+            unlockMutex();
+            delete backgroundThread_;
+            lockMutex();
+            backgroundThread_ = 0;
+        }
+        
         onVolumeChange();
         setVolumeHasChanged(false);
     }
@@ -1220,7 +1196,9 @@ void OptimizedProxyGeometry::process() {
 
             if (backgroundThread_) {
                 backgroundThread_->interrupt();
+                unlockMutex();
                 delete backgroundThread_;
+                lockMutex();
                 backgroundThread_ = 0;
             }
 
@@ -1256,18 +1234,19 @@ void OptimizedProxyGeometry::process() {
 #ifdef VRN_PROXY_DEBUG
             backgroundThread_ = new MinCubeBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()), geometry_, &volumeStructure_, volStructureSize_, stepSize, debugOutput_.get(), enableClipping_.get(), clipLlf, clipUrb);
 #else
-            backgroundThread_ = new MinCubeBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()), geometry_, &volumeStructure_, volStructureSize_, stepSize, enableClipping_.get(), clipLlf, clipUrb);
+            backgroundThread_ = new MinCubeBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()), geometry_, &volumeStructure_, volStructureSize_, stepSize, false, enableClipping_.get(), clipLlf, clipUrb);
 #endif
 
+            //start background computation
+            backgroundThread_->run();
+
             if (waitForOptimization_.get()) {
-                // wait for background thread to finish computation: do not run as a thread
-                MinCubeBackgroundThread* minCubeThread = dynamic_cast<MinCubeBackgroundThread*>(backgroundThread_);
-                minCubeThread->computeMinCube();
+                // wait for background thread to finish computation
+                unlockMutex();
+                backgroundThread_->join();
+                lockMutex();
             }
             else {
-                //start background computation
-                backgroundThread_->run();
-
                 //while background computation is not finished: use temporary cube geometry
                 processTmpCube();
                 outport_.setData(tmpGeometry_, false);
@@ -1285,7 +1264,9 @@ void OptimizedProxyGeometry::process() {
 
             if (backgroundThread_) {
                 backgroundThread_->interrupt();
+                unlockMutex();
                 delete backgroundThread_;
+                lockMutex();
                 backgroundThread_ = 0;
             }
 
@@ -1321,18 +1302,19 @@ void OptimizedProxyGeometry::process() {
 #ifdef VRN_PROXY_DEBUG
             backgroundThread_ = new OctreeBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()), geometry_, &octreeRoot_, checkHalfNodes_.get(), stepSize, debugOutput_.get(), enableClipping_.get(), clipLlf, clipUrb);
 #else
-            backgroundThread_ = new OctreeBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()), geometry_, &octreeRoot_, true, stepSize, enableClipping_.get(), clipLlf, clipUrb);
+            backgroundThread_ = new OctreeBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()), geometry_, &octreeRoot_, true, stepSize, false, enableClipping_.get(), clipLlf, clipUrb);
 #endif
 
+            //start background computation
+            backgroundThread_->run();
+
             if (waitForOptimization_.get()) {
-                // wait for background thread to finish computation: do not run as a thread
-                OctreeBackgroundThread* octreeThread = dynamic_cast<OctreeBackgroundThread*>(backgroundThread_);
-                octreeThread->computeOctreeMaxBricks();
+                // wait for background thread to finish computation
+                unlockMutex();
+                backgroundThread_->join();
+                lockMutex();
             }
             else {
-                //start background computation
-                backgroundThread_->run();
-
                 //while background computation is not finished: use temporary cube geometry
                 processTmpCube();
                 outport_.setData(tmpGeometry_, false);
@@ -1355,7 +1337,9 @@ void OptimizedProxyGeometry::process() {
 
             if (backgroundThread_) {
                 backgroundThread_->interrupt();
+                unlockMutex();
                 delete backgroundThread_;
+                lockMutex();
                 backgroundThread_ = 0;
             }
 
@@ -1391,18 +1375,19 @@ void OptimizedProxyGeometry::process() {
 #ifdef VRN_PROXY_DEBUG
             backgroundThread_ = new MaximalBricksBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()), geometry_, &volumeStructure_, volStructureSize_, stepSize, debugOutput_.get(), enableClipping_.get(), clipLlf, clipUrb);
 #else
-            backgroundThread_ = new MaximalBricksBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()), geometry_, &volumeStructure_, volStructureSize_, stepSize, enableClipping_.get(), clipLlf, clipUrb);
+            backgroundThread_ = new MaximalBricksBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()), geometry_, &volumeStructure_, volStructureSize_, stepSize, false, enableClipping_.get(), clipLlf, clipUrb);
 #endif
 
+            //start background computation
+            backgroundThread_->run();
+
             if (waitForOptimization_.get()) {
-                // wait for background thread to finish computation: do not run as a thread
-                MaximalBricksBackgroundThread* brickThread = dynamic_cast<MaximalBricksBackgroundThread*>(backgroundThread_);
-                brickThread->computeMaximalBricks();
+                // wait for background thread to finish computation
+                unlockMutex();
+                backgroundThread_->join();
+                lockMutex();
             }
             else {
-                //start background computation
-                backgroundThread_->run();
-
                 //while background computation is not finished: use temporary cube geometry
                 processTmpCube();
                 outport_.setData(tmpGeometry_, false);
@@ -1863,12 +1848,12 @@ void OptimizedProxyGeometry::onResolutionModeChange() {
 
 void OptimizedProxyGeometry::onVolumeChange() {
 
-    // interrupt background thread
-    if (backgroundThread_) {
+    // interrupt background thread... not necessary anymore, already done in process() before calling onVolumeChange()
+    /*if (backgroundThread_) {
         backgroundThread_->interrupt();
         delete backgroundThread_;
         backgroundThread_ = 0;
-    }
+    }*/
 
     //register as new observer
     inport_.getData()->addObserver(this);

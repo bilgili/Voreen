@@ -46,8 +46,14 @@ class VRN_CORE_API BackgroundThread {
 
         BackgroundThread() : finished_(false), running_(false) {}
 
-        /// destructor waits for internal thread to finish (does NOT interrupt it... for interruption, interrupt() or interruptAndJoin() has to be called first)
-        ~BackgroundThread();
+        /**
+         *  Destructor waits for internal thread to finish (does NOT interrupt it... for interruption, interrupt() or interruptAndJoin() has to be called first).
+         *  
+         *  If the destructor of a derived class destroys data the internal thread is working on, join() or interruptAndJoin() have to be called within the
+         *  destructor of the derived class (before destroying the data!) or (outside the destructor) before destroying the (derived) thread object, 
+         *  as otherwise the internal thread may still try to access the data.
+         */
+        virtual ~BackgroundThread();
 
         /// Call this method to start the internal thread. If it is already running, it is interrupted before starting the new computation.
         virtual void run();
@@ -92,13 +98,15 @@ class VRN_CORE_API BackgroundThread {
 /**
  * Worker thread for a processor, automatically invalidates processor when finished.
  * When using a class derived from this template, T must be derived from Processor class.
- * Classes derived from this template need to have access to lockMutex(), unlockMutex() and invalidate() methods of the processor (ie. friend class or inner class).
  *
- * ATTENTION - do not call join() from processor:
- * if the processor calls join() to wait for the background thread (e.g. during process()-method) this leads to a deadlock, as the background thread cannot finish without obtaining the processor mutex (for invalidation), and the mutex is locked until the processor finishes its computations
+ * ATTENTION - if calling join() from process() method in associated processor, it is necessary to first call unlockMutex() (and afterwards call lockMutex()), because at the end of its computations, the background thread tries to lock the mutex before invalidating the processor, which otherwise would lead to deadlock. The same goes for calling the destructor within process() (as it contains an implicit join()) and interruptAndJoin() (because the interrupt signal might arrive at the thread when computation is finished and the thread will not be interrupted before trying to lock the mutex).
+ *
+ *  If the destructor of a derived class destroys data the internal thread is working on, join() or interruptAndJoin() have to be called within the
+ *  destructor of the derived class (before destroying the data!) or (outside the destructor) before destroying the (derived) thread object, 
+ *  as otherwise the internal thread may still try to access the data.
  */
 template <class T>
-class VRN_CORE_API ProcessorBackgroundThread : public BackgroundThread {
+class ProcessorBackgroundThread : public BackgroundThread {
 
     public:
 
