@@ -109,7 +109,7 @@ void Processor::initialize() throw (tgt::Exception) {
 
     if (!VoreenApplication::app()) {
         LERROR("VoreenApplication not instantiated");
-        throw new VoreenException("VoreenApplication not instantiated");
+        throw VoreenException("VoreenApplication not instantiated");
     }
 
     if (isInitialized()) {

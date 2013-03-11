@@ -63,7 +63,7 @@ CanvasRendererWidget::~CanvasRendererWidget() {
 
 }
 
-void CanvasRendererWidget::initialize() {
+void CanvasRendererWidget::initialize() throw (VoreenException) {
     QProcessorWidget::initialize();
 
     CanvasRenderer* canvasRenderer = dynamic_cast<CanvasRenderer*>(processor_);
@@ -71,12 +71,12 @@ void CanvasRendererWidget::initialize() {
 
     if (!VoreenApplication::app()) {
         LERRORC("voreen.qt.CanvasRendererWidget", "VoreenApplication not instantiated");
-        throw new VoreenException("VoreenApplication not instantiated");
+        throw VoreenException("VoreenApplication not instantiated");
     }
     NetworkEvaluator* evaluator = VoreenApplication::app()->getNetworkEvaluator(processor_);
     if (!evaluator) {
         LERRORC("voreen.qt.CanvasRendererWidget", "No evaluator assigned to VoreenApplication");
-        throw new VoreenException("No evaluator assigned to VoreenApplication");
+        throw VoreenException("No evaluator assigned to VoreenApplication");
     }
 
     canvasWidget_ = new tgt::QtCanvas("", tgt::ivec2(getSize().x, getSize().y), tgt::GLCanvas::RGBADD, this, true, 0);

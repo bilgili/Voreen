@@ -44,7 +44,7 @@ public:
     CanvasRendererWidget(QWidget* parent, CanvasRenderer* canvasRenderer);
     virtual ~CanvasRendererWidget();
 
-    void initialize();
+    void initialize() throw (VoreenException);
 
     void showScreenshotTool();
 

@@ -70,9 +70,9 @@ public:
      * @note This setting does only affect the conversion of unbounded
      *  data types (float, double).
      */
-    void setInputIntensityRange(const tgt::dvec2& range) {
+    void setInputIntensityRange(const tgt::dvec2& range) throw (VoreenException) {
         if (range.x >= range.y)
-            throw new VoreenException("Illegal range parameter. Expecting range.x < range.y");
+            throw VoreenException("Illegal range parameter. Expecting range.x < range.y");
         inputIntensityRange_ = range;
     }
 
@@ -82,7 +82,7 @@ public:
      * Returns a Volume with a VolumeAtomic<T>
      */
     template<class T>
-    Volume* apply(const VolumeBase* srcVolume) const;
+    Volume* apply(const VolumeBase* srcVolume) const throw (VoreenException);
 
     /**
      * Assigns a progress bar that should be used by the
@@ -99,7 +99,7 @@ private:
 };
 
 template<class T>
-Volume* VolumeOperatorConvert::apply(const VolumeBase* srcVolumeHandle) const {
+Volume* VolumeOperatorConvert::apply(const VolumeBase* srcVolumeHandle) const throw (VoreenException) {
     const VolumeRAM* srcVolume = srcVolumeHandle->getRepresentation<VolumeRAM>();
     VolumeAtomic<T>* destVolume = new VolumeAtomic<T>(srcVolume->getDimensions());
 
