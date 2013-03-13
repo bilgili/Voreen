@@ -35,9 +35,10 @@ namespace voreen {
 
 class VRN_CORE_API VolumeGeneratorBase {
 public:
+    virtual ~VolumeGeneratorBase() {}
     virtual std::string getFormat() const = 0;
     virtual std::string getBaseType() const = 0;
-    virtual VolumeRAM* create(tgt::svec3 dimensions) const = 0;
+    virtual VolumeRAM* create(tgt::svec3 dimensions) const throw (std::bad_alloc) = 0;
     virtual bool isType(const VolumeRAM* v) const = 0;
     virtual int getNumChannels() const = 0;
     virtual int getBytesPerVoxel() const = 0;
@@ -56,7 +57,9 @@ public:
         return "";
     }
 
-    VolumeRAM* create(const std::string& format, tgt::svec3 dimensions) const {
+    VolumeRAM* create(const std::string& format, tgt::svec3 dimensions) const 
+        throw (std::bad_alloc) 
+    {
         for (size_t i = 0; i < generators_.size(); ++i) {
             if (generators_[i]->getFormat() == format)
                 return generators_[i]->create(dimensions);
@@ -105,7 +108,7 @@ public:
     virtual std::string getFormat() const = 0;
     virtual std::string getBaseType() const = 0;
 
-    virtual VolumeRAM* create(tgt::svec3 dimensions) const {
+    virtual VolumeRAM* create(tgt::svec3 dimensions) const throw (std::bad_alloc) {
         return new VolumeAtomic<T>(dimensions);
     }
 
@@ -164,6 +167,18 @@ public:
     std::string getBaseType() const { return getFormat(); }
 };
 
+class VRN_CORE_API VolumeGeneratorUInt64 : public VolumeGeneratorGeneric<uint64_t> {
+public:
+    std::string getFormat() const { return "uint64"; }
+    std::string getBaseType() const { return getFormat(); }
+};
+
+class VRN_CORE_API VolumeGeneratorInt64 : public VolumeGeneratorGeneric<int64_t> {
+public:
+    std::string getFormat() const { return "int64"; }
+    std::string getBaseType() const { return getFormat(); }
+};
+
 class VRN_CORE_API VolumeGeneratorFloat : public VolumeGeneratorGeneric<float> {
 public:
     std::string getFormat() const { return "float"; }
@@ -215,6 +230,30 @@ public:
     std::string getBaseType() const { return "int16"; }
 };
 
+class VRN_CORE_API VolumeGenerator2xUInt32 : public VolumeGeneratorGeneric<tgt::Vector2<uint32_t> > {
+public:
+    std::string getFormat() const { return "Vector2(uint32)"; }
+    std::string getBaseType() const { return "uint32"; }
+};
+
+class VRN_CORE_API VolumeGenerator2xInt32 : public VolumeGeneratorGeneric<tgt::Vector2<int32_t> > {
+public:
+    std::string getFormat() const { return "Vector2(int32)"; }
+    std::string getBaseType() const { return "int32"; }
+};
+
+class VRN_CORE_API VolumeGenerator2xUInt64 : public VolumeGeneratorGeneric<tgt::Vector2<uint64_t> > {
+public:
+    std::string getFormat() const { return "Vector2(uint64)"; }
+    std::string getBaseType() const { return "uint64"; }
+};
+
+class VRN_CORE_API VolumeGenerator2xInt64 : public VolumeGeneratorGeneric<tgt::Vector2<int64_t> > {
+public:
+    std::string getFormat() const { return "Vector2(int64)"; }
+    std::string getBaseType() const { return "int64"; }
+};
+
 //--------------------------------------------------------------------------------
 //Vector3 types:
 
@@ -254,6 +293,30 @@ public:
     std::string getBaseType() const { return "int16"; }
 };
 
+class VRN_CORE_API VolumeGenerator3xUInt32 : public VolumeGeneratorGeneric<tgt::Vector3<uint32_t> > {
+public:
+    std::string getFormat() const { return "Vector3(uint32)"; }
+    std::string getBaseType() const { return "uint32"; }
+};
+
+class VRN_CORE_API VolumeGenerator3xInt32 : public VolumeGeneratorGeneric<tgt::Vector3<int32_t> > {
+public:
+    std::string getFormat() const { return "Vector3(int32)"; }
+    std::string getBaseType() const { return "int32"; }
+};
+
+class VRN_CORE_API VolumeGenerator3xUInt64 : public VolumeGeneratorGeneric<tgt::Vector3<uint64_t> > {
+public:
+    std::string getFormat() const { return "Vector3(uint64)"; }
+    std::string getBaseType() const { return "uint64"; }
+};
+
+class VRN_CORE_API VolumeGenerator3xInt64 : public VolumeGeneratorGeneric<tgt::Vector3<int64_t> > {
+public:
+    std::string getFormat() const { return "Vector3(int64)"; }
+    std::string getBaseType() const { return "int64"; }
+};
+
 //--------------------------------------------------------------------------------
 //Vector4 types:
 
@@ -291,6 +354,30 @@ class VRN_CORE_API VolumeGenerator4xInt16 : public VolumeGeneratorGeneric<tgt::V
 public:
     std::string getFormat() const { return "Vector4(int16)"; }
     std::string getBaseType() const { return "int16"; }
+};
+
+class VRN_CORE_API VolumeGenerator4xUInt32 : public VolumeGeneratorGeneric<tgt::Vector4<uint32_t> > {
+public:
+    std::string getFormat() const { return "Vector4(uint32)"; }
+    std::string getBaseType() const { return "uint32"; }
+};
+
+class VRN_CORE_API VolumeGenerator4xInt32 : public VolumeGeneratorGeneric<tgt::Vector4<int32_t> > {
+public:
+    std::string getFormat() const { return "Vector4(int32)"; }
+    std::string getBaseType() const { return "int32"; }
+};
+
+class VRN_CORE_API VolumeGenerator4xUInt64 : public VolumeGeneratorGeneric<tgt::Vector4<uint64_t> > {
+public:
+    std::string getFormat() const { return "Vector4(uint64)"; }
+    std::string getBaseType() const { return "uint64"; }
+};
+
+class VRN_CORE_API VolumeGenerator4xInt64 : public VolumeGeneratorGeneric<tgt::Vector4<int64_t> > {
+public:
+    std::string getFormat() const { return "Vector4(int64)"; }
+    std::string getBaseType() const { return "int64"; }
 };
 
 //--------------------------------------------------------------------------------

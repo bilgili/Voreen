@@ -43,28 +43,46 @@ VolumeFactory::VolumeFactory() {
     generators_.push_back(new VolumeGeneratorUInt32());
     generators_.push_back(new VolumeGeneratorInt32());
 
+    generators_.push_back(new VolumeGeneratorUInt64());
+    generators_.push_back(new VolumeGeneratorInt64());
+
     generators_.push_back(new VolumeGeneratorFloat());
     generators_.push_back(new VolumeGeneratorDouble());
 
     //Vector:
+        //2
     generators_.push_back(new VolumeGenerator2xFloat());
     generators_.push_back(new VolumeGenerator2xDouble());
     generators_.push_back(new VolumeGenerator2xUInt8());
     generators_.push_back(new VolumeGenerator2xInt8());
     generators_.push_back(new VolumeGenerator2xUInt16());
     generators_.push_back(new VolumeGenerator2xInt16());
+    generators_.push_back(new VolumeGenerator2xUInt32());
+    generators_.push_back(new VolumeGenerator2xInt32());
+    generators_.push_back(new VolumeGenerator2xUInt64());
+    generators_.push_back(new VolumeGenerator2xInt64());
+        //3
     generators_.push_back(new VolumeGenerator3xFloat());
     generators_.push_back(new VolumeGenerator3xDouble());
     generators_.push_back(new VolumeGenerator3xUInt8());
     generators_.push_back(new VolumeGenerator3xInt8());
     generators_.push_back(new VolumeGenerator3xUInt16());
     generators_.push_back(new VolumeGenerator3xInt16());
+    generators_.push_back(new VolumeGenerator3xUInt32());
+    generators_.push_back(new VolumeGenerator3xInt32());
+    generators_.push_back(new VolumeGenerator3xUInt64());
+    generators_.push_back(new VolumeGenerator3xInt64());
+        //4
     generators_.push_back(new VolumeGenerator4xFloat());
     generators_.push_back(new VolumeGenerator4xDouble());
     generators_.push_back(new VolumeGenerator4xUInt8());
     generators_.push_back(new VolumeGenerator4xInt8());
     generators_.push_back(new VolumeGenerator4xUInt16());
     generators_.push_back(new VolumeGenerator4xInt16());
+    generators_.push_back(new VolumeGenerator4xUInt32());
+    generators_.push_back(new VolumeGenerator4xInt32());
+    generators_.push_back(new VolumeGenerator4xUInt64());
+    generators_.push_back(new VolumeGenerator4xInt64());
 
     //Matrix:
     generators_.push_back(new VolumeGeneratorMat3Float());

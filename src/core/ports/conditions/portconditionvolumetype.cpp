@@ -30,6 +30,32 @@
 
 namespace voreen {
 
+voreen::PortConditionVolumeType::PortConditionVolumeType(const std::string& typeString, const std::string& volTypeName)
+    : PortCondition("Volume of type " + volTypeName + " expected")
+    , typeString_(typeString)
+{}
+
+voreen::PortConditionVolumeType::~PortConditionVolumeType()
+{}
+
+bool voreen::PortConditionVolumeType::acceptsPortData() const  {
+    if (!volumePort_ || !volumePort_->hasData())
+        return false;
+
+    return (volumePort_->getData()->getFormat() == typeString_);
+}
+
+void voreen::PortConditionVolumeType::setCheckedPort(const Port* checkedPort) {
+    if (!dynamic_cast<const VolumePort*>(checkedPort)) {
+        LERRORC("voreen.PortConditionVolumeType", "Assigned port is not a volume port");
+    }
+    else {
+        volumePort_ = static_cast<const VolumePort*>(checkedPort);
+    }
+}
+
+// ----------------------------------------------------------------------------
+
 PortConditionVolumeTypeGL::PortConditionVolumeTypeGL()
         : PortCondition("OpenGL-compatible volume type expected: uint8/int8, uint16/int16, uint32/int32, float")
 {

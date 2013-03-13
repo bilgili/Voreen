@@ -34,12 +34,11 @@
 namespace voreen {
 
 /**
- * Generic base class for port conditions that check for a specific volume type T.
+ * Base class for port conditions that check for a specific volume type.
  */
-template<typename T>
-class PortConditionVolumeType : public PortCondition {
+class VRN_CORE_API PortConditionVolumeType : public PortCondition {
 public:
-    PortConditionVolumeType(const std::string& volTypeName);
+    PortConditionVolumeType(const std::string& typeString, const std::string& volTypeName);
 
     virtual ~PortConditionVolumeType();
 
@@ -51,7 +50,7 @@ public:
 
 protected:
     virtual void setCheckedPort(const Port* checkedPort);
-
+    const std::string typeString_;
     const VolumePort* volumePort_;
 };
 
@@ -130,7 +129,7 @@ protected:
  * - VolumeRAM_4xUInt32, VolumeRAM_4xInt32
  * - VolumeRAM_4xUInt64, VolumeRAM_4xInt64
  */
-class PortConditionVolumeTypeInteger : public PortCondition {
+class VRN_CORE_API PortConditionVolumeTypeInteger : public PortCondition {
 public:
     PortConditionVolumeTypeInteger();
 
@@ -167,283 +166,251 @@ protected:
 
 // single channel
 
-class VRN_CORE_API PortConditionVolumeTypeUInt8 : public PortConditionVolumeType<VolumeRAM_UInt8> {
+class VRN_CORE_API PortConditionVolumeTypeUInt8 : public PortConditionVolumeType {
 public:
     PortConditionVolumeTypeUInt8() :
-      PortConditionVolumeType<VolumeRAM_UInt8>("VolumeRAM_UInt8") {};
+      PortConditionVolumeType("uint8","Volume_UInt8") {};
 };
 
-class VRN_CORE_API PortConditionVolumeTypeInt8 : public PortConditionVolumeType<VolumeRAM_Int8> {
+class VRN_CORE_API PortConditionVolumeTypeInt8 : public PortConditionVolumeType {
 public:
     PortConditionVolumeTypeInt8() :
-      PortConditionVolumeType<VolumeRAM_Int8>("VolumeRAM_Int8") {};
+      PortConditionVolumeType("int8","Volume_Int8") {};
 };
 
-class VRN_CORE_API PortConditionVolumeTypeUInt16 : public PortConditionVolumeType<VolumeRAM_UInt16> {
+class VRN_CORE_API PortConditionVolumeTypeUInt16 : public PortConditionVolumeType {
 public:
     PortConditionVolumeTypeUInt16() :
-      PortConditionVolumeType<VolumeRAM_UInt16>("VolumeRAM_UInt16") {};
+      PortConditionVolumeType("uint16","Volume_UInt16") {};
 };
 
-class VRN_CORE_API PortConditionVolumeTypeInt16 : public PortConditionVolumeType<VolumeRAM_Int16> {
+class VRN_CORE_API PortConditionVolumeTypeInt16 : public PortConditionVolumeType {
 public:
     PortConditionVolumeTypeInt16() :
-      PortConditionVolumeType<VolumeRAM_Int16>("VolumeRAM_Int16") {};
+      PortConditionVolumeType("int16","Volume_Int16") {};
 };
 
-class VRN_CORE_API PortConditionVolumeTypeUInt32 : public PortConditionVolumeType<VolumeRAM_UInt32> {
+class VRN_CORE_API PortConditionVolumeTypeUInt32 : public PortConditionVolumeType {
 public:
     PortConditionVolumeTypeUInt32() :
-      PortConditionVolumeType<VolumeRAM_UInt32>("VolumeRAM_UInt32") {};
+      PortConditionVolumeType("uint32","Volume_UInt32") {};
 };
 
-class VRN_CORE_API PortConditionVolumeTypeInt32 : public PortConditionVolumeType<VolumeRAM_Int32> {
+class VRN_CORE_API PortConditionVolumeTypeInt32 : public PortConditionVolumeType {
 public:
     PortConditionVolumeTypeInt32() :
-      PortConditionVolumeType<VolumeRAM_Int32>("VolumeRAM_Int32") {};
+      PortConditionVolumeType("int32","Volume_Int32") {};
 };
 
-class VRN_CORE_API PortConditionVolumeTypeUInt64 : public PortConditionVolumeType<VolumeRAM_UInt64> {
+class VRN_CORE_API PortConditionVolumeTypeUInt64 : public PortConditionVolumeType {
 public:
     PortConditionVolumeTypeUInt64() :
-      PortConditionVolumeType<VolumeRAM_UInt64>("VolumeRAM_UInt64") {};
+      PortConditionVolumeType("uint64","Volume_UInt64") {};
 };
 
-class VRN_CORE_API PortConditionVolumeTypeInt64 : public PortConditionVolumeType<VolumeRAM_Int64> {
+class VRN_CORE_API PortConditionVolumeTypeInt64 : public PortConditionVolumeType {
 public:
     PortConditionVolumeTypeInt64() :
-      PortConditionVolumeType<VolumeRAM_Int64>("VolumeRAM_Int64") {};
+      PortConditionVolumeType("int64","Volume_Int64") {};
 };
 
-class VRN_CORE_API PortConditionVolumeTypeFloat : public PortConditionVolumeType<VolumeRAM_Float> {
+class VRN_CORE_API PortConditionVolumeTypeFloat : public PortConditionVolumeType {
 public:
     PortConditionVolumeTypeFloat() :
-      PortConditionVolumeType<VolumeRAM_Float>("VolumeRAM_Float") {};
+      PortConditionVolumeType("float","Volume_Float") {};
 };
 
-class VRN_CORE_API PortConditionVolumeTypeDouble : public PortConditionVolumeType<VolumeRAM_Double> {
+class VRN_CORE_API PortConditionVolumeTypeDouble : public PortConditionVolumeType {
 public:
     PortConditionVolumeTypeDouble() :
-      PortConditionVolumeType<VolumeRAM_Double>("VolumeRAM_Double") {};
+      PortConditionVolumeType("double","Volume_Double") {};
 };
 
 // two channels
 
-class VRN_CORE_API PortConditionVolumeType2xUInt8 : public PortConditionVolumeType<VolumeRAM_2xUInt8> {
+class VRN_CORE_API PortConditionVolumeType2xUInt8 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType2xUInt8() :
-      PortConditionVolumeType<VolumeRAM_2xUInt8>("VolumeRAM_2xUInt8") {};
+      PortConditionVolumeType("Vector2(uint8)","Volume_2xUInt8") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType2xInt8 : public PortConditionVolumeType<VolumeRAM_2xInt8> {
+class VRN_CORE_API PortConditionVolumeType2xInt8 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType2xInt8() :
-      PortConditionVolumeType<VolumeRAM_2xInt8>("VolumeRAM_2xInt8") {};
+      PortConditionVolumeType("Vector2(int8)","Volume_2xInt8") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType2xUInt16 : public PortConditionVolumeType<VolumeRAM_2xUInt16> {
+class VRN_CORE_API PortConditionVolumeType2xUInt16 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType2xUInt16() :
-      PortConditionVolumeType<VolumeRAM_2xUInt16>("VolumeRAM_2xUInt16") {};
+      PortConditionVolumeType("Vector2(uint16)","Volume_2xUInt16") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType2xInt16 : public PortConditionVolumeType<VolumeRAM_2xInt16> {
+class VRN_CORE_API PortConditionVolumeType2xInt16 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType2xInt16() :
-      PortConditionVolumeType<VolumeRAM_2xInt16>("VolumeRAM_2xInt16") {};
+      PortConditionVolumeType("Vector2(int16)","Volume_2xInt16") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType2xUInt32 : public PortConditionVolumeType<VolumeRAM_2xUInt32> {
+class VRN_CORE_API PortConditionVolumeType2xUInt32 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType2xUInt32() :
-      PortConditionVolumeType<VolumeRAM_2xUInt32>("VolumeRAM_2xUInt32") {};
+      PortConditionVolumeType("Vector2(uint32)","Volume_2xUInt32") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType2xInt32 : public PortConditionVolumeType<VolumeRAM_2xInt32> {
+class VRN_CORE_API PortConditionVolumeType2xInt32 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType2xInt32() :
-      PortConditionVolumeType<VolumeRAM_2xInt32>("VolumeRAM_2xInt32") {};
+      PortConditionVolumeType("Vector2(int32)","Volume_2xInt32") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType2xUInt64 : public PortConditionVolumeType<VolumeRAM_2xUInt64> {
+class VRN_CORE_API PortConditionVolumeType2xUInt64 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType2xUInt64() :
-      PortConditionVolumeType<VolumeRAM_2xUInt64>("VolumeRAM_2xUInt64") {};
+      PortConditionVolumeType("Vector2(uint64)","Volume_2xUInt64") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType2xInt64 : public PortConditionVolumeType<VolumeRAM_2xInt64> {
+class VRN_CORE_API PortConditionVolumeType2xInt64 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType2xInt64() :
-      PortConditionVolumeType<VolumeRAM_2xInt64>("VolumeRAM_2xInt64") {};
+      PortConditionVolumeType("Vector2(int64)","Volume_2xInt64") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType2xFloat : public PortConditionVolumeType<VolumeRAM_2xFloat> {
+class VRN_CORE_API PortConditionVolumeType2xFloat : public PortConditionVolumeType {
 public:
     PortConditionVolumeType2xFloat() :
-      PortConditionVolumeType<VolumeRAM_2xFloat>("VolumeRAM_2xFloat") {};
+      PortConditionVolumeType("Vector2(float)","Volume_2xFloat") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType2xDouble : public PortConditionVolumeType<VolumeRAM_2xDouble> {
+class VRN_CORE_API PortConditionVolumeType2xDouble : public PortConditionVolumeType {
 public:
     PortConditionVolumeType2xDouble() :
-      PortConditionVolumeType<VolumeRAM_2xDouble>("VolumeRAM_2xDouble") {};
+      PortConditionVolumeType("Vector2(double)","Volume_2xDouble") {};
 };
 
 // three channels
 
-class VRN_CORE_API PortConditionVolumeType3xUInt8 : public PortConditionVolumeType<VolumeRAM_3xUInt8> {
+class VRN_CORE_API PortConditionVolumeType3xUInt8 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType3xUInt8() :
-      PortConditionVolumeType<VolumeRAM_3xUInt8>("VolumeRAM_3xUInt8") {};
+      PortConditionVolumeType("Vector3(uint8)","Volume_3xUInt8") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType3xInt8 : public PortConditionVolumeType<VolumeRAM_3xInt8> {
+class VRN_CORE_API PortConditionVolumeType3xInt8 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType3xInt8() :
-      PortConditionVolumeType<VolumeRAM_3xInt8>("VolumeRAM_3xInt8") {};
+      PortConditionVolumeType("Vector3(int8)","Volume_3xInt8") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType3xUInt16 : public PortConditionVolumeType<VolumeRAM_3xUInt16> {
+class VRN_CORE_API PortConditionVolumeType3xUInt16 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType3xUInt16() :
-      PortConditionVolumeType<VolumeRAM_3xUInt16>("VolumeRAM_3xUInt16") {};
+      PortConditionVolumeType("Vector3(uint16)","Volume_3xUInt16") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType3xInt16 : public PortConditionVolumeType<VolumeRAM_3xInt16> {
+class VRN_CORE_API PortConditionVolumeType3xInt16 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType3xInt16() :
-      PortConditionVolumeType<VolumeRAM_3xInt16>("VolumeRAM_3xInt16") {};
+      PortConditionVolumeType("Vector3(int16)","Volume_3xInt16") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType3xUInt32 : public PortConditionVolumeType<VolumeRAM_3xUInt32> {
+class VRN_CORE_API PortConditionVolumeType3xUInt32 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType3xUInt32() :
-      PortConditionVolumeType<VolumeRAM_3xUInt32>("VolumeRAM_3xUInt32") {};
+      PortConditionVolumeType("Vector3(uint32)","Volume_3xUInt32") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType3xInt32 : public PortConditionVolumeType<VolumeRAM_3xInt32> {
+class VRN_CORE_API PortConditionVolumeType3xInt32 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType3xInt32() :
-      PortConditionVolumeType<VolumeRAM_3xInt32>("VolumeRAM_3xInt32") {};
+      PortConditionVolumeType("Vector3(int32)","Volume_3xInt32") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType3xUInt64 : public PortConditionVolumeType<VolumeRAM_3xUInt64> {
+class VRN_CORE_API PortConditionVolumeType3xUInt64 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType3xUInt64() :
-      PortConditionVolumeType<VolumeRAM_3xUInt64>("VolumeRAM_3xUInt64") {};
+      PortConditionVolumeType("Vector3(uint64)","Volume_3xUInt64") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType3xInt64 : public PortConditionVolumeType<VolumeRAM_3xInt64> {
+class VRN_CORE_API PortConditionVolumeType3xInt64 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType3xInt64() :
-      PortConditionVolumeType<VolumeRAM_3xInt64>("VolumeRAM_3xInt64") {};
+      PortConditionVolumeType("Vector3(int64)","Volume_3xInt64") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType3xFloat : public PortConditionVolumeType<VolumeRAM_3xFloat> {
+class VRN_CORE_API PortConditionVolumeType3xFloat : public PortConditionVolumeType {
 public:
     PortConditionVolumeType3xFloat() :
-      PortConditionVolumeType<VolumeRAM_3xFloat>("VolumeRAM_3xFloat") {};
+      PortConditionVolumeType("Vector3(float)","Volume_3xFloat") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType3xDouble : public PortConditionVolumeType<VolumeRAM_3xDouble> {
+class VRN_CORE_API PortConditionVolumeType3xDouble : public PortConditionVolumeType {
 public:
     PortConditionVolumeType3xDouble() :
-      PortConditionVolumeType<VolumeRAM_3xDouble>("VolumeRAM_3xDouble") {};
+      PortConditionVolumeType("Vector3(double)","Volume_3xDouble") {};
 };
 
 // four channels
 
-class VRN_CORE_API PortConditionVolumeType4xUInt8 : public PortConditionVolumeType<VolumeRAM_4xUInt8> {
+class VRN_CORE_API PortConditionVolumeType4xUInt8 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType4xUInt8() :
-      PortConditionVolumeType<VolumeRAM_4xUInt8>("VolumeRAM_4xUInt8") {};
+      PortConditionVolumeType("Vector4(uint8)","Volume_4xUInt8") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType4xInt8 : public PortConditionVolumeType<VolumeRAM_4xInt8> {
+class VRN_CORE_API PortConditionVolumeType4xInt8 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType4xInt8() :
-      PortConditionVolumeType<VolumeRAM_4xInt8>("VolumeRAM_4xInt8") {};
+      PortConditionVolumeType("Vector4(int8)","Volume_4xInt8") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType4xUInt16 : public PortConditionVolumeType<VolumeRAM_4xUInt16> {
+class VRN_CORE_API PortConditionVolumeType4xUInt16 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType4xUInt16() :
-      PortConditionVolumeType<VolumeRAM_4xUInt16>("VolumeRAM_4xUInt16") {};
+      PortConditionVolumeType("Vector4(uint16)","Volume_4xUInt16") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType4xInt16 : public PortConditionVolumeType<VolumeRAM_4xInt16> {
+class VRN_CORE_API PortConditionVolumeType4xInt16 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType4xInt16() :
-      PortConditionVolumeType<VolumeRAM_4xInt16>("VolumeRAM_4xInt16") {};
+      PortConditionVolumeType("Vector4(int16)","Volume_4xInt16") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType4xUInt32 : public PortConditionVolumeType<VolumeRAM_4xUInt32> {
+class VRN_CORE_API PortConditionVolumeType4xUInt32 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType4xUInt32() :
-      PortConditionVolumeType<VolumeRAM_4xUInt32>("VolumeRAM_4xUInt32") {};
+      PortConditionVolumeType("Vector4(uint32)","Volume_4xUInt32") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType4xInt32 : public PortConditionVolumeType<VolumeRAM_4xInt32> {
+class VRN_CORE_API PortConditionVolumeType4xInt32 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType4xInt32() :
-      PortConditionVolumeType<VolumeRAM_4xInt32>("VolumeRAM_4xInt32") {};
+      PortConditionVolumeType("Vector4(int32)","Volume_4xInt32") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType4xUInt64 : public PortConditionVolumeType<VolumeRAM_4xUInt64> {
+class VRN_CORE_API PortConditionVolumeType4xUInt64 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType4xUInt64() :
-      PortConditionVolumeType<VolumeRAM_4xUInt64>("VolumeRAM_4xUInt64") {};
+      PortConditionVolumeType("Vector4(uint64)","Volume_4xUInt64") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType4xInt64 : public PortConditionVolumeType<VolumeRAM_4xInt64> {
+class VRN_CORE_API PortConditionVolumeType4xInt64 : public PortConditionVolumeType {
 public:
     PortConditionVolumeType4xInt64() :
-      PortConditionVolumeType<VolumeRAM_4xInt64>("VolumeRAM_4xInt64") {};
+      PortConditionVolumeType("Vector4(int64)","Volume_4xInt64") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType4xFloat : public PortConditionVolumeType<VolumeRAM_4xFloat> {
+class VRN_CORE_API PortConditionVolumeType4xFloat : public PortConditionVolumeType {
 public:
     PortConditionVolumeType4xFloat() :
-      PortConditionVolumeType<VolumeRAM_4xFloat>("VolumeRAM_4xFloat") {};
+      PortConditionVolumeType("Vector4(float)","Volume_4xFloat") {};
 };
 
-class VRN_CORE_API PortConditionVolumeType4xDouble : public PortConditionVolumeType<VolumeRAM_4xDouble> {
+class VRN_CORE_API PortConditionVolumeType4xDouble : public PortConditionVolumeType {
 public:
     PortConditionVolumeType4xDouble() :
-      PortConditionVolumeType<VolumeRAM_4xDouble>("VolumeRAM_4xDouble") {};
+      PortConditionVolumeType("Vector4(double)","Volume_4xDouble") {};
 };
-
-
-// -----------------------------------------------------------------------------------------------
-// template definitions
-
-template<typename T>
-voreen::PortConditionVolumeType<T>::PortConditionVolumeType(const std::string& volTypeName)
-    : PortCondition("Volume of type " + volTypeName + " expected")
-{}
-
-template<typename T>
-voreen::PortConditionVolumeType<T>::~PortConditionVolumeType()
-{}
-
-template<typename T>
-bool voreen::PortConditionVolumeType<T>::acceptsPortData() const  {
-    if (!volumePort_ || !volumePort_->hasData())
-        return false;
-
-    const VolumeRAM* volume = volumePort_->getData()->getRepresentation<VolumeRAM>();
-    return (dynamic_cast<const T*>(volume));
-}
-
-template<typename T>
-void voreen::PortConditionVolumeType<T>::setCheckedPort(const Port* checkedPort) {
-    if (!dynamic_cast<const VolumePort*>(checkedPort)) {
-        LERRORC("voreen.PortConditionVolumeType", "Assigned port is not a volume port");
-    }
-    else {
-        volumePort_ = static_cast<const VolumePort*>(checkedPort);
-    }
-}
 
 } // namespace
 
