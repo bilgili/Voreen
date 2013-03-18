@@ -34,10 +34,6 @@
 #include <typeinfo>
 #include <sstream>
 
-#ifdef VRN_MODULE_FLOWREEN
-#include "modules/flowreen/datastructures/volumeflow3d.h"
-#endif
-
 using tgt::vec3;
 using tgt::bvec3;
 using tgt::ivec3;
@@ -109,13 +105,6 @@ VolumeTexture* VolumeGL::getTexture() {
 void VolumeGL::generateTexture(const VolumeRAM* volume)
         throw (VoreenException, std::bad_alloc)
 {
-    if (!tgt::hand(tgt::greaterThan(volume->getDimensions(), svec3(1)))) {
-        std::stringstream message;
-        message << "OpenGL volumes must have a size greater than one in all dimensions. Actual size: " << volume->getDimensions();
-        LERROR(message.str());
-        throw VoreenException(message.str());
-    }
-
     if (!GpuCaps.is3DTexturingSupported()) {
         std::string message = "3D textures apparently not supported by the OpenGL driver";
         LERROR(message);
@@ -338,14 +327,6 @@ void VolumeGL::generateTexture(const VolumeRAM* volume)
         LERROR(message);
         throw VoreenException(message);
     }
-    // special types (TODO: extract from here)
-#ifdef VRN_MODULE_FLOWREEN
-    else if (dynamic_cast<const VolumeFlow3D*>(volume)) {
-        format = GL_RGB;
-        internalFormat = GL_RGB16;
-        dataType = GL_FLOAT;
-    }
-#endif
     else {
         LERROR("unknown or unsupported volume type");
     }
@@ -356,41 +337,29 @@ void VolumeGL::generateTexture(const VolumeRAM* volume)
     //
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     VolumeTexture* vTex = 0;
-
-    tgt::vec3* temp2 = 0;
-#ifdef VRN_MODULE_FLOWREEN
-    // Textures containing flow data need to contain data
-    // within range [0.0, 1.0], so the values have to be mapped
-    const VolumeFlow3D* flowTex = dynamic_cast<const VolumeFlow3D*>(volume);
-    if (flowTex) {
-        const float minValue = flowTex->getMinValue();
-        const float maxValue = flowTex->getMaxValue();
-        const float range = (maxValue - minValue);
-
-        const tgt::vec3* const voxels = flowTex->voxel();
-        temp2 = new tgt::vec3[volume->getNumVoxels()];
-        for (size_t i = 0; i < volume->getNumVoxels(); ++i) {
-            if (voxels[i] != tgt::vec3::zero) {
-                temp2[i].x = (voxels[i].x - minValue) / range;
-                temp2[i].y = (voxels[i].y - minValue) / range;
-                temp2[i].z = (voxels[i].z - minValue) / range;
-            }
-        }
-    }
-#endif
-
-
-    // use temp data if this was created
-    if (temp2) {
-        vTex = new VolumeTexture(reinterpret_cast<GLubyte*>(temp2), volume->getDimensions(),
-        format, internalFormat, dataType, tgt::Texture::LINEAR);
-    }
-    else {
+    char* tempVolumeData = 0;
+    if (volume->getDimensions().z > 1) { // multi-slice volume => just create OGL texture from it
         vTex = new VolumeTexture(static_cast<const GLubyte*>(volume->getData()),
-            volume->getDimensions(),
+            volume->getDimensions(), 
             format, internalFormat, dataType, tgt::Texture::LINEAR);
     }
-
+    else { // single-slice volume (not allowed as OGL texture) => double slice 
+        LWARNING("OpenGL does not allow 3D textures consisting of only one slice: cloning slice");
+        try {
+            tempVolumeData = new char[2*volume->getNumBytes()];
+            memcpy(tempVolumeData, volume->getData(), volume->getNumBytes());
+            memcpy(tempVolumeData+volume->getNumBytes(), volume->getData(), volume->getNumBytes());
+            
+            vTex = new VolumeTexture(reinterpret_cast<const GLubyte*>(tempVolumeData),
+                tgt::svec3(volume->getDimensions().x, volume->getDimensions().y, volume->getDimensions().z * 2), 
+                format, internalFormat, dataType, tgt::Texture::LINEAR);
+        }
+        catch (std::bad_alloc&) {
+            LERROR("bad allocation while creating OpenGL texture");
+            throw VoreenException("bad allocation while creating OpenGL texture");
+        }
+    }
+    tgtAssert(vTex, "volume texture not created");
     LGL_ERROR;
 
     vTex->bind();
@@ -424,11 +393,11 @@ void VolumeGL::generateTexture(const VolumeRAM* volume)
 
     LGL_ERROR;
 
-    // delete temporary data that has eventually be created
-    delete[] temp2;
-
     // prevent deleting twice
     vTex->setPixelData(0);
+
+    delete[] tempVolumeData;
+    tempVolumeData = 0;
 
     // append to internal data structure
     texture_ = vTex;
@@ -489,7 +458,7 @@ voreen::RealWorldMapping VolumeGL::getPixelTransferMapping() const {
 
 bool RepresentationConverterUploadGL::canConvert(const VolumeRepresentation* source) const {
     //We can only convert from RAM volumes:
-    if(dynamic_cast<const VolumeRAM*>(source))
+    if (dynamic_cast<const VolumeRAM*>(source))
         return true;
     else
         return false;

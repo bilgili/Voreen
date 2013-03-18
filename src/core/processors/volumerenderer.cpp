@@ -87,12 +87,14 @@ bool VolumeRenderer::bindVolumes(tgt::Shader* shader, const std::vector<VolumeSt
         const VolumeGL* volumeGL = volumeStruct.volume_->getRepresentation<VolumeGL>();
         if (!volumeGL || !volumeGL->getTexture()) {
             LWARNING("No volume texture while binding volumes");
+            success = false;
             continue;
         }
 
         const TextureUnit* texUnit = volumeStruct.texUnit_;
         if (!texUnit) {
             LERROR("No texture unit while binding volumes");
+            success = false;
             continue;
         }
 

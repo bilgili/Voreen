@@ -392,7 +392,7 @@ void SliceViewer::process() {
             break;
 
         // calculate depth in llb/urf space
-        depth = ((static_cast<float>(sliceNumber) / static_cast<float>(numSlices - 1)) - 0.5f)
+        depth = ((static_cast<float>(sliceNumber) / static_cast<float>(std::max(numSlices - 1, 1))) - 0.5f)
             * texDim[sliceAlignment_.getValue()];
 
         // check whether the given slice is not within tex
@@ -600,7 +600,11 @@ void SliceViewer::renderInfoTexts() const {
         std::string prefix100;
         std::string prefix1000;
         std::string dummy;
-        if (numSlices < 100) {
+        if (numSlices < 10) {
+            dummy = "8/8";
+            prefix10 = "";
+        }
+        else if (numSlices < 100) {
             dummy = "88/88";
             prefix10 = "0";
         }
@@ -698,7 +702,7 @@ tgt::vec3 SliceViewer::screenToVoxelPos(tgt::ivec2 screenPos) const {
     posWithinSlice /= sliceSize_;
 
     // calculate the normalized depth of the picked slice (texture z coordinate)
-    float depth = slice / (volumeDim[voxelPosPermutation_.z] - 1.f);
+    float depth = slice / std::max(volumeDim[voxelPosPermutation_.z] - 1.f, 1.f);
 
     // now we have the assigned texture coordinates of the picked fragment
     tgt::vec4 texCoords(posWithinSlice, depth, 1.f);

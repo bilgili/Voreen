@@ -186,7 +186,7 @@ float VolumeRaycaster::getSamplingStepSize(const VolumeBase* vol) {
 bool VolumeRaycaster::bindVolumes(tgt::Shader* shader, const std::vector<VolumeStruct> &volumes,
         const tgt::Camera* camera, const tgt::vec4& lightPosition) {
 
-    if (VolumeRenderer::bindVolumes(shader, volumes, camera, lightPosition) == false)
+    if (!VolumeRenderer::bindVolumes(shader, volumes, camera, lightPosition))
         return false;
 
     shader->setIgnoreUniformLocationError(true);
@@ -195,7 +195,7 @@ bool VolumeRaycaster::bindVolumes(tgt::Shader* shader, const std::vector<VolumeS
     // size is calculated for each volume, but shaders need to be adapted as well to have volume
     // parameters available in ray setup and compositing. joerg
     if (volumes.size() > 0) {
-        if (!volumes[0].volume_ || !volumes[0].volume_->getRepresentation<VolumeGL>()->getTexture()) {
+        if (!volumes[0].volume_ || !volumes[0].volume_->getRepresentation<VolumeGL>() || !volumes[0].volume_->getRepresentation<VolumeGL>()->getTexture()) {
             LWARNING("No volume texture");
         }
         else {
