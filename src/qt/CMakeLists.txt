@@ -365,6 +365,18 @@ IF(WIN32)
     ELSE()
         MESSAGE(WARNING "Qt DLLs not found")
     ENDIF()
+    
+    # add svg iconengine dll to install target
+    IF (VRN_ADD_INSTALL_TARGET)
+        INSTALL(FILES ${QT_PLUGINS_DIR}/iconengines/qsvgicond4.dll 
+            DESTINATION iconengines
+            CONFIGURATIONS Debug
+        )        
+        INSTALL(FILES ${QT_PLUGINS_DIR}/iconengines/qsvgicon4.dll 
+            DESTINATION iconengines
+            CONFIGURATIONS Release
+        )        
+    ENDIF()
 ENDIF()
 
 
