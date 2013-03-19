@@ -15,9 +15,9 @@ IF(WIN32)
         )
         
         SET(MOD_DEBUG_DLLS
-			${MOD_DIR}/ext/ffmpeg/lib/win32/avcodec-54.dll
+	    ${MOD_DIR}/ext/ffmpeg/lib/win32/avcodec-54.dll
             ${MOD_DIR}/ext/ffmpeg/lib/win32/avformat-54.dll
-            ${MOD_DIR}/ext/ffmpeg/lib/win32/avutil-51.dll
+            ${MOD_DIR}/ext/ffmpeg/lib/win32/avutil-52.dll
             ${MOD_DIR}/ext/ffmpeg/lib/win32/swscale-2.dll
         )
 
@@ -31,12 +31,12 @@ IF(WIN32)
         )
         
         SET(MOD_DEBUG_DLLS
-			${MOD_DIR}/ext/ffmpeg/lib/win64/avcodec-54.dll
+            ${MOD_DIR}/ext/ffmpeg/lib/win64/avcodec-54.dll
             ${MOD_DIR}/ext/ffmpeg/lib/win64/avformat-54.dll
-            ${MOD_DIR}/ext/ffmpeg/lib/win64/avutil-51.dll
+            ${MOD_DIR}/ext/ffmpeg/lib/win64/avutil-52.dll
             ${MOD_DIR}/ext/ffmpeg/lib/win64/swscale-2.dll
         )
-		SET(MOD_RELEASE_DLLS ${MOD_DEBUG_DLLS})
+        SET(MOD_RELEASE_DLLS ${MOD_DEBUG_DLLS})
     ENDIF()
     
     # deployment
