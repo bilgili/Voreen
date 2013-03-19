@@ -22,16 +22,17 @@
 /*--start constants--*/
 #define PY_MAJOR_VERSION	2
 #define PY_MINOR_VERSION	7
-#define PY_MICRO_VERSION	1
+#define PY_MICRO_VERSION	3
 #define PY_RELEASE_LEVEL	PY_RELEASE_LEVEL_FINAL
 #define PY_RELEASE_SERIAL	0
 
 /* Version as a string */
-#define PY_VERSION      	"2.7.1"
+#define PY_VERSION      	"2.7.3"
 /*--end constants--*/
 
-/* Subversion Revision number of this file (not of the repository) */
-#define PY_PATCHLEVEL_REVISION  "$Revision: 86832 $"
+/* Subversion Revision number of this file (not of the repository). Empty
+   since Mercurial migration. */
+#define PY_PATCHLEVEL_REVISION  ""
 
 /* Version as a single 4-byte hex number, e.g. 0x010502B2 == 1.5.2b2.
    Use this for numeric comparisons, e.g. #if PY_VERSION_HEX >= ... */

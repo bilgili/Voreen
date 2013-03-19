@@ -41,6 +41,7 @@ Used in:  PY_LONG_LONG
 
 **************************************************************************/
 
+
 /* For backward compatibility only. Obsolete, do not use. */
 #ifdef HAVE_PROTOTYPES
 #define Py_PROTO(x) x
@@ -324,6 +325,7 @@ typedef Py_intptr_t     Py_ssize_t;
 #include <time.h>
 #endif /* !HAVE_SYS_TIME_H */
 #endif /* !TIME_WITH_SYS_TIME */
+
 
 /******************************
  * WRAPPER FOR <sys/select.h> *
@@ -634,6 +636,7 @@ extern pid_t forkpty(int *, char *, struct termios *, struct winsize *);
 #endif /* !defined(HAVE_PTY_H) && !defined(HAVE_LIBUTIL_H) */
 #endif /* defined(HAVE_OPENPTY) || defined(HAVE_FORKPTY) */
 
+
 /* These are pulled from various places. It isn't obvious on what platforms
    they are necessary, nor what the exact prototype should look like (which
    is likely to vary between platforms!) If you find you need one of these
@@ -651,6 +654,7 @@ extern int fclose(FILE *);
 /* From Modules/posixmodule.c */
 extern int fdatasync(int);
 #endif /* 0 */
+
 
 /* On 4.4BSD-descendants, ctype functions serves the whole range of
  * wchar_t character set rather than single byte code points only.
@@ -810,6 +814,7 @@ typedef struct fd_set {
 #endif /* FD_SET */
 
 #endif /* fd manipulation macros */
+
 
 /* limits.h constants that may be missing */
 

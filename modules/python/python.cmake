@@ -8,28 +8,28 @@ IF(WIN32)
 
     IF(VRN_WIN32)
         SET(MOD_DEBUG_LIBRARIES 
-            "${MOD_DIR}/ext/python27/lib/win32/debug/python27.lib"
+            "${MOD_DIR}/ext/python27/lib/win32/debug/python27_d.lib"
         )
         SET(MOD_RELEASE_LIBRARIES 
             "${MOD_DIR}/ext/python27/lib/win32/release/python27.lib"
         )
         
         SET(MOD_DEBUG_DLLS
-            "${MOD_DIR}/ext/python27/lib/win32/debug/python27.dll"
+            "${MOD_DIR}/ext/python27/lib/win32/debug/python27_d.dll"
         )
         SET(MOD_RELEASE_DLLS 
             "${MOD_DIR}/ext/python27/lib/win32/release/python27.dll"
         )
     ELSEIF(VRN_WIN64)
         SET(MOD_DEBUG_LIBRARIES 
-            "${MOD_DIR}/ext/python27/lib/win64/debug/python27.lib"
+            "${MOD_DIR}/ext/python27/lib/win64/debug/python27_d.lib"
         )
         SET(MOD_RELEASE_LIBRARIES 
             "${MOD_DIR}/ext/python27/lib/win64/release/python27.lib"
         )
         
         SET(MOD_DEBUG_DLLS
-            "${MOD_DIR}/ext/python27/lib/win64/debug/python27.dll"
+            "${MOD_DIR}/ext/python27/lib/win64/debug/python27_d.dll"
         )
         SET(MOD_RELEASE_DLLS 
             "${MOD_DIR}/ext/python27/lib/win64/release/python27.dll"

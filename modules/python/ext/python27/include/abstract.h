@@ -185,6 +185,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
        */
 
+
      /* Implemented elsewhere:
 
      int PyObject_SetAttrString(PyObject *o, char *attr_name, PyObject *v);
@@ -298,6 +299,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
        */
 
+
+
      PyAPI_FUNC(PyObject *) PyObject_Call(PyObject *callable_object,
                                          PyObject *args, PyObject *kw);
 
@@ -333,6 +336,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
        */
 
+
      PyAPI_FUNC(PyObject *) PyObject_CallMethod(PyObject *o, char *m,
                                                char *format, ...);
 
@@ -362,6 +366,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
      the equivalent of the Python expression: apply(o,args).
        */
 
+
      PyAPI_FUNC(PyObject *) PyObject_CallMethodObjArgs(PyObject *o,
                                                       PyObject *m, ...);
 
@@ -373,6 +378,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
      the Python expression: o.method(args).
        */
 
+
      /* Implemented elsewhere:
 
      long PyObject_Hash(PyObject *o);
@@ -382,6 +388,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
      expression: hash(o).
 
        */
+
 
      /* Implemented elsewhere:
 
@@ -502,7 +509,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
       arbitrary data.
 
       0 is returned on success.  buffer and buffer_len are only
-      set in case no error occurrs.  Otherwise, -1 is returned and
+      set in case no error occurs.  Otherwise, -1 is returned and
       an exception set.
 
        */
@@ -517,7 +524,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
       writeable memory location in buffer of size buffer_len.
 
       0 is returned on success.  buffer and buffer_len are only
-      set in case no error occurrs. Otherwise, -1 is returned and
+      set in case no error occurs. Otherwise, -1 is returned and
       an exception set.
 
        */
@@ -541,6 +548,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
        success
     */
 
+
      PyAPI_FUNC(void *) PyBuffer_GetPointer(Py_buffer *view, Py_ssize_t *indices);
 
     /* Get the memory area pointed to by the indices for the buffer given.
@@ -551,6 +559,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
     /* Return the implied itemsize of the data-format area from a
        struct-style description */
+
+
 
      PyAPI_FUNC(int) PyBuffer_ToContiguous(void *buf, Py_buffer *view,
                                            Py_ssize_t len, char fort);
@@ -1020,6 +1030,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
        */
 
+
      PyAPI_FUNC(PyObject *) PyNumber_ToBase(PyObject *n, int base);
 
        /*
@@ -1027,6 +1038,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
      marker of 0b, 0o or 0x prefixed if applicable.
      If n is not an int object, it is converted with PyNumber_Index first.
        */
+
 
 /*  Sequence protocol:*/
 
@@ -1127,6 +1139,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
      Returns the sequence, o, as a tuple on success, and NULL on failure.
      This is equivalent to the Python expression: tuple(o)
        */
+
 
      PyAPI_FUNC(PyObject *) PySequence_List(PyObject *o);
        /*
@@ -1357,11 +1370,13 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
      statement: o[key]=v.
       */
 
+
 PyAPI_FUNC(int) PyObject_IsInstance(PyObject *object, PyObject *typeorclass);
       /* isinstance(object, typeorclass) */
 
 PyAPI_FUNC(int) PyObject_IsSubclass(PyObject *object, PyObject *typeorclass);
       /* issubclass(object, typeorclass) */
+
 
 PyAPI_FUNC(int) _PyObject_RealIsInstance(PyObject *inst, PyObject *cls);
 

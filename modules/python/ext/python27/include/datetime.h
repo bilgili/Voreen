@@ -84,6 +84,7 @@ typedef struct
     PyObject *tzinfo;
 } PyDateTime_Time;              /* hastzinfo true */
 
+
 /* All datetime objects are of PyDateTime_DateTimeType, but that can be
  * allocated in two ways too, just like for time objects above.  In addition,
  * the plain date type is a base class for datetime, so it must also have
@@ -109,6 +110,7 @@ typedef struct
     _PyDateTime_DATETIMEHEAD
     PyObject *tzinfo;
 } PyDateTime_DateTime;          /* hastzinfo true */
+
 
 /* Apply for date and datetime instances. */
 #define PyDateTime_GET_YEAR(o)     ((((PyDateTime_Date*)o)->data[0] << 8) | \

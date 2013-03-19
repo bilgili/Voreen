@@ -75,6 +75,7 @@ typedef struct PyMemberDef {
 
 #define T_PYSSIZET       19 /* Py_ssize_t */
 
+
 /* Flags */
 #define READONLY        1
 #define RO              READONLY                /* Shorthand */

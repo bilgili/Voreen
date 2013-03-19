@@ -57,6 +57,7 @@ PyAPI_FUNC(PyObject *) PyMemoryView_FromBuffer(Py_buffer *info);
     /* create new if bufptr is NULL 
         will be a new bytesobject in base */
 
+
 /* The struct is declared here so that macros can work, but it shouldn't
    be considered public. Don't access those fields directly, use the macros
    and functions instead! */

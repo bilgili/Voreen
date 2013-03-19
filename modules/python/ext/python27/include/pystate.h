@@ -1,6 +1,7 @@
 
 /* Thread and interpreter state structures and their interfaces */
 
+
 #ifndef Py_PYSTATE_H
 #define Py_PYSTATE_H
 #ifdef __cplusplus
@@ -167,7 +168,7 @@ PyAPI_FUNC(void) PyGILState_Release(PyGILState_STATE);
 
 /* Helper/diagnostic function - get the current thread state for
    this thread.  May return NULL if no GILState API has been used
-   on the current thread.  Note the main thread always has such a
+   on the current thread.  Note that the main thread always has such a
    thread-state, even if no auto-thread-state call has been made
    on the main thread.
 */
