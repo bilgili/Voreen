@@ -1,6 +1,23 @@
 Voreen Changelog
 ----------------
 
+2013-03-22: Voreen 4.2.1
+------------------------
+
+   * Features:
+     o OMETiffVolumeReader supports 5D data stacks and multi-directory tiff files
+     o Added 'sample' module containing compilable example processors
+
+   * Bug Fixes/Minor Changes:
+     o Fixed OpenGL texture creation of single-slice volumes
+     o CameraProperty adjusts near plane according to physical data set extent 
+     o Added missing qsvgicon4 DLLs to Win32 install targets
+     o Added Python and FFmpeg Win32 builds fully compatible with Visual Studio 2010/2012
+     o PortConditionVolumeType does not implicitly create VolumeRAM anymore
+     o ProcessorPropertiesWidget propertly handles properties in groups without label
+     o Cleaned up OptimizedProxyGeometry
+
+
 2013-03-01: Voreen 4.2
 ----------------------
 
