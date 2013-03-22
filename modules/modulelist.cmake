@@ -11,6 +11,7 @@ OPTION(VRN_MODULE_DYNAMICGLSL
 OPTION(VRN_MODULE_FLOWREEN      "Provides flow visualization techniques"                        ON )
 OPTION(VRN_MODULE_PLOTTING      "Provides plotting components"                                  ON )
 OPTION(VRN_MODULE_PVM           "Provides a volume reader for Stefan Roettger's PVM format"     ON )
+OPTION(VRN_MODULE_SAMPLE        "Contains example processors"                                   OFF)
 OPTION(VRN_MODULE_SEGY          "Provides a volume reader for the SEGY format"                  ON )
 OPTION(VRN_MODULE_STEREOSCOPY   "Provides stereo rendering"                                     ON )
 OPTION(VRN_MODULE_STAGING       "Experimental code almost ready for productive use"             ON )
@@ -24,7 +25,7 @@ OPTION(VRN_MODULE_ZIP           "Provides ZIP support via the zlib library"     
 # modules with non-standard external dependencies
 OPTION(VRN_MODULE_FONTRENDERING "Provides font rendering using the Freetype/FTGL libraries"     OFF)
 OPTION(VRN_MODULE_FFMPEG        "Provides video encoding using the FFmpeg library"              OFF)
-OPTION(VRN_MODULE_TIFF          "A volume reader for multi-image TIFF files, using the LibTIFF" OFF)
+OPTION(VRN_MODULE_TIFF          "Volume readers for multi-image TIFF files and OME-TIFF stacks" OFF)
 OPTION(VRN_MODULE_PYTHON        "Python bindings, allowing scripts to access the Voreen API"    OFF)
 OPTION(VRN_MODULE_OPENCL        "Provides an OpenCL wrapper and OpenCL-based processors"        OFF)
 OPTION(VRN_MODULE_OPENMP        "Activates OpenMP code for parallelization"                     OFF)
