@@ -27,7 +27,10 @@
 #define VRN_EXPLOSIONPROXYGEOMETRY_H
 
 #include "voreen/core/processors/renderprocessor.h"
-#include "voreen/core/ports/allports.h"
+#include "voreen/core/ports/volumeport.h"
+#include "voreen/core/ports/renderport.h"
+#include "voreen/core/ports/geometryport.h"
+#include "voreen/core/ports/loopport.h"
 #include "voreen/core/interaction/idmanager.h"
 #include "voreen/core/properties/eventproperty.h"
 #include "voreen/core/properties/optionproperty.h"
@@ -82,6 +85,8 @@ public:
 
     virtual bool isReady() const;
 
+    /// HACK: Uses the viewport of MouseEvents to resize the internal rendertarget.
+    virtual void onEvent(tgt::Event* e);
 protected:
     virtual void setDescriptions() {
         setDescription("Provides a ray casting proxy geometry that can be sectioned into bricks for exploded views. The loop port has to be connected to a ExplosionCompositor.\
@@ -98,9 +103,6 @@ The created proxy geometries of regular grid or manual grid mode can be redefine
     virtual void initialize() throw (tgt::Exception);
     virtual void deinitialize() throw (tgt::Exception);
 
-    /**
-     * Struct Brick.
-     */
     struct Brick
     {
         tgt::vec3 coordLlf;
@@ -235,9 +237,8 @@ The created proxy geometries of regular grid or manual grid mode can be redefine
     /**
      * Creates the bricklist for regularGrid (regularBricklist_) or
      * manualGrid (manualBricklist_) bricking mode
-     * @param numIterations
      */
-    virtual void createRegularOrManualBricklist(int numIterations);
+    virtual void createRegularOrManualBricklist();
 
     /**
      * Creates the bricklist for custom bricking mode
@@ -347,11 +348,6 @@ The created proxy geometries of regular grid or manual grid mode can be redefine
     std::vector<Brick> regularBricklist_;
     std::vector<Brick> manualBricklist_;
     std::vector<Brick> customBricklist_;
-
-    /**
-     * Sorted bricklist to be rendered (e.g. sorted regularBricklist_).
-     */
-    std::vector<Brick> outputBricklist_;
 
     /**
      * Number of manual added bricks on X-, Y- and Z-axis.
@@ -521,9 +517,6 @@ The created proxy geometries of regular grid or manual grid mode can be redefine
      */
     FloatVec3Property translation_;
 
-    /**
-     * Camera property.
-     */
     CameraProperty camera_;
 
     /**
@@ -544,9 +537,6 @@ The created proxy geometries of regular grid or manual grid mode can be redefine
 
     /// Inport for the dataset to be bricked.
     VolumePort inportVolume_;
-
-    /// To be connected to the corresponding ExplosionCompositor's loop port.
-    LoopPort loopInport_;
 
     /// Outport for the generated mesh proxy geometry.
     GeometryPort outportProxyGeometry_;

@@ -66,6 +66,8 @@ QPropertyWidget::QPropertyWidget(Property* prop, QWidget* parent, bool showNameL
     setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
 
     setMouseTracking(true);     // This is kind of a hack needed to update propertytimelinewidgets for animation. Look at them for further explanation
+
+    connect(this, SIGNAL(updateFromPropertySignal()), this, SLOT(updateFromPropertySlot()));
 }
 
 QPropertyWidget::~QPropertyWidget() {
@@ -75,6 +77,10 @@ QPropertyWidget::~QPropertyWidget() {
     }
     delete nameLabel_;
     nameLabel_ = 0;
+}
+
+void QPropertyWidget::updateFromProperty() {
+    emit updateFromPropertySignal();
 }
 
 std::string QPropertyWidget::getPropertyGuiName() {

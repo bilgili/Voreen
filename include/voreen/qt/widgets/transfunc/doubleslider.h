@@ -76,6 +76,11 @@ public:
      */
     float getMaxValue();
 
+    /// Sets mapping to real values (only used for tooltip)
+    void setMapping(float min, float max);
+    void setUnit(std::string unit);
+    void showToolTip(bool stt);
+
 public slots:
      /**
       * Sets the maximal value to max and emits valuesChanged(float, float).
@@ -155,6 +160,13 @@ protected:
      */
     void mouseReleaseEvent(QMouseEvent* event);
 
+    /// Show a tooltip at the current mouse position
+    void showToolTip(std::string text);
+
+    std::string generateToolTipText(bool minBold, bool maxBold);
+
+    float getMappedValue(float norm);
+
 private:
     /**
      * Internal Function to move the active slider(s). Called by \a mouseMoveEvent() and \a mousePressEvent().
@@ -165,15 +177,27 @@ private:
 
     float minValue_;           ///< relative x coordinate of position of left slider
     float maxValue_;           ///< relative x coordinate of position of right slider
+
     float normalizedMousePos_; ///< position where the drag of a slider started
+
     float mV1_;                ///< x coordinate of left slider when dragging started
     float mV2_;                ///< x coordinate of right slider when dragging started
+
     float minimalAllowedSliderDistance_; ///< mininmal allowed distance between both sliders
     int sliderWidth_;          ///< pixel width of sliders
+
     int leftOffset_;           ///< offset to left before slider and line will start
     int rightOffset_;          ///< offset to right before slider and line will end
+
     bool leftSliderActive_;    ///< true when left slider was clicked, false otherwise
     bool rightSliderActive_;   ///< true when right slider was clicked, false otherwise
+
+    //Tooltip stuff:
+    float minRWValue_;
+    float maxRWValue_;
+    std::string unit_;
+    bool showToolTip_;
+    QPoint globalMousePos_;
 };
 
 } // namespace voreen

@@ -26,7 +26,7 @@
 #ifndef VRN_DEPTHDARKENING_H
 #define VRN_DEPTHDARKENING_H
 
-#include "voreen/core/ports/allports.h"
+#include "voreen/core/ports/renderport.h"
 #include "voreen/core/processors/imageprocessorbypassable.h"
 #include "voreen/core/properties/floatproperty.h"
 

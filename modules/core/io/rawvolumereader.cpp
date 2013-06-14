@@ -588,7 +588,7 @@ VolumeList* RawVolumeReader::readBrick(const std::string &url, tgt::ivec3 brickS
 
     volume->clear();
 
-    int voxelSize = (volume->getBitsAllocated() / 8);
+    int voxelSize = static_cast<int>(volume->getBitsAllocated() / 8);
 
     uint64_t initialSeekPos = (brickStartPos.z *(datasetDims.x*datasetDims.y)*brickSize*voxelSize )+
         (brickStartPos.y * datasetDims.x*brickSize*voxelSize) + (brickStartPos.x*brickSize*voxelSize);

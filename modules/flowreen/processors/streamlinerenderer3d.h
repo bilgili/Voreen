@@ -37,6 +37,9 @@
 #include "voreen/core/properties/cameraproperty.h"
 #include "voreen/core/datastructures/volume/volumegl.h"
 
+#include "voreen/core/ports/volumeport.h"
+#include "voreen/core/ports/renderport.h"
+
 namespace voreen {
 
 class Flow3D;

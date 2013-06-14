@@ -27,7 +27,8 @@
 #define VRN_GEOMETRYCLIPPING_H
 
 #include "voreen/core/processors/processor.h"
-#include "voreen/core/ports/allports.h"
+
+#include "voreen/core/ports/geometryport.h"
 
 #include "voreen/core/properties/vectorproperty.h"
 #include "voreen/core/properties/floatproperty.h"

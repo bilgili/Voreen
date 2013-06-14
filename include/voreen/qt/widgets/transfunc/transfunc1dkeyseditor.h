@@ -143,32 +143,8 @@ public slots:
      */
     void saveTransferFunction();
 
-    /**
-     * Slot that is called from doubleSlider when the user dragged a slider. It updates the
-     * spinboxes with new threshold values.
-     *
-     * @param lower new lower threshold
-     * @param upper new upper threshold
-     */
-    void thresholdChanged(float min, float max);
-
-    /**
-     * Slot that is called when the user changes the value in lowerThreshold spinbox.
-     * It updates the ranges of spinboxes and adapts the doubleslider to new thresholds.
-     * The transfer function is updatet as well.
-     *
-     * @param value new lower threshold
-     */
-    void lowerThresholdSpinChanged(double value);
-
-    /**
-     * Slot that is called when the user changes the value in upperThreshold spinbox.
-     * It updates the ranges of spinboxes and adapts the doubleslider to new thresholds.
-     * The transfer function is updatet as well.
-     *
-     * @param value new upper threshold
-     */
-    void upperThresholdSpinChanged(double value);
+    /// Transform the currently loaded TF into a ramp.
+    void makeRamp();
 
     /**
      * This Function is called if one of the mapping spinboxes have changed.
@@ -194,6 +170,11 @@ public slots:
      * Resets the transfer function to default.
      */
     void resetTransferFunction();
+
+    /**
+     * Applies the current set thresholds to the transfer function.
+     */
+    void applyThreshold();
 
     /**
      * This slot is called whenever the color of a key was changed.
@@ -225,11 +206,6 @@ protected:
     void repaintAll();
 
     /**
-     * Applies the current set thresholds to the transfer function.
-     */
-    void applyThreshold();
-
-    /**
      * Creates the layout with mapping canvas and threshold control elements.
      *
      * @return the layout with mapping canvas and threshold control elements
@@ -254,20 +230,20 @@ protected:
     void checkDomainVersusData();
 
     /**
-     * Updates the threshold spinboxes and the slider. Values are set from the mapping spinboxes or from the TF.
-     *
-     * @param fromTF true: value from TF    false: value from mapping spinboxes
+     * Updates the threshold slider.
      */
-    void updateThresholdSpin(bool fromTF = false);
+    void updateThresholdFromProperty();
 
     /**
      * Updates the mapping spinboxes after values of the boxes have been set.
-     * updateThresholdSpin has to be called afterwards to get the threshold konsistent.
+     * updateThresholdFromProperty has to be called afterwards to get the threshold konsistent.
      *
      * @param fromTF if true, the values of the boxes are set to transferFuncintensity_.domain
      */
     void updateMappingSpin(bool fromTF = false);
 
+    /// Updates the display of data bounds (volume min/max values).
+    void updateDataBounds();
 
     TransFuncMappingCanvas* transCanvas_;       ///< mapping canvas
     TransFunc1DKeys* transferFuncIntensity_; ///< the transfer function that is editet with this widget
@@ -277,12 +253,11 @@ protected:
     QToolButton* loadButton_;               ///< button for loading a transfer function
     QToolButton* saveButton_;               ///< button for saving a transfer function
     QToolButton* clearButton_;              ///< button for resetting transfer function to default
+    QToolButton* makeRampButton_;           ///< button to transform a TF into a ramp
     QToolButton* repaintButton_;            ///< button for forcing a repaint of the volume rendering
     ColorPicker* colorPicker_;              ///< picker for choosing the color of a key in transfer function
     ColorLuminancePicker* colorLumPicker_;  ///< picker for choosing the alpha value of a key
     DoubleSlider* doubleSlider_;            ///< 2 slider for adjusting the thresholds
-    QDoubleSpinBox* lowerThresholdSpin_;          ///< spinbox for lower threshold
-    QDoubleSpinBox* upperThresholdSpin_;          ///< spinbox for upper threshold
     QDoubleSpinBox* lowerMappingSpin_;          ///< spinbox for lower mapping value
     QDoubleSpinBox* upperMappingSpin_;          ///< spinbox for upper mapping value
     QLabel* lowerData_;          ///< label of lower volume bound
@@ -293,7 +268,6 @@ protected:
     Qt::Orientation orientation_; ///< orientation of the widget, e.g. position of the color and luminancepicker
 
     int maxDigits_; ///< maximal digits of domain and threshold
-    bool setTFValues_; ///< true, if slider values has to be updated
 
     static const std::string loggerCat_; ///< the logger category
 };

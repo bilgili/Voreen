@@ -31,7 +31,7 @@
 #include <vector>
 
 #include "voreen/core/voreencoreapi.h"
-#include "voreen/core/ports/allports.h"
+#include "voreen/core/ports/port.h"
 
 namespace voreen {
 

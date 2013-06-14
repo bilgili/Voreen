@@ -27,6 +27,7 @@
 #define VRN_TRANSFUNC_H
 
 #include "voreen/core/io/serialization/serialization.h"
+#include "voreen/core/datastructures/meta/metadatabase.h"
 #include "voreen/core/voreenobject.h"
 
 #include "voreen/core/voreencoreapi.h"
@@ -70,7 +71,7 @@ public:
     virtual ~TransFunc();
 
     virtual std::string getClassName() const { return "TransFunc";     }
-    virtual TransFunc* create() const        { return new TransFunc(); }
+    virtual TransFunc* create() const        { return 0; /*new TransFunc();*/ }
 
     /**
      * Returns a define for the usage of transfer functions in shaders.
@@ -79,7 +80,7 @@ public:
      *
      * @return define for usage of transfer functions in shaders
      */
-    virtual std::string getShaderDefines() const;
+    virtual std::string getShaderDefines(const std::string& defineName = "TF_SAMPLER_TYPE") const;
 
     /**
      * Returns a string representation of the sampler type: "sampler1D" for 1D transfer
@@ -254,11 +255,11 @@ public:
     virtual void setDomain(tgt::vec2 domain, int dimension = 0);
 
     /// @overload
-    virtual void setDomain(float lower, float upper, int dimension);
+    void setDomain(float lower, float upper, int dimension);
 
     /**
      * Converts the passed real-world data value to a normalized value in the range [0.0,1.0],
-     * according to the currently set real-world mapping.
+     * with regard to the currently set domain.
      *
      * @param rw the real-world data value to normalize
      * @param dimension of the transfer function dimension to apply the mapping for
@@ -266,10 +267,22 @@ public:
      * @see setDomain
      */
     float realWorldToNormalized(float rw, int dimension = 0) const;
+    tgt::vec2 realWorldToNormalized(tgt::vec2 rw) const;
+
+    /**
+     * Converts the passed real-world data value to a normalized value in the range [0.0,1.0],
+     * with regard to the passed transfer function domain.
+     *
+     * @param rw the real-world data value to normalize
+     * @param domain transfer function domain to use. domain.x must be smaller than domain.y.
+     *
+     * @see setDomain
+     */
+    static float realWorldToNormalized(float rw, const tgt::vec2& domain);
 
     /**
      * Converts the passed normalized data value (range: [0.0,1.0]) to the corresponding real-world value,
-     * according to the currently set real-world mapping.
+     * with regard to the currently set transfer function domain.
      *
      * @param n the normalized data value to convert
      * @param dimension of the transfer function dimension to apply the mapping for
@@ -277,6 +290,21 @@ public:
      * @see setDomain
      */
     float normalizedToRealWorld(float n, int dimension = 0) const;
+    tgt::vec2 normalizedToRealWorld(tgt::vec2 n) const;
+
+    /**
+     * Converts the passed normalized data value (range: [0.0,1.0]) to the corresponding real-world value,
+     * with regard to the passed transfer function domain.
+     *
+     * @param n the normalized data value to convert
+     * @param domain the transfer function domain to use for the transformation. domain.x must be smaller than domain.y.
+     *
+     * @see setDomain
+     */
+    static float normalizedToRealWorld(float n, const tgt::vec2& domain);
+
+    void setIgnoreAlpha(bool ia);
+    bool getIgnoreAlpha() const;
 
 protected:
 
@@ -290,6 +318,7 @@ protected:
     GLint format_;                ///< format of the transfer function texture
     GLenum dataType_;             ///< data type of the transfer function texture
     tgt::Texture::Filter filter_; ///< filtering mode of the transfer function texture.
+    bool ignoreAlpha_;            ///< Ignore alpha values an make everything opaque.
 
     std::vector<std::string> loadFileFormats_; ///< endings that are supported for loading a transfer function
     std::vector<std::string> saveFileFormats_; ///< endings that are supported for saving a transfer function
@@ -308,6 +337,35 @@ private:
     void fitDimensions(int& width, int& height, int& depth) const;
 
     static const std::string loggerCat_; ///< logger category
+};
+
+///------------------------------------------------------------------------------------------------
+
+/**
+ * Metadata encapsulating a TransferFunction.
+ * The meta data object takes ownership of the encapsulated transfer function
+ * and deletes it on its own destruction.
+ */
+class VRN_CORE_API TransFuncMetaData : public MetaDataBase {
+public:
+    TransFuncMetaData();
+    TransFuncMetaData(TransFunc* transfunc);
+    virtual ~TransFuncMetaData();
+    virtual MetaDataBase* create() const     { return new TransFuncMetaData(); }
+    virtual std::string getClassName() const { return "TransFuncMetaData";     }
+    virtual MetaDataBase* clone() const;
+
+    void setTransferFunction(TransFunc* transfunc);
+    TransFunc* getTransferFunction() const;
+
+    virtual std::string toString() const;
+    virtual std::string toString(const std::string& component) const;
+
+    virtual void serialize(XmlSerializer& s) const;
+    virtual void deserialize(XmlDeserializer& s);
+
+private:
+    TransFunc* transFunc_;
 };
 
 } // namespace voreen

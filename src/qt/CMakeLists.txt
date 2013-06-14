@@ -153,6 +153,7 @@ SET(VRN_QT_SOURCES
     widgets/transfunc/histogrampainter.cpp
     widgets/transfunc/transfunceditor.cpp
     widgets/transfunc/transfunc1dkeyseditor.cpp
+    widgets/transfunc/transfunc1dhistogrampainter.cpp
     widgets/transfunc/transfunc1dkeyspainter.cpp
     widgets/transfunc/transfunc1drampeditor.cpp
     widgets/transfunc/transfunc2dprimitiveseditor.cpp
@@ -341,6 +342,7 @@ SET(VRN_QT_HEADERS_NONMOC
     ../../include/voreen/qt/widgets/property/vecpropertywidget.h
     
     ../../include/voreen/qt/widgets/transfunc/transfunc1dkeyspainter.h
+    ../../include/voreen/qt/widgets/transfunc/transfunc1dhistogrampainter.h
     
     ../../ext/tgt/qt/qtcanvas.h
     ../../ext/tgt/qt/qttimer.h

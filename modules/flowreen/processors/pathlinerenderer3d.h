@@ -27,6 +27,9 @@
 
 #include <string>
 #include "voreen/core/processors/renderprocessor.h"
+#include "voreen/core/ports/volumeport.h"
+#include "voreen/core/ports/renderport.h"
+#include "voreen/core/ports/genericcoprocessorport.h"
 #include "flowreenprocessor.h"
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/floatproperty.h"

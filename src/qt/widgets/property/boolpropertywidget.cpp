@@ -45,7 +45,7 @@ BoolPropertyWidget::BoolPropertyWidget(BoolProperty* prop, QWidget* parent)
     addVisibilityControls();
 }
 
-void BoolPropertyWidget::updateFromProperty() {
+void BoolPropertyWidget::updateFromPropertySlot() {
     chkBox_->blockSignals(true);
     chkBox_->setChecked(property_->get());
     chkBox_->blockSignals(false);

@@ -27,7 +27,7 @@
 #define VRN_IMAGEMASKING_H
 
 #include "voreen/core/processors/imageprocessorbypassable.h"
-#include "voreen/core/ports/allports.h"
+#include "voreen/core/ports/renderport.h"
 #include "voreen/core/properties/vectorproperty.h"
 
 namespace voreen {

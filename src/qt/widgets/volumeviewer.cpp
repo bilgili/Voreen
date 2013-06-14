@@ -99,7 +99,6 @@ const std::string VolumeViewer::loggerCat_("voreen.qt.VolumeContainerWidget");
 
 VolumeViewer::VolumeViewer(QWidget* parent)
     : QWidget(parent, Qt::Tool)
-    , NetworkEvaluator::ProcessWrapper()
     , evaluator_(0)
     , volumeIOHelper_(parent)
     , updateRequired_(true)
@@ -162,12 +161,12 @@ QSize VolumeViewer::sizeHint() const {
 
 void VolumeViewer::setNetworkEvaluator(NetworkEvaluator* evaluator) {
     if (evaluator_)
-        evaluator_->removeProcessWrapper(this);
+        evaluator_->removeObserver(static_cast<NetworkEvaluatorObserver*>(this));
 
     evaluator_ = evaluator;
 
     if (evaluator_)
-        evaluator_->addProcessWrapper(this);
+        evaluator_->addObserver(static_cast<NetworkEvaluatorObserver*>(this));
 
     updateRequired_ = true;
     update();
@@ -303,8 +302,8 @@ void VolumeViewer::updateFromNetwork() {
 
     for (size_t i=0; i<volumeHandles_.size(); i++) {
         const VolumeBase* handle = volumeHandles_.at(i);
-        if (!handle->isObservedBy(this))
-            handle->addObserver(this);
+        if (!handle->isObservedBy(static_cast<VolumeObserver*>(this)))
+            handle->addObserver(static_cast<VolumeObserver*>(this));
 
         tgtAssert(handleToPortMap_.find(handle) != handleToPortMap_.end(),
             "missing entry in handleToPortMap");
@@ -319,9 +318,6 @@ void VolumeViewer::updateFromNetwork() {
 QTreeWidgetItem* VolumeViewer::createTreeWidgetItem(const VolumeBase* handle, const Port* port) {
     tgtAssert(handle, "no handle");
     tgtAssert(port, "no port");
-
-    const VolumeRAM* volume = handle->getRepresentation<VolumeRAM>();
-    tgtAssert(volume, "no volume");
 
     QTreeWidgetItem* treeItem = new QTreeWidgetItem(volumeInfos_);
     std::string name = VolumeViewHelper::getStrippedVolumeName(handle);
@@ -338,7 +334,7 @@ QTreeWidgetItem* VolumeViewer::createTreeWidgetItem(const VolumeBase* handle, co
 
     treeItem->setFont(0, QFont(fontInfo.family(), fontSize));
     treeItem->setText(0, QString::fromStdString(port->getQualifiedName()) + QString(QChar::LineSeparator)
-        + QString::fromStdString(name) + " (" + QString::fromStdString(VolumeViewHelper::getVolumeType(volume)) + ")" + QString(QChar::LineSeparator)
+        + QString::fromStdString(name) + " (" + QString::fromStdString(VolumeViewHelper::getVolumeType(handle)) + ")" + QString(QChar::LineSeparator)
         + QString::fromStdString(path) + QString(QChar::LineSeparator)
         + "Dimension: " + QString::fromStdString(VolumeViewHelper::getVolumeDimension(handle)));
 
@@ -346,10 +342,10 @@ QTreeWidgetItem* VolumeViewer::createTreeWidgetItem(const VolumeBase* handle, co
     treeItem->setSizeHint(0,QSize(65,65));
     treeItem->setToolTip(0, QString::fromStdString(port->getQualifiedName()) + "\n"
         + QString::fromStdString(name
-            + " ("+VolumeViewHelper::getVolumeType(volume)+")"+ "\n"+ path
+            + " ("+VolumeViewHelper::getVolumeType(handle)+")"+ "\n"+ path
             + "\nDimensions: " + VolumeViewHelper::getVolumeDimension(handle) + "\nVoxel Spacing: "
             + VolumeViewHelper::getVolumeSpacing(handle) +"\nMemory Size: "
-            + VolumeViewHelper::getVolumeMemorySize(volume)));
+            + VolumeViewHelper::getVolumeMemorySize(handle)));
 
     return treeItem;
 }
@@ -363,8 +359,7 @@ std::string VolumeViewer::calculateVolumeSizeString(const std::vector<const Volu
     handleSet.insert(handles.begin(), handles.end());
 
     for (std::set<const VolumeBase*>::iterator it = handleSet.begin(); it != handleSet.end(); ++it) {
-        const VolumeRAM* volume = (*it)->getRepresentation<VolumeRAM>();
-        volumeSize += VolumeViewHelper::getVolumeMemorySizeByte(volume);
+        volumeSize += VolumeViewHelper::getVolumeMemorySizeByte(*it);
     }
     int volumeCount = static_cast<int>(handleSet.size());
 

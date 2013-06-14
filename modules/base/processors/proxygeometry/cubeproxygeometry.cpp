@@ -92,6 +92,7 @@ void CubeProxyGeometry::process() {
     // adapt clipping plane properties on volume change
     if (inport_.hasChanged()) {
         adjustClipPropertiesRanges();
+        adjustClippingToVolumeROI();
     }
 
     const VolumeBase* inputVolume = inport_.getData();
@@ -126,7 +127,8 @@ void CubeProxyGeometry::process() {
     }
 
     // create output mesh
-    TriangleMeshGeometryVec3* mesh = TriangleMeshGeometryVec3::createCube(VertexVec3(texLlf, texLlf), VertexVec3(texUrb, texUrb));
+    //TriangleMeshGeometryVec3* mesh = TriangleMeshGeometryVec3::createCube(VertexVec3(texLlf, texLlf), VertexVec3(texUrb, texUrb));
+    TriangleMeshGeometryVec4Vec3* mesh = TriangleMeshGeometryVec4Vec3::createCube(texLlf, texUrb, texLlf, texUrb, 1.0f);
     mesh->transform(inputVolume->getTextureToWorldMatrix());
 
     outport_.setData(mesh);
@@ -241,5 +243,32 @@ void CubeProxyGeometry::adjustClipPropertiesVisibility() {
     setPropertyGroupVisible("clipping", clipEnabled);
 }
 
+void CubeProxyGeometry::adjustClippingToVolumeROI() {
+    // adjust clipping sliders to volume ROI, if set
+    if (inport_.getData()->hasMetaData("RoiPixelOffset") && inport_.getData()->hasMetaData("RoiPixelLength")) {
+        const tgt::ivec3 volumeDim = static_cast<tgt::ivec3>(inport_.getData()->getDimensions());
+        tgt::ivec3 roiLlf = inport_.getData()->getMetaDataValue<IVec3MetaData>("RoiPixelOffset", tgt::ivec3(0));
+        tgt::ivec3 roiLength = inport_.getData()->getMetaDataValue<IVec3MetaData>("RoiPixelLength", volumeDim);
+        if (tgt::hor(tgt::lessThan(roiLlf, tgt::ivec3::zero)) || tgt::hor(tgt::greaterThanEqual(roiLlf, volumeDim))) {
+            LWARNING("Invalid ROI offset: " << roiLlf);
+        }
+        else if (tgt::hor(tgt::lessThanEqual(roiLength, tgt::ivec3::zero))) {
+            LWARNING("Invalid ROI length: " << roiLength);
+        }
+        else {
+            tgt::ivec3 roiUrb = tgt::min(roiLlf + roiLength - 1, volumeDim - tgt::ivec3::one);
+
+            LINFO("Applying volume ROI: llf=" << roiLlf << ", urb=" << roiUrb);
+
+            clipRight_.set(static_cast<float>(roiLlf.x));
+            clipFront_.set(static_cast<float>(roiLlf.y));
+            clipBottom_.set(static_cast<float>(roiLlf.z));
+
+            clipLeft_.set(static_cast<float>(roiUrb.x));
+            clipBack_.set(static_cast<float>(roiUrb.y));
+            clipTop_.set(static_cast<float>(roiUrb.z));
+        }
+    }
+}
 
 } // namespace

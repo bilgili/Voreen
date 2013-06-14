@@ -256,7 +256,7 @@ protected:
 
 const std::string VoreenMainWindow::loggerCat_("voreenve.VoreenMainWindow");
 
-VoreenMainWindow::VoreenMainWindow(const std::string& workspace, bool resetSettings)
+VoreenMainWindow::VoreenMainWindow(const std::string& workspace, bool noInitialWorkspace, bool resetSettings)
     : QMainWindow()
     , networkEditorWindow_(0)
     , networkEditorWidget_(0)
@@ -268,6 +268,7 @@ VoreenMainWindow::VoreenMainWindow(const std::string& workspace, bool resetSetti
     , animationEditor_(0)
     , renderTargetViewer_(0)
     , guiMode_(MODE_NONE)
+    , noInitialWorkspace_(noInitialWorkspace)
 {
 
     setDockOptions(QMainWindow::AnimatedDocks); // disallow tabbed docks
@@ -426,20 +427,26 @@ void VoreenMainWindow::initialize(VoreenSplashScreen* splash) {
     }
 
     //
-    // now the GUI is complete
+    // now the GUI is complete => load initial workspace
     //
-    if (!currentWorkspace_.isEmpty()) {
-        // load workspace passed as program parameter
-        openWorkspace(currentWorkspace_);
-    }
-    else if (!lastWorkspace_.isEmpty() && loadLastWorkspace_ && startupWorkspace_) {
-        // load last workspace, but only if loading has been successful last time
-        openWorkspace(lastWorkspace_);
+    if (!noInitialWorkspace_) {
+        if (!currentWorkspace_.isEmpty()) {
+            // load workspace passed as program parameter
+            openWorkspace(currentWorkspace_);
+        }
+        else if (!lastWorkspace_.isEmpty() && loadLastWorkspace_ && startupWorkspace_) {
+            // load last workspace, but only if loading has been successful last time
+            openWorkspace(lastWorkspace_);
+        }
+        else {
+            // load an initial workspace
+            openWorkspace(VoreenApplication::app()->getResourcePath("workspaces/standard.vws").c_str());
+        }
     }
     else {
-        // load an initial workspace
-        openWorkspace(VoreenApplication::app()->getResourcePath("workspaces/standard.vws").c_str());
+        newWorkspace();
     }
+
     startupComplete("workspace");
 }
 

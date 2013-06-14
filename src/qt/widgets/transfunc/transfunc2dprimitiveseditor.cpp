@@ -42,11 +42,13 @@
 #include <QSlider>
 #include <QSplitter>
 #include <QToolButton>
-
+#include <QDoubleSpinBox>
 
 namespace voreen {
 
 const std::string TransFunc2DPrimitivesEditor::loggerCat_("voreen.qt.TransFunc2DPrimitivesEditor");
+
+using tgt::vec2;
 
 TransFunc2DPrimitivesEditor::TransFunc2DPrimitivesEditor(TransFuncProperty* prop, QWidget* parent,
                                                                    Qt::Orientation orientation)
@@ -54,13 +56,10 @@ TransFunc2DPrimitivesEditor::TransFunc2DPrimitivesEditor(TransFuncProperty* prop
     , transCanvas_(0)
     , painter_(0)
     , orientation_(orientation)
-    , maximumIntensity_(255)
 {
     title_ = QString("Intensity Gradient (2D)");
 
     transFuncGradient_ = dynamic_cast<TransFunc2DPrimitives*>(property_->get());
-
-    supported_ = GpuCaps.areFramebufferObjectsSupported();
 }
 
 TransFunc2DPrimitivesEditor::~TransFunc2DPrimitivesEditor() {
@@ -70,22 +69,18 @@ TransFunc2DPrimitivesEditor::~TransFunc2DPrimitivesEditor() {
 QLayout* TransFunc2DPrimitivesEditor::createMappingLayout() {
     QLayout* layout = new QHBoxLayout();
 
-    if (supported_) {
-        transCanvas_ = new tgt::QtCanvas("", tgt::ivec2(1, 1), tgt::GLCanvas::RGBADD, 0, true);
-        transCanvas_->getGLFocus();
-        //transCanvas_->setMinimumSize(200, 100);
+    transCanvas_ = new tgt::QtCanvas("", tgt::ivec2(1, 1), tgt::GLCanvas::RGBADD, 0, true);
+    transCanvas_->getGLFocus();
+    //transCanvas_->setMinimumSize(200, 100);
 
-        painter_ = new TransFunc2DPrimitivesPainter(transCanvas_);
-        painter_->initialize();
-        if (transFuncGradient_)
-            painter_->setTransFunc(transFuncGradient_);
+    painter_ = new TransFunc2DPrimitivesPainter(transCanvas_);
+    painter_->initialize();
+    if (transFuncGradient_)
+        painter_->setTransFunc(transFuncGradient_);
 
-        transCanvas_->setPainter(painter_);
+    transCanvas_->setPainter(painter_);
 
-        layout->addWidget(transCanvas_);
-    }
-    else
-        layout->addWidget(new QLabel(tr("Your graphics card does not support FramebufferObjects!")));
+    layout->addWidget(transCanvas_);
 
     return layout;
 }
@@ -122,12 +117,17 @@ QLayout* TransFunc2DPrimitivesEditor::createButtonLayout() {
     histogramEnabledButton_->setIcon(QIcon(":/qt/icons/histogram.png"));
     histogramEnabledButton_->setToolTip(tr("Show data histogram"));
 
+    fitToDomainButton_ = new QToolButton();
+    fitToDomainButton_->setIcon(QIcon(":/qt/icons/histogram_fit.png"));
+    fitToDomainButton_->setToolTip(tr("Fit Domain to Data"));
+
     buttonLayout->addWidget(clearButton_);
     buttonLayout->addWidget(loadButton_);
     buttonLayout->addWidget(saveButton_);
     buttonLayout->addSpacing(4);
     buttonLayout->addWidget(gridEnabledButton_);
     buttonLayout->addWidget(histogramEnabledButton_);
+    buttonLayout->addWidget(fitToDomainButton_);
 
     buttonLayout->addStretch();
 
@@ -171,7 +171,7 @@ QLayout* TransFunc2DPrimitivesEditor::createSliderLayout() {
     histogramBrightness_->setEnabled(false);
     histogramBrightness_->setMinimum(10);
     histogramBrightness_->setMaximum(1000);
-    histogramBrightness_->setValue(100);
+    histogramBrightness_->setValue(200);
 
     histogramLog_ = new QCheckBox(tr("Logarithmic Histogram"));
     histogramLog_->setEnabled(false);
@@ -187,6 +187,20 @@ QLayout* TransFunc2DPrimitivesEditor::createSliderLayout() {
     fuzziness_->setMinimum(0);
     fuzziness_->setMaximum(100);
 
+    QHBoxLayout* intensityDomainLayout = new QHBoxLayout();
+    lowerIntensityDomainSpin_ = new QDoubleSpinBox();
+    upperIntensityDomainSpin_ = new QDoubleSpinBox();
+    intensityDomainLayout->addWidget(lowerIntensityDomainSpin_);
+    intensityDomainLayout->addWidget(new QLabel(tr("Intensity Domain")));
+    intensityDomainLayout->addWidget(upperIntensityDomainSpin_);
+
+    QHBoxLayout* gradientDomainLayout = new QHBoxLayout();
+    lowerGradientDomainSpin_ = new QDoubleSpinBox();
+    upperGradientDomainSpin_ = new QDoubleSpinBox();
+    gradientDomainLayout->addWidget(lowerGradientDomainSpin_);
+    gradientDomainLayout->addWidget(new QLabel(tr("Gradient Domain")));
+    gradientDomainLayout->addWidget(upperGradientDomainSpin_);
+
     layout->addWidget(new QLabel(tr("Histogram Brightness:")));
     layout->addWidget(histogramBrightness_);
     layout->addWidget(histogramLog_);
@@ -194,6 +208,8 @@ QLayout* TransFunc2DPrimitivesEditor::createSliderLayout() {
     layout->addWidget(transparency_);
     layout->addWidget(new QLabel(tr("Fuzziness:")));
     layout->addWidget(fuzziness_);
+    layout->addLayout(intensityDomainLayout);
+    layout->addLayout(gradientDomainLayout);
 
     layout->addStretch();
 
@@ -245,12 +261,11 @@ void TransFunc2DPrimitivesEditor::createWidgets() {
     mainLayout->addWidget(splitter);
 
     setLayout(mainLayout);
+    updateFromProperty();
+    volumeChanged();
 }
 
 void TransFunc2DPrimitivesEditor::createConnections() {
-    if (!supported_)
-        return;
-
     // buttons
     connect(loadButton_,  SIGNAL(clicked()), this, SLOT(loadTransferFunction()));
     connect(saveButton_,  SIGNAL(clicked()), this, SLOT(saveTransferFunction()));
@@ -258,6 +273,7 @@ void TransFunc2DPrimitivesEditor::createConnections() {
 
     connect(gridEnabledButton_,      SIGNAL(clicked()), this, SLOT(toggleShowGrid()));
     connect(histogramEnabledButton_, SIGNAL(clicked()), this, SLOT(toggleShowHistogram()));
+    connect(fitToDomainButton_, SIGNAL(clicked()), this, SLOT(fitToDomain()));
 
     connect(quadButton_,   SIGNAL(clicked()), painter_, SLOT(addQuadPrimitive()));
     connect(bananaButton_, SIGNAL(clicked()), painter_, SLOT(addBananaPrimitive()));
@@ -283,6 +299,28 @@ void TransFunc2DPrimitivesEditor::createConnections() {
     connect(painter_, SIGNAL(toggleInteractionMode(bool)), this, SLOT(toggleInteractionMode(bool)));
     connect(painter_, SIGNAL(repaintSignal()), this, SLOT(repaintSignal()));
 
+    // domain
+    connect(lowerGradientDomainSpin_, SIGNAL(valueChanged(double)), this, SLOT(domainChanged()));
+    connect(upperGradientDomainSpin_, SIGNAL(valueChanged(double)), this, SLOT(domainChanged()));
+
+    connect(lowerIntensityDomainSpin_, SIGNAL(valueChanged(double)), this, SLOT(domainChanged()));
+    connect(upperIntensityDomainSpin_, SIGNAL(valueChanged(double)), this, SLOT(domainChanged()));
+}
+
+void TransFunc2DPrimitivesEditor::domainChanged() {
+    if(transFuncGradient_) {
+        transFuncGradient_->setDomain(vec2(lowerIntensityDomainSpin_->value(), upperIntensityDomainSpin_->value()), 0);
+        transFuncGradient_->setDomain(vec2(lowerGradientDomainSpin_->value(), upperGradientDomainSpin_->value()), 1);
+        painter_->updateTF();
+        transCanvas_->update();
+    }
+}
+
+void TransFunc2DPrimitivesEditor::fitToDomain() {
+    if(transFuncGradient_) {
+        painter_->fitToDomain();
+        property_->invalidate();
+    }
 }
 
 void TransFunc2DPrimitivesEditor::loadTransferFunction() {
@@ -334,6 +372,9 @@ void TransFunc2DPrimitivesEditor::toggleShowGrid() {
 }
 
 void TransFunc2DPrimitivesEditor::toggleShowHistogram() {
+    volume_ = property_->getVolumeHandle();
+
+    painter_->volumeChanged(volume_);
     painter_->setHistogramVisible(histogramEnabledButton_->isChecked());
     histogramBrightness_->setEnabled(histogramEnabledButton_->isChecked());
     histogramLog_->setEnabled(histogramEnabledButton_->isChecked());
@@ -370,19 +411,32 @@ void TransFunc2DPrimitivesEditor::stopTracking() {
 }
 
 void TransFunc2DPrimitivesEditor::updateFromProperty() {
-    if (!supported_)
-        return;
-
     const VolumeBase* newHandle = property_->getVolumeHandle();
     if (newHandle != volume_) {
         volume_ = newHandle;
         volumeChanged();
     }
 
-    if (transFuncGradient_)
+    transFuncGradient_ = dynamic_cast<TransFunc2DPrimitives*>(property_->get());
+    if (transFuncGradient_) {
         transCanvas_->update();
-    else
-        resetEditor();
+
+        // update domain spinboxes, disabling signals to prevent immediate change notification
+        lowerIntensityDomainSpin_->blockSignals(true);
+        lowerIntensityDomainSpin_->setValue(transFuncGradient_->getDomain(0).x);
+        lowerIntensityDomainSpin_->blockSignals(false);
+        upperIntensityDomainSpin_->blockSignals(true);
+        upperIntensityDomainSpin_->setValue(transFuncGradient_->getDomain(0).y);
+        upperIntensityDomainSpin_->blockSignals(false);
+        lowerGradientDomainSpin_->blockSignals(true);
+        lowerGradientDomainSpin_->setValue(transFuncGradient_->getDomain(1).x);
+        lowerGradientDomainSpin_->blockSignals(false);
+        upperGradientDomainSpin_->blockSignals(true);
+        upperGradientDomainSpin_->setValue(transFuncGradient_->getDomain(1).y);
+        upperGradientDomainSpin_->blockSignals(false);
+    }
+    //else
+        //resetEditor();
 }
 
 void TransFunc2DPrimitivesEditor::volumeChanged() {
@@ -391,28 +445,23 @@ void TransFunc2DPrimitivesEditor::volumeChanged() {
     histogramEnabledButton_->blockSignals(true);
     histogramEnabledButton_->setChecked(false);
     histogramEnabledButton_->blockSignals(false);
+
     histogramBrightness_->setEnabled(false);
     histogramLog_->setEnabled(false);
     histogramBrightness_->blockSignals(true);
     histogramBrightness_->setValue(100);
     histogramBrightness_->blockSignals(false);
 
-    if (volume_ && volume_->getRepresentation<VolumeRAM>()) {
-        int bits = volume_->getRepresentation<VolumeRAM>()->getBitsAllocated() / volume_->getRepresentation<VolumeRAM>()->getNumChannels();
-        maximumIntensity_ = static_cast<int>(pow(2.f, static_cast<float>(bits)))-1;
-    }
+    //if (volume_ && volume_->getRepresentation<VolumeRAM>()) {
+        //int bits = volume_->getRepresentation<VolumeRAM>()->getBitsAllocated() / volume_->getRepresentation<VolumeRAM>()->getNumChannels();
+        //maximumIntensity_ = static_cast<int>(pow(2.f, static_cast<float>(bits)))-1;
+    //}
 
     // propagate volume to painter where the histogram is calculated
-    if (volume_)
-        painter_->volumeChanged(volume_);
-    else
-        painter_->volumeChanged(0);
+    painter_->volumeChanged(volume_);
 }
 
 void TransFunc2DPrimitivesEditor::resetEditor() {
-    if (!supported_)
-        return;
-
     if (property_->get() != transFuncGradient_) {
         LDEBUG("The pointers of property and transfer function do not match."
                 << "Creating new transfer function object.....");
@@ -420,7 +469,7 @@ void TransFunc2DPrimitivesEditor::resetEditor() {
         // Need to make the GL context of this context current, as we use it for OpenGL calls
         // with the transFuncGradient_ later on.
         transCanvas_->getGLFocus();
-        transFuncGradient_ = new TransFunc2DPrimitives(maximumIntensity_ + 1);
+        transFuncGradient_ = new TransFunc2DPrimitives();
         property_->set(transFuncGradient_);
 
         painter_->setTransFunc(transFuncGradient_);

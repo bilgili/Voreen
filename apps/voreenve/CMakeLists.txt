@@ -91,7 +91,7 @@ IF (VRN_PRECOMPILED_HEADER AND MSVC)
 ENDIF()
 
 # define target
-IF(VRN_WINDOWS_DEPLOYMENT)
+IF(VRN_DEPLOYMENT)
     MESSAGE("* Linking against Windows subsystem (deployment build)")
     
     # WIN32 symbol causes the executable to link against the Windows subsystem (thus not showing console window)

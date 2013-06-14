@@ -28,6 +28,7 @@
 
 #include "voreen/core/processors/processor.h"
 #include "flowreenprocessor.h"
+#include "voreen/core/ports/volumeport.h"
 
 #include <string>
 

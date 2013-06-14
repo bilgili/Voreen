@@ -27,6 +27,7 @@
 #define VRN_VOREENVISUALIZATION_H
 
 #include "voreen/core/network/processornetwork.h"
+#include "voreen/core/network/networkevaluator.h"
 #include <QtGui>
 
 namespace tgt {
@@ -45,7 +46,7 @@ class RenderTargetViewer;
 class InputMappingDialog;
 class VolumeViewer;
 
-class VoreenVisualization : public QObject, public ProcessorNetworkObserver {
+class VoreenVisualization : public QObject, public ProcessorNetworkObserver, public NetworkEvaluatorObserver {
     Q_OBJECT
 public:
     VoreenVisualization(tgt::GLCanvas* sharedContext);
@@ -95,7 +96,12 @@ signals:
     void modified();
 
 private:
-    void propagateNetwork(ProcessorNetwork* network);
+    /**
+     * Called by the NetworkEvaluator (via observation).
+     * Propagates the new network to the GUI components.
+     */
+    virtual void networkAssigned(ProcessorNetwork* newNetwork, ProcessorNetwork* previousNetwork);
+
     void propagateWorkspaceDescription(const std::string& description);
 
     /**

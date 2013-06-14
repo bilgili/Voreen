@@ -30,6 +30,8 @@
 #include "voreen/core/datastructures/imagesequence.h"
 #include "voreen/core/datastructures/volume/volumelist.h"
 
+#include <sstream>
+
 namespace tgt {
     class Texture;
 }
@@ -100,6 +102,20 @@ public:
     virtual tgt::col3 getColorHint() const {
         return tgt::col3(255, 0, 255);
     }
+    virtual std::string getContentDescription() const {
+        std::stringstream strstr;
+        strstr << Port::getContentDescription();
+        if(hasData())
+            strstr << std::endl << "Size of List: " << getData()->size();
+        return strstr.str();
+    }
+    virtual std::string getContentDescriptionHTML() const {
+        std::stringstream strstr;
+        strstr << Port::getContentDescriptionHTML();
+        if(hasData())
+            strstr << "<br>" << "Size of List: " << getData()->size();
+        return strstr.str();
+    }
 };
 
 #ifdef DLL_TEMPLATE_INST
@@ -115,6 +131,23 @@ public:
 
     virtual Port* create(PortDirection direction, const std::string& id, const std::string& guiName = "") const {return new ImageSequencePort(direction,id,guiName);}
     virtual std::string getClassName() const { return "ImageSequencePort"; }
+
+    virtual std::string getContentDescription() const {
+        std::stringstream strstr;
+        strstr << Port::getContentDescription();
+        if(hasData())
+            strstr << std::endl << "Size of List: " << getData()->size();
+        return strstr.str();
+    }
+
+    virtual std::string getContentDescriptionHTML() const {
+        std::stringstream strstr;
+        strstr << Port::getContentDescriptionHTML();
+        if(hasData())
+            strstr << "<br>" << "Size of List: " << getData()->size();
+        return strstr.str();
+    }
+
 };
 
 
@@ -228,10 +261,12 @@ bool GenericPort<T>::isReady() const {
 template <typename T>
 void GenericPort<T>::clear() {
     if (isOutport()) {
-        if(ownsData_)
-            delete portData_;
-
-        portData_ = 0;
+        if(portData_) {
+            if(ownsData_)
+                delete portData_;
+            portData_ = 0;
+            invalidatePort();
+        }
     }
     else
         LERROR("clear() called on inport");

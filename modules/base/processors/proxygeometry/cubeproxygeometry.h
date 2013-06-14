@@ -27,7 +27,9 @@
 #define VRN_CUBEPROXYGEOMETRY_H
 
 #include "voreen/core/processors/processor.h"
-#include "voreen/core/ports/allports.h"
+
+#include "voreen/core/ports/volumeport.h"
+#include "voreen/core/ports/geometryport.h"
 
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/floatproperty.h"
@@ -87,6 +89,9 @@ private:
 
     /// Adjust visibility of the clipping plane properties according to enableClipping_ property.
     void adjustClipPropertiesVisibility();
+
+    /// Extracts ROI from volume (if present) and adjusts clipping slider accordingly.
+    void adjustClippingToVolumeROI();
 
     VolumePort inport_;              ///< Inport for the dataset the proxy is generated for.
     GeometryPort outport_;           ///< Outport for the generated cube proxy geometry.

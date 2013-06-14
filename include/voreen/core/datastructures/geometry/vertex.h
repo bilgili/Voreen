@@ -67,6 +67,9 @@ struct VertexBase {
 
     /// Interpolates two vertices of this type. Reimplement in subclass.
     static VertexBase interpolate(const VertexBase& v1, const VertexBase& v2, float t);
+
+    /// Sets the normal of this vertex, used in clipping code. Default implementation does nothing.
+    void setNormal(tgt::vec3 n);
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -103,6 +106,8 @@ struct VertexVec4Vec3 : public VertexBase {
     static void disableVertexAttributePointers();
 
     static VertexVec4Vec3 interpolate(const VertexVec4Vec3& v1, const VertexVec4Vec3& v2, float t);
+
+    void setNormal(tgt::vec3 n);
 };
 
 } // namespace

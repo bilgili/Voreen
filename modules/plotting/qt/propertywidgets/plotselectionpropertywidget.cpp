@@ -66,14 +66,14 @@ PlotSelectionPropertyWidget::PlotSelectionPropertyWidget(PlotSelectionProperty* 
     connect(btnRemove_, SIGNAL(clicked()), this, SLOT(btnRemoveClicked()));
     connect(btnRemoveUnused_, SIGNAL(clicked()), this, SLOT(btnRemoveUnusedClicked()));
     connect(table_, SIGNAL(doubleClicked(const QModelIndex&)), this, SLOT(tableViewDoubleClicked(const QModelIndex&)));
-    updateFromProperty();
+    updateFromPropertySlot();
 
     mainWidget->setLayout(gl);
     addWidget(mainWidget);
     addVisibilityControls();
 }
 
-void PlotSelectionPropertyWidget::updateFromProperty() {
+void PlotSelectionPropertyWidget::updateFromPropertySlot() {
     delete proxyModel_;
 
     proxyModel_ = new PlotSelectionTableModel(property_, this);

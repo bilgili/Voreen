@@ -148,7 +148,6 @@ SegmentationRaycaster::SegmentationRaycaster()
 
     destActive_[0] = false;
     destActive_[1] = false;
-    destActive_[2] = false;
 }
 
 SegmentationRaycaster::~SegmentationRaycaster() {

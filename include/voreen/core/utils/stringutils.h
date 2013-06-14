@@ -39,8 +39,11 @@ namespace voreen {
 /// Converts an int to a string.
 VRN_CORE_API std::string itos(int i, int stringLength = -1, char fillChar = '0');
 
-/// Converts an size_t to a string.
-VRN_CORE_API std::string itos(size_t i, int stringLength = -1, char fillChar = '0');
+/// Converts an uint32_t to a string.
+VRN_CORE_API std::string itos(uint32_t i, int stringLength = -1, char fillChar = '0');
+
+/// Converts an uint64_t to a string.
+VRN_CORE_API std::string itos(uint64_t i, int stringLength = -1, char fillChar = '0');
 
 /**
  * Converts a float to a string.

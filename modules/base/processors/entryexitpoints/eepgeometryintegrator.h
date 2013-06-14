@@ -27,7 +27,9 @@
 #define VRN_EEPGEOMETRYINTEGRATOR_H
 
 #include "voreen/core/processors/imageprocessor.h"
-#include "voreen/core/ports/allports.h"
+
+#include "voreen/core/ports/renderport.h"
+#include "voreen/core/ports/volumeport.h"
 
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/cameraproperty.h"

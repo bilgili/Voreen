@@ -93,7 +93,7 @@ public:
         MODE_DEVELOPMENT
     };
 
-    VoreenMainWindow(const std::string& workspace = "", bool resetSettings = false);
+    VoreenMainWindow(const std::string& workspace = "", bool noInitialWorkspace = false, bool resetSettings = false);
     ~VoreenMainWindow();
 
     void initialize(VoreenSplashScreen* splash = 0);
@@ -302,6 +302,7 @@ private:
     QByteArray developmentModeState_;
     QByteArray networkEditorWindowState_;
 
+    bool noInitialWorkspace_;
     bool loadLastWorkspace_;
     QString lastWorkspace_;
 

@@ -42,7 +42,6 @@ Q_OBJECT;
 public:
     VoxelTypePropertyWidget(VoxelTypeProperty* prop, QWidget* parent = 0, bool addVisibilityControl = true);
     virtual ~VoxelTypePropertyWidget();
-    void updateFromProperty();
 
     void setVolume(const VolumeBase* volume);
 
@@ -67,6 +66,7 @@ protected:
 
 protected slots:
     void updatePropertyFromWidget() const;
+    void updateFromPropertySlot();
 
 };
 

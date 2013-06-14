@@ -27,7 +27,7 @@
 #define VRN_VOLUMESELECTOR_H
 
 #include "voreen/core/processors/processor.h"
-#include "voreen/core/ports/allports.h"
+#include "voreen/core/ports/volumeport.h"
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/datastructures/volume/volume.h"
 

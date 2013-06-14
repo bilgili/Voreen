@@ -56,13 +56,23 @@ public:
      * Assigns a volume list to this processor.
      *
      * @param owner if true, the processor takes ownership of the passed volumes
+     * @param selected if true, the passed volumes will be selected
      */
-    void setVolumeList(VolumeList* collection, bool owner = false);
+    void setVolumeList(VolumeList* collection, bool owner = false, bool selected = true);
 
     /**
      * Returns the currently assigned volume list.
      */
     VolumeList* getVolumeList() const;
+
+    /**
+     * Loads volumes from the passed URL and adds them to the output list.
+     * If the data set could not be successfully loaded, an exception is thrown.
+     *
+     * @param selected if true, the loaded volumes will be selected
+     */
+    void loadVolumes(const std::string& url, bool selected = true)
+        throw (tgt::FileException, std::bad_alloc);
 
 protected:
     virtual void setDescriptions() {

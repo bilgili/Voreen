@@ -30,9 +30,9 @@
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "voreen/core/datastructures/volume/volumelist.h"
 #include "voreen/core/datastructures/geometry/pointsegmentlistgeometry.h"
-
+#include "voreen/core/ports/loopport.h"
 #include "voreen/core/properties/optionproperty.h"
-#include "voreen/core/ports/allports.h"
+
 
 #include <string>
 #include "tgt/vector.h"

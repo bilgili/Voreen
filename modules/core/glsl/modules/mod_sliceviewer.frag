@@ -53,7 +53,7 @@ vec4 add(vec4 previous, vec4 current, float factor) {
     return previous + current;
 }
 
-vec4 substract(vec4 previous, vec4 current, float factor) {
+vec4 subtract(vec4 previous, vec4 current, float factor) {
     return previous - current;
 }
 

@@ -41,13 +41,14 @@ Q_OBJECT
 public:
     FontPropertyWidget(FontProperty* prop, QWidget* parent = 0);
 
+public slots:
+    void updateProperty();
+
 protected:
     FontProperty* property_;
 
-    void updateFromProperty();
-
-public slots:
-    void updateProperty();
+protected slots:
+    virtual void updateFromPropertySlot();
 
 private:
     QGroupBox* groupBox_;

@@ -26,6 +26,8 @@
 #include "volumelistsource.h"
 
 #include "voreen/core/datastructures/volume/volumelist.h"
+#include "voreen/core/io/volumeserializerpopulator.h"
+#include "voreen/core/io/volumeserializer.h"
 
 namespace voreen {
 
@@ -65,16 +67,51 @@ void VolumeListSource::invalidate(int inv) {
     Processor::invalidate(inv);
 }
 
-void VolumeListSource::setVolumeList(VolumeList* collection, bool owner) {
+void VolumeListSource::setVolumeList(VolumeList* collection, bool owner, bool selected) {
     volumeURLList_.clear();
     if (!collection)
         return;
     for (size_t i=0; i<collection->size(); i++)
-        volumeURLList_.addVolume(collection->at(i), owner, true);
+        volumeURLList_.addVolume(collection->at(i), owner, selected);
 }
 
 VolumeList* VolumeListSource::getVolumeList() const {
     return volumeURLList_.getVolumes(false);
+}
+
+void VolumeListSource::loadVolumes(const std::string& url, bool selected /*= true*/)
+    throw (tgt::FileException, std::bad_alloc)
+{
+    tgtAssert(!url.empty(), "passed url is empty");
+
+    // load volumes
+    VolumeSerializerPopulator serializerPopulator;
+    VolumeList* volumeList = 0;
+    try {
+        volumeList = serializerPopulator.getVolumeSerializer()->read(url);
+    }
+    catch (tgt::FileException& e) {
+        LWARNING(e.what());
+        throw e;
+    }
+    catch (std::bad_alloc& e) {
+        LWARNING("Bad allocation while loading volumes from: " << url);
+        throw e;
+    }
+    catch (tgt::Exception& e) {
+        LWARNING("Unknown exception while loading volumes from '" << url << "':" << e.what());
+        throw tgt::FileException(e.what(), url);
+    }
+    tgtAssert(volumeList && !volumeList->empty(), "no volumes loaded");
+
+    // add loaded volumes
+    for (size_t i=0; i<volumeList->size(); i++) {
+        tgtAssert(volumeList->at(i), "null pointer as volume");
+        volumeURLList_.addVolume(volumeList->at(i), true, selected);
+    }
+    delete volumeList;
+
+    invalidate();
 }
 
 } // namespace

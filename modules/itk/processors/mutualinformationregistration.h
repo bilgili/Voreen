@@ -29,7 +29,7 @@
 #include "itkprocessor.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 
-#include "voreen/core/ports/allports.h"
+#include "voreen/core/ports/volumeport.h"
 #include "voreen/core/properties/floatproperty.h"
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/boolproperty.h"

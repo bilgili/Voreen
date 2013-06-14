@@ -28,6 +28,7 @@
 
 #include "voreen/core/processors/volumeslicer.h"
 #include "voreen/core/interaction/camerainteractionhandler.h"
+#include "voreen/core/properties/lightsourceproperty.h"
 #include "voreen/core/properties/vectorproperty.h"
 #include "voreen/core/properties/shaderproperty.h"
 
@@ -71,7 +72,7 @@ private:
     // interaction handlers
     CameraInteractionHandler cameraHandler_;
 
-    FloatVec4Property halfLight_;
+    LightSourceProperty halfLight_;
     bool invert_;
 };
 

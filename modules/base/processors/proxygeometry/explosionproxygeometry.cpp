@@ -26,10 +26,13 @@
 #include "explosionproxygeometry.h"
 #include "voreen/core/datastructures/geometry/meshlistgeometry.h"
 #include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
+#include "voreen/core/datastructures/geometry/geometrysequence.h"
 #include "tgt/glmath.h"
 #include <vector>
 
 namespace voreen {
+
+using tgt::vec3;
 
 ExplosionProxyGeometry::ExplosionProxyGeometry()
     : RenderProcessor()
@@ -62,7 +65,7 @@ ExplosionProxyGeometry::ExplosionProxyGeometry()
     , undo_("Undo", "Undo")
     , takeForCustom_("takeForCustomMode", "Take this for custom mode")
     , translation_("translation", "Translation", tgt::vec3(0.f, 0.f, 0.f), tgt::vec3(-10.f), tgt::vec3(10.f))
-    , camera_("camera", "Camera", tgt::Camera())
+    , camera_("camera", "Camera", tgt::Camera(), Processor::VALID)
     , selectingOneBrickEvent_("mouseEvent.selectingOneBrick", "Select one brick", this,
                                &ExplosionProxyGeometry::onSelectingOneBrickEvent,
                                tgt::MouseEvent::MOUSE_BUTTON_LEFT, tgt::MouseEvent::PRESSED, tgt::Event::CTRL)
@@ -75,7 +78,6 @@ ExplosionProxyGeometry::ExplosionProxyGeometry()
                                      tgt::MouseEvent::PRESSED | tgt::MouseEvent::MOTION | tgt::MouseEvent::RELEASED,
                                      tgt::Event::Modifier(tgt::Event::CTRL | tgt::Event::ALT))
     , inportVolume_(Port::INPORT, "volumehandle.in", "Volume Input")
-    , loopInport_(Port::INPORT, "loop.inport", "Loop Inport")
     , outportProxyGeometry_(Port::OUTPORT, "geometry.proxy", "Proxy Geometry")
     , outportRenderGeometry_(Port::OUTPORT, "geometry.render", "Render Geometry")
     , pickingBuffer_(Port::OUTPORT, "pickingBuffer")
@@ -83,9 +85,7 @@ ExplosionProxyGeometry::ExplosionProxyGeometry()
     brickColor_.setViews(Property::COLOR);
     selectedBrickColor_.setViews(Property::COLOR);
 
-    loopInport_.setLoopPort(true);
     addPort(inportVolume_);
-    addPort(loopInport_);
     addPort(outportProxyGeometry_);
     addPort(outportRenderGeometry_);
     addPrivateRenderPort(pickingBuffer_);
@@ -216,10 +216,9 @@ bool ExplosionProxyGeometry::isReady() const {
 void ExplosionProxyGeometry::beforeProcess() {
     RenderProcessor::beforeProcess();
 
-    if (inportVolume_.hasChanged() && (loopInport_.getLoopIteration() == 0)) {
+    if (inportVolume_.hasChanged()) {
         if (brickingMode_.isSelected("regularGrid")) {
             regularBricklist_.clear();
-            loopInport_.setNumLoopIterations(numBricksXp_.get() * numBricksYp_.get() * numBricksZp_.get());
             updatePlaneWidgets();
         }
         else {
@@ -229,98 +228,112 @@ void ExplosionProxyGeometry::beforeProcess() {
 }
 
 void ExplosionProxyGeometry::process() {
-    tgtAssert(inportVolume_.getData()->getRepresentation<VolumeRAM>(), "no volume");
-
-    int iteration = loopInport_.getLoopIteration();
+    tgtAssert(inportVolume_.getData(), "no volume");
 
     /////////////////////////////Bricking process beginning/////////////////////////////////////
-    TriangleMeshGeometryVec3* proxyGeometry = new TriangleMeshGeometryVec3();
+    GeometrySequence* proxyGeometry = new GeometrySequence();
     MeshListGeometry* renderGeometry = new MeshListGeometry();
+
+    tgt::mat4 tToW = inportVolume_.getData()->getTextureToWorldMatrix();
 
     //regularGrid bricking
     if (brickingMode_.get() == "regularGrid") {
-        if (iteration == 0) {
+        if (regularBricklist_.empty())
+            createRegularOrManualBricklist();
 
-            if (regularBricklist_.empty())
-                createRegularOrManualBricklist(loopInport_.getNumLoopIterations());
-
-            outputBricklist_ = sortBricklist(regularBricklist_);
+        for(size_t i=0; i<regularBricklist_.size(); i++) {
+            TriangleMeshGeometryVec4Vec3* tmg = TriangleMeshGeometryVec4Vec3::createCube(regularBricklist_.at(i).coordLlf, regularBricklist_.at(i).coordUrb, regularBricklist_.at(i).texLlf, regularBricklist_.at(i).texUrb, 1.0f);
+            tmg->setTransformationMatrix(tToW * tgt::mat4::createTranslation(regularBricklist_.at(i).translation));
+            proxyGeometry->addGeometry(tmg);
         }
 
-        proxyGeometry->addCube(VertexVec3(outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texLlf),
-                               VertexVec3(outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texUrb));
-
         if (showBoundingBoxes_.get() == "all" || showBoundingBoxes_.get() == "selected") {
-            renderGeometry->addMesh(MeshGeometry::createCube(
-                outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation,
-                outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation,
-                outputBricklist_.at(iteration).texLlf,
-                outputBricklist_.at(iteration).texUrb,
-                brickColor_.get().xyz(),
-                brickColor_.get().xyz()));
+            for(size_t i=0; i<regularBricklist_.size(); i++) {
+                MeshGeometry mg = MeshGeometry::createCube(
+                    regularBricklist_.at(i).coordLlf,
+                    regularBricklist_.at(i).coordUrb,
+                    regularBricklist_.at(i).texLlf,
+                    regularBricklist_.at(i).texUrb,
+                    brickColor_.get().xyz(),
+                    brickColor_.get().xyz());
+
+                mg.setTransformationMatrix(tToW * tgt::mat4::createTranslation(regularBricklist_.at(i).translation));
+                renderGeometry->addMesh(mg);
+            }
         }
     }
     //manualGrid bricking
     else if (brickingMode_.get() == "manualGrid") {
-        if (iteration == 0) {
+        if (manualBricklist_.empty())
+            doBricking();
 
-            if (manualBricklist_.empty())
-                doBricking();
-
-            outputBricklist_ = sortBricklist(manualBricklist_);
+        for(size_t i=0; i<manualBricklist_.size(); i++) {
+            TriangleMeshGeometryVec4Vec3* tmg = TriangleMeshGeometryVec4Vec3::createCube(manualBricklist_.at(i).coordLlf, manualBricklist_.at(i).coordUrb, manualBricklist_.at(i).texLlf, manualBricklist_.at(i).texUrb, 1.0f);
+            tmg->transform(tToW);
+            tmg->transform(tgt::mat4::createTranslation(manualBricklist_.at(i).translation));
+            proxyGeometry->addGeometry(tmg);
         }
 
-        proxyGeometry->addCube(VertexVec3(outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texLlf),
-                               VertexVec3(outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texUrb));
-
         if (showBoundingBoxes_.get() == "all" || showBoundingBoxes_.get() == "selected") {
-            renderGeometry->addMesh(MeshGeometry::createCube(
-                outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation,
-                outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation,
-                outputBricklist_.at(iteration).texLlf,
-                outputBricklist_.at(iteration).texUrb,
-                brickColor_.get().xyz(),
-                brickColor_.get().xyz()));
+            for(size_t i=0; i<manualBricklist_.size(); i++) {
+                MeshGeometry mg = MeshGeometry::createCube(
+                            manualBricklist_.at(i).coordLlf,
+                            manualBricklist_.at(i).coordUrb,
+                            manualBricklist_.at(i).texLlf,
+                            manualBricklist_.at(i).texUrb,
+                            brickColor_.get().xyz(),
+                            brickColor_.get().xyz());
+                mg.setTransformationMatrix(tToW * tgt::mat4::createTranslation(regularBricklist_.at(i).translation));
+                renderGeometry->addMesh(mg);
+            }
         }
     }
     //custom bricking
     else{
-        if (iteration == 0) {
-            if (customBricklist_.empty())
-                doBricking();
-
-            outputBricklist_ = sortBricklist(customBricklist_);
-        }
+        if(customBricklist_.empty())
+            doBricking();
 
         registerForSelecting(customBricklist_);
 
-        if (outputBricklist_.at(iteration).selected) {
-            if (showBoundingBoxes_.get() == "all" || showBoundingBoxes_.get() == "selected") {
-                renderGeometry->addMesh(MeshGeometry::createCube(
-                    outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation,
-                    outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation,
-                    outputBricklist_.at(iteration).texLlf,
-                    outputBricklist_.at(iteration).texUrb,
-                    selectedBrickColor_.get().xyz(),
-                    selectedBrickColor_.get().xyz()));
+        for(size_t i=0; i<customBricklist_.size(); i++) {
+            if (customBricklist_.at(i).selected) {
+                if (showBoundingBoxes_.get() == "all" || showBoundingBoxes_.get() == "selected") {
+                    MeshGeometry mg = MeshGeometry::createCube(
+                                customBricklist_.at(i).coordLlf,
+                                customBricklist_.at(i).coordUrb,
+                                customBricklist_.at(i).texLlf,
+                                customBricklist_.at(i).texUrb,
+                                selectedBrickColor_.get().xyz(),
+                                selectedBrickColor_.get().xyz());
 
-            }
-            proxyGeometry->addCube(VertexVec3(outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texLlf),
-                                   VertexVec3(outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texUrb));
-        }
-        else {
-            if (!outputBricklist_.at(iteration).hidden) {
-                if (showBoundingBoxes_.get() == "all") {
-                    renderGeometry->addMesh(MeshGeometry::createCube(
-                        outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation,
-                        outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation,
-                        outputBricklist_.at(iteration).texLlf,
-                        outputBricklist_.at(iteration).texUrb,
-                        brickColor_.get().xyz(),
-                        brickColor_.get().xyz()));
+                    mg.setTransformationMatrix(tToW * tgt::mat4::createTranslation(regularBricklist_.at(i).translation));
+                    renderGeometry->addMesh(mg);
                 }
-                proxyGeometry->addCube(VertexVec3(outputBricklist_.at(iteration).coordLlf + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texLlf),
-                    VertexVec3(outputBricklist_.at(iteration).coordUrb + outputBricklist_.at(iteration).translation, outputBricklist_.at(iteration).texUrb));
+
+                TriangleMeshGeometryVec4Vec3* tmg = TriangleMeshGeometryVec4Vec3::createCube(customBricklist_.at(i).coordLlf, customBricklist_.at(i).coordUrb, customBricklist_.at(i).texLlf, customBricklist_.at(i).texUrb, 1.0f);
+                tmg->transform(tToW);
+                tmg->transform(tgt::mat4::createTranslation(customBricklist_.at(i).translation));
+                proxyGeometry->addGeometry(tmg);
+            }
+            else {
+                if (!customBricklist_.at(i).hidden) {
+                    if (showBoundingBoxes_.get() == "all") {
+                        MeshGeometry mg = MeshGeometry::createCube(
+                                    customBricklist_.at(i).coordLlf,
+                                    customBricklist_.at(i).coordUrb,
+                                    customBricklist_.at(i).texLlf,
+                                    customBricklist_.at(i).texUrb,
+                                    brickColor_.get().xyz(),
+                                    brickColor_.get().xyz());
+
+                        mg.setTransformationMatrix(tToW * tgt::mat4::createTranslation(regularBricklist_.at(i).translation));
+                        renderGeometry->addMesh(mg);
+                    }
+                    TriangleMeshGeometryVec4Vec3* tmg = TriangleMeshGeometryVec4Vec3::createCube(customBricklist_.at(i).coordLlf, customBricklist_.at(i).coordUrb, customBricklist_.at(i).texLlf, customBricklist_.at(i).texUrb, 1.0f);
+                    tmg->transform(tToW);
+                    tmg->transform(tgt::mat4::createTranslation(customBricklist_.at(i).translation));
+                    proxyGeometry->addGeometry(tmg);
+                }
             }
         }
 
@@ -334,8 +347,6 @@ void ExplosionProxyGeometry::process() {
 void ExplosionProxyGeometry::onBrickingModeChange() {
 
     if (brickingMode_.get() == "regularGrid") {
-
-        loopInport_.setNumLoopIterations(numBricksXp_.get() * numBricksYp_.get() * numBricksZp_.get());
         //showBoundingBoxes_.set("all");
         selectedBrickColor_.setVisible(false);
         hideNonSelectedBricks_.setVisible(false);
@@ -486,15 +497,15 @@ void ExplosionProxyGeometry::doBricking() {
 
     const VolumeBase* volume = inportVolume_.getData();
 
-    tgt::vec3 volumeSize = volume->getCubeSize();;
+    //tgt::vec3 volumeSize = volume->getCubeSize();;
+    tgt::vec3 volumeSize(1.0f);
     tgt::vec3 offsetLlf;
     tgt::vec3 offsetUrb;
     tgt::vec3 texLlf;
     tgt::vec3 texUrb;
 
     if (brickingMode_.isSelected("regularGrid")) {
-        createRegularOrManualBricklist(numBricksXp_.get() * numBricksYp_.get() * numBricksZp_.get());
-        loopInport_.setNumLoopIterations(numBricksXp_.get() * numBricksYp_.get() * numBricksZp_.get());
+        createRegularOrManualBricklist();
     }
     else if (brickingMode_.isSelected("manualGrid")) {
         offsetLlf = tgt::vec3(0.f, 0.f, 0.f);
@@ -523,14 +534,11 @@ void ExplosionProxyGeometry::doBricking() {
             zPlanestex_.insert(zPlanestex_.end(), texUrb.z);
         }
 
-        createRegularOrManualBricklist(static_cast<int>(numBricksXm_ * numBricksYm_ * numBricksZm_));
-        loopInport_.setNumLoopIterations(static_cast<int>(numBricksXm_ * numBricksYm_ * numBricksZm_));
+        createRegularOrManualBricklist();
     }
     else{
         if (customBricklist_.empty())
             createCustomBricklist(' ', 0, 0);
-
-        loopInport_.setNumLoopIterations(static_cast<int>(customBricklist_.size()));
     }
 }
 
@@ -549,7 +557,8 @@ void ExplosionProxyGeometry::addBrickingPlane(char axis, size_t& numBricks, std:
                                              std::vector<float>& planestex, std::stack<float>& coords) {
 
     const VolumeBase* volume = inportVolume_.getData();
-    tgt::vec3 volumeSize = volume->getCubeSize();
+    //tgt::vec3 volumeSize = volume->getCubeSize();
+    tgt::vec3 volumeSize(1.0f);
     tgt::ivec3 numSlices = volume->getDimensions();
     tgt::vec3 texLlf(0, 0, 1);
     tgt::vec3 texUrb(1, 1, 0);
@@ -569,7 +578,6 @@ void ExplosionProxyGeometry::addBrickingPlane(char axis, size_t& numBricks, std:
         }
         else if (!selectedBricks_.empty()) {
             createCustomBricklist('x', offset, tex);
-            loopInport_.setNumLoopIterations(static_cast<int>(customBricklist_.size()));
         }
     }
     else if (axis == 'y') {
@@ -581,7 +589,6 @@ void ExplosionProxyGeometry::addBrickingPlane(char axis, size_t& numBricks, std:
         }
         else if (!selectedBricks_.empty()) {
             createCustomBricklist('y', offset, tex);
-            loopInport_.setNumLoopIterations(static_cast<int>(customBricklist_.size()));
         }
     }
     else if (axis == 'z') {
@@ -593,7 +600,6 @@ void ExplosionProxyGeometry::addBrickingPlane(char axis, size_t& numBricks, std:
         }
         else if (!selectedBricks_.empty()) {
             createCustomBricklist('z', offset, tex);
-            loopInport_.setNumLoopIterations(static_cast<int>(customBricklist_.size()));
         }
     }
 
@@ -637,6 +643,7 @@ void ExplosionProxyGeometry::addBrickingPlane(char axis, size_t& numBricks, std:
         numBricks = numBricks + 1;
         doBricking();
     }
+    invalidate();
 }
 
 void ExplosionProxyGeometry::onDeleteLastBrickingPlaneChange(char axis) {
@@ -648,6 +655,8 @@ void ExplosionProxyGeometry::onDeleteLastBrickingPlaneChange(char axis) {
 
     else if (axis == 'z')
         deleteLastBrickingPlane(numBricksZm_, zPlanescoord_, zPlanestex_, zCoords_);
+
+    invalidate();
 }
 
 void ExplosionProxyGeometry::deleteLastBrickingPlane(size_t& numBricks, std::vector<float>& planescoord,
@@ -673,6 +682,8 @@ void ExplosionProxyGeometry::deleteLastBrickingPlane(size_t& numBricks, std::vec
         numBricks = numBricks - 1;
         doBricking();
     }
+
+    invalidate();
 }
 
 void ExplosionProxyGeometry::onClearBrickingListChange(char axis) {
@@ -704,11 +715,12 @@ void ExplosionProxyGeometry::clearBrickingList(char axis) {
             zCoords_.pop();
     }
 
+    invalidate();
 }
 
 void ExplosionProxyGeometry::onExplosionGapChange() {
     if (inportVolume_.hasData()) {
-        createRegularOrManualBricklist(loopInport_.getNumLoopIterations());
+        createRegularOrManualBricklist();
     }
 }
 
@@ -780,7 +792,6 @@ void ExplosionProxyGeometry::undo() {
 
         registerForSelecting(customBricklist_);
         updatePlaneWidgets();
-        loopInport_.setNumLoopIterations(static_cast<int>(customBricklist_.size()));
         invalidate();
     }
 }
@@ -793,7 +804,6 @@ void ExplosionProxyGeometry::resetMode() {
         numBricksZp_.set(1);
         regularExplosionGap_.set(0);
         regularBricklist_.clear();
-        loopInport_.setNumLoopIterations(numBricksXp_.get() * numBricksYp_.get() * numBricksZp_.get());
         updatePlaneWidgets();
     }
     else if (brickingMode_.isSelected("manualGrid")) {
@@ -801,7 +811,6 @@ void ExplosionProxyGeometry::resetMode() {
         clearBrickingList('y');
         clearBrickingList('z');
         doBricking();
-        loopInport_.setNumLoopIterations(1);
         updatePlaneWidgets();
         manualExplosionGap_.set(0);
     }
@@ -821,71 +830,57 @@ void ExplosionProxyGeometry::resetMode() {
 
 }
 
-void ExplosionProxyGeometry::createRegularOrManualBricklist(int numIterations) {
-
+void ExplosionProxyGeometry::createRegularOrManualBricklist() {
     if (!inportVolume_.hasData()) {
         LWARNING("No volume!");
         return;
     }
 
     const VolumeBase* volume = inportVolume_.getData();
-    tgt::vec3 volumeSize = volume->getCubeSize();
+    //tgt::vec3 volumeSize = volume->getCubeSize();
+    tgt::vec3 volumeSize(1.0f, 1.0f, 1.0f);
     tgt::ivec3 numSlices = volume->getDimensions();
     tgt::vec3 sliceWidth = getSliceWidth(volume);
-    tgt::vec3 coordLlf = -(volumeSize / static_cast<tgt::vec3::ElemType>(2));
-    tgt::vec3 coordUrb = (volumeSize / static_cast<tgt::vec3::ElemType>(2));
-
-    std::swap(coordLlf.z, coordUrb.z);
-    const tgt::vec3 texLlf(0, 0, 1);
-    const tgt::vec3 texUrb(1, 1, 0);
+    //tgt::vec3 coordLlf = volume->getLLF();
+    //tgt::vec3 coordUrb = volume->getURB();;
+    tgt::vec3 coordLlf(0, 0, 0);
+    tgt::vec3 coordUrb(1, 1, 1);
+    //std::swap(coordLlf.z, coordUrb.z);
 
     Brick current;
     int xOffset;
     int yOffset;
     int zOffset;
-    int it;
 
     if (brickingMode_.get() == "regularGrid") {
         regularBricklist_.clear();
 
-        float xBricks = static_cast<float>(numBricksXp_.get());
-        float yBricks = static_cast<float>(numBricksYp_.get());
-        float zBricks = static_cast<float>(numBricksZp_.get());
-        float gx = -1.f * (xBricks - 1.f);
-        float gy = -1.f * (yBricks - 1.f);
-        float gz = -1.f * (zBricks - 1.f);
-        float hx = volumeSize.x / xBricks;
-        float hy = volumeSize.y / yBricks;
-        float hz = volumeSize.z / zBricks;
-        tgt::vec3 startcUrb = coordUrb - tgt::vec3((xBricks - 1.f) * hx,(yBricks - 1.f) * hy, -(zBricks - 1.f) * hz);
-        tgt::vec3 starttUrb = texUrb - tgt::vec3((xBricks - 1.f) / xBricks,(yBricks - 1.f) / yBricks, -1.f * (zBricks - 1.f) / zBricks);
+        vec3 bricks = vec3(static_cast<float>(numBricksXp_.get()), static_cast<float>(numBricksYp_.get()), static_cast<float>(numBricksZp_.get()));
+        vec3 g = vec3(-1.0f) * (bricks - vec3(1.0f));
+        vec3 h = volumeSize / bricks;
 
+        for (int x = 0; x < numBricksXp_.get(); ++x) {
+            for (int y = 0; y < numBricksYp_.get(); ++y) {
+                for (int z = 0; z < numBricksZp_.get(); ++z) {
+                    vec3 coord(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
 
-        for (it = 0; it < numIterations; ++it) {
-            xOffset = it / (numBricksYp_.get() * numBricksZp_.get());
-            yOffset = (it / numBricksZp_.get()) % numBricksYp_.get();
-            zOffset = it % numBricksZp_.get();
+                    current.coordLlf = coordLlf + (coord * h);
+                    current.coordUrb = coordLlf + ((coord + vec3(1.0f)) * h);
 
-            current.coordLlf = coordLlf + tgt::vec3(static_cast<float>(xOffset) * hx, static_cast<float>(yOffset) * hy,
-                                                    -static_cast<float>(zOffset) * hz);
-            current.coordUrb = startcUrb + tgt::vec3(static_cast<float>(xOffset) * hx, static_cast<float>(yOffset) * hy,
-                                                     -static_cast<float>(zOffset) * hz);
-            current.texLlf = texLlf + tgt::vec3(static_cast<float>(xOffset) / xBricks, static_cast<float>(yOffset) / yBricks,
-                                                -static_cast<float>(zOffset) / zBricks);
-            current.texUrb = starttUrb+tgt::vec3(static_cast<float>(xOffset)/xBricks,static_cast<float>(yOffset)/yBricks,
-                                                 -static_cast<float>(zOffset)/zBricks);
-            current.sliceIndexLlf = tgt::ivec3(static_cast<int>(xOffset*hx / sliceWidth.x), static_cast<int>(yOffset * hy / sliceWidth.y),
-                                               numSlices.z - static_cast<int>(zOffset * hz / sliceWidth.z));
-            current.sliceIndexUrb = tgt::ivec3(static_cast<int>((current.coordUrb.x - coordLlf.x) / sliceWidth.x),
-                                               static_cast<int>((current.coordUrb.y - coordLlf.y) / sliceWidth.y),
-                                               numSlices.z + static_cast<int>((current.coordUrb.z - coordLlf.z) / sliceWidth.z));
-            current.translation = tgt::vec3((gx * regularExplosionGap_.get() / 2) + static_cast<float>(xOffset) * regularExplosionGap_.get(),
-                                            (gy * regularExplosionGap_.get() / 2) + static_cast<float>(yOffset) * regularExplosionGap_.get(),
-                                            -((gz * regularExplosionGap_.get() / 2) + static_cast<float>(zOffset) * regularExplosionGap_.get()));
-            current.brickId = -1;
-            current.selected = true;
-            current.hidden = false;
-            regularBricklist_.insert(regularBricklist_.end(), current);
+                    current.texLlf = coord / bricks;
+                    current.texUrb = (coord + vec3(1.0f)) / bricks;
+
+                    current.sliceIndexLlf = tgt::ivec3((coord * h) / sliceWidth);
+                    current.sliceIndexUrb = tgt::ivec3(static_cast<int>((current.coordUrb.x - coordLlf.x) / sliceWidth.x), static_cast<int>((current.coordUrb.y - coordLlf.y) / sliceWidth.y), numSlices.z + static_cast<int>((current.coordUrb.z - coordLlf.z) / sliceWidth.z));
+
+                    //current.translation = tgt::vec3(0.0f);
+                    current.translation = (g * regularExplosionGap_.get() * 0.5f) + coord * regularExplosionGap_.get();
+                    current.brickId = -1;
+                    current.selected = true;
+                    current.hidden = false;
+                    regularBricklist_.push_back(current);
+                }
+            }
         }
     }
     else if (brickingMode_.get() == "manualGrid") {
@@ -894,14 +889,13 @@ void ExplosionProxyGeometry::createRegularOrManualBricklist(int numIterations) {
                                               (numBricksYm_ - 1) * manualExplosionGap_.get() / 2,
                                               -1.f * (numBricksZm_ - 1) * manualExplosionGap_.get() / 2);
 
-        for (it = 0; it < numIterations; ++it) {
+        for (int it = 0; it < static_cast<int>(numBricksXm_ * numBricksYm_ * numBricksZm_); ++it) {
             xOffset = it / static_cast<int>(numBricksYm_ * numBricksZm_);
             yOffset = (it / static_cast<int>(numBricksZm_)) % numBricksYm_;
             zOffset = it % numBricksZm_;
 
             current.coordLlf = coordLlf + tgt::vec3(xPlanescoord_.at(xOffset),yPlanescoord_.at(yOffset),(zPlanescoord_.at(zOffset)));
-            current.coordUrb = coordLlf + tgt::vec3(xPlanescoord_.at(xOffset + 1),yPlanescoord_.at(yOffset + 1),
-                                                    (zPlanescoord_.at(zOffset + 1)));
+            current.coordUrb = coordLlf + tgt::vec3(xPlanescoord_.at(xOffset + 1),yPlanescoord_.at(yOffset + 1), (zPlanescoord_.at(zOffset + 1)));
             current.texLlf = tgt::vec3(xPlanestex_.at(xOffset),yPlanestex_.at(yOffset),zPlanestex_.at(zOffset));
             current.texUrb = tgt::vec3(xPlanestex_.at(xOffset + 1),yPlanestex_.at(yOffset + 1),zPlanestex_.at(zOffset + 1));
             current.sliceIndexLlf = tgt::ivec3(static_cast<int>(xPlanescoord_.at(xOffset) / sliceWidth.x),
@@ -928,15 +922,15 @@ void ExplosionProxyGeometry::createCustomBricklist(char addPlaneAxis, float addP
     }
 
     const VolumeBase* volume = inportVolume_.getData();
-    tgt::vec3 volumeSize = volume->getCubeSize();
     tgt::ivec3 numSlices = volume->getDimensions();
     tgt::vec3 sliceWidth = getSliceWidth(volume);
-    tgt::vec3 coordLlf = -(volumeSize / static_cast<tgt::vec3::ElemType>(2));
-    tgt::vec3 coordUrb = (volumeSize / static_cast<tgt::vec3::ElemType>(2));
+    //tgt::vec3 coordLlf = volume->getLLF();
+    //tgt::vec3 coordUrb = volume->getURB();
+    tgt::vec3 coordLlf(0, 0, 0);
+    tgt::vec3 coordUrb(1, 1, 1);
 
-    std::swap(coordLlf.z, coordUrb.z);
-    const tgt::vec3 texLlf(0, 0, 1);
-    const tgt::vec3 texUrb(1, 1, 0);
+    const tgt::vec3 texLlf(0, 0, 0);
+    const tgt::vec3 texUrb(1, 1, 1);
 
     Brick current;
     std::vector<Brick> newBricks;
@@ -1097,53 +1091,6 @@ void ExplosionProxyGeometry::createCustomBricklist(char addPlaneAxis, float addP
     customBricklistStack_.push(customBricklist_);
 }
 
-std::vector<ExplosionProxyGeometry::Brick> ExplosionProxyGeometry::sortBricklist(std::vector<Brick> unsortedBricklist) {
-    std::vector<Brick> sortedBricklist;
-    Brick current;
-    Brick compare;
-    std::vector<Brick> help;
-    tgt::vec3 currentMiddle;
-    tgt::vec3 compareMiddle;
-    float currentDistance;
-    float compareDistance;
-    bool inserted = false;
-    int it;
-    int i;
-
-    for (it = 0; it < loopInport_.getNumLoopIterations(); ++it) {
-        current = unsortedBricklist.at(it);
-        help.clear();
-        help.insert(help.begin(), current);
-
-        if (it == 0)
-            sortedBricklist.insert(sortedBricklist.end(), current);
-        else{
-            inserted = false;
-            currentMiddle = findMiddle(help);
-            currentDistance = getCameraDistance(camera_.get().getPosition(), currentMiddle);
-            i = 0;
-
-            while (i < it && !inserted) {
-                compare = sortedBricklist.at(i);
-                help.clear();
-                help.insert(help.begin(), compare);
-                compareMiddle = findMiddle(help);
-                compareDistance = getCameraDistance(camera_.get().getPosition(), compareMiddle);
-
-                if (currentDistance > compareDistance) {
-                    sortedBricklist.insert(sortedBricklist.begin() + i, current);
-                    inserted = true;
-                }
-                if (i == (it - 1) && !inserted) {
-                    sortedBricklist.insert(sortedBricklist.end(), current);
-                }
-                ++i;
-            }
-        }
-    }
-    return sortedBricklist;
-}
-
 tgt::vec3 ExplosionProxyGeometry::findMiddle(std::vector<Brick> bricklist) {
     float xMiddle;
     float yMiddle;
@@ -1193,7 +1140,8 @@ float ExplosionProxyGeometry::getCameraDistance(tgt::vec3 cameraposition, tgt::v
 
 tgt::vec3 ExplosionProxyGeometry::getSliceWidth(const VolumeBase* volume) {
     tgt::vec3 sliceWidth;
-    sliceWidth = volume->getCubeSize() / tgt::vec3(volume->getDimensions());
+    //sliceWidth = volume->getCubeSize() / tgt::vec3(volume->getDimensions());
+    sliceWidth = tgt::vec3(1.0f) / tgt::vec3(volume->getDimensions());
     return sliceWidth;
 }
 
@@ -1438,6 +1386,14 @@ void ExplosionProxyGeometry::onSelectingSeveralBricksEvent(tgt::MouseEvent * e) 
         updatePlaneWidgets();
         invalidate();
     }
+}
+
+void ExplosionProxyGeometry::onEvent(tgt::Event* e) {
+    tgt::MouseEvent* me = dynamic_cast<tgt::MouseEvent*>(e);
+    if(me)
+        pickingBuffer_.resize(me->viewport());
+
+    RenderProcessor::onEvent(e);
 }
 
 void ExplosionProxyGeometry::onTranslateSelectedBricksEvent(tgt::MouseEvent * e) {

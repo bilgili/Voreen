@@ -44,7 +44,7 @@ using tgt::ivec4;
 
 namespace voreen {
 
-PreIntegrationTableMap::PreIntegrationTableMap(const TransFunc1DKeys* tf, size_t maxSize) : tf_(tf) {
+PreIntegrationTableMap::PreIntegrationTableMap(TransFunc1DKeys* tf, size_t maxSize) : tf_(tf) {
     //maxSize_ must be >= 1
     if (maxSize == 0)
         maxSize_ = 1;
@@ -56,7 +56,7 @@ PreIntegrationTableMap::~PreIntegrationTableMap() {
     clear();
 }
 
-void PreIntegrationTableMap::setTransFunc(const TransFunc1DKeys* tf) {
+void PreIntegrationTableMap::setTransFunc(TransFunc1DKeys* tf) {
     tf_ = tf;
 }
 
@@ -70,7 +70,7 @@ void PreIntegrationTableMap::clear() {
     queue_ = std::queue<PreIntegrationTableAttributes>();
 }
 
-const PreIntegrationTable* PreIntegrationTableMap::getPreIntegrationTable(float samplingStepSize, size_t dimension, bool useIntegral) {
+const PreIntegrationTable* PreIntegrationTableMap::getPreIntegrationTable(float samplingStepSize, size_t dimension, bool useIntegral, bool computeOnGPU, tgt::Shader* program) {
 
     if (!tf_)
         return 0;
@@ -87,6 +87,7 @@ const PreIntegrationTable* PreIntegrationTableMap::getPreIntegrationTable(float 
     attributes.samplingStepSize_ = samplingStepSize;
     attributes.dimension_ = dim;
     attributes.useIntegral_ = useIntegral;
+    attributes.computeOnGPU_ = computeOnGPU;
 
     //try to find the right pre-integration table
     std::map<PreIntegrationTableAttributes, PreIntegrationTable*>::iterator it = tableMap_.find(attributes);
@@ -101,7 +102,7 @@ const PreIntegrationTable* PreIntegrationTableMap::getPreIntegrationTable(float 
             queue_.pop();
         }
         //create new pre-integration table and add it to the map
-        PreIntegrationTable* table = new PreIntegrationTable(tf_, dim, samplingStepSize, useIntegral);
+        PreIntegrationTable* table = new PreIntegrationTable(tf_, dim, samplingStepSize, useIntegral, computeOnGPU, program);
         tableMap_.insert(std::make_pair(attributes,table));
         queue_.push(attributes);
         it = tableMap_.find(attributes);
@@ -109,6 +110,7 @@ const PreIntegrationTable* PreIntegrationTableMap::getPreIntegrationTable(float 
     }
 }
 
+//-------------------------------------------------------------------------------------------------
 
 // some stream helper functions
 inline int readInt(std::ifstream& stream);
@@ -123,6 +125,7 @@ TransFunc1DKeys::TransFunc1DKeys(int width)
     , upperThreshold_(1.f)
     , domain_(0.0, 1.0f)
     , preIntegrationTableMap_(NULL, 10)
+    , preIntegrationProgram_(0)
 {
     loadFileFormats_.push_back("tfi");
     loadFileFormats_.push_back("lut");
@@ -146,8 +149,9 @@ TransFunc1DKeys::TransFunc1DKeys(int width)
 
 TransFunc1DKeys::TransFunc1DKeys(const TransFunc1DKeys& tf)
     : TransFunc(tf.dimensions_.x, tf.dimensions_.y, tf.dimensions_.z,
-                tf.format_, tf.dataType_, tf.filter_),
-    preIntegrationTableMap_(NULL,10)
+                tf.format_, tf.dataType_, tf.filter_)
+      , preIntegrationTableMap_(NULL,10)
+      , preIntegrationProgram_(0)
 {
     updateFrom(tf);
     //pre-integration table map is not copied
@@ -159,6 +163,9 @@ TransFunc1DKeys::~TransFunc1DKeys() {
         delete keys_[i];
 
     preIntegrationTableMap_.clear();
+
+    if (preIntegrationProgram_)
+        ShdrMgr.dispose(preIntegrationProgram_);
 }
 
 bool TransFunc1DKeys::operator==(const TransFunc1DKeys& tf) {
@@ -183,6 +190,37 @@ bool TransFunc1DKeys::operator!=(const TransFunc1DKeys& tf) {
     return !(*this == tf);
 }
 
+bool TransFunc1DKeys::isStandardFunc() const {
+    if(getDomain() == tgt::vec2(0.0f, 1.0f) && (getNumKeys() == 2)) {
+        const TransFuncMappingKey* k0 = getKey(0);
+        if((k0->getIntensity() == 0.0f) && !(k0->isSplit()) && (k0->getColorL() == col4(0, 0, 0, 0))) {
+            const TransFuncMappingKey* k1 = getKey(1);
+            if((k1->getIntensity() == 1.0f) && !(k1->isSplit()) && (k1->getColorL() == col4(255)))
+                return true;
+        }
+    }
+    return false;
+}
+
+void TransFunc1DKeys::makeRamp() {
+    if(keys_.size() >= 2) {
+        float min = keys_[0]->getIntensity();
+        float max = keys_[keys_.size()-1]->getIntensity();
+        float width = max - min;
+
+        for(size_t i=0; i<keys_.size(); i++) {
+            float v = keys_[i]->getIntensity();
+            v -= min;
+            v /= width;
+            keys_[i]->setIntensity(v);
+            keys_[i]->setAlphaL(v);
+            keys_[i]->setAlphaR(v);
+        }
+    }
+    textureInvalid_ = true;
+    preIntegrationTableMap_.clear();
+}
+
 void TransFunc1DKeys::setToStandardFunc() {
     clearKeys();
     keys_.push_back(new TransFuncMappingKey(0.f, col4(0, 0, 0, 0)));
@@ -194,6 +232,11 @@ void TransFunc1DKeys::setToStandardFunc() {
 
 tgt::vec4 TransFunc1DKeys::getMeanValue(float segStart, float segEnd) const {
     ivec4 result(0);
+    if (!tex_ || textureInvalid_) {
+        LWARNING("getMeanValue(): texture is invalid");
+        return result;
+    }
+
     float width = static_cast<float>(tex_->getWidth());
     for (int i = static_cast<int>(segStart*width); i < segEnd*width; ++i)
         result += ivec4(tex_->texel<col4>(i));
@@ -216,10 +259,11 @@ col4 TransFunc1DKeys::getMappingForValue(float value) const {
     while ((keyIterator != keys_.end()) && (value > (*keyIterator)->getIntensity()))
         keyIterator++;
 
+    col4 color;
     if (keyIterator == keys_.begin())
-        return keys_[0]->getColorL();
+        color = keys_[0]->getColorL();
     else if (keyIterator == keys_.end())
-        return (*(keyIterator-1))->getColorR();
+        color = (*(keyIterator-1))->getColorR();
     else{
         // calculate the value weighted by the destination to the next left and right key
         TransFuncMappingKey* leftKey = *(keyIterator-1);
@@ -227,13 +271,16 @@ col4 TransFunc1DKeys::getMappingForValue(float value) const {
         float fraction = (value - leftKey->getIntensity()) / (rightKey->getIntensity() - leftKey->getIntensity());
         col4 leftDest = leftKey->getColorR();
         col4 rightDest = rightKey->getColorL();
-        col4 result = leftDest;
-        result.r += static_cast<uint8_t>((rightDest.r - leftDest.r) * fraction);
-        result.g += static_cast<uint8_t>((rightDest.g - leftDest.g) * fraction);
-        result.b += static_cast<uint8_t>((rightDest.b - leftDest.b) * fraction);
-        result.a += static_cast<uint8_t>((rightDest.a - leftDest.a) * fraction);
-        return result;
+        color = leftDest;
+        color.r += static_cast<uint8_t>((rightDest.r - leftDest.r) * fraction);
+        color.g += static_cast<uint8_t>((rightDest.g - leftDest.g) * fraction);
+        color.b += static_cast<uint8_t>((rightDest.b - leftDest.b) * fraction);
+        color.a += static_cast<uint8_t>((rightDest.a - leftDest.a) * fraction);
     }
+    if(ignoreAlpha_)
+        color.a = 255;
+
+    return color;
 }
 
 void TransFunc1DKeys::updateTexture() {
@@ -281,7 +328,11 @@ int TransFunc1DKeys::getNumKeys() const {
     return static_cast<int>(keys_.size());
 }
 
-TransFuncMappingKey* TransFunc1DKeys::getKey(int i) const {
+const TransFuncMappingKey* TransFunc1DKeys::getKey(int i) const {
+    return keys_.at(i);
+}
+
+TransFuncMappingKey* TransFunc1DKeys::getKey(int i) {
     return keys_.at(i);
 }
 
@@ -410,6 +461,11 @@ bool TransFunc1DKeys::saveTfi(const std::string& filename) const {
 
 bool TransFunc1DKeys::saveImage(const std::string& filename) const {
 #ifdef VRN_MODULE_DEVIL
+    if (!tex_ || textureInvalid_) {
+        LWARNING("saveImage(): texture is invalid");
+        return false;
+    }
+
     //extract file extension
     std::string fileExtension;
     size_t dotPosition = filename.rfind(".");
@@ -452,6 +508,11 @@ bool TransFunc1DKeys::saveImage(const std::string& filename) const {
 }
 
 bool TransFunc1DKeys::saveLUT(const std::string& filename) const {
+    if (!tex_ || textureInvalid_) {
+        LWARNING("saveLUT(): texture is invalid");
+        return false;
+    }
+
     std::fstream f;
     f.open(filename.c_str(), std::ios::out);
     for (int i = 0; i < tex_->getWidth(); ++i) {
@@ -596,7 +657,6 @@ void TransFunc1DKeys::updateFrom(const TransFunc1DKeys& tf) {
 }
 
 void TransFunc1DKeys::serialize(XmlSerializer& s) const {
-
     TransFunc::serialize(s);
 
     // serialize keys...
@@ -610,7 +670,6 @@ void TransFunc1DKeys::serialize(XmlSerializer& s) const {
 }
 
 void TransFunc1DKeys::deserialize(XmlDeserializer& s) {
-
     TransFunc::deserialize(s);
 
     // deserialize keys...
@@ -1047,33 +1106,11 @@ void TransFunc1DKeys::setDomain(tgt::vec2 domain, int dimension) {
         domain_ = domain;
 }
 
-const PreIntegrationTable* TransFunc1DKeys::getPreIntegrationTable(float samplingStepSize, size_t dimension, bool useIntegral) {
+const PreIntegrationTable* TransFunc1DKeys::getPreIntegrationTable(float samplingStepSize, size_t dimension, bool useIntegral, bool computeOnGPU) {
+    if (computeOnGPU && !preIntegrationProgram_)
+        preIntegrationProgram_ = ShdrMgr.loadSeparate("passthrough.vert", "preintegration/preintegration.frag", generateStandardShaderHeader(0), false);
 
-    /*size_t dim;
-
-    if (dimension == 0)
-        dim = static_cast<size_t>(std::min(dimensions_.x, 1024));
-    else
-        dim = dimension;
-
-    //create key to pre-integration table map
-    PreIntegrationTableAttributes attributes;
-    attributes.samplingStepSize_ = samplingStepSize;
-    attributes.dimension_ = dim;
-    attributes.useIntegral_ = useIntegral;
-
-    //try to find the right pre-integration table
-    std::map<PreIntegrationTableAttributes, PreIntegrationTable*>::iterator it = tableMap_.find(attributes);
-    if (it != preIntegrationTableMap_.end())
-        return (it->second);
-    else {
-        PreIntegrationTable* table = new PreIntegrationTable(const_cast<TransFunc1DKeys*>(this), dim, samplingStepSize, useIntegral);
-        preIntegrationTableMap_.insert(std::make_pair(attributes,table));
-        it = preIntegrationTableMap_.find(attributes);
-        return (it->second);
-    }*/
-
-    return preIntegrationTableMap_.getPreIntegrationTable(samplingStepSize,dimension,useIntegral);
+    return preIntegrationTableMap_.getPreIntegrationTable(samplingStepSize,dimension,useIntegral,computeOnGPU, preIntegrationProgram_);
 }
 
 void TransFunc1DKeys::deleteTexture() {

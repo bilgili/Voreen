@@ -185,6 +185,8 @@ public:
      */
     void setTransFunc(TransFunc2DPrimitives* tf);
 
+    void fitToDomain();
+
 public slots:
     /**
      * Adds a quad primitive to the editor and updates the texture of the tf.
@@ -313,7 +315,6 @@ private:
     tgt::Texture* histogramTex_;            ///< texture created out of the histogramdata
     bool dragging_;                         ///< is the user dragging a primitive or a control point of a primitive?
     tgt::vec2 mouseCoord_;                  ///< position of the mouse in the last move event
-    float scaleFactor_;                     ///< scaling factor for y coordinate of primitives
 };
 
 } // namespace voreen

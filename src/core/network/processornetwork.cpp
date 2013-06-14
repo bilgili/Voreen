@@ -31,7 +31,7 @@
 #include "voreen/core/datastructures/transfunc/transfuncmappingkey.h"
 #include "voreen/core/network/portconnection.h"
 #include "voreen/core/network/networkgraph.h"
-#include "voreen/core/ports/allports.h"
+#include "voreen/core/ports/coprocessorport.h"
 #include "voreen/core/processors/renderprocessor.h"
 #include "voreen/core/properties/eventproperty.h"
 #include "voreen/core/properties/link/propertylink.h"

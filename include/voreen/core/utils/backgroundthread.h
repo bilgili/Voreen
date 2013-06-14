@@ -47,11 +47,12 @@ class VRN_CORE_API BackgroundThread {
         BackgroundThread() : finished_(false), running_(false) {}
 
         /**
-         *  Destructor waits for internal thread to finish (does NOT interrupt it... for interruption, interrupt() or interruptAndJoin() has to be called first).
-         *  
-         *  If the destructor of a derived class destroys data the internal thread is working on, join() or interruptAndJoin() have to be called within the
-         *  destructor of the derived class (before destroying the data!) or (outside the destructor) before destroying the (derived) thread object, 
-         *  as otherwise the internal thread may still try to access the data.
+         * Destructor waits for internal thread to finish (does NOT interrupt it... for interruption, interrupt()
+         * or interruptAndJoin() has to be called first).
+         *
+         * If the destructor of a derived class destroys data the internal thread is working on, join() or interruptAndJoin()
+         * have to be called within the destructor of the derived class (before destroying the data!) or (outside the destructor)
+         * before destroying the (derived) thread object, as otherwise the internal thread may still try to access the data.
          */
         virtual ~BackgroundThread();
 
@@ -81,7 +82,7 @@ class VRN_CORE_API BackgroundThread {
         /// Overwrite for clean-ups. Is called in case a running background thread is interrupted (ie. interrupt()-call or interruptAndJoin()-call).
         virtual void handleInterruption() {}
 
-        /// Sets an interruption point. Worker thread may only be interrupted during execution of  threadMain() when arriving at such a point.
+        /// Sets an interruption point. Worker thread may only be interrupted during execution of threadMain() when arriving at such a point.
         inline void interruptionPoint() {
             boost::this_thread::interruption_point();
         }
@@ -95,15 +96,21 @@ class VRN_CORE_API BackgroundThread {
         bool running_; ///< indicates if background computation is currently running
 };
 
+//-------------------------------------------------------------------------------------------------
+
 /**
  * Worker thread for a processor, automatically invalidates processor when finished.
  * When using a class derived from this template, T must be derived from Processor class.
  *
- * ATTENTION - if calling join() from process() method in associated processor, it is necessary to first call unlockMutex() (and afterwards call lockMutex()), because at the end of its computations, the background thread tries to lock the mutex before invalidating the processor, which otherwise would lead to deadlock. The same goes for calling the destructor within process() (as it contains an implicit join()) and interruptAndJoin() (because the interrupt signal might arrive at the thread when computation is finished and the thread will not be interrupted before trying to lock the mutex).
+ * ATTENTION - if calling join() from process() method in associated processor, it is necessary to first call unlockMutex()
+ *  (and afterwards call lockMutex()), because at the end of its computations the background thread tries to lock the mutex
+ *  before invalidating the processor, which otherwise would lead to deadlock. The same goes for calling the destructor within process()
+ *  (as it contains an implicit join()) and interruptAndJoin(), because the interrupt signal might arrive at the thread
+ *  when computation is finished and the thread will not be interrupted before trying to lock the mutex.
  *
- *  If the destructor of a derived class destroys data the internal thread is working on, join() or interruptAndJoin() have to be called within the
- *  destructor of the derived class (before destroying the data!) or (outside the destructor) before destroying the (derived) thread object, 
- *  as otherwise the internal thread may still try to access the data.
+ * If the destructor of a derived class destroys data the internal thread is working on, join() or interruptAndJoin()
+ * have to be called within the destructor of the derived class (before destroying the data!) or (outside the destructor)
+ * before destroying the (derived) thread object, as otherwise the internal thread may still try to access the data.
  */
 template <class T>
 class ProcessorBackgroundThread : public BackgroundThread {
@@ -157,4 +164,4 @@ class ProcessorBackgroundThread : public BackgroundThread {
 
 } //namespace
 
-#endif //VRN_BACKGROUNDTHREAD_H
+#endif // VRN_BACKGROUNDTHREAD_H

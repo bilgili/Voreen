@@ -444,6 +444,7 @@ private:
     RenderTarget* renderTarget_;
 
     bool validResult_;
+    bool cleared_;    //< false, if the render buffer is empty
     tgt::ivec2 size_; //neccessary for inports
 
     RenderSizePropagation renderSizePropagation_;

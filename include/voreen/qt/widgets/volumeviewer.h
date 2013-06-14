@@ -68,8 +68,8 @@ protected:
 /**
  * Widget that traverses the network and displays all contained volumes in a tree.
  */
-class VRN_QT_API VolumeViewer : public QWidget, public VolumeObserver, public NetworkEvaluator::ProcessWrapper {
-Q_OBJECT
+class VRN_QT_API VolumeViewer : public QWidget, public VolumeObserver, public NetworkEvaluatorObserver {
+    Q_OBJECT
 public:
 
     VolumeViewer(QWidget* parent = 0);

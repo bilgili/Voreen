@@ -57,6 +57,14 @@ public:
         return base_->useConverter(converter);
     }
 
+    virtual void addRepresentation(VolumeRepresentation* rep) {
+        const_cast<VolumeBase*>(base_)->addRepresentation(rep);
+    }
+
+    virtual void removeRepresentation(size_t i) {
+        const_cast<VolumeBase*>(base_)->removeRepresentation(i);
+    }
+
     virtual std::vector<std::string> getMetaDataKeys() const {
         return base_->getMetaDataKeys();
     }

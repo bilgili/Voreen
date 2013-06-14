@@ -46,7 +46,9 @@ Camera::Camera(const vec3& position, const vec3& focus, const vec3& up,
       projectionMode_(pm),
       eyeSeparation_(1.0f),
       eyeMode_(EYE_MIDDLE),
-      axisMode_(ON_AXIS)
+      axisMode_(ON_AXIS),
+      useOffset_(false),
+      offset_(tgt::vec3(0.f))
 {
     viewMatrix_ = mat4::createLookAt(position, focus, up);
 }
@@ -59,9 +61,11 @@ Camera::Camera(const Camera& cam)
       projectionMode_(cam.getProjectionMode()),
       eyeSeparation_(cam.getStereoEyeSeparation()),
       eyeMode_(cam.getStereoEyeMode()),
-      axisMode_(cam.getStereoAxisMode())
+      axisMode_(cam.getStereoAxisMode()),
+      useOffset_(cam.isOffsetEnabled()),
+      offset_(cam.getOffset())
 {
-    viewMatrix_ = mat4::createLookAt(position_, focus_, upVector_);
+    viewMatrix_ = mat4::createLookAt(getPositionWithOffsets(), getFocusWithOffsets(), upVector_);
 }
 
 Camera::~Camera() {
@@ -73,6 +77,8 @@ Camera* Camera::clone() const {
     cam->setStereoAxisMode(axisMode_);
     cam->setStereoEyeMode(eyeMode_, false);
     cam->setStereoEyeSeparation(eyeSeparation_, false);
+    cam->enableOffset(useOffset_);
+    cam->setOffset(offset_);
     return cam;
 }
 
@@ -126,7 +132,7 @@ void Camera::setViewMatrix(const mat4& mvMat) {
 
         positionCamera(pos.xyz(), focus.xyz(), up.xyz());
 
-        viewMatrix_ = mvMat;
+        updateVM();
     }
 }
 
@@ -144,10 +150,18 @@ mat4 Camera::getViewMatrixInverse() const {
         return mat4::identity;
 }
 
+tgt::Frustum Camera::getFrustumWithOffsets() const {
+    if(eyeMode_ != EYE_MIDDLE && axisMode_ == ON_AXIS)
+        return stereoFrustumShift();
+    else
+        return frust_;
+}
+
 mat4 Camera::getFrustumMatrix(float windowRatio) const {
-    return mat4::createFrustum(frust_.getLeft() * windowRatio, frust_.getRight() * windowRatio,
-                               frust_.getBottom(), frust_.getTop(),
-                               frust_.getNearDist(), frust_.getFarDist());
+    Frustum f = getFrustumWithOffsets();
+    return mat4::createFrustum(f.getLeft() * windowRatio, f.getRight() * windowRatio,
+                               f.getBottom(), f.getTop(),
+                               f.getNearDist(), f.getFarDist());
 }
 
 mat4 Camera::getFrustumMatrix(ivec2 windowSize) const {
@@ -256,102 +270,60 @@ vec3 Camera::project(ivec2 vp, vec3 point) const {
 }
 
 bool Camera::setStereoEyeSeparation(float separation, bool updateCam) {
-    if(!updateCam) {
-        eyeSeparation_ = separation;
-        return false;
-    }
-
-    if(eyeMode_ == EYE_MIDDLE)
-        return false;
-
-    float dif = separation - eyeSeparation_;
-    if(dif == 0.f)
-        return false;
-    else {
-        stereoShift(getStereoShift(eyeMode_, EYE_MIDDLE));
-        eyeSeparation_ = separation;
-        stereoShift(getStereoShift(EYE_MIDDLE, eyeMode_));
-        //tgt::vec3 dir = getStrafe() * dif / 2.f;
-        //stereoShift(dir);
-        return true;
-    }
+    eyeSeparation_ = separation;
+    return updateCam;;
 }
 
 bool Camera::setStereoEyeMode(StereoEyeMode mode, bool updateCam) {
-    if(!updateCam) {
-        eyeMode_ = mode;
+    if(eyeMode_ == mode)
         return false;
-    }
-
-    if(mode == eyeMode_)
-        return false;
-
-    stereoShift(getStereoShift(eyeMode_, mode));
     eyeMode_ = mode;
-    return true;
+    return updateCam;
 }
 
-void Camera::stereoShift(tgt::vec3 shift) {
-    if(length(shift) == 0.f)
-        return;
-    stereoCameraShift(shift);
-    if(axisMode_ == ON_AXIS)
-        stereoFrustumShift(shift);
-}
-
-tgt::vec3 Camera::getStereoShift(StereoEyeMode from, StereoEyeMode to) const {
-    if(from == to)
+tgt::vec3 Camera::getStereoShift() const {
+    if(eyeMode_ == EYE_MIDDLE)
         return tgt::vec3(0.f);
+    else if(eyeMode_ == EYE_LEFT)
+        return getStrafeWithOffsets() * (-eyeSeparation_ * 0.5f);
+    else
+        return getStrafeWithOffsets() * (eyeSeparation_ * 0.5f);
 
-    switch(to) {
-        case EYE_LEFT:
-            switch(from){
-                case EYE_MIDDLE:
-                    return getStrafe() * (-eyeSeparation_ / 2.f);
-                case EYE_RIGHT:
-                    return getStrafe() * (-eyeSeparation_);
-            }
-            break;
-
-        case EYE_MIDDLE:
-            switch(from){
-                case EYE_LEFT:
-                    return getStrafe() * (eyeSeparation_ / 2.0f);
-                case EYE_RIGHT:
-                    return getStrafe() * (-eyeSeparation_/ 2.0f);
-            }
-            break;
-
-        case EYE_RIGHT:
-            switch(from){
-                case EYE_MIDDLE:
-                    return getStrafe() * (eyeSeparation_ / 2.0f);
-                case EYE_LEFT:
-                    return getStrafe() * eyeSeparation_;
-            }
-            break;
-    }
     //should not get here, but removes a warning
     return tgt::vec3(0.f);
 }
 
-void Camera::stereoCameraShift(tgt::vec3 shift) {
-    //calculate new focus
-    float moveXScalar = tgt::dot(shift, getStrafe());
-    float moveYScalar = tgt::dot(shift, getUpVector());
-    tgt::vec3 focusProj = moveXScalar * getStrafe() + moveYScalar * getUpVector();
-
-    //set new position/focus
-    position_ = getPosition() + shift;
-    focus_ = getFocus() + focusProj;
-    invalidateVM();
+tgt::vec3 Camera::getStrafeWithOffsets() const {
+    tgt::vec3 pos = position_;
+    if(useOffset_)
+        pos += offset_;
+    return normalize(cross(focus_ - pos, upVector_));
 }
 
-void Camera::stereoFrustumShift(tgt::vec3 shift) {
-    if(projectionMode_ != FRUSTUM) {
-        LWARNINGC("tgt.camera", "Using stereo frustum shifting without proper projection mode, switching to frustum projection.");
-        setProjectionMode(FRUSTUM);
+tgt::vec3 Camera::getFocusWithOffsets() const {
+    tgt::vec3 foc = focus_;
+    if(eyeMode_ != EYE_MIDDLE) {
+        tgt::vec3 shift = getStereoShift();
+        tgt::vec3 strafe = getStrafeWithOffsets();
+        float moveXScalar = tgt::dot(shift, strafe);
+        float moveYScalar = tgt::dot(shift, upVector_);
+        foc += moveXScalar * strafe + moveYScalar * upVector_;
     }
+    return foc;
+}
+
+tgt::vec3 Camera::getPositionWithOffsets() const {
+    tgt::vec3 pos = position_;
+    if(eyeMode_ != EYE_MIDDLE)
+        pos += getStereoShift();
+    if(useOffset_);
+        pos += offset_;
+    return pos;
+}
+
+tgt::Frustum Camera::stereoFrustumShift() const {
+    Frustum f = frust_;
+    tgt::vec3 shift = getStereoShift();
 
     float moveXScalar = tgt::dot(shift, getStrafe());
     float moveYScalar = tgt::dot(shift, getUpVector());
@@ -360,12 +332,13 @@ void Camera::stereoFrustumShift(tgt::vec3 shift) {
     //float nDist = length(getPosition() - getFocus() + shift);
     float nDist = getFocalLength();
 
-    setFrustRight((getFrustRight() * oDist - moveXScalar * getNearDist())/nDist);
+    f.setRight((getFrustRight() * oDist - moveXScalar * getNearDist())/nDist);
     //should be +dis... but left frustum value is < 0 so --=+
-    setFrustLeft((getFrustLeft() * oDist - moveXScalar * getNearDist())/nDist);
-    setFrustTop((getFrustTop() * oDist - moveYScalar * getNearDist())/nDist);
+    f.setLeft((getFrustLeft() * oDist - moveXScalar * getNearDist())/nDist);
+    f.setTop((getFrustTop() * oDist - moveYScalar * getNearDist())/nDist);
     //should be +dis... but left frustum value is < 0 so --=+
-    setFrustBottom((getFrustBottom() * oDist - moveYScalar * getNearDist())/nDist);
+    f.setBottom((getFrustBottom() * oDist - moveYScalar * getNearDist())/nDist);
+    return f;
 }
 
 } // namespace tgt

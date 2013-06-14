@@ -26,7 +26,6 @@
 #include "imagesequencesource.h"
 
 #include "voreen/core/datastructures/volume/volume.h"
-#include "voreen/core/ports/allports.h"
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/datastructures/imagesequence.h"
 #include "voreen/core/io/progressbar.h"

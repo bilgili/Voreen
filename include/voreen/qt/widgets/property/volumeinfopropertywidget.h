@@ -41,14 +41,15 @@ class VolumeInfoPropertyWidget : public QPropertyWidget {
 public:
     VolumeInfoPropertyWidget(VolumeInfoProperty* volumeInfoProp, QWidget* parent);
 
-    virtual void updateFromProperty();
-
     /// Returns the null pointer, since this widget does not need a separate label.
     virtual CustomLabel* getNameLabel() const;
 
 protected:
     /// @see QPropertyWidget
     void showNameLabel(bool);
+
+protected slots:
+    virtual void updateFromPropertySlot();
 
 private:
     const VolumeBase* getVolumeFromProperty() const;

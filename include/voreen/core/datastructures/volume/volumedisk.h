@@ -32,49 +32,144 @@
 #include "voreen/core/datastructures/volume/volumeram.h"
 #include "voreen/core/datastructures/volume/volumegl.h"
 
+#include <stdexcept>
 namespace voreen {
 
-/// A representation storing the information to do a lazy loading of the volume data.
+/**
+ * Base class for representations storing the information to do a lazy loading of the volume data from disk.
+ */
 class VRN_CORE_API VolumeDisk : public VolumeRepresentation {
 public:
     /**
-     * @param filename Absolute file name.
      * @param format @see VolumeFactory
-     * @param offset If offset >= 0: Bytes offset from beginning of file. If offset < 0: assume data is aligned to end of file.
-     * @param swapEndian Swaps endianness if true.
+     * @param dimensions voxel dimensions of the volume
      */
-    VolumeDisk(const std::string& filename, const std::string& format, tgt::ivec3 dimensions, int64_t offset = 0, bool swapEndian = false);
-    VolumeDisk(const VolumeDisk* diskrep);
+    VolumeDisk(const std::string& format, tgt::svec3 dimensions);
 
-    virtual ~VolumeDisk();
-
-    std::string getFileName() const { return filename_; }
-    ///@see VolumeFactory
+    /// @see VolumeFactory
     virtual std::string getFormat() const { return format_; }
 
     /// Returns the base type (e.g., "float" for a representation of format "Vector3(float)").
     virtual std::string getBaseType() const;
 
-    virtual int getNumChannels() const;
-    virtual int getBytesPerVoxel() const;
-    ///loads slices from the disk volume and returns the new (ram)volume
-    virtual VolumeRAM* loadSlices(const size_t firstSlice, const size_t lastSlice) const;
-    ///loads a sub brick volume
-    virtual VolumeRAM* loadBrick(const tgt::svec3 offset, const tgt::svec3 dimensions) const;
-    ///Creates new disk representation based on current disk representation.
-    virtual VolumeDisk* getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset = tgt::svec3(0,0,0)) const throw (std::bad_alloc);
+    virtual size_t getNumChannels() const;
+    virtual size_t getBytesPerVoxel() const;
 
-    ///Offset in the file (in bytes).
+    /**
+     * Returns a hash string of the disk volume.
+     * For performance reasons, the hash is usually not computed from the volume itself,
+     * but rather from identifying information such as the disk filename(s).
+     */
+    virtual std::string getHash() const = 0;
+
+    /**
+     * Loads the entire volume from disk and returns it as VolumeRAM.
+     * The caller is responsible for deleting the returned object.
+     *
+     * @throw tgt::Exception if the volume could not be loaded
+     */
+    virtual VolumeRAM* loadVolume() const
+        throw (tgt::Exception) = 0;
+
+    /**
+     * Loads a set of consecutive z slices from disk and returns them as VolumeRAM.
+     * The caller is responsible for deleting the returned object.
+     *
+     * @param firstZSlice first slice of the slice range to load (inclusive)
+     * @param lastZSlice last slice of the slice range to load (inclusive)
+     *
+     * @throw tgt::Exception if the slices could not be loaded
+     */
+    virtual VolumeRAM* loadSlices(const size_t firstZSlice, const size_t lastZSlice) const
+        throw (tgt::Exception) = 0;
+
+    /**
+     * Loads a brick of the volume from disk and returns it as VolumeRAM.
+     * The caller is responsible for deleting the returned object.
+     *
+     * @param offset lower-left-front corner voxel of the brick to load
+     * @param dimensions dimension of the brick to load
+     *
+     * @throw tgt::Exception if the brick could not be loaded
+     */
+    virtual VolumeRAM* loadBrick(const tgt::svec3& offset, const tgt::svec3& dimensions) const
+        throw (tgt::Exception) = 0;
+
+protected:
+    std::string format_;
+
+    static const std::string loggerCat_;
+};
+
+//-------------------------------------------------------------------------------------------------
+
+/**
+ * Disk volume that references a raw (binary) file.
+ */
+class VRN_CORE_API VolumeDiskRaw : public VolumeDisk {
+public:
+    /**
+     * @param filename Absolute file name of the raw file.
+     * @param format @see VolumeFactory
+     * @param dimensions voxel dimensions of the volume
+     * @param offset If offset >= 0: Bytes offset from beginning of file. If offset < 0: assume data is aligned to end of file.
+     * @param swapEndian Swaps endianness if true.
+     */
+    VolumeDiskRaw(const std::string& filename, const std::string& format, tgt::svec3 dimensions, int64_t offset = 0, bool swapEndian = false);
+    VolumeDiskRaw(const VolumeDiskRaw* diskrep);
+    virtual ~VolumeDiskRaw();
+
+    std::string getFileName() const { return filename_; }
+
+    /// offset in the file (in bytes).
     int64_t getOffset() const { return offset_; }
     bool getSwapEndian() const { return swapEndian_; }
+
+    /// Computes a hash string from the filename, the format, the dimensions, the offset and the swapEndian parameter.
+    virtual std::string getHash() const;
+
+    /**
+     * Loads the entire volume from disk and returns it as VolumeRAM.
+     * The caller is responsible for deleting the returned object.
+     *
+     * @throw tgt::Exception if the volume could not be loaded
+     */
+    virtual VolumeRAM* loadVolume() const
+        throw (tgt::Exception);
+
+    /**
+     * Loads a set of consecutive z slices from disk and returns them as VolumeRAM.
+     * The caller is responsible for deleting the returned object.
+     *
+     * @param firstZSlice first slice of the slice range to load (inclusive)
+     * @param lastZSlice last slice of the slice range to load (inclusive)
+     *
+     * @throw tgt::Exception if the slices could not be loaded
+     */
+    virtual VolumeRAM* loadSlices(const size_t firstZSlice, const size_t lastZSlice) const
+        throw (tgt::Exception);
+
+    /**
+     * Loads a brick of the volume from disk and returns it as VolumeRAM.
+     * The caller is responsible for deleting the returned object.
+     *
+     * @param offset lower-left-front corner voxel of the brick to load
+     * @param dimensions dimension of the brick to load
+     *
+     * @throw tgt::Exception if the brick could not be loaded
+     */
+    virtual VolumeRAM* loadBrick(const tgt::svec3& offset, const tgt::svec3& dimensions) const
+        throw (tgt::Exception);
+
 protected:
     std::string filename_;
-    std::string format_;
     int64_t offset_;
     bool swapEndian_;
 
     static const std::string loggerCat_;
 };
+
+//-------------------------------------------------------------------------------------------------
 
 /// Creates a VolumeRam from a VolumeDisk.
 class VRN_CORE_API  RepresentationConverterLoadFromDisk : public RepresentationConverter<VolumeRAM> {
@@ -82,6 +177,8 @@ public:
     virtual bool canConvert(const VolumeRepresentation* source) const;
     virtual VolumeRepresentation* convert(const VolumeRepresentation* source) const;
 };
+
+//-------------------------------------------------------------------------------------------------
 
 /// Creates a VolumeGL from a VolumeDisk.
 class VRN_CORE_API  RepresentationConverterLoadFromDiskToGL : public RepresentationConverter<VolumeGL> {

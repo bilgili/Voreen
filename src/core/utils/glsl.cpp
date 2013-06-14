@@ -63,7 +63,7 @@ void setUniform(tgt::Shader* shader, const std::string& volumeUniform, const std
 
     // camera position in volume object coords
     if (camera)
-        shader->setUniform(structUniform + ".cameraPositionPhysical_", invTm*camera->getPosition());
+        shader->setUniform(structUniform + ".cameraPositionPhysical_", invTm*camera->getPositionWithOffsets());
 
     // light position in volume object coords
     shader->setUniform(structUniform + ".lightPositionPhysical_", (invTm*lightPosition).xyz());

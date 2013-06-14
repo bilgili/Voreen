@@ -63,7 +63,7 @@ void GeometryClipping::process() {
         return;
     }
 
-    tgt::vec3 n = normal_.get();
+    tgt::vec3 n = normalize(normal_.get());
     float d = position_.get();
 
     if (invert_.get())

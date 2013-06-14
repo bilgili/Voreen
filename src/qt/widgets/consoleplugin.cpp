@@ -28,6 +28,7 @@
 #include "tgt/logmanager.h"
 
 #include <QApplication>
+#include <QThread>
 #include <QTextEdit>
 #include <QVBoxLayout>
 #include <QScrollBar>
@@ -59,6 +60,13 @@ public:
 
 protected:
     void logFiltered(const std::string &cat, tgt::LogLevel level, const std::string &msg, const std::string & /*extendedInfo*/ ="") {
+        // accessing Qt widgets is only allowed in the GUI thread
+        bool isGuiThread = (QThread::currentThread() == QCoreApplication::instance()->thread());
+        if (!isGuiThread) {
+            std::cerr << "Logging call from non-GUI thread: " << cat << " (" << level << ") " << msg << std::endl;
+            return;
+        }
+
         std::string output;
 
         std::string style;

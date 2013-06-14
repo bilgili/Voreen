@@ -32,6 +32,8 @@
 #include "tgt/event/mouseevent.h"
 #include "tgt/event/keyevent.h"
 #include "tgt/event/timeevent.h"
+#include "tgt/event/touchevent.h"
+#include "tgt/event/touchpoint.h"
 #include "tgt/timer.h"
 #include "voreen/core/properties/eventproperty.h"
 
@@ -39,6 +41,8 @@ using tgt::Event;
 using tgt::MouseEvent;
 using tgt::KeyEvent;
 using tgt::TimeEvent;
+using tgt::TouchEvent;
+using tgt::TouchPoint;
 
 namespace voreen {
 
@@ -67,6 +71,10 @@ CameraInteractionHandler::CameraInteractionHandler(const std::string& id, const 
     fpNavi_ = new FirstPersonNavigation(cameraProp_);
 
     // event properties trackball
+    multiTouchEvent_ = new EventProperty<CameraInteractionHandler>(id + ".multitouch", guiName + "Multitouch", this,
+        &CameraInteractionHandler::handleMultitouch, sharing, enabled);
+    addEventProperty(multiTouchEvent_);
+
     rotateEvent_ = new EventProperty<CameraInteractionHandler>(id + ".rotate", guiName + " Rotate", this,
         &CameraInteractionHandler::rotateEvent,
         MouseEvent::MOUSE_BUTTON_LEFT,
@@ -155,6 +163,35 @@ CameraInteractionHandler::~CameraInteractionHandler() {
     delete fpNavi_;
     delete timerEventHandler_;
     delete motionTimer_;
+}
+
+// handle multi touch event
+// TODO: react on events with more than two touch points
+void CameraInteractionHandler::handleMultitouch(tgt::TouchEvent* e){
+    tgtAssert(cameraProp_, "No camera property");
+    tgtAssert(fpNavi_, "No trackball navigation");
+
+    if (e->touchPoints().size() == 2) {
+
+        // propagate event to trackball navigation
+        if (e->touchPointStates() & TouchPoint::TouchPointPressed) {
+            cameraProp_->toggleInteractionMode(true, this);
+            tbNavi_->touchPressEvent(e);
+            e->accept();
+            //cameraProp_->invalidate();
+        }
+        else if (e->touchPointStates() & TouchPoint::TouchPointReleased) {
+            cameraProp_->toggleInteractionMode(false, this);
+            tbNavi_->touchReleaseEvent(e);
+            e->accept();
+            cameraProp_->invalidate();
+        }
+        else if (e->touchPointStates() & TouchPoint::TouchPointMoved | TouchPoint::TouchPointStationary) {
+            tbNavi_->touchMoveEvent(e);
+            e->accept();
+            cameraProp_->invalidate();
+        }
+    }
 }
 
 // TODO: left clicked mousedragging is catched by fpNavi, too. Maybe this method should get a proper name?!

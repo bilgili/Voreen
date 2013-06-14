@@ -781,7 +781,6 @@ int ProcessorNetwork::removePropertyLinksFromSubNetwork(const std::vector<Proces
             numRemoved++;
         }
     }
-
     return numRemoved;
 }
 

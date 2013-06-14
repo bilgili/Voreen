@@ -36,7 +36,6 @@
 namespace voreen {
 
 class Volume;
-class Volume;
 
 #ifdef DLL_TEMPLATE_INST
 template class VRN_CORE_API TemplateProperty<TransFunc*>;
@@ -149,6 +148,9 @@ public:
      */
     virtual void volumeChange(const VolumeBase* source);
 
+    /// Listens for the VolumeMinMax computation to finish.
+    virtual void derivedDataThreadFinished(const VolumeBase* source, const VolumeDerivedData* derivedData);
+
     /**
      * @see Property::serialize
      */
@@ -211,6 +213,9 @@ protected:
     /// Determines whether the transfer function value domain is always apated when an new volumehandle is passed to the
     /// property.
     bool alwaysFitDomain_;
+
+    /// Set to true, if the domain fitting should be executed after the VolumeMinMax computation has finished
+    bool fitToDomainPending_;
 
     static const std::string loggerCat_; ///< logger category
 };

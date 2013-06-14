@@ -29,12 +29,22 @@
 #include "voreen/core/processors/renderprocessor.h"
 #include "voreen/core/properties/eventproperty.h"
 #include "voreen/core/properties/boolproperty.h"
-#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/vectorproperty.h"
 
 namespace voreen {
 
 class VRN_CORE_API TripleView : public RenderProcessor {
+    enum WindowConfiguration {
+        abc = 0,
+        Abc = 1,
+        Bac = 2,
+        Cab = 3,
+        A = 4,
+        B = 5,
+        C = 6
+    };
+
 public:
     TripleView();
     ~TripleView();
@@ -48,8 +58,12 @@ public:
     virtual void invalidate(int inv = INVALID_RESULT);
 
 protected:
+    void renderPortQuad(RenderPort& rp, tgt::vec3 translate, tgt::vec3 scale);
+    void renderLargeSmallSmall(RenderPort& large, RenderPort& small1, RenderPort& small2);
+    void distributeEventLargeSmallSmall(RenderPort& large, RenderPort& small1, RenderPort& small2, tgt::MouseEvent* me);
+
     virtual void setDescriptions() {
-        setDescription("Combines three input images in a horizontal layout.");
+        setDescription("Combines three input images in a configurable layout.");
     }
 
     virtual void process();
@@ -57,15 +71,13 @@ protected:
 
     virtual void onEvent(tgt::Event* e);
 
-    void toggleMaximization(tgt::MouseEvent* me);
     void updateSizes();
 
     void mouseMove(tgt::MouseEvent* e);
 
     BoolProperty showGrid_;
     FloatVec4Property gridColor_;
-    IntProperty maximized_;
-    BoolProperty maximizeOnDoubleClick_;
+    IntOptionProperty configuration_;
     EventProperty<TripleView> maximizeEventProp_;
     EventProperty<TripleView> mouseMoveEventProp_;
 

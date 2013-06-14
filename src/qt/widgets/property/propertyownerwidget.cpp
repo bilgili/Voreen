@@ -28,7 +28,6 @@
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/voreenmodule.h"
 #include "voreen/core/properties/propertyowner.h"
-#include "voreen/core/properties/volumeurlproperty.h"
 #include "voreen/core/properties/transfuncproperty.h"
 
 #include "voreen/qt/widgets/expandableheaderbutton.h"
@@ -38,10 +37,9 @@
 #include "voreen/qt/widgets/property/qpropertywidget.h"
 #include "voreen/qt/widgets/property/grouppropertywidget.h"
 #include "voreen/qt/widgets/property/transfuncpropertywidget.h"
-#include "voreen/qt/widgets/property/volumeurllistpropertywidget.h"
-#include "voreen/qt/widgets/property/volumeurlpropertywidget.h"
 
 #include <QVBoxLayout>
+#include <QPushButton>
 #include <QGridLayout>
 
 namespace voreen {

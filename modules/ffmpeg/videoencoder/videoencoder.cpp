@@ -212,6 +212,7 @@ const char* containerAppendix(VideoEncoder::ContainerCodecPair preset) {
     }
 }
 
+#if (LIBAVFORMAT_VERSION_MAJOR < 54)
 CodecID containerCodecId(VideoEncoder::ContainerCodecPair preset) {
     switch (preset) {
     default:
@@ -228,6 +229,24 @@ CodecID containerCodecId(VideoEncoder::ContainerCodecPair preset) {
         return CODEC_ID_THEORA;
     }
 }
+#else
+AVCodecID containerCodecId(VideoEncoder::ContainerCodecPair preset) {
+    switch (preset) {
+    default:
+        return AV_CODEC_ID_MPEG2VIDEO;
+    case VideoEncoder::FLVFLV:
+        return AV_CODEC_ID_FLV1;
+    case VideoEncoder::MPEG4AVI:
+        return AV_CODEC_ID_MPEG4;
+    case VideoEncoder::WMVWMV:
+        return AV_CODEC_ID_WMV2;
+    case VideoEncoder::HUFFYUVAVI:
+        return AV_CODEC_ID_HUFFYUV;
+    case VideoEncoder::OGGTHEORA:
+        return AV_CODEC_ID_THEORA;
+    }
+}
+#endif
 
 PixelFormat codecPixFmt(VideoEncoder::ContainerCodecPair preset) {
     switch (preset) {

@@ -78,11 +78,6 @@ QColor ClickableColorMapLabel::toQColor(tgt::Color color) {
 
 // ------------------------------------------------------------------------------------------------
 
-
-
-
-
-
 ColorMapPropertyWidget::ColorMapPropertyWidget(ColorMapProperty* prop, QWidget* parent)
     : QPropertyWidget(prop, parent)
     , property_(prop)
@@ -109,10 +104,9 @@ ColorMapPropertyWidget::ColorMapPropertyWidget(ColorMapProperty* prop, QWidget* 
     addVisibilityControls();
 }
 
-void ColorMapPropertyWidget::updateFromProperty() {
+void ColorMapPropertyWidget::updateFromPropertySlot() {
     updateColorLabel();
 }
-
 
 void ColorMapPropertyWidget::updateColorLabel() {
     colorLbl_->setColorMap(property_->get());

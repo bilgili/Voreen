@@ -93,7 +93,7 @@ StringExpressionPropertyWidget::StringExpressionPropertyWidget(StringExpressionP
 StringExpressionPropertyWidget::~StringExpressionPropertyWidget() {
 }
 
-void StringExpressionPropertyWidget::updateFromProperty() {
+void StringExpressionPropertyWidget::updateFromPropertySlot() {
     // Update textEdit
     textEdit_->blockSignals(true);
     QString st = QString::fromStdString(property_->get());

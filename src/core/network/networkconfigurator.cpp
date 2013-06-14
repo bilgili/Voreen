@@ -31,6 +31,8 @@
 #include "voreen/core/utils/exception.h"
 #include "voreen/core/utils/stringutils.h"
 
+#include "voreen/core/properties/buttonproperty.h"
+
 #include "tgt/logmanager.h"
 #include "tgt/exception.h"
 #include "tgt/assert.h"

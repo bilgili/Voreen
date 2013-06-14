@@ -41,7 +41,7 @@ void fillBlendingProp(StringOptionProperty& sop) {
     sop.addOption("replace", "Replace");
     sop.addOption("deactivate", "deactivate");
     sop.addOption("add", "Add");
-    sop.addOption("substract", "Substract");
+    sop.addOption("subtract", "Subtract");
     sop.addOption("multiply", "Multiply");
     sop.addOption("divide", "Divide");
     sop.addOption("difference", "Difference");

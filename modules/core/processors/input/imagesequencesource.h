@@ -27,7 +27,6 @@
 #define VRN_IMAGESEQUENCESOURCE_H
 
 #include "voreen/core/processors/renderprocessor.h"
-#include "voreen/core/ports/allports.h"
 #include "voreen/core/properties/filedialogproperty.h"
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/boolproperty.h"

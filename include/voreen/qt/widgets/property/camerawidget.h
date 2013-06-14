@@ -52,7 +52,7 @@ class FloatVec3PropertyWidget;
 class CameraWidget : public QWidget {
     Q_OBJECT
 public:
-    CameraWidget(CameraProperty* camera, float minDist = 0.01f, float maxDist = 500.f, QWidget* parent = 0);
+    CameraWidget(CameraProperty* camera, QWidget* parent = 0);
     ~CameraWidget();
 
     void updateFromCamera();
@@ -152,8 +152,6 @@ private:
     CameraProperty* cameraProp_;
     VoreenTrackball* track_;
 
-    int minDist_;
-    int maxDist_;
     const float CAM_DIST_SCALE_FACTOR;
 
     const tgt::vec3 AXIAL_VIEW;
@@ -201,7 +199,6 @@ private:
     // trackball: reset camera focus after shifting
     QPushButton* resetCamFocusToTrackballCenter_;
 
-    float dist_;
     bool rotateX_;
     bool rotateY_;
     bool rotateZ_;

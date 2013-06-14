@@ -36,7 +36,7 @@ OptionPropertyWidget::OptionPropertyWidget(OptionPropertyBase* prop, QWidget* pa
     , property_(prop)
     , cBox_(new QComboBox)
 {
-    updateFromProperty();
+    updateFromPropertySlot();
     QFontInfo fontInfo(font());
     cBox_->setFont(QFont(fontInfo.family(), QPropertyWidget::fontSize_));
     addWidget(cBox_);
@@ -46,7 +46,7 @@ OptionPropertyWidget::OptionPropertyWidget(OptionPropertyBase* prop, QWidget* pa
     addVisibilityControls();
 }
 
-void OptionPropertyWidget::updateFromProperty() {
+void OptionPropertyWidget::updateFromPropertySlot() {
     cBox_->blockSignals(true);
     cBox_->clear();
 

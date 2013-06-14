@@ -25,6 +25,8 @@
 
 #include "voreen/core/datastructures/volume/volumehash.h"
 
+#include "voreen/core/datastructures/volume/volumedisk.h"
+#include "voreen/core/datastructures/volume/volumeram.h"
 #include "voreen/core/io/serialization/xmlserializer.h"
 #include "voreen/core/io/serialization/xmldeserializer.h"
 
@@ -50,13 +52,23 @@ VolumeDerivedData* VolumeHash::create() const {
 VolumeDerivedData* VolumeHash::createFrom(const VolumeBase* handle) const {
     tgtAssert(handle, "no volume");
 
-    const VolumeRAM* v = handle->getRepresentation<VolumeRAM>();
-    tgtAssert(v, "no volume");
+    // prefer disk representation over ram representation
+    if (handle->hasRepresentation<VolumeDisk>()) {
+        return new VolumeHash(handle->getRepresentation<VolumeDisk>()->getHash());
+    }
+    else if (handle->hasRepresentation<VolumeRAM>()) { //< do not load volume into ram for hashing
+        const VolumeRAM* v = handle->getRepresentation<VolumeRAM>();
+        tgtAssert(v, "no volume");
 
-    size_t s = v->getNumVoxels() * v->getBytesPerVoxel();
+        size_t s = v->getNumVoxels() * v->getBytesPerVoxel();
 
-    std::string h = VoreenHash::getHash(v->getData(), s);
-    return new VolumeHash(h);
+        std::string h = VoreenHash::getHash(v->getData(), s);
+        return new VolumeHash(h);
+    }
+    else {
+        LWARNING("Unable to compute volume hash: neither disk nor ram representation available");
+        return new VolumeHash("");
+    }
 }
 
 void VolumeHash::serialize(XmlSerializer& s) const  {

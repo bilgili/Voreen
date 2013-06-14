@@ -58,8 +58,6 @@ class ColorPropertyWidget : public QPropertyWidget {
 public:
     ColorPropertyWidget(FloatVec4Property* prop, QWidget* parent = 0);
 
-    void updateFromProperty();
-
 public slots:
     void setProperty();
 
@@ -68,6 +66,9 @@ protected:
     void updateColorLabel();
     tgt::Color toTgtColor(QColor color);
     QColor toQColor(tgt::Color color);
+
+protected slots:
+    virtual void updateFromPropertySlot();
 
 private:
     FloatVec4Property* property_;

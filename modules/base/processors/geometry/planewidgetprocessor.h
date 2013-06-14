@@ -116,6 +116,7 @@ private:
     GLuint arrowDisplayList_;           ///< displaylist for rendering of an arrow
     GLuint sphereDisplayList_;          ///< displaylist for rendering of a sphere
 
+    BoolProperty enable_;
     FloatProperty manipulatorScaling_;
     FloatVec4Property xColor_;
     FloatVec4Property yColor_;
@@ -143,8 +144,6 @@ private:
 
     BoolProperty showInnerBB_;
     FloatVec4Property innerColor_;
-
-    FloatVec4Property lightPosition_;
 
     EventProperty<PlaneWidgetProcessor>* moveEventProp_;
     EventProperty<PlaneWidgetProcessor>* syncMoveEventProp_;

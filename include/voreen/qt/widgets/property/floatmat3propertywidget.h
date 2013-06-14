@@ -41,8 +41,6 @@ Q_OBJECT
 public:
     FloatMat3PropertyWidget(FloatMat3Property*, QWidget* = 0);
 
-    void updateFromProperty();
-
 protected:
     virtual std::string getExtension() const { return "vm3"; }
     virtual void saveMatrix(const std::string& filename) const throw (SerializationException);
@@ -61,8 +59,10 @@ protected:
     QLineEdit* z2_;
 
 protected slots:
+    virtual void updateFromPropertySlot();
     void updateValue();
     void identity();
+
 };
 
 }// namespace voreen

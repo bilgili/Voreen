@@ -40,7 +40,6 @@ public:
     GroupPropertyWidget(Property*, bool, std::string, QWidget* = 0);
     void addWidget(QPropertyWidget*, const QString);
     void addWidget(QPropertyWidget*, QWidget*, const QString);
-    virtual void updateFromProperty();
 
     Property* getProperty() const;
 
@@ -48,6 +47,7 @@ public:
     bool isAnyPropertyVisible(Property::LODSetting lod);
 
 protected slots:
+    virtual void updateFromPropertySlot();
     void hideGroup(bool);
 
 private:

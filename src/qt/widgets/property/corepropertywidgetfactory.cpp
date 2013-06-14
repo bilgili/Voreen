@@ -32,6 +32,7 @@
 #include "voreen/core/properties/floatproperty.h"
 #include "voreen/core/properties/fontproperty.h"
 #include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/lightsourceproperty.h"
 #include "voreen/core/properties/matrixproperty.h"
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/propertyvector.h"
@@ -107,14 +108,6 @@ PropertyWidget* CorePropertyWidgetFactory::createWidget(Property* prop) const {
         FloatVec4Property* vec4Prop = static_cast<FloatVec4Property*>(prop);
         if (prop->getViews() == Property::DEFAULT)
             return new FloatVec4PropertyWidget(vec4Prop, 0);
-        else if (prop->getViews() == Property::LIGHT_POSITION)
-            return new LightPropertyWidget(vec4Prop, 0);
-        else if (prop->getViews() == (Property::LIGHT_POSITION | Property::DEFAULT)) {
-            GroupPropertyWidget* tab = new GroupPropertyWidget(vec4Prop, true, "");
-            tab->addWidget(new LightPropertyWidget(vec4Prop, 0), "Widget");
-            tab->addWidget(new FloatVec4PropertyWidget(vec4Prop, 0), "Vector");
-            return tab;
-        }
         else if (prop->getViews() == Property::COLOR) {
             return new ColorPropertyWidget(vec4Prop, 0);
         }
@@ -149,6 +142,14 @@ PropertyWidget* CorePropertyWidgetFactory::createWidget(Property* prop) const {
 
     if (typeid(*prop) == typeid(FloatMat4Property))
         return new FloatMat4PropertyWidget(static_cast<FloatMat4Property*>(prop), 0);
+
+    if (typeid(*prop) == typeid(LightSourceProperty)) {
+        LightSourceProperty* lsp = static_cast<LightSourceProperty*>(prop);
+        GroupPropertyWidget* tab = new GroupPropertyWidget(lsp, true, "");
+        tab->addWidget(new LightPropertyWidget(lsp, 0), "Widget");
+        tab->addWidget(new FloatVec4PropertyWidget(lsp, 0), "Vector");
+        return tab;
+    }
 
     // dynamic cast necessary, since we are dealing with an abstract base class
     if (dynamic_cast<OptionPropertyBase*>(prop))

@@ -37,6 +37,9 @@ using tgt::ivec2;
 using tgt::quat;
 using tgt::MouseEvent;
 using tgt::KeyEvent;
+using tgt::TouchEvent;
+using tgt::TouchPoint;
+
 
 const std::string TrackballNavigation::loggerCat_ = "voreen.Trackballnavigation";
 
@@ -85,6 +88,81 @@ void TrackballNavigation::mousePressEvent(tgt::MouseEvent* e) {
 
         startMouseDrag( e );
         e->ignore();
+    }
+}
+
+void TrackballNavigation::touchReleaseEvent(tgt::TouchEvent* e) {
+
+    if (!trackball_)
+        return;
+
+    if (trackballEnabled_) {
+
+        tracking_ = false;
+        e->ignore();
+    }
+}
+
+void TrackballNavigation::touchPressEvent(tgt::TouchEvent* e) {
+
+    if (!trackball_)
+        return;
+
+    if (trackballEnabled_) {
+
+        vec2 pointPos1 = e->touchPoints()[0].pos();
+        vec2 pointPos2 = e->touchPoints()[1].pos();
+
+        lastConnection_ = pointPos1 - pointPos2;
+        lastDistance_ = length(pointPos1 - pointPos2);
+
+        tracking_ = true;
+        e->ignore();
+    }
+}
+
+void TrackballNavigation::touchMoveEvent(tgt::TouchEvent* e) {
+
+    if (!trackball_ || !tracking_)
+        return;
+
+    if (trackballEnabled_) {
+
+        vec2 pointPos1 = e->touchPoints()[0].pos();
+        vec2 pointPos2 = e->touchPoints()[1].pos();
+
+        float newDistance = length(pointPos1 - pointPos2);
+        float zoomFactor = newDistance / lastDistance_;
+
+        vec2 newConnection = pointPos1 - pointPos2;
+
+        // normalice vector to calculate angle
+        newConnection = tgt::normalize(newConnection);
+        lastConnection_ = tgt::normalize(lastConnection_);
+
+        float angle = acos(newConnection.x * lastConnection_.x + newConnection.y * lastConnection_.y) ;
+        float angleDegree = tgt::rad2deg(angle);
+
+        // check crossproduct to determine whether it is a left or a right rotation
+        vec3 cross = tgt::cross(vec3(newConnection,0),vec3(lastConnection_,0));
+
+        // rotation if angle is big enough
+        if(angleDegree > 8.f) {
+            if (cross.z >= 0) {
+                angle = -angle;
+            }
+            // rotation around the z axis
+            trackball_ ->rotate(vec3(0.f, 0.f, 1.f), angle);
+        }
+
+        // zoom if the angle is low
+        else {
+            trackball_->zoom(zoomFactor);
+        }
+
+        e->accept();
+        lastDistance_ = newDistance;
+        lastConnection_ = newConnection;
     }
 }
 

@@ -106,13 +106,14 @@ tgt::vec2 TouchPoint::startScreenPos() const {
     return startScreenPos_;
 }
 
-TouchPoint::t_state    TouchPoint::state() const {
+TouchPoint::State    TouchPoint::state() const {
     return state_;
 }
 
 //Internal
 void TouchPoint::setId(int id){ id_ = id; }
-void TouchPoint::setState(t_state state){ state_ = state; }
+void TouchPoint::setPrimary(bool primary){ isPrimary_ = primary; }
+void TouchPoint::setState(TouchPoint::State state){ state_ = state; }
 void TouchPoint::setPos(const vec2  &pos){ pos_ = pos; }
 void TouchPoint::setScenePos(const vec2 &scenePos){ scenePos_ = scenePos; }
 void TouchPoint::setScreenPos(const vec2 &screenPos){ screenPos_ = screenPos; }

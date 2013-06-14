@@ -28,7 +28,7 @@
 
 #include "voreen/core/processors/renderprocessor.h"
 
-#include "voreen/core/ports/allports.h"
+
 #include "../ports/plotport.h"
 
 #include "../properties/plotdataproperty.h"

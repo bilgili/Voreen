@@ -27,7 +27,7 @@
 #define VRN_VOLUMESOURCEPROCESSOR_H
 
 #include "voreen/core/processors/processor.h"
-#include "voreen/core/ports/allports.h"
+#include "voreen/core/ports/volumeport.h"
 #include "voreen/core/datastructures/volume/volume.h"
 #include "voreen/core/properties/volumeurlproperty.h"
 #include "voreen/core/properties/volumeinfoproperty.h"
@@ -55,6 +55,8 @@ public:
      * Loads the volume specified by filename. The loading is
      * delegated to the processor's VolumeURLProperty.
      *
+     * If the data set could not be successfully loaded, an exception is thrown.
+     *
      * @param filename the volume to load
      */
     void loadVolume(const std::string& filename)
@@ -70,8 +72,9 @@ public:
      * The processor does \e not take ownership of the assigned volume.
      *
      * @param volume The volume to assign, is written to the processor's outport
+     * @param owner if true, the VolumeSource takes ownership of the passed volume
      */
-    void setVolume(VolumeBase* volume);
+    void setVolume(VolumeBase* volume, bool owner = false);
 
     /**
      * Returns a reference to the volume of the loaded volume. May be null.

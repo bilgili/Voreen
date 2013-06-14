@@ -78,6 +78,8 @@ public:
         throw (VoreenException);
 
     virtual tgt::col3 getColorHint() const;
+    virtual std::string getContentDescription() const;
+    virtual std::string getContentDescriptionHTML() const;
 };
 
 } // namespace

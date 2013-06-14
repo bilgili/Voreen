@@ -360,23 +360,28 @@ void TriangleMeshGeometry<V>::clip(const tgt::plane& clipPlane, double epsilon) 
                 else
                     connectionVertex = edgeList.at(i).second;
 
-                if (edgeList.at(j).first.equals(connectionVertex, epsilon)) {
+                if (distance(edgeList.at(j).first.pos_, connectionVertex.pos_) < epsilon) {
                     std::swap(edgeList.at(i + 1), edgeList.at(j));
                     reverseLastEdge = false;
                     break;
                 }
-                else if (edgeList.at(j).second.equals(connectionVertex, epsilon)) {
+                else if (distance(edgeList.at(j).second.pos_, connectionVertex.pos_) < epsilon) {
                     std::swap(edgeList.at(i + 1), edgeList.at(j));
                     reverseLastEdge = true;
                     break;
                 }
             }
         }
+        // Set normal of all vertices to plane normal:
+        for (size_t i = 0; i < edgeList.size(); ++i) {
+            edgeList.at(i).first.setNormal(pl.n);
+            edgeList.at(i).second.setNormal(pl.n);
+        }
 
-        //// Convert sorted edge list to sorted vertex list...
+        // Convert sorted edge list to sorted vertex list...
         std::vector<VertexType> closingFaceVertices;
         for (size_t i = 0; i < edgeList.size(); ++i) {
-            bool reverseEdge = i != 0 && !closingFaceVertices.at(closingFaceVertices.size() - 1).equals(edgeList.at(i).first, epsilon);
+            bool reverseEdge = (i != 0) && !(distance(closingFaceVertices.at(closingFaceVertices.size() - 1).pos_, edgeList.at(i).first.pos_) < epsilon);
 
             VertexType first = (reverseEdge ? edgeList.at(i).second : edgeList.at(i).first);
             VertexType second = (reverseEdge ? edgeList.at(i).first : edgeList.at(i).second);
@@ -396,13 +401,15 @@ void TriangleMeshGeometry<V>::clip(const tgt::plane& clipPlane, double epsilon) 
         tgt::vec3 closingFaceNormal(0, 0, 0);
         for (size_t i = 0; i < closingFaceVertices.size(); ++i)
             closingFaceNormal += tgt::cross(closingFaceVertices[i].pos_, closingFaceVertices[(i + 1) % closingFaceVertices.size()].pos_);
+
         closingFaceNormal = tgt::normalize(closingFaceNormal);
 
         if (tgt::dot(pl.n, closingFaceNormal) < 0)
             std::reverse(closingFaceVertices.begin(), closingFaceVertices.end());
 
-        if(closingFaceVertices.size() > 2)
+        if(closingFaceVertices.size() > 2) {
             triangulate(closingFaceVertices);
+        }
     }
 }
 
@@ -542,6 +549,14 @@ public:
     virtual std::string getClassName() const { return "TriangleMeshGeometryVec4Vec3"; }
 
     static TriangleMeshGeometryVec4Vec3* createCube(tgt::vec3 coordLlf, tgt::vec3 coordUrb, tgt::vec3 colorLlf, tgt::vec3 colorUrb, float alpha, tgt::vec3 texLlf, tgt::vec3 texUrb);
+
+    /// Adds a cube to this mesh.
+    void addCube(VertexVec3 llfVertex, VertexVec3 urbVertex);
+
+    void addQuad(const VertexVec3& v1, const VertexVec3& v2, const VertexVec3& v3, const VertexVec3& v4);
+
+    /// Creates a cube with color and normals:
+    static TriangleMeshGeometryVec4Vec3* createCube(tgt::vec3 coordLlf, tgt::vec3 coordUrb, tgt::vec3 colorLlf, tgt::vec3 colorUrb, float alpha);
 };
 
 //-------------------------------------------------------------------------------------------------

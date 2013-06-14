@@ -54,7 +54,7 @@ using tgt::TextureUnit;
 namespace {
 template<typename T>
 void copySliceData(const voreen::VolumeAtomic<T>* volume, tgt::Texture* sliceTexture,
-    voreen::SliceRendererBase::SliceAlignment sliceAlign, size_t sliceID, bool flipX, bool flipY);
+    voreen::SliceAlignment sliceAlign, size_t sliceID, bool flipX, bool flipY);
 }
 
 namespace voreen {
@@ -157,23 +157,21 @@ bool SliceRendererBase::setupSliceShader(tgt::Shader* shader, const VolumeBase* 
     tgtAssert(volumeHandle, "no volumehandle");
     tgtAssert(transferUnit, "no transferunit");
 
-    const VolumeRAM* volume = volumeHandle->getRepresentation<VolumeRAM>();
-    if (!volume) {
-        LERROR("setupSliceShader(): no CPU representation");
-        return false;
-    }
-
     // activate the shader and set the needed uniforms
     shader->activate();
 
     transferFunc_.get()->setUniform(shader, "transferFunc_", "transferFuncTex_", transferUnit->getUnitNumber());
+    shader->setUniform("numChannels_", 1);
 
     RealWorldMapping rwm = volumeHandle->getRealWorldMapping();
-    // map signed integer types from [-1.0:1.0] to [0.0:1.0] in order to avoid clamping of negative values
-    // => the pixel transfer mapping (see below) has to be reverted in the shader (see bindSliceTexture)
-    if (volume->isInteger() && volume->isSigned()) {
-        RealWorldMapping pixelTransferMapping(0.5f, 0.5f, "");
-        rwm = RealWorldMapping::combine(pixelTransferMapping.getInverseMapping(), rwm);
+    if (volumeHandle->hasRepresentation<VolumeRAM>()) {
+        // map signed integer types from [-1.0:1.0] to [0.0:1.0] in order to avoid clamping of negative values
+        // => the pixel transfer mapping (see below) has to be reverted in the shader (see bindSliceTexture)
+        const VolumeRAM* volumeRAM = volumeHandle->getRepresentation<VolumeRAM>();
+        if (volumeRAM->isInteger() && volumeRAM->isSigned()) {
+            RealWorldMapping pixelTransferMapping(0.5f, 0.5f, "");
+            rwm = RealWorldMapping::combine(pixelTransferMapping.getInverseMapping(), rwm);
+        }
     }
     shader->setUniform("rwmScale_", rwm.getScale());
     shader->setUniform("rwmOffset_", rwm.getOffset());
@@ -195,13 +193,6 @@ bool SliceRendererBase::bindSliceTexture(tgt::Shader* shader, const VolumeBase* 
         return false;
     }
 
-    // retrieve CPU representation
-    const VolumeRAM* volume = volumeHandle->getRepresentation<VolumeRAM>();
-    if (!volume) {
-        LERROR("bindSliceTexture(): no CPU representation");
-        return false;
-    }
-
     // pass number of texture channels to shader
     int numChannels = static_cast<int>(sliceTexture->getNumChannels());
     shader->setUniform("numChannels_", numChannels);
@@ -213,8 +204,12 @@ bool SliceRendererBase::bindSliceTexture(tgt::Shader* shader, const VolumeBase* 
     LGL_ERROR;
 
     // upload texture data
+    const VolumeRAM* volumeRAM = 0;
+    if (volumeHandle->hasRepresentation<VolumeRAM>())
+        volumeRAM = volumeHandle->getRepresentation<VolumeRAM>();
+
     // map signed integer types from [-1.0:1.0] to [0.0:1.0] in order to avoid clamping of negative values
-    if (volume->isInteger() && volume->isSigned()) {
+    if (volumeRAM && volumeRAM->isInteger() && volumeRAM->isSigned()) {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glPixelTransferf(GL_RED_SCALE,   0.5f);
         glPixelTransferf(GL_GREEN_SCALE, 0.5f);
@@ -230,7 +225,7 @@ bool SliceRendererBase::bindSliceTexture(tgt::Shader* shader, const VolumeBase* 
     sliceTexture->uploadTexture();
     LGL_ERROR;
 
-    if (volume->isInteger() && volume->isSigned()) {
+    if (volumeRAM && volumeRAM->isInteger() && volumeRAM->isSigned()) {
         glPopAttrib();
     }
 
@@ -333,7 +328,7 @@ tgt::Texture* SliceRendererBase::generateAlignedSliceTexture(const VolumeBase* v
     bool flipY = false;
     if (voxelLowerLeft.x == voxelUpperRight.x){
         // Y-Z-Slice
-        sliceAlign = SliceRendererBase::YZ_PLANE;
+        sliceAlign = YZ_PLANE;
         sliceTexDim = tgt::ivec3(volDim.yz(), 1);
         sliceID = voxelLowerLeft.x;
         flipX = voxelLowerLeft.y > voxelUpperRight.y;
@@ -341,7 +336,7 @@ tgt::Texture* SliceRendererBase::generateAlignedSliceTexture(const VolumeBase* v
     }
     else if (voxelLowerLeft.y == voxelUpperRight.y) {
         // X-Z-Slice
-        sliceAlign = SliceRendererBase::XZ_PLANE;
+        sliceAlign = XZ_PLANE;
         sliceTexDim = tgt::ivec3(volDim.x, volDim.z, 1);
         sliceID = voxelLowerLeft.y;
         flipX = voxelLowerLeft.x > voxelUpperRight.x;
@@ -349,7 +344,7 @@ tgt::Texture* SliceRendererBase::generateAlignedSliceTexture(const VolumeBase* v
     }
     else if (voxelLowerLeft.z == voxelUpperRight.z) {
         // X-Y-Slice
-        sliceAlign = SliceRendererBase::XY_PLANE;
+        sliceAlign = XY_PLANE;
         sliceTexDim = tgt::ivec3(volDim.xy(), 1);
         sliceID = voxelLowerLeft.z;
         flipX = voxelLowerLeft.x > voxelUpperRight.x;
@@ -730,7 +725,7 @@ namespace {
 // template definitions
 template<typename T>
 void copySliceData(const voreen::VolumeAtomic<T>* volume, tgt::Texture* sliceTexture,
-        voreen::SliceRendererBase::SliceAlignment sliceAlign, size_t sliceID, bool flipX, bool flipY) {
+        voreen::SliceAlignment sliceAlign, size_t sliceID, bool flipX, bool flipY) {
 
     tgtAssert(volume, "volume is null");
     tgtAssert(sliceTexture, "sliceTexture is null");
@@ -740,7 +735,7 @@ void copySliceData(const voreen::VolumeAtomic<T>* volume, tgt::Texture* sliceTex
     tgt::ivec3 volDim = volume->getDimensions();
     tgt::ivec2 sliceDim = sliceTexture->getDimensions().xy();
     switch (sliceAlign) {
-    case voreen::SliceRendererBase::YZ_PLANE:
+    case voreen::YZ_PLANE:
         {
             tgtAssert(volDim.yz() == sliceDim, "dimensions mismatch");
             tgtAssert(static_cast<int>(sliceID) < volDim.x, "invalid slice id");
@@ -752,7 +747,7 @@ void copySliceData(const voreen::VolumeAtomic<T>* volume, tgt::Texture* sliceTex
             }
         }
         break;
-    case voreen::SliceRendererBase::XZ_PLANE:
+    case voreen::XZ_PLANE:
         {
             tgtAssert(volDim.x == sliceDim.x && volDim.z == sliceDim.y, "dimensions mismatch");
             tgtAssert(static_cast<int>(sliceID) < volDim.y, "invalid slice id");
@@ -764,7 +759,7 @@ void copySliceData(const voreen::VolumeAtomic<T>* volume, tgt::Texture* sliceTex
             }
         }
         break;
-    case voreen::SliceRendererBase::XY_PLANE:
+    case voreen::XY_PLANE:
         {
             tgtAssert(volDim.xy() == sliceDim, "dimensions mismatch");
             tgtAssert(static_cast<int>(sliceID) < volDim.z, "invalid slice id");

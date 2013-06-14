@@ -29,6 +29,8 @@
 #include "tgt/event/eventlistener.h"
 #include "tgt/vector.h"
 #include "tgt/event/mouseevent.h"
+#include "tgt/event/touchevent.h"
+#include "tgt/event/touchpoint.h"
 #include "tgt/glcanvas.h"
 #include "voreen/core/interaction/voreentrackball.h"
 
@@ -79,6 +81,29 @@ public:
      * @param e The event to be processed.
      */
     virtual void mousePressEvent(tgt::MouseEvent* e);
+
+     /**
+     * React to a touch press-Event.
+     *
+     * @param e The event to be processed.
+     */
+
+    virtual void touchPressEvent(tgt::TouchEvent* e);
+
+     /**
+     * React to a touch release event.
+     *
+     * @param e The event to be processed.
+     */
+
+    virtual void touchReleaseEvent(tgt::TouchEvent* e);
+
+    /**
+     * React to a touch move-Event. Actually this causes rotation or zoom.
+     *
+     * @param e The event to be processed.
+     */
+    virtual void touchMoveEvent(tgt::TouchEvent* e);
 
     /**
      * React to a release event.
@@ -244,6 +269,12 @@ protected:
     /// Last mouse coordinates to allow calculation of the relative change.
     /// Ought to be relative coordinates within range [-1, 1]x[-1, 1].
     tgt::vec2 lastMousePosition_;
+
+    // Last distance between two TouchPoints to allow calculation of zoomFactor
+    float lastDistance_;
+
+    // Last connection vector between two touch points
+    tgt::vec2 lastConnection_;
 
     //float minDistance_;     ///< minimal allowed orthogonal distance to center of trackball
     //float maxDistance_;     ///< maximal allowed orthogonal distance to center of trackball (now retrieved from camera property)

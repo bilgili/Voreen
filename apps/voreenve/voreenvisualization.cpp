@@ -61,12 +61,13 @@ VoreenVisualization::VoreenVisualization(tgt::GLCanvas* sharedContext)
     , modified_(false)
 {
     // assign network evaluator to application
+    tgtAssert(evaluator_, "no network evaluator");
     VoreenApplication::app()->registerNetworkEvaluator(evaluator_);
+    evaluator_->addObserver(static_cast<NetworkEvaluatorObserver*>(this));
 }
 
 VoreenVisualization::~VoreenVisualization() {
-
-    propagateNetwork(0);
+    evaluator_->setProcessorNetwork(0);
     delete evaluator_;
 
     workspace_->clear();
@@ -132,10 +133,11 @@ void VoreenVisualization::importNetwork(const QString& filename)
 {
     NetworkSerializer networkSerializer;
     ProcessorNetwork* net = networkSerializer.readNetworkFromFile(filename.toStdString());
-    propagateNetwork(0);
+    evaluator_->setProcessorNetwork(0);
     delete workspace_->getProcessorNetwork();
+
     workspace_->setProcessorNetwork(net);
-    propagateNetwork(workspace_->getProcessorNetwork());
+    evaluator_->setProcessorNetwork(workspace_->getProcessorNetwork());
 }
 
 void VoreenVisualization::exportNetwork(const QString& filename)
@@ -158,7 +160,7 @@ void VoreenVisualization::newWorkspace() {
 
     // clear workspace resources
     evaluator_->unlock();
-    propagateNetwork(0);
+    evaluator_->setProcessorNetwork(0);
     workspace_->clear();
 
     // generate new resources
@@ -166,10 +168,10 @@ void VoreenVisualization::newWorkspace() {
 
     blockSignals(false);
 
-    // propagate resources
-    propagateNetwork(workspace_->getProcessorNetwork());
+    // assign new network
+    evaluator_->setProcessorNetwork(workspace_->getProcessorNetwork());
     if (workspace_->hasDescription())
-    propagateWorkspaceDescription(workspace_->getDescription());
+        propagateWorkspaceDescription(workspace_->getDescription());
 }
 
 void VoreenVisualization::openWorkspace(const QString& filename, const QString& workDir) throw (SerializationException) {
@@ -182,7 +184,7 @@ void VoreenVisualization::openWorkspace(const QString& filename, const QString& 
 
     // clear workspace resources
     evaluator_->unlock();
-    propagateNetwork(0);
+    evaluator_->setProcessorNetwork(0);
     workspace_->clear();
 
     blockSignals(false);
@@ -198,7 +200,8 @@ void VoreenVisualization::openWorkspace(const QString& filename, const QString& 
     workspaceErrors_ = workspace_->getErrors();
     readOnlyWorkspace_ = workspace_->readOnly();
 
-    propagateNetwork(workspace_->getProcessorNetwork());
+    // assign new network
+    evaluator_->setProcessorNetwork(workspace_->getProcessorNetwork());
     propagateWorkspaceDescription(workspace_->getDescription());
 }
 
@@ -259,10 +262,10 @@ void VoreenVisualization::cleanupTempFiles(std::vector<std::string> tmpFiles, st
     }   // while (
 }
 
-void VoreenVisualization::propagateNetwork(ProcessorNetwork* network) {
+void VoreenVisualization::networkAssigned(ProcessorNetwork* network, ProcessorNetwork* /*previousNetwork*/) {
 
     if (network) {
-        network->addObserver(this);
+        network->addObserver(static_cast<ProcessorNetworkObserver*>(this));
     }
 
     if (propertyListWidget_) {
@@ -276,8 +279,8 @@ void VoreenVisualization::propagateNetwork(ProcessorNetwork* network) {
     }
 
     // assign network to evaluator, also initializes the network
-    evaluator_->setProcessorNetwork(network);
-    qApp->processEvents();
+    //evaluator_->setProcessorNetwork(network);
+    //qApp->processEvents();
 
     if (networkEditorWidget_ && network) {
         networkEditorWidget_->selectPreviouslySelectedProcessors();
@@ -295,6 +298,7 @@ void VoreenVisualization::propagateNetwork(ProcessorNetwork* network) {
 }
 
 void VoreenVisualization::propagateWorkspaceDescription(const std::string& description) {
+    // TODO: what to do with the description?
     if (!description.empty())
         LINFO(description);
 }

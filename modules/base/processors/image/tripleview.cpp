@@ -28,15 +28,13 @@
 namespace voreen {
 
 using tgt::ivec2;
+using tgt::vec3;
 
 TripleView::TripleView()
     : RenderProcessor()
     , showGrid_("showGrid", "Show grid", true)
     , gridColor_("gridColor", "Grid color", tgt::vec4(1.0f, 1.0f, 1.0f, 1.0f))
-    , maximized_("maximized", "Maximized sub-view", 0, 0, 4)
-    , maximizeOnDoubleClick_("maximizeOnDoubleClick", "Maximize on double click", true)
-    , maximizeEventProp_("mouseEvent.maximize", "Maximize Event", this, &TripleView::toggleMaximization,
-        tgt::MouseEvent::MOUSE_BUTTON_LEFT, tgt::MouseEvent::DOUBLECLICK, tgt::MouseEvent::MODIFIER_NONE)
+    , configuration_("configuration", "Configuration")
     , mouseMoveEventProp_("mouseEvent.move", "Move Event", this, &TripleView::mouseMove,
     tgt::MouseEvent::MOUSE_BUTTON_NONE, tgt::MouseEvent::MOTION | tgt::MouseEvent::CLICK | tgt::MouseEvent::ENTER_EXIT, tgt::MouseEvent::MODIFIER_NONE)
     , outport_(Port::OUTPORT, "outport", "Image Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
@@ -49,10 +47,15 @@ TripleView::TripleView()
     gridColor_.setViews(Property::COLOR);
     addProperty(showGrid_);
     addProperty(gridColor_);
-    addProperty(maximized_);
-    maximized_.setVisible(false);
-    addProperty(maximizeOnDoubleClick_);
-    addEventProperty(maximizeEventProp_);
+    configuration_.addOption("abc", "abc", abc);
+    configuration_.addOption("Abc", "Abc", Abc);
+    configuration_.addOption("Bac", "Bac", Bac);
+    configuration_.addOption("Cab", "Cab", Cab);
+    configuration_.addOption("A", "A", A);
+    configuration_.addOption("B", "B", B);
+    configuration_.addOption("C", "C", C);
+    addProperty(configuration_);
+    configuration_.onChange(CallMemberAction<TripleView>(this, &TripleView::updateSizes));
     addEventProperty(mouseMoveEventProp_);
 
     addPort(outport_);
@@ -77,15 +80,15 @@ bool TripleView::isReady() const {
     if (!inport1_.isReady() && !inport2_.isReady() && !inport3_.isReady())
         return false;
 
-    if(maximized_.get() == 0) {
-        switch(maximized_.get()) {
-            case 1: if(!inport1_.isReady())
+    if(configuration_.getValue() > 3) {
+        switch(configuration_.getValue()) {
+            case A: if(!inport1_.isReady())
                         return false;
                     break;
-            case 2: if(!inport2_.isReady())
+            case B: if(!inport2_.isReady())
                         return false;
                     break;
-            case 3: if(!inport3_.isReady())
+            case C: if(!inport3_.isReady())
                         return false;
                     break;
         }
@@ -93,135 +96,128 @@ bool TripleView::isReady() const {
     return true;
 }
 
-void TripleView::process() {
-    if (maximized_.get() == 0) {
-        glMatrixMode(GL_MODELVIEW);
-        outport_.activateTarget();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+void TripleView::renderPortQuad(RenderPort& rp, tgt::vec3 translate, tgt::vec3 scale) {
+    rp.bindColorTexture(GL_TEXTURE0);
+    rp.getColorTexture()->enable();
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+    glTranslatef(translate.x, translate.y, translate.z);
+    glScalef(scale.x, scale.y, scale.z);
 
-        if (inport1_.isReady()) {
-            inport1_.bindColorTexture(GL_TEXTURE0);
-            inport1_.getColorTexture()->enable();
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-            glTranslatef(-0.66666f, 0.0f, 0.0f);
-            glScalef(0.333333f, 1.0f, 1.0f);
+    glDepthFunc(GL_ALWAYS);
+    renderQuad();
+    glDepthFunc(GL_LESS);
 
-            glDepthFunc(GL_ALWAYS);
-            renderQuad();
-            glDepthFunc(GL_LESS);
+    glLoadIdentity();
+    rp.getColorTexture()->disable();
+}
 
-            glLoadIdentity();
-            inport1_.getColorTexture()->disable();
-        }
+void TripleView::renderLargeSmallSmall(RenderPort& large, RenderPort& small1, RenderPort& small2) {
+    glMatrixMode(GL_MODELVIEW);
+    outport_.activateTarget();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        if (inport2_.isReady()) {
-            inport2_.bindColorTexture(GL_TEXTURE0);
-            inport2_.getColorTexture()->enable();
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-            //glTranslatef(0.0f, 0.0f, 0.0f);
-            glScalef(0.333333f, 1.0f, 1.0f);
+    if (large.isReady())
+        renderPortQuad(large, vec3(-0.333333f, 0.0f, 0.0f), vec3(0.666666, 1.0f, 1.0f));
 
-            glDepthFunc(GL_ALWAYS);
-            renderQuad();
-            glDepthFunc(GL_LESS);
+    if (small1.isReady())
+        renderPortQuad(small1, vec3(0.666666f, 0.5f, 0.0f), vec3(0.333333f, 0.5f, 1.0f));
 
-            glLoadIdentity();
-            inport2_.getColorTexture()->disable();
-        }
+    if (small2.isReady())
+        renderPortQuad(small2, vec3(0.666666f, -0.5f, 0.0f), vec3(0.333333f, 0.5f, 1.0f));
 
-        if (inport3_.isReady()) {
-            inport3_.bindColorTexture(GL_TEXTURE0);
-            inport3_.getColorTexture()->enable();
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-            glTranslatef(0.666666f, 0.0f, 0.0f);
-            glScalef(0.333333f, 1.0f, 1.0f);
+    glActiveTexture(GL_TEXTURE0);
 
-            glDepthFunc(GL_ALWAYS);
-            renderQuad();
-            glDepthFunc(GL_LESS);
+    if(showGrid_.get()) {
+        glDepthFunc(GL_ALWAYS);
+        glColor4f(gridColor_.get().r, gridColor_.get().g, gridColor_.get().b, gridColor_.get().a);
+        glBegin(GL_LINES);
+        glVertex2f(0.333333f, -1.0f);
+        glVertex2f(0.333333f, 1.0f);
 
-            glLoadIdentity();
-            inport3_.getColorTexture()->disable();
-        }
+        glVertex2f(0.333333f, 0.0f);
+        glVertex2f(1.f, 0.0f);
 
-        glActiveTexture(GL_TEXTURE0);
-
-        if(showGrid_.get()) {
-            glDepthFunc(GL_ALWAYS);
-            glColor4f(gridColor_.get().r, gridColor_.get().g, gridColor_.get().b, gridColor_.get().a);
-            glBegin(GL_LINES);
-            glVertex2f(-0.333333f, -1.0f);
-            glVertex2f(-0.333333f, 1.0f);
-
-            glVertex2f(0.333333f, -1.0f);
-            glVertex2f(0.333333f, 1.0f);
-            glEnd();
-            glDepthFunc(GL_LESS);
-        }
-
-        outport_.deactivateTarget();
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        LGL_ERROR;
+        glEnd();
+        glDepthFunc(GL_LESS);
     }
-    else {
+
+    outport_.deactivateTarget();
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    LGL_ERROR;
+}
+
+void TripleView::process() {
+    switch(configuration_.getValue()) {
+        case abc: {
+                      glMatrixMode(GL_MODELVIEW);
+                      outport_.activateTarget();
+                      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                      if (inport1_.isReady())
+                          renderPortQuad(inport1_, vec3(-0.66666f, 0.0f, 0.0f), vec3(0.333333f, 1.0f, 1.0f));
+
+                      if (inport2_.isReady())
+                          renderPortQuad(inport2_, vec3(0.0f, 0.0f, 0.0f), vec3(0.333333f, 1.0f, 1.0f));
+
+                      if (inport3_.isReady())
+                          renderPortQuad(inport3_, vec3(0.666666f, 0.0f, 0.0f), vec3(0.333333f, 1.0f, 1.0f));
+
+                      glActiveTexture(GL_TEXTURE0);
+
+                      if(showGrid_.get()) {
+                          glDepthFunc(GL_ALWAYS);
+                          glColor4f(gridColor_.get().r, gridColor_.get().g, gridColor_.get().b, gridColor_.get().a);
+                          glBegin(GL_LINES);
+                          glVertex2f(-0.333333f, -1.0f);
+                          glVertex2f(-0.333333f, 1.0f);
+
+                          glVertex2f(0.333333f, -1.0f);
+                          glVertex2f(0.333333f, 1.0f);
+                          glEnd();
+                          glDepthFunc(GL_LESS);
+                      }
+
+                      outport_.deactivateTarget();
+                      glMatrixMode(GL_MODELVIEW);
+                      glLoadIdentity();
+                      LGL_ERROR;
+                  }
+                  break;
+        case Abc: renderLargeSmallSmall(inport1_, inport2_, inport3_);
+                  break;
+        case Bac: renderLargeSmallSmall(inport2_, inport1_, inport3_);
+                  break;
+        case Cab: renderLargeSmallSmall(inport3_, inport1_, inport2_);
+                  break;
         //maximized:
-        switch(maximized_.get()) {
-            case 1: if(!inport1_.isReady())
-                        return;
+        case A: if(!inport1_.isReady())
+                    return;
 
-                    outport_.activateTarget();
-                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                outport_.activateTarget();
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                    inport1_.bindColorTexture(GL_TEXTURE0);
-                    inport1_.getColorTexture()->enable();
-                    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+                renderPortQuad(inport1_, vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 1.0f));
+                outport_.deactivateTarget();
+                break;
+        case B: if(!inport2_.isReady())
+                    return;
 
-                    glDepthFunc(GL_ALWAYS);
-                    renderQuad();
-                    glDepthFunc(GL_LESS);
+                outport_.activateTarget();
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                    glLoadIdentity();
-                    inport1_.getColorTexture()->disable();
-                    outport_.deactivateTarget();
-                    break;
-            case 2: if(!inport2_.isReady())
-                        return;
+                renderPortQuad(inport2_, vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 1.0f));
+                outport_.deactivateTarget();
+                break;
+        case C: if(!inport3_.isReady())
+                    return;
 
-                    outport_.activateTarget();
-                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                outport_.activateTarget();
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                    inport2_.bindColorTexture(GL_TEXTURE0);
-                    inport2_.getColorTexture()->enable();
-                    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-
-                    glDepthFunc(GL_ALWAYS);
-                    renderQuad();
-                    glDepthFunc(GL_LESS);
-
-                    glLoadIdentity();
-                    inport2_.getColorTexture()->disable();
-                    outport_.deactivateTarget();
-                    break;
-            case 3: if(!inport3_.isReady())
-                        return;
-
-                    outport_.activateTarget();
-                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-                    inport3_.bindColorTexture(GL_TEXTURE0);
-                    inport3_.getColorTexture()->enable();
-                    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-
-                    glDepthFunc(GL_ALWAYS);
-                    renderQuad();
-                    glDepthFunc(GL_LESS);
-
-                    glLoadIdentity();
-                    inport3_.getColorTexture()->disable();
-                    outport_.deactivateTarget();
-                    break;
-        }
+                renderPortQuad(inport3_, vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 1.0f));
+                outport_.deactivateTarget();
+                break;
     }
 }
 
@@ -233,21 +229,30 @@ void TripleView::initialize() throw (tgt::Exception) {
 void TripleView::updateSizes() {
     if (outport_.getReceivedSize() == tgt::ivec2(0))
         return;
-
-    if(maximized_.get() == 0) {
-        tgt::ivec2 subsize = outport_.getReceivedSize();
-        subsize.x /= 3;
-        inport1_.requestSize(subsize);
-        inport2_.requestSize(subsize);
-        inport3_.requestSize(subsize);
-    }
     else {
-        switch(maximized_.get()) {
-            case 1: inport1_.requestSize(outport_.getReceivedSize());
+        tgt::ivec2 outsize = outport_.getReceivedSize();
+        switch(configuration_.getValue()) {
+            case abc: inport1_.requestSize(ivec2(static_cast<int>(outsize.x * 0.333333f), outsize.y));
+                      inport2_.requestSize(ivec2(static_cast<int>(outsize.x * 0.333333f), outsize.y));
+                      inport3_.requestSize(ivec2(static_cast<int>(outsize.x * 0.333333f), outsize.y));
+                      break;
+            case Abc: inport1_.requestSize(ivec2(static_cast<int>(outsize.x * 0.666666f), outsize.y));
+                      inport2_.requestSize(ivec2(static_cast<int>(outsize.x * 0.333333f), outsize.y / 2));
+                      inport3_.requestSize(ivec2(static_cast<int>(outsize.x * 0.333333f), outsize.y / 2));
+                      break;
+            case Bac: inport2_.requestSize(ivec2(static_cast<int>(outsize.x * 0.666666f), outsize.y));
+                      inport1_.requestSize(ivec2(static_cast<int>(outsize.x * 0.333333f), outsize.y / 2));
+                      inport3_.requestSize(ivec2(static_cast<int>(outsize.x * 0.333333f), outsize.y / 2));
+                      break;
+            case Cab: inport3_.requestSize(ivec2(static_cast<int>(outsize.x * 0.666666f), outsize.y));
+                      inport1_.requestSize(ivec2(static_cast<int>(outsize.x * 0.333333f), outsize.y / 2));
+                      inport2_.requestSize(ivec2(static_cast<int>(outsize.x * 0.333333f), outsize.y / 2));
+                      break;
+            case A: inport1_.requestSize(outport_.getReceivedSize());
                     break;
-            case 2: inport2_.requestSize(outport_.getReceivedSize());
+            case B: inport2_.requestSize(outport_.getReceivedSize());
                     break;
-            case 3: inport3_.requestSize(outport_.getReceivedSize());
+            case C: inport3_.requestSize(outport_.getReceivedSize());
                     break;
             default:;
         }
@@ -255,96 +260,121 @@ void TripleView::updateSizes() {
 }
 
 void TripleView::mouseMove(tgt::MouseEvent* e) {
-    e->accept();
-    int prevCurrenPort = currentPort_;
+    //FIXME
+    //e->accept();
+    //int prevCurrenPort = currentPort_;
 
-    if (maximized_.get() == 0) {
-        if ((e->action() & tgt::MouseEvent::EXIT) == tgt::MouseEvent::EXIT)
-            currentPort_ = -1;
+    //if (configuration_.getValue() == abc) {
+        //if ((e->action() & tgt::MouseEvent::EXIT) == tgt::MouseEvent::EXIT)
+            //currentPort_ = -1;
 
-        if ((e->action() & tgt::MouseEvent::PRESSED) == tgt::MouseEvent::PRESSED)
-            isDragging_ = true;
-        if ((e->action() & tgt::MouseEvent::RELEASED) == tgt::MouseEvent::RELEASED)
-            isDragging_ = false;
+        //if ((e->action() & tgt::MouseEvent::PRESSED) == tgt::MouseEvent::PRESSED)
+            //isDragging_ = true;
+        //if ((e->action() & tgt::MouseEvent::RELEASED) == tgt::MouseEvent::RELEASED)
+            //isDragging_ = false;
 
-        if (!isDragging_) {
-            if(e->x() < (e->viewport().x / 3))
-                currentPort_ = 1;
-            else if(e->x() < (e->viewport().x * 0.66666f))
-                currentPort_ = 2;
-            else
-                currentPort_ = 3;
-        }
+        //if (!isDragging_) {
+            //if(e->x() < (e->viewport().x / 3))
+                //currentPort_ = 1;
+            //else if(e->x() < (e->viewport().x * 0.66666f))
+                //currentPort_ = 2;
+            //else
+                //currentPort_ = 3;
+        //}
 
-        if (currentPort_ != prevCurrenPort) {
-            tgt::MouseEvent leaveEvent(1, 1, tgt::MouseEvent::EXIT, e->modifiers(), e->button(), ivec2(e->viewport().x / 3, e->viewport().y));
-            tgt::MouseEvent enterEvent(1, 1, tgt::MouseEvent::ENTER, e->modifiers(), e->button(), ivec2(e->viewport().x / 3, e->viewport().y));
-            leaveEvent.ignore();
-            enterEvent.ignore();
-            switch(prevCurrenPort) {
-                case 1:
-                    inport1_.distributeEvent(&leaveEvent);
-                    break;
-                case 2:
-                    inport2_.distributeEvent(&leaveEvent);
-                    break;
-                case 3:
-                    inport3_.distributeEvent(&leaveEvent);
-                    break;
-            }
-            switch(currentPort_) {
-                case 1:
-                    inport1_.distributeEvent(&enterEvent);
-                    break;
-                case 2:
-                    inport2_.distributeEvent(&enterEvent);
-                    break;
-                case 3:
-                    inport3_.distributeEvent(&enterEvent);
-                    break;
-            }
-        }
-        tgt::MouseEvent moveEvent(e->x() % (e->viewport().x/3), e->y(), tgt::MouseEvent::MOTION, e->modifiers(), e->button(), ivec2(e->viewport().x / 3, e->viewport().y));
-        moveEvent.ignore();
-        switch(currentPort_) {
-            case 1:
-                inport1_.distributeEvent(&moveEvent);
-                break;
-            case 2:
-                inport2_.distributeEvent(&moveEvent);
-                break;
-            case 3:
-                inport3_.distributeEvent(&moveEvent);
-                break;
-        }
-    }
-    else {
-        switch(maximized_.get()) {
-            case 1: inport1_.distributeEvent(e);
-                break;
-            case 2: inport2_.distributeEvent(e);
-                break;
-            case 3: inport3_.distributeEvent(e);
-                break;
-            default:;
-        }
-    }
+        //if (currentPort_ != prevCurrenPort) {
+            //tgt::MouseEvent leaveEvent(1, 1, tgt::MouseEvent::EXIT, e->modifiers(), e->button(), ivec2(e->viewport().x / 3, e->viewport().y));
+            //tgt::MouseEvent enterEvent(1, 1, tgt::MouseEvent::ENTER, e->modifiers(), e->button(), ivec2(e->viewport().x / 3, e->viewport().y));
+            //leaveEvent.ignore();
+            //enterEvent.ignore();
+            //switch(prevCurrenPort) {
+                //case 1:
+                    //inport1_.distributeEvent(&leaveEvent);
+                    //break;
+                //case 2:
+                    //inport2_.distributeEvent(&leaveEvent);
+                    //break;
+                //case 3:
+                    //inport3_.distributeEvent(&leaveEvent);
+                    //break;
+            //}
+            //switch(currentPort_) {
+                //case 1:
+                    //inport1_.distributeEvent(&enterEvent);
+                    //break;
+                //case 2:
+                    //inport2_.distributeEvent(&enterEvent);
+                    //break;
+                //case 3:
+                    //inport3_.distributeEvent(&enterEvent);
+                    //break;
+            //}
+        //}
+        //tgt::MouseEvent moveEvent(e->x() % (e->viewport().x/3), e->y(), tgt::MouseEvent::MOTION, e->modifiers(), e->button(), ivec2(e->viewport().x / 3, e->viewport().y));
+        //moveEvent.ignore();
+        //switch(currentPort_) {
+            //case 1:
+                //inport1_.distributeEvent(&moveEvent);
+                //break;
+            //case 2:
+                //inport2_.distributeEvent(&moveEvent);
+                //break;
+            //case 3:
+                //inport3_.distributeEvent(&moveEvent);
+                //break;
+        //}
+    //}
+    //else {
+        //switch(configuration_.getValue()) {
+            //case A: inport1_.distributeEvent(e);
+                //break;
+            //case B: inport2_.distributeEvent(e);
+                //break;
+            //case C: inport3_.distributeEvent(e);
+                //break;
+            //default:;
+        //}
+    //}
 }
 
 void TripleView::invalidate(int inv) {
     RenderProcessor::invalidate(inv);
 }
 
-void TripleView::onEvent(tgt::Event* e) {
+void TripleView::distributeEventLargeSmallSmall(RenderPort& large, RenderPort& small1, RenderPort& small2, tgt::MouseEvent* me) {
+    if (me->x() < (me->viewport().x * 0.666666f)) {
+        tgt::MouseEvent newme(me->x(), me->y(), me->action(), me->modifiers(), me->button(), ivec2(static_cast<int>(me->viewport().x * 0.666666f), me->viewport().y));
+        newme.ignore();  // accepted is set to true by default
+        large.distributeEvent(&newme);
+        if (newme.isAccepted())
+            me->accept();
+    }
+    else if (me->y() < (me->viewport().y * 0.5)) {
+        tgt::MouseEvent newme(me->x() - static_cast<int>(me->viewport().x * 0.666666f), me->y(), me->action(), me->modifiers(), me->button(), ivec2(me->viewport().x / 3, me->viewport().y / 2));
+        newme.ignore();
+        small1.distributeEvent(&newme);
+        if (newme.isAccepted())
+            me->accept();
+    }
+    else {
+        tgt::MouseEvent newme(me->x() - static_cast<int>(me->viewport().x * 0.666666f), me->y() - static_cast<int>(me->viewport().y * 0.5f), me->action(), me->modifiers(), me->button(), ivec2(me->viewport().x / 3, me->viewport().y / 2));
+        newme.ignore();
+        small2.distributeEvent(&newme);
+        if (newme.isAccepted())
+            me->accept();
+    }
+}
 
+void TripleView::onEvent(tgt::Event* e) {
     tgt::MouseEvent* me = dynamic_cast<tgt::MouseEvent*>(e);
 
-    if (!me || mouseMoveEventProp_.accepts(me) || (maximizeEventProp_.accepts(me) && maximizeOnDoubleClick_.get())) {
+    if (!me || mouseMoveEventProp_.accepts(me)) {
         RenderProcessor::onEvent(e);
         return;
     }
 
-    if (maximized_.get() == 0) {
+    switch(configuration_.getValue()) {
+        case abc:
             if (me->x() < (me->viewport().x * 0.33333f)) {
                 tgt::MouseEvent newme(me->x(), me->y(), me->action(), me->modifiers(), me->button(), ivec2(me->viewport().x / 3, me->viewport().y));
                 newme.ignore();  // accepted is set to true by default
@@ -366,35 +396,20 @@ void TripleView::onEvent(tgt::Event* e) {
                 if (newme.isAccepted())
                     me->accept();
             }
-    }
-    else {
-        switch(maximized_.get()) {
-            case 1: inport1_.distributeEvent(me);
-                    break;
-            case 2: inport2_.distributeEvent(me);
-                    break;
-            case 3: inport3_.distributeEvent(me);
-                    break;
-            default:;
-        }
-    }
-}
-
-void TripleView::toggleMaximization(tgt::MouseEvent* me) {
-    if (maximizeOnDoubleClick_.get()) {
-        if (maximized_.get() == 0) {
-            if (me->x() < (me->viewport().x * 0.333333f))
-                maximized_.set(1);
-            else if (me->x() < (me->viewport().x * 0.666666f))
-                maximized_.set(2);
-            else
-                maximized_.set(3);
-        }
-        else
-            maximized_.set(0);
-
-        updateSizes();
-        me->accept();
+            break;
+        case Abc: distributeEventLargeSmallSmall(inport1_, inport2_, inport3_, me);
+                  break;
+        case Bac: distributeEventLargeSmallSmall(inport2_, inport1_, inport3_, me);
+                  break;
+        case Cab: distributeEventLargeSmallSmall(inport3_, inport1_, inport2_, me);
+                  break;
+        case A: inport1_.distributeEvent(me);
+                break;
+        case B: inport2_.distributeEvent(me);
+                break;
+        case C: inport3_.distributeEvent(me);
+                break;
+        default:;
     }
 }
 

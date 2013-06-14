@@ -27,7 +27,8 @@
 #define VRN_BINARYIMAGEPROCESSOR_H
 
 #include "voreen/core/processors/imageprocessor.h"
-#include "voreen/core/ports/allports.h"
+
+#include "voreen/core/ports/renderport.h"
 
 #include "voreen/core/properties/shaderproperty.h"
 

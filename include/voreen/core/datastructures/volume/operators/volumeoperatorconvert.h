@@ -70,7 +70,7 @@ public:
      * @note This setting does only affect the conversion of unbounded
      *  data types (float, double).
      */
-    void setInputIntensityRange(const tgt::dvec2& range) throw (VoreenException) {
+    void setInputIntensityRange(const tgt::dvec2& range) throw (VoreenException){
         if (range.x >= range.y)
             throw VoreenException("Illegal range parameter. Expecting range.x < range.y");
         inputIntensityRange_ = range;
@@ -171,7 +171,7 @@ Volume* VolumeOperatorConvert::apply(const VolumeBase* srcVolumeHandle) const th
                 // conversion range not set => use input volume's intensity range
                 min = srcVolume->minNormalizedValue(0);
                 max = srcVolume->maxNormalizedValue(0);
-                for (int i=1; i<srcVolume->getNumChannels(); i++) {
+                for (size_t i=1; i<srcVolume->getNumChannels(); i++) {
                     min = std::min(min, srcVolume->minNormalizedValue(i));
                     max = std::max(max, srcVolume->maxNormalizedValue(i));
                 }
@@ -209,10 +209,10 @@ Volume* VolumeOperatorConvert::apply(const VolumeBase* srcVolumeHandle) const th
         }
         else {
             tgtAssert(srcVolume->getNumChannels() == destVolume->getNumChannels(), "channel-count mis-match");
-            int numChannels = srcVolume->getNumChannels();
+            size_t numChannels = srcVolume->getNumChannels();
             LINFOC("voreen.VolumeOperatorConvert", "Using fallback with setVoxelNormalized and getVoxelNormalized (" << numChannels << " channels)");
             VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::ivec3(0, 0, 0), srcVolume->getDimensions(), progressBar_) {
-                for (int channel=0; channel < numChannels; channel++)
+                for (size_t channel=0; channel < numChannels; channel++)
                     destVolume->setVoxelNormalized(srcVolume->getVoxelNormalized(i, channel)*scale + offset, i, channel);
             }
         }

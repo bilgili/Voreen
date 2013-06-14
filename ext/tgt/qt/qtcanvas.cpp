@@ -23,6 +23,8 @@
  **********************************************************************/
 
 #include "qtcanvas.h"
+#include "tgt/event/touchevent.h"
+#include "tgt/event/touchpoint.h"
 
 namespace tgt {
 
@@ -43,6 +45,8 @@ QtCanvas::QtCanvas(const std::string& title,
     setWindowTitle(QString(title.c_str()));
 
     setFocusPolicy(Qt::StrongFocus);
+    // enable this line to receive touch events
+    setAttribute(Qt::WA_AcceptTouchEvents);
 
     // we have our own AutoBufferSwap-mechanism (GLCanvas::setAutoFlush), so disable the one of qt
     setAutoBufferSwap(false);
@@ -577,6 +581,49 @@ KeyEvent::KeyCode QtCanvas::getKey(int key) {
             // case Qt::Key_Yes : return tgt::KeyEvent::K_;
         default: return tgt::KeyEvent::K_UNKNOWN;
     }
+}
+
+bool QtCanvas::event(QEvent *event) {
+
+    switch (event->type()) {
+    case QEvent::TouchBegin:
+    case QEvent::TouchUpdate:
+    case QEvent::TouchEnd:
+    {
+        QTouchEvent* touchEvent = static_cast<QTouchEvent*>(event);
+        QList<QTouchEvent::TouchPoint> touchPoints = touchEvent->touchPoints();
+        event->accept();
+
+        qint8 deviceType = touchEvent->deviceType();
+        std::deque<tgt::TouchPoint> tps;
+        int states = 0;
+
+        foreach (const QTouchEvent::TouchPoint &p, touchPoints) {
+            int id = p.id();
+            tgt::vec2 pos(p.pos().x(), p.pos().y());
+            int state = p.state();
+            bool primary = p.isPrimary();
+
+            states = states | state;
+
+            tgt::TouchPoint tp;
+            tp.setId(id);
+            tp.setPos(pos);
+            tp.setState((tgt::TouchPoint::State)state);
+            tp.setPrimary(primary);
+
+            tps.push_back(tp);
+        }
+
+        tgt::TouchEvent * te = new tgt::TouchEvent(tgt::Event::MODIFIER_NONE, (tgt::TouchPoint::State)states, (tgt::TouchEvent::DeviceType)deviceType, tps);
+        eventHandler_->broadcast(te);
+
+        break;
+    }
+    default:
+        return QGLWidget::event(event);
+    }
+    return true;
 }
 
 } // namespace

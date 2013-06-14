@@ -66,10 +66,9 @@ public:
      */
     enum View {
         DEFAULT =        1,
-        LIGHT_POSITION = 1 << 1,
-        COLOR =          1 << 2,
-        SLIDER =         1 << 3,
-        SPINBOX =        1 << 4
+        COLOR =          1 << 1,
+        SLIDER =         1 << 2,
+        SPINBOX =        1 << 3
     };
 
     /**

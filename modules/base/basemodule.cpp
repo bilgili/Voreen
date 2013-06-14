@@ -83,6 +83,7 @@
 // proxy geometry
 #include "processors/proxygeometry/cubeproxygeometry.h"
 #include "processors/proxygeometry/explosionproxygeometry.h"
+#include "processors/proxygeometry/multipassproxygeometry.h"
 #include "processors/proxygeometry/multiplanarproxygeometry.h"
 #include "processors/proxygeometry/multivolumeproxygeometry.h"
 #include "processors/proxygeometry/optimizedproxygeometry.h"
@@ -146,6 +147,7 @@
 #include "io/analyzevolumereader.h"
 #include "io/brukervolumereader.h"
 #include "io/ecat7volumereader.h"
+#include "io/inveonvolumereader.h"
 #include "io/multivolumereader.h"
 #include "io/mhdvolumereader.h"
 #include "io/mhdvolumewriter.h"
@@ -218,6 +220,7 @@ BaseModule::BaseModule(const std::string& modulePath) : VoreenModule(modulePath)
     // proxy geometry
     registerSerializableType(new CubeProxyGeometry());
     registerSerializableType(new ExplosionProxyGeometry());
+    registerSerializableType(new MultiPassProxyGeometry());
     registerSerializableType(new MultiPlanarProxyGeometry());
     registerSerializableType(new MultiVolumeProxyGeometry());
     registerSerializableType(new OptimizedProxyGeometry());
@@ -278,6 +281,7 @@ BaseModule::BaseModule(const std::string& modulePath) : VoreenModule(modulePath)
     registerVolumeReader(new AnalyzeVolumeReader());
     registerVolumeReader(new BrukerVolumeReader());
     registerVolumeReader(new ECAT7VolumeReader());
+    registerVolumeReader(new InveonVolumeReader());
     registerVolumeReader(new MultiVolumeReader(0));
     registerVolumeReader(new MhdVolumeReader());
     registerVolumeWriter(new MhdVolumeWriter());

@@ -32,6 +32,7 @@
 #include "voreen/core/datastructures/geometry/meshgeometry.h"
 #include "voreen/core/datastructures/meta/realworldmappingmetadata.h"
 
+#include <stdexcept>
 namespace voreen {
 
 /**
@@ -69,23 +70,20 @@ public:
     virtual VolumeRAM* createNew(const tgt::svec3& dimensions, bool allocMem = false) const throw (std::bad_alloc) = 0;
 
     /// Create new volume which contains part of the data of the current volume.
-    virtual VolumeRAM* getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset = tgt::svec3(0,0,0)) const throw (std::bad_alloc) = 0;
-
-    /// Exchange part of volume
-    virtual void setSubVolume(const VolumeRAM* vol, tgt::svec3 offset = tgt::svec3(0,0,0)) = 0;
+    virtual VolumeRAM* getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset = tgt::svec3(0,0,0)) const throw (std::bad_alloc,std::invalid_argument) = 0;
 
     /// Returns the number of bytes held in the \a data_ array.
     virtual size_t getNumBytes() const = 0;
 
     /// Returns the number of channels of this volume.
-    virtual int getNumChannels() const = 0;
+    virtual size_t getNumChannels() const = 0;
 
     /// Returns the number of bits that are allocated by each voxel.
     /// For technical reasons, it may exceed the volume's bit depth.
-    virtual int getBitsAllocated() const = 0;
+    virtual size_t getBitsAllocated() const = 0;
 
     /// Returns the number of bytes that are allocated for each voxel.
-    virtual int getBytesPerVoxel() const = 0;
+    virtual size_t getBytesPerVoxel() const = 0;
 
     /// Returns whether the volume's data type is a signed type.
     virtual bool isSigned() const = 0;
@@ -238,6 +236,10 @@ public:
     /// Gets a void* to the data stored with this Volume
     virtual const void* getData() const = 0;
     virtual void* getData() = 0;
+
+    /// Gets a void* to the requested data. New memory will be allocated for the return buffer.
+    virtual void* getBrickData(const tgt::svec3& offset, const tgt::svec3& dimension) const throw (std::invalid_argument) = 0;
+    virtual void* getSliceData(const size_t firstSlice, const size_t lastSlice) const throw (std::invalid_argument) = 0;
 
     /**
      * Use this as type safe wrapper in order to get a proper typed pointer.

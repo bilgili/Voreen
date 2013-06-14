@@ -56,7 +56,7 @@ public:
     /**
      * Returns the Volumetype
      */
-    static std::string getVolumeType(const VolumeRAM*);
+    static std::string getVolumeType(const VolumeBase*);
 
     /**
      * Returns the Volumename (incl. path)
@@ -87,10 +87,9 @@ public:
      * Returns a string desribing the amount of memory
      * that is actually occupied by the volume.
      */
-    static std::string getVolumeMemorySize(const VolumeRAM*);
     static std::string getVolumeMemorySize(const VolumeBase*);
 
-    static size_t getVolumeMemorySizeByte(const VolumeRAM*);
+    static size_t getVolumeMemorySizeByte(const VolumeBase*);
 
 };
 

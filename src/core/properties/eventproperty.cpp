@@ -37,6 +37,8 @@ EventPropertyBase::EventPropertyBase(const std::string& id, const std::string& g
     : Property(id, guiName)
     , receivesMouseEvents_(mouseEvents)
     , receivesKeyEvents_(keyEvents)
+    // TODO add ctor parameter for touch events
+    , receivesTouchEvents_(false)
     , enabled_(enabled)
     , mouseButtons_(mouseButtons)
     , mouseAction_(mouseAction)
@@ -64,6 +66,9 @@ bool EventPropertyBase::accepts(tgt::Event* e) const {
         accept = receivesKeyEvents();
         accept &= (keyEvent->modifiers() == getModifier());
         accept &= ((keyEvent->keyCode() == getKeyCode()) || (getKeyCode() == tgt::KeyEvent::K_LAST));
+    }
+    else if (tgt::TouchEvent* touchEvent = dynamic_cast<tgt::TouchEvent*>(e)) {
+        accept = receivesTouchEvents();
     }
 
     return accept;
@@ -111,6 +116,10 @@ bool EventPropertyBase::receivesKeyEvents() const {
     return receivesKeyEvents_;
 }
 
+bool EventPropertyBase::receivesTouchEvents() const {
+    return receivesTouchEvents_;
+}
+
 tgt::MouseEvent::MouseButtons EventPropertyBase::getMouseButtons() const {
     return mouseButtons_;
 }
@@ -154,6 +163,13 @@ void EventPropertyBase::setReceivesMouseEvents(bool mouseEvents) {
 void EventPropertyBase::setReceivesKeyEvents(bool keyEvents) {
     if (receivesKeyEvents_) {
         receivesKeyEvents_ = keyEvents;
+        notifyChangeListener();
+    }
+}
+
+void EventPropertyBase::setReceivesTouchEvents(bool touchEvents) {
+    if (receivesTouchEvents_) {
+        receivesTouchEvents_ = touchEvents;
         notifyChangeListener();
     }
 }

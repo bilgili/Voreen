@@ -201,13 +201,23 @@ void SingleVolumeRaycaster::beforeProcess() {
     LGL_ERROR;
 
     transferFunc_.setVolumeHandle(volumeInport_.getData());
+    //HACK: 2D TFs use FBOs to update the texture, we trigger the update here to prevent conflicts in process()
+    //if(transferFunc_.get() && dynamic_cast<TransFunc2DPrimitives*>(transferFunc_.get()))
+        transferFunc_.get()->bind();
 
     // A new volume was loaded
-    if (volumeInport_.hasChanged() && volumeInport_.hasData())
+    if(volumeInport_.hasChanged() && volumeInport_.hasData())
         camera_.adaptInteractionToScene(volumeInport_.getData()->getBoundingBox().getBoundingBox(), tgt::min(volumeInport_.getData()->getSpacing()));
+
+    //if the pre-integration table is computed on the gpu, this must be done before the rendering process
+    if (classificationMode_.get() == "pre-integrated-gpu")
+        if (TransFunc1DKeys* tf1d = dynamic_cast<TransFunc1DKeys*>(transferFunc_.get()))
+            tf1d->getPreIntegrationTable(getSamplingStepSize(volumeInport_.getData()), 0, false, true)->getTexture();
+
 }
 
 void SingleVolumeRaycaster::process() {
+
     LGL_ERROR;
 
     // determine render size and activate internal port group

@@ -55,6 +55,9 @@ VertexBase VertexBase::interpolate(const VertexBase& v1, const VertexBase& v2, f
     return VertexBase((v1.pos_ * (1.0f - t)) + (v2.pos_ * t));
 }
 
+void VertexBase::setNormal(tgt::vec3 /*n*/) {
+}
+
 //-------------------------------------------------------------------------------------------------
 
 VertexVec3::VertexVec3(tgt::vec3 pos, tgt::vec3 attr1)
@@ -128,6 +131,11 @@ void VertexVec4Vec3::disableVertexAttributePointers() {
 
 VertexVec4Vec3 VertexVec4Vec3::interpolate(const VertexVec4Vec3& v1, const VertexVec4Vec3& v2, float t) {
     return VertexVec4Vec3((v1.pos_ * (1.0f - t)) + (v2.pos_ * t), (v1.attr1_* (1.0f - t)) + (v2.attr1_* t), (v1.attr2_* (1.0f - t)) + (v2.attr2_* t));
+    //return VertexVec4Vec3((v1.pos_ * (1.0f - t)) + (v2.pos_ * t), (v1.attr1_* (1.0f - t)) + (v2.attr1_* t), tgt::vec3(0.0f));
+}
+
+void VertexVec4Vec3::setNormal(tgt::vec3 n) {
+    attr2_ = n;
 }
 
 } // namespace

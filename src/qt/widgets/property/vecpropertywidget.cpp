@@ -57,7 +57,7 @@ VecPropertyWidget<WIDGETTYPE, VECTORPROP, ELEMTYPE>::VecPropertyWidget(VECTORPRO
 
     QPropertyWidget::addLayout(myLayout_);
     QPropertyWidget::addVisibilityControls();
-    updateFromProperty();
+    updateFromPropertySlot();
 
     precisionMenu_ = new QMenu(this);
     highAction_ = precisionMenu_->addAction("High Precision");
@@ -79,7 +79,7 @@ VecPropertyWidget<WIDGETTYPE, VECTORPROP, ELEMTYPE>::~VecPropertyWidget() {
 }
 
 template<class WIDGETTYPE, class VECTORPROP, typename ELEMTYPE>
-void VecPropertyWidget<WIDGETTYPE, VECTORPROP, ELEMTYPE>::updateFromProperty() {
+void VecPropertyWidget<WIDGETTYPE, VECTORPROP, ELEMTYPE>::updateFromPropertySlot() {
     const typename VECTORPROP::ElemType& values = vectorProp_->get();
     const typename VECTORPROP::ElemType& minValues = vectorProp_->getMinValue();
     const typename VECTORPROP::ElemType& maxValues = vectorProp_->getMaxValue();
@@ -136,7 +136,7 @@ void VecPropertyWidget<WIDGETTYPE, VECTORPROP, ELEMTYPE>::mousePressEvent(QMouse
         else if(prec == instantValueChangeAction_) {
             vectorProp_->setTracking(!vectorProp_->hasTracking());
         }
-        updateFromProperty();
+        updateFromPropertySlot();
     }
     QWidget::mousePressEvent(event);
 }

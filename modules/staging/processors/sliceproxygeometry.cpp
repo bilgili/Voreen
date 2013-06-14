@@ -73,13 +73,13 @@ void SliceProxyGeometry::process() {
     vec3 inPlaneA = normalize(cross(n, temp)) * 0.5f * size_.get();
     vec3 inPlaneB = normalize(cross(n, inPlaneA)) * 0.5f * size_.get();
 
-    vec3 base = n * position_.get();
+    vec3 base = n * -position_.get();
 
     TriangleMeshGeometryVec3* slice = new TriangleMeshGeometryVec3();
     slice->addQuad(VertexVec3(base + inPlaneA + inPlaneB, base + inPlaneA + inPlaneB),
-                  VertexVec3(base - inPlaneA + inPlaneB, base - inPlaneA + inPlaneB),
-                  VertexVec3(base - inPlaneA - inPlaneB, base - inPlaneA - inPlaneB),
-                  VertexVec3(base + inPlaneA - inPlaneB, base + inPlaneA - inPlaneB));
+                   VertexVec3(base - inPlaneA + inPlaneB, base - inPlaneA + inPlaneB),
+                   VertexVec3(base - inPlaneA - inPlaneB, base - inPlaneA - inPlaneB),
+                   VertexVec3(base + inPlaneA - inPlaneB, base + inPlaneA - inPlaneB));
 
     LGL_ERROR;
 

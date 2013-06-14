@@ -25,6 +25,7 @@
 
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/properties/property.h"
+#include "voreen/core/ports/coprocessorport.h"
 
 #include "tgt/glmath.h"
 #include "tgt/shadermanager.h"
@@ -34,7 +35,7 @@
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/voreenmodule.h"
 #include "voreen/core/processors/processorwidgetfactory.h"
-#include "voreen/core/ports/allports.h"
+
 #include "voreen/core/processors/processorwidget.h"
 #include "voreen/core/properties/eventproperty.h"
 #include "voreen/core/properties/transfuncproperty.h"
@@ -193,6 +194,7 @@ void Processor::beforeProcess() {
 }
 
 void Processor::afterProcess() {
+    setValid();
 }
 
 void Processor::clearOutports() {

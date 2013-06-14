@@ -70,6 +70,11 @@ public:
      * @param source the calling Volume
      */
     virtual void volumeChange(const VolumeBase* source) = 0;
+
+    /**
+     * This method is called by the observed Volume after a VolumeDerivedDataThread has finished.
+     */
+    virtual void derivedDataThreadFinished(const VolumeBase* source, const VolumeDerivedData* derivedData) {}
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -199,6 +204,36 @@ private:
 
 //-------------------------------------------------------------------------------------------------
 
+template <class T>
+class VolumeDerivedDataThread : public VolumeDerivedDataThreadBase {
+public:
+    virtual void run() {
+        T dummy;
+        VolumeDerivedData* tmp = 0;
+        try {
+            tmp = dummy.createFrom(volume_);
+        }
+        catch(boost::thread_interrupted&)
+        {
+            tmp = 0;
+            resultMutex_.lock();
+            result_ = 0;
+            resultMutex_.unlock();
+            return;
+        }
+        resultMutex_.lock();
+        result_ = tmp;
+        resultMutex_.unlock();
+
+        notifyVolume();
+    }
+
+protected:
+    void notifyVolume();
+};
+
+//-------------------------------------------------------------------------------------------------
+
 #ifdef DLL_TEMPLATE_INST
 template class VRN_CORE_API Observable<VolumeObserver>;
 #endif
@@ -241,11 +276,20 @@ public:
     T* getDerivedData() const;
 
     /**
+     * Launches a thread to calculate derived data of type T.
+     * Observe this volume to get notified when calculations finish (@see VolumeObserver::derivedDataThreadFinished())
+     *
+     * @return If a derived data of type T has already been calculated it is returned, otherwise 0.
+     */
+    template<class T>
+    T* getDerivedDataThreaded() const;
+
+    /**
      * Returns whether there exists a derived data item of the specified type T,
      * which must be a concrete subtype of VolumeDerivedData.
      */
     template<class T>
-    bool hasDerivedData() const;
+    T* hasDerivedData() const;
 
     /**
      * Adds the given data item to the derived data associated with this handle.
@@ -260,6 +304,7 @@ public:
     }
 
     void addDerivedData(VolumeDerivedData* data) {
+        derivedDataMutex_.lock();
         for (std::set<VolumeDerivedData*>::const_iterator it=derivedData_.begin(); it!=derivedData_.end(); ++it) {
             if (typeid(**it) == typeid(*data)) {
                 derivedData_.erase(it);
@@ -267,6 +312,7 @@ public:
             }
         }
         derivedData_.insert(data);
+        derivedDataMutex_.unlock();
     }
 
     /**
@@ -301,6 +347,8 @@ public:
     virtual size_t getNumRepresentations() const = 0;
     virtual const VolumeRepresentation* getRepresentation(size_t i) const = 0;
     virtual const VolumeRepresentation* useConverter(const RepresentationConverterBase* converter) const = 0;
+    virtual void addRepresentation(VolumeRepresentation* representation) = 0;
+    virtual void removeRepresentation(size_t i) = 0;
 
     template <class T>
     bool hasRepresentation() const {
@@ -311,10 +359,19 @@ public:
         return false;
     }
 
+    template <class T>
+    void removeRepresentation() {
+        for(size_t i=0; i<getNumRepresentations(); i++) {
+            if (dynamic_cast<const T*>(getRepresentation(i))) {
+                removeRepresentation(i);
+            }
+        }
+    }
+
     /// Returns the format of the volume as string (e.g., "uint8" or "Vector3(float)", @see VolumeFactory).
     std::string getFormat() const;
 
-    /// Returns the base type (e.g., "float" for a representation of format "Vector3(float)").
+    /// Returns the base type (e.g.,    "float" for a representation of format "Vector3(float)").
     std::string getBaseType() const;
 
     size_t getNumChannels() const;
@@ -426,6 +483,9 @@ public:
      * of the volume was done.
      */
     void notifyReload();
+
+    template<class T>
+    void derivedDataThreadFinished(VolumeDerivedDataThreadBase* ddt) const;
 protected:
     template<class T>
         void addDerivedDataInternal(T* data) const;
@@ -433,49 +493,61 @@ protected:
     template<class T>
         void removeDerivedDataInternal() const;
 
+    void clearFinishedThreads();
+    void stopRunningThreads();
+
     VolumeURL origin_;
-    mutable std::set<VolumeDerivedData*> derivedData_;
+
+    mutable std::set<VolumeDerivedData*> derivedData_; // use mutex derivedDataMutex_ to make derived data thread safe!
+    mutable boost::mutex derivedDataMutex_;
+
+    mutable std::set<VolumeDerivedDataThreadBase*> derivedDataThreads_;
+    mutable std::set<VolumeDerivedDataThreadBase*> derivedDataThreadsFinished_;
+    mutable boost::mutex derivedDataThreadMutex_;
 
     static const std::string loggerCat_;
 };
 
 template <class T>
 const T* VolumeBase::getRepresentation() const {
-    if(getNumRepresentations() == 0) {
+    if (getNumRepresentations() == 0) {
         LWARNING("Found no representations for this volumehandle!" << this);
         return 0;
     }
 
     //Check if rep. is available:
-    for(size_t i=0; i<getNumRepresentations(); i++) {
-        if(dynamic_cast<const T*>(getRepresentation(i))) {
+    for (size_t i=0; i<getNumRepresentations(); i++) {
+        if (dynamic_cast<const T*>(getRepresentation(i))) {
             return static_cast<const T*>(getRepresentation(i));
         }
     }
 
-    //Check if conversion is possible:
+    // try to convert from VolumeRAM
     ConverterFactory fac;
-    for(size_t i=0; i<getNumRepresentations(); i++) {
-        RepresentationConverter<T>* converter = fac.findConverter<T>(getRepresentation(i));
-        if(converter) {
+    if (hasRepresentation<VolumeRAM>()) {
+        const VolumeRAM* volumeRam = getRepresentation<VolumeRAM>();
+        RepresentationConverter<T>* converter = fac.findConverter<T>(volumeRam);
+        if (converter) {
             const T* rep = static_cast<const T*>(useConverter(converter)); //we can static cast here because we know the converter returns T*
+            if (rep)
+                return rep;
+        }
 
-            if(rep)
+    }
+
+    // try to convert from other representations
+    for (size_t i=0; i<getNumRepresentations(); i++) {
+        RepresentationConverter<T>* converter = fac.findConverter<T>(getRepresentation(i));
+        if (converter) {
+            const T* rep = static_cast<const T*>(useConverter(converter)); //we can static cast here because we know the converter returns T*
+            if (rep)
                 return rep;
         }
     }
 
-    // Found no converter. Using fallback (Converting to RAM volume)
-    if(!hasRepresentation<VolumeRAM>()) {
-        if (getRepresentation<VolumeRAM>())
-            return getRepresentation<T>();
-        else
-            return 0;
-    }
-    else {
-        LERROR("Found no way to return a representation of the requested type!");
-        return 0;
-    }
+    LERROR("Failed to create representation of the requested type!");
+    return 0;
+
 }
 
 template <>
@@ -504,6 +576,9 @@ public:
     Volume(VolumeRepresentation* const volume, const VolumeBase* vh);
     Volume(VolumeRepresentation* const volume, const MetaDataContainer* mdc);
     Volume(VolumeRepresentation* const volume, const MetaDataContainer* mdc, const std::set<VolumeDerivedData*>& derivedData);
+private:
+    Volume(const Volume&) {} // private copy-constructor to prevent copying, use clone() instead.
+public:
 
     /**
      * Delete all Volume pointers and the hardware specific ones, if they have been generated.
@@ -590,13 +665,24 @@ public:
     ///Set the MD5 hash. Should only be called by a reader.
     virtual void setHash(const std::string& hash) const;
 
-    void addRepresentation(VolumeRepresentation* rep) {
+    virtual void addRepresentation(VolumeRepresentation* rep) {
         //TODO: check for duplicates using RTI
         representations_.push_back(rep);
     }
 
+    virtual void removeRepresentation(size_t i) {
+        if (i >= representations_.size())
+            return;
+
+        stopRunningThreads();
+        delete representations_.at(i);
+        representations_.erase(representations_.begin() + i);
+    }
+
     template<class T>
     void removeRepresentation() {
+        stopRunningThreads();
+
         //Check if rep. is available:
         for(size_t i=0; i<representations_.size(); i++) {
             T* test = dynamic_cast<T*>(representations_[i]);
@@ -616,6 +702,7 @@ public:
             if(!VolumeBase::getRepresentation<T>())
                 return;
         }
+        stopRunningThreads();
 
         for(size_t i=0; i<representations_.size(); i++) {
             T* test = dynamic_cast<T*>(representations_[i]);
@@ -656,6 +743,7 @@ public:
 
     template <class T>
     T* getWritableRepresentation() {
+        stopRunningThreads();
         T* rep = const_cast<T*>(getRepresentation<T>());
         makeRepresentationExclusive<T>();
         clearDerivedData();
@@ -663,6 +751,7 @@ public:
     }
 
     void deleteAllRepresentations() {
+        stopRunningThreads();
         while(!representations_.empty()) {
             delete representations_.back();
             representations_.pop_back();
@@ -670,6 +759,7 @@ public:
     }
 
     void releaseAllRepresentations() {
+        stopRunningThreads();
         representations_.clear();
     }
 
@@ -703,34 +793,98 @@ private:
 //---------------------------------------------------------------------------
 // template definitions
 
+template <class T>
+void VolumeDerivedDataThread<T>::notifyVolume() {
+    volume_->derivedDataThreadFinished<T>(this);
+}
+
+//---------------------------------------------------------------------------
+
 template<class T>
 T* VolumeBase::getDerivedData() const {
-    for (std::set<VolumeDerivedData*>::iterator it=derivedData_.begin(); it!=derivedData_.end(); ++it) {
-        if (typeid(**it) == typeid(T))
-            return dynamic_cast<T*>(*it);
+    T* test = hasDerivedData<T>();
+    if(test)
+        return test;
+
+    // Look for running threads calculating this type of derived data:
+    derivedDataThreadMutex_.lock();
+    for (std::set<VolumeDerivedDataThreadBase*>::iterator it=derivedDataThreads_.begin(); it!=derivedDataThreads_.end(); ++it) {
+        if (typeid(**it) == typeid(VolumeDerivedDataThread<T>)) {
+            VolumeDerivedDataThreadBase* ddt = *it;
+            derivedDataThreadMutex_.unlock();
+            if(ddt->isRunning())
+                ddt->join();
+            return hasDerivedData<T>();
+        }
     }
 
-    // try to create derived data item
-    T* dummy = new T();
-    if (!dynamic_cast<VolumeDerivedData*>(dummy)) {
-        LERROR("template parameter is not a subtype of VolumeDerivedData");
-        delete dummy;
-        throw std::invalid_argument("template parameter is not a subtype of VolumeDerivedData");
-    }
-    T* result = dynamic_cast<T*>(static_cast<VolumeDerivedData*>(dummy)->createFrom(this));
-    if (result)
-        addDerivedDataInternal<T>(result);
-    delete dummy;
-    return result;
+    // no running thread...start a new one:
+    VolumeDerivedDataThread<T>* thread = new VolumeDerivedDataThread<T>();
+    derivedDataThreads_.insert(thread);
+    derivedDataThreadMutex_.unlock();
+
+    thread->startThread(this);
+
+    thread->join(); // ...and wait for it to finish
+    return hasDerivedData<T>();
 }
 
 template<class T>
-bool VolumeBase::hasDerivedData() const {
-    for (std::set<VolumeDerivedData*>::const_iterator it=derivedData_.begin(); it!=derivedData_.end(); ++it) {
-        if (typeid(**it) == typeid(T))
-            return true;
+T* VolumeBase::getDerivedDataThreaded() const {
+    T* test = hasDerivedData<T>();
+    if(test)
+        return test;
+
+    // Look for running threads calculating this type of derived data:
+    derivedDataThreadMutex_.lock();
+    for (std::set<VolumeDerivedDataThreadBase*>::iterator it=derivedDataThreads_.begin(); it!=derivedDataThreads_.end(); ++it) {
+        if (typeid(**it) == typeid(VolumeDerivedDataThread<T>)) {
+            derivedDataThreadMutex_.unlock(); // there is a thread calculating this type of derived data
+            return 0;
+        }
     }
-    return false;
+
+    VolumeDerivedDataThread<T>* thread = new VolumeDerivedDataThread<T>();
+    thread->startThread(this);
+    derivedDataThreads_.insert(thread);
+    derivedDataThreadMutex_.unlock();
+
+    return 0;
+}
+
+template<class T>
+void VolumeBase::derivedDataThreadFinished(VolumeDerivedDataThreadBase* ddt) const {
+    VolumeDerivedData* result = ddt->getResult();
+    if (result)
+        addDerivedDataInternal<T>(static_cast<T*>(result));
+
+    derivedDataThreadMutex_.lock();
+    derivedDataThreads_.erase(ddt);
+    derivedDataThreadMutex_.unlock();
+
+    // notify observers
+    std::vector<VolumeObserver*> observers = getObservers();
+    for (size_t i=0; i<observers.size(); ++i)
+        observers[i]->derivedDataThreadFinished(this, result);
+
+    derivedDataThreadMutex_.lock();
+    derivedDataThreadsFinished_.insert(ddt);
+    derivedDataThreadMutex_.unlock();
+}
+
+
+template<class T>
+T* VolumeBase::hasDerivedData() const {
+    derivedDataMutex_.lock();
+    for (std::set<VolumeDerivedData*>::const_iterator it=derivedData_.begin(); it!=derivedData_.end(); ++it) {
+        if (typeid(**it) == typeid(T)) {
+            T* tmp = static_cast<T*>(*it);
+            derivedDataMutex_.unlock();
+            return tmp;
+        }
+    }
+    derivedDataMutex_.unlock();
+    return 0;
 }
 
 template<class T>
@@ -743,7 +897,9 @@ void VolumeBase::addDerivedDataInternal(T* data) const {
     if (hasDerivedData<T>())
         removeDerivedDataInternal<T>();
 
+    derivedDataMutex_.lock();
     derivedData_.insert(static_cast<VolumeDerivedData*>(data));
+    derivedDataMutex_.unlock();
 }
 
 template<class T>
@@ -751,15 +907,17 @@ void VolumeBase::removeDerivedDataInternal() const {
     if (!hasDerivedData<T>())
         return;
 
-    T* data = getDerivedData<T>();
+    derivedDataMutex_.lock();
+    //T* data = getDerivedData<T>();
     for (std::set<VolumeDerivedData*>::iterator it=derivedData_.begin(); it!=derivedData_.end(); ++it) {
-        if (*it == data) {
+        if (dynamic_cast<T*>(*it)) {
+            delete *it;
             derivedData_.erase(it);
-            delete data;
+            derivedDataMutex_.unlock();
             return;
         }
     }
-
+    derivedDataMutex_.unlock();
 }
 
 /*

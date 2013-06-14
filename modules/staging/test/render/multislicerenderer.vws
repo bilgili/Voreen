@@ -1,11 +1,11 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="14">
+        <ProcessorNetwork version="15">
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
-                        <item type="MeshEntryExitPoints" ref="ref29" />
+                        <item type="Canvas" ref="ref52" />
                     </values>
                 </MetaItem>
                 <MetaItem name="Zoom" type="ZoomMetaData">
@@ -14,8 +14,9 @@
                     <transform.row2 x="-2477.22705078125" y="293.13604736328125" z="1" />
                 </MetaItem>
                 <MetaItem name="ZoomCenter" type="Vec2MetaData">
-                    <value x="1042.5" y="-20.5" />
+                    <value x="48.29948425" y="946.23083496" />
                 </MetaItem>
+                <MetaItem name="ZoomFactor" type="FloatMetaData" value="0.45549139" />
                 <MetaItem name="autoLinkCameras" type="BoolMetaData" value="false" />
             </MetaData>
             <Processors>
@@ -76,9 +77,9 @@
                     </MetaData>
                     <Properties>
                         <Property mapKey="alignCameraButton" name="alignCameraButton" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref75">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref75">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.02499998" y="0.02499998" z="-1.51249993" />
                             <focus x="0.02499998" y="0.02499998" z="0.02499998" />
@@ -86,6 +87,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="floatSliceIndex" name="floatSliceIndex" value="20" />
                         <Property mapKey="plane" name="plane">
@@ -137,9 +140,9 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-420" y="70" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref61">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref61">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-2.03206825" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -147,13 +150,14 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="cameraInsideVolumeTechnique" name="cameraInsideVolumeTechnique" value="cpu" />
                         <Property mapKey="jitterEntryPoints" name="jitterEntryPoints" value="false" />
                         <Property mapKey="jitterStepLength" name="jitterStepLength" value="0.005" />
                         <Property mapKey="outputCoordinateSystem" name="outputCoordinateSystem" value="world" />
                         <Property mapKey="useCulling" name="useCulling" value="false" />
-                        <Property mapKey="useFloatRenderTargets" name="useFloatRenderTargets" value="true" />
                     </Properties>
                     <Inports>
                         <Port name="proxgeometry.geometry" direction="1" portID="proxgeometry.geometry" guiName="Proxy Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -188,6 +192,7 @@
                                 <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
@@ -209,9 +214,9 @@
                         <Property mapKey="blendingMode2" name="blendingMode2" value="maximumAlpha" />
                         <Property mapKey="blendingMode3" name="blendingMode3" value="maximumAlpha" />
                         <Property mapKey="blendingMode4" name="blendingMode4" value="maximumAlpha" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref62">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref62">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-2.03206825" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -219,6 +224,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
                         <Property mapKey="textureClampMode1_" name="textureClampMode1_" value="clamp-to-edge" />
@@ -381,9 +388,9 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-227" y="56" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref63">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref63">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.02499998" y="0.02499998" z="-1.51249993" />
                             <focus x="0.02499998" y="0.02499998" z="0.02499998" />
@@ -391,13 +398,14 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="cameraInsideVolumeTechnique" name="cameraInsideVolumeTechnique" value="cpu" />
                         <Property mapKey="jitterEntryPoints" name="jitterEntryPoints" value="false" />
                         <Property mapKey="jitterStepLength" name="jitterStepLength" value="0.005" />
                         <Property mapKey="outputCoordinateSystem" name="outputCoordinateSystem" value="world" />
                         <Property mapKey="useCulling" name="useCulling" value="false" />
-                        <Property mapKey="useFloatRenderTargets" name="useFloatRenderTargets" value="true" />
                     </Properties>
                     <Inports>
                         <Port name="proxgeometry.geometry" direction="1" portID="proxgeometry.geometry" guiName="Proxy Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -432,6 +440,7 @@
                                 <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
@@ -479,9 +488,9 @@
                         <Property mapKey="blendingMode2" name="blendingMode2" value="minimumAlpha" />
                         <Property mapKey="blendingMode3" name="blendingMode3" value="maximumAlpha" />
                         <Property mapKey="blendingMode4" name="blendingMode4" value="maximumAlpha" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref64">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref64">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.02499998" y="0.02499998" z="-1.51249993" />
                             <focus x="0.02499998" y="0.02499998" z="0.02499998" />
@@ -489,6 +498,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
                         <Property mapKey="textureClampMode1_" name="textureClampMode1_" value="clamp-to-edge" />
@@ -633,9 +644,9 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-30" y="59" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref65">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref65">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.02499998" y="0.02499998" z="-1.51249993" />
                             <focus x="0.02499998" y="0.02499998" z="0.02499998" />
@@ -643,13 +654,14 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="cameraInsideVolumeTechnique" name="cameraInsideVolumeTechnique" value="cpu" />
                         <Property mapKey="jitterEntryPoints" name="jitterEntryPoints" value="false" />
                         <Property mapKey="jitterStepLength" name="jitterStepLength" value="0.005" />
                         <Property mapKey="outputCoordinateSystem" name="outputCoordinateSystem" value="world" />
                         <Property mapKey="useCulling" name="useCulling" value="false" />
-                        <Property mapKey="useFloatRenderTargets" name="useFloatRenderTargets" value="true" />
                     </Properties>
                     <Inports>
                         <Port name="proxgeometry.geometry" direction="1" portID="proxgeometry.geometry" guiName="Proxy Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -684,6 +696,7 @@
                                 <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
@@ -731,9 +744,9 @@
                         <Property mapKey="blendingMode2" name="blendingMode2" value="replace" />
                         <Property mapKey="blendingMode3" name="blendingMode3" value="maximumAlpha" />
                         <Property mapKey="blendingMode4" name="blendingMode4" value="maximumAlpha" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref66">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref66">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.02499998" y="0.02499998" z="-1.51249993" />
                             <focus x="0.02499998" y="0.02499998" z="0.02499998" />
@@ -741,6 +754,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
                         <Property mapKey="textureClampMode1_" name="textureClampMode1_" value="clamp-to-edge" />
@@ -885,9 +900,9 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="148" y="67" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref67">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref67">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.02499998" y="0.02499998" z="-1.51249993" />
                             <focus x="0.02499998" y="0.02499998" z="0.02499998" />
@@ -895,13 +910,14 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="cameraInsideVolumeTechnique" name="cameraInsideVolumeTechnique" value="cpu" />
                         <Property mapKey="jitterEntryPoints" name="jitterEntryPoints" value="false" />
                         <Property mapKey="jitterStepLength" name="jitterStepLength" value="0.005" />
                         <Property mapKey="outputCoordinateSystem" name="outputCoordinateSystem" value="world" />
                         <Property mapKey="useCulling" name="useCulling" value="false" />
-                        <Property mapKey="useFloatRenderTargets" name="useFloatRenderTargets" value="true" />
                     </Properties>
                     <Inports>
                         <Port name="proxgeometry.geometry" direction="1" portID="proxgeometry.geometry" guiName="Proxy Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -936,6 +952,7 @@
                                 <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
@@ -947,7 +964,7 @@
                 <Processor type="Canvas" name="Canvas 4" id="ref50">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="163" y="389" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="2076" y="4" width="256" height="256" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="796" y="65" width="256" height="256" />
                     </MetaData>
                     <Properties>
                         <Property mapKey="canvasSize" name="canvasSize">
@@ -983,9 +1000,9 @@
                         <Property mapKey="blendingMode2" name="blendingMode2" value="deactivate" />
                         <Property mapKey="blendingMode3" name="blendingMode3" value="maximumAlpha" />
                         <Property mapKey="blendingMode4" name="blendingMode4" value="maximumAlpha" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref68">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref68">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.02499998" y="0.02499998" z="-1.51249993" />
                             <focus x="0.02499998" y="0.02499998" z="0.02499998" />
@@ -993,6 +1010,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
                         <Property mapKey="textureClampMode1_" name="textureClampMode1_" value="clamp-to-edge" />
@@ -1137,9 +1156,9 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="337" y="71" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref69">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref69">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.02499998" y="0.02499998" z="-1.51249993" />
                             <focus x="0.02499998" y="0.02499998" z="0.02499998" />
@@ -1147,13 +1166,14 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="cameraInsideVolumeTechnique" name="cameraInsideVolumeTechnique" value="cpu" />
                         <Property mapKey="jitterEntryPoints" name="jitterEntryPoints" value="false" />
                         <Property mapKey="jitterStepLength" name="jitterStepLength" value="0.005" />
                         <Property mapKey="outputCoordinateSystem" name="outputCoordinateSystem" value="world" />
                         <Property mapKey="useCulling" name="useCulling" value="false" />
-                        <Property mapKey="useFloatRenderTargets" name="useFloatRenderTargets" value="true" />
                     </Properties>
                     <Inports>
                         <Port name="proxgeometry.geometry" direction="1" portID="proxgeometry.geometry" guiName="Proxy Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -1188,6 +1208,7 @@
                                 <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
@@ -1235,9 +1256,9 @@
                         <Property mapKey="blendingMode2" name="blendingMode2" value="add" />
                         <Property mapKey="blendingMode3" name="blendingMode3" value="maximumAlpha" />
                         <Property mapKey="blendingMode4" name="blendingMode4" value="maximumAlpha" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref70">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref70">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.02499998" y="0.02499998" z="-1.51249993" />
                             <focus x="0.02499998" y="0.02499998" z="0.02499998" />
@@ -1245,6 +1266,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
                         <Property mapKey="textureClampMode1_" name="textureClampMode1_" value="clamp-to-edge" />
@@ -1389,9 +1412,9 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="569" y="67" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref71">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref71">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.02499998" y="0.02499998" z="-1.51249993" />
                             <focus x="0.02499998" y="0.02499998" z="0.02499998" />
@@ -1399,13 +1422,14 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="cameraInsideVolumeTechnique" name="cameraInsideVolumeTechnique" value="cpu" />
                         <Property mapKey="jitterEntryPoints" name="jitterEntryPoints" value="false" />
                         <Property mapKey="jitterStepLength" name="jitterStepLength" value="0.005" />
                         <Property mapKey="outputCoordinateSystem" name="outputCoordinateSystem" value="world" />
                         <Property mapKey="useCulling" name="useCulling" value="false" />
-                        <Property mapKey="useFloatRenderTargets" name="useFloatRenderTargets" value="true" />
                     </Properties>
                     <Inports>
                         <Port name="proxgeometry.geometry" direction="1" portID="proxgeometry.geometry" guiName="Proxy Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -1440,6 +1464,7 @@
                                 <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
@@ -1458,7 +1483,7 @@
                             <value x="256" y="256" />
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
-                        <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/substract.png" />
+                        <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/subtract.png" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -1484,12 +1509,12 @@
                         <Property mapKey="blendingFactor3" name="blendingFactor3" value="0.5" />
                         <Property mapKey="blendingFactor4" name="blendingFactor4" value="0.5" />
                         <Property mapKey="blendingMode1" name="blendingMode1" value="maximumAlpha" />
-                        <Property mapKey="blendingMode2" name="blendingMode2" value="substract" />
+                        <Property mapKey="blendingMode2" name="blendingMode2" value="subtract" />
                         <Property mapKey="blendingMode3" name="blendingMode3" value="maximumAlpha" />
                         <Property mapKey="blendingMode4" name="blendingMode4" value="maximumAlpha" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref72">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref72">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.02499998" y="0.02499998" z="-1.51249993" />
                             <focus x="0.02499998" y="0.02499998" z="0.02499998" />
@@ -1497,6 +1522,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
                         <Property mapKey="textureClampMode1_" name="textureClampMode1_" value="clamp-to-edge" />
@@ -1641,9 +1668,9 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="755" y="69" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref73">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref73">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.02499998" y="0.02499998" z="-1.51249993" />
                             <focus x="0.02499998" y="0.02499998" z="0.02499998" />
@@ -1651,13 +1678,14 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="cameraInsideVolumeTechnique" name="cameraInsideVolumeTechnique" value="cpu" />
                         <Property mapKey="jitterEntryPoints" name="jitterEntryPoints" value="false" />
                         <Property mapKey="jitterStepLength" name="jitterStepLength" value="0.005" />
                         <Property mapKey="outputCoordinateSystem" name="outputCoordinateSystem" value="world" />
                         <Property mapKey="useCulling" name="useCulling" value="false" />
-                        <Property mapKey="useFloatRenderTargets" name="useFloatRenderTargets" value="true" />
                     </Properties>
                     <Inports>
                         <Port name="proxgeometry.geometry" direction="1" portID="proxgeometry.geometry" guiName="Proxy Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -1692,6 +1720,7 @@
                                 <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
@@ -1739,9 +1768,9 @@
                         <Property mapKey="blendingMode2" name="blendingMode2" value="multiply" />
                         <Property mapKey="blendingMode3" name="blendingMode3" value="maximumAlpha" />
                         <Property mapKey="blendingMode4" name="blendingMode4" value="maximumAlpha" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1" id="ref74">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.02499998" frustRight="1.02499998" frustBottom="-1.02499998" frustTop="1.02499998" frustNear="0.01" frustFar="3.07499981" fovy="178.88204956" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref74">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.02499998" y="0.02499998" z="-1.51249993" />
                             <focus x="0.02499998" y="0.02499998" z="0.02499998" />
@@ -1749,6 +1778,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
                         <Property mapKey="textureClampMode1_" name="textureClampMode1_" value="clamp-to-edge" />
@@ -1901,9 +1932,9 @@
                         <Property mapKey="blendingMode2" name="blendingMode2" value="divide" />
                         <Property mapKey="blendingMode3" name="blendingMode3" value="maximumAlpha" />
                         <Property mapKey="blendingMode4" name="blendingMode4" value="maximumAlpha" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-1.77137399" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -1911,6 +1942,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
                         <Property mapKey="textureClampMode1_" name="textureClampMode1_" value="clamp-to-edge" />
@@ -2055,9 +2088,9 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="962" y="78" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-1.77137399" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -2065,13 +2098,14 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="cameraInsideVolumeTechnique" name="cameraInsideVolumeTechnique" value="cpu" />
                         <Property mapKey="jitterEntryPoints" name="jitterEntryPoints" value="false" />
                         <Property mapKey="jitterStepLength" name="jitterStepLength" value="0.005" />
                         <Property mapKey="outputCoordinateSystem" name="outputCoordinateSystem" value="world" />
                         <Property mapKey="useCulling" name="useCulling" value="false" />
-                        <Property mapKey="useFloatRenderTargets" name="useFloatRenderTargets" value="true" />
                     </Properties>
                     <Inports>
                         <Port name="proxgeometry.geometry" direction="1" portID="proxgeometry.geometry" guiName="Proxy Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -2106,6 +2140,7 @@
                                 <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
@@ -2171,9 +2206,9 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="1373" y="95" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-1.77137399" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -2181,13 +2216,14 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="cameraInsideVolumeTechnique" name="cameraInsideVolumeTechnique" value="cpu" />
                         <Property mapKey="jitterEntryPoints" name="jitterEntryPoints" value="false" />
                         <Property mapKey="jitterStepLength" name="jitterStepLength" value="0.005" />
                         <Property mapKey="outputCoordinateSystem" name="outputCoordinateSystem" value="world" />
                         <Property mapKey="useCulling" name="useCulling" value="false" />
-                        <Property mapKey="useFloatRenderTargets" name="useFloatRenderTargets" value="true" />
                     </Properties>
                     <Inports>
                         <Port name="proxgeometry.geometry" direction="1" portID="proxgeometry.geometry" guiName="Proxy Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -2222,6 +2258,7 @@
                                 <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
@@ -2243,9 +2280,9 @@
                         <Property mapKey="blendingMode2" name="blendingMode2" value="difference" />
                         <Property mapKey="blendingMode3" name="blendingMode3" value="maximumAlpha" />
                         <Property mapKey="blendingMode4" name="blendingMode4" value="maximumAlpha" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-1.77137399" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -2253,6 +2290,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
                         <Property mapKey="textureClampMode1_" name="textureClampMode1_" value="clamp-to-edge" />
@@ -2405,9 +2444,9 @@
                         <Property mapKey="blendingMode2" name="blendingMode2" value="decal" />
                         <Property mapKey="blendingMode3" name="blendingMode3" value="maximumAlpha" />
                         <Property mapKey="blendingMode4" name="blendingMode4" value="maximumAlpha" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-1.77137399" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -2415,6 +2454,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
                         <Property mapKey="textureClampMode1_" name="textureClampMode1_" value="clamp-to-edge" />
@@ -2559,9 +2600,9 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="1551" y="86" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-1.77137399" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -2569,13 +2610,14 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="cameraInsideVolumeTechnique" name="cameraInsideVolumeTechnique" value="cpu" />
                         <Property mapKey="jitterEntryPoints" name="jitterEntryPoints" value="false" />
                         <Property mapKey="jitterStepLength" name="jitterStepLength" value="0.005" />
                         <Property mapKey="outputCoordinateSystem" name="outputCoordinateSystem" value="world" />
                         <Property mapKey="useCulling" name="useCulling" value="false" />
-                        <Property mapKey="useFloatRenderTargets" name="useFloatRenderTargets" value="true" />
                     </Properties>
                     <Inports>
                         <Port name="proxgeometry.geometry" direction="1" portID="proxgeometry.geometry" guiName="Proxy Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -2610,6 +2652,7 @@
                                 <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
@@ -2649,9 +2692,9 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="1765" y="101" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-1.77137399" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -2659,13 +2702,14 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="cameraInsideVolumeTechnique" name="cameraInsideVolumeTechnique" value="cpu" />
                         <Property mapKey="jitterEntryPoints" name="jitterEntryPoints" value="false" />
                         <Property mapKey="jitterStepLength" name="jitterStepLength" value="0.005" />
                         <Property mapKey="outputCoordinateSystem" name="outputCoordinateSystem" value="world" />
                         <Property mapKey="useCulling" name="useCulling" value="false" />
-                        <Property mapKey="useFloatRenderTargets" name="useFloatRenderTargets" value="true" />
                     </Properties>
                     <Inports>
                         <Port name="proxgeometry.geometry" direction="1" portID="proxgeometry.geometry" guiName="Proxy Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -2700,6 +2744,7 @@
                                 <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
@@ -2721,9 +2766,9 @@
                         <Property mapKey="blendingMode2" name="blendingMode2" value="over" />
                         <Property mapKey="blendingMode3" name="blendingMode3" value="maximumAlpha" />
                         <Property mapKey="blendingMode4" name="blendingMode4" value="maximumAlpha" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-1.77137399" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -2731,6 +2776,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
                         <Property mapKey="textureClampMode1_" name="textureClampMode1_" value="clamp-to-edge" />
@@ -2927,9 +2974,9 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="1950" y="94" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-1.77137399" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -2937,13 +2984,14 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="cameraInsideVolumeTechnique" name="cameraInsideVolumeTechnique" value="cpu" />
                         <Property mapKey="jitterEntryPoints" name="jitterEntryPoints" value="false" />
                         <Property mapKey="jitterStepLength" name="jitterStepLength" value="0.005" />
                         <Property mapKey="outputCoordinateSystem" name="outputCoordinateSystem" value="world" />
                         <Property mapKey="useCulling" name="useCulling" value="false" />
-                        <Property mapKey="useFloatRenderTargets" name="useFloatRenderTargets" value="true" />
                     </Properties>
                     <Inports>
                         <Port name="proxgeometry.geometry" direction="1" portID="proxgeometry.geometry" guiName="Proxy Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -2978,6 +3026,7 @@
                                 <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
@@ -2999,9 +3048,9 @@
                         <Property mapKey="blendingMode2" name="blendingMode2" value="setHue" />
                         <Property mapKey="blendingMode3" name="blendingMode3" value="maximumAlpha" />
                         <Property mapKey="blendingMode4" name="blendingMode4" value="maximumAlpha" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-1.77137399" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -3009,6 +3058,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
                         <Property mapKey="textureClampMode1_" name="textureClampMode1_" value="clamp-to-edge" />
@@ -3153,9 +3204,9 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="2131" y="104" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-1.77137399" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -3163,13 +3214,14 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="cameraInsideVolumeTechnique" name="cameraInsideVolumeTechnique" value="cpu" />
                         <Property mapKey="jitterEntryPoints" name="jitterEntryPoints" value="false" />
                         <Property mapKey="jitterStepLength" name="jitterStepLength" value="0.005" />
                         <Property mapKey="outputCoordinateSystem" name="outputCoordinateSystem" value="world" />
                         <Property mapKey="useCulling" name="useCulling" value="false" />
-                        <Property mapKey="useFloatRenderTargets" name="useFloatRenderTargets" value="true" />
                     </Properties>
                     <Inports>
                         <Port name="proxgeometry.geometry" direction="1" portID="proxgeometry.geometry" guiName="Proxy Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -3204,6 +3256,7 @@
                                 <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
@@ -3251,9 +3304,9 @@
                         <Property mapKey="blendingMode2" name="blendingMode2" value="blend" />
                         <Property mapKey="blendingMode3" name="blendingMode3" value="maximumAlpha" />
                         <Property mapKey="blendingMode4" name="blendingMode4" value="maximumAlpha" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-1.77137399" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -3261,6 +3314,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
                         <Property mapKey="textureClampMode1_" name="textureClampMode1_" value="clamp-to-edge" />
@@ -3405,9 +3460,9 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="2333" y="99" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-1.77137399" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -3415,13 +3470,14 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="cameraInsideVolumeTechnique" name="cameraInsideVolumeTechnique" value="cpu" />
                         <Property mapKey="jitterEntryPoints" name="jitterEntryPoints" value="false" />
                         <Property mapKey="jitterStepLength" name="jitterStepLength" value="0.005" />
                         <Property mapKey="outputCoordinateSystem" name="outputCoordinateSystem" value="world" />
                         <Property mapKey="useCulling" name="useCulling" value="false" />
-                        <Property mapKey="useFloatRenderTargets" name="useFloatRenderTargets" value="true" />
                     </Properties>
                     <Inports>
                         <Port name="proxgeometry.geometry" direction="1" portID="proxgeometry.geometry" guiName="Proxy Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -3456,6 +3512,7 @@
                                 <Property mapKey="cameraHandler.moveLeft" name="cameraHandler.moveLeft" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="97" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveRight" name="cameraHandler.moveRight" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="100" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
@@ -3477,9 +3534,9 @@
                         <Property mapKey="blendingMode2" name="blendingMode2" value="over" />
                         <Property mapKey="blendingMode3" name="blendingMode3" value="over" />
                         <Property mapKey="blendingMode4" name="blendingMode4" value="over" />
-                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" autoFocus="true" centerOption="0" adaptationOption="1">
+                        <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-1.49500096" frustRight="1.49500096" frustBottom="-1.49500096" frustTop="1.49500096" frustNear="0.01" frustFar="514.54998779" fovy="179.23350525" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="1284" y="4" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="4" y="4" />
                             </MetaData>
                             <position x="0.00038449" y="0.12338075" z="-1.77137399" />
                             <focus x="0.00038449" y="0.12338075" z="0.02499998" />
@@ -3487,6 +3544,8 @@
                             <trackball moveCenter="false">
                                 <center x="0" y="0" z="0" />
                             </trackball>
+                            <sceneLLF x="0" y="0" z="0" />
+                            <sceneURB x="0" y="0" z="0" />
                         </Property>
                         <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
                         <Property mapKey="textureClampMode1_" name="textureClampMode1_" value="clamp-to-edge" />

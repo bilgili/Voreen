@@ -72,7 +72,7 @@ protected:
  */
 class NetworkConverter4to5 : public NetworkConverter {
 public:
-    virtual void convert(TiXmlElement* elem);
+    virtual void convert(TiXmlElement* networkElem);
 };
 
 /**
@@ -83,7 +83,7 @@ public:
  */
 class NetworkConverter5to6 : public NetworkConverter {
 public:
-    virtual void convert(TiXmlElement* elem);
+    virtual void convert(TiXmlElement* networkElem);
 };
 
 /**
@@ -94,7 +94,7 @@ public:
  */
 class NetworkConverter6to7 : public NetworkConverter {
 public:
-    virtual void convert(TiXmlElement* elem);
+    virtual void convert(TiXmlElement* networkElem);
 };
 
 /**
@@ -105,7 +105,7 @@ public:
  */
 class NetworkConverter7to8 : public NetworkConverter {
 public:
-    virtual void convert(TiXmlElement* elem);
+    virtual void convert(TiXmlElement* networkElem);
 };
 
 /**
@@ -116,7 +116,7 @@ public:
  */
 class NetworkConverter8to9 : public NetworkConverter {
 public:
-    virtual void convert(TiXmlElement* elem);
+    virtual void convert(TiXmlElement* networkElem);
 };
 
 /**
@@ -127,7 +127,7 @@ public:
  */
 class NetworkConverter9to10 : public NetworkConverter {
 public:
-    virtual void convert(TiXmlElement* elem);
+    virtual void convert(TiXmlElement* networkElem);
 };
 
 /**
@@ -138,7 +138,7 @@ public:
  */
 class NetworkConverter10to11 : public NetworkConverter {
 public:
-    virtual void convert(TiXmlElement* elem);
+    virtual void convert(TiXmlElement* networkElem);
 };
 
 /**
@@ -146,7 +146,7 @@ public:
  */
 class NetworkConverter11to12 : public NetworkConverter {
 public:
-    virtual void convert(TiXmlElement* elem);
+    virtual void convert(TiXmlElement* networkElem);
     void convertVolumeContainer(TiXmlElement* workspaceNode);
 };
 
@@ -155,7 +155,7 @@ public:
  */
 class NetworkConverter12to13 : public NetworkConverter {
 public:
-    virtual void convert(TiXmlElement* elem);
+    virtual void convert(TiXmlElement* networkElem);
 };
 
 /**
@@ -163,7 +163,7 @@ public:
  */
 class NetworkConverter13to14 : public NetworkConverter {
 public:
-    virtual void convert(TiXmlElement* elem);
+    virtual void convert(TiXmlElement* networkElem);
 };
 
 /**
@@ -171,7 +171,15 @@ public:
  */
 class NetworkConverter14to15 : public NetworkConverter {
 public:
-    virtual void convert(TiXmlElement* elem);
+    virtual void convert(TiXmlElement* networkElem);
+};
+
+/**
+ * OptimizedProxyGeometry modes renaming.
+ */
+class NetworkConverter15to16 : public NetworkConverter {
+public:
+    virtual void convert(TiXmlElement* networkElem);
 };
 
 } // namespace

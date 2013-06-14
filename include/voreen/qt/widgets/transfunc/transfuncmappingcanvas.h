@@ -33,7 +33,6 @@
 
 #include <QWidget>
 #include <QMenu>
-#include <QThread>
 
 class QAction;
 class QColor;
@@ -49,28 +48,6 @@ class TransFunc1DKeys;
 class Volume;
 class Volume;
 
-/**
- * Background thread for calculating a histogram.
- */
-class VRN_QT_API HistogramThread : public QThread {
-    Q_OBJECT
-public:
-    HistogramThread(const VolumeBase* volume, int count, QObject* parent = 0);
-    void run();
-
-signals:
-    /**
-     * Emitted when histogram calculation is finished. Must always be connected and the
-     * receiving slot must take ownership of the VolumeHistogramIntensity object, as the
-     * HistogramThread will never delete the object.
-     */
-    void setHistogram(VolumeHistogramIntensity*);
-
-private:
-    const VolumeBase* volume_;
-    int count_;
-};
-
 // ------------------------------------------------------------------------- //
 
 /**
@@ -79,7 +56,7 @@ private:
  * down left mouse button. Furthermore keys can be splitted, merged and deleted. The color of a key
  * can also be changed.
  */
-class VRN_QT_API TransFuncMappingCanvas : public QWidget {
+class VRN_QT_API TransFuncMappingCanvas : public QWidget, public VolumeObserver {
     Q_OBJECT
 public:
     /**
@@ -217,6 +194,11 @@ public:
      * @param text caption of the y axis
      */
     void setYAxisText(const std::string& text);
+
+    // VolumeObserver methods:
+    virtual void volumeDelete(const VolumeBase* source);
+    virtual void volumeChange(const VolumeBase* source);
+    virtual void derivedDataThreadFinished(const VolumeBase* source, const VolumeDerivedData* derivedData);
 
 signals:
     /**
@@ -460,13 +442,13 @@ protected:
     QAction* resetAction_;      ///< action for reset transfer function context menu entry
     QAction* yAxisLogarithmicAction_;  ///< action for determining the scale on the histogram y-axis
 
-    HistogramThread* histogramThread_; ///< thread for calcultating the histogram in the background
     bool histogramNeedsUpdate_;        ///< volume was changed, histogram must be re-calculated
+    bool histogramThreadRunning_;
 
     const VolumeBase* volume_; ///< the currently assigned volume
 
 protected slots:
-    void setHistogram(VolumeHistogramIntensity* histogram);
+    void setHistogram(const VolumeHistogramIntensity* histogram);
 
 };
 

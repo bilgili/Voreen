@@ -50,7 +50,8 @@ public:
     /// Returns the null pointer, since this widget does not need a separate label.
     virtual CustomLabel* getNameLabel() const;
 
-    virtual void updateFromProperty();
+protected slots:
+    virtual void updateFromPropertySlot();
 
 private:
     void updateSelection();

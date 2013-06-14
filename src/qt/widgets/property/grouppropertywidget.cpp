@@ -114,7 +114,7 @@ void GroupPropertyWidget::hideGroup(bool toggled){
     }
 }
 
-void GroupPropertyWidget::updateFromProperty() {
+void GroupPropertyWidget::updateFromPropertySlot() {
     std::vector<QPropertyWidget*>::iterator it = propertyWidgets_.begin();
     while(it != propertyWidgets_.end()) {
         (*it)->updateFromProperty();

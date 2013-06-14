@@ -27,7 +27,7 @@
 #define VRN_RANDOMWALKER_H
 
 #include "voreen/core/processors/volumeprocessor.h"
-
+#include "voreen/core/ports/geometryport.h"
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/floatproperty.h"
@@ -36,7 +36,7 @@
 #include "voreen/core/properties/transfuncproperty.h"
 #include "voreen/core/properties/optionproperty.h"
 
-#include "voreen/core/ports/allports.h"
+
 #include "voreen/core/datastructures/geometry/pointsegmentlistgeometry.h"
 
 #include "voreen/core/processors/cache.h"
@@ -58,7 +58,7 @@ class RandomWalkerSolver;
 class RandomWalkerSeeds;
 class RandomWalkerWeights;
 
-/** 
+/**
  * Performs a semi-automatic volume segmentation using the 3D random walker algorithm.
  * User manual: http://voreen.uni-muenster.de/?q=random-walker
  *

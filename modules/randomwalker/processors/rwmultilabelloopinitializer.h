@@ -30,7 +30,9 @@
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 
 #include "voreen/core/properties/optionproperty.h"
-#include "voreen/core/ports/allports.h"
+
+#include "voreen/core/ports/geometryport.h"
+#include "voreen/core/ports/loopport.h"
 
 #include <string>
 #include "tgt/vector.h"

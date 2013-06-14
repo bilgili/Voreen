@@ -31,7 +31,7 @@
 #include "flowreenprocessor.h"
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/intproperty.h"
-
+#include "voreen/core/ports/volumeport.h"
 namespace voreen {
 
 class Volume;

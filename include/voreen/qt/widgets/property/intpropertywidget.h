@@ -38,7 +38,6 @@ Q_OBJECT;
 public:
     IntPropertyWidget(IntProperty* prop, QWidget* parent = 0, bool addVisibilityControl = true);
     virtual ~IntPropertyWidget();
-    void updateFromProperty();
     void setWidget(const int value, const int minValue, const int maxValue, const int stepping);
 
 public slots:
@@ -53,6 +52,10 @@ protected:
     virtual void mousePressEvent(QMouseEvent*);
     QMenu* instantValueChangeMenu_;
     QAction* instantValueChangeAction_;
+
+protected slots:
+    virtual void updateFromPropertySlot();
+
 };
 
 } // namespace

@@ -38,8 +38,8 @@ class StringOptionProperty;
 
 class VRN_CORE_API ClassificationModes {
 public:
-    static std::string getShaderDefineSamplerType(const std::string mode, const TransFunc* tf);
-    static std::string getShaderDefineFunction(const std::string mode);
+    static std::string getShaderDefineSamplerType(const std::string mode, const TransFunc* tf, const std::string& defineName = "TF_SAMPLER_TYPE");
+    static std::string getShaderDefineFunction(const std::string mode, const std::string& defineName = "RC_APPLY_CLASSIFICATION");
     static void bindTexture(const std::string mode, TransFunc* tf, float samplingStepSize);
     static bool usesTransferFunction(const std::string mode);
     static void fillProperty(StringOptionProperty* prop);

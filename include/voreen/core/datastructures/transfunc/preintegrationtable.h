@@ -30,7 +30,10 @@
 #include "tgt/vector.h"
 #include "tgt/texture.h"
 #include "voreen/core/datastructures/transfunc/transfunc1dkeys.h"
+#include "voreen/core/processors/imageprocessor.h"
+#include "voreen/core/utils/glsl.h"
 
+#include "tgt/textureunit.h"
 namespace voreen {
 
 /**
@@ -47,15 +50,22 @@ public:
      * @param resolution the resolution of the table in both directions (if <= 1 the resolution is set to 256)
      * @param d the segment length (= sampling step size) for which the pre-integration table is computed (if <= 0 the segment length is set to 1.0)
      * @param useIntegral Use integral functions to compute pre-integration table, which is faster but not quite as accurate.
+     * @param computeOnGPU Compute the pre-integration table texture on the GPU.
+     * @param program the shader program that is used to compute the pre-integration table on the GPU.
      */
-    PreIntegrationTable(const TransFunc1DKeys* transFunc, size_t resolution = 256, float d = 1.f, bool useIntegral = true);
+    PreIntegrationTable(TransFunc1DKeys* transFunc, size_t resolution = 256, float d = 1.f, bool useIntegral = true, bool computeOnGPU = false, tgt::Shader* program = 0);
 
     ~PreIntegrationTable();
 
     /**
      * Compute the pre-integrated table for the given transfer function.
      */
-    void computeTable();
+    void computeTable() const;
+
+    /**
+     * Compute the pre-integrated table on the GPU.
+     */
+    void computeTableGPU() const;
 
     /**
      * Return the value in the pre-integration table.
@@ -84,18 +94,21 @@ private:
     PreIntegrationTable();
 
     /// Generates the texture for the pre-integration table.
-    virtual void createTex() const;
+    virtual void createTexFromTable() const;
 
-    const TransFunc1DKeys* transFunc_; ///< the 1D transfer function that is used to compute the pre-integration table
+    TransFunc1DKeys* transFunc_; ///< the 1D transfer function that is used to compute the pre-integration table
 
-    size_t resolution_; ///< resolution of the pre-integrated table
-    float samplingStepSize_; ///< length of the segments
-    bool useIntegral_; ///< true for approximative (but faster) computation using integral functions
+    size_t resolution_;         ///< resolution of the pre-integrated table
+    float samplingStepSize_;    ///< length of the segments
+    bool useIntegral_;          ///< true for approximative (but faster) computation using integral functions
+    bool computeOnGPU_;         ///< if true this pre-integration table is computed on the GPU
 
-    tgt::vec4* table_; ///< the actual pre-integration table in row-major order
+    mutable tgt::vec4* table_; ///< the actual pre-integration table in row-major order
 
     mutable tgt::Texture* tex_; ///< texture for the pre-integration table, is generated internally
 
+    mutable tgt::Shader* program_; ///< shader program to compute the pre-integration table on the gpu
+    mutable RenderTarget renderTarget_; ///< internal render target for computing the pre-integration table on the gpu
 };
 
 } //namespace

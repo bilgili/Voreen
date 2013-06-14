@@ -40,8 +40,6 @@ Q_OBJECT
 public:
     FloatMat4PropertyWidget(FloatMat4Property*, QWidget* = 0);
 
-    void updateFromProperty();
-
 protected:
     virtual std::string getExtension() const { return "vm4"; }
     virtual void saveMatrix(const std::string& filename) const throw (SerializationException);
@@ -71,6 +69,7 @@ protected:
     QLineEdit* w4_;
 
 protected slots:
+    virtual void updateFromPropertySlot();
     void updateValue();
     void identity();
 };

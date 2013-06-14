@@ -64,6 +64,8 @@ protected:
 
     int height_;
     std::vector<unsigned char> prevData_;
+
+    static const std::string loggerCat_;
 };
 
 } // namespace voreen

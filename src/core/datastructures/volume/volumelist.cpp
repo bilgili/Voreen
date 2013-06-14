@@ -26,6 +26,7 @@
 #include "voreen/core/datastructures/volume/volumelist.h"
 
 #include "voreen/core/datastructures/volume/volume.h"
+#include "voreen/core/utils/hashing.h"
 
 using std::vector;
 
@@ -147,6 +148,15 @@ size_t VolumeList::size() const {
 
 bool VolumeList::empty() const {
     return (size() == 0);
+}
+
+std::string VolumeList::getHash() const {
+    if(empty())
+        return VoreenHash::getHash("emptylist");
+    std::stringstream stream;
+    for( std::vector<VolumeBase*>::const_iterator vol = volumes_.begin(); vol != volumes_.end(); vol++)
+        stream << (*vol)->getHash();
+    return VoreenHash::getHash(stream.str());
 }
 
 void VolumeList::notifyVolumeAdded(const VolumeBase* handle) {

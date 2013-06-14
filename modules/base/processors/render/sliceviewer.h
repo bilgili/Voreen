@@ -123,6 +123,7 @@ protected:
 
     /// Property containing the available alignments: xy (axial), xz (coronal), yz (sagittal)
     OptionProperty<SliceAlignment> sliceAlignment_;
+    IntProperty channel_;                   ///< Property determining the volume channel to display
     IntProperty sliceIndex_;                ///< Property containing the currently selected slice
     IntProperty numGridRows_;               ///< Property containing the current row count of the displayed grid
     IntProperty numGridCols_;               ///< Property containing the current column count of the displayed grid

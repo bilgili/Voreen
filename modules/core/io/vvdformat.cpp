@@ -129,7 +129,7 @@ VvdObject::VvdObject(const VolumeBase* vh, std::string rawFilename) : rawData_(v
 
 Volume* VvdObject::createVolume(std::string directory) {
     VolumeRepresentation* volume;
-    volume = (VolumeRAM*) new VolumeDisk(directory+"/"+rawData_.getFilename(), rawData_.getFormat(), rawData_.getDimensions());
+    volume = (VolumeRAM*) new VolumeDiskRaw(directory+"/"+rawData_.getFilename(), rawData_.getFormat(), rawData_.getDimensions());
 
     Volume* vh = new Volume(volume, &metaData_, derivedData_);
 

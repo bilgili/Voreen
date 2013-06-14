@@ -127,6 +127,7 @@ private:
     void zoomEvent(tgt::MouseEvent* e);
     void shiftEvent(tgt::MouseEvent* e);
     void keyEvent(tgt::KeyEvent* e);
+    void handleMultitouch(tgt::TouchEvent* e);
 
     // Writes the states of the fp event properties to the interaction handler.
     void updateFpKeySettings();
@@ -148,6 +149,7 @@ private:
     EventProperty<CameraInteractionHandler>* zoomEvent_;
     EventProperty<CameraInteractionHandler>* shiftEvent_;
     EventProperty<CameraInteractionHandler>* wheelZoomEvent_;
+    EventProperty<CameraInteractionHandler>* multiTouchEvent_;
 
     // first-person properties
     EventProperty<CameraInteractionHandler>* moveForwardEvent_;

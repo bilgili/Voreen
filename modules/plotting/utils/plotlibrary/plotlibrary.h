@@ -304,7 +304,7 @@ public:
      * \param   axis            axis
      * \param   helperLines     flag whether to render helper lines
      **/
-    virtual void renderAxisScales(Axis axis, bool helperLines, const std::string& label = "") = 0;
+    virtual void renderAxisScales(Axis axis, bool helperLines, const std::string& label = "", plot_t offset = 0) = 0;
 
     /**
      * \brief   Renders the x axis scales using labels from \a data, and optionally helperlines.

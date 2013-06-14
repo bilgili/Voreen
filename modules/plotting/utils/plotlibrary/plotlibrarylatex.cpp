@@ -1210,7 +1210,7 @@ void PlotLibraryLatex::renderAxes() {
     }
 }
 
-void PlotLibraryLatex::renderAxisScales(Axis axis, bool helperLines, const std::string& label) {
+void PlotLibraryLatex::renderAxisScales(Axis axis, bool helperLines, const std::string& label, plot_t offset) {
     tgt::dvec2 step = updateScaleSteps(axis);
     latexColor_ = drawingColor_;
     plot_t xl = domain_[0].getLeft();    plot_t xr = domain_[0].getRight();
@@ -1236,7 +1236,7 @@ void PlotLibraryLatex::renderAxisScales(Axis axis, bool helperLines, const std::
             plot_t pos = i;//(logarithmicAxisFlags_[axis] ? convertFromLogCoordinates(i, axis) : i);
             stream.str("");
             stream.clear();
-            stream << round(pos, step.y);
+            stream << round(pos + offset, step.y);
             if (axis == X_AXIS) {
                 xAxisLabelGroup_.addLabel(stream.str(),
                                           convertPlotCoordinatesToViewport3(tgt::dvec3(i, yl, zr)),

@@ -24,6 +24,7 @@
  ***********************************************************************************/
 
 #include "voreen/core/datastructures/volume/volumederiveddata.h"
+#include "voreen/core/datastructures/volume/volume.h"
 
 namespace voreen {
 

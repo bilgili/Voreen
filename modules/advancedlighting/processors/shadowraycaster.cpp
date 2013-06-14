@@ -86,7 +86,7 @@ ShadowRaycaster::ShadowRaycaster()
     }
 
     addProperty(lightPosition_);
-    lightPosition_.onChange(Call1ParMemberAction<LightVolumeGenerator, FloatVec4Property*>(lightVolumeGenerator_, &LightVolumeGenerator::setLightPosition, &lightPosition_));
+    lightPosition_.onChange(Call1ParMemberAction<LightVolumeGenerator, LightSourceProperty*>(lightVolumeGenerator_, &LightVolumeGenerator::setLightPosition, &lightPosition_));
     lightPosition_.setVisible(true);
 
     addProperty(camera_);
@@ -593,7 +593,7 @@ void LightVolumeGenerator::transferFunctionChanged() {
     recomputeNeeded_ = true;
 }
 
-void LightVolumeGenerator::setLightPosition(FloatVec4Property* lightPosition) {
+void LightVolumeGenerator::setLightPosition(LightSourceProperty* lightPosition) {
     // do nothing if lightposition is unchanged
     if (lightPosition_.get() == lightPosition->get())
         return;

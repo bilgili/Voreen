@@ -25,6 +25,9 @@
 
 #include "voreen/qt/progressdialog.h"
 
+#include <QCoreApplication>
+#include <QThread>
+
 namespace {
     const int stepGranularity = 200; // number of steps on the QProgressDialog
     const int minimalUpdateWait = 50; // time to wait between progress bar updates
@@ -51,6 +54,11 @@ ProgressDialog::~ProgressDialog() {
 }
 
 void ProgressDialog::update() {
+    // GUI operations are only allowed in the GUI thread
+    bool isGuiThread = (QThread::currentThread() == QCoreApplication::instance()->thread());
+    if (!isGuiThread)
+        return;
+
     int intProgress = static_cast<int>(progress_ * stepGranularity);
     if ((time_->elapsed() > minimalUpdateWait || intProgress == progressDialog_->maximum())
         && progressDialog_->value() != intProgress)
@@ -61,6 +69,11 @@ void ProgressDialog::update() {
 }
 
 void ProgressDialog::show() {
+    // GUI operations are only allowed in the GUI thread
+    bool isGuiThread = (QThread::currentThread() == QCoreApplication::instance()->thread());
+    if (!isGuiThread)
+        return;
+
     setProgress(0.f);
     progressDialog_->show();
     progressDialog_->raise();
@@ -68,21 +81,41 @@ void ProgressDialog::show() {
 }
 
 void ProgressDialog::hide() {
+    // GUI operations are only allowed in the GUI thread
+    bool isGuiThread = (QThread::currentThread() == QCoreApplication::instance()->thread());
+    if (!isGuiThread)
+        return;
+
     setProgress(1.f);
     progressDialog_->hide();
 }
 
 void ProgressDialog::setMessage(const std::string& message) {
+    // GUI operations are only allowed in the GUI thread
+    bool isGuiThread = (QThread::currentThread() == QCoreApplication::instance()->thread());
+    if (!isGuiThread)
+        return;
+
     ProgressBar::setMessage(message);
     progressDialog_->setLabelText(QString::fromStdString(message));
 }
 
 void ProgressDialog::setTitle(const std::string& title) {
+    // GUI operations are only allowed in the GUI thread
+    bool isGuiThread = (QThread::currentThread() == QCoreApplication::instance()->thread());
+    if (!isGuiThread)
+        return;
+
     ProgressBar::setTitle(title);
     progressDialog_->setWindowTitle(QString::fromStdString(title));
 }
 
 void ProgressDialog::forceUpdate() {
+    // GUI operations are only allowed in the GUI thread
+    bool isGuiThread = (QThread::currentThread() == QCoreApplication::instance()->thread());
+    if (!isGuiThread)
+        return;
+
     progressDialog_->repaint();
 }
 

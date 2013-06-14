@@ -65,8 +65,9 @@ class ColorMapPropertyWidget : public QPropertyWidget {
     Q_OBJECT
 public:
     ColorMapPropertyWidget(ColorMapProperty* prop, QWidget* parent = 0);
-    void updateFromProperty();
 
+protected slots:
+    virtual void updateFromPropertySlot();
 
 private slots:
     void selectColormap(int index);

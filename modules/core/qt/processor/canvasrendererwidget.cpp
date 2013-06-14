@@ -63,7 +63,7 @@ CanvasRendererWidget::~CanvasRendererWidget() {
 
 }
 
-void CanvasRendererWidget::initialize() throw (VoreenException) {
+void CanvasRendererWidget::initialize() throw (VoreenException){
     QProcessorWidget::initialize();
 
     CanvasRenderer* canvasRenderer = dynamic_cast<CanvasRenderer*>(processor_);
@@ -80,6 +80,7 @@ void CanvasRendererWidget::initialize() throw (VoreenException) {
     }
 
     canvasWidget_ = new tgt::QtCanvas("", tgt::ivec2(getSize().x, getSize().y), tgt::GLCanvas::RGBADD, this, true, 0);
+    VoreenApplicationQt::qtApp()->sendTouchEventsTo(canvasWidget_);
     canvasWidget_->setMinimumSize(64, 64);
     canvasWidget_->setMouseTracking(true); // for receiving mouse move events without a pressed button
 
@@ -126,6 +127,14 @@ void CanvasRendererWidget::keyPressEvent(QKeyEvent* event) {
             }
         }
     }
+}
+
+bool CanvasRendererWidget::event(QEvent *event) {
+    if(event->type() == QEvent::WinIdChange && canvasWidget_) {
+        VoreenApplicationQt::qtApp()->sendTouchEventsTo(canvasWidget_);
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 void CanvasRendererWidget::resizeEvent(QResizeEvent* event) {

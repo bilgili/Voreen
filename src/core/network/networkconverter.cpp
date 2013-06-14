@@ -412,4 +412,39 @@ void NetworkConverter14to15::convert(TiXmlElement* elem) {
     changeProcessorType(elem, "VolumeCollectionModalityFilter", "VolumeListModalityFilter");
 }
 
+
+void NetworkConverter15to16::convert(TiXmlElement* networkElem) {
+    // convert OptimizedProxyGeometry.modeString values
+    TiXmlElement* processorsNode = networkElem->FirstChildElement("Processors");
+    if (!processorsNode) {
+        LWARNING("No <Processors> node found in <ProcessorNetwork>");
+        return;
+    }
+    for (TiXmlElement* node = processorsNode->FirstChildElement("Processor"); node; node = node->NextSiblingElement("Processor")) {
+        const std::string* type = node->Attribute(std::string("type"));
+        if (type && *type == "OptimizedProxyGeometry") {
+            TiXmlElement* propertiesNode = node->FirstChildElement("Properties");
+            if (propertiesNode) {
+                for (TiXmlElement* propertyNode = propertiesNode->FirstChildElement("Property"); propertyNode; propertyNode = propertyNode->NextSiblingElement("Property")) {
+                    const std::string* propName = propertyNode->Attribute(std::string("name"));
+                    if (propName && *propName == "modeString") {
+                        const std::string* valueStr = propertyNode->Attribute(std::string("value"));
+                        if (valueStr && *valueStr == "cube")
+                            propertyNode->SetAttribute("value", "boundingbox");
+                        else if (valueStr && *valueStr == "mincube")
+                            propertyNode->SetAttribute("value", "minboundingbox");
+                        else if (valueStr && *valueStr == "maximalcubes")
+                            propertyNode->SetAttribute("value", "visiblebricks");
+                        else if (valueStr && *valueStr == "octreemax")
+                            propertyNode->SetAttribute("value", "octreebricks");
+                    }
+                }
+            }
+        }
+    }
+
+
+
+}
+
 } // namespace

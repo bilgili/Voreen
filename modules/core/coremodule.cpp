@@ -107,6 +107,7 @@
 #include "voreen/core/datastructures/volume/volumehash.h"
 #include "voreen/core/datastructures/volume/volumeminmax.h"
 #include "voreen/core/datastructures/volume/volumepreview.h"
+#include "voreen/core/datastructures/volume/histogram.h"
 
 // ROI
 #include "voreen/core/datastructures/roi/roicube.h"
@@ -114,7 +115,7 @@
 #include "voreen/core/datastructures/roi/roisphere.h"
 #include "voreen/core/datastructures/roi/roiraster.h"
 #include "voreen/core/datastructures/roi/roiunion.h"
-#include "voreen/core/datastructures/roi/roisubstract.h"
+#include "voreen/core/datastructures/roi/roisubtract.h"
 #include "voreen/core/datastructures/roi/roigraph.h"
 
 // volume i/o
@@ -237,6 +238,7 @@ CoreModule::CoreModule(const std::string& modulePath)
     registerSerializableType(new LinkEvaluatorIVec3Id());
     registerSerializableType(new LinkEvaluatorIVec4Id());
 
+    registerSerializableType(new LinkEvaluatorLightSourceId());
     registerSerializableType(new LinkEvaluatorVec2Id());
     registerSerializableType(new LinkEvaluatorVec3Id());
     registerSerializableType(new LinkEvaluatorVec4Id());
@@ -317,6 +319,7 @@ CoreModule::CoreModule(const std::string& modulePath)
     registerSerializableType(new LinkEvaluatorCameraPosId());
     registerSerializableType(new LinkEvaluatorCameraLookId());
     registerSerializableType(new LinkEvaluatorCameraFocusId());
+    registerSerializableType(new LinkEvaluatorCameraFrustumId());
 
     registerSerializableType(new LinkEvaluatorTransFuncId());
     registerSerializableType(new LinkEvaluatorButtonId());
@@ -340,6 +343,8 @@ CoreModule::CoreModule(const std::string& modulePath)
     registerSerializableType(new VolumeMinMax());
     registerSerializableType(new VolumeHash());
     registerSerializableType(new VolumePreview());
+    registerSerializableType(new VolumeHistogramIntensity());
+    registerSerializableType(new VolumeHistogramIntensityGradient());
 
     // meta data
     registerSerializableType(new BoolMetaData());
@@ -379,7 +384,7 @@ CoreModule::CoreModule(const std::string& modulePath)
     registerSerializableType(new ROISphere());
     registerSerializableType(new ROIRaster());
     registerSerializableType(new ROIUnion());
-    registerSerializableType(new ROISubstract());
+    registerSerializableType(new ROISubtract());
     registerSerializableType(new ROIGraph());
 
     // io

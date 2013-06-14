@@ -40,12 +40,12 @@ HalfAngleSlicer::HalfAngleSlicer()
     , lightCamera_(tgt::Camera(tgt::vec3(0.f, -3.5f, -3.5f), tgt::vec3(0.f, 0.f, 0.f), tgt::vec3(0.f, 1.f, 0.f)))
     , eyeCamera_("eyeCamera", "Eye Camera", tgt::Camera(tgt::vec3(0.f, 0.f, 3.5f), tgt::vec3(0.f, 0.f, 0.f), tgt::vec3(0.f, 1.f, 0.f)))
     , cameraHandler_("cameraHandler", "Camera Handler", &eyeCamera_)
-    , halfLight_("halfLight", "Light source position", tgt::vec4(0.f, -3.5f, -3.5f, 1.f), tgt::vec4(-15), tgt::vec4(15))
+    , halfLight_("halfLight", "Light source position", tgt::vec4(0.f, -3.5f, -3.5f, 1.f))
     , invert_(false)
 {
     removeProperty(&camera_);
+
     addInteractionHandler(cameraHandler_);
-    halfLight_.setViews(Property::View(Property::LIGHT_POSITION | Property::DEFAULT));
     addProperty(shaderProp_);
     addProperty(eyeCamera_);
     addProperty(halfLight_);
@@ -61,6 +61,7 @@ Processor* HalfAngleSlicer::create() const {
 void HalfAngleSlicer::initialize() throw (tgt::Exception) {
     VolumeSlicer::initialize();
     compile();
+    halfLight_.setCamera(&eyeCamera_);
 }
 
 void HalfAngleSlicer::compile() {

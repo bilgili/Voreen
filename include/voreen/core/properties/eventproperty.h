@@ -120,6 +120,16 @@ public:
     bool receivesKeyEvents() const;
 
     /**
+     * Determines whether the event property listens to touch events.
+     */
+    void setReceivesTouchEvents(bool touchEvents);
+
+    /**
+     * Returns whether the event property listens to touch events.
+     */
+    bool receivesTouchEvents() const;
+
+    /**
      * Determines the mouse buttons the property reacts to.
      *
      * @see accepts
@@ -221,6 +231,7 @@ protected:
 
     bool receivesMouseEvents_;  ///< Determines whether mouse event receiving is enabled for this processor.
     bool receivesKeyEvents_;    ///< Determines whether key event receiving is enabled for this processor.
+    bool receivesTouchEvents_;  ///< Determines whether touch event receiving is enabled for this processor.
     bool enabled_;              ///< If false, the property does not receive any events.
 
     tgt::MouseEvent::MouseButtons mouseButtons_; ///< Buttons the property reacts to
@@ -454,14 +465,19 @@ EventProperty<T>::EventProperty(const std::string& id, const std::string& guiNam
                                 T* target, void (T::*fptTouchEvent)(tgt::TouchEvent*),
                                 bool shareEvents, bool enabled)
     : EventPropertyBase(id, guiName,
-        true, true, shareEvents, enabled)
+        false, false,
+        tgt::MouseEvent::MOUSE_BUTTON_NONE, tgt::MouseEvent::ACTION_NONE,
+        tgt::KeyEvent::K_UNKNOWN, tgt::Event::MODIFIER_NONE,
+        shareEvents, enabled)
     , target_(target)
     , fptMouseEvent_(0)
     , fptKeyEvent_(0)
-    , fptTouchEvent_(fptTouchEvent_)
+    , fptTouchEvent_(fptTouchEvent)
     , fptEvent_(0)
     , fptOnChange_(0)
 {
+    // TODO pass this via constructor
+    receivesTouchEvents_ = true;
     tgtAssert(target_ && fptTouchEvent_, "Passed target or function pointer invalid");
 }
 

@@ -41,6 +41,7 @@
 #include <QMessageBox>
 #include <QDir>
 #include <QSettings>
+#include <QThread>
 
 using std::string;
 
@@ -140,7 +141,11 @@ tgt::Timer* VoreenApplicationQt::createTimer(tgt::EventHandler* handler) const {
 }
 
 ProgressDialog* VoreenApplicationQt::createProgressDialog() const {
-    return new ProgressDialog(getMainWindow());
+    // creation of widgets only allowed in GUI thread
+    if (QThread::currentThread() == QCoreApplication::instance()->thread())
+        return new ProgressDialog(getMainWindow());
+    else
+        return 0;
 }
 
 void VoreenApplicationQt::registerQtModule(VoreenModuleQt* qtModule) {

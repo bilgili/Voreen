@@ -69,6 +69,13 @@ void VolumeListSave::initialize() throw (tgt::Exception) {
     volumeSerializerPopulator_ = new VolumeSerializerPopulator();
 }
 
+void VolumeListSave::deinitialize() throw (tgt::Exception) {
+    delete volumeSerializerPopulator_;
+    volumeSerializerPopulator_ = 0;
+
+    VolumeProcessor::deinitialize();
+}
+
 void VolumeListSave::process() {
     if (inport_.hasChanged() && continousSave_.get())
         saveVolumeList();
@@ -117,5 +124,6 @@ void VolumeListSave::saveVolumeList() {
 
     }
 }
+
 
 }   // namespace

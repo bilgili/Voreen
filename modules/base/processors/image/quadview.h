@@ -63,6 +63,8 @@ protected:
     void portSizeReceiveChanged();
 
     void mouseMove(tgt::MouseEvent* e);
+    void distributeMouseEvent(tgt::MouseEvent* me);
+    void distributeTouchEvent(tgt::TouchEvent* te);
 
     BoolProperty showGrid_;
     FloatVec4Property gridColor_;

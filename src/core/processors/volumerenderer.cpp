@@ -52,7 +52,6 @@ VolumeRenderer::VolumeRenderer()
     , materialSpecular_("materialSpecular", "Specular material color", tgt::vec4(1.f, 1.f, 1.f, 1.f))
     , materialShininess_("materialShininess", "Shininess", 60.f, 0.1f, 128.f)
 {
-    lightPosition_.setViews(Property::View(Property::LIGHT_POSITION | Property::DEFAULT));
     lightAmbient_.setViews(Property::COLOR);
     lightDiffuse_.setViews(Property::COLOR);
     lightSpecular_.setViews(Property::COLOR);
@@ -86,7 +85,7 @@ bool VolumeRenderer::bindVolumes(tgt::Shader* shader, const std::vector<VolumeSt
         const VolumeStruct& volumeStruct = volumes[i];
         const VolumeGL* volumeGL = volumeStruct.volume_->getRepresentation<VolumeGL>();
         if (!volumeGL || !volumeGL->getTexture()) {
-            LWARNING("No volume texture while binding volumes");
+            LERROR("OpenGL volume not available");
             success = false;
             continue;
         }

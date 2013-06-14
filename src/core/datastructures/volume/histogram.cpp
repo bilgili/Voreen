@@ -25,28 +25,153 @@
 
 #include "voreen/core/datastructures/volume/histogram.h"
 #include "voreen/core/datastructures/volume/volume.h"
+#include "voreen/core/datastructures/volume/volumeram.h"
+#include "voreen/core/datastructures/volume/volumedisk.h"
+#include "voreen/core/datastructures/volume/operators/volumeoperatorgradient.h"
 
 #include "voreen/core/io/serialization/xmlserializer.h"
 #include "voreen/core/io/serialization/xmldeserializer.h"
 
 namespace voreen {
 
-Histogram1D createHistogram1DFromVolume(const VolumeBase* handle, int bucketCount) {
+using tgt::vec3;
+using tgt::ivec3;
+
+Histogram1D createHistogram1DFromVolume(const VolumeBase* handle, int bucketCount, size_t channel /*= 0*/) {
+    RealWorldMapping rwm = handle->getRealWorldMapping();
+
+    const VolumeMinMax* volumeMinMax = handle->getDerivedData<VolumeMinMax>();
+    tgtAssert(channel < volumeMinMax->getNumChannels(), "invalid channel");
+    float min = volumeMinMax->getMinNormalized(channel);
+    float max = volumeMinMax->getMaxNormalized(channel);
+    min = rwm.normalizedToRealWorld(min);
+    max = rwm.normalizedToRealWorld(max);
+
+    Histogram1D h(min, max, bucketCount);
+
+    // prefer RAM over disk representation, but only if RAM volume is already present
+    const VolumeRAM* volumeRam = 0;
+    const VolumeDisk* volumeDisk = 0;
+    if (handle->hasRepresentation<VolumeRAM>())
+        volumeRam = handle->getRepresentation<VolumeRAM>();
+    else if (handle->hasRepresentation<VolumeDisk>())
+        volumeDisk = handle->getRepresentation<VolumeDisk>();
+    else {
+        LWARNINGC("voreen.Histogram", "Unable to compute 1D histogram: neither disk nor ram represenation available");
+        return h;
+    }
+    tgtAssert(volumeRam || volumeDisk, "no representation");
+
+    // iterate over slices
+    tgt::svec3 dims = handle->getDimensions();
+    tgt::svec3 pos;
+    for (pos.z = 0; pos.z < dims.z; ++pos.z) {
+        try {
+            boost::this_thread::sleep(boost::posix_time::seconds(0));
+        }
+        catch(boost::thread_interrupted&)
+        {
+            throw boost::thread_interrupted();
+        }
+
+        if (volumeRam) {
+            // access volume data in RAM directly
+            for (pos.y = 0; pos.y < dims.y; ++pos.y) {
+                for (pos.x = 0; pos.x < dims.x; ++pos.x) {
+                    float val = volumeRam->getVoxelNormalized(pos, channel);
+                    val = rwm.normalizedToRealWorld(val);
+                    h.addSample(val);
+                }
+            }
+        }
+        else if (volumeDisk) {
+            try {
+                // temporarily load current slice into RAM
+                VolumeRAM* sliceVolume = volumeDisk->loadSlices(pos.z, pos.z);
+                tgtAssert(sliceVolume, "null pointer returned (exception expected)");
+                for (pos.y = 0; pos.y < dims.y; ++pos.y) {
+                    for (pos.x = 0; pos.x < dims.x; ++pos.x) {
+                        float val = sliceVolume->getVoxelNormalized(tgt::svec3(pos.x, pos.y, 0), channel);
+                        val = rwm.normalizedToRealWorld(val);
+                        h.addSample(val);
+                    }
+                }
+                delete sliceVolume;
+            }
+            catch (tgt::Exception& e) {
+                LWARNINGC("voreen.Histogram", "Unable to compute 1D histogram: failed to load slice from disk volume: " + std::string(e.what()));
+                return h;
+            }
+        }
+        else {
+            tgtAssert(false, "should never get here");
+        }
+    }
+
+    return h;
+}
+
+//-----------------------------------------------------------------------------
+
+Histogram2D createHistogram2DFromVolume(const VolumeBase* handle, int bucketCountIntensity, int bucketCountGradient) {
     const VolumeRAM* vol = handle->getRepresentation<VolumeRAM>();
     RealWorldMapping rwm = handle->getRealWorldMapping();
+    ivec3 dims = vol->getDimensions();
+    vec3 sp = handle->getSpacing();
 
     float min = handle->getDerivedData<VolumeMinMax>()->getMinNormalized();
     float max = handle->getDerivedData<VolumeMinMax>()->getMaxNormalized();
     min = rwm.normalizedToRealWorld(min);
     max = rwm.normalizedToRealWorld(max);
 
-    Histogram1D h(min, max, bucketCount);
+    float minGradLength = 0.0f; // always 0
+    float maxGradLength = 0.0f;
 
-    for(size_t i=0; i<vol->getNumVoxels(); i++) {
-        float v = vol->getVoxelNormalized(i);
-        v = rwm.normalizedToRealWorld(v);
+    //TODO: improve performance
+    ivec3 pos;
+    for (pos.z = 0; pos.z < dims.z; ++pos.z) {
+        try {
+            boost::this_thread::sleep(boost::posix_time::seconds(0));
+        }
+        catch(boost::thread_interrupted&)
+        {
+            throw boost::thread_interrupted();
+        }
+        for (pos.y = 0; pos.y < dims.y; ++pos.y) {
+            for (pos.x = 0; pos.x < dims.x; ++pos.x) {
+                //vec3 grad = VolumeOperatorGradient::calcGradientCentralDifferences(vol, sp, pos);
+                vec3 grad = VolumeOperatorGradient::calcGradientSobel(vol, sp, pos);
 
-        h.addSample(v);
+                float nlength = tgt::length(grad) * rwm.getScale();
+
+                if (nlength > maxGradLength)
+                    maxGradLength = nlength;
+            }
+        }
+    }
+
+    Histogram2D h(min, max, bucketCountIntensity, minGradLength, maxGradLength, bucketCountGradient);
+    for (pos.z = 0; pos.z < dims.z; ++pos.z) {
+        try {
+            boost::this_thread::sleep(boost::posix_time::seconds(0));
+        }
+        catch(boost::thread_interrupted&)
+        {
+            throw boost::thread_interrupted();
+        }
+        for (pos.y = 0; pos.y < dims.y; ++pos.y) {
+            for (pos.x = 0; pos.x < dims.x; ++pos.x) {
+                //vec3 grad = VolumeOperatorGradient::calcGradientCentralDifferences(vol, sp, pos);
+                vec3 grad = VolumeOperatorGradient::calcGradientSobel(vol, sp, pos);
+
+                float nlength = tgt::length(grad) * rwm.getScale();
+
+                float v = vol->getVoxelNormalized(pos);
+                v = rwm.normalizedToRealWorld(v);
+
+                h.addSample(v, nlength);
+            }
+        }
     }
 
     return h;
@@ -56,81 +181,110 @@ Histogram1D createHistogram1DFromVolume(const VolumeBase* handle, int bucketCoun
 
 VolumeHistogramIntensity::VolumeHistogramIntensity() :
     VolumeDerivedData(),
-    hist_(0.0f, 1.0f, 1)
+    histograms_()
 {}
 
-VolumeHistogramIntensity::VolumeHistogramIntensity(const VolumeHistogramIntensity& h) : hist_(h.hist_) {
+VolumeHistogramIntensity::VolumeHistogramIntensity(const VolumeHistogramIntensity& h) : histograms_() {
 }
 
-VolumeHistogramIntensity::VolumeHistogramIntensity(const Histogram1D& h) : hist_(h) {
+VolumeHistogramIntensity::VolumeHistogramIntensity(const Histogram1D& h) {
+    histograms_.push_back(h);
 }
 
-VolumeHistogramIntensity::VolumeHistogramIntensity(const VolumeBase* vol, int bucketCount) : hist_(createHistogram1DFromVolume(vol, bucketCount)) {
-}
+VolumeHistogramIntensity::VolumeHistogramIntensity(const std::vector<Histogram1D>& histograms) :
+    histograms_(histograms)
+{}
 
 VolumeDerivedData* VolumeHistogramIntensity::createFrom(const VolumeBase* handle) const {
     tgtAssert(handle, "no volume");
     VolumeHistogramIntensity* h = new VolumeHistogramIntensity();
-    Histogram1D hist = createHistogram1DFromVolume(handle, 256);
-    h->hist_ = hist;
+    for (size_t channel = 0; channel < handle->getNumChannels(); channel++) {
+        Histogram1D hist = createHistogram1DFromVolume(handle, 256, channel);
+        h->histograms_.push_back(hist);
+    }
     return h;
 }
 
-size_t VolumeHistogramIntensity::getBucketCount() const {
-    return hist_.getNumBuckets();
+size_t VolumeHistogramIntensity::getNumChannels() const {
+    return histograms_.size();
 }
 
-uint64_t VolumeHistogramIntensity::getValue(int bucket) const {
-    return hist_.getBucket(bucket);
+size_t VolumeHistogramIntensity::getBucketCount(size_t channel) const {
+    tgtAssert(channel < histograms_.size(), "invalid channel");
+    return histograms_.at(channel).getNumBuckets();
 }
 
-uint64_t VolumeHistogramIntensity::getValue(size_t bucket) const {
-    return getValue(static_cast<int>(bucket));
+uint64_t VolumeHistogramIntensity::getValue(int bucket, size_t channel) const {
+    tgtAssert(channel < histograms_.size(), "invalid channel");
+    return histograms_.at(channel).getBucket(bucket);
 }
 
-uint64_t VolumeHistogramIntensity::getValue(float i) const {
-    size_t bucketCount = hist_.getNumBuckets();
+uint64_t VolumeHistogramIntensity::getValue(size_t bucket, size_t channel) const {
+    tgtAssert(channel < histograms_.size(), "invalid channel");
+    return getValue(static_cast<int>(bucket), channel);
+}
+
+uint64_t VolumeHistogramIntensity::getValue(float i, size_t channel) const {
+    tgtAssert(channel < histograms_.size(), "invalid channel");
+    size_t bucketCount = histograms_.at(channel).getNumBuckets();
     float m = (bucketCount - 1.f);
     int bucket = static_cast<int>(floor(i * m));
-    return getValue(bucket);
+    return getValue(bucket, channel);
 }
 
-float VolumeHistogramIntensity::getNormalized(int i) const {
-    return hist_.getBucketNormalized(i);
+float VolumeHistogramIntensity::getNormalized(int i, size_t channel) const {
+    tgtAssert(channel < histograms_.size(), "invalid channel");
+    return histograms_.at(channel).getBucketNormalized(i);
 }
 
-float VolumeHistogramIntensity::getNormalized(float i) const {
-    size_t bucketCount = hist_.getNumBuckets();
+float VolumeHistogramIntensity::getNormalized(float i, size_t channel) const {
+    tgtAssert(channel < histograms_.size(), "invalid channel");
+    size_t bucketCount = histograms_.at(channel).getNumBuckets();
     float m = (bucketCount - 1.f);
     int bucket = static_cast<int>(floor(i * m));
-    return getNormalized(bucket);
+    return getNormalized(bucket, channel);
 }
 
-float VolumeHistogramIntensity::getLogNormalized(int i) const {
-     return (logf(static_cast<float>(1+hist_.getBucket(i)) ) / logf( static_cast<float>(1+hist_.getMaxBucket())));
+float VolumeHistogramIntensity::getLogNormalized(int i, size_t channel) const {
+    tgtAssert(channel < histograms_.size(), "invalid channel");
+    const Histogram1D& hist = histograms_.at(channel);
+    return (logf(static_cast<float>(1+hist.getBucket(i)) ) / logf( static_cast<float>(1+hist.getMaxBucket())));
 }
 
-float VolumeHistogramIntensity::getLogNormalized(float i) const {
-    size_t bucketCount = hist_.getNumBuckets();
+float VolumeHistogramIntensity::getLogNormalized(float i, size_t channel) const {
+    tgtAssert(channel < histograms_.size(), "invalid channel");
+    size_t bucketCount = histograms_.at(channel).getNumBuckets();
     float m = (bucketCount - 1.f);
     int bucket = static_cast<int>(floor(i * m));
-    return getLogNormalized(bucket);
+    return getLogNormalized(bucket, channel);
 }
 
 void VolumeHistogramIntensity::serialize(XmlSerializer& s) const  {
-    s.serialize("histogram", hist_);
+    s.serialize("histograms", histograms_, "channel");
 }
 
 void VolumeHistogramIntensity::deserialize(XmlDeserializer& s) {
-    s.deserialize("histogram", hist_);
+    try {
+        s.deserialize("histograms", histograms_, "channel");
+    }
+    catch (SerializationException& /*e*/) {
+        // try to deserialize old format (single channel)
+        Histogram1D hist;
+        s.deserialize("histogram", hist);
+
+        histograms_.clear();
+        histograms_.push_back(hist);
+    }
 }
 
-const Histogram1D& VolumeHistogramIntensity::getHistogram() const {
-    return hist_;
+const Histogram1D& VolumeHistogramIntensity::getHistogram(size_t channel) const {
+    tgtAssert(channel < histograms_.size(), "invalid channel");
+    return histograms_.at(channel);
 }
 
-Histogram1D& VolumeHistogramIntensity::getHistogram() {
-    return hist_;
+Histogram1D& VolumeHistogramIntensity::getHistogram(size_t channel) {
+    tgtAssert(channel < histograms_.size(), "invalid channel");
+    return histograms_.at(channel);
 }
 
 VolumeDerivedData* VolumeHistogramIntensity::create() const {
@@ -139,179 +293,63 @@ VolumeDerivedData* VolumeHistogramIntensity::create() const {
 
 //-----------------------------------------------------------------------------
 
-VolumeHistogramIntensityGradient::VolumeHistogramIntensityGradient(const VolumeBase* volumeHandleGrad, const VolumeBase* volumeHandleIntensity,
-                                                       int bucketCounti, int bucketCountg, bool scale)
-    : scaleFactor_(1.f)
-{
-    const VolumeRAM* volumeGrad = volumeHandleGrad->getRepresentation<VolumeRAM>();
-    const VolumeRAM* volumeIntensity = volumeHandleIntensity->getRepresentation<VolumeRAM>();
-
-    if (dynamic_cast<const VolumeRAM_3xUInt8*>(volumeGrad)) {
-        calcHG(static_cast<const VolumeRAM_3xUInt8*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
-    }
-    else if (dynamic_cast<const VolumeRAM_4xUInt8*>(volumeGrad)) {
-        calcHG(static_cast<const VolumeRAM_4xUInt8*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
-    }
-    else if (dynamic_cast<const VolumeRAM_3xUInt16*>(volumeGrad)) {
-        calcHG(static_cast<const VolumeRAM_3xUInt16*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
-    }
-    else if (dynamic_cast<const VolumeRAM_4xUInt16*>(volumeGrad)) {
-        calcHG(static_cast<const VolumeRAM_4xUInt16*>(volumeGrad), volumeIntensity, bucketCounti, bucketCountg, scale);
-    }
-    else {
-        LERRORC("voreen.VolumeVolumeHistogramIntensityGradient",
-                "VolumeVolumeHistogramIntensityGradient needs 24 or 32 bit DS as input!");
-    }
-}
-
 VolumeHistogramIntensityGradient::VolumeHistogramIntensityGradient() :
     VolumeDerivedData(),
-    maxValue_(-1),
-    significantRangeIntensity_(-1),
-    significantRangeGradient_(-1),
-    scaleFactor_(-1.f)
+    hist_(0.0f, 1.0f, 1, 0.0f, 1.0f, 1)
 {}
 
-VolumeDerivedData* VolumeHistogramIntensityGradient::createFrom(const VolumeBase* /*handle*/) const {
-    // unable to create 2D histogram without gradient volume
-    return 0;
+VolumeDerivedData* VolumeHistogramIntensityGradient::createFrom(const VolumeBase* handle) const {
+    tgtAssert(handle, "no volume");
+    VolumeHistogramIntensityGradient* h = new VolumeHistogramIntensityGradient();
+    Histogram2D hist = createHistogram2DFromVolume(handle, 256, 256);
+    h->hist_ = hist;
+    h->maxBucket_ = hist.getMaxBucket();
+    return h;
 }
 
 size_t VolumeHistogramIntensityGradient::getBucketCountIntensity() const {
-    return histValues_.size();
+    return hist_.getNumBuckets(0);
 }
 
 size_t VolumeHistogramIntensityGradient::getBucketCountGradient() const {
-    return histValues_[0].size();
+    return hist_.getNumBuckets(1);
 }
 
 int VolumeHistogramIntensityGradient::getValue(int i, int g) const {
-    return histValues_[i][g];
+    return static_cast<int>(hist_.getBucket(i, g));
 }
 
 float VolumeHistogramIntensityGradient::getNormalized(int i, int g) const {
-    return (static_cast<float>(histValues_[i][g]) / static_cast<float>(maxValue_));
+    return (static_cast<float>(getValue(i, g)) / static_cast<float>(getMaxBucket()));
 }
 
 float VolumeHistogramIntensityGradient::getLogNormalized(int i, int g) const {
-    return (logf(static_cast<float>(1+histValues_[i][g]) ) / log(static_cast<float>(1+maxValue_)));
+    return (logf(static_cast<float>(1+getValue(i, g)) ) / log(static_cast<float>(1+getMaxBucket())));
 }
 
-int VolumeHistogramIntensityGradient::getMaxValue() const {
-    return maxValue_;
+int VolumeHistogramIntensityGradient::getMaxBucket() const {
+    return static_cast<int>(maxBucket_);
 }
 
-tgt::ivec2 VolumeHistogramIntensityGradient::getSignificantRangeIntensity() const {
-    return significantRangeIntensity_;
+float VolumeHistogramIntensityGradient::getMinValue(int dim) const {
+    return hist_.getMinValue(dim);
 }
 
-tgt::ivec2 VolumeHistogramIntensityGradient::getSignificantRangeGradient() const {
-    return significantRangeGradient_;
-}
-
-float VolumeHistogramIntensityGradient::getScaleFactor() const {
-    return scaleFactor_;
-}
-
-template<class U>
-void VolumeHistogramIntensityGradient::calcHG(const VolumeAtomic<U>* volumeGrad, const VolumeRAM* volumeIntensity, int bucketCounti, int bucketCountg, bool scale) {
-    // bits used for gradients
-    int bitsG = volumeGrad->getBitsAllocated() / volumeGrad->getNumChannels();
-    float halfMax = (pow(2.f, bitsG) - 1.f) / 2.f;
-    const tgt::ivec3 gradDim = volumeGrad->getDimensions();
-
-    std::vector<float> gradientLengths;
-    float maxGradientLength = 0.f;
-
-    // calculate length of all gradients
-    for (int z = 0; z < gradDim.z; ++z) {
-        for (int y = 0; y < gradDim.y; ++y) {
-            for (int x = 0; x < gradDim.x; ++x) {
-                float gx = volumeGrad->voxel(x,y,z).r - halfMax;
-                float gy = volumeGrad->voxel(x,y,z).g - halfMax;
-                float gz = volumeGrad->voxel(x,y,z).b - halfMax;
-
-                float nlength = tgt::length(tgt::vec3(gx, gy, gz));
-
-                if (nlength > maxGradientLength)
-                    maxGradientLength = nlength;
-
-                gradientLengths.push_back(nlength);
-            }
-        }
-    }
-
-    // maximum length of a gradient
-    float maxLength;
-    if (scale) {
-        maxLength = maxGradientLength;
-        scaleFactor_ = maxLength / (halfMax * sqrt(3.f));
-    }
-    else
-        maxLength = halfMax * sqrt(3.f);
-
-    // init histogram with 0 values
-    for (int j = 0; j < bucketCounti; j++)
-        histValues_.push_back(std::vector<int>(bucketCountg));
-
-
-    int bucketg, bucketi;
-    maxValue_ = 0;
-    significantRangeIntensity_ = tgt::ivec2(bucketCounti, -1);
-    significantRangeGradient_ = tgt::ivec2(bucketCountg, -1);
-
-    for (int z = 0; z < gradDim.z; ++z) {
-        for (int y = 0; y < gradDim.y; ++y) {
-            for (int x = 0; x < gradDim.x; ++x) {
-                float intensity;
-                if (volumeIntensity)
-                    intensity = volumeIntensity->getVoxelNormalized(x,y,z);
-                else
-                    intensity = volumeGrad->getVoxelNormalized(x,y,z,volumeGrad->getNumChannels()-1);
-
-                if (intensity > 1.f)
-                    intensity = 1.f;
-
-                int pos = z * gradDim.y * gradDim.x + y * gradDim.x + x;
-
-                bucketi = tgt::ifloor(intensity * (bucketCounti - 1));
-                bucketg = tgt::ifloor((gradientLengths[pos] / maxLength) * (bucketCountg - 1));
-
-                histValues_[bucketi][bucketg]++;
-                if ((histValues_[bucketi][bucketg]) > maxValue_)
-                    maxValue_ = histValues_[bucketi][bucketg];
-
-                if (bucketi < significantRangeIntensity_.x)
-                    significantRangeIntensity_.x = bucketi;
-                if (bucketi > significantRangeIntensity_.y)
-                    significantRangeIntensity_.y = bucketi;
-                if (bucketg < significantRangeGradient_.x)
-                    significantRangeGradient_.x = bucketg;
-                if (bucketg > significantRangeGradient_.y)
-                    significantRangeGradient_.y = bucketg;
-            }
-        }
-    }
+float VolumeHistogramIntensityGradient::getMaxValue(int dim) const {
+    return hist_.getMaxValue(dim);
 }
 
 void VolumeHistogramIntensityGradient::serialize(XmlSerializer& s) const {
-    s.serialize("values", histValues_);
-    s.serialize("maxValue", maxValue_);
-    s.serialize("significantRangeIntensity", significantRangeIntensity_);
-    s.serialize("significantRangeGradient", significantRangeGradient_);
-    s.serialize("scaleFactor", scaleFactor_);
+    s.serialize("histogram", hist_);
 }
 
 void VolumeHistogramIntensityGradient::deserialize(XmlDeserializer& s) {
-    s.deserialize("values", histValues_);
-    s.deserialize("maxValue", maxValue_);
-    s.deserialize("significantRangeIntensity", significantRangeIntensity_);
-    s.deserialize("significantRangeGradient", significantRangeGradient_);
-    s.deserialize("scaleFactor", scaleFactor_);
+    s.deserialize("histogram", hist_);
 }
 
 VolumeDerivedData* VolumeHistogramIntensityGradient::create() const {
     return new VolumeHistogramIntensityGradient();
 }
+
 
 } // namespace voreen

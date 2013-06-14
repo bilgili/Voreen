@@ -48,8 +48,8 @@ RaytracingEntryExitPoints::RaytracingEntryExitPoints()
       context_(0),
       queue_(0),
       prog_(0),
-      entryPort_(Port::OUTPORT, "image.entrypoints", "Entry-points Output"),
-      exitPort_(Port::OUTPORT, "image.exitpoints", "Exit-points Output"),
+      entryPort_(Port::OUTPORT, "image.entrypoints", "Entry-points Output",  true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER),
+      exitPort_(Port::OUTPORT, "image.exitpoints", "Exit-points Output",  true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_RECEIVER),
       inport_(Port::INPORT, "proxgeometry.geometry", "Proxy-geometry Input")
 {
     addProperty(useFloatRenderTargets_);
@@ -108,10 +108,10 @@ void RaytracingEntryExitPoints::initialize() throw (tgt::Exception) {
 
 bool RaytracingEntryExitPoints::isReady() const {
     if(entryPort_.isReady() && exitPort_.isReady() && inport_.isReady()) {
-        if(dynamic_cast<const MeshListGeometry*>(inport_.getData()))
+        if(dynamic_cast<const TriangleMeshGeometryVec3*>(inport_.getData()))
             return true;
         else {
-            LERROR("Geometry of type MeshListGeometry expected.");
+            LERROR("Geometry of type TriangleMeshGeometryVec3 expected.");
         }
     }
     return false;
@@ -135,16 +135,17 @@ void RaytracingEntryExitPoints::beforeProcess() {
 }
 
 struct triangle {
-    float4 a;
-    float4 b;
-    float4 c;
-    float4 a_tc;
-    float4 b_tc;
-    float4 c_tc;
+    cl_float4 a;
+    cl_float4 b;
+    cl_float4 c;
+    cl_float4 a_tc;
+    cl_float4 b_tc;
+    cl_float4 c_tc;
 };
 
 void RaytracingEntryExitPoints::process() {
-    const MeshListGeometry* inportGeometry = static_cast<const MeshListGeometry*>(inport_.getData()); //checked in isReady
+    //const MeshListGeometry* inportGeometry = static_cast<const MeshListGeometry*>(inport_.getData());
+    const TriangleMeshGeometryVec3* inportGeometry = dynamic_cast<const TriangleMeshGeometryVec3*> (inport_.getData()); //checked in isReady
 
     if(prog_) {
         Kernel* k = prog_->getKernel("raytrace");
@@ -153,58 +154,54 @@ void RaytracingEntryExitPoints::process() {
             glFinish();
 
             std::vector<triangle> triangles;
-            for(size_t i=0; i<inportGeometry->getMeshCount(); i++) {
-                const MeshGeometry& mesh = inportGeometry->getMesh(i);
+            for(size_t i=0; i<inportGeometry->getNumTriangles(); i++) {
+                triangle t;
 
-                for(size_t j=0; j<mesh.getFaceCount(); ++j) {
-                    const FaceGeometry& fg = mesh.getFace(j);
+                t.a.s[0] = inportGeometry->getTriangle(i).v_[0].pos_.x;
+                t.a.s[1] = inportGeometry->getTriangle(i).v_[0].pos_.y;
+                t.a.s[2] = inportGeometry->getTriangle(i).v_[0].pos_.z;
+                t.a.s[3] = 1.0f;
 
-                    if((fg.getVertexCount() < 3) || (fg.getVertexCount() > 5)) {
-                        LWARNING("Skipping face, unhandled number of vertices: " << fg.getVertexCount());
-                        continue;
-                    }
+                t.b.s[0] = inportGeometry->getTriangle(i).v_[1].pos_.x;
+                t.b.s[1] = inportGeometry->getTriangle(i).v_[1].pos_.y;
+                t.b.s[2] = inportGeometry->getTriangle(i).v_[1].pos_.z;
+                t.b.s[3] = 1.0f;
 
-                    triangle t;
+                t.c.s[0] = inportGeometry->getTriangle(i).v_[2].pos_.x;
+                t.c.s[1] = inportGeometry->getTriangle(i).v_[2].pos_.y;
+                t.c.s[2] = inportGeometry->getTriangle(i).v_[2].pos_.z;
+                t.c.s[3] = 1.0f;
 
-                    t.a = tgt::vec4(fg.getVertex(0).getCoords(), 0.0f);
-                    t.b = tgt::vec4(fg.getVertex(1).getCoords(), 0.0f);
-                    t.c = tgt::vec4(fg.getVertex(2).getCoords(), 0.0f);
-                    t.a_tc = tgt::vec4(fg.getVertex(0).getTexCoords(), 0.0f);
-                    t.b_tc = tgt::vec4(fg.getVertex(1).getTexCoords(), 0.0f);
-                    t.c_tc = tgt::vec4(fg.getVertex(2).getTexCoords(), 0.0f);
-                    triangles.push_back(t);
+                t.a_tc.s[0] = inportGeometry->getTriangle(i).v_[0].attr1_.x;
+                t.a_tc.s[1] = inportGeometry->getTriangle(i).v_[0].attr1_.y;
+                t.a_tc.s[2] = inportGeometry->getTriangle(i).v_[0].attr1_.z;
+                t.a_tc.s[3] = 1.0f;
 
-                    if(fg.getVertexCount() == 4) {
-                        t.a = tgt::vec4(fg.getVertex(2).getCoords(), 0.0f);
-                        t.b = tgt::vec4(fg.getVertex(3).getCoords(), 0.0f);
-                        t.c = tgt::vec4(fg.getVertex(0).getCoords(), 0.0f);
-                        t.a_tc = tgt::vec4(fg.getVertex(2).getTexCoords(), 0.0f);
-                        t.b_tc = tgt::vec4(fg.getVertex(3).getTexCoords(), 0.0f);
-                        t.c_tc = tgt::vec4(fg.getVertex(0).getTexCoords(), 0.0f);
-                        triangles.push_back(t);
-                    }
+                t.b_tc.s[0] = inportGeometry->getTriangle(i).v_[1].attr1_.x;
+                t.b_tc.s[1] = inportGeometry->getTriangle(i).v_[1].attr1_.y;
+                t.b_tc.s[2] = inportGeometry->getTriangle(i).v_[1].attr1_.z;
+                t.b_tc.s[3] = 1.0f;
 
-                    if(fg.getVertexCount() == 5) {
-                        t.a = tgt::vec4(fg.getVertex(3).getCoords(), 0.0f);
-                        t.b = tgt::vec4(fg.getVertex(4).getCoords(), 0.0f);
-                        t.c = tgt::vec4(fg.getVertex(0).getCoords(), 0.0f);
-                        t.a_tc = tgt::vec4(fg.getVertex(3).getTexCoords(), 0.0f);
-                        t.b_tc = tgt::vec4(fg.getVertex(4).getTexCoords(), 0.0f);
-                        t.c_tc = tgt::vec4(fg.getVertex(0).getTexCoords(), 0.0f);
-                        triangles.push_back(t);
-                    }
-                }
+                t.c_tc.s[0] = inportGeometry->getTriangle(i).v_[2].attr1_.x;
+                t.c_tc.s[1] = inportGeometry->getTriangle(i).v_[2].attr1_.y;
+                t.c_tc.s[2] = inportGeometry->getTriangle(i).v_[2].attr1_.z;
+                t.c_tc.s[3] = 1.0f;
+
+                triangles.push_back(t);
             }
 
             SharedTexture entry(context_, CL_MEM_WRITE_ONLY, entryPort_.getColorTexture());
             SharedTexture exit(context_, CL_MEM_WRITE_ONLY, exitPort_.getColorTexture());
             Buffer inBuffer(context_, CL_MEM_READ_ONLY, sizeof(triangle) * triangles.size());
+            Buffer transformationMatrixBuffer (context_, CL_MEM_READ_ONLY, sizeof(tgt::mat4));
 
             float ratio = (float)entryPort_.getSize().x / (float)entryPort_.getSize().y;
             float h = tan((camera_.get().getFovy() * 0.5f / 360.0f) * 2.0f * tgt::PIf);
             float w = h * ratio;
             vec3 up = camera_.get().getUpVector() * h;
             vec3 strafe = camera_.get().getStrafe() * w;
+            tgt::mat4 tM = inportGeometry->getTransformationMatrix();
+
 
             k->setArg(0, entry);
             k->setArg(1, exit);
@@ -214,11 +211,13 @@ void RaytracingEntryExitPoints::process() {
             k->setArg(5, up);
             k->setArg(6, camera_.get().getLook());
             k->setArg(7, strafe);
+            k->setArg(8, transformationMatrixBuffer);
 
+            queue_->enqueueWriteBuffer(&transformationMatrixBuffer, &tM);
             queue_->enqueueWriteBuffer(&inBuffer, &triangles[0]);
             queue_->enqueueAcquireGLObject(&entry);
             queue_->enqueueAcquireGLObject(&exit);
-            queue_->enqueue(k, entryPort_.getSize());
+            queue_->enqueue(k, exitPort_.getSize());
             queue_->enqueueReleaseGLObject(&exit);
             queue_->enqueueReleaseGLObject(&entry);
 

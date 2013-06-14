@@ -153,7 +153,7 @@ public:
     bool isSelected(const std::string& url) const;
 
     /**
-     * Loads the volume from passed source URL.
+     * Loads a single volume from passed source URL.
      * If the volume has already been loaded, it is reloaded.
      *
      * @note The passed URL must be contained by the property.

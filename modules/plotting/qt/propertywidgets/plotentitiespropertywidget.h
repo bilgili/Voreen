@@ -54,7 +54,6 @@ private slots:
     void updateColormap(int index);
     void updateLoadStrategy(int index);
     void listViewDoubleClicked(QListWidgetItem* item);
-    void updateFromProperty();
 
 protected:
 
@@ -76,6 +75,9 @@ protected:
     QComboBox* cbLoadStrategy_;
 
     PlotEntitiesProperty* property_;
+
+protected slots:
+    virtual void updateFromPropertySlot();
 
 };
 

@@ -54,7 +54,7 @@ PlotDataPropertyWidget::PlotDataPropertyWidget(PlotDataProperty* prop, QWidget* 
     editBt_->setFont(QFont(fontInfo.family(), QPropertyWidget::fontSize_));
 }
 
-void PlotDataPropertyWidget::updateFromProperty() {
+void PlotDataPropertyWidget::updateFromPropertySlot() {
     updateFromPropertyFlag_ = true;
 }
 

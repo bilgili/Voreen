@@ -37,6 +37,7 @@ PlaneWidgetProcessor::PlaneWidgetProcessor()
     , syncMovement_(false)
     , arrowDisplayList_(0)
     , sphereDisplayList_(0)
+    , enable_("enable", "Enable", true)
     , manipulatorScaling_("manipulatorScaling", "Manipulator scaling", 1.0f, 0.1f, 10.0f)
     , xColor_("xColor", "x Color", tgt::vec4(1.0f, 0.0f, 0.0f, 1.0f))
     , yColor_("yColor", "y Color", tgt::vec4(0.0f, 1.0f, 0.0f, 1.0f))
@@ -62,8 +63,6 @@ PlaneWidgetProcessor::PlaneWidgetProcessor()
     , width_("lineWidth", "Line Width", 1.0f, 1.0f, 10.0f)
     , showInnerBB_("showInnerBB", "Show inner box", false)
     , innerColor_("innerColor", "Inner box color", tgt::vec4(0.0f, 0.0f, 0.0f, 1.0f))
-    , lightPosition_("lightPosition", "Light source position", tgt::vec4(2.3f, 1.5f, 1.5f, 1.f),
-        tgt::vec4(-10), tgt::vec4(10))
     , inport_(Port::INPORT, "volume", "Volume Input")
 {
     innerColor_.setViews(Property::COLOR);
@@ -71,6 +70,8 @@ PlaneWidgetProcessor::PlaneWidgetProcessor()
     yColor_.setViews(Property::COLOR);
     zColor_.setViews(Property::COLOR);
     addPort(inport_);
+
+    addProperty(enable_);
 
     moveEventProp_ = new EventProperty<PlaneWidgetProcessor>(
         "mouseEvent.clipplaneMovement", "Clipplane movement", this,
@@ -116,9 +117,6 @@ PlaneWidgetProcessor::PlaneWidgetProcessor()
     addProperty(zColor_);
     addProperty(showInnerBB_);
     addProperty(innerColor_);
-
-    addProperty(lightPosition_);
-    lightPosition_.setViews(Property::LIGHT_POSITION);
 
     //X
     manipulators_.push_back(Manipulator(0, 0, &clipLeftX_, &clipRightX_, true));
@@ -199,7 +197,7 @@ void PlaneWidgetProcessor::deinitialize() throw (tgt::Exception) {
 
 void PlaneWidgetProcessor::invalidate(int inv) {
     if (inport_.isReady()) {
-        tgt::ivec3 numSlices = inport_.getData()->getRepresentation<VolumeRAM>()->getDimensions();
+        tgt::ivec3 numSlices = inport_.getData()->getDimensions();
 
         clipRightX_.setMaxValue((float)numSlices.x-1);
         if(clipRightX_.get() > clipRightX_.getMaxValue())
@@ -236,7 +234,7 @@ void PlaneWidgetProcessor::invalidate(int inv) {
         clipBottomZ_.setMaxValue(100000);
     }
 
-    clipLeftX_.setVisible(clipEnabledLeftX_.get());
+    /*clipLeftX_.setVisible(clipEnabledLeftX_.get());
     clipUseSphereManipulatorLeftX_.setVisible(clipEnabledLeftX_.get());
 
     clipRightX_.setVisible(clipEnabledRightX_.get());
@@ -252,7 +250,7 @@ void PlaneWidgetProcessor::invalidate(int inv) {
     clipUseSphereManipulatorTopZ_.setVisible(clipEnabledTopZ_.get());
 
     clipBottomZ_.setVisible(clipEnabledBottomZ_.get());
-    clipUseSphereManipulatorBottomZ_.setVisible(clipEnabledBottomZ_.get());
+    clipUseSphereManipulatorBottomZ_.setVisible(clipEnabledBottomZ_.get()); */
 
     GeometryRendererBase::invalidate(inv);
 }
@@ -368,6 +366,9 @@ void PlaneWidgetProcessor::planeMovementSync(tgt::MouseEvent* e) {
 }
 
 void PlaneWidgetProcessor::renderPicking() {
+    if (!enable_.get())
+        return;
+
     if (!idManager_)
         return;
 
@@ -422,6 +423,9 @@ void PlaneWidgetProcessor::renderPicking() {
 }
 
 void PlaneWidgetProcessor::render() {
+    if (!enable_.get())
+        return;
+
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     glPushMatrix();
@@ -569,12 +573,18 @@ void PlaneWidgetProcessor::render() {
 
     glEnable(GL_LIGHTING);
     glShadeModel(GL_SMOOTH);
-    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition_.get().elem);
+
     glEnable(GL_LIGHT0);
 
-    vec3 spec(1.0f, 1.0f, 1.0f);
+    // set light pos to camera pos
+    glPushMatrix();
+    glLoadIdentity();
+    glLightfv(GL_LIGHT0, GL_POSITION, tgt::vec4(0.f, 0.f, 1.f, 0.f).elem);
+    glPopMatrix();
+
+    /*vec3 spec(1.0f, 1.0f, 1.0f);
     glMaterialf( GL_FRONT_AND_BACK,    GL_SHININESS,    25.0f);
-    glMaterialfv(GL_FRONT_AND_BACK,    GL_SPECULAR,    spec.elem);
+    glMaterialfv(GL_FRONT_AND_BACK,    GL_SPECULAR,    spec.elem); */
 
     //render manipulators:
     //X
@@ -640,7 +650,8 @@ void PlaneWidgetProcessor::paintManipulator(const Manipulator& a, bool useSphere
                 break;
     }
 
-    paintManipulator(getCorner(a.axis_, a.corner_, a.prop_->get() / (float) a.prop_->getMaxValue()), rot, angle, manipulatorScaling_.get(), useSphereManipulator);
+    float scalingFactor = 0.3f * tgt::length(getUrb() - getLlf()) * manipulatorScaling_.get();
+    paintManipulator(getCorner(a.axis_, a.corner_, a.prop_->get() / (float) a.prop_->getMaxValue()), rot, angle, scalingFactor, useSphereManipulator);
 }
 
 void PlaneWidgetProcessor::paintManipulator(tgt::vec3 translation, tgt::vec3 rotationAxis, float rotationAngle, float scaleFactor, bool useSphereManipulator)

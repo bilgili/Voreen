@@ -101,6 +101,12 @@ public:
      * Returns the the scaleProcessorFontSizeProperty value.
      */
     virtual int getProcessorFontScale() const;
+
+    /**
+     * Registers a widget to receive touch events.  Default implementation does nothing.
+     */
+    virtual void sendTouchEventsTo(QWidget *wid) {}
+
 protected:
     virtual void loadModules() throw (VoreenException);
 

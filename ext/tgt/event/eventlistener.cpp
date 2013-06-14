@@ -66,9 +66,7 @@ void EventListener::onEvent(Event* e) {
         timerEvent(static_cast<TimeEvent*>(e));
     }
     else if (typeid(*e) == typeid(TouchEvent)) {
-        //TODO TouchEvent* te = static_cast<TouchEvent*>(e);
-        //if (te->action() == TouchEvent::PRESSED)
-           //TODO TouchEvent(te);
+        touchEvent(static_cast<TouchEvent*>(e));
     }
 }
 

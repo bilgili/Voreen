@@ -56,6 +56,7 @@ SET(MOD_CORE_SOURCES
     
     ${MOD_DIR}/processors/proxygeometry/cubeproxygeometry.cpp
     ${MOD_DIR}/processors/proxygeometry/explosionproxygeometry.cpp
+    ${MOD_DIR}/processors/proxygeometry/multipassproxygeometry.cpp
     ${MOD_DIR}/processors/proxygeometry/multiplanarproxygeometry.cpp
     ${MOD_DIR}/processors/proxygeometry/multivolumeproxygeometry.cpp
     ${MOD_DIR}/processors/proxygeometry/optimizedproxygeometry.cpp
@@ -115,6 +116,7 @@ SET(MOD_CORE_SOURCES
     ${MOD_DIR}/io/analyzevolumereader.cpp
     ${MOD_DIR}/io/brukervolumereader.cpp
     ${MOD_DIR}/io/ecat7volumereader.cpp
+    ${MOD_DIR}/io/inveonvolumereader.cpp
     ${MOD_DIR}/io/multivolumereader.cpp
     ${MOD_DIR}/io/mhdvolumereader.cpp
     ${MOD_DIR}/io/mhdvolumewriter.cpp
@@ -178,6 +180,7 @@ SET(MOD_CORE_HEADERS
     
     ${MOD_DIR}/processors/proxygeometry/cubeproxygeometry.h
     ${MOD_DIR}/processors/proxygeometry/explosionproxygeometry.h
+    ${MOD_DIR}/processors/proxygeometry/multipassproxygeometry.h
     ${MOD_DIR}/processors/proxygeometry/multiplanarproxygeometry.h
     ${MOD_DIR}/processors/proxygeometry/multivolumeproxygeometry.h
     ${MOD_DIR}/processors/proxygeometry/optimizedproxygeometry.h
@@ -237,6 +240,7 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/io/analyzevolumereader.h
     ${MOD_DIR}/io/brukervolumereader.h
     ${MOD_DIR}/io/ecat7volumereader.h
+    ${MOD_DIR}/io/inveonvolumereader.h
     ${MOD_DIR}/io/multivolumereader.h
     ${MOD_DIR}/io/mhdvolumereader.h
     ${MOD_DIR}/io/mhdvolumewriter.h

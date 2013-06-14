@@ -69,4 +69,18 @@ tgt::col3 CoProcessorPort::getColorHint() const {
     return tgt::col3(0, 255, 0);
 }
 
+std::string CoProcessorPort::getContentDescription() const {
+    std::stringstream strstr;
+    strstr << getGuiName() << std::endl
+           << "Type: " << getClassName();
+    return strstr.str();
+}
+
+std::string CoProcessorPort::getContentDescriptionHTML() const {
+    std::stringstream strstr;
+    strstr << "<center><font><b>" << getGuiName() << "</b></font></center>"
+           << "Type: " << getClassName();
+    return strstr.str();
+}
+
 } // namespace

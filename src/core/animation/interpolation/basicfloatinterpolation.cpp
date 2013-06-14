@@ -82,7 +82,7 @@ float BasicFloatInterpolation::inExponentInterpolation(float startvalue, float e
         return startvalue;
     if (time > 1.f)
         return endvalue;
-    float multiplicator = pow(2,10*(time-1)) - 0.0001f;
+    float multiplicator = powf(2,10*(time-1)) - 0.0001f;
     return startvalue + multiplicator * (endvalue-startvalue);
 }
 float BasicFloatInterpolation::inCircInterpolation(float startvalue, float endvalue, float time) {
@@ -144,7 +144,7 @@ float BasicFloatInterpolation::outExponentInterpolation(float startvalue, float 
         return startvalue;
     if (time > 1.f)
         return endvalue;
-    float multiplicator = 1.001f * (1.f - pow(2, -10*time));
+    float multiplicator = 1.001f * (1.f - powf(2, -10*time));
     return startvalue + multiplicator * (endvalue-startvalue);
 }
 

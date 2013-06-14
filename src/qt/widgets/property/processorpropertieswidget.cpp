@@ -30,7 +30,6 @@
 #include "voreen/core/interaction/interactionhandler.h"
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/ports/port.h"
-#include "voreen/core/properties/volumeurlproperty.h"
 
 #include "voreen/qt/widgets/expandableheaderbutton.h"
 #include "voreen/qt/widgets/property/lightpropertywidget.h"
@@ -38,8 +37,6 @@
 #include "voreen/qt/widgets/property/propertyvectorwidget.h"
 #include "voreen/qt/widgets/property/qpropertywidget.h"
 #include "voreen/qt/widgets/property/grouppropertywidget.h"
-#include "voreen/qt/widgets/property/volumeurllistpropertywidget.h"
-#include "voreen/qt/widgets/property/volumeurlpropertywidget.h"
 #include "voreen/core/ports/renderport.h" //for size properties
 
 #include <QVBoxLayout>
@@ -305,14 +302,20 @@ void ProcessorPropertiesWidget::instantiateWidgets() {
                             }
                         }
                         propertyGroupsMap_[prop->getGroupID()]->addWidget(w, w->getNameLabel(), QString::fromStdString(w->getPropertyGuiName()));
-                        if(w->getNameLabel())w->getNameLabel()->setMinimumWidth(60);
+                        if(w->getNameLabel())
+                            w->getNameLabel()->setMinimumWidth(60);
                         gridLayout->addWidget(propertyGroupsMap_[prop->getGroupID()], rows, 0, 1, 2);
                         propertyGroupsMap_[prop->getGroupID()]->setVisible(prop->getOwner()->isPropertyGroupVisible(prop->getGroupID()));
                     }
                     else {
                         CustomLabel* nameLabel = w->getNameLabel();
-                        gridLayout->addWidget(w, rows, 1, 1, 1);
-                        gridLayout->addWidget(nameLabel, rows, 0, 1, 1);
+                        if(nameLabel) {
+                            gridLayout->addWidget(w, rows, 1, 1, 1);
+                            gridLayout->addWidget(nameLabel, rows, 0, 1, 1);
+                        }
+                        else {
+                            gridLayout->addWidget(w, rows, 0, 1, 2);
+                        }
                     }
                 }
             }
@@ -362,7 +365,8 @@ void ProcessorPropertiesWidget::instantiateWidgets() {
                             }
                         }
                         propertyGroupsMap_[prop->getGroupID()]->addWidget(w, w->getNameLabel(), QString::fromStdString(w->getPropertyGuiName()));
-                        if(w->getNameLabel())w->getNameLabel()->setMinimumWidth(60);
+                        if(w->getNameLabel())
+                            w->getNameLabel()->setMinimumWidth(60);
                         gridLayout->addWidget(propertyGroupsMap_[prop->getGroupID()], rows, 0, 1, 2);
                         propertyGroupsMap_[prop->getGroupID()]->setVisible(prop->getOwner()->isPropertyGroupVisible(prop->getGroupID()));
                     }
@@ -382,12 +386,18 @@ void ProcessorPropertiesWidget::instantiateWidgets() {
                             }
                         }
                         else {
-                            gridLayout->addWidget(nameLabel, rows, 0, 1, 1);
-                            ++rows;
-                            gridLayout->addWidget(w, rows, 0, 1, 2);
-
+                            if (nameLabel) {
+                                gridLayout->addWidget(nameLabel, rows, 0, 1, 1);
+                                ++rows;
+                                gridLayout->addWidget(w, rows, 1, 1, 1);
+                            }
+                            else {
+                                gridLayout->addWidget(w, rows, 0, 1, 2);
+                            }
+                            //gridLayout->addWidget(nameLabel, rows, 0, 1, 1);
+                            //++rows;
+                            //gridLayout->addWidget(w, rows, 0, 1, 2);
                         }
-
                     }
 
                 }
@@ -444,8 +454,13 @@ void ProcessorPropertiesWidget::propertiesChanged(const PropertyOwner*) {
                 connect(w, SIGNAL(modified()), this, SLOT(propertyModified()));
                 CustomLabel* nameLabel = w->getNameLabel();
                 int curRow = gridLayout->rowCount();
-                gridLayout->addWidget(nameLabel, curRow, 0, 1, 1);
-                gridLayout->addWidget(w, curRow, 1, 1, 2);
+                if(nameLabel) {
+                    gridLayout->addWidget(nameLabel, curRow, 0, 1, 1);
+                    gridLayout->addWidget(w, curRow, 1, 1, 1);
+                }
+                else {
+                    gridLayout->addWidget(w, curRow, 0, 1, 2);
+                }
             }
         }
     }

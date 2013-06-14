@@ -1293,7 +1293,7 @@ void PlotLibrarySvg::renderAxes() {
 
 }
 
-void PlotLibrarySvg::renderAxisScales(Axis axis, bool helperLines, const std::string& label) {
+void PlotLibrarySvg::renderAxisScales(Axis axis, bool helperLines, const std::string& label, plot_t offset) {
     tgt::dvec2 step = updateScaleSteps(axis);
     svgColor_ = drawingColor_;
     plot_t xl = domain_[0].getLeft();    plot_t xr = domain_[0].getRight();
@@ -1319,7 +1319,7 @@ void PlotLibrarySvg::renderAxisScales(Axis axis, bool helperLines, const std::st
             plot_t pos = i;//(logarithmicAxisFlags_[axis] ? convertFromLogCoordinates(i, axis) : i);
             stream.str("");
             stream.clear();
-            stream << round(pos, step.y);
+            stream << round(pos + offset, step.y);
             if (axis == X_AXIS) {
                 xAxisLabelGroup_.addLabel(stream.str(),
                                           convertPlotCoordinatesToViewport3(tgt::dvec3(i, yl, zr)),

@@ -130,6 +130,10 @@ int Texture::calcBpp(GLint format, GLenum dataType) {
             typeSize = 4;
             break;
 
+        case GL_DOUBLE:
+            typeSize = 8;
+            break;
+
         default:
             LWARNINGC("tgt.Texture", "unknown dataType");
     }
@@ -170,6 +174,8 @@ int Texture::calcBpp(GLint internalformat) {
         case GL_RGBA8:
         case GL_BGRA:
         case GL_DEPTH_COMPONENT32:
+        case GL_R32F:
+        case GL_LUMINANCE32F_ARB:
             bpp = 4;
             break;
 
@@ -205,6 +211,7 @@ int Texture::calcNumChannels(GLint format) {
     case 1:
     case GL_COLOR_INDEX:
     case GL_RED:
+    case GL_R32F:
     case GL_GREEN:
     case GL_BLUE:
     case GL_ALPHA:
@@ -232,6 +239,7 @@ int Texture::calcNumChannels(GLint format) {
     case GL_BGRA:
     case GL_RGBA16:
     case GL_RGBA16F_ARB:
+    case GL_LUMINANCE32F_ARB:
         return 4;
         break;
 

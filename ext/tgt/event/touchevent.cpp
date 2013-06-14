@@ -27,7 +27,7 @@
 namespace tgt {
 
 
-TouchEvent::TouchEvent(Event::Modifier mod, t_state touchPointStates, DeviceType deviceType, const std::deque<TouchPoint> &touchPoints)
+TouchEvent::TouchEvent(Event::Modifier mod, TouchPoint::State touchPointStates, DeviceType deviceType, const std::deque<TouchPoint> &touchPoints)
     : Event()
     , mod_(mod)
     , deviceType_(deviceType)
@@ -45,9 +45,9 @@ TouchEvent::DeviceType TouchEvent::deviceType() const
     return deviceType_;
 }
 
-TouchEvent::t_state TouchEvent::touchPointStates() const
+TouchPoint::State TouchEvent::touchPointStates() const
 {
-    return TouchEvent::TouchPointMoved; //< TODO
+    return touchPointStates_;
 }
 
 const std::deque<TouchPoint> &TouchEvent::touchPoints() const
@@ -56,32 +56,11 @@ const std::deque<TouchPoint> &TouchEvent::touchPoints() const
 }
 
 int TouchEvent::getEventType() {
-    switch (action_) {
-        case MOTION:
-            // motion = move?
-            return MOUSEMOVEEVENT;
-            break;
-        case PRESSED:
-            return MOUSEPRESSEVENT;
-            break;
-        case RELEASED:
-            return MOUSERELEASEEVENT;
-            break;
-        default:
-            return 0;
-    }
-}
-
-TouchEvent::MouseAction TouchEvent::action() const {
-    return action_;
+    return TOUCHEVENT;
 }
 
 Event::Modifier TouchEvent::modifiers() const {
     return mod_;
 }
-
-/*tgt::QtCanvas * TouchEvent::widget () const {
-
-}*/
 
 }

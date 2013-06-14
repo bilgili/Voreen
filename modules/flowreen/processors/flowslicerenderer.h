@@ -31,6 +31,9 @@
 #include "modules/flowreen/utils/colorcodingability.h"
 #include "flowreenprocessor.h"
 
+#include "voreen/core/ports/renderport.h"
+#include "voreen/core/ports/volumeport.h"
+
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/optionproperty.h"

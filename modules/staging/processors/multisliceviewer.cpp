@@ -105,7 +105,7 @@ void fillBlendingProp2(StringOptionProperty& sop) {
     sop.addOption("replace", "Replace");
     sop.addOption("deactivate", "deactivate");
     sop.addOption("add", "Add");
-    sop.addOption("substract", "Substract");
+    sop.addOption("subtract", "Subtract");
     sop.addOption("multiply", "Multiply");
     sop.addOption("divide", "Divide");
     sop.addOption("difference", "Difference");
@@ -125,9 +125,17 @@ MultiSliceViewer::MultiSliceViewer()
     , mainInport_("mainInport", "Main Volume")
     , restrictToMainVolume_("restrictToMainVolume", "Restrict Rendering to Main Volume", false)
     , sliceAlignment_("sliceAlignmentProp", "Slice Alignment")
-    , sliceIndex_("sliceIndex", "Slice Number", 0, 0, 10000)
+    , xSliceIndexProp_("xSliceIndex", "X Slice Number", 0, 0, 10000)
+    , ySliceIndexProp_("ySliceIndex", "Y Slice Number", 0, 0, 10000)
+    , zSliceIndexProp_("zSliceIndex", "Z Slice Number", 0, 0, 10000)
     , camera_("camera", "Camera")
     , alignCameraButton_("alignCameraButton", "Align Camera")
+    , renderCrosshair_("renderCrosshair", "Render Crosshair")
+    , crosshairColor_("crosshairColor", "Crosshair Color", tgt::Color(0.f, 1.f, 0.f, 1.f))
+    , crosshairWidth_("crosshairWidth", "Crosshair Width", 1.f, 0.1f, 10.f)
+    , crosshairRadius_("crosshairRadius", "Crosshair Radius", 15.f, 1.f, 50.f)
+    , grabbedX_(false)
+    , grabbedY_(false)
     , plane_("plane", "Plane", vec3(1.0f, 0.0f, 0.0f), vec3(-5.0f), vec3(5.0f), Processor::VALID)
     , planeDist_("planeDist", "Plane Distance", 0.0f, -1000.0f, 1000.0f, Processor::VALID)
     , transferFunc1_("transferFunction1", "Transfer function 1")
@@ -151,7 +159,7 @@ MultiSliceViewer::MultiSliceViewer()
     , texClampMode3_("textureClampMode3_", "Texture Clamp 3")
     , texClampMode4_("textureClampMode4_", "Texture Clamp 4")
     , texBorderIntensity_("textureBorderIntensity", "Texture Border Intensity", 0.f)
-    , mwheelCycleHandler_("mouseWheelHandler", "Slice Cycling", &sliceIndex_)
+    , mwheelCycleHandler_("mouseWheelHandler", "Slice Cycling", &zSliceIndexProp_)
     , interactionHandler_("interactionHandler", "Camera Interaction", &camera_)
     , texMode1_("textureMode1", "Texture Mode 1", Processor::INVALID_PROGRAM)
     , texMode2_("textureMode2", "Texture Mode 2", Processor::INVALID_PROGRAM)
@@ -164,7 +172,8 @@ MultiSliceViewer::MultiSliceViewer()
     , inport3_(Port::INPORT, "volume3", "Volume 3", false, Processor::INVALID_PROGRAM)
     , inport4_(Port::INPORT, "volume4", "Volume 4", false, Processor::INVALID_PROGRAM)
     , geomPort_(Port::OUTPORT, "geometry")
-    , textPort_(Port::OUTPORT, "text")
+    , sliceIndexTextPort_(Port::OUTPORT, "text")
+    , intensityTextPort_(Port::OUTPORT, "textIntensity")
     , outport_(Port::OUTPORT, "output", "Rendering", true, INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER)
     , entryPort_(Port::OUTPORT, "entrypoints", "entrypoints", false, INVALID_RESULT, RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB)
 {
@@ -185,12 +194,21 @@ MultiSliceViewer::MultiSliceViewer()
     sliceAlignment_.onChange( CallMemberAction<MultiSliceViewer>(this, &MultiSliceViewer::updateSliceProperties) );
     addProperty(sliceAlignment_);
 
-    addProperty(sliceIndex_);
+    addProperty(xSliceIndexProp_);
+    addProperty(ySliceIndexProp_);
+    addProperty(zSliceIndexProp_);
 
     addProperty(camera_);
 
     addProperty(alignCameraButton_);
     alignCameraButton_.onChange( CallMemberAction<MultiSliceViewer>(this, &MultiSliceViewer::alignCamera) );
+
+    addProperty(renderCrosshair_);
+    renderCrosshair_.onChange( CallMemberAction<MultiSliceViewer>(this, &MultiSliceViewer::adjustPropertyVisibility) );
+    crosshairColor_.setViews(Property::COLOR);
+    addProperty(crosshairColor_);
+    addProperty(crosshairWidth_);
+    addProperty(crosshairRadius_);
 
     addProperty(plane_);
     addProperty(planeDist_);
@@ -284,10 +302,17 @@ MultiSliceViewer::MultiSliceViewer()
     addPort(outport_);
     addPrivateRenderPort(entryPort_);
     addPort(geomPort_);
-    addPort(textPort_);
+    addPort(sliceIndexTextPort_);
+    addPort(intensityTextPort_);
 }
 
 MultiSliceViewer::~MultiSliceViewer() {
+}
+
+void MultiSliceViewer::adjustPropertyVisibility() {
+    crosshairColor_.setVisible(renderCrosshair_.get());
+    crosshairWidth_.setVisible(renderCrosshair_.get());
+    crosshairRadius_.setVisible(renderCrosshair_.get());
 }
 
 void MultiSliceViewer::initialize() throw (tgt::Exception) {
@@ -360,6 +385,32 @@ bool MultiSliceViewer::isReady() const {
         return false;
 }
 
+const IntProperty* MultiSliceViewer::getSliceIndexProperty() const {
+    switch(sliceAlignment_.getValue()) {
+        case YZ_PLANE: return &xSliceIndexProp_;
+        case XZ_PLANE: return &ySliceIndexProp_;
+        case XY_PLANE: return &zSliceIndexProp_;
+        default:
+            {
+                tgtAssert(false, "should not get here!");
+                return &xSliceIndexProp_;
+            }
+    }
+}
+
+int MultiSliceViewer::getSliceIndex() const {
+    switch(sliceAlignment_.getValue()) {
+        case YZ_PLANE: return xSliceIndexProp_.get();
+        case XZ_PLANE: return ySliceIndexProp_.get();
+        case XY_PLANE: return zSliceIndexProp_.get();
+        default:
+            {
+                return xSliceIndexProp_.get();
+                tgtAssert(false, "should not get here!");
+            }
+    }
+}
+
 void MultiSliceViewer::process() {
     sliceCache_.setCacheSize(cacheSize_.get());
     sliceCache_.setSamplingRate(samplingRate_.get());
@@ -378,20 +429,15 @@ void MultiSliceViewer::process() {
     const VolumeBase* volh = getMainInport()->getData();
 
     // Calculate geometry:
-    TriangleMeshGeometryVec3* slice = getSliceGeometry(volh, sliceAlignment_.getValue(), (float)sliceIndex_.get(), true, restrictToMainVolume_.get() ? std::vector<const VolumeBase*>() : getSecondaryVolumes());
+    TriangleMeshGeometryVec3* slice = getSliceGeometry(volh, sliceAlignment_.getValue(), (float)getSliceIndex(), true, restrictToMainVolume_.get() ? std::vector<const VolumeBase*>() : getSecondaryVolumes());
     geomPort_.setData(slice);
 
     //calculate plane equation:
     tgt::mat4 m = slice->getTransformationMatrix();
     tgt::plane p(m * slice->getTriangle(0).v_[0].pos_, m * slice->getTriangle(0).v_[1].pos_, m * slice->getTriangle(0).v_[2].pos_);
 
-    tgt::vec3 test(1.0f);
-    tgt::vec4 planeVec = p.toVec4();
-    if(dot(test, planeVec.xyz()) < 0.0f)
-       planeVec *= -1.0f;
-
-    plane_.set(planeVec.xyz());
-    planeDist_.set(-planeVec.w);
+    plane_.set(p.n);
+    planeDist_.set(p.d);
 
     // render entry points:
     entryPort_.activateTarget();
@@ -415,9 +461,9 @@ void MultiSliceViewer::process() {
     eepShader_->activate();
     setGlobalShaderParameters(eepShader_, &cam);
     eepShader_->setUniform("useTextureCoordinates_", false);
-    mat4 viewToWorldMatrix = mat4::identity;
-    cam.getViewMatrix().invert(viewToWorldMatrix);
-    eepShader_->setUniform("inverseViewMatrix_", viewToWorldMatrix);
+    //mat4 viewToWorldMatrix = mat4::identity;
+    //cam.getViewMatrix().invert(viewToWorldMatrix);
+    //eepShader_->setUniform("inverseViewMatrix_", viewToWorldMatrix);
     LGL_ERROR;
 
     slice->render();
@@ -609,27 +655,128 @@ void MultiSliceViewer::process() {
     glActiveTexture(GL_TEXTURE0);
     LGL_ERROR;
 
+    if(renderCrosshair_.get()) {
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glColor4f(crosshairColor_.get().x, crosshairColor_.get().y, crosshairColor_.get().z, crosshairColor_.get().w);
+        glLineWidth(crosshairWidth_.get());
+        glDepthFunc(GL_ALWAYS);
+        glEnable(GL_BLEND);
+
+        vec3 pVoxel = vec3((float)xSliceIndexProp_.get(), (float)ySliceIndexProp_.get(), (float)zSliceIndexProp_.get()) + vec3(0.5f);
+        vec3 p = volh->getVoxelToWorldMatrix() * pVoxel;
+        tgt::vec2 c = camera_.get().project(outport_.getSize(), p).xy();
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        tgt::vec2 ss = outport_.getSize();
+        glOrtho(0, ss.x, 0, ss.y, 0, 1);
+
+        float circleRadius = crosshairRadius_.get();
+
+        glBegin(GL_LINES);
+        glVertex2f(0.0f, c.y);
+        glVertex2f(c.x-circleRadius, c.y);
+
+        glVertex2f(c.x+circleRadius, c.y);
+        glVertex2f(ss.x, c.y);
+
+        glVertex2f(c.x, 0.0f);
+        glVertex2f(c.x, c.y-circleRadius);
+
+        glVertex2f(c.x, c.y+circleRadius);
+        glVertex2f(c.x, ss.y);
+        glEnd();
+
+        glBegin(GL_LINE_LOOP);
+        int numSegments = 100;
+        for(int i=0; i<numSegments; i++) {
+            float angle = ((float)i / (float) numSegments) * tgt::PIf * 2.0f;
+            glVertex2f(c.x + (sinf(angle) * circleRadius), c.y + (cosf(angle) * circleRadius));
+        }
+        glEnd();
+
+        glDisable(GL_BLEND);
+
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        LGL_ERROR;
+        glPopAttrib();
+    }
+
     outport_.deactivateTarget();
 
-    //Generate text output:
-    std::stringstream strstr;
-    strstr << sliceIndex_.get() << "/" << sliceIndex_.getMaxValue();
-    textPort_.setData(strstr.str());
+    //Generate slice index text output:
+    std::stringstream strstrIndex;
+    strstrIndex << getSliceIndex() << "/" << getSliceIndexProperty()->getMaxValue();
+    sliceIndexTextPort_.setData(strstrIndex.str());
+
+    //Generate intensity text output:
+    std::string strIntensity;
+    tgt::vec3 posWorld = volh->getVoxelToWorldMatrix() * (vec3((float)xSliceIndexProp_.get(), (float)ySliceIndexProp_.get(), (float)zSliceIndexProp_.get()) + vec3(0.5f));
+    if(inport1_.isReady()) {
+        RealWorldMapping rwm = inport1_.getData()->getRealWorldMapping();
+        vec3 posVoxel = inport1_.getData()->getWorldToVoxelMatrix() * posWorld;
+        if (inport1_.getData()->hasRepresentation<VolumeRAM>())
+            strIntensity += inport1_.getData()->getRepresentation<VolumeRAM>()->getVoxelValueAsString(posVoxel, &rwm);
+        else
+            ; // TODO
+    }
+    if(inport2_.isReady()) {
+        if(!strIntensity.empty())
+            strIntensity += "\n";
+
+        RealWorldMapping rwm = inport2_.getData()->getRealWorldMapping();
+        vec3 posVoxel = inport2_.getData()->getWorldToVoxelMatrix() * posWorld;
+        if (inport2_.getData()->hasRepresentation<VolumeRAM>())
+            strIntensity += inport2_.getData()->getRepresentation<VolumeRAM>()->getVoxelValueAsString(posVoxel, &rwm);
+        else
+            ; // TODO
+    }
+    if(inport3_.isReady()) {
+        if(!strIntensity.empty())
+            strIntensity += "\n";
+
+        RealWorldMapping rwm = inport3_.getData()->getRealWorldMapping();
+        vec3 posVoxel = inport3_.getData()->getWorldToVoxelMatrix() * posWorld;
+        if (inport3_.getData()->hasRepresentation<VolumeRAM>())
+            strIntensity += inport3_.getData()->getRepresentation<VolumeRAM>()->getVoxelValueAsString(posVoxel, &rwm);
+        else
+            ; // TODO
+    }
+    if(inport4_.isReady()) {
+        if(!strIntensity.empty())
+            strIntensity += "\n";
+
+        RealWorldMapping rwm = inport4_.getData()->getRealWorldMapping();
+        vec3 posVoxel = inport4_.getData()->getWorldToVoxelMatrix() * posWorld;
+        if (inport4_.getData()->hasRepresentation<VolumeRAM>())
+           strIntensity += inport4_.getData()->getRepresentation<VolumeRAM>()->getVoxelValueAsString(posVoxel, &rwm);
+        else
+            ; // TODO
+    }
+    intensityTextPort_.setData(strIntensity);
 }
 
 void MultiSliceViewer::updateSliceProperties() {
-    tgt::ivec3 volumeDim(0);
-    if (getMainInport()->getData())
-        volumeDim = getMainInport()->getData()->getDimensions();
-
-    tgtAssert(sliceAlignment_.getValue() >= 0 && sliceAlignment_.getValue() <= 2, "Invalid alignment value");
-    int numSlices = volumeDim[sliceAlignment_.getValue()];
-    if (numSlices == 0)
+    if (!getMainInport()->getData())
         return;
 
-    sliceIndex_.setMaxValue(numSlices-1);
-    if (sliceIndex_.get() >= static_cast<int>(numSlices))
-        sliceIndex_.set(static_cast<int>(numSlices / 2));
+    tgt::ivec3 volumeDim = getMainInport()->getData()->getDimensions();
+    tgtAssert(sliceAlignment_.getValue() >= 0 && sliceAlignment_.getValue() <= 2, "Invalid alignment value");
+
+    xSliceIndexProp_.setMaxValue(volumeDim.x - 1);
+    ySliceIndexProp_.setMaxValue(volumeDim.y - 1);
+    zSliceIndexProp_.setMaxValue(volumeDim.z - 1);
+    switch(sliceAlignment_.getValue()) {
+        case YZ_PLANE: mwheelCycleHandler_.setProperty(&xSliceIndexProp_);
+                       break;
+        case XZ_PLANE: mwheelCycleHandler_.setProperty(&ySliceIndexProp_);
+                       break;
+        case XY_PLANE: mwheelCycleHandler_.setProperty(&zSliceIndexProp_);
+                       break;
+        default: tgtAssert(false, "should not get here!");
+    }
 
     alignCamera();
 }
@@ -695,7 +842,7 @@ void MultiSliceViewer::alignCamera() {
     vec3 look = normalize(center - pos);
     tgt::Camera currentCam = camera_.get();
 
-    if(dot(look, currentCam.getLook()) < 0.99f)
+    if(dot(look, currentCam.getLook()) < 0.99f || ( (tgt::length(pos - currentCam.getPosition()) / farDist) > 0.001f) )
         updateCam = true;
 
     //TODO: more checks, make configureable?
@@ -708,6 +855,129 @@ void MultiSliceViewer::alignCamera() {
 
         camera_.set(cam);
     }
+}
+
+void MultiSliceViewer::setIntProperty(IntProperty& p, int value) {
+    if(value < p.getMinValue())
+        p.set(p.getMinValue());
+    else if(value > p.getMaxValue())
+        p.set(p.getMaxValue());
+    else
+        p.set(value);
+}
+
+void MultiSliceViewer::onEvent(tgt::Event* e) {
+    tgt::MouseEvent* me = dynamic_cast<tgt::MouseEvent*>(e);
+
+    if(me) {
+        tgt::ivec2 coord = me->coord();
+        coord.y = me->viewport().y - coord.y;
+
+        if(renderCrosshair_.get()) {
+            if((me->action() == tgt::MouseEvent::PRESSED) && (me->button() == tgt::MouseEvent::MOUSE_BUTTON_LEFT)) {
+                const VolumeBase* volh = getMainInport()->getData();
+                if(volh) {
+                    vec3 pVoxel = vec3((float)xSliceIndexProp_.get(), (float)ySliceIndexProp_.get(), (float)zSliceIndexProp_.get()) + vec3(0.5f);
+                    vec3 p = volh->getVoxelToWorldMatrix() * pVoxel;
+                    tgt::vec2 c = camera_.get().project(outport_.getSize(), p).xy();
+
+                    if(distance(tgt::vec2(coord), c) < crosshairRadius_.get()) {
+                        grabbedX_ = true;
+                        grabbedY_ = true;
+                    }
+                    else if(abs(coord.x - c.x) < 5)
+                        grabbedY_ = true;
+                    else if(abs(coord.y - c.y) < 5)
+                        grabbedX_ = true;
+
+                    if(grabbedX_ || grabbedY_)
+                        e->accept();
+                }
+            }
+            else if((me->action() == tgt::MouseEvent::RELEASED) && (me->button() == tgt::MouseEvent::MOUSE_BUTTON_LEFT)) {
+                if(grabbedX_ || grabbedY_) {
+                    grabbedX_ = false;
+                    grabbedY_ = false;
+                    e->accept();
+                    return;
+                }
+            }
+            else if(me->action() == tgt::MouseEvent::MOTION) {
+                if(grabbedX_ || grabbedY_) {
+                    const VolumeBase* volh = getMainInport()->getData();
+                    if(volh) {
+                        tgt::line3 line = camera_.get().getViewRay(me->viewport(), me->coord());
+                        vec3 pWorld = line.getFromParam(0.5f);
+                        vec3 pVoxel = volh->getWorldToVoxelMatrix() * pWorld;
+
+                        switch(sliceAlignment_.getValue()) {
+                            case YZ_PLANE: {
+                                               if(grabbedY_)
+                                                   setIntProperty(ySliceIndexProp_, tgt::iround(pVoxel.y));
+                                               if(grabbedX_)
+                                                   setIntProperty(zSliceIndexProp_, tgt::iround(pVoxel.z));
+                                           }
+                                           break;
+                            case XZ_PLANE: {
+                                               if(grabbedY_)
+                                                   setIntProperty(xSliceIndexProp_, tgt::iround(pVoxel.x));
+                                               if(grabbedX_)
+                                                   setIntProperty(zSliceIndexProp_, tgt::iround(pVoxel.z));
+                                           }
+                                           break;
+                            case XY_PLANE: {
+                                               if(grabbedY_)
+                                                   setIntProperty(xSliceIndexProp_, tgt::iround(pVoxel.x));
+                                               if(grabbedX_)
+                                                   setIntProperty(ySliceIndexProp_, tgt::iround(pVoxel.y));
+                                           }
+                                           break;
+                            default: tgtAssert(false, "should not get here!");
+                        }
+                    }
+                    e->accept();
+                    return;
+                }
+            }
+            else if(me->action() == tgt::MouseEvent::EXIT) {
+                //grabbedX_ = false;
+                //grabbedY_ = false;
+            }
+        }
+
+        if(me->action() == tgt::MouseEvent::DOUBLECLICK) {
+            const VolumeBase* volh = getMainInport()->getData();
+            if(volh) {
+                tgt::line3 line = camera_.get().getViewRay(me->viewport(), me->coord());
+                vec3 pWorld = line.getFromParam(0.5f);
+                vec3 pVoxel = volh->getWorldToVoxelMatrix() * pWorld;
+
+                switch(sliceAlignment_.getValue()) {
+                    case YZ_PLANE: {
+                                       setIntProperty(ySliceIndexProp_, tgt::iround(pVoxel.y));
+                                       setIntProperty(zSliceIndexProp_, tgt::iround(pVoxel.z));
+                                   }
+                                   break;
+                    case XZ_PLANE: {
+                                       setIntProperty(xSliceIndexProp_, tgt::iround(pVoxel.x));
+                                       setIntProperty(zSliceIndexProp_, tgt::iround(pVoxel.z));
+                                   }
+                                   break;
+                    case XY_PLANE: {
+                                       setIntProperty(xSliceIndexProp_, tgt::iround(pVoxel.x));
+                                       setIntProperty(ySliceIndexProp_, tgt::iround(pVoxel.y));
+                                   }
+                                   break;
+                    default: tgtAssert(false, "should not get here!");
+                }
+            }
+            e->accept();
+            return;
+        }
+        lastMousePos_ = coord;
+    }
+
+    VolumeRenderer::onEvent(e);
 }
 
 std::string MultiSliceViewer::generateHeader() {

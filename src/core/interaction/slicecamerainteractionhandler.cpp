@@ -30,6 +30,8 @@
 #include "tgt/event/mouseevent.h"
 #include "tgt/event/keyevent.h"
 #include "tgt/event/timeevent.h"
+#include "tgt/event/touchevent.h"
+#include "tgt/event/touchpoint.h"
 #include "tgt/timer.h"
 #include "voreen/core/properties/eventproperty.h"
 
@@ -37,6 +39,8 @@ using tgt::Event;
 using tgt::MouseEvent;
 using tgt::KeyEvent;
 using tgt::TimeEvent;
+using tgt::TouchPoint;
+using tgt::TouchEvent;
 
 using tgt::vec2;
 using tgt::vec3;
@@ -54,6 +58,10 @@ SliceCameraInteractionHandler::SliceCameraInteractionHandler(const std::string& 
     , cameraProp_(cameraProp)
 {
     tgtAssert(cameraProp, "No camera property");
+
+    multiTouchEvent_ = new EventProperty<SliceCameraInteractionHandler>(id + ".multitouch", guiName + "Multitouch", this,
+        &SliceCameraInteractionHandler::handleMultitouch, sharing, enabled);
+    addEventProperty(multiTouchEvent_);
 
     zoomEvent_ = new EventProperty<SliceCameraInteractionHandler>(id + ".zoom", "Zoom", this,
         &SliceCameraInteractionHandler::zoomEvent,
@@ -79,6 +87,54 @@ SliceCameraInteractionHandler::SliceCameraInteractionHandler(const std::string& 
 
 SliceCameraInteractionHandler::~SliceCameraInteractionHandler() {
     // event properties are deleted by base class InteractionHandler
+}
+
+void SliceCameraInteractionHandler::handleMultitouch(tgt::TouchEvent* e) {
+    tgtAssert(cameraProp_, "No camera property");
+
+    if (e->touchPoints().size() == 2) {
+
+        if (e->touchPointStates() & TouchPoint::TouchPointPressed) {
+            cameraProp_->toggleInteractionMode(true, this);
+            vec2 touchPoint1 = e->touchPoints()[0].pos();
+            vec2 touchPoint2 = e->touchPoints()[1].pos();
+
+            lastDistance_ = length (touchPoint1 - touchPoint2);
+
+            e->accept();
+            //cameraProp_->invalidate();
+        }
+        else if (e->touchPointStates() & TouchPoint::TouchPointReleased) {
+            cameraProp_->toggleInteractionMode(false, this);
+            e->accept();
+            cameraProp_->invalidate();
+        }
+
+        // slicecamerainteractionhandler only handles touch event to zoom
+        else if (e->touchPointStates() & TouchPoint::TouchPointMoved) {
+
+            vec2 pointPos1 = e->touchPoints()[0].pos();
+            vec2 pointPos2 = e->touchPoints()[1].pos();
+
+            float newDistance = length(pointPos1 - pointPos2);
+            float zoomFactor = lastDistance_ / newDistance;
+            float mod = zoomFactor;
+
+            tgt::Frustum f = cameraProp_->get().getFrustum();
+
+            f.setLeft(f.getLeft()*mod);
+            f.setRight(f.getRight()*mod);
+            f.setBottom(f.getBottom()*mod);
+            f.setTop(f.getTop()*mod);
+
+            cameraProp_->setFrustum(f);
+
+            lastDistance_ = newDistance;
+            e->accept();
+
+            cameraProp_->invalidate();
+        }
+    }
 }
 
 void SliceCameraInteractionHandler::zoomEvent(tgt::MouseEvent* e) {
@@ -150,17 +206,9 @@ void SliceCameraInteractionHandler::shiftEvent(tgt::MouseEvent* e) {
     }
     else if (e->action() == MouseEvent::MOTION) {
         //perform panning motion:
-        ivec2 mOffset = e->coord() - lastMousePos_;
-
-        //get offset in world coordinates:
-        tgt::Frustum f = cameraProp_->get().getFrustum();
-        float windowRatio = static_cast<float>(e->viewport().x) / e->viewport().y;
-        vec2 windowSizeWorld = vec2((f.getRight() - f.getLeft()) * windowRatio, f.getTop() - f.getBottom());
-        vec2 mouseOffsetNormalized = vec2(mOffset) / vec2(e->viewport());
-
-        vec3 offset(0.0f);
-        offset -= windowSizeWorld.x * mouseOffsetNormalized.x * cameraProp_->get().getStrafe();
-        offset += windowSizeWorld.y * mouseOffsetNormalized.y * cameraProp_->get().getUpVector();
+        tgt::line3 lineCur = cameraProp_->get().getViewRay(e->viewport(), e->coord());
+        tgt::line3 linePrev = cameraProp_->get().getViewRay(e->viewport(), lastMousePos_);
+        vec3 offset = linePrev.getStart() - lineCur.getStart();
 
         cameraProp_->setPosition(cameraProp_->get().getPosition() + offset);
         cameraProp_->setFocus(cameraProp_->get().getFocus() + offset);
@@ -169,18 +217,9 @@ void SliceCameraInteractionHandler::shiftEvent(tgt::MouseEvent* e) {
         e->accept();
     }
     else if (e->action() == MouseEvent::DOUBLECLICK) {
-        //center at doubleclicked position
-        ivec2 mOffset = (e->viewport() / 2) - e->coord();
-
-        //get offset in world coordinates:
-        tgt::Frustum f = cameraProp_->get().getFrustum();
-        float windowRatio = static_cast<float>(e->viewport().x) / e->viewport().y;
-        vec2 windowSizeWorld = vec2((f.getRight() - f.getLeft()) * windowRatio, f.getTop() - f.getBottom());
-        vec2 mouseOffsetNormalized = vec2(mOffset) / vec2(e->viewport());
-
-        vec3 offset(0.0f);
-        offset -= windowSizeWorld.x * mouseOffsetNormalized.x * cameraProp_->get().getStrafe();
-        offset += windowSizeWorld.y * mouseOffsetNormalized.y * cameraProp_->get().getUpVector();
+        tgt::line3 lineCur = cameraProp_->get().getViewRay(e->viewport(), e->coord());
+        tgt::line3 lineCenter = cameraProp_->get().getViewRay(e->viewport(), e->viewport() / 2);
+        vec3 offset = lineCur.getStart() - lineCenter.getStart();
 
         cameraProp_->setPosition(cameraProp_->get().getPosition() + offset);
         cameraProp_->setFocus(cameraProp_->get().getFocus() + offset);

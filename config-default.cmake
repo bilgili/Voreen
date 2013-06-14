@@ -42,6 +42,8 @@ SET(VRN_CUSTOM_MODULEDIR        ${VRN_HOME}/custommodules
 ####################################################################################################
 #  Options
 ####################################################################################################
+SET(VRN_BINARY_OUTPUT_DIR       ${VRN_HOME}/bin
+    CACHE PATH "Directory where binary files (apps and libraries) are put in" )
 OPTION(VRN_SHARED_LIBS          "Build shared libraries?"                                       ON )
 OPTION(VRN_PRECOMPILED_HEADER   "Use pre-compiled headers?"                                     ON )
 OPTION(VRN_ADD_INSTALL_TARGET   "Add install target for creating a binary distribution?"        OFF)
@@ -54,6 +56,6 @@ IF(WIN32)
     OPTION(VRN_DISABLE_ZERO_CHECK   
         "Do not generate ZERO_CHECK target (might cause unnecessary PCH re-compilations)"       ON )
 
-    OPTION(VRN_WINDOWS_DEPLOYMENT   "Settings/install target for Windows deployment archive"    OFF)
-    MARK_AS_ADVANCED(VRN_WINDOWS_DEPLOYMENT)
+    OPTION(VRN_DEPLOYMENT   "Settings/install target for deployment"                           OFF)
+    MARK_AS_ADVANCED(VRN_DEPLOYMENT)
 ENDIF()

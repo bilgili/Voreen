@@ -27,7 +27,7 @@
 #define VRN_CANNY_H
 
 #include "voreen/core/processors/imageprocessor.h"
-#include "voreen/core/ports/allports.h"
+#include "voreen/core/ports/renderport.h"
 
 #include "voreen/core/properties/floatproperty.h"
 #include "voreen/core/properties/vectorproperty.h"

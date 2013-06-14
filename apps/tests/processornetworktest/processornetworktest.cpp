@@ -99,6 +99,7 @@ public:
     Port* create(PortDirection direction, const std::string& id, const std::string& guiName = "") const{return new BasicPort(direction,id,guiName);}
     std::string getClassName() const { return "BasicPort";}
     void forwardData() const {};
+    bool hasData() const {return false;}
 };
 
 //

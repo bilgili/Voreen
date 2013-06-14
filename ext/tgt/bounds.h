@@ -192,7 +192,7 @@ protected:
 };
 
 /// ostream-operator
-std::ostream& operator<< (std::ostream& o, const Bounds& b);
+TGT_API std::ostream& operator<< (std::ostream& o, const Bounds& b);
 
 } // namespace
 

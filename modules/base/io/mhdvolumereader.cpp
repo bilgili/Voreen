@@ -243,7 +243,7 @@ VolumeList* MhdVolumeReader::read(const std::string &url)
     if(!FileSys.fileExists(fullRawFilename))
         throw tgt::FileException("Raw file '" + fullRawFilename + "' does not exist!");
 
-    volume = (VolumeRAM*) new VolumeDisk(fullRawFilename , voreenVoxelType, dimensions, headerSkip);
+    volume = (VolumeRAM*) new VolumeDiskRaw(fullRawFilename , voreenVoxelType, dimensions, headerSkip);
 
     Volume* vh = new Volume(volume, spacing, offset);
     vh->setOrigin(origin);

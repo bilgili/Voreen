@@ -53,6 +53,14 @@ void GeometrySequence::addGeometry(Geometry* g) {
     geometries_.push_back(g);
 }
 
+size_t GeometrySequence::getNumGeometries() const {
+    return geometries_.size();
+}
+
+const Geometry* GeometrySequence::getGeometry(size_t i) const {
+    return geometries_[i];
+}
+
 bool GeometrySequence::equals(const Geometry* geometry, double epsilon) const {
     tgtAssert(geometry, "null pointer passed");
     const GeometrySequence* gs = dynamic_cast<const GeometrySequence*>(geometry);
@@ -71,7 +79,7 @@ bool GeometrySequence::equals(const Geometry* geometry, double epsilon) const {
 }
 
 void GeometrySequence::clip(const tgt::plane& clipPlane, double epsilon) {
-    for(size_t i=0; i<geometries_.size(); i++) 
+    for(size_t i=0; i<geometries_.size(); i++)
         geometries_[i]->clip(clipPlane, epsilon);
 }
 

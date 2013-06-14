@@ -355,7 +355,7 @@ void InteractiveRegistrationWidget::planeChanged() {
     vec3 p = point_.get();
 
     vec3 n = normalize(plane_.get());
-    tgt::plane pl(n, planeDist_.get());
+    tgt::plane pl(-n, planeDist_.get());
     float dist = pl.distance(p);
     p -= dist * n;
 
@@ -413,7 +413,7 @@ void InteractiveRegistrationWidget::onEvent(tgt::Event* e) {
                 if(mouseDown_ >= 0) {
                     tgt::line3 l = camera_.get().getViewRay(me->viewport(), me->coord());
                     tgt::line3 prevL = camera_.get().getViewRay(me->viewport(), lastCoord_);
-                    tgt::plane p(normalize(plane_.get()), planeDist_.get());
+                    tgt::plane p(normalize(-plane_.get()), planeDist_.get());
 
                     float t, prevT;
                     if(p.intersect(l, t) && p.intersect(prevL, prevT)) {

@@ -45,6 +45,8 @@
 
 namespace voreen {
 
+using tgt::vec2;
+
 TransFunc2DPrimitivesPainter::TransFunc2DPrimitivesPainter(tgt::GLCanvas* canvas)
     : QObject()
     , tgt::Painter(canvas)
@@ -59,7 +61,6 @@ TransFunc2DPrimitivesPainter::TransFunc2DPrimitivesPainter(tgt::GLCanvas* canvas
     , histogram_(0)
     , histogramTex_(0)
     , dragging_(false)
-    , scaleFactor_(1.f)
 {
     canvas->getEventHandler()->addListenerToBack(this);
 }
@@ -100,21 +101,9 @@ void TransFunc2DPrimitivesPainter::mouseMoveEvent(tgt::MouseEvent* event) {
             emit toggleInteractionMode(true);
             dragging_ = true;
         }
-        // test whether the movement is correct
-        /*bool inside = */selectedPrimitive_->move(offset);
-        // one or more control points are moved outside of the canvas
-        // -> do not allow movement and reset mouse cursor to position before movement
-        //if (!inside) {
-            //tgt::QtCanvas* canvas = static_cast<tgt::QtCanvas*>(getCanvas());
-            //QPoint p(static_cast<int>(mouseCoord_.x * size.x),
-                     //static_cast<int>((1.f - mouseCoord_.y) * size.y));
-            //p = canvas->mapToGlobal(p);
-            //QCursor::setPos(p);
-        //}
-        //else {
-            mouseCoord_ = pos;
-            updateTF();
-        //}
+        selectedPrimitive_->move(offset);
+        mouseCoord_ = pos;
+        updateTF();
     }
 
     getCanvas()->update();
@@ -186,14 +175,19 @@ TransFuncPrimitive* TransFunc2DPrimitivesPainter::getPrimitiveUnderMouse(tgt::ve
     getCanvas()->getGLFocus();
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glPushMatrix();
+    glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glScalef(2.0f, 2.0f, 1.0f);
+    glTranslatef(-0.5f, -0.5f, 0.0f);
+
     glDisable(GL_BLEND);
     // paint all primitives with special color
     // (first component is id and both other components are 123)
     tf_->paintForSelection();
 
-    glPopMatrix();
+    glLoadIdentity();
     glPopAttrib();
 
     // read pixels at clicked position
@@ -214,7 +208,7 @@ TransFuncPrimitive* TransFunc2DPrimitivesPainter::getPrimitiveUnderMouse(tgt::ve
 
 void TransFunc2DPrimitivesPainter::addQuadPrimitive() {
     // create new primitive
-    TransFuncPrimitive* p = new TransFuncQuad(tgt::vec2(0.5f), 0.2f, tgt::col4(128), scaleFactor_);
+    TransFuncPrimitive* p = new TransFuncQuad(tgt::vec2(0.5f), 0.2f, tgt::col4(128));
 
     // add primitive to transfer function
     tf_->addPrimitive(p);
@@ -233,7 +227,7 @@ void TransFunc2DPrimitivesPainter::addBananaPrimitive() {
     // create new primitive
     TransFuncPrimitive* p = new TransFuncBanana(tgt::vec2(0.f), tgt::vec2(0.3f, 0.4f),
                                                 tgt::vec2(0.34f, 0.2f), tgt::vec2(0.5f, 0.f),
-                                                tgt::col4(128), scaleFactor_);
+                                                tgt::col4(128));
 
     // add primitive to transfer function
     tf_->addPrimitive(p);
@@ -312,9 +306,16 @@ void TransFunc2DPrimitivesPainter::resetTransferFunction() {
     getCanvas()->update();
 }
 
+float rwToNormalized(float rw, vec2 dom) {
+    return (rw - dom.x) / (dom.y - dom.x);
+}
+
 void TransFunc2DPrimitivesPainter::paint() {
     if (GpuCaps.areShadersSupported())
         tgt::Shader::deactivate();
+
+    tgt::ivec2 s = getCanvas()->getSize();
+    glViewport(0, 0, s.x, s.y);
 
     glActiveTexture(GL_TEXTURE0);
     glEnable(GL_BLEND);
@@ -322,18 +323,40 @@ void TransFunc2DPrimitivesPainter::paint() {
     glDisable(GL_DEPTH_TEST);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glScalef(2.0f, 2.0f, 1.0f);
+    glTranslatef(-0.5f, -0.5f, 0.0f);
 
-    if (showHistogram_ && histogramTex_) {
+    if (showHistogram_ && histogram_ && histogramTex_) {
+        // transform into normalized coordinates:
+        vec2 v1 = vec2(histogram_->getMinValue(0), histogram_->getMinValue(1));
+        vec2 v2 = vec2(histogram_->getMaxValue(0), histogram_->getMinValue(1));
+        vec2 v3 = vec2(histogram_->getMaxValue(0), histogram_->getMaxValue(1));
+        vec2 v4 = vec2(histogram_->getMinValue(0), histogram_->getMaxValue(1));
+
+        //v4 = tf_->realWorldToNormalized(v4); //doesn't work since values are clamped to 0-1
+        v1.x = rwToNormalized(v1.x, tf_->getDomain(0));
+        v2.x = rwToNormalized(v2.x, tf_->getDomain(0));
+        v3.x = rwToNormalized(v3.x, tf_->getDomain(0));
+        v4.x = rwToNormalized(v4.x, tf_->getDomain(0));
+
+        v1.y = rwToNormalized(v1.y, tf_->getDomain(1));
+        v2.y = rwToNormalized(v2.y, tf_->getDomain(1));
+        v3.y = rwToNormalized(v3.y, tf_->getDomain(1));
+        v4.y = rwToNormalized(v4.y, tf_->getDomain(1));
+
         glEnable(GL_TEXTURE_2D);
         histogramTex_->bind();
         glBegin(GL_QUADS);
             // Front Face
             glColor3f(1.f, 1.f, 1.f);
-            glTexCoord2f(0.f, 0.f); glVertex3f(0.f, 0.f, -0.5f);  // Bottom Left Of The Texture and Quad
-            glTexCoord2f(1.f, 0.f); glVertex3f(1.f, 0.f, -0.5f);  // Bottom Right Of The Texture and Quad
-            glTexCoord2f(1.f, 1.f); glVertex3f(1.f, 1.f, -0.5f);  // Top Right Of The Texture and Quad
-            glTexCoord2f(0.f, 1.f); glVertex3f(0.f, 1.f, -0.5f);  // Top Left Of The Texture and Quad
+            glTexCoord2f(0.f, 0.f); glVertex3f(v1.x, v1.y, -0.5f);  // Bottom Left Of The Texture and Quad
+            glTexCoord2f(1.f, 0.f); glVertex3f(v2.x, v2.y, -0.5f);  // Bottom Right Of The Texture and Quad
+            glTexCoord2f(1.f, 1.f); glVertex3f(v3.x, v3.y, -0.5f);  // Top Right Of The Texture and Quad
+            glTexCoord2f(0.f, 1.f); glVertex3f(v4.x, v4.y, -0.5f);  // Top Left Of The Texture and Quad
         glEnd();
         histogramTex_->disable();
         glDisable(GL_TEXTURE_2D);
@@ -375,8 +398,17 @@ void TransFunc2DPrimitivesPainter::initialize() {
 }
 
 void TransFunc2DPrimitivesPainter::updateTF() {
-    tf_->invalidateTexture();
+    if(tf_) {
+        tf_->invalidateTexture();
+    }
     emit repaintSignal();
+}
+
+void TransFunc2DPrimitivesPainter::fitToDomain() {
+    if(tf_ && histogram_) {
+        tf_->setDomain(vec2(histogram_->getMinValue(0), histogram_->getMaxValue(0)), 0);
+        tf_->setDomain(vec2(histogram_->getMinValue(1), histogram_->getMaxValue(1)), 1);
+    }
 }
 
 void TransFunc2DPrimitivesPainter::sizeChanged(const tgt::ivec2& size) {
@@ -428,60 +460,20 @@ void TransFunc2DPrimitivesPainter::setHistogramVisible(bool v) {
         createHistogram();
         createHistogramTexture();
         QApplication::restoreOverrideCursor();
-
-        // update texture of transfer function because the scaling factor changed
-        updateTF();
     }
 }
 
 void TransFunc2DPrimitivesPainter::createHistogram() {
-    const VolumeBase* gradientVolume = 0;
-    const VolumeBase* intensityVolume = 0;
-
-    int bucketsg;
-    int bucketsi;
-    size_t numChannels = volume_->getNumChannels();
-    const VolumeRAM* vol = volume_->getRepresentation<VolumeRAM>();
-    if (numChannels == 4) {
-        // gradients are already stored in the volume
-        gradientVolume = volume_;
-        if ((vol->getBytesPerVoxel() / numChannels) > 1)
-            bucketsg = 512;
-        else
-            bucketsg = 256;
-        bucketsi = bucketsg;
-    }
-    else {
-        // calculate 8 bit gradients
-        if (tgt::max(volume_->getDimensions()) <= 128) {
-            intensityVolume = volume_;
-        } else {
-            // HACK!
-            tgt::ivec3 newDims = tgt::ivec3(tgt::vec3(volume_->getDimensions()) / (tgt::max(volume_->getDimensions()) / 128.f));
-            intensityVolume = VolumeOperatorResample::APPLY_OP(volume_, newDims, VolumeRAM::LINEAR);
-        }
-        VolumeOperatorGradient volOpGr;
-        gradientVolume = volOpGr.apply<uint8_t>(intensityVolume,VolumeOperatorGradient::VOG_CENTRAL_DIFFERENCE);
-
-        bucketsg = 256;
-        if ((vol->getBytesPerVoxel() / numChannels) > 1)
-            bucketsi = 512;
-        else
-            bucketsi = 256;
-    }
-    // create histogram with scaling to the maximum gradient length in the dataset
-    histogram_ = new VolumeHistogramIntensityGradient(gradientVolume, intensityVolume, bucketsi, bucketsg, true);
-    scaleFactor_ = histogram_->getScaleFactor();
-    tf_->setScaleFactor(scaleFactor_);
-
-    if (numChannels != 4)
-        delete gradientVolume;
-
-    if (intensityVolume != volume_)
-        delete intensityVolume;
+    if(volume_)
+        histogram_ = volume_->getDerivedData<VolumeHistogramIntensityGradient>();
+    else
+        histogram_ = 0;
 }
 
 void TransFunc2DPrimitivesPainter::createHistogramTexture() {
+    if(!histogram_)
+        return;
+
     tgt::ivec3 dims = tgt::ivec3(static_cast<int>(histogram_->getBucketCountIntensity()),
         static_cast<int>(histogram_->getBucketCountGradient()), 1);
 
@@ -492,6 +484,9 @@ void TransFunc2DPrimitivesPainter::createHistogramTexture() {
 }
 
 void TransFunc2DPrimitivesPainter::updateHistogramTexture() {
+    if(!histogramTex_ || !histogram_)
+        return;
+
     for (int i = 0; i < histogramTex_->getHeight(); ++i) {
         for (int j = 0; j < histogramTex_->getWidth(); ++j) {
             int value;
@@ -499,10 +494,12 @@ void TransFunc2DPrimitivesPainter::updateHistogramTexture() {
                 value = tgt::iround(histogram_->getLogNormalized(j, i)*255.f*histogramBrightness_);
             else
                 value = tgt::iround(histogram_->getNormalized(j, i)*255.f*histogramBrightness_);
+
             if (value > 255)
                 value = 255;
             else if (value < 0)
                 value = 0;
+
             histogramTex_->texel<uint8_t>(j, i) = static_cast<uint8_t>(value);
         }
     }
@@ -514,13 +511,10 @@ void TransFunc2DPrimitivesPainter::volumeChanged(const VolumeBase* newVolume) {
 
     histogramBrightness_ = 1.f;
     showHistogram_ = false;
-    scaleFactor_ = 1.f;
-    if (tf_)
-        tf_->setScaleFactor(scaleFactor_);
 
-    delete histogram_;
-    delete histogramTex_;
     histogram_ = 0;
+
+    delete histogramTex_;
     histogramTex_ = 0;
 }
 

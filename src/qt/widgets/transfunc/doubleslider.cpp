@@ -26,12 +26,16 @@
 #include "voreen/qt/widgets/transfunc/doubleslider.h"
 
 #include "tgt/tgt_math.h"
+#include "voreen/core/utils/stringutils.h"
+#include "tgt/logmanager.h"
 
 #include <math.h>
 
 #include <QColor>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QApplication>
+#include <QToolTip>
 
 namespace voreen {
 
@@ -45,8 +49,14 @@ DoubleSlider::DoubleSlider(QWidget* parent)
     leftSliderActive_ = false;
     rightSliderActive_ = false;
     minimalAllowedSliderDistance_ = 0.0001f;
-    sliderWidth_ = 4;
+    sliderWidth_ = 6;
+    minRWValue_ = 0.0f;
+    maxRWValue_ = 1.0f;
+    unit_ = "";
+    showToolTip_ = false;
     setFixedHeight(16);
+
+    setToolTip(QString::fromStdString(generateToolTipText(false, false)));
 }
 
 void DoubleSlider::setOffsets(int left, int right) {
@@ -58,23 +68,30 @@ void DoubleSlider::paintEvent(QPaintEvent* event) {
     event->accept();
     int leftMarker =  tgt::iround(minValue_ * (width()-leftOffset_-rightOffset_) + leftOffset_);
     int rightMarker = tgt::iround(maxValue_ * (width()-leftOffset_-rightOffset_) + leftOffset_);
-    QPoint leftSlider[5] = {
-        QPoint(leftMarker - sliderWidth_, static_cast<int>(0.3f * height())),
-        QPoint(leftMarker - sliderWidth_, height()),
+    QPoint leftSlider[4] = {
+        QPoint(leftMarker, height()),
         QPoint(leftMarker + sliderWidth_, height()),
-        QPoint(leftMarker + sliderWidth_, static_cast<int>(0.3f * height())),
+        QPoint(leftMarker + sliderWidth_, static_cast<int>(0.4f * height())),
         QPoint(leftMarker, 0)
     };
-    QPoint rightSlider[5] = {
-        QPoint(rightMarker - sliderWidth_, static_cast<int>(0.3f * height())),
+    QPoint rightSlider[4] = {
+        QPoint(rightMarker - sliderWidth_, static_cast<int>(0.4f * height())),
         QPoint(rightMarker - sliderWidth_, height()),
-        QPoint(rightMarker + sliderWidth_, height()),
-        QPoint(rightMarker + sliderWidth_, static_cast<int>(0.3f * height())),
+        QPoint(rightMarker, height()),
         QPoint(rightMarker, 0)
     };
-    QColor sliderColor(255, 255, 255);
-    QColor sliderDarkColor(75, 130, 89);
-    QColor lineColor(75, 130, 89);
+    QPoint centerQuad[4] = {
+        QPoint(rightMarker - sliderWidth_, static_cast<int>(0.4f * height())),
+        QPoint(rightMarker - sliderWidth_, height()),
+        QPoint(leftMarker + sliderWidth_, height()),
+        QPoint(leftMarker + sliderWidth_, static_cast<int>(0.4f * height())),
+    };
+
+    QPalette pal = QApplication::palette();
+
+    QColor sliderColor = pal.color(QPalette::Base);
+    QColor sliderDarkColor = pal.color(QPalette::Mid);
+    QColor lineColor = pal.color(QPalette::Dark);
 
     QPainter paint(this);
     paint.setRenderHint(QPainter::Antialiasing);
@@ -83,34 +100,48 @@ void DoubleSlider::paintEvent(QPaintEvent* event) {
     paint.setPen(lineColor);
     paint.drawLine(leftOffset_, height()/2, width()-rightOffset_, height()/2);
 
-    //draw left marker
+    //draw center
+    paint.setBrush(sliderDarkColor);
+    paint.setPen(lineColor);
+    paint.save();
+    paint.drawConvexPolygon(centerQuad, 4);
+    paint.restore();
+
     paint.setBrush(sliderColor);
     paint.setPen(sliderDarkColor);
 
+    //draw left marker
     paint.save();
-    paint.drawConvexPolygon(leftSlider, 5);
+    paint.drawConvexPolygon(leftSlider, 4);
     paint.restore();
 
     //draw right marker
     paint.save();
-    paint.drawConvexPolygon(rightSlider, 5);
+    paint.drawConvexPolygon(rightSlider, 4);
     paint.restore();
-
 }
 
 void DoubleSlider::mousePressEvent(QMouseEvent* e) {
     e->accept();
+    globalMousePos_ = e->globalPos();
     //calculate which marker is nearest to mouse position
-    normalizedMousePos_ = static_cast<float>((e->pos()).x()-leftOffset_) / static_cast<float>(width()-leftOffset_-rightOffset_);
+    normalizedMousePos_ = static_cast<float>(e->pos().x()-leftOffset_) / static_cast<float>(width()-leftOffset_-rightOffset_);
+    int leftMarker =  tgt::iround(minValue_ * (width()-leftOffset_-rightOffset_) + leftOffset_);
+    int rightMarker = tgt::iround(maxValue_ * (width()-leftOffset_-rightOffset_) + leftOffset_);
+
     mV1_ = minValue_;
     mV2_ = maxValue_;
     if (e->button() == Qt::LeftButton) {
-        if (fabs(minValue_ - normalizedMousePos_) < fabs(maxValue_ - normalizedMousePos_)) {
+        if (e->pos().x() < (leftMarker + sliderWidth_)) {
             leftSliderActive_ = true;
             rightSliderActive_ = false;
         }
-        else {
+        else if(e->pos().x() > (rightMarker - sliderWidth_)) {
             leftSliderActive_ = false;
+            rightSliderActive_ = true;
+        }
+        else if((leftMarker < e->pos().x()) && (rightMarker > e->pos().x())){
+            leftSliderActive_ = true;
             rightSliderActive_ = true;
         }
     }
@@ -124,29 +155,72 @@ void DoubleSlider::mousePressEvent(QMouseEvent* e) {
 
 void DoubleSlider::mouseMoveEvent(QMouseEvent* e){
     e->accept();
+    globalMousePos_ = e->globalPos();
     float normalizedMousePosTmp = static_cast<float>((e->pos()).x()-leftOffset_) / static_cast<float>(width()-leftOffset_-rightOffset_);
     if (normalizedMousePosTmp > 1.f)
         normalizedMousePosTmp = 1.f;
     else if (normalizedMousePosTmp < 0.f)
         normalizedMousePosTmp = 0.f;
     moveSlider(normalizedMousePosTmp);
+
     emit valuesChanged(minValue_, maxValue_);
 }
 
+void DoubleSlider::showToolTip(std::string text) {
+    if(!showToolTip_)
+        return;
+
+    //QToolTip::showText(globalMousePos_, "");
+    QToolTip::showText(globalMousePos_, QString::fromStdString(text));
+}
+
 void DoubleSlider::mouseReleaseEvent(QMouseEvent* e) {
+    leftSliderActive_ = false;
+    rightSliderActive_ = false;
     e->accept();
     emit toggleInteractionMode(false);
 }
 
+std::string DoubleSlider::generateToolTipText(bool minBold, bool maxBold) {
+    std::string text = "<p style='white-space:pre'>";
+
+    if(minBold)
+        text += "<b>";
+    text += ftos(getMappedValue(getMinValue()));
+    if(minBold)
+        text += "</b>";
+
+    text += " -> ";
+
+    if(maxBold)
+        text += "<b>";
+    text += ftos(getMappedValue(getMaxValue()));
+    if(maxBold)
+        text += "</b>";
+
+    if(unit_ != "")
+        text += " [" + unit_ + "]";
+
+    text += "<br>w: " + ftos(getMappedValue(getMaxValue()) - getMappedValue(getMinValue()));
+    text += "<br>l: " + ftos( (getMappedValue(getMaxValue()) + getMappedValue(getMinValue())) * 0.5f);
+
+    return text;
+}
+
 void DoubleSlider::moveSlider(float mousePos) {
-    if (leftSliderActive_ && !rightSliderActive_)
+    if (leftSliderActive_ && !rightSliderActive_) {
         setMinValue(mousePos);
-    if (rightSliderActive_ && !leftSliderActive_)
+        showToolTip(generateToolTipText(true, false));
+    }
+    if (rightSliderActive_ && !leftSliderActive_) {
         setMaxValue(mousePos);
+        showToolTip(generateToolTipText(false, true));
+    }
     if (rightSliderActive_ && leftSliderActive_) {
         float mouseDiff = normalizedMousePos_ - mousePos;
         setMinValue(mV1_ - mouseDiff);
         setMaxValue(mV2_ - mouseDiff);
+        showToolTip(generateToolTipText(true, true));
     }
 }
 
@@ -167,6 +241,7 @@ void DoubleSlider::setMinValue(float val) {
         else
             minValue_ = val;
     }
+    setToolTip(QString::fromStdString(generateToolTipText(false, false)));
     update();
     emit valuesChanged(minValue_, maxValue_);
 }
@@ -188,6 +263,7 @@ void DoubleSlider::setMaxValue(float val) {
         else
             maxValue_ = val;
     }
+    setToolTip(QString::fromStdString(generateToolTipText(false, false)));
     update();
     emit valuesChanged(minValue_, maxValue_);
 }
@@ -213,6 +289,25 @@ float DoubleSlider::getMinValue() {
 
 float DoubleSlider::getMaxValue() {
     return maxValue_;
+}
+
+void DoubleSlider::setMapping(float min, float max) {
+    minRWValue_ = min;
+    maxRWValue_ = max;
+    setToolTip(QString::fromStdString(generateToolTipText(false, false)));
+}
+
+void DoubleSlider::setUnit(std::string unit) {
+    unit_ = unit;
+    setToolTip(QString::fromStdString(generateToolTipText(false, false)));
+}
+
+void DoubleSlider::showToolTip(bool stt) {
+    showToolTip_ = stt;
+}
+
+float DoubleSlider::getMappedValue(float norm) {
+    return minRWValue_ + (norm * (maxRWValue_ - minRWValue_));
 }
 
 void DoubleSlider::setMinimalAllowedSliderDistance(float dist) {

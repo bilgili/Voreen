@@ -49,6 +49,15 @@ public:
     virtual ~QPropertyWidget();
     virtual QSize sizeHint() const;
 
+    /**
+     * Public method called by the owning property. Delegates the call to updateFromPropertySlot()
+     * via the signal/slot mechanism. This redirection is necessary to allow background threads
+     * to call updateFromProperty().
+
+     * @note: Do not overwrite this method, but updateFromPropertySlot() instead!
+     */
+    virtual void updateFromProperty();
+
     virtual void setEnabled(bool enabled);
     virtual void setVisible(bool state);
 
@@ -88,6 +97,19 @@ protected:
 
     mutable CustomLabel* nameLabel_;
     bool showNameLabel_;
+
+protected slots:
+    /**
+     * Override this method to perform the update operations
+     * that would usually be placed in updateFromProperty().
+     *
+     * updateFromProperty() calls are redirected to this method via a signal.
+     */
+    virtual void updateFromPropertySlot() = 0;
+
+signals:
+    void updateFromPropertySignal();
+
 };
 
 } // namespace

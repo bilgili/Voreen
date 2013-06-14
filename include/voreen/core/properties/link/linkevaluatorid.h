@@ -30,6 +30,7 @@
 
 #include "voreen/core/properties/shaderproperty.h"
 #include "voreen/core/properties/cameraproperty.h"
+#include "voreen/core/properties/lightsourceproperty.h"
 #include "voreen/core/properties/volumeurlproperty.h"
 
 namespace voreen {
@@ -509,6 +510,20 @@ public:
     bool arePropertiesLinkable(const Property* p1, const Property* p2) const;
 };
 
+//------------------------------------------------------------------------------------------------------
+
+class VRN_CORE_API LinkEvaluatorCameraFrustumId : public LinkEvaluatorBase {
+public:
+    virtual std::string getClassName() const { return "LinkEvaluatorCameraFrustumId"; }
+    virtual LinkEvaluatorBase* create() const { return new LinkEvaluatorCameraFrustumId(); }
+    virtual std::string getGuiName() const { return "Camera Frustum Identity"; }
+
+    ///Special implementation to only link focus vector with FloatVec3Property
+    virtual void eval(Property* src, Property* dst) throw (VoreenException);
+
+    bool arePropertiesLinkable(const Property* p1, const Property* p2) const;
+};
+
 //-------------------------------------------------------------------------------------------------------
 
 class VRN_CORE_API LinkEvaluatorTransFuncId : public LinkEvaluatorBase {
@@ -531,6 +546,20 @@ public:
     virtual std::string getGuiName() const { return "Button"; }
 
     ///Special implementation to only link position focus and up vector
+    virtual void eval(Property* src, Property* dst) throw (VoreenException);
+
+    bool arePropertiesLinkable(const Property* p1, const Property* p2) const;
+};
+
+//-------------------------------------------------------------------------------------------------------
+
+class VRN_CORE_API LinkEvaluatorLightSourceId : public LinkEvaluatorBase {
+public:
+    virtual std::string getClassName() const { return "LinkEvaluatorLightSourceId"; }
+    virtual LinkEvaluatorBase* create() const { return new LinkEvaluatorLightSourceId(); }
+    virtual std::string getGuiName() const { return "LightSource"; }
+
+    ///Special implementation to make sure light source property widgets are updated
     virtual void eval(Property* src, Property* dst) throw (VoreenException);
 
     bool arePropertiesLinkable(const Property* p1, const Property* p2) const;

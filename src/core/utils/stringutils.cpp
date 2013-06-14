@@ -40,7 +40,16 @@ std::string itos(int i, int stringLength /*= -1*/, char fillChar /*= '0'*/) {
     return s.str();
 }
 
-std::string itos(size_t i, int stringLength /*= -1*/, char fillChar /*= '0'*/) {
+std::string itos(uint32_t i, int stringLength /*= -1*/, char fillChar /*= '0'*/) {
+    std::stringstream s;
+    if(stringLength > 0)
+        s << std::setw(stringLength) << std::setfill(fillChar) << i;
+    else
+        s << i;
+    return s.str();
+}
+
+std::string itos(uint64_t i, int stringLength /*= -1*/, char fillChar /*= '0'*/) {
     std::stringstream s;
     if(stringLength > 0)
         s << std::setw(stringLength) << std::setfill(fillChar) << i;

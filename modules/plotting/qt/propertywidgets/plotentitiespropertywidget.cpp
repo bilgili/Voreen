@@ -100,10 +100,10 @@ PlotEntitiesPropertyWidget::PlotEntitiesPropertyWidget(PlotEntitiesProperty* pro
     addWidget(mainWidget);
     addVisibilityControls();
 
-    updateFromProperty();
+    updateFromPropertySlot();
 }
 
-void PlotEntitiesPropertyWidget::updateFromProperty() {
+void PlotEntitiesPropertyWidget::updateFromPropertySlot() {
     reCreateWidgets();
     //first we clear all entries
     lwEntities_->clear();

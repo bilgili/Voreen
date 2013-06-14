@@ -85,6 +85,7 @@ void rayTraversal(in vec3 first, in vec3 last) {
     float t     = 0.0;
     float tIncr = 0.0;
     float tEnd  = 1.0;
+    float lastIntensity = 0.0f; //used for pre-integrated transfer-functions
     vec3 rayDirection;
     raySetup(first, last, samplingStepSize_, rayDirection, tIncr, tEnd);
 
@@ -95,7 +96,7 @@ void rayTraversal(in vec3 first, in vec3 last) {
         vec4 voxel = getVoxel(volume_, volumeStruct_, samplePos);
 
         #ifdef SHADOWS_ACTIVE
-            vec4 classified = RC_APPLY_CLASSIFICATION(transferFunc_, transferFuncTex_, voxel);
+            vec4 classified = RC_APPLY_CLASSIFICATION(transferFunc_, transferFuncTex_, voxel, lastIntensity);
             vec3 materialColor = classified.rgb;
             float opacity = classified.a;
             vec4 envColor = getShadowValues(samplePos);
@@ -137,7 +138,7 @@ void rayTraversal(in vec3 first, in vec3 last) {
             else
                 voxel.xyz = CALC_GRADIENT(volume_, volumeStruct_, samplePos);
             // apply classification
-            vec4 color = RC_APPLY_CLASSIFICATION(transferFunc_, transferFuncTex_, voxel);
+            vec4 color = RC_APPLY_CLASSIFICATION(transferFunc_, transferFuncTex_, voxel, lastIntensity);
             // apply shading
             color.rgb = APPLY_SHADING(voxel.xyz, texToPhysical(samplePos, volumeStruct_), volumeStruct_.lightPositionPhysical_, volumeStruct_.cameraPositionPhysical_, color.rgb, color.rgb, vec3(1.0, 1.0, 1.0));
         #endif
@@ -146,6 +147,7 @@ void rayTraversal(in vec3 first, in vec3 last) {
         if (color.a > 0.0) {
             result = RC_APPLY_COMPOSITING(result, color, samplePos, voxel.xyz, t, samplingStepSize_, tDepth);
         }
+        lastIntensity = voxel.a;
 
         finished = earlyRayTermination(result.a, EARLY_RAY_TERMINATION_OPACITY);
         t += tIncr;

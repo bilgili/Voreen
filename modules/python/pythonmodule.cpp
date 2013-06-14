@@ -135,6 +135,9 @@ void PythonModule::initialize() throw (tgt::Exception) {
     // init Python's internal module search path
     addModulePath(VoreenApplication::app()->getResourcePath("scripts"));
     addModulePath(getModulePath("scripts"));
+#ifdef WIN32
+    addModulePath(getModulePath("ext/python27/modules"));
+#endif
 
     //
     // Redirect script output from std::cout to voreen_print function (see above)

@@ -42,6 +42,9 @@ public:
     virtual void addGeometry(Geometry* g);
     //TODO: remove
 
+    size_t getNumGeometries() const;
+    const Geometry* getGeometry(size_t i) const;
+
     virtual bool equals(const Geometry* geometry, double epsilon = 1e-5) const;
 
     /**

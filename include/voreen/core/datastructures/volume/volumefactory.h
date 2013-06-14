@@ -57,8 +57,8 @@ public:
         return "";
     }
 
-    VolumeRAM* create(const std::string& format, tgt::svec3 dimensions) const 
-        throw (std::bad_alloc) 
+    VolumeRAM* create(const std::string& format, tgt::svec3 dimensions) const
+        throw (std::bad_alloc)
     {
         for (size_t i = 0; i < generators_.size(); ++i) {
             if (generators_[i]->getFormat() == format)

@@ -72,14 +72,13 @@ public:
     virtual VolumeAtomic<T>* clone() const throw (std::bad_alloc);
     virtual VolumeAtomic<T>* clone(void* data) const throw (std::bad_alloc);
     virtual VolumeAtomic<T>* createNew(const tgt::svec3& dimensions, bool allocMem = false) const throw (std::bad_alloc);
-    virtual VolumeAtomic<T>* getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset = tgt::svec3(0,0,0)) const throw (std::bad_alloc);
-    virtual void setSubVolume(const VolumeRAM* vol, tgt::svec3 offset = tgt::svec3(0,0,0));
+    virtual VolumeAtomic<T>* getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset = tgt::svec3(0,0,0)) const throw (std::bad_alloc, std::invalid_argument);
 
-    virtual int getBitsAllocated() const;
+    virtual size_t getBitsAllocated() const;
 
-    virtual int getNumChannels() const;
+    virtual size_t getNumChannels() const;
 
-    virtual int getBytesPerVoxel() const;
+    virtual size_t getBytesPerVoxel() const;
 
     virtual bool isSigned() const;
 
@@ -181,6 +180,9 @@ public:
     virtual void clear();
     virtual const void* getData() const;
     virtual void* getData();
+
+    virtual void* getBrickData(const tgt::svec3& offset, const tgt::svec3& dimensions) const throw (std::invalid_argument);
+    virtual void* getSliceData(const size_t firstSlice, const size_t lastSlice) const throw (std::invalid_argument);
 
     /**
      * Invalidates cached values (e.g. min/max), should be called when the volume was modified.
@@ -365,8 +367,14 @@ throw (std::bad_alloc)
 
 template<class T>
 VolumeAtomic<T>* VolumeAtomic<T>::getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset) const
-throw (std::bad_alloc)
+    throw (std::bad_alloc, std::invalid_argument)
 {
+    //check wrong parameters
+    if(tgt::hmul(dimensions) == 0)
+        throw std::invalid_argument("requested subvolume dimensions are zero!");
+    if(!tgt::hand(tgt::lessThanEqual(offset+dimensions,getDimensions())))
+        throw std::invalid_argument("requested subvolume outside volume date!");
+
     // create new volume
     VolumeAtomic<T>* newVolume = new VolumeAtomic<T>(dimensions, true);
     T* data = reinterpret_cast<T*>(newVolume->getData());
@@ -374,7 +382,7 @@ throw (std::bad_alloc)
     // determine parameters
     size_t voxelSize = static_cast<size_t>(getBytesPerVoxel());
     tgt::svec3 dataDims = getDimensions();
-    size_t initialStartPos = (offset.z * (dataDims.x*dataDims.y)*voxelSize)+(offset.y * dataDims.x*voxelSize) + (offset.x*voxelSize);
+    size_t initialStartPos = (offset.z * dataDims.x * dataDims.y)+(offset.y * dataDims.x) + offset.x;
 
     // per row
     size_t dataSize = dimensions.x*voxelSize;
@@ -384,8 +392,8 @@ throw (std::bad_alloc)
     size_t subVolumePos;
     for (size_t i=0; i < dimensions.z; i++) {
         for (size_t j=0; j < dimensions.y; j++) {
-            volumePos = (j*dataDims.x*voxelSize) + (i*dataDims.x*dataDims.y*voxelSize);
-            subVolumePos = (j*dimensions.x*voxelSize) + (i*dimensions.x*dimensions.y*voxelSize);
+            volumePos = (j*dataDims.x) + (i*dataDims.x*dataDims.y);
+            subVolumePos = (j*dimensions.x) + (i*dimensions.x*dimensions.y);
             memcpy(data + subVolumePos, (data_ + volumePos + initialStartPos), dataSize);
         }
     }
@@ -394,48 +402,22 @@ throw (std::bad_alloc)
 }
 
 template<class T>
-void VolumeAtomic<T>::setSubVolume(const VolumeRAM* vol, tgt::svec3 offset)
-{
-    const T* data = reinterpret_cast<const T*>(vol->getData());
-
-    // determine parameters
-    size_t voxelSize = static_cast<size_t>(getBytesPerVoxel());
-    tgt::svec3 dataDims = getDimensions();
-    size_t initialStartPos = (offset.z * (dataDims.x*dataDims.y)*voxelSize)+(offset.y * dataDims.x*voxelSize) + (offset.x*voxelSize);
-
-    // per row
-    tgt::svec3 dimensions = vol->getDimensions();
-    size_t dataSize = dimensions.x*voxelSize;
-
-    // memcpy each row for every slice in sub volume to form this volume
-    size_t volumePos;
-    size_t subVolumePos;
-    for (size_t i=0; i < dimensions.z; i++) {
-        for (size_t j=0; j < dimensions.y; j++) {
-            volumePos =  (j*dataDims.x*voxelSize) + (i*dataDims.x*dataDims.y*voxelSize);
-            subVolumePos = (j*dimensions.x*voxelSize) + (i*dimensions.x*dimensions.y*voxelSize);
-            memcpy((data_ + volumePos + initialStartPos), (data + subVolumePos), dataSize);
-        }
-    }
-}
-
-template<class T>
 VolumeAtomic<T>::~VolumeAtomic() {
     delete[] data_;
 }
 
 template<class T>
-int VolumeAtomic<T>::getNumChannels() const {
+size_t VolumeAtomic<T>::getNumChannels() const {
     return VolumeElement<T>::getNumChannels();
 }
 
 template<class T>
-int VolumeAtomic<T>::getBitsAllocated() const {
+size_t VolumeAtomic<T>::getBitsAllocated() const {
     return BITS_PER_VOXEL;
 }
 
 template<class T>
-int VolumeAtomic<T>::getBytesPerVoxel() const {
+size_t VolumeAtomic<T>::getBytesPerVoxel() const {
     return BYTES_PER_VOXEL;
 }
 
@@ -623,6 +605,57 @@ const void* VolumeAtomic<T>::getData() const {
 template<class T>
 void* VolumeAtomic<T>::getData() {
     return reinterpret_cast<void*>(data_);
+}
+
+template<class T>
+void* VolumeAtomic<T>::getBrickData(const tgt::svec3& offset, const tgt::svec3& dimensions) const throw (std::invalid_argument) {
+    //check wrong parameters
+    if(tgt::hmul(dimensions) == 0)
+        throw std::invalid_argument("requested subvolume dimensions are zero!");
+    if(!tgt::hand(tgt::lessThanEqual(offset+dimensions,getDimensions())))
+        throw std::invalid_argument("requested subvolume outside volume date!");
+
+    // create buffer
+    T* data = new T[tgt::hmul(dimensions)];
+
+    // determine parameters
+    tgt::svec3 dataDims = getDimensions();
+    size_t initialStartPos = (offset.z * dataDims.x * dataDims.y)+(offset.y * dataDims.x) + offset.x;
+    // per row
+    size_t rowSizeInBytes = dimensions.x*static_cast<size_t>(getBytesPerVoxel());
+
+    // memcpy each row for every slice to form sub volume
+    size_t volumePos;
+    size_t bufferPos;
+    for (size_t z=0; z < dimensions.z; z++) {
+        for (size_t y=0; y < dimensions.y; y++) {
+            volumePos = (y*dataDims.x) + (z*dataDims.x*dataDims.y);
+            bufferPos = (y*dimensions.x) + (z*dimensions.x*dimensions.y);
+            memcpy((data + bufferPos), (data_ + volumePos + initialStartPos), rowSizeInBytes);
+        }
+    }
+
+    return reinterpret_cast<void*>(data);
+}
+
+template<class T>
+void* VolumeAtomic<T>::getSliceData(const size_t firstSlice, const size_t lastSlice) const throw (std::invalid_argument) {
+    //check for wrong parameter
+    if(getDimensions().z <= lastSlice)
+        throw std::invalid_argument("lastSlice is out of volume dimension!!!");
+    if(firstSlice > lastSlice)
+        throw std::invalid_argument("firstSlice has to be less or equal lastSlice!!!");
+
+    //create buffer
+    tgt::svec3 dataDims = getDimensions();
+    size_t bufferSize = dataDims.x*dataDims.y*(lastSlice-firstSlice+1);
+    T* data = new T[bufferSize];
+    //determine parameters
+    size_t initialStartPos = dataDims.x * dataDims.y * firstSlice;
+    //copy data
+    memcpy(data,data_ + initialStartPos, bufferSize*getBytesPerVoxel());
+
+    return reinterpret_cast<void*>(data);
 }
 
 /*

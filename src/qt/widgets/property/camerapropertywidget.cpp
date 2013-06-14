@@ -54,7 +54,7 @@ CameraPropertyWidget::CameraPropertyWidget(CameraProperty* prop, QWidget* parent
     editBt_->setFont(QFont(fontInfo.family(), QPropertyWidget::fontSize_));
 }
 
-void CameraPropertyWidget::updateFromProperty() {
+void CameraPropertyWidget::updateFromPropertySlot() {
     if (cameraWidget_ && cameraWidget_->isVisible())
         cameraWidget_->updateFromCamera();
 }
@@ -77,7 +77,7 @@ void CameraPropertyWidget::customizeEditorWindow() {
 }
 
 QWidget* CameraPropertyWidget::createEditorWindowWidget() {
-    cameraWidget_ = new CameraWidget(property_, 0.05f, 500.f, parentWidget());
+    cameraWidget_ = new CameraWidget(property_, parentWidget());
     cameraWidget_->createWidgets();
     cameraWidget_->createConnections();
 

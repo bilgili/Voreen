@@ -33,17 +33,17 @@ namespace voreen {
 
 using tgt::vec3;
 
-std::string ClassificationModes::getShaderDefineSamplerType(const std::string mode, const TransFunc* tf) {
+std::string ClassificationModes::getShaderDefineSamplerType(const std::string mode, const TransFunc* tf, const std::string& defineName) {
     if(startsWith(mode, "pre-integrated") && dynamic_cast<const TransFunc1DKeys*>(tf) )
-        return "#define TF_SAMPLER_TYPE sampler2D\n";
+        return "#define " + defineName + " sampler2D\n";
     else if (mode == "transfer-function")
-        return tf->getShaderDefines();
+        return tf->getShaderDefines(defineName);
     else
         return "";
 }
 
-std::string ClassificationModes::getShaderDefineFunction(const std::string mode) {
-    std::string def = "#define RC_APPLY_CLASSIFICATION(transFunc, transFuncTex, voxel) ";
+std::string ClassificationModes::getShaderDefineFunction(const std::string mode, const std::string& defineName) {
+    std::string def = "#define " + defineName + "(transFunc, transFuncTex, voxel, lastIntensity) ";
 
     if (mode == "none")
         def += "vec4(voxel.a);\n";
@@ -63,6 +63,8 @@ void ClassificationModes::bindTexture(const std::string mode, TransFunc* tf, flo
             tf1d->getPreIntegrationTable(samplingStepSize, 0, true)->getTexture()->bind();
         else if(mode == "pre-integrated")
             tf1d->getPreIntegrationTable(samplingStepSize, 0, false)->getTexture()->bind();
+        else if(mode == "pre-integrated-gpu")
+            tf1d->getPreIntegrationTable(samplingStepSize, 0, false, true)->getTexture()->bind();
         else
             tf->bind();
     }
@@ -84,6 +86,7 @@ void ClassificationModes::fillProperty(StringOptionProperty* prop) {
     prop->addOption("transfer-function", "Transfer Function");
     prop->addOption("pre-integrated-fast", "Pre-integrated TF (fast)");
     prop->addOption("pre-integrated", "Pre-integrated TF");
+    prop->addOption("pre-integrated-gpu", "Pre-Integrated TF (GPU)");
     prop->select("transfer-function");
 }
 

@@ -34,53 +34,8 @@
 
 namespace voreen {
 
-std::string VolumeViewHelper::getVolumeType(const VolumeRAM* volume) {
-
-    if (dynamic_cast<const VolumeRAM_UInt8*>(volume))       return "UInt8";
-    if (dynamic_cast<const VolumeRAM_UInt16*>(volume))      return "UInt16";
-    if (dynamic_cast<const VolumeRAM_UInt32*>(volume))      return "UInt32";
-    if (dynamic_cast<const VolumeRAM_UInt64*>(volume))      return "UInt64";
-    if (dynamic_cast<const VolumeRAM_Int8*>(volume))        return "Int8";
-    if (dynamic_cast<const VolumeRAM_Int16*>(volume))       return "Int16";
-    if (dynamic_cast<const VolumeRAM_Int32*>(volume))       return "Int32";
-    if (dynamic_cast<const VolumeRAM_Int64*>(volume))       return "Int64";
-    if (dynamic_cast<const VolumeRAM_Float*>(volume))       return "Float";
-    if (dynamic_cast<const VolumeRAM_Double*>(volume))      return "Double";
-
-    if (dynamic_cast<const VolumeRAM_2xUInt8*>(volume))     return "2xUInt8";
-    if (dynamic_cast<const VolumeRAM_2xUInt16*>(volume))    return "2xUInt16";
-    if (dynamic_cast<const VolumeRAM_2xUInt32*>(volume))    return "2xUInt32";
-    if (dynamic_cast<const VolumeRAM_2xUInt64*>(volume))    return "2xUInt64";
-    if (dynamic_cast<const VolumeRAM_2xInt8*>(volume))      return "2xInt8";
-    if (dynamic_cast<const VolumeRAM_2xInt16*>(volume))     return "2xInt16";
-    if (dynamic_cast<const VolumeRAM_2xInt32*>(volume))     return "2xInt32";
-    if (dynamic_cast<const VolumeRAM_2xInt64*>(volume))     return "2xInt64";
-    if (dynamic_cast<const VolumeRAM_2xFloat*>(volume))     return "2xFloat";
-    if (dynamic_cast<const VolumeRAM_2xDouble*>(volume))    return "2xDouble";
-
-    if (dynamic_cast<const VolumeRAM_3xUInt8*>(volume))     return "3xUInt8";
-    if (dynamic_cast<const VolumeRAM_3xUInt16*>(volume))    return "3xUInt16";
-    if (dynamic_cast<const VolumeRAM_3xUInt32*>(volume))    return "3xUInt32";
-    if (dynamic_cast<const VolumeRAM_3xUInt64*>(volume))    return "3xUInt64";
-    if (dynamic_cast<const VolumeRAM_3xInt8*>(volume))      return "3xInt8";
-    if (dynamic_cast<const VolumeRAM_3xInt16*>(volume))     return "3xInt16";
-    if (dynamic_cast<const VolumeRAM_3xInt32*>(volume))     return "3xInt32";
-    if (dynamic_cast<const VolumeRAM_3xInt64*>(volume))     return "3xInt64";
-    if (dynamic_cast<const VolumeRAM_3xFloat*>(volume))     return "3xFloat";
-    if (dynamic_cast<const VolumeRAM_3xDouble*>(volume))    return "3xDouble";
-
-    if (dynamic_cast<const VolumeRAM_4xUInt8*>(volume))     return "4xUInt8";
-    if (dynamic_cast<const VolumeRAM_4xUInt16*>(volume))    return "4xUInt16";
-    if (dynamic_cast<const VolumeRAM_4xUInt32*>(volume))    return "4xUInt32";
-    if (dynamic_cast<const VolumeRAM_4xUInt64*>(volume))    return "4xUInt64";
-    if (dynamic_cast<const VolumeRAM_4xInt8*>(volume))      return "4xInt8";
-    if (dynamic_cast<const VolumeRAM_4xInt16*>(volume))     return "4xInt16";
-    if (dynamic_cast<const VolumeRAM_4xInt32*>(volume))     return "4xInt32";
-    if (dynamic_cast<const VolumeRAM_4xInt64*>(volume))     return "4xInt64";
-    if (dynamic_cast<const VolumeRAM_4xFloat*>(volume))     return "4xFloat";
-    if (dynamic_cast<const VolumeRAM_4xDouble*>(volume))    return "4xDouble";
-
-    return "<unknown>";
+std::string VolumeViewHelper::getVolumeType(const VolumeBase* volume) {
+    return volume->getFormat();
 }
 
 QPixmap VolumeViewHelper::generatePreview(const VolumeBase* volume, int height) {
@@ -90,39 +45,44 @@ QPixmap VolumeViewHelper::generatePreview(const VolumeBase* volume, int height) 
 QPixmap VolumeViewHelper::generateBorderedPreview(const VolumeBase* handle, int height, int border) {
 
     VolumePreview* prev = handle->getDerivedData<VolumePreview>();
-    int internHeight = prev->getHeight();
+    if (prev) {
 
-    QImage origImg = QImage(internHeight, internHeight, QImage::Format_ARGB32);
-    for (int y=0; y<internHeight; y++) {
-        for (int x=0; x<internHeight; x++) {
-            int previewIndex = y * internHeight + x;
-            int greyVal = prev->getData()[previewIndex];
-            origImg.setPixel(x, y, qRgb(greyVal, greyVal, greyVal));
+        int internHeight = prev->getHeight();
+
+        QImage origImg = QImage(internHeight, internHeight, QImage::Format_ARGB32);
+        for (int y=0; y<internHeight; y++) {
+            for (int x=0; x<internHeight; x++) {
+                int previewIndex = y * internHeight + x;
+                int greyVal = prev->getData()[previewIndex];
+                origImg.setPixel(x, y, qRgb(greyVal, greyVal, greyVal));
+            }
         }
-    }
-    QImage* preview = new QImage(origImg.scaled(height, height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+        QImage* preview = new QImage(origImg.scaled(height, height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
 
-    // draw border
-    for (int y = 0; y < preview->height(); y++){
-        for (int x = 0; x < border; x++)
-            preview->setPixel(preview->width()-x-1, y, qRgb(255, 255, 255));
-    }
-    for (int x = 0; x < preview->width(); x++){
-        for (int y = 0; y < border; y++)
-               preview->setPixel(x, preview->height()-y-1, qRgb(255, 255, 255));
-    }
+        // draw border
+        for (int y = 0; y < preview->height(); y++){
+            for (int x = 0; x < border; x++)
+                preview->setPixel(preview->width()-x-1, y, qRgb(255, 255, 255));
+        }
+        for (int x = 0; x < preview->width(); x++){
+            for (int y = 0; y < border; y++)
+                   preview->setPixel(x, preview->height()-y-1, qRgb(255, 255, 255));
+        }
 
-    QPixmap pixmap = QPixmap::fromImage(*preview);
-    delete preview;
+        QPixmap pixmap = QPixmap::fromImage(*preview);
+        delete preview;
 
-    return pixmap;
+        return pixmap;
+    }
+    else {
+        LWARNINGC("voreenqt.VolumeViewHelper", "VolumePreview not available");
+        return QPixmap(height, height);
+    }
 }
 
 std::string VolumeViewHelper::volumeInfoString(const VolumeBase* handle) {
     std::string outString;
     if (handle && handle->getRepresentation<VolumeRAM>()) {
-
-        const VolumeRAM* volume = handle->getRepresentation<VolumeRAM>();
 
         std::string filename = getStrippedVolumeName(handle);
         if(filename.length() > 13) {
@@ -133,12 +93,12 @@ std::string VolumeViewHelper::volumeInfoString(const VolumeBase* handle) {
         }
         std::string spacing = getVolumeSpacing(handle);
         std::string dimension = getVolumeDimension(handle);
-        std::string type = getVolumeType(volume);
+        std::string type = getVolumeType(handle);
         outString+="<style type='text/css'> table {margin-left:0px; margin-top:1px; font-size: 9px;}</style><table><tr><td>"+filename+"</td><td></td></tr><tr><td>type </td><td>" \
             +type+"</td></tr><tr><td>dimension </td><td>" \
             +dimension+"</td></tr><tr><td>spacing </td><td>" \
             +spacing+"</td></tr><tr><td>memSize </td><td>" \
-    +getVolumeMemorySize(volume)+" bytes</td></tr> </table>";
+    +getVolumeMemorySize(handle)+" bytes</td></tr> </table>";
 
     }
     else {
@@ -205,24 +165,6 @@ std::string VolumeViewHelper::getVolumeSpacing(const VolumeBase* volume) {
     return out.str();
 }
 
-std::string VolumeViewHelper::getVolumeMemorySize(const VolumeRAM* volume) {
-    std::stringstream out;
-
-    size_t bytes = volume->getNumBytes();
-    float mb = tgt::round(bytes/104857.6f) / 10.f;    //calculate mb with 0.1f precision
-    float kb = tgt::round(bytes/102.4f) / 10.f;
-    if (mb >= 0.5f) {
-        out << mb << " MB";
-    }
-    else if (kb >= 0.5f) {
-        out << kb << " kB";
-    }
-    else {
-        out << bytes << " bytes";
-    }
-    return out.str();
-}
-
 std::string VolumeViewHelper::getVolumeMemorySize(const VolumeBase* volume) {
     std::stringstream out;
 
@@ -241,11 +183,8 @@ std::string VolumeViewHelper::getVolumeMemorySize(const VolumeBase* volume) {
     return out.str();
 }
 
-size_t VolumeViewHelper::getVolumeMemorySizeByte(const VolumeRAM* volume) {
-    size_t volumeBytes = 0;
-
-    volumeBytes = volume->getNumBytes();
-    return volumeBytes;
+size_t VolumeViewHelper::getVolumeMemorySizeByte(const VolumeBase* volume) {
+    return volume->getNumVoxels()*volume->getBytesPerVoxel();
 
 }
 

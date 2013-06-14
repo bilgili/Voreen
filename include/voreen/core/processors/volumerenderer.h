@@ -31,6 +31,7 @@
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/vectorproperty.h"
 #include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/lightsourceproperty.h"
 #include "voreen/core/ports/volumeport.h"
 
 #include "voreen/core/datastructures/volume/volumegl.h"
@@ -103,7 +104,7 @@ protected:
                              const tgt::Camera* camera = 0, const tgt::vec4& lightPosition = tgt::vec4(0.f));
 
     /// The position of the light source used for lighting calculations in world coordinates
-    FloatVec4Property lightPosition_;
+    LightSourceProperty lightPosition_;
 
     /// The light source's ambient color according to the Phong lighting model
     FloatVec4Property lightAmbient_;

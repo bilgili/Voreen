@@ -52,6 +52,7 @@ public:
 protected:
     void keyPressEvent(QKeyEvent*);
     void resizeEvent(QResizeEvent*);
+    bool event(QEvent *event);
 
     void createScreenshotTool();
 

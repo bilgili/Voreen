@@ -72,6 +72,7 @@ public:
     Port* create(PortDirection direction, const std::string& id, const std::string& guiName = "") const{return new BasicPort(direction,id,guiName);}
     std::string getClassName() const { return "BasicPort";}
     void forwardData() const {};
+    bool hasData() const {return false;}
 };
 
 //
@@ -220,7 +221,7 @@ public:
 //
 
 /// Is registered at the NetworkEvaluator and records the evaluation order.
-class EvaluationOrderRecorder : public NetworkEvaluator::ProcessWrapper {
+class EvaluationOrderRecorder : public NetworkEvaluatorObserver {
 public:
     virtual void beforeProcess(Processor* p) {
         evalOrder.push_back(p);
@@ -285,7 +286,7 @@ struct TestFixture {
         network = new ProcessorNetwork();
         evaluator = new NetworkEvaluator(false, 0);
         evalOrderRec = new EvaluationOrderRecorder();
-        evaluator->addProcessWrapper(evalOrderRec);
+        evaluator->addObserver(evalOrderRec);
 
         network->addProcessor(startProcessor, "StartProcessor");
         network->addProcessor(startProcessor2, "StartProcessor2");
@@ -300,7 +301,7 @@ struct TestFixture {
     }
 
     ~TestFixture() {
-        evaluator->removeProcessWrapper(evalOrderRec);
+        evaluator->addObserver(evalOrderRec);
         delete evaluator;
         delete evalOrderRec;
         delete network;

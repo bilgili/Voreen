@@ -73,8 +73,8 @@ public:
 
     virtual std::string getFormat() const;
     virtual std::string getBaseType() const;
-    virtual int getNumChannels() const;
-    virtual int getBytesPerVoxel() const;
+    virtual size_t getNumChannels() const;
+    virtual size_t getBytesPerVoxel() const;
 
     /**
      * Returns the real-world mapping that has been applied during texture upload

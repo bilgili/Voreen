@@ -25,6 +25,8 @@
 
 #include "ometiffvolumereader.h"
 
+#include "volumediskometiff.h"
+
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "voreen/core/io/progressbar.h"
 #include "voreen/core/utils/stringutils.h"
@@ -70,26 +72,6 @@ void deleteVolumes(const std::vector<std::vector<voreen::VolumeRAM*> >& volumes)
 
 namespace voreen {
 
-OMETiffVolumeReader::OMETiffFile::OMETiffFile(std::string filename, size_t numDirectories, size_t firstZ, size_t firstT, size_t firstC) 
-    : filename_(filename)
-    , numDirectories_(numDirectories)
-    , firstZ_(firstZ)
-    , firstT_(firstT)
-    , firstC_(firstC)
-{}
-
-std::string OMETiffVolumeReader::OMETiffFile::toString() const {
-    std::string result = "OMETiffFile[";
-    result += "filename=" + filename_ + ", ";
-    result += "numDirectories=" + itos(numDirectories_) + ", ";
-    result += "firstZ=" + itos(firstZ_) + ", ";
-    result += "firstT=" + itos(firstT_) + ", ";
-    result += "firstC=" + itos(firstC_) + "]";
-    return result;
-}
-
-// ------------------------------------------------------------------------------------------------
-
 const std::string OMETiffVolumeReader::loggerCat_ = "voreen.ome.OmeTiffVolumeReader";
 
 OMETiffVolumeReader::OMETiffVolumeReader(ProgressBar* progress) : VolumeReader(progress)
@@ -117,12 +99,6 @@ VolumeList* OMETiffVolumeReader::read(const std::string &url)
     int requestedTimestep = -1;
     if (origin.getSearchParameter("timestep") != "")
         requestedTimestep = stoi(origin.getSearchParameter("timestep"));
-    if ((requestedChannel == -1) != (requestedTimestep == -1)) {
-        LWARNING("Either channel and timestep need both to be specified, or none of them. Ignoring.");
-        requestedChannel = -1;
-        requestedTimestep = -1;
-    }
-    const bool singleVolume = requestedChannel != -1;
 
     // open master ome tiff file
     TIFF* tiffFile = TIFFOpen(masterFileName.c_str(), "r");
@@ -132,21 +108,16 @@ VolumeList* OMETiffVolumeReader::read(const std::string &url)
     LINFO("Reading OME XML from master file: " << masterFileName);
 
     if (getProgressBar()) {
-        getProgressBar()->setTitle("Loading OME-TIFF data set");
+        getProgressBar()->setTitle("Opening OME-TIFF datastack");
         getProgressBar()->setMessage("Scanning files...");
         getProgressBar()->show();
         getProgressBar()->forceUpdate();
     }
 
     // extract meta data from OME XML, stored in the image description field of the tiff file
-    std::string dimensionOrder;
-    svec3 dimensions;
-    int sizeC, sizeT;
-    tgt::vec3 spacing;
-    std::string dataType;
-    std::vector<OMETiffFile> files;
+    OMETiffStack stack;
     try {
-        extractMetaData(tiffFile, tgt::FileSystem::dirName(masterFileName), dimensionOrder, dimensions, sizeC, sizeT, dataType, spacing, files);
+        stack = extractStackInformation(tiffFile, tgt::FileSystem::dirName(masterFileName));
         TIFFClose(tiffFile);
         tiffFile = 0;
     }
@@ -155,75 +126,174 @@ VolumeList* OMETiffVolumeReader::read(const std::string &url)
         raiseIOException(e.what(), masterFileName, getProgressBar());
     }
 
-    // in single mode, check requested channel and timestep
-    if (singleVolume) {
-        if (requestedChannel >= sizeC) {
-            raiseIOException("Requested channel (" + itos(requestedChannel) + ") is greater/equal than number of channels in stack (" + itos(sizeC) + ")", 
-                masterFileName, getProgressBar());
-        }
-        if (requestedTimestep >= sizeT) {
-            raiseIOException("Requested timestep (" + itos(requestedTimestep) + ") is greater/equal than number of timesteps in stack (" + itos(sizeT) + ")", 
-                masterFileName, getProgressBar());
-        }
-    }
-
     // determine number of directories stored in each tiff file (requires to open files)
-    size_t numSlices = 0;
     try {
-        determineDirectoryCount(files, numSlices);
+        determineDirectoryCount(stack);
     }
     catch (tgt::Exception& e) {
         raiseIOException(e.what(), masterFileName, getProgressBar());
     }
 
-    // check extracted meta data
-    if (tgt::hor(tgt::lessThanEqual(dimensions, tgt::svec3::zero)) || tgt::hor(tgt::greaterThan(dimensions, tgt::svec3(99999)))) {
-        std::ostringstream stream;
-        stream << dimensions;
-        raiseIOException("Invalid dimensions: " + stream.str(), masterFileName, getProgressBar());
-    }
-    if (tgt::hor(tgt::lessThan(spacing, tgt::vec3::zero))) {
-        std::ostringstream stream;
-        stream << spacing;
-        LWARNING("negative spacing: " + stream.str() + ", overwriting with 1.0");
-        spacing = tgt::vec3(1.f);
-    }
-    else if (tgt::hor(tgt::equal(spacing, tgt::vec3::zero))) {
-        std::ostringstream stream;
-        stream << spacing;
-        LWARNING("zero spacing: " + stream.str() + ", overwriting with 1.0");
-        spacing = tgt::vec3(1.f);
-    }
-    if (numSlices != dimensions.z*sizeC*sizeT) {
-        raiseIOException("Total number of slices in TIFF files (" + itos(numSlices) + 
-            ") does not match stack size (dim.z*sizeC*sizeT = " + itos(dimensions.z*sizeC*sizeT) + ") ", masterFileName, getProgressBar());
-    }
+    tgtAssert(!stack.files_.empty(), "no files passed");
+    tgtAssert(!stack.dimensionOrder_.empty(), "no dimension order passed");
+    tgtAssert(!stack.datatype_.empty(), "no dimension order passed");
+    tgtAssert(tgt::hand(tgt::greaterThan(stack.voxelSpacing_, tgt::vec3::zero)), "invalid spacing");
+    tgtAssert(stack.sizeC_ > 0, "sizeC must be greater 0");
+    tgtAssert(stack.sizeT_ > 0, "sizeT must be greater 0");
+    tgtAssert(stack.numSlices_ > 0, "num slices must be greater 0")
 
     // log extracted data
-    LINFO("DimensionOrder: " << dimensionOrder);
-    LINFO("Volume dimensions: " << dimensions);
-    LINFO("Voxel spacing: " << spacing << " micron");
-    LINFO("Data type: " << dataType);
-    LINFO("Num channels: " << sizeC);
-    LINFO("Num timesteps: " << sizeT);
-    if (singleVolume)
-        LINFO("Loading channel/timestep: " << requestedChannel << "/" << requestedTimestep);
+    LINFO("DimensionOrder: " << stack.dimensionOrder_);
+    LINFO("Volume dimensions: " << stack.volumeDim_);
+    LINFO("Voxel spacing: " << stack.voxelSpacing_ * 1000.f << " micron");
+    LINFO("Data type: " << stack.datatype_);
+    LINFO("Num channels: " << stack.sizeC_);
+    LINFO("Num timesteps: " << stack.sizeT_);
+    if (requestedChannel > -1 && requestedTimestep > -1)
+        LINFO("Selected channel/timestep: " << requestedChannel << "/" << requestedTimestep);
+    else if (requestedChannel > -1)
+        LINFO("Selected channel: " << requestedChannel);
+    else if (requestedTimestep > -1)
+        LINFO("Selected timestep: " << requestedTimestep);
+    /*else
+        LINFO("Loading " << stack.sizeC_ << " channels with " << stack.sizeT_ << " timesteps each"); */
 
     LDEBUG("TIFF files:");
-    for (size_t i=0; i<files.size(); i++)
-        LDEBUG(files.at(i).toString());
+    for (size_t i=0; i<stack.files_.size(); i++)
+        LDEBUG(stack.files_.at(i).toString());
 
-    // adapt spacing: OME base length is micron, Voreen base length unit is mm
-    spacing /= 1000.f;
+    // check requested channel and timestep
+    if (requestedChannel >= static_cast<int>(stack.sizeC_)) {
+        raiseIOException("Requested channel (" + itos(requestedChannel) + ") is greater/equal than number of channels in stack (" + itos(stack.sizeC_) + ")",
+            masterFileName, getProgressBar());
+    }
+    if (requestedTimestep >= static_cast<int>(stack.sizeT_)) {
+        raiseIOException("Requested timestep (" + itos(requestedTimestep) + ") is greater/equal than number of timesteps in stack (" + itos(stack.sizeT_) + ")",
+            masterFileName, getProgressBar());
+    }
+
+    // create disk volume for each channel/timestep
+    VolumeList* volumeList = new VolumeList();
+    for (size_t c=0; c<stack.sizeC_; c++) {
+        for (size_t t=0; t<stack.sizeT_; t++) {
+            if ((c == requestedChannel || requestedChannel == -1) && (t == requestedTimestep || requestedTimestep == -1)) {
+                VolumeDiskOmeTiff* diskRep = new VolumeDiskOmeTiff(stack.datatype_, stack.volumeDim_, stack, c, t);
+                Volume* volumeHandle = new Volume(diskRep, stack.voxelSpacing_, vec3(0.0f));
+                volumeHandle->setTimestep(static_cast<float>(t));
+                volumeHandle->setMetaDataValue<SizeTMetaData, size_t>("Channel", c);
+
+                VolumeURL origin("ome-tiff", masterFileName);
+                origin.addSearchParameter("channel", itos(c));
+                origin.addSearchParameter("timestep", itos(t));
+                volumeHandle->setOrigin(origin);
+
+                volumeList->add(volumeHandle);
+            }
+        }
+    }
+    tgtAssert(!volumeList->empty(), "volume list is empty");
+
+    if (getProgressBar())
+        getProgressBar()->hide();
+
+    return volumeList;
+}
+
+VolumeBase* OMETiffVolumeReader::read(const VolumeURL& origin)
+    throw (tgt::FileException, std::bad_alloc)
+{
+    VolumeList* volumeList = read(origin.getURL());
+    tgtAssert(!volumeList->empty(), "volume list is empty");
+
+    VolumeBase* volume = volumeList->first();
+    tgtAssert(volume, "volume is null");
+
+    if (volumeList->size() > 1) {
+        LWARNING("read(origin): more than one volume loaded. Discarding redundant volumes.");
+        for (size_t i=1; i<volumeList->size(); i++)
+            delete volumeList->at(i);
+    }
+
+    return volume;
+}
+
+std::vector<VolumeURL> OMETiffVolumeReader::listVolumes(const std::string& urlStr) const
+    throw (tgt::FileException)
+{
+    VolumeURL url(urlStr);
+    std::string filepath = url.getPath();
+
+    TIFF* tiffFile = TIFFOpen(filepath.c_str(), "r");
+    if (!tiffFile)
+        raiseIOException("Failed to open file", filepath);
+
+    // extract meta data from OME XML, stored in the image description field of the tiff file
+    OMETiffStack stack;
+    try {
+        stack = extractStackInformation(tiffFile, filepath);
+    }
+    catch (tgt::Exception& e) {
+        raiseIOException(e.what(), urlStr);
+    }
+
+    // identify volumes by channel and timestep
+    std::vector<VolumeURL> volumeURLs;
+    for (size_t c=0; c < static_cast<size_t>(stack.sizeC_); c++) {
+        for (size_t t=0; t < static_cast<size_t>(stack.sizeT_); t++) {
+            VolumeURL subUrl("ome-tiff", filepath);
+            subUrl.addSearchParameter("channel", itos(c));
+            subUrl.addSearchParameter("timestep", itos(t));
+            subUrl.getMetaDataContainer().addMetaData("Channel", new IntMetaData((int)c));
+            subUrl.getMetaDataContainer().addMetaData("Timestep", new IntMetaData((int)t));
+            subUrl.getMetaDataContainer().addMetaData("Volume Dimensions", new IVec3MetaData(static_cast<ivec3>(stack.volumeDim_)));
+            subUrl.getMetaDataContainer().addMetaData("Voxel Spacing", new StringMetaData(genericToString(stack.voxelSpacing_ * 1000.f) + " micron"));
+            volumeURLs.push_back(subUrl);
+        }
+    }
+
+    return volumeURLs;
+}
+
+std::vector<VolumeRAM*> OMETiffVolumeReader::loadVolumesIntoRam(const OMETiffStack& stack,
+    int requestedChannel /*= -1*/, int requestedTimestep /*= -1*/, int firstZSlice /*= -1*/, int lastZSlice /*= -1*/) const throw (tgt::Exception)
+{
+    tgtAssert(requestedChannel == -1 || requestedChannel < (int)stack.sizeC_, "invalid channel");
+    tgtAssert(requestedTimestep == -1 || requestedTimestep < (int)stack.sizeT_, "invalid timestep");
+    tgtAssert(firstZSlice < 0 || (firstZSlice <= lastZSlice && firstZSlice < (int)stack.volumeDim_.z), "invalid firstSlice");
+    tgtAssert(lastZSlice < 0 || (lastZSlice < (int)stack.volumeDim_.z), "invalid lastSlice");
+
+    tgtAssert(!stack.files_.empty(), "no files passed");
+    tgtAssert(!stack.dimensionOrder_.empty(), "no dimension order passed");
+    tgtAssert(!stack.datatype_.empty(), "no dimension order passed");
+    tgtAssert(tgt::hand(tgt::greaterThan(stack.voxelSpacing_, tgt::vec3::zero)), "invalid spacing");
+    tgtAssert(stack.sizeC_ > 0, "sizeC must be greater 0");
+    tgtAssert(stack.sizeT_ > 0, "sizeT must be greater 0");
+    tgtAssert(stack.numSlices_ > 0, "num slices must be greater 0")
+
+    // either both or none of the slice parameters must be given
+    if (firstZSlice < 0 || lastZSlice < 0) {
+        firstZSlice = -1;
+        lastZSlice = -1;
+    }
+
+    bool singleSlice = requestedChannel >= 0 && requestedTimestep >= 0 && firstZSlice >= 0 && firstZSlice == lastZSlice;
+    if (getProgressBar() && !singleSlice) { // do not show progress bar for a single slice
+        getProgressBar()->setTitle("Loading OME-TIFF data set");
+        getProgressBar()->show();
+        getProgressBar()->forceUpdate();
+    }
+
+    // determine dimensions of output volumes: stack volume dim, if no slice range has been selected, or slice range otherwise
+    const tgt::svec3 outputVolDim(stack.volumeDim_.x, stack.volumeDim_.y, (firstZSlice >= 0) ? (lastZSlice-firstZSlice + 1) : stack.volumeDim_.z);
 
     // create two nested vectors of output volumes: first coordinate=channel, second coordinate=time
     // (volumes will be created on demand)
     std::vector<std::vector<VolumeRAM*> > volumes;
-    for (size_t c=0; c<sizeC; c++) {
-        std::vector<VolumeRAM*> timeSeries(sizeT, reinterpret_cast<VolumeRAM*>(0));
+    for (size_t c=0; c < static_cast<size_t>(stack.sizeC_); c++) {
+        std::vector<VolumeRAM*> timeSeries(stack.sizeT_, reinterpret_cast<VolumeRAM*>(0));
         volumes.push_back(timeSeries);
     }
-    tgtAssert(volumes.size() == sizeC, "invalid size of volume vector");
+    tgtAssert(volumes.size() == stack.sizeC_, "invalid size of volume vector");
 
     // insert current and max z,c,t values into helper vectors according to DimensionOrder
     int curZ = 0;
@@ -231,17 +301,17 @@ VolumeList* OMETiffVolumeReader::read(const std::string &url)
     int curT = 0;
     std::vector<int*> curStackIndices = std::vector<int*>(3, reinterpret_cast<int*>(0));
     std::vector<int> dimSizes = std::vector<int>(3, 0);
-    std::string::size_type posZ = dimensionOrder.find("Z");
-    std::string::size_type posC = dimensionOrder.find("C");
-    std::string::size_type posT = dimensionOrder.find("T");
+    std::string::size_type posZ = stack.dimensionOrder_.find("Z");
+    std::string::size_type posC = stack.dimensionOrder_.find("C");
+    std::string::size_type posT = stack.dimensionOrder_.find("T");
     if (posZ < 2 || posZ > 4 || posC < 2 || posC > 4 || posT < 2 || posT > 4)
-        raiseIOException("Invalid DimensionOrder: " + dimensionOrder, masterFileName, getProgressBar());
+        throw tgt::Exception("Invalid DimensionOrder: " + stack.dimensionOrder_);
     curStackIndices.at(posZ-2) = &curZ;
-    dimSizes.at(posZ-2) = static_cast<int>(dimensions.z);
+    dimSizes.at(posZ-2) = static_cast<int>(stack.volumeDim_.z);
     curStackIndices.at(posC-2) = &curC;
-    dimSizes.at(posC-2) = sizeC;
+    dimSizes.at(posC-2) = static_cast<int>(stack.sizeC_);
     curStackIndices.at(posT-2) = &curT;
-    dimSizes.at(posT-2) = sizeT;
+    dimSizes.at(posT-2) = static_cast<int>(stack.sizeT_);
     tgtAssert(curStackIndices.at(0) != 0 && dimSizes.at(0) != 0 && curStackIndices.at(1) != 0 && dimSizes.at(1) != 0 && curStackIndices.at(2) != 0 && dimSizes.at(2) != 0,
         "dimension vector not properly initialized");
 
@@ -251,9 +321,9 @@ VolumeList* OMETiffVolumeReader::read(const std::string &url)
     //
     VolumeFactory volumeFac;
     size_t curSlice = 0;
-    for (int fileID = 0; fileID < files.size(); fileID++) {
-        OMETiffFile& curFile = files.at(fileID);
-        if (getProgressBar())
+    for (int fileID = 0; fileID < static_cast<int>(stack.files_.size()); fileID++) {
+        const OMETiffFile& curFile = stack.files_.at(fileID);
+        if (getProgressBar() && !singleSlice)
             getProgressBar()->setMessage("Loading " + curFile.filename_ + " ...");
 
         // open current tiff file
@@ -273,48 +343,49 @@ VolumeList* OMETiffVolumeReader::read(const std::string &url)
         //
         // iterate over directories of current TIFF file
         //
-        for (size_t tiffDir = 0; tiffDir < files.at(fileID).numDirectories_; tiffDir++) {
-            tgtAssert(curC < volumes.size(), "current C value larger than volumes vector");
-            tgtAssert(curT < volumes[curC].size(), "current T value larger than volumes vector");
+        for (size_t tiffDir = 0; tiffDir < stack.files_.at(fileID).numDirectories_; tiffDir++) {
+            tgtAssert(curC < (int)volumes.size(), "current C value larger than volumes vector");
+            tgtAssert(curT < (int)volumes[curC].size(), "current T value larger than volumes vector");
 
-            if (getProgressBar()) {
-                getProgressBar()->setProgress(static_cast<float>(curSlice) / static_cast<float>(numSlices-1));
+            if (getProgressBar() && !singleSlice) {
+                getProgressBar()->setProgress(static_cast<float>(curSlice) / static_cast<float>(stack.numSlices_-1));
                 getProgressBar()->forceUpdate();
             }
 
-            // ignore slice, if only a single volume is loaded and current channel/timestep do not match requested volume
-            if (!singleVolume || (curC == requestedChannel && curT == requestedTimestep)) {
-                
+            // ignore slice, if a specific channel/timestep/slice is requested, which does not match current channel/timestep/slice
+            bool skipSlice = (requestedChannel >= 0  && curC != requestedChannel)  ||
+                             (requestedTimestep >= 0 && curT != requestedTimestep) ||
+                             (firstZSlice >= 0 && (firstZSlice > curZ || lastZSlice < curZ));
+            if (!skipSlice) {
                 // retrieve current volume and create it, if not created yet
                 VolumeRAM*& currentVolume = volumes[curC][curT];
                 if (!currentVolume) {
                     try {
-                        currentVolume = volumeFac.create(dataType, dimensions);
+                        currentVolume = volumeFac.create(stack.datatype_, outputVolDim);
                     }
                     catch (std::exception& e) {
                         LERROR(e.what());
                         deleteVolumes(volumes);
                         if (getProgressBar())
                             getProgressBar()->hide();
-                        throw tgt::IOException(e.what(), masterFileName);
+                        throw e;
                     }
                 }
                 tgtAssert(currentVolume, "current volume is null");
 
                 // read current directory/slice
                 try {
-                    size_t curSliceByteOffset = tgt::hmul(dimensions.xy()) * curZ * currentVolume->getBytesPerVoxel();
+                    tgtAssert(firstZSlice == -1 || firstZSlice <= curZ, "invalid curZ (should have skipped this slice)");
+                    size_t zSliceInOutputVolume = firstZSlice >= 0 ? curZ-firstZSlice : curZ;
+                    size_t curSliceByteOffset = tgt::hmul(outputVolDim.xy()) * zSliceInOutputVolume * currentVolume->getBytesPerVoxel();
                     void* curSlicePointer = reinterpret_cast<void*>(reinterpret_cast<char*>(currentVolume->getData()) + curSliceByteOffset);
-                    readTiffDirectory(curTiffFile, dataType, dimensions, curSlicePointer);
-                
-                    // alternative using devil (works only for single-slice files!):
-                    //readTiffDirectory(curFile, dataType, dimensions, curSlicePointer);
+                    readTiffDirectory(curTiffFile, stack.datatype_, stack.volumeDim_.xy(), curSlicePointer);
                 }
                 catch (tgt::Exception& e) {
                     deleteVolumes(volumes);
                     raiseIOException("Failed to read tiff slice: " + std::string(e.what()), curFile.filename_, getProgressBar());
                 }
-            } // single volume
+            }
 
             // increment directory in tiff file
             TIFFReadDirectory(curTiffFile);
@@ -322,7 +393,7 @@ VolumeList* OMETiffVolumeReader::read(const std::string &url)
             // update stack indices (pointers to curZ, curC, curT)
             curSlice++;
             (*curStackIndices[0])++; //< first index changes fastest
-            if (*curStackIndices[0] >= dimSizes[0]) { //< handle overvlow
+            if (*curStackIndices[0] >= dimSizes[0]) { //< handle overflow
                 *curStackIndices[0] = 0;
                 (*curStackIndices[1])++;
                 if (*curStackIndices[1] >= dimSizes[1]) {
@@ -331,7 +402,7 @@ VolumeList* OMETiffVolumeReader::read(const std::string &url)
                 }
             }
             tgtAssert((*curStackIndices[0] < dimSizes[0] && *curStackIndices[1] < dimSizes[1] && *curStackIndices[2] < dimSizes[2]) ||
-                      (curSlice == numSlices), "invalid stack indices");
+                (curSlice == stack.numSlices_), "invalid stack indices");
 
         } // directory iteration
 
@@ -340,100 +411,31 @@ VolumeList* OMETiffVolumeReader::read(const std::string &url)
 
     } // file iteration
 
+    // collect created VolumeRAMs in result vector
+    std::vector<VolumeRAM*> result;
+    for (size_t c=0; c<volumes.size(); c++) {
+        for (size_t t=0; t<volumes[c].size(); t++) {
+            if ((requestedChannel == -1 || c == requestedChannel) && (requestedTimestep == -1 || t == requestedTimestep))
+                tgtAssert(volumes.at(c).at(t), "missing volume"); //< current channel/timestep is expected to have been created
+            if (volumes[c][t]) {
+                result.push_back(volumes.at(c).at(t));
+            }
+        }
+    }
+    tgtAssert(!result.empty(), "result volume vector is empty");
 
     if (getProgressBar())
         getProgressBar()->hide();
 
-    // collect created volumes in volume list
-    VolumeList* volumeList = new VolumeList();
-    for (size_t c=0; c<volumes.size(); c++) {
-        for (size_t t=0; t<volumes[c].size(); t++) {
-            tgtAssert(singleVolume || volumes[c][t], "missing volume"); //< if not single volume, all volumes should have been created
-            if (volumes[c][t]) {
-                Volume* volumeHandle = new Volume(volumes[c][t], spacing, vec3(0.0f));
-                volumeHandle->setTimestep(static_cast<float>(t));
-                volumeHandle->setMetaDataValue<IntMetaData, int>("Channel", (int)c);
-
-                VolumeURL origin("ome-tiff", masterFileName);
-                origin.addSearchParameter("channel", itos(c));
-                origin.addSearchParameter("timestep", itos(t));
-                volumeHandle->setOrigin(origin);
-
-                volumeList->add(volumeHandle);
-            }
-        }
-    }
-    tgtAssert(!volumeList->empty(), "volume list is empty");
-
-    return volumeList;
-}
-
-VolumeBase* OMETiffVolumeReader::read(const VolumeURL& origin) 
-    throw (tgt::FileException, std::bad_alloc) 
-{
-    VolumeList* volumeList = read(origin.getURL());
-    tgtAssert(!volumeList->empty(), "volume list is empty");
-
-    VolumeBase* volume = volumeList->first();
-    tgtAssert(volume, "volume is null");
-
-    if (volumeList->size() > 1) {
-        LWARNING("read(origin): more than one volume loaded. Discarding redundant volumes.");
-        for (size_t i=1; i<volumeList->size(); i++)
-            delete volumeList->at(i);
-    }
-
-    return volume;
-}
-
-std::vector<VolumeURL> OMETiffVolumeReader::listVolumes(const std::string& urlStr) const 
-    throw (tgt::FileException) 
-{
-    VolumeURL url(urlStr);
-    std::string filepath = url.getPath();
-
-    TIFF* tiffFile = TIFFOpen(filepath.c_str(), "r");
-    if (!tiffFile)
-        raiseIOException("Failed to open file", filepath);
-
-    // extract meta data from OME XML, stored in the image description field of the tiff file
-    std::string dimensionOrder;
-    svec3 dimensions;
-    int sizeC, sizeT;
-    tgt::vec3 spacing;
-    std::string dataType;
-    std::vector<OMETiffFile> files;
-    try {
-        extractMetaData(tiffFile, filepath, dimensionOrder, dimensions, sizeC, sizeT, dataType, spacing, files);
-    }
-    catch (tgt::Exception& e) {
-        raiseIOException(e.what(), urlStr);
-    }
-
-    // identify volumes by channel and timestep
-    std::vector<VolumeURL> volumeURLs;
-    for (size_t c=0; c<sizeC; c++) {
-        for (size_t t=0; t<sizeT; t++) {
-            VolumeURL subUrl("ome-tiff", filepath);
-            subUrl.addSearchParameter("channel", itos(c));
-            subUrl.addSearchParameter("timestep", itos(t));
-            subUrl.getMetaDataContainer().addMetaData("Channel", new IntMetaData((int)c));
-            subUrl.getMetaDataContainer().addMetaData("Timestep", new IntMetaData((int)t));
-            subUrl.getMetaDataContainer().addMetaData("Volume Dimensions", new IVec3MetaData(static_cast<ivec3>(dimensions)));
-            subUrl.getMetaDataContainer().addMetaData("Voxel Spacing", new StringMetaData(genericToString(spacing) + " micron"));
-            volumeURLs.push_back(subUrl);
-        }
-    }
-    
-    return volumeURLs;
+    return result;
 }
 
 
 // protected/private methods
 // -------------------------
 
-void OMETiffVolumeReader::readTiffDirectory(TIFF* tiffFile, const std::string& dataType, const tgt::svec3& volumeDim, void* destBuffer) const 
-    throw (tgt::Exception) 
+void OMETiffVolumeReader::readTiffDirectory(TIFF* tiffFile, const std::string& dataType, const tgt::svec2& sliceDim, void* destBuffer) const
+    throw (tgt::Exception)
 {
     tgtAssert(tiffFile, "null pointer passed");
 
@@ -447,10 +449,10 @@ void OMETiffVolumeReader::readTiffDirectory(TIFF* tiffFile, const std::string& d
         bitsPerVoxel = 32;
     else {
         tgtAssert(false, "unknown data type"); //< should have been checked before
-        throw tgt::Exception("Unknown data type: " + dataType);   
+        throw tgt::Exception("Unknown data type: " + dataType);
     }
     tgtAssert(bitsPerVoxel > 0, "invalid bits per voxel");
-        
+
     // read properties from tiff file and check against passed parameters
     uint32 width, height;
     uint16 depth, bps;
@@ -458,8 +460,8 @@ void OMETiffVolumeReader::readTiffDirectory(TIFF* tiffFile, const std::string& d
     TIFFGetField(tiffFile, TIFFTAG_IMAGELENGTH, &height);
     TIFFGetField(tiffFile, TIFFTAG_SAMPLESPERPIXEL, &depth);
     TIFFGetField(tiffFile, TIFFTAG_BITSPERSAMPLE, &bps);
-    if ((volumeDim.x != static_cast<int>(width)) || (volumeDim.y != static_cast<int>(height))) {
-        throw tgt::Exception("Slice dimensions (" + genericToString(tgt::ivec2(width, height)) + ") differ from volume dimensions (" + genericToString(volumeDim) + ")");
+    if ((sliceDim.x != static_cast<int>(width)) || (sliceDim.y != static_cast<int>(height))) {
+        throw tgt::Exception("Tiff image dimensions (" + genericToString(tgt::ivec2(width, height)) + ") differ from volume slice dimensions (" + genericToString(sliceDim) + ")");
     }
     else if (depth != 1) {
         throw tgt::Exception("Samples per pixel != 1 (" + itos(depth) + ")");
@@ -471,7 +473,7 @@ void OMETiffVolumeReader::readTiffDirectory(TIFF* tiffFile, const std::string& d
     // determine strip parameters
     tsize_t stripCount = TIFFNumberOfStrips(tiffFile);
     tsize_t stripSize = TIFFStripSize(tiffFile);
-    
+
     // iterate over strips and copy them to dest buffer
     for (tstrip_t stripID=0; stripID<static_cast<tstrip_t>(stripCount); stripID++) {
         if (TIFFReadEncodedStrip(tiffFile, stripID, destBuffer, stripSize) == -1)
@@ -482,11 +484,12 @@ void OMETiffVolumeReader::readTiffDirectory(TIFF* tiffFile, const std::string& d
 }
 
 // see OME XML schema definition: http://www.openmicroscopy.org/Schemas/Documentation/Generated/OME-2012-06/ome.html
-void OMETiffVolumeReader::extractMetaData(TIFF* tiffFile, const std::string& path, std::string& dimensionOrder, tgt::svec3& dimensions, int& sizeC, int& sizeT, std::string& dataType,
-    tgt::vec3& spacing, std::vector<OMETiffFile>& files) const 
-    throw (tgt::Exception) 
+OMETiffStack OMETiffVolumeReader::extractStackInformation(TIFF* tiffFile, const std::string& path) const
+    throw (tgt::Exception)
 {
     tgtAssert(tiffFile, "no tiff file");
+
+    OMETiffStack stack;
 
     char* desc = 0;
     TIFFGetField(tiffFile, TIFFTAG_IMAGEDESCRIPTION, &desc);
@@ -524,21 +527,22 @@ void OMETiffVolumeReader::extractMetaData(TIFF* tiffFile, const std::string& pat
         throw tgt::Exception("Node 'Pixels' is not an element");
 
     // extract 'DimensionOrder' from 'Pixels' elem (see )
-    if (pixelsElem->QueryValueAttribute("DimensionOrder", &dimensionOrder) != TIXML_SUCCESS)
+    if (pixelsElem->QueryValueAttribute("DimensionOrder", &stack.dimensionOrder_) != TIXML_SUCCESS)
         throw tgt::Exception("Failed to read attribute 'DimensionOrder' of element 'Pixels' in OME XML");
-    dimensionOrder = toUpper(trim(dimensionOrder));
-    if (dimensionOrder != "XYZCT" &&  
-        dimensionOrder != "XYZTC" &&
-        dimensionOrder != "XYCTZ" &&
-        dimensionOrder != "XYCZT" &&
-        dimensionOrder != "XYTCZ" &&
-        dimensionOrder != "XYTZC"    )
+    stack.dimensionOrder_ = toUpper(trim(stack.dimensionOrder_));
+    if (stack.dimensionOrder_ != "XYZCT" &&
+        stack.dimensionOrder_ != "XYZTC" &&
+        stack.dimensionOrder_ != "XYCTZ" &&
+        stack.dimensionOrder_ != "XYCZT" &&
+        stack.dimensionOrder_ != "XYTCZ" &&
+        stack.dimensionOrder_ != "XYTZC"    )
     {
-        throw VoreenException("Unknown DimensionOrder: " + dimensionOrder);
+        throw VoreenException("Unknown DimensionOrder: " + stack.dimensionOrder_);
     }
 
     // extract dimensions from 'Pixels' elem
     ivec3 intDim;
+    int sizeT, sizeC;
     if (pixelsElem->QueryIntAttribute("SizeX", &intDim.x) != TIXML_SUCCESS)
         throw tgt::Exception("Failed to read attribute 'SizeX' of element 'Pixels' in OME XML");
     if (pixelsElem->QueryIntAttribute("SizeY", &intDim.y) != TIXML_SUCCESS)
@@ -549,27 +553,58 @@ void OMETiffVolumeReader::extractMetaData(TIFF* tiffFile, const std::string& pat
         throw tgt::Exception("Failed to read attribute 'SizeT' of element 'Pixels' in OME XML");
     if (pixelsElem->QueryIntAttribute("SizeC", &sizeC) != TIXML_SUCCESS)
         throw tgt::Exception("Failed to read attribute 'SizeC' of element 'Pixels' in OME XML");
-    dimensions = static_cast<svec3>(intDim);
+
+    // check and convert dimension information
+    if (tgt::hor(tgt::lessThanEqual(intDim, tgt::ivec3::zero)) || tgt::hor(tgt::greaterThan(intDim, tgt::ivec3(99999)))) {
+        std::ostringstream stream;
+        stream << intDim;
+        throw VoreenException("Invalid volume dimensions: " + stream.str());
+    }
+    stack.volumeDim_ = static_cast<tgt::svec3>(intDim);
+    if (sizeC <= 0) {
+        throw VoreenException("Invalid sizeC: " + itos(sizeC));
+    }
+    stack.sizeC_ = static_cast<size_t>(sizeC);
+    if (sizeT <= 0) {
+        throw VoreenException("Invalid sizeT: " + itos(sizeT));
+    }
+    stack.sizeT_ = static_cast<size_t>(sizeT);
 
     // extract data type from 'Pixels' elem
     std::string pixelTypeStr;
     if (pixelsElem->QueryValueAttribute("PixelType", &pixelTypeStr) != TIXML_SUCCESS) {
         LWARNING("Failed to read attribute 'PixelType' of element 'Pixels' in OME XML. Trying attribute 'Type' instead...");
-        if (pixelsElem->QueryValueAttribute("Type", &pixelTypeStr) != TIXML_SUCCESS) 
+        if (pixelsElem->QueryValueAttribute("Type", &pixelTypeStr) != TIXML_SUCCESS)
             throw tgt::Exception("Failed to read attribute 'PixelType'/'Type' of element 'Pixels' in OME XML");
     }
-    dataType = pixelTypeStr; //< OME pixel type strings equal type strings used by the VolumeFactory
-    if (dataType != "uint8" && dataType != "int8" && dataType != "uint16" && dataType != "int16" &&
-        dataType != "uint32" && dataType != "int32" && dataType != "float" )
-        throw tgt::Exception("Unknown/unsupported PixelType: " + dataType);
+    stack.datatype_ = pixelTypeStr; //< OME pixel type strings equal type strings used by the VolumeFactory
+    if (stack.datatype_ != "uint8" && stack.datatype_ != "int8" && stack.datatype_ != "uint16" && stack.datatype_ != "int16" &&
+        stack.datatype_ != "uint32" && stack.datatype_ != "int32" && stack.datatype_ != "float" )
+        throw tgt::Exception("Unknown/unsupported PixelType: " + stack.datatype_);
 
     // extract spacing from 'Pixels' elem
-    if (pixelsElem->QueryFloatAttribute("PhysicalSizeX", &spacing.x) != TIXML_SUCCESS)
+    tgt::vec3 physicalsize;
+    if (pixelsElem->QueryFloatAttribute("PhysicalSizeX", &physicalsize.x) != TIXML_SUCCESS)
         throw tgt::Exception("Failed to read attribute 'PhysicalSizeX' of element 'Pixels' in OME XML");
-    if (pixelsElem->QueryFloatAttribute("PhysicalSizeY", &spacing.y) != TIXML_SUCCESS)
+    if (pixelsElem->QueryFloatAttribute("PhysicalSizeY", &physicalsize.y) != TIXML_SUCCESS)
         throw tgt::Exception("Failed to read attribute 'PhysicalSizeY' of element 'Pixels' in OME XML");
-    if (pixelsElem->QueryFloatAttribute("PhysicalSizeZ", &spacing.z) != TIXML_SUCCESS)
+    if (pixelsElem->QueryFloatAttribute("PhysicalSizeZ", &physicalsize.z) != TIXML_SUCCESS)
         throw tgt::Exception("Failed to read attribute 'PhysicalSizeZ' of element 'Pixels' in OME XML");
+
+    if (tgt::hor(tgt::lessThan(physicalsize, tgt::vec3::zero))) {
+        std::ostringstream stream;
+        stream << physicalsize;
+        LWARNING("negative physicalsize: " + stream.str() + ", overwriting with 1.0");
+        stack.voxelSpacing_ = tgt::vec3(1.f);
+    }
+    else if (tgt::hor(tgt::equal(physicalsize, tgt::vec3::zero))) {
+        std::ostringstream stream;
+        stream << physicalsize;
+        LWARNING("physicalsize is zero : " + stream.str() + ", overwriting with 1.0");
+        physicalsize = tgt::vec3(1.f);
+    }
+    // adapt spacing: OME base length is micron, Voreen base length unit is mm
+    stack.voxelSpacing_ = physicalsize / 1000.f;
 
     // collect 'TiffData' nodes
     std::vector<const TiXmlElement*> tiffdataElems;
@@ -581,7 +616,7 @@ void OMETiffVolumeReader::extractMetaData(TIFF* tiffFile, const std::string& pat
     }
 
     // extract file information from 'TiffData' nodes
-    files.clear();
+    stack.files_.clear();
     std::string currentUUID;
     try {
         for (size_t i=0; i<tiffdataElems.size(); i++) {
@@ -589,7 +624,7 @@ void OMETiffVolumeReader::extractMetaData(TIFF* tiffFile, const std::string& pat
             const TiXmlElement* tiffDataElem = tiffdataElems.at(i);
 
             // extract UUID element and string (mandatory)
-            const TiXmlElement* uuidElem = getXMLElement(tiffDataElem, "UUID"); 
+            const TiXmlElement* uuidElem = getXMLElement(tiffDataElem, "UUID");
             tgtAssert(uuidElem, "elem is null"); //< exception expected
             std::string uuid = uuidElem->GetText();
             if (uuid.empty())
@@ -617,22 +652,32 @@ void OMETiffVolumeReader::extractMetaData(TIFF* tiffFile, const std::string& pat
             tiffDataElem->QueryIntAttribute("FirstT", &firstT);
 
             // create file descriptor from extracted information
-            files.push_back(OMETiffFile(filename, 0, firstZ, firstT, firstC));
+            stack.files_.push_back(OMETiffFile(filename, 0, firstZ, firstT, firstC));
         }
     }
     catch (tgt::Exception& e) {
         throw tgt::Exception("Failed to collect file information from 'TiffData' nodes in OME XML: " + std::string(e.what()));
     }
+
+    tgtAssert(!stack.files_.empty(), "no files passed");
+    tgtAssert(!stack.dimensionOrder_.empty(), "no dimension order passed");
+    tgtAssert(!stack.datatype_.empty(), "no dimension order passed");
+    tgtAssert(tgt::hand(tgt::greaterThan(stack.voxelSpacing_, tgt::vec3::zero)), "invalid spacing");
+    tgtAssert(stack.sizeC_ > 0, "sizeC must be greater 0");
+    tgtAssert(stack.sizeT_ > 0, "sizeT must be greater 0");
+    //tgtAssert(stack.numSlices_ > 0, "num slices must be greater 0")
+
+    return stack;
 }
 
-void OMETiffVolumeReader::determineDirectoryCount(std::vector<OMETiffFile>& files, size_t& totalNumberOfSlices) 
-    throw (tgt::Exception) 
+void OMETiffVolumeReader::determineDirectoryCount(OMETiffStack& stack)
+    throw (tgt::Exception)
 {
 
     // determine number of directories for each TIFF file
-    totalNumberOfSlices = 0;
-    for (size_t i=0; i<files.size(); i++) {
-        OMETiffFile& file = files.at(i);
+    stack.numSlices_ = 0;
+    for (size_t i=0; i<stack.files_.size(); i++) {
+        OMETiffFile& file = stack.files_.at(i);
         file.numDirectories_ = 0;
         TIFF* tiffFile = TIFFOpen(file.filename_.c_str(), "r");
         if (tiffFile) {
@@ -642,15 +687,23 @@ void OMETiffVolumeReader::determineDirectoryCount(std::vector<OMETiffFile>& file
             TIFFClose(tiffFile);
             if (file.numDirectories_ == 0)
                 throw tgt::Exception("No directories found in TIFF file '" + file.filename_ + "'");
-            totalNumberOfSlices += file.numDirectories_;
+            stack.numSlices_ += file.numDirectories_;
         }
         else
             throw tgt::Exception("Failed to open TIFF file '" + file.filename_ + "'");
     }
+    tgtAssert(stack.numSlices_ > 0, "num slices must not be 0");
+
+    // TODO
+    /*if (numSlices != stack.volumeDim_.z*stack.sizeC_*stack.sizeT_) {
+        raiseIOException("Total number of slices in TIFF files (" + itos(numSlices) +
+            ") does not match stack size (dim.z*sizeC*sizeT = " + itos(stack.volumeDim_.z*stack.sizeC_*stack.sizeT_) + ") ", masterFileName, getProgressBar());
+    } */
+
 }
 
-const TiXmlNode* OMETiffVolumeReader::getXMLNode(const TiXmlNode* parent, const std::string& path) const 
-    throw (tgt::Exception) 
+const TiXmlNode* OMETiffVolumeReader::getXMLNode(const TiXmlNode* parent, const std::string& path) const
+    throw (tgt::Exception)
 {
     tgtAssert(parent, "parent node is null");
     tgtAssert(!path.empty(), "path string is empty");
@@ -676,8 +729,8 @@ const TiXmlNode* OMETiffVolumeReader::getXMLNode(const TiXmlNode* parent, const 
     return currentNode;
 }
 
-const TiXmlElement* OMETiffVolumeReader::getXMLElement(const TiXmlNode* parent, const std::string& path) const 
-    throw (tgt::Exception) 
+const TiXmlElement* OMETiffVolumeReader::getXMLElement(const TiXmlNode* parent, const std::string& path) const
+    throw (tgt::Exception)
 {
     // retrieve node
     const TiXmlNode* xmlNode = getXMLNode(parent, path);
@@ -691,8 +744,8 @@ const TiXmlElement* OMETiffVolumeReader::getXMLElement(const TiXmlNode* parent, 
 }
 
 std::vector<const TiXmlNode*> OMETiffVolumeReader::getXMLNodeList(const TiXmlNode* parent,
-        const std::string& path, const std::string& nodeName) const 
-        throw (tgt::Exception)  
+        const std::string& path, const std::string& nodeName) const
+        throw (tgt::Exception)
 {
     tgtAssert(parent, "parent node is null");
     tgtAssert(!nodeName.empty(), "node name is empty");
@@ -715,8 +768,8 @@ std::vector<const TiXmlNode*> OMETiffVolumeReader::getXMLNodeList(const TiXmlNod
     return result;
 }
 
-std::vector<const TiXmlElement*> OMETiffVolumeReader::getXMLElementList(const TiXmlNode* parent, const std::string& path, const std::string& nodeName) const 
-    throw (tgt::Exception) 
+std::vector<const TiXmlElement*> OMETiffVolumeReader::getXMLElementList(const TiXmlNode* parent, const std::string& path, const std::string& nodeName) const
+    throw (tgt::Exception)
 {
     tgtAssert(parent, "parent node is null");
     tgtAssert(!nodeName.empty(), "node name is empty");
@@ -736,8 +789,8 @@ std::vector<const TiXmlElement*> OMETiffVolumeReader::getXMLElementList(const Ti
 
 
 /* Previous read slice method using Devil (not used anymore)
- 
-void OMETiffVolumeReader::readTiffSliceFileIL(const std::string& filename, const std::string& dataType, const tgt::svec3& volumeDim, void* destBuffer) const 
+
+void OMETiffVolumeReader::readTiffSliceFileIL(const std::string& filename, const std::string& dataType, const tgt::svec3& volumeDim, void* destBuffer) const
     throw (tgt::Exception)
 {
     tgtAssert(destBuffer, "no dest buffer");
@@ -760,7 +813,7 @@ void OMETiffVolumeReader::readTiffSliceFileIL(const std::string& filename, const
         ilDataType = IL_FLOAT;
     else {
         tgtAssert(false, "unknown data type"); //< should have been checked before
-        throw tgt::Exception("Unknown data type: " + dataType);   
+        throw tgt::Exception("Unknown data type: " + dataType);
     }
 
     // open image

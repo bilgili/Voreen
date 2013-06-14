@@ -35,32 +35,24 @@ class QWidget;
 
 namespace voreen {
 
-class FloatVec4Property;
-class FloatVec4PropertyWidget;
+class LightSourceProperty;
 class LightWidget;
-class CameraProperty;
 
 class LightPropertyWidget : public QPropertyWidget {
 Q_OBJECT
 public:
-    LightPropertyWidget(FloatVec4Property* prop, QWidget* parent = 0);
+    LightPropertyWidget(LightSourceProperty* prop, QWidget* parent = 0);
 
 protected:
-    FloatVec4Property* property_;
+    LightSourceProperty* property_;
     LightWidget* light_;
     QCheckBox* followCam_;
-    bool noUpdateFromProp_;
-    tgt::vec3 curCenter_;
-
-    CameraProperty* getCamera();
-    void cameraUpdate();    // on property change of the cameraproperty this is invoked by calling
-                            // a member action
-    void updateFromProperty();
-    //MetaDataBase* getWidgetMetaData() const;
-    virtual void updateMetaData() const;
 
 protected slots:
+    virtual void updateFromPropertySlot();
+
     void changeWidgetLight(tgt::vec4);
+    void changeFollowCam(bool b);
 };
 
 } // namespace voreen

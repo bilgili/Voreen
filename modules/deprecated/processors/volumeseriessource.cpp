@@ -27,12 +27,13 @@
 
 #include "voreen/core/datastructures/volume/volume.h"
 #include "voreen/core/processors/processorwidgetfactory.h"
-#include "voreen/core/ports/allports.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "voreen/core/io/textfilereader.h"
+
+#include "tgt/filesystem.h"
 
 namespace voreen {
 

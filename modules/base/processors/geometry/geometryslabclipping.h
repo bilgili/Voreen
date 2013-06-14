@@ -27,7 +27,9 @@
 #define VRN_GEOMETRYSLABCLIPPING_H
 
 #include "voreen/core/processors/processor.h"
-#include "voreen/core/ports/allports.h"
+
+#include "voreen/core/ports/geometryport.h"
+
 #include "voreen/core/interaction/mwheelnumpropinteractionhandler.h"
 
 #include "voreen/core/properties/vectorproperty.h"

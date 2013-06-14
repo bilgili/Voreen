@@ -44,7 +44,16 @@ float realWorldToTexture(TransFuncParameters tf, float v) {
         return (v - tf.domainLower_.x) / (tf.domainUpper_.x - tf.domainLower_.x);
 }
 
-//TODO: 2D, 3D
+vec2 realWorldToTexture(TransFuncParameters tf, vec2 v) {
+    float x = realWorldToTexture(tf, v.x);
+
+    if(v.y <= tf.domainLower_.y)
+       return vec2(x, 0.0);
+    else if(v.y >= tf.domainUpper_.y)
+       return vec2(x, 1.0);
+    else
+       return vec2(x, (v.y - tf.domainLower_.y) / (tf.domainUpper_.y - tf.domainLower_.y));
+}
 
 vec4 applyTF(TransFuncParameters transfunc, sampler1D tex, float intensity) {
     intensity = realWorldToTexture(transfunc, intensity);
@@ -66,17 +75,17 @@ vec4 applyTF(TransFuncParameters transfunc, sampler1D tex, vec4 intensity) {
 
 vec4 applyTF(TransFuncParameters transfunc, sampler2D tex, float intensity, float gradientMagnitude) {
     #if defined(GLSL_VERSION_130)
-        return texture(tex, vec2(intensity, gradientMagnitude));
+        return texture(tex, realWorldToTexture(transfunc, vec2(intensity, gradientMagnitude)));
     #else
-        return texture2D(tex, vec2(intensity, gradientMagnitude));
+        return texture2D(tex, realWorldToTexture(transfunc, vec2(intensity, gradientMagnitude)));
     #endif
 }
 
 vec4 applyTF(TransFuncParameters transfunc, sampler2D tex, vec4 intensityGradient) {
     #if defined(GLSL_VERSION_130)
-        return texture(tex, vec2(intensityGradient.a, length(intensityGradient.rgb)));
+        return texture(tex, realWorldToTexture(transfunc, vec2(intensityGradient.a, length(intensityGradient.rgb))));
     #else
-        return texture2D(tex, vec2(intensityGradient.a, length(intensityGradient.rgb)));
+        return texture2D(tex, realWorldToTexture(transfunc, vec2(intensityGradient.a, length(intensityGradient.rgb))));
     #endif
 }
 

@@ -1776,6 +1776,102 @@ VolumeWriteBuffer::VolumeWriteBuffer(const Context* context, VolumeRAM* vol) : i
     volume_ = vol;
 }
 
+
+void fillGradientModesPropertyCL(StringOptionProperty& gradientMode) {
+    gradientMode.addOption("none",                 "none"                  );
+    gradientMode.addOption("forward-differences",  "Forward Differences"   );
+    gradientMode.addOption("central-differences",  "Central Differences"   );
+    gradientMode.addOption("sobel",                "Sobel"                 );
+    gradientMode.addOption("filtered",             "Filtered"              );
+    gradientMode.select("central-differences");
+}
+
+void fillShadingModesPropertyCL(StringOptionProperty& shadeMode) {
+    shadeMode.addOption("none",                   "none"                   );
+    shadeMode.addOption("phong-diffuse",          "Phong (Diffuse)"        );
+    shadeMode.addOption("phong-specular",         "Phong (Specular)"       );
+    shadeMode.addOption("phong-diffuse-ambient",  "Phong (Diffuse+Amb.)"   );
+    shadeMode.addOption("phong-diffuse-specular", "Phong (Diffuse+Spec.)"  );
+    shadeMode.addOption("phong",                  "Phong (Full)"           );
+    shadeMode.addOption("toon",                   "Toon"                   );
+    shadeMode.addOption("cook-torrance",          "Cook-Torrance"          );
+    shadeMode.addOption("oren-nayar",             "Oren-Nayar"             );
+    shadeMode.addOption("ward",                   "Ward (Isotropic)"       );
+    shadeMode.select("phong");
+}
+
+void fillCompositingModesPropertyCL(StringOptionProperty& compositingMode) {
+    compositingMode.addOption("dvr", "DVR");
+    compositingMode.addOption("mip", "MIP");
+    compositingMode.addOption("mida", "MIDA");
+    compositingMode.addOption("iso", "ISO");
+    compositingMode.addOption("fhp", "FHP");
+    compositingMode.addOption("fhn", "FHN");
+}
+
+
+std::string getGradientDefineCL(std::string gradientMode, std::string functionName) {
+    std::string headerSource = "#define " + functionName + "(volume, volumeStruct, samplePos) ";
+    if (gradientMode == "none")
+        headerSource += "(color - (float4)(0.5))*2.0;\n";
+    else if (gradientMode == "forward-differences")
+        headerSource += "calcGradientAFD(volume, volumeStruct, samplePos);\n";
+    else if (gradientMode == "central-differences")
+        headerSource += "calcGradientA(volume, volumeStruct, samplePos);\n";
+    else if (gradientMode == "filtered")
+        headerSource += "calcGradientFiltered(volume, volumeStruct, samplePos);\n";
+    else if (gradientMode == "sobel")
+        headerSource += "calcGradientSobel(volume, volumeStruct, samplePos);\n";
+
+    return headerSource;
+}
+
+std::string getShaderDefineCL(std::string shadeMode, std::string functionName, std::string n, std::string pos, std::string lPos, std::string cPos, std::string ka, std::string kd, std::string ks) {
+    std::string headerSource = "#define " + functionName + "(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ", lightSource_" +") ";
+    if (shadeMode == "none")
+        headerSource += "" + ka + ";\n";
+    else if (shadeMode == "phong-diffuse")
+        headerSource += "phongShadingD(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + kd + ", lightSource_" + ");\n";
+    else if (shadeMode == "phong-specular")
+        headerSource += "phongShadingS(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ks + ", lightSource_" + ");\n";
+    else if (shadeMode == "phong-diffuse-ambient")
+        headerSource += "phongShadingDA(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + kd + ", " + ka + ", lightSource_" + ");\n";
+    else if (shadeMode == "phong-diffuse-specular")
+        headerSource += "phongShadingDS(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + kd + ", " + ks + ", lightSource_" + ");\n";
+    else if (shadeMode == "phong")
+        headerSource += "phongShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ", lightSource_"+ ");\n";
+    else if (shadeMode == "toon")
+        headerSource += "toonShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + kd + ", 3" + ", lightSource_" + ");\n";
+    else if (shadeMode == "cook-torrance")
+        headerSource += "cookTorranceShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ", lightSource_" + ");\n";
+    else if (shadeMode == "oren-nayar")
+        headerSource += "orenNayarShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", lightSource_" + ");\n";
+    else if (shadeMode == "lafortune")
+        headerSource += "lafortuneShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ", lightSource_" + ");\n";
+    else if (shadeMode == "ward")
+        headerSource += "wardShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ", lightSource_" + ");\n";
+
+    return headerSource;
+}
+
+std::string getCompositingDefineCl(std::string compositingMode, std::string functionName, std::string result, std::string color, std::string samplePos, std::string gradient, std::string t, std::string samplingStepSize, std::string tDepth) {
+    std::string headerSource = "#define " + functionName +"(" + result + ", " + color + ", " +samplePos + ", " + gradient + ", " + t + ", " + samplingStepSize + ", " + tDepth + ") ";
+    if (compositingMode == "dvr")
+        headerSource += "compositeDVR(result, color, t, samplingStepSize, tDepth);\n";
+    else if (compositingMode == "mip")
+        headerSource += "compositeMIP(result, color, t, tDepth);\n";
+    else if (compositingMode == "mida")
+        headerSource += "compositeMIDA(result, voxel, color, f_max_i, t, samplingStepSize, tDepth, gammaValue_);\n";
+    else if (compositingMode == "iso")
+        headerSource += "compositeISO(result, color, t, tDepth, isoValue_);\n";
+    else if (compositingMode == "fhp")
+        headerSource += "compositeFHP(samplePos, result, t, tDepth);\n";
+    else if (compositingMode == "fhn")
+        headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
+
+    return headerSource;
+}
+
 } //namespace cl
 
 } //namespace voreen

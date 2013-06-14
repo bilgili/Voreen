@@ -191,7 +191,7 @@ void Font::update(bool reloadFont) {
         }
     }
 
-    if (!font_->Error()) {
+    if (font_ && !font_->Error()) {
         font_->FaceSize(fontSize_);
 
         //delete simpleLayout_;

@@ -28,6 +28,8 @@
 
 namespace voreen {
 
+const std::string VolumePreview::loggerCat_("voreen.VolumePreview");
+
 VolumePreview::VolumePreview()
     : VolumeDerivedData()
     , height_(0)
@@ -77,10 +79,11 @@ VolumeDerivedData* VolumePreview::createFrom(const VolumeBase* handle) const {
 
     const VolumeRAM* volumeRam = 0;
     const VolumeDisk* volumeDisk = 0;
-    if(handle->hasRepresentation<VolumeRAM>()) {
+    if (handle->hasRepresentation<VolumeRAM>()) {
         volumeRam = handle->getRepresentation<VolumeRAM>();
         tgtAssert(volumeRam, "no volume");
-    } else if(handle->hasRepresentation<VolumeDisk>()) {
+    }
+    else if (handle->hasRepresentation<VolumeDisk>()) {
         volumeDisk = handle->getRepresentation<VolumeDisk>();
         tgtAssert(volumeDisk, "no volume");
     }
@@ -88,16 +91,25 @@ VolumeDerivedData* VolumePreview::createFrom(const VolumeBase* handle) const {
     tgt::vec3 position;
     int offset = static_cast<int>(handle->getDimensions().z - 1) / 2;
 
-    if(volumeRam)
+    if (volumeRam)
         position.z = static_cast<float>(offset);
-    else if (volumeDisk){
-            volumeRam = volumeDisk->loadSlices(offset,offset);
-            tgtAssert(volumeRam, "no volume");
-            position.z = 0;
-        } else {
-            LERROR("No VolumeRAM or VolumeDisk!");
+    else if (volumeDisk) {
+        try {
+            volumeRam = volumeDisk->loadSlices(offset, offset);
+        }
+        catch (tgt::Exception& e) {
+            LERROR(e.what());
+        }
+        if (!volumeRam) {
+            LERROR("VolumeDisk::loadSlices failed to create a RAM volume");
             return 0;
         }
+        position.z = 0;
+    }
+    else {
+        LERROR("Neither VolumeRAM nor VolumeDisk available");
+        return 0;
+    }
 
     // generate preview in float buffer
     minVal = volumeRam->elementRange().y;

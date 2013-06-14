@@ -36,6 +36,7 @@ class QCheckBox;
 class QLayout;
 class QSlider;
 class QToolButton;
+class QDoubleSpinBox;
 
 namespace voreen {
 
@@ -151,6 +152,10 @@ public slots:
      */
     void repaintSignal();
 
+    void domainChanged();
+
+    void fitToDomain();
+
 private:
 
     /**
@@ -188,6 +193,8 @@ private:
     QToolButton* clearButton_;            ///< button for resetting of the tf
     QToolButton* gridEnabledButton_;      ///< button for enabling and disabling the grid
     QToolButton* histogramEnabledButton_; ///< button for enabling and disabling the histogram
+    QToolButton* fitToDomainButton_;      ///< button for enabling and disabling the histogram
+
     QToolButton* quadButton_;             ///< button for adding a quad primitive
     QToolButton* bananaButton_;           ///< button for adding a banana primitive
     QToolButton* deleteButton_;           ///< button for deletion of current selected primitive
@@ -196,10 +203,11 @@ private:
     QSlider* histogramBrightness_;        ///< slider for adjusting the brightness of the histogram
     QSlider* fuzziness_;                  ///< slider for adjusting the fuzzines of a primitive
     QSlider* transparency_;               ///< slider for adjusting the transparency of a primitive
+    QDoubleSpinBox* lowerIntensityDomainSpin_;         ///< spinbox for lower mapping value
+    QDoubleSpinBox* upperIntensityDomainSpin_;         ///< spinbox for upper mapping value
+    QDoubleSpinBox* lowerGradientDomainSpin_;          ///< spinbox for lower mapping value
+    QDoubleSpinBox* upperGradientDomainSpin_;          ///< spinbox for upper mapping value
     Qt::Orientation orientation_;         ///< orientation of the widget
-
-    int maximumIntensity_;                ///< maximum intensity that can occur in the current rendered volume
-    bool supported_;                      ///< indicates whether 2D tf's are supported by current graphics hardware
 
     static const std::string loggerCat_;  ///< the logger category
 };

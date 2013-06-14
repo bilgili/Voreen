@@ -113,7 +113,7 @@ void VolumeReader::reverseXSliceOrder(VolumeRAM* const volume) const {
     if (volume == 0)
         return;
 
-    const int bytesPerVoxel = volume->getBytesPerVoxel();
+    size_t bytesPerVoxel = volume->getBytesPerVoxel();
     const tgt::ivec3 dim = volume->getDimensions();
 
     typedef unsigned char BYTE;
@@ -141,7 +141,7 @@ void VolumeReader::reverseYSliceOrder(VolumeRAM* const volume) const {
     if (volume == 0)
         return;
 
-    const int bytesPerVoxel = volume->getBytesPerVoxel();
+    size_t bytesPerVoxel = volume->getBytesPerVoxel();
     const tgt::ivec3 dim = volume->getDimensions();
 
     typedef unsigned char BYTE;
@@ -170,9 +170,9 @@ void VolumeReader::reverseZSliceOrder(VolumeRAM* const volume) const {
     if (volume == 0)
         return;
 
-    const int bytesPerVoxel = volume->getBytesPerVoxel();
+    size_t bytesPerVoxel = volume->getBytesPerVoxel();
     const tgt::ivec3 dim = volume->getDimensions();
-    const int sliceSize = dim.x * dim.y * bytesPerVoxel;
+    size_t sliceSize = dim.x * dim.y * bytesPerVoxel;
 
     typedef unsigned char BYTE;
     BYTE* const data = reinterpret_cast<BYTE* const>(volume->getData());

@@ -94,6 +94,7 @@ public:
      *
      * @return color of the left part of the key
      */
+    const tgt::col4& getColorL() const;
     tgt::col4& getColorL();
 
     /**
@@ -115,6 +116,7 @@ public:
      *
      * @return color of the right part of the key
      */
+    const tgt::col4& getColorR() const;
     tgt::col4& getColorR();
 
     /**
@@ -152,7 +154,7 @@ public:
      *
      * @return true if the key is split, false otherwise.
      */
-    bool isSplit();
+    bool isSplit() const;
 
     /**
      * Splits or unsplits this key.
@@ -167,7 +169,7 @@ public:
      *
      * @return intensity at which the key is located
      */
-    float getIntensity();
+    float getIntensity() const;
 
     /**
      * Sets the intensity of the key to the given value. The keys of the transfer function

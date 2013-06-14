@@ -38,6 +38,7 @@ BoundingBoxRenderer::BoundingBoxRenderer()
     : GeometryRendererBase()
     , volumeInport_(Port::INPORT, "volume", "Volume Input")
     , geometryInport_(Port::INPORT, "geometry", "Geometry Input")
+    , enable_("enable", "Enable", true)
     , bboxColor_("boundingboxColor", "Color", tgt::vec4(0.8f, 0.8f, 0.8f, 1.0f))
     , width_("boundingBoxWidth", "Line width", 1.0f, 1.0f, 10.0f)
     , stippleFactor_("boundingBoxStippleFactor", "Stipple factor", 1, 0, 255)
@@ -48,6 +49,7 @@ BoundingBoxRenderer::BoundingBoxRenderer()
     addPort(volumeInport_);
     addPort(geometryInport_);
 
+    addProperty(enable_);
     addProperty(showGrid_);
     addProperty(tilesProp_);
 
@@ -70,6 +72,9 @@ bool BoundingBoxRenderer::isReady() const {
 }
 
 void BoundingBoxRenderer::render() {
+    if (!enable_.get())
+        return;
+
     tgtAssert(volumeInport_.isReady() || geometryInport_.isReady(), "neither inport is ready");
     if (volumeInport_.isReady() && geometryInport_.isReady()) {
         LWARNING("Either volume inport or geometry inport may be connected");

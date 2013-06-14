@@ -76,7 +76,7 @@ private:
 //TODO:
 //Slice* getVolumeSlice(const VolumeBase* vh, SliceAlignment alignment, float sliceIndex);
 
-Slice* getVolumeSlice(const VolumeBase* vh, SliceAlignment alignment, int sliceIndex);
+Slice* getVolumeSlice(const VolumeBase* vh, SliceAlignment alignment, int sliceIndex, int channel = 0);
 
 Slice* getVolumeSlice(const VolumeBase* vh, tgt::plane pl, float samplingRate);
 

@@ -71,146 +71,65 @@ VolumePort::VolumePort(PortDirection direction, const std::string& id, const std
 
 std::string VolumePort::getContentDescription() const {
     std::stringstream strstr;
-    strstr  << getGuiName() << std::endl
-            << "Type: " << getClassName() << std::endl;
+    //port values
+    strstr  << Port::getContentDescription();
 
-    if (getData() && getData()->getRepresentation<VolumeRAM>()) {
-            const VolumeBase* h = getData();
-            const VolumeRAM* v = getData()->getRepresentation<VolumeRAM>();
-            std::string type;
-            if (dynamic_cast<const VolumeRAM_UInt8*>(v))    type = "UInt8";    else
-            if (dynamic_cast<const VolumeRAM_UInt16*>(v))   type = "UInt16";   else
-            if (dynamic_cast<const VolumeRAM_UInt32*>(v))   type = "UInt32";   else
-            if (dynamic_cast<const VolumeRAM_UInt64*>(v))   type = "UInt64";   else
-            if (dynamic_cast<const VolumeRAM_Int8*>(v))     type = "Int8";     else
-            if (dynamic_cast<const VolumeRAM_Int16*>(v))    type = "Int16";    else
-            if (dynamic_cast<const VolumeRAM_Int32*>(v))    type = "Int32";    else
-            if (dynamic_cast<const VolumeRAM_Int64*>(v))    type = "Int64";    else
-            if (dynamic_cast<const VolumeRAM_Float*>(v))    type = "Float";    else
-            if (dynamic_cast<const VolumeRAM_Double*>(v))   type = "Double";   else
-            if (dynamic_cast<const VolumeRAM_2xUInt8*>(v))  type = "2xUInt8";  else
-            if (dynamic_cast<const VolumeRAM_2xUInt16*>(v)) type = "2xUInt16"; else
-            if (dynamic_cast<const VolumeRAM_2xUInt32*>(v)) type = "2xUInt32"; else
-            if (dynamic_cast<const VolumeRAM_2xUInt64*>(v)) type = "2xUInt64"; else
-            if (dynamic_cast<const VolumeRAM_2xInt8*>(v))   type = "2xInt8";   else
-            if (dynamic_cast<const VolumeRAM_2xInt16*>(v))  type = "2xInt16";  else
-            if (dynamic_cast<const VolumeRAM_2xInt32*>(v))  type = "2xInt32";  else
-            if (dynamic_cast<const VolumeRAM_2xInt64*>(v))  type = "2xInt64";  else
-            if (dynamic_cast<const VolumeRAM_2xFloat*>(v))  type = "2xFloat";  else
-            if (dynamic_cast<const VolumeRAM_2xDouble*>(v)) type = "2xDouble"; else
-            if (dynamic_cast<const VolumeRAM_3xUInt8*>(v))  type = "3xUInt8";  else
-            if (dynamic_cast<const VolumeRAM_3xUInt16*>(v)) type = "3xUInt16"; else
-            if (dynamic_cast<const VolumeRAM_3xUInt32*>(v)) type = "3xUInt32"; else
-            if (dynamic_cast<const VolumeRAM_3xUInt64*>(v)) type = "3xUInt64"; else
-            if (dynamic_cast<const VolumeRAM_3xInt8*>(v))   type = "3xInt8";   else
-            if (dynamic_cast<const VolumeRAM_3xInt16*>(v))  type = "3xInt16";  else
-            if (dynamic_cast<const VolumeRAM_3xInt32*>(v))  type = "3xInt32";  else
-            if (dynamic_cast<const VolumeRAM_3xInt64*>(v))  type = "3xInt64";  else
-            if (dynamic_cast<const VolumeRAM_3xFloat*>(v))  type = "3xFloat";  else
-            if (dynamic_cast<const VolumeRAM_3xDouble*>(v)) type = "3xDouble"; else
-            if (dynamic_cast<const VolumeRAM_4xUInt8*>(v))  type = "4xUInt8";  else
-            if (dynamic_cast<const VolumeRAM_4xUInt16*>(v)) type = "4xUInt16"; else
-            if (dynamic_cast<const VolumeRAM_4xUInt32*>(v)) type = "4xUInt32"; else
-            if (dynamic_cast<const VolumeRAM_4xUInt64*>(v)) type = "4xUInt64"; else
-            if (dynamic_cast<const VolumeRAM_4xInt8*>(v))   type = "4xInt8";   else
-            if (dynamic_cast<const VolumeRAM_4xInt16*>(v))  type = "4xInt16";  else
-            if (dynamic_cast<const VolumeRAM_4xInt32*>(v))  type = "4xInt32";  else
-            if (dynamic_cast<const VolumeRAM_4xInt64*>(v))  type = "4xInt64";  else
-            if (dynamic_cast<const VolumeRAM_4xFloat*>(v))  type = "4xFloat";  else
-            if (dynamic_cast<const VolumeRAM_4xDouble*>(v)) type = "4xDouble"; else
-                                                            type = "<unknown>";
+    if (hasData()) {
+        const VolumeBase* vol = getData();
 
-    strstr << "Data Type: " << type << std::endl
-                   << "Dimension: " << h->getDimensions()[0] << " x " << h->getDimensions()[1] << " x " << h->getDimensions()[2]  << std::endl
-                   << "Spacing: "   << h->getSpacing()[0] << " x " << h->getSpacing()[1] << " x " << h->getSpacing()[2] << " mm" << std::endl
-                   << "Bits Per Voxel: " << v->getBitsAllocated() << std::endl
-                   << "Num Voxels: "<< v->getNumVoxels() << std::endl
-                   << "Memory Size: ";
-            size_t bytes = v->getNumBytes();
-            float mb = tgt::round(bytes/104857.6f) / 10.f;    //calculate mb with 0.1f precision
-            float kb = tgt::round(bytes/102.4f) / 10.f;
-            if (mb >= 0.5f) {
-                strstr << mb << " MB";
-            }
-            else if (kb >= 0.5f) {
-                strstr << kb << " kB";
-            }
-            else {
-                strstr << bytes << " bytes";
-            }
+        strstr << std::endl <<"Data Type: " << vol->getFormat() << std::endl
+               << "Dimension: " << vol->getDimensions()[0] << " x " << vol->getDimensions()[1] << " x " << vol->getDimensions()[2]  << std::endl
+               << "Spacing: "   << vol->getSpacing()[0] << " x " << vol->getSpacing()[1] << " x " << vol->getSpacing()[2] << " mm" << std::endl
+               << "Number of Channels: " << vol->getNumChannels() << std::endl
+               << "Bytes per Voxel: " << vol->getBytesPerVoxel() << " bytes" << std::endl
+               << "Memory Size: ";
+        size_t bytes = vol->getNumVoxels()*vol->getNumChannels()*vol->getBytesPerVoxel();
+        float gb = tgt::round(bytes/107374182.4f) / 10.f;
+        float mb = tgt::round(bytes/104857.6f) / 10.f;    //calculate mb with 0.1f precision
+        float kb = tgt::round(bytes/102.4f) / 10.f;
+        if (gb >= 0.5f) {
+            strstr << gb << "GB";
+        } else if (mb >= 0.5f) {
+            strstr << mb << " MB";
+        }
+        else if (kb >= 0.5f) {
+            strstr << kb << " kB";
+        }
+        else {
+            strstr << bytes << " bytes";
+        }
     }
     return strstr.str();
 }
 
 std::string VolumePort::getContentDescriptionHTML() const {
     std::stringstream strstr;
-    strstr  << "<center><font><b>" << getGuiName() << "</b></font></center>"
-            << "Type: " << getClassName() << "<br>";
+    //port values
+    strstr  << Port::getContentDescriptionHTML();
 
-    if (getData() && getData()->getRepresentation<VolumeRAM>()) {
-            const VolumeBase* h = getData();
-            const VolumeRAM* v = getData()->getRepresentation<VolumeRAM>();
-            std::string type;
-            if (dynamic_cast<const VolumeRAM_UInt8*>(v))    type = "UInt8";    else
-            if (dynamic_cast<const VolumeRAM_UInt16*>(v))   type = "UInt16";   else
-            if (dynamic_cast<const VolumeRAM_UInt32*>(v))   type = "UInt32";   else
-            if (dynamic_cast<const VolumeRAM_UInt64*>(v))   type = "UInt64";   else
-            if (dynamic_cast<const VolumeRAM_Int8*>(v))     type = "Int8";     else
-            if (dynamic_cast<const VolumeRAM_Int16*>(v))    type = "Int16";    else
-            if (dynamic_cast<const VolumeRAM_Int32*>(v))    type = "Int32";    else
-            if (dynamic_cast<const VolumeRAM_Int64*>(v))    type = "Int64";    else
-            if (dynamic_cast<const VolumeRAM_Float*>(v))    type = "Float";    else
-            if (dynamic_cast<const VolumeRAM_Double*>(v))   type = "Double";   else
-            if (dynamic_cast<const VolumeRAM_2xUInt8*>(v))  type = "2xUInt8";  else
-            if (dynamic_cast<const VolumeRAM_2xUInt16*>(v)) type = "2xUInt16"; else
-            if (dynamic_cast<const VolumeRAM_2xUInt32*>(v)) type = "2xUInt32"; else
-            if (dynamic_cast<const VolumeRAM_2xUInt64*>(v)) type = "2xUInt64"; else
-            if (dynamic_cast<const VolumeRAM_2xInt8*>(v))   type = "2xInt8";   else
-            if (dynamic_cast<const VolumeRAM_2xInt16*>(v))  type = "2xInt16";  else
-            if (dynamic_cast<const VolumeRAM_2xInt32*>(v))  type = "2xInt32";  else
-            if (dynamic_cast<const VolumeRAM_2xInt64*>(v))  type = "2xInt64";  else
-            if (dynamic_cast<const VolumeRAM_2xFloat*>(v))  type = "2xFloat";  else
-            if (dynamic_cast<const VolumeRAM_2xDouble*>(v)) type = "2xDouble"; else
-            if (dynamic_cast<const VolumeRAM_3xUInt8*>(v))  type = "3xUInt8";  else
-            if (dynamic_cast<const VolumeRAM_3xUInt16*>(v)) type = "3xUInt16"; else
-            if (dynamic_cast<const VolumeRAM_3xUInt32*>(v)) type = "3xUInt32"; else
-            if (dynamic_cast<const VolumeRAM_3xUInt64*>(v)) type = "3xUInt64"; else
-            if (dynamic_cast<const VolumeRAM_3xInt8*>(v))   type = "3xInt8";   else
-            if (dynamic_cast<const VolumeRAM_3xInt16*>(v))  type = "3xInt16";  else
-            if (dynamic_cast<const VolumeRAM_3xInt32*>(v))  type = "3xInt32";  else
-            if (dynamic_cast<const VolumeRAM_3xInt64*>(v))  type = "3xInt64";  else
-            if (dynamic_cast<const VolumeRAM_3xFloat*>(v))  type = "3xFloat";  else
-            if (dynamic_cast<const VolumeRAM_3xDouble*>(v)) type = "3xDouble"; else
-            if (dynamic_cast<const VolumeRAM_4xUInt8*>(v))  type = "4xUInt8";  else
-            if (dynamic_cast<const VolumeRAM_4xUInt16*>(v)) type = "4xUInt16"; else
-            if (dynamic_cast<const VolumeRAM_4xUInt32*>(v)) type = "4xUInt32"; else
-            if (dynamic_cast<const VolumeRAM_4xUInt64*>(v)) type = "4xUInt64"; else
-            if (dynamic_cast<const VolumeRAM_4xInt8*>(v))   type = "4xInt8";   else
-            if (dynamic_cast<const VolumeRAM_4xInt16*>(v))  type = "4xInt16";  else
-            if (dynamic_cast<const VolumeRAM_4xInt32*>(v))  type = "4xInt32";  else
-            if (dynamic_cast<const VolumeRAM_4xInt64*>(v))  type = "4xInt64";  else
-            if (dynamic_cast<const VolumeRAM_4xFloat*>(v))  type = "4xFloat";  else
-            if (dynamic_cast<const VolumeRAM_4xDouble*>(v)) type = "4xDouble"; else
-                                                            type = "<unknown>";
-
-    strstr << "Data Type: " << type << "<br>"
-                   << "Dimension: " << h->getDimensions()[0] << " x " << h->getDimensions()[1] << " x " << h->getDimensions()[2]  << "<br>"
-                   << "Spacing: "   << h->getSpacing()[0] << " x " << h->getSpacing()[1] << " x " << h->getSpacing()[2] << " mm"  << "<br>"
-                   << "Bits Per Voxel: " << v->getBitsAllocated() << "<br>"
-                   << "Num Voxels: "<< v->getNumVoxels() << "<br>"
-                   << "Memory Size: ";
-            size_t bytes = v->getNumBytes();
-            float mb = tgt::round(bytes/104857.6f) / 10.f;    //calculate mb with 0.1f precision
-            float kb = tgt::round(bytes/102.4f) / 10.f;
-            if (mb >= 0.5f) {
-                strstr << mb << " MB";
-            }
-            else if (kb >= 0.5f) {
-                strstr << kb << " kB";
-            }
-            else {
-                strstr << bytes << " bytes";
-            }
+    if (hasData()) {
+        const VolumeBase* vol = getData();
+        strstr << "<br>" << "Data Type: " << vol->getFormat() << "<br>"
+               << "Dimension: " << vol->getDimensions()[0] << " x " << vol->getDimensions()[1] << " x " << vol->getDimensions()[2]  << "<br>"
+               << "Spacing: "   << vol->getSpacing()[0] << " x " << vol->getSpacing()[1] << " x " << vol->getSpacing()[2] << " mm"  << "<br>"
+               << "Number of Channels: " << vol->getNumChannels() << "<br>"
+               << "Bytes per Voxel: " << vol->getBytesPerVoxel() << "<br>"
+               << "Memory Size: ";
+        size_t bytes = vol->getNumChannels()*vol->getNumVoxels()*vol->getBytesPerVoxel();
+        float gb = tgt::round(bytes/107374182.4f) / 10.f;
+        float mb = tgt::round(bytes/104857.6f) / 10.f;    //calculate mb with 0.1f precision
+        float kb = tgt::round(bytes/102.4f) / 10.f;
+        if (gb >= 0.5f) {
+            strstr << gb << "GB";
+        } else if (mb >= 0.5f) {
+            strstr << mb << " MB";
+        }
+        else if (kb >= 0.5f) {
+            strstr << kb << " kB";
+        }
+        else {
+            strstr << bytes << " bytes";
+        }
     }
     return strstr.str();
 }

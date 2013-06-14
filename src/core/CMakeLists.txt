@@ -62,7 +62,7 @@ SET(VRN_CORE_SOURCES
     datastructures/meta/zoommetadata.cpp
     datastructures/roi/roiaggregation.cpp
     datastructures/roi/roiunion.cpp
-    datastructures/roi/roisubstract.cpp
+    datastructures/roi/roisubtract.cpp
     datastructures/roi/roibase.cpp
     datastructures/roi/roinormalizedgeometry.cpp
     datastructures/roi/roicube.cpp
@@ -97,6 +97,7 @@ SET(VRN_CORE_SOURCES
     datastructures/volume/volumetexture.cpp
     datastructures/volume/volumeslicehelper.cpp
     datastructures/volume/operators/volumeoperatorregiongrow.cpp
+    datastructures/volume/operators/volumeoperatorgradient.cpp
     
     interaction/booltoggleinteractionhandler.cpp
     interaction/buttonpressinteractionhandler.cpp
@@ -165,6 +166,7 @@ SET(VRN_CORE_SOURCES
     properties/floatproperty.cpp
     properties/fontproperty.cpp
     properties/intproperty.cpp
+    properties/lightsourceproperty.cpp
     properties/matrixproperty.cpp 
     properties/numericproperty.cpp
     properties/optionproperty.cpp
@@ -292,7 +294,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/datastructures/meta/zoommetadata.h
     ../../include/voreen/core/datastructures/roi/roiaggregation.h
     ../../include/voreen/core/datastructures/roi/roiunion.h
-    ../../include/voreen/core/datastructures/roi/roisubstract.h
+    ../../include/voreen/core/datastructures/roi/roisubtract.h
     ../../include/voreen/core/datastructures/roi/roibase.h
     ../../include/voreen/core/datastructures/roi/roinormalizedgeometry.h
     ../../include/voreen/core/datastructures/roi/roicube.h
@@ -396,7 +398,6 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/network/processornetworkobserver.h
     ../../include/voreen/core/network/workspace.h
 
-    ../../include/voreen/core/ports/allports.h
     ../../include/voreen/core/ports/coprocessorport.h
     ../../include/voreen/core/ports/genericcoprocessorport.h
     ../../include/voreen/core/ports/genericport.h
@@ -427,7 +428,6 @@ SET(VRN_CORE_HEADERS
 
     ../../include/voreen/core/properties/action.h
     ../../include/voreen/core/properties/allactions.h
-    ../../include/voreen/core/properties/allproperties.h
     ../../include/voreen/core/properties/boolproperty.h
     ../../include/voreen/core/properties/buttonproperty.h
     ../../include/voreen/core/properties/callmemberaction.h
@@ -438,6 +438,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/properties/floatproperty.h
     ../../include/voreen/core/properties/fontproperty.h
     ../../include/voreen/core/properties/intproperty.h
+    ../../include/voreen/core/properties/lightsourceproperty.h
     ../../include/voreen/core/properties/matrixproperty.h
     ../../include/voreen/core/properties/numericproperty.h
     ../../include/voreen/core/properties/optionproperty.h

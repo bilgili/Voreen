@@ -340,18 +340,18 @@ void VolumeGL::generateTexture(const VolumeRAM* volume)
     char* tempVolumeData = 0;
     if (volume->getDimensions().z > 1) { // multi-slice volume => just create OGL texture from it
         vTex = new VolumeTexture(static_cast<const GLubyte*>(volume->getData()),
-            volume->getDimensions(), 
+            volume->getDimensions(),
             format, internalFormat, dataType, tgt::Texture::LINEAR);
     }
-    else { // single-slice volume (not allowed as OGL texture) => double slice 
+    else { // single-slice volume (not allowed as OGL texture) => double slice
         LWARNING("OpenGL does not allow 3D textures consisting of only one slice: cloning slice");
         try {
             tempVolumeData = new char[2*volume->getNumBytes()];
             memcpy(tempVolumeData, volume->getData(), volume->getNumBytes());
             memcpy(tempVolumeData+volume->getNumBytes(), volume->getData(), volume->getNumBytes());
-            
+
             vTex = new VolumeTexture(reinterpret_cast<const GLubyte*>(tempVolumeData),
-                tgt::svec3(volume->getDimensions().x, volume->getDimensions().y, volume->getDimensions().z * 2), 
+                tgt::svec3(volume->getDimensions().x, volume->getDimensions().y, volume->getDimensions().z * 2),
                 format, internalFormat, dataType, tgt::Texture::LINEAR);
         }
         catch (std::bad_alloc&) {
@@ -413,7 +413,7 @@ std::string VolumeGL::getBaseType() const {
     return baseType_;
 }
 
-int VolumeGL::getNumChannels() const {
+size_t VolumeGL::getNumChannels() const {
     switch(getTexture()->getFormat()) {
         case GL_ALPHA: return 1;
         case GL_LUMINANCE_ALPHA: return 2;
@@ -426,7 +426,7 @@ int VolumeGL::getNumChannels() const {
     }
 }
 
-int VolumeGL::getBytesPerVoxel() const {
+size_t VolumeGL::getBytesPerVoxel() const {
     int bytesPerChannel = 0;
     switch(getTexture()->getDataType()) {
         case GL_UNSIGNED_BYTE:

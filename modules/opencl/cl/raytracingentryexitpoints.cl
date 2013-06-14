@@ -42,6 +42,11 @@ void writeFloat(image2d_t img, int2 p, float4 value) {
     }
 }
 
+typedef struct _mat4 {
+        float4 x,y,z,w;
+} mat4;
+
+
 typedef struct _Triangle {
     float4 a;
     float4 b;
@@ -100,13 +105,23 @@ IntersectionResult rayIntersectsTriangle(Ray r, Triangle tri) {
         //return res;
 }
 
+//matrix vector n
+float4 matrixVectorMult (__global mat4* matrix, float4 vector) {
+    float4 result;
+    result.x = dot(matrix->x, vector);
+    result.y = dot(matrix->y, vector);
+    result.z = dot(matrix->z, vector);
+    result.w = dot(matrix->w, vector);
+    return result;
+}
+
 float4 getTexCoord(Triangle t, float u, float v) {
     float4 tc;
     tc = ((1.0 - u - v) * t.a_tc) + (u * t.b_tc) + (v * t.c_tc);
     return tc;
 }
 
-__kernel void raytrace(write_only image2d_t entry, write_only image2d_t exit, __global Triangle* triangles, int numTriangles, float4 pos, float4 up, float4 look, float4 strafe)
+__kernel void raytrace(write_only image2d_t entry, write_only image2d_t exit, __global Triangle* triangles, int numTriangles, float4 pos, float4 up, float4 look, float4 strafe, __global mat4* transformation_)
 {
     int x = get_global_id(0);
     int y = get_global_id(1);
@@ -131,6 +146,9 @@ __kernel void raytrace(write_only image2d_t entry, write_only image2d_t exit, __
 
     for(int i=0; i<numTriangles; i++) {
         Triangle tri = triangles[i];
+        tri.a = matrixVectorMult(transformation_, tri.a);
+        tri.b = matrixVectorMult(transformation_, tri.b);
+        tri.c = matrixVectorMult(transformation_, tri.c);
         IntersectionResult intersectRes = rayIntersectsTriangle(r, tri);
         if(intersectRes.intersect) {
             if(intersects) {

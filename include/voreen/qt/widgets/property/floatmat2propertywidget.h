@@ -42,8 +42,6 @@ Q_OBJECT
 public:
     FloatMat2PropertyWidget(FloatMat2Property*, QWidget* = 0);
 
-    void updateFromProperty();
-
 protected:
     virtual std::string getExtension() const { return "vm2"; }
     virtual void saveMatrix(const std::string& filename) const throw (SerializationException);
@@ -57,8 +55,10 @@ protected:
     QLineEdit* y1_;
 
 protected slots:
+    virtual void updateFromPropertySlot();
     void updateValue();
     void identity();
+
 };
 
 }// namespace voreen

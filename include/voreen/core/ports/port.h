@@ -180,9 +180,8 @@ public:
     /**
      * Returns whether the port contains data.
      * To be overridden by a concrete subclass.
-     * The default implementation returns false.
      */
-    virtual bool hasData() const;
+    virtual bool hasData() const = 0;
 
     /**
      * Returns whether the port is ready to be used
@@ -436,6 +435,13 @@ private:
      * @note Is called by the NetworkEvaluator.
      */
     void setLoopIteration(int iteration);
+
+    /**
+     * Detects whether or not a given inport, when connected to this port, will
+     * form a closed loop without the involvement of loop ports, which would lead
+     * to undefined results.  This method is called by testConnectivity().
+     */
+    bool detectIllegalLoop(const Port* inport) const;
 
     bool isLoopPort_;          ///< defines if the port is a loop port , i.e., if
                                ///  it is used to define loops in the network

@@ -31,7 +31,7 @@
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/boolproperty.h"
 
-#include "voreen/core/ports/allports.h"
+
 
 #include <string>
 

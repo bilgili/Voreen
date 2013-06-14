@@ -27,7 +27,7 @@
 #define VRN_VOLUMELISTMODALITYFILTER
 
 #include "voreen/core/processors/processor.h"
-#include "voreen/core/ports/allports.h"
+#include "voreen/core/ports/volumeport.h"
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/datastructures/volume/volumelist.h"
 

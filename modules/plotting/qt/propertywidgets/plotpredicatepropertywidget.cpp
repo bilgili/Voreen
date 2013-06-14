@@ -38,7 +38,7 @@ PlotPredicatePropertyWidget::PlotPredicatePropertyWidget(PlotPredicateProperty* 
     , property_(prop)
     , lWidget_(new QListWidget)
 {
-    updateFromProperty();
+    updateFromPropertySlot();
     QFontInfo fontInfo(font());
     lWidget_->setFont(QFont(fontInfo.family(), QPropertyWidget::fontSize_));
     addWidget(lWidget_);
@@ -48,7 +48,7 @@ PlotPredicatePropertyWidget::PlotPredicatePropertyWidget(PlotPredicateProperty* 
     addVisibilityControls();
 }
 
-void PlotPredicatePropertyWidget::updateFromProperty() {
+void PlotPredicatePropertyWidget::updateFromPropertySlot() {
     lWidget_->blockSignals(true);
     lWidget_->clear();
 

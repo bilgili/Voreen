@@ -39,13 +39,13 @@ Q_OBJECT
 public:
     PlotPredicatePropertyWidget(PlotPredicateProperty* prop, QWidget* parent = 0);
 
-    void updateFromProperty();
-
-
-
 protected:
     PlotPredicateProperty* property_;
     QListWidget* lWidget_;
+
+protected slots:
+    virtual void updateFromPropertySlot();
+
 };
 
 } // namespace

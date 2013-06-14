@@ -61,7 +61,7 @@ vec4 getFirstHitColor(in vec3 firstHitPos) {
         //voxel.xyz = CALC_GRADIENT(vec3(0.0), entryPoints_, 0.0);
 
     // apply classification
-    result = RC_APPLY_CLASSIFICATION(transferFunc_, transferFuncTex_, voxel);
+    result = RC_APPLY_CLASSIFICATION(transferFunc_, transferFuncTex_, voxel, voxel.a);
 
     // apply shading
     result.rgb = APPLY_SHADING(voxel.xyz, texToPhysical(firstHitPos, volumeStruct_), volumeStruct_.lightPositionPhysical_, volumeStruct_.cameraPositionPhysical_, result.rgb, result.rgb, result.rgb);

@@ -95,6 +95,10 @@ private:
 
     ShaderProperty shaderProp_;        ///< The shader property used by this raycaster.
 
+    StringOptionProperty classificationMode2_;  ///< What type of transfer function should be used for classification
+    StringOptionProperty classificationMode3_;  ///< What type of transfer function should be used for classification
+    StringOptionProperty classificationMode4_;  ///< What type of transfer function should be used for classification
+
     StringOptionProperty shadeMode1_;       ///< shading mode to use for volume 1
     StringOptionProperty shadeMode2_;       ///< shading mode to use for volume 2
     StringOptionProperty shadeMode3_;       ///< shading mode to use for volume 3

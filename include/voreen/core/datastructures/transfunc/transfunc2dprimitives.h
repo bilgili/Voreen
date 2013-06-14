@@ -67,6 +67,8 @@ public:
     virtual std::string getClassName() const { return "TransFunc2DPrimitives";     }
     virtual TransFunc* create() const        { return new TransFunc2DPrimitives(); }
 
+    virtual std::string getShaderDefines(const std::string& defineName = "TF_SAMPLER_TYPE") const;
+
     /**
      * Operator to compare two TransFuncIntensityGradient's. True is returned when
      * height and width are the same in both transfer functions and all texel in this
@@ -88,15 +90,8 @@ public:
      */
     bool operator!=(const TransFunc2DPrimitives& tf);
 
-    /**
-     * Sets the scaling factor in y direction for the primitive coordinates to the given value.
-     * That is necessary because the histogram is scaled to the maximum gradient length that occurs
-     * in the current rendered dataset. Usually this length is smaller than the highest possible
-     * gradient length. The factor is passed to the primitives.
-     *
-     * @param factor scaling factor for primitive coordinates in y direction
-     */
-    void setScaleFactor(float factor);
+    virtual tgt::vec2 getDomain(int dimension = 0) const;
+    virtual void setDomain(tgt::vec2 domain, int dimension = 0);
 
     /**
      * The central entry point for loading a gradient transfer function.
@@ -176,7 +171,8 @@ public:
      * Returns the i.th primitive of the transfer function or 0
      * if no such primitive exists.
      */
-    TransFuncPrimitive* getPrimitive(int i) const;
+    const TransFuncPrimitive* getPrimitive(int i) const;
+    TransFuncPrimitive* getPrimitive(int i);
 
     /**
      * @see Serializable::serialize
@@ -230,6 +226,9 @@ protected:
     bool loadTfig(const std::string& filename);
 
     std::vector<TransFuncPrimitive*> primitives_; ///< primitives the transfer function consists of
+
+    tgt::vec2 domainIntensity_;
+    tgt::vec2 domainGradientMagnitude_;
 
 private:
     tgt::FramebufferObject* fbo_;        ///< used for rendering the primitives to the texture

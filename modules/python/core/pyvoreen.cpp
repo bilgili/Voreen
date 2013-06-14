@@ -238,6 +238,11 @@ static PyObject* voreen_setPropertyValue(PyObject* /*self*/, PyObject* args) {
         if (setPropertyValue<BoolProperty, bool>(typedProp, (bool)value, "setPropertyValue"))
             Py_RETURN_NONE;
     }
+    else if (ButtonProperty* typedProp = dynamic_cast<ButtonProperty*>(property)) {
+        // directly trigger button property without reading passed value
+        typedProp->clicked();
+        Py_RETURN_NONE;
+    }
     else if (StringProperty* typedProp = dynamic_cast<StringProperty*>(property)) {
         char* value;
         if (!PyArg_ParseTuple(args, "sss:setPropertyValue", &processorName, &propertyID, &value))

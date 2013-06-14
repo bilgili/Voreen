@@ -400,13 +400,68 @@ void QuadView::invalidate(int inv) {
 
 void QuadView::onEvent(tgt::Event* e) {
 
-    tgt::MouseEvent* me = dynamic_cast<tgt::MouseEvent*>(e);
-
-    if (!me || mouseMoveEventProp_.accepts(me) || (maximizeEventProp_.accepts(me) && maximizeOnDoubleClick_.get())) {
-        RenderProcessor::onEvent(e);
+    tgt::TouchEvent* te = dynamic_cast<tgt::TouchEvent*>(e);
+    if(te) {
+        distributeTouchEvent(te);
         return;
     }
 
+    tgt::MouseEvent* me = dynamic_cast<tgt::MouseEvent*>(e);
+    if(me && !(mouseMoveEventProp_.accepts(me) || (maximizeEventProp_.accepts(me) && maximizeOnDoubleClick_.get()))) {
+        distributeMouseEvent(me);
+        return;
+    }
+
+    RenderProcessor::onEvent(e);
+}
+
+// TODO For now, Touch Events are sent to inports only if all touchpoints are located within a single subsection of the viewport
+void QuadView::distributeTouchEvent(tgt::TouchEvent* te) {
+
+    if (maximized_.get() == 0) {
+        const std::deque<tgt::TouchPoint>& tps = te->touchPoints();
+        const tgt::TouchPoint& first = tps.front();
+        tgt::vec2 outSize = outport_.getSize();
+        int section = first.pos().y < outSize.y / 2 ? (first.pos().x < outSize.x / 2 ? 0 : 1) : (first.pos().x < outSize.x / 2 ? 2 : 3);
+        for(std::deque<tgt::TouchPoint>::const_iterator it = tps.begin() + 1; it != tps.end(); it++) {
+            const tgt::TouchPoint& tp = *it;
+            // TODO different sections -> handle instead of doing nothing
+            if(section != (tp.pos().y < outSize.y / 2 ? (tp.pos().x < outSize.x / 2 ? 0 : 1) : (tp.pos().x < outSize.x / 2 ? 2 : 3)))
+                return;
+        }
+
+        RenderPort* inport = (section == 0 ? &inport1_ : (section == 1 ? &inport2_ : (section == 2 ? &inport3_ : &inport4_)));
+        tgt::vec2 offset = section == 0 ? tgt::vec2(0.f) : (section == 1 ? tgt::vec2(-outSize.x / 2.f, 0.f) : (section == 2 ? tgt::vec2(0.f, -outSize.y / 2.f) : -outSize / 2.f));
+        std::deque<tgt::TouchPoint> tpsTrafo;
+        for(std::deque<tgt::TouchPoint>::const_iterator it = tps.begin(); it != tps.end(); it++) {
+            const tgt::TouchPoint& tp = *it;
+            tgt::TouchPoint newTP = tp;
+            newTP.setPos(tp.pos() + offset);
+            tpsTrafo.push_back(newTP);
+        }
+
+        tgt::TouchEvent nte = tgt::TouchEvent(tgt::Event::MODIFIER_NONE, te->touchPointStates(), te->deviceType(), tpsTrafo);
+        nte.ignore();  // accepted is set to true by default
+        inport->distributeEvent(&nte);
+        if(nte.isAccepted())
+            te->accept();
+    }
+    else {
+        switch(maximized_.get()) {
+            case 1: inport1_.distributeEvent(te);
+                    break;
+            case 2: inport2_.distributeEvent(te);
+                    break;
+            case 3: inport3_.distributeEvent(te);
+                    break;
+            case 4: inport4_.distributeEvent(te);
+                    break;
+            default:;
+        }
+    }
+}
+
+void QuadView::distributeMouseEvent(tgt::MouseEvent* me) {
     if (maximized_.get() == 0) {
         if (me->y() < (me->viewport().y / 2)) {
             if (me->x() < (me->viewport().x / 2)) {

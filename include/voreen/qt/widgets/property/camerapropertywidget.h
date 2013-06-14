@@ -44,8 +44,6 @@ class CameraPropertyWidget : public QPropertyWidgetWithEditorWindow {
 public:
     CameraPropertyWidget(CameraProperty* prop, QWidget* parent = 0);
 
-    void updateFromProperty();
-
 public slots:
     void setProperty(tgt::Camera* value);
 
@@ -61,6 +59,9 @@ protected:
 
     CameraProperty* property_;
     CameraWidget* cameraWidget_;
+
+protected slots:
+    virtual void updateFromPropertySlot();
 };
 
 } // namespace

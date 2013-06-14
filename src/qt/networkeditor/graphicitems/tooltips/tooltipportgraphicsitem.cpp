@@ -89,10 +89,14 @@ bool ToolTipPortGraphicsItem::updateToolTip(qreal x, qreal y) {
     //try+catch to guarantee a call of TollTipBase::updateToolTip
     try {
         if (rp = dynamic_cast<RenderPort*>(dynamic_cast<PortGraphicsItem*>(parent())->getPort())) {
-            tgt::ivec2 size = rp->getSize();
-            tgt::Texture* tex = rp->getColorTexture();
             delete image_;
             image_ = 0;
+
+            if (!rp->hasData())
+                throw "exception";
+
+            tgt::ivec2 size = rp->getSize();
+            tgt::Texture* tex = rp->getColorTexture();
             if (!tex)
                 throw "exception";
 
@@ -133,10 +137,14 @@ bool ToolTipPortGraphicsItem::updateToolTip(qreal x, qreal y) {
         else if(vp = dynamic_cast<VolumePort*>(dynamic_cast<PortGraphicsItem*>(parent())->getPort())) {
             delete image_;
             image_ = 0;
-            if (!vp->getData())
+            if (!vp->hasData())
                 throw "exception";
 
             VolumePreview* prev = vp->getData()->getDerivedData<VolumePreview>();
+            //no preview present
+            if(!prev) {
+                return ToolTipBaseGraphicsItem::updateToolTip(x,y);
+            }
             int internHeight = prev->getHeight();
 
             QImage origImg = QImage(internHeight, internHeight, QImage::Format_ARGB32);

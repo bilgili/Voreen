@@ -28,7 +28,8 @@
 
 #include "modules/itk/processors/itkprocessor.h"
 #include "voreen/core/processors/volumeprocessor.h"
-#include "voreen/core/ports/allports.h"
+#include "voreen/core/ports/volumeport.h"
+#include "voreen/core/ports/geometryport.h"
 #include <string>
 
 #include "voreen/core/datastructures/geometry/pointlistgeometry.h"

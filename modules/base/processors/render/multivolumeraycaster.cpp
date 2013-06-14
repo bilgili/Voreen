@@ -28,6 +28,7 @@
 #include "tgt/textureunit.h"
 #include "voreen/core/ports/conditions/portconditionvolumetype.h"
 #include "voreen/core/utils/glsl.h"
+#include "voreen/core/utils/classificationmodes.h"
 
 #include <sstream>
 
@@ -52,6 +53,9 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
     , internalRenderPort2_(Port::OUTPORT, "internalRenderPort2", "Internal Render Port 2", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB)
     , internalPortGroup_(true)
     , shaderProp_("raycast.prg", "Raycasting Shader", "rc_multivolume.frag", "passthrough.vert")
+    , classificationMode2_("classification2", "Classification 2", Processor::INVALID_PROGRAM)
+    , classificationMode3_("classification3", "Classification 3", Processor::INVALID_PROGRAM)
+    , classificationMode4_("classification4", "Classification 4", Processor::INVALID_PROGRAM)
     , shadeMode1_("shading1", "Shading 1", Processor::INVALID_PROGRAM)
     , shadeMode2_("shading2", "Shading 2", Processor::INVALID_PROGRAM)
     , shadeMode3_("shading3", "Shading 3", Processor::INVALID_PROGRAM)
@@ -90,6 +94,14 @@ MultiVolumeRaycaster::MultiVolumeRaycaster()
 
     // shader property
     addProperty(shaderProp_);
+
+    addProperty(classificationMode_);
+    ClassificationModes::fillProperty(&classificationMode2_);
+    addProperty(classificationMode2_);
+    ClassificationModes::fillProperty(&classificationMode3_);
+    addProperty(classificationMode3_);
+    ClassificationModes::fillProperty(&classificationMode4_);
+    addProperty(classificationMode4_);
 
     // tf properties
     addProperty(transferFunc1_);
@@ -187,7 +199,10 @@ void MultiVolumeRaycaster::compile() {
 }
 
 bool MultiVolumeRaycaster::isReady() const {
-    if(!entryPort_.isReady() || !exitPort_.isReady() || !volumeInport1_.isReady())
+    if(!entryPort_.isReady() || !exitPort_.isReady())
+        return false;
+
+    if(!(volumeInport1_.isReady() || volumeInport2_.isReady() || volumeInport3_.isReady() || volumeInport4_.isReady() ))
         return false;
 
     //check if at least one outport is connected:
@@ -225,6 +240,10 @@ void MultiVolumeRaycaster::beforeProcess() {
         if(length(b.diagonal()) != 0.0)
             camera_.adaptInteractionToScene(b);
     }
+}
+
+float getVoxelSamplingStepSize(const VolumeBase* vol, float worldSamplingStepSize) {
+    return tgt::min(worldSamplingStepSize * vol->getPhysicalToTextureMatrix().getScalingPart());
 }
 
 void MultiVolumeRaycaster::process() {
@@ -308,43 +327,8 @@ void MultiVolumeRaycaster::process() {
     bindVolumes(raycastPrg, volumeTextures, &cam, lightPosition_.get());
     LGL_ERROR;
 
-    // bind transfer functions
-    TextureUnit transferUnit1, transferUnit2, transferUnit3, transferUnit4;
-    transferUnit1.activate();
-    if (transferFunc1_.get())
-        transferFunc1_.get()->bind();
-
-    transferUnit2.activate();
-    if (transferFunc2_.get())
-        transferFunc2_.get()->bind();
-
-    transferUnit3.activate();
-    if (transferFunc3_.get())
-        transferFunc3_.get()->bind();
-
-    transferUnit4.activate();
-    if (transferFunc4_.get())
-        transferFunc4_.get()->bind();
-
-    LGL_ERROR;
-
-    // pass raycaster specific uniforms to the shader
-    if (compositingMode_.get() ==  "iso" ||
-        compositingMode1_.get() == "iso" ||
-        compositingMode2_.get() == "iso")
-        raycastPrg->setUniform("isoValue_", isoValue_.get());
-
-    if(volumeInport1_.isReady())
-        transferFunc1_.get()->setUniform(raycastPrg, "transferFunc1_", "transferFuncTex1_", transferUnit1.getUnitNumber());
-    if(volumeInport2_.isReady())
-        transferFunc2_.get()->setUniform(raycastPrg, "transferFunc2_", "transferFuncTex2_", transferUnit2.getUnitNumber());
-    if(volumeInport3_.isReady())
-        transferFunc3_.get()->setUniform(raycastPrg, "transferFunc3_", "transferFuncTex3_", transferUnit3.getUnitNumber());
-    if(volumeInport4_.isReady())
-        transferFunc4_.get()->setUniform(raycastPrg, "transferFunc4_", "transferFuncTex4_", transferUnit4.getUnitNumber());
-    LGL_ERROR;
-
     // determine ray step length in world coords
+    float samplingStepSizeWorld = 0.0f;
     if (volumeTextures.size() > 0) {
         float voxelSizeWorld = 999.f;
         float voxelSizeTexture = 999.f;
@@ -361,7 +345,7 @@ void MultiVolumeRaycaster::process() {
             }
         }
 
-        float samplingStepSizeWorld = voxelSizeWorld / samplingRate_.get();
+        samplingStepSizeWorld = voxelSizeWorld / samplingRate_.get();
         float samplingStepSizeTexture = voxelSizeTexture / samplingRate_.get();
 
         if (interactionMode()) {
@@ -379,6 +363,43 @@ void MultiVolumeRaycaster::process() {
         LGL_ERROR;
     }
     LGL_ERROR;
+
+    // bind transfer functions
+    TextureUnit transferUnit1, transferUnit2, transferUnit3, transferUnit4;
+    transferUnit1.activate();
+    if (transferFunc1_.get() && volumeInport1_.getData())
+        ClassificationModes::bindTexture(classificationMode_.get(), transferFunc1_.get(), getVoxelSamplingStepSize(volumeInport1_.getData(), samplingStepSizeWorld));
+
+    transferUnit2.activate();
+    if (transferFunc2_.get() && volumeInport2_.getData())
+        ClassificationModes::bindTexture(classificationMode2_.get(), transferFunc2_.get(), getVoxelSamplingStepSize(volumeInport2_.getData(), samplingStepSizeWorld));
+
+    transferUnit3.activate();
+    if (transferFunc3_.get() && volumeInport3_.getData())
+        ClassificationModes::bindTexture(classificationMode3_.get(), transferFunc3_.get(), getVoxelSamplingStepSize(volumeInport3_.getData(), samplingStepSizeWorld));
+
+    transferUnit4.activate();
+    if (transferFunc4_.get() && volumeInport4_.getData())
+        ClassificationModes::bindTexture(classificationMode4_.get(), transferFunc4_.get(), getVoxelSamplingStepSize(volumeInport4_.getData(), samplingStepSizeWorld));
+
+    LGL_ERROR;
+
+    // pass raycaster specific uniforms to the shader
+    if (compositingMode_.get() ==  "iso" ||
+        compositingMode1_.get() == "iso" ||
+        compositingMode2_.get() == "iso")
+        raycastPrg->setUniform("isoValue_", isoValue_.get());
+
+    if(volumeInport1_.isReady() && ClassificationModes::usesTransferFunction(classificationMode_.get()))
+        transferFunc1_.get()->setUniform(raycastPrg, "transferFunc1_", "transferFuncTex1_", transferUnit1.getUnitNumber());
+    if(volumeInport2_.isReady() && ClassificationModes::usesTransferFunction(classificationMode2_.get()))
+        transferFunc2_.get()->setUniform(raycastPrg, "transferFunc2_", "transferFuncTex2_", transferUnit2.getUnitNumber());
+    if(volumeInport3_.isReady() && ClassificationModes::usesTransferFunction(classificationMode3_.get()))
+        transferFunc3_.get()->setUniform(raycastPrg, "transferFunc3_", "transferFuncTex3_", transferUnit3.getUnitNumber());
+    if(volumeInport4_.isReady() && ClassificationModes::usesTransferFunction(classificationMode4_.get()))
+        transferFunc4_.get()->setUniform(raycastPrg, "transferFunc4_", "transferFuncTex4_", transferUnit4.getUnitNumber());
+    LGL_ERROR;
+
 
     // perform the actual raycasting by drawing a screen-aligned quad
     renderQuad();
@@ -412,10 +433,15 @@ std::string MultiVolumeRaycaster::generateHeader() {
     if(volumeInport4_.isReady())
         headerSource += "#define VOLUME_4_ACTIVE\n";
 
-    headerSource += "#define TF_SAMPLER_TYPE_1 " + transferFunc1_.get()->getSamplerType() + "\n";
-    headerSource += "#define TF_SAMPLER_TYPE_2 " + transferFunc2_.get()->getSamplerType() + "\n";
-    headerSource += "#define TF_SAMPLER_TYPE_3 " + transferFunc3_.get()->getSamplerType() + "\n";
-    headerSource += "#define TF_SAMPLER_TYPE_4 " + transferFunc4_.get()->getSamplerType() + "\n";
+    headerSource += ClassificationModes::getShaderDefineSamplerType(classificationMode_.get(), transferFunc1_.get(), "TF_SAMPLER_TYPE_1");
+    headerSource += ClassificationModes::getShaderDefineSamplerType(classificationMode2_.get(), transferFunc2_.get(), "TF_SAMPLER_TYPE_2");
+    headerSource += ClassificationModes::getShaderDefineSamplerType(classificationMode3_.get(), transferFunc3_.get(), "TF_SAMPLER_TYPE_3");
+    headerSource += ClassificationModes::getShaderDefineSamplerType(classificationMode4_.get(), transferFunc4_.get(), "TF_SAMPLER_TYPE_4");
+
+    headerSource += ClassificationModes::getShaderDefineFunction(classificationMode_.get(), "RC_APPLY_CLASSIFICATION");
+    headerSource += ClassificationModes::getShaderDefineFunction(classificationMode2_.get(), "RC_APPLY_CLASSIFICATION2");
+    headerSource += ClassificationModes::getShaderDefineFunction(classificationMode3_.get(), "RC_APPLY_CLASSIFICATION3");
+    headerSource += ClassificationModes::getShaderDefineFunction(classificationMode4_.get(), "RC_APPLY_CLASSIFICATION4");
 
     // configure shading mode
     headerSource += getShaderDefine(shadeMode1_.get(), "APPLY_SHADING_1");

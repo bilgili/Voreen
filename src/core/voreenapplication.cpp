@@ -446,6 +446,16 @@ void VoreenApplication::initialize() throw (VoreenException) {
     // (program path is available before command line parser execution
     string prog = cmdParser_->getProgramPath();
 
+#if defined(VRN_BASE_PATH) // use base path passed by CMAKE, if present
+    basePath_ = VRN_BASE_PATH;
+    if (!tgt::FileSystem::dirExists(basePath_)) {
+        std::cerr << "WARNING: Passed base path does not exist: " << basePath_ << ". Using current directory instead.\n";
+        basePath_ = ".";
+    }
+    else {
+        basePath_ = tgt::FileSystem::cleanupPath(basePath_);
+    }
+#else // else try to find base path starting at program path
     basePath_ = ".";
     // cut path from program location
     string::size_type p = prog.find_last_of("/\\");
@@ -457,14 +467,20 @@ void VoreenApplication::initialize() throw (VoreenException) {
     // try to find base path starting at program path
     basePath_ = findBasePath(basePath_);
     if (basePath_ == "") {
-        std::cout << "WARNING: Base path not found. Using current directory.\n";
+        std::cerr << "WARNING: Base path not found. Using current directory instead.\n";
         basePath_ = ".";
     }
     basePath_ = tgt::FileSystem::absolutePath(basePath_);
+#endif
 
-    if (getDeploymentMode())
+    // use user directory for custom data, if in deployment mode
+    if (getDeploymentMode() && !documentsPath.empty()) {
+        char lastChar = *documentsPath.rbegin();
+        if (lastChar != '/' && lastChar != '\\')
+            documentsPath += "/";
         userDataPath_ = tgt::FileSystem::cleanupPath(documentsPath + "Voreen");
-    else
+    }
+    else // use VRN_HOME/data as data directory
         userDataPath_ = tgt::FileSystem::cleanupPath(getBasePath("data"));
 
 
@@ -544,11 +560,14 @@ void VoreenApplication::initialize() throw (VoreenException) {
                 LogMgr.reinit(getUserDataPath()); //< write log file to user data dir by default
                 log = new tgt::HtmlLog(logFile_);
                 absLogPath = tgt::FileSystem::absolutePath(LogMgr.getLogDir() + "/" + logFile_);
+
             }
             tgtAssert(log, "no log");
 
             log->addCat("", true, logLevel_);
             LogMgr.addLog(log);
+
+            std::cout << "Log file: " << absLogPath << "\n";
          }
     }
 
@@ -1005,7 +1024,7 @@ void VoreenApplication::timerEvent(tgt::TimeEvent* /*e*/) {
     }
     networkEvaluationRequired_ = false;
 
-    // check every 500 ms if the network has to be re-evaluated,
+    // check every 100 ms if the network has to be re-evaluated,
     // unless a re-evaluation has been explicitly scheduled via scheduleNetworkProcessing
     if (schedulingTimer_->isStopped() || schedulingTimer_->getTickTime() != 100) {
         schedulingTimer_->stop();

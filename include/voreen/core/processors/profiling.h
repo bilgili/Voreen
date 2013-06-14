@@ -137,8 +137,12 @@ protected:
     //static const std::string loggerCat_;
 };
 
+#ifdef VRN_PRINT_PROFILING
 #define PROFILING_BLOCK(name) \
     ProfilingBlock block(name, performanceRecord_);
+#else
+#define PROFILING_BLOCK(name)
+#endif
 
 } // namespace
 

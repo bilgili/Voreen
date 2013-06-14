@@ -27,15 +27,29 @@
 
 #include "processors/alignedsliceproxygeometry.h"
 #include "processors/arbitraryvolumeclipping.h"
-#include "processors/samplingpositiontransformation.h"
+#include "processors/interactiveregistrationwidget.h"
 #include "processors/multislicerenderer.h"
 #include "processors/multisliceviewer.h"
+#include "processors/multivolumegeometryraycaster.h"
+#include "processors/registrationinitializer.h"
+#include "processors/samplingpositiontransformation.h"
+#include "processors/screenspaceambientocclusion.h"
+#include "processors/sliceproxygeometry.h"
 #include "processors/tabbedview.h"
 #include "processors/transfuncoverlay.h"
-#include "processors/sliceproxygeometry.h"
-#include "processors/screenspaceambientocclusion.h"
-#include "processors/interactiveregistrationwidget.h"
-#include "processors/registrationinitializer.h"
+
+// octree datastructures
+#include "octree/datastructures/volumeoctree.h"
+#include "octree/datastructures/octreebrickpoolmanager.h"
+#include "octree/datastructures/octreebrickpoolmanagerdisk.h"
+
+// octree processors
+#include "octree/processors/octreecreator.h"
+#include "octree/processors/octreeproxygeometry.h"
+#include "octree/processors/singleoctreeraycastercpu.h"
+#ifdef VRN_MODULE_OPENCL
+    #include "octree/processors/singleoctreeraycastercl.h"
+#endif
 
 namespace voreen {
 
@@ -44,6 +58,9 @@ StagingModule::StagingModule(const std::string& modulePath)
 {
     setID("Staging");
     setGuiName("Staging");
+
+    addShaderPath(getModulePath("glsl"));
+    addShaderPath(getModulePath("octree/processors/glsl"));
 
     registerSerializableType(new AlignedSliceProxyGeometry());
     registerSerializableType(new ArbitraryVolumeClipping());
@@ -56,8 +73,23 @@ StagingModule::StagingModule(const std::string& modulePath)
     registerSerializableType(new TabbedView());
     registerSerializableType(new TransFuncOverlay());
     registerSerializableType(new RegistrationInitializer());
+#ifdef GL_ATOMIC_COUNTER_BUFFER //disable compilation for old gl headers
+    registerSerializableType(new MultiVolumeGeometryRaycaster());
+#endif
 
-    addShaderPath(getModulePath("glsl"));
+    // octree datastructures
+    registerSerializableType(new VolumeOctree());
+    registerSerializableType(new OctreeBrickPoolManagerRAM());
+    registerSerializableType(new OctreeBrickPoolManagerDiskLimitedRam(64, 512, false, ""));
+
+    // octree processors
+    registerSerializableType(new OctreeProxyGeometry());
+    registerSerializableType(new OctreeCreator());
+    registerSerializableType(new SingleOctreeRaycasterCPU());
+#ifdef VRN_MODULE_OPENCL
+    registerSerializableType(new SingleOctreeRaycasterCL());
+#endif
+
 }
 
 } // namespace

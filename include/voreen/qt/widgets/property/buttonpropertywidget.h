@@ -38,7 +38,6 @@ class ButtonPropertyWidget : public QPropertyWidget {
 Q_OBJECT
 public:
     ButtonPropertyWidget(ButtonProperty* prop, QWidget* parent = 0);
-    void updateFromProperty() {}
 
     /// Returns an empty label.
     virtual CustomLabel* getNameLabel() const;
@@ -51,6 +50,10 @@ protected:
 
     ButtonProperty* property_;
     QPushButton* button_;
+
+protected slots:
+    virtual void updateFromPropertySlot() {};
+
 };
 
 } // namespace

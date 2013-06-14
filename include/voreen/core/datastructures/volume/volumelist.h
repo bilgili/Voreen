@@ -181,6 +181,11 @@ public:
      */
     virtual bool empty() const;
 
+    /**
+     * Returns the hash of the list based on the hashes of the contained volumes.
+     */
+    virtual std::string getHash() const;
+
     /// @see VolumeObserver::volumeChange
     virtual void volumeChange(const VolumeBase* volume);
 

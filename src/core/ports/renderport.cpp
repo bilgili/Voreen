@@ -84,6 +84,7 @@ RenderPort::RenderPort(PortDirection direction, const std::string& id, const std
     : Port(direction, id, guiName, allowMultipleConnections, invalidationLevel)
     , renderTarget_(0)
     , validResult_(false)
+    , cleared_(true)
     , size_(128,128)
     , renderSizePropagation_(renderSizePropagation)
     , internalColorFormat_(internalColorFormat)
@@ -139,17 +140,17 @@ RenderPort::~RenderPort() {
 
 std::string RenderPort::getContentDescription() const {
     std::stringstream strstr;
-    strstr  << getGuiName() << std::endl
-            << "Type: " << getClassName() << std::endl
-            << "Size: " << getSize().x << " x " << getSize().y;
+    strstr  << Port::getContentDescription();
+    if(hasData())
+        strstr << std::endl << "Size: " << getSize().x << " x " << getSize().y;
     return strstr.str();
 }
 
 std::string RenderPort::getContentDescriptionHTML() const {
     std::stringstream strstr;
-    strstr  << "<center><font><b>" << getGuiName() << "</b></font></center>"
-            << "Type: " << getClassName() << "<br>"
-            << "Size: " << getSize().x << " x " << getSize().y;
+    strstr  << Port::getContentDescriptionHTML();
+    if(hasData())
+        strstr << "<br>" << "Size: " << getSize().x << " x " << getSize().y;
     return strstr.str();
 }
 
@@ -201,6 +202,7 @@ void RenderPort::initialize() throw (tgt::Exception) {
     renderTarget_->setDebugLabel(processor_->getID()+ "::" + getID());
     renderTarget_->resize(size_);
     validResult_ = false;
+    cleared_ = true;
     LGL_ERROR;
 }
 
@@ -238,6 +240,8 @@ void RenderPort::activateTarget(const std::string& debugLabel) {
         //LERROR("activateTarget() called on inport (" <<
             //processor_->getID() << ":" << getID() << ")");
     }
+
+    cleared_ = false;
 }
 
 void RenderPort::deactivateTarget() {
@@ -252,6 +256,8 @@ void RenderPort::deactivateTarget() {
     else {
         LERROR("deactivateTarget() called on inport");
     }
+
+    cleared_ = false;
 }
 
 bool RenderPort::isActive() const {
@@ -271,11 +277,12 @@ void RenderPort::clear() {
     if (!isOutport())
         LERROR("clear() called on inport");
     else {
-        if(hasRenderTarget()) {
+        if (hasRenderTarget() && !cleared_) {
             activateTarget();
             clearTarget();
             invalidateResult();
             deactivateTarget();
+            cleared_ = true;
         }
     }
 }

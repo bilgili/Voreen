@@ -57,6 +57,7 @@
 #include <QStyle>
 #include <QStyleOption>
 #include <QColor>
+#include <QtSvg/QSvgRenderer>
 
 namespace voreen {
     /// Struct used to return all needed informations to draw a graphicsitem in the right state
@@ -99,9 +100,6 @@ namespace voreen {
  */
 class NWEStyle_Base {
 public:
-    NWEStyle_Base(){};
-    ~NWEStyle_Base(){};
-
     /*********************************************************************
      *                       General Color Defines
      ********************************************************************/
@@ -116,6 +114,11 @@ public:
     static const QColor NWEStyle_ConnectionYes;             //< Color of potential connections if they are valid
     static const QColor NWEStyle_ConnectionMaybe;           //< Color of potential connections if they are partly valid
     static const QColor NWEStyle_ConnectionNo;              //< Color of potential connections if they are not valid
+
+    static QSvgRenderer NWEStyle_Error1Renderer;     //< Renderer for error type 1 sign
+    static QSvgRenderer NWEStyle_Error2Renderer;     //< Renderer for error type 2 sign
+    static const QString NWEStyle_Error1SVGPath;     //< Path to the error 1 svg element
+    static const QString NWEStyle_Error2SVGPath;     //< Path to the error 2 svg element
 
     //aggregation
     static const QColor NWEStyle_AggregationColor1;         //< Default color of the aggregation graphicsitem
@@ -146,6 +149,14 @@ public:
         ES_ERROR_T1 = 1,
         ES_ERROR_T2 = 2
     };
+
+    NWEStyle_Base(){
+        NWEStyle_Error1Renderer.load(NWEStyle_Error1SVGPath);
+        NWEStyle_Error2Renderer.load(NWEStyle_Error2SVGPath);
+    };
+
+    ~NWEStyle_Base(){};
+
     /*********************************************************************
      *                       General Color Function
      ********************************************************************/

@@ -44,7 +44,6 @@ public:
     FloatPropertyWidget(FloatProperty* prop, QWidget* parent = 0, bool addVisibilityControl = true);
     virtual ~FloatPropertyWidget();
 
-    void updateFromProperty();
     void setWidget(const float value, const float minValue, const float maxValue, const float stepping);
 
 public slots:
@@ -60,6 +59,10 @@ protected:
     QMenu* precisionMenu_;
     QAction* highAction_;
     QAction* instantValueChangeAction_;
+
+protected slots:
+    virtual void updateFromPropertySlot();
+
 };
 
 } // namespace voreen

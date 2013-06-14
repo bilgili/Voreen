@@ -38,31 +38,14 @@ namespace voreen {
  */
 class VRN_CORE_API TransFuncPrimitive : public VoreenSerializableObject {
 public:
-    /**
-     * Standard constructor
-     */
     TransFuncPrimitive();
 
     /**
-     * Constructor
-     *
      * @param col color of the primitive
-     * @param scalefactor scaling of the y coordinate of the primitive
      */
-    TransFuncPrimitive(const tgt::col4& col, float scaleFactor);
+    TransFuncPrimitive(const tgt::col4& col);
 
-    /**
-     * Destructor
-     */
     virtual ~TransFuncPrimitive();
-
-    /**
-     * Sets the scaleFactor of the primitive to the given value. The y coordinates
-     * of the primitive are adjusted according to the scaleFactor.
-     *
-     * @param scaleFactor scaleFactor for the y coordinates of the primitve
-     */
-    virtual void setScaleFactor(float scaleFactor) = 0;
 
     /**
      * Paints the primitive.
@@ -185,7 +168,6 @@ protected:
     float fuzziness_;   ///< fuzziness of the primitive
     float cpSize_;      ///< size of a control point
     int grabbed_;       ///< number of the grabbed control point. -1 when no control point is grabbed
-    float scaleFactor_; ///< scaling of the primitive coordinates in y direction
 };
 
 // ----------------------------------------------------------------------------
@@ -195,9 +177,6 @@ protected:
  */
 class VRN_CORE_API TransFuncQuad : public TransFuncPrimitive {
 public:
-    /**
-     * Constructor
-     */
     TransFuncQuad();
 
     /**
@@ -206,25 +185,13 @@ public:
      * @param center center of the quad
      * @param size size of the quad
      * @param col color of the quad
-     * @param scaleFactor scaling of the y coordinate of the primitive
      */
-    TransFuncQuad(const tgt::vec2& center, float size, const tgt::col4& col, float scaleFactor);
+    TransFuncQuad(const tgt::vec2& center, float size, const tgt::col4& col);
 
-    /**
-     * Destructor
-     */
     ~TransFuncQuad();
 
     virtual std::string getClassName() const   { return "TransFuncQuad";     }
     virtual TransFuncPrimitive* create() const { return new TransFuncQuad(); }
-
-    /**
-     * Sets the scaleFactor of the primitive to the given value. The y coordinates
-     * of the primitive are adjusted according to the scaleFactor.
-     *
-     * @param scaleFactor scaleFactor for the y coordinates of the primitve
-     */
-    void setScaleFactor(float scaleFactor);
 
     /**
      * Paints the quad. The fuzziness factor is obeyed.
@@ -287,7 +254,6 @@ public:
 
 protected:
     tgt::vec2 coords_[4]; ///< the coordinates of the 4 vertices
-    bool scaleCoords_;    ///< indicates whether the coordinates must be scaled in paint() or not
 };
 
 // ----------------------------------------------------------------------------
@@ -304,9 +270,6 @@ protected:
  */
 class VRN_CORE_API TransFuncBanana : public TransFuncPrimitive {
 public:
-    /**
-     * Constructor
-     */
     TransFuncBanana();
 
     /**
@@ -317,25 +280,13 @@ public:
      * @param b2 coordinate of the lower middle control point
      * @param c  coordinate of the right control point
      * @param col color of the primitive
-     * @param scaleFactor scaling of the y coordinate of the primitive
      */
-    TransFuncBanana(const tgt::vec2& a, const tgt::vec2& b1, const tgt::vec2& b2, const tgt::vec2& c, const tgt::col4& col, float scaleFactor);
+    TransFuncBanana(const tgt::vec2& a, const tgt::vec2& b1, const tgt::vec2& b2, const tgt::vec2& c, const tgt::col4& col);
 
-    /**
-     * Destructor
-     */
     ~TransFuncBanana();
 
     virtual std::string getClassName() const   { return "TransFuncBanana";     }
     virtual TransFuncPrimitive* create() const { return new TransFuncBanana(); }
-
-    /**
-     * Sets the scaleFactor of the primitive to the given value. The y coordinates
-     * of the primitive are adjusted according to the scaleFactor.
-     *
-     * @param scaleFactor scaleFactor for the y coordinates of the primitve
-     */
-    void setScaleFactor(float scaleFactor);
 
     /**
      * Paints the banana. The fuzziness is obeyed.
@@ -408,8 +359,6 @@ protected:
     tgt::vec2 coords_[4]; ///< coordinates of the 4 vertices
 
     int steps_; ///< number of triangles used to fill the space between the both splines
-
-    bool scaleCoords_; ///< indicates whether the coordinates must be scaled in paintInner() or not
 };
 
 } // namespace voreen

@@ -30,8 +30,8 @@
 #include "voreen/core/interaction/camerainteractionhandler.h"
 
 #include "voreen/core/datastructures/geometry/meshlistgeometry.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 
-#include "voreen/core/ports/allports.h"
 #include "voreen/core/properties/cameraproperty.h"
 #include "voreen/core/properties/boolproperty.h"
 

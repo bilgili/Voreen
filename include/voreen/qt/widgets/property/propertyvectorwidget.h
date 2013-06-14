@@ -65,11 +65,8 @@ public:
 
     PropertyVectorWidget(PropertyVector* prop, QWidget* parent = 0);
 
-    void updateFromProperty();
-
 public slots:
     void setProperty(PropertyVector* value);
-
 
 protected:
 
@@ -95,6 +92,9 @@ protected:
     std::map<QAction*, int> propertyMap_;
 
     QMenu* propertyMenu_;
+
+protected slots:
+    virtual void updateFromPropertySlot();
 
 };
 

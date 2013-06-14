@@ -82,6 +82,15 @@ private:
         throw (VoreenException);
 
     /**
+     * Read a .PLY geometry.
+     *
+     * @return the read geometry
+     * @throw VoreenException if reading failed
+     */
+    Geometry* readPLYGeometry(const std::string& filename) const
+        throw (VoreenException);
+
+    /**
      * Reads a point list or point segment list from a text file.
      *
      * @param filename the file to read

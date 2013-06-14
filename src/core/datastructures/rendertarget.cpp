@@ -78,8 +78,14 @@ void RenderTarget::initialize(GLint internalColorFormat, GLint internalDepthForm
         case GL_RGBA32F_ARB:
             colorTex_ = new Texture(0, size, GL_RGBA, GL_RGBA32F_ARB, GL_FLOAT, Texture::LINEAR);
             break;
+        case GL_RED:
+            colorTex_ = new Texture(0, size, GL_RED, GL_RED, GL_UNSIGNED_BYTE, Texture::LINEAR);
+            break;
         case GL_R32F:
             colorTex_ = new Texture(0, size, GL_RED, GL_R32F, GL_FLOAT, Texture::LINEAR);
+            break;
+        case GL_LUMINANCE32F_ARB:
+            colorTex_ = new Texture(0, size, GL_LUMINANCE, GL_LUMINANCE32F_ARB, GL_FLOAT, Texture::LINEAR);
             break;
         default:
             LERROR("Unknown internal format!");

@@ -148,7 +148,7 @@ void OcclusionSlicer::process() {
 
     slicingPrg->setUniform("sigma_", sigma_.get());
     slicingPrg->setUniform("radius_", radius_.get());
-    slicingPrg->setUniform("lightPos_", lightPosition_.get().xyz());
+    slicingPrg->setUniform("lightPos_", lightPosition_.get());
 
     // bind the volumes and pass the necessary information to the shader
     bindVolumes(slicingPrg, volumeTextures, &cam, lightPosition_.get());

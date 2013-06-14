@@ -60,10 +60,10 @@ class RandomWalkerWeights;
  * the solver enters the failure state.
  *
  * Usage:
- * 1) construct the solver by passing the volume along with the seed and edge weight definers
- * 2) call setupEquationSystem() on the solver
- * 3) if setup successful, call solve() and pass the VoreenBlas instance to use
- * 4) if computation successful, either retrieve the random walker solution as binary buffer
+ * 1. construct the solver by passing the volume along with the seed and edge weight definers
+ * 2. call setupEquationSystem() on the solver
+ * 3. if setup successful, call solve() and pass the VoreenBlas instance to use
+ * 4. if computation successful, either retrieve the random walker solution as binary buffer
  *    or call generateBinarySegmentation() / generateProbabilityVolume() to retrieve the segmented volume
  *
  */

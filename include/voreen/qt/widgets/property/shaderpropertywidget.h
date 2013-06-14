@@ -41,7 +41,6 @@ Q_OBJECT
 public:
     ShaderPropertyWidget(ShaderProperty* prop, QWidget* parent = 0);
 
-    void updateFromProperty();
     void disconnect();
 
 public slots:
@@ -55,6 +54,10 @@ protected:
     ShaderPlugin* plugin_;
     ShaderProperty* property_;
     QPushButton* editBt_;
+
+protected slots:
+    virtual void updateFromPropertySlot();
+
 };
 
 } // namespace

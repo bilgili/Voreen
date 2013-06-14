@@ -27,8 +27,8 @@
 
 #include "voreen/qt/widgets/transfunc/histogrampainter.h"
 
-#include "voreen/core/datastructures/volume/volumeram.h"
 #include "voreen/core/datastructures/volume/volume.h"
+#include "voreen/core/datastructures/volume/volumedisk.h"
 #include "voreen/core/datastructures/volume/volumedecorator.h"
 #include "voreen/core/datastructures/volume/histogram.h"
 #include "voreen/core/datastructures/transfunc/transfunc1dkeys.h"
@@ -42,27 +42,12 @@
 #include <QPainter>
 #include <QString>
 #include <QToolTip>
-#include <QThread>
 
 #include <iostream>
 
 namespace voreen {
 
 using tgt::vec2;
-
-HistogramThread::HistogramThread(const VolumeBase* volume, int count, QObject* parent)
-    : QThread(parent)
-    , volume_(volume)
-    , count_(count)
-{
-    tgtAssert(volume, "No volume");
-}
-
-void HistogramThread::run() {
-    Histogram1D h = createHistogram1DFromVolume(volume_, count_);
-    VolumeHistogramIntensity* hist = new VolumeHistogramIntensity(h);
-    emit setHistogram(hist);
-}
 
 //-----------------------------------------------------------------------------
 
@@ -74,8 +59,8 @@ TransFuncMappingCanvas::TransFuncMappingCanvas(QWidget* parent, TransFunc1DKeys*
     , noColor_(noColor)
     , xAxisText_(xAxisText)
     , yAxisText_(yAxisText)
-    , histogramThread_(0)
     , histogramNeedsUpdate_(false)
+    , histogramThreadRunning_(false)
 {
     xRange_ = vec2(0.f, 1.f);
     yRange_ = vec2(0.f, 1.f);
@@ -144,10 +129,6 @@ TransFuncMappingCanvas::TransFuncMappingCanvas(QWidget* parent, TransFunc1DKeys*
 }
 
 TransFuncMappingCanvas::~TransFuncMappingCanvas() {
-    if (histogramThread_) {
-        histogramThread_->wait(); // wait for thread to finish before deleting
-        delete histogramThread_;
-    }
 }
 
 //--------- methods for reacting on Qt events ---------//
@@ -365,7 +346,7 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent* event) {
     paint.drawRect(0, 0, width() - 1, height() - 1);
 
     paint.setMatrixEnabled(false);
-    if (histogramThread_ && !histogramThread_->isFinished()) {
+    if (histogramThreadRunning_) {
         paint.setPen(Qt::red);
         paint.drawText(QRectF(0, 7, width() - 1, height() - 8), tr("Calculating histogram..."), QTextOption(Qt::AlignHCenter));
     }
@@ -909,22 +890,20 @@ void TransFuncMappingCanvas::updateHistogram() {
     const VolumeBase* baseHandle = volume_;
     while (dynamic_cast<const VolumeDecoratorIdentity*>(baseHandle))
         baseHandle = dynamic_cast<const VolumeDecoratorIdentity*>(baseHandle)->getDecorated();
-    if (baseHandle && baseHandle->hasDerivedData<VolumeHistogramIntensity>()) {
-        setHistogram(baseHandle->getDerivedData<VolumeHistogramIntensity>());
+    if (volume_ && volume_->hasDerivedData<VolumeHistogramIntensity>()) {
+        setHistogram(volume_->getDerivedData<VolumeHistogramIntensity>());
+        histogramThreadRunning_ = false;
     }
-    else if (volume_ && volume_->getRepresentation<VolumeRAM>()) {
-        int bits = volume_->getRepresentation<VolumeRAM>()->getBitsAllocated() / volume_->getRepresentation<VolumeRAM>()->getNumChannels();
-
-        int numBuckets = 1024;
-        if(bits == 8)
-            numBuckets = 256;
-
-        histogramThread_ = new HistogramThread(volume_, numBuckets, this);
-        connect(histogramThread_, SIGNAL(setHistogram(VolumeHistogramIntensity*)),
-                this, SLOT(setHistogram(VolumeHistogramIntensity*)));
-        connect(histogramThread_, SIGNAL(finished()),
-                this, SLOT(update()));
-        histogramThread_->start();
+    else if (baseHandle && baseHandle->hasDerivedData<VolumeHistogramIntensity>()) {
+        setHistogram(baseHandle->getDerivedData<VolumeHistogramIntensity>());
+        histogramThreadRunning_ = false;
+    }
+    else if (volume_ /**&&  // only calculate histogram, if a VolumeRAM or VolumeDiskRaw representation are present (hack)
+            (volume_->hasRepresentation<VolumeRAM>()) ||
+            (volume_->hasRepresentation<VolumeDisk>() && dynamic_cast<const VolumeDiskRaw*>(volume_->getRepresentation<VolumeDisk>()))*/ ) {
+        volume_->getDerivedDataThreaded<VolumeHistogramIntensity>();
+        histogramThreadRunning_ = true;
+        setHistogram(0);
     }
     else {
         setHistogram(0);
@@ -932,20 +911,14 @@ void TransFuncMappingCanvas::updateHistogram() {
 }
 
 void TransFuncMappingCanvas::volumeChanged(const VolumeBase* volumeHandle) {
-    // stop histogram thread and deregister from volume as observer
-    if (histogramThread_) {
-        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-        //histogramThread_->terminate();
-        histogramThread_->wait(); // wait for old thread to finish before deleting
-        delete histogramThread_;
-        histogramThread_ = 0;
-        QApplication::restoreOverrideCursor();
-    }
     histogramPainter_->setHistogram(0);
 
     volume_ = volumeHandle;
 
+    clearObserveds();
+    histogramThreadRunning_ = false;
     if (volume_) {
+        volume_->addObserver(this);
         histogramNeedsUpdate_ = true;
     }
 
@@ -953,6 +926,24 @@ void TransFuncMappingCanvas::volumeChanged(const VolumeBase* volumeHandle) {
         updateHistogram();
 
     update();
+}
+
+void TransFuncMappingCanvas::volumeDelete(const VolumeBase* source) {
+    setHistogram(0);
+    histogramThreadRunning_ = false;
+}
+
+void TransFuncMappingCanvas::volumeChange(const VolumeBase* source) {
+    setHistogram(0);
+    histogramThreadRunning_ = false;
+}
+
+void TransFuncMappingCanvas::derivedDataThreadFinished(const VolumeBase* source, const VolumeDerivedData* derivedData) {
+    if(dynamic_cast<const VolumeHistogramIntensity*>(derivedData)) {
+        setHistogram(static_cast<const VolumeHistogramIntensity*>(derivedData));
+        histogramThreadRunning_ = false;
+        update();
+    }
 }
 
 void TransFuncMappingCanvas::setTransFunc(TransFunc1DKeys* tf) {
@@ -969,21 +960,9 @@ void TransFuncMappingCanvas::setYAxisText(const std::string& text) {
     yAxisText_ = QString(text.c_str());
 }
 
-void TransFuncMappingCanvas::setHistogram(VolumeHistogramIntensity* histogram) {
+void TransFuncMappingCanvas::setHistogram(const VolumeHistogramIntensity* histogram) {
     tgtAssert(histogramPainter_, "no histogram painter");
     histogramPainter_->setHistogram(histogram);
-
-    // write histogram to base handle (hack!)
-    const VolumeBase* baseHandle = volume_;
-    while (dynamic_cast<const VolumeDecoratorIdentity*>(baseHandle))
-        baseHandle = dynamic_cast<const VolumeDecoratorIdentity*>(baseHandle)->getDecorated();
-    if (!baseHandle) {
-        LWARNINGC("voreen.qt.TransFuncMappingCanvas", "No base handle");
-        return;
-    }
-
-    if (baseHandle && !baseHandle->hasDerivedData<VolumeHistogramIntensity>())
-        const_cast<VolumeBase*>(baseHandle)->addDerivedData<VolumeHistogramIntensity>(histogram);
 }
 
 } // namespace voreen

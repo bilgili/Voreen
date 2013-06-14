@@ -144,17 +144,20 @@ Volume* VolumeOperatorVorticity::apply(const VolumeBase* srcVolume, VolumeOperat
             }
         }
 
-        Volume xValsVol = Volume(xVals, handle);
-        Volume yValsVol = Volume(yVals, handle);
-        Volume zValsVol = Volume(zVals, handle);
+        Volume* xValsVol = new Volume(xVals, handle);
+        Volume* yValsVol = new Volume(yVals, handle);
+        Volume* zValsVol = new Volume(zVals, handle);
 
         VolumeOperatorGradient voOpGr;
-        Volume* xvh = voOpGr.apply<U>(&xValsVol, gt);
+        Volume* xvh = voOpGr.apply<U>(xValsVol, gt);
+        delete xValsVol;
         const VolumeAtomic<tgt::Vector3<U> >* xGrad = xvh->getRepresentation<VolumeAtomic<tgt::Vector3<U> > >();
-        Volume* yvh = voOpGr.apply<U>(&yValsVol, gt);
+        delete yValsVol;
+        Volume* yvh = voOpGr.apply<U>(yValsVol, gt);
         const VolumeAtomic<tgt::Vector3<U> >* yGrad = yvh->getRepresentation<VolumeAtomic<tgt::Vector3<U> > >();
-        Volume* zvh = voOpGr.apply<U>(&zValsVol, gt);
+        Volume* zvh = voOpGr.apply<U>(zValsVol, gt);
         const VolumeAtomic<tgt::Vector3<U> >* zGrad = zvh->getRepresentation<VolumeAtomic<tgt::Vector3<U> > >();
+        delete zValsVol;
 
         for (pos.z = 0; pos.z < dim.z; pos.z++) {
             for (pos.y = 0; pos.y < dim.y; pos.y++) {

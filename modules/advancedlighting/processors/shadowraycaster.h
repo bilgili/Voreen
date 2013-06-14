@@ -241,7 +241,7 @@ public:
      *
      * @param lightPosition lightPosition property of the raycaster that uses the lightvolume
      */
-    void setLightPosition(FloatVec4Property* lightPosition);
+    void setLightPosition(LightSourceProperty* lightPosition);
 
     /**
      * Method that is called when the transfer function changes. Adapts the borderColor and forces

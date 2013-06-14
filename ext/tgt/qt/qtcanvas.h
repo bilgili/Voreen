@@ -122,6 +122,9 @@ public:
     virtual void keyPressEvent(QKeyEvent* event);
     virtual void keyReleaseEvent(QKeyEvent* event);
 
+    // necessary to handle touch events
+    virtual bool event(QEvent *event);
+
     ///
     /// Helpers used to generate tgt-Events out of qt-Events
     ///

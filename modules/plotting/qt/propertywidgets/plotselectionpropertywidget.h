@@ -57,10 +57,8 @@ public:
      **/
     PlotSelectionPropertyWidget(PlotSelectionProperty* prop, QWidget* parent = 0);
 
-    /**
-     * Updates all widgets from property.
-     **/
-    void updateFromProperty();
+protected slots:
+    virtual void updateFromPropertySlot();
 
 private slots:
     void btnAddClicked();

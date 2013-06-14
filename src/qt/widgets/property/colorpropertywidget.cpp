@@ -86,7 +86,7 @@ ColorPropertyWidget::ColorPropertyWidget(FloatVec4Property* prop, QWidget* paren
     setMinimumHeight(18);
 }
 
-void ColorPropertyWidget::updateFromProperty() {
+void ColorPropertyWidget::updateFromPropertySlot() {
     currentColor_ = toQColor(property_->get());
     updateColorLabel();
 }

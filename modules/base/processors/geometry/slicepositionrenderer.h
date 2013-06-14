@@ -59,6 +59,8 @@ protected:
 private:
     void togglePropertyVisibility();
 
+    BoolProperty enable_;
+
     BoolProperty renderXSlice_;
     FloatVec4Property xColor_;
     IntProperty xSliceIndexProp_;

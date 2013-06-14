@@ -44,8 +44,6 @@ public:
     StringExpressionPropertyWidget(StringExpressionProperty* prop, QWidget* parent = 0);
     virtual ~StringExpressionPropertyWidget();
 
-    virtual void updateFromProperty();
-
 public slots:
     //void setProperty(const QString& text);
     void setProperty();
@@ -61,6 +59,10 @@ protected:
     QTextEdit* textEdit_;
     QComboBox* comboBox_;
     QPushButton* button_;
+
+protected slots:
+    virtual void updateFromPropertySlot();
+
 };
 
 } // namespace

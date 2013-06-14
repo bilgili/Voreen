@@ -73,6 +73,10 @@ void TransFuncMappingKey::setColorL(const tgt::ivec4& color) {
         colorR_ = tgt::col4(color);
 }
 
+const tgt::col4& TransFuncMappingKey::getColorL() const {
+    return colorL_;
+}
+
 tgt::col4& TransFuncMappingKey::getColorL() {
     return colorL_;
 }
@@ -87,6 +91,10 @@ void TransFuncMappingKey::setColorR(const tgt::ivec4& color) {
     colorR_ = tgt::col4(color);
     if (!split_)
         colorL_ = tgt::col4(color);
+}
+
+const tgt::col4& TransFuncMappingKey::getColorR() const {
+    return colorR_;
 }
 
 tgt::col4& TransFuncMappingKey::getColorR() {
@@ -113,7 +121,7 @@ float TransFuncMappingKey::getAlphaL() {
     return colorL_.a / 255.f;
 }
 
-bool TransFuncMappingKey::isSplit() {
+bool TransFuncMappingKey::isSplit() const {
     return split_;
 }
 
@@ -130,7 +138,7 @@ void TransFuncMappingKey::setSplit(bool split, bool useLeft) {
     split_ = split;
 }
 
-float TransFuncMappingKey::getIntensity() {
+float TransFuncMappingKey::getIntensity() const {
     return intensity_;
 }
 

@@ -1104,7 +1104,7 @@ void PlotLibraryOpenGl::renderAxes() {
     glEnable(GL_DEPTH_TEST);
 }
 
-void PlotLibraryOpenGl::renderAxisScales(Axis axis, bool helperLines, const std::string& label) {
+void PlotLibraryOpenGl::renderAxisScales(Axis axis, bool helperLines, const std::string& label, plot_t offset) {
     tgt::dvec2 step = updateScaleSteps(axis);
     glLineWidth(axesWidth_/2.f);
     glColor4fv(drawingColor_.elem);
@@ -1131,7 +1131,7 @@ void PlotLibraryOpenGl::renderAxisScales(Axis axis, bool helperLines, const std:
             plot_t pos = i;//(logarithmicAxisFlags_[axis] ? convertFromLogCoordinates(i, axis) : i);
             stream.str("");
             stream.clear();
-            stream << round(pos, step.y);
+            stream << round(pos + offset, step.y);
             if (axis == X_AXIS) {
                 xAxisLabelGroup_.addLabel(stream.str(),
                                           convertPlotCoordinatesToViewport3(tgt::dvec3(i, yl, zr)),

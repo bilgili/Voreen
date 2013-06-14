@@ -73,13 +73,15 @@ public:
      */
     void setXRange(const tgt::vec2& xRange);
 
+    const VolumeHistogramIntensity* getHistogram() const;
+
 public slots:
     /**
      * Sets the painted histogram to the given value.
      *
      * @param histogram the histogram that will be painted
      */
-    void setHistogram(VolumeHistogramIntensity* histogram);
+    void setHistogram(const VolumeHistogramIntensity* histogram);
 
     /**
      * Determines whether a logarithmic scale is to be used on the y-axis.
@@ -101,7 +103,7 @@ private:
     int padding_;           ///< additional padding at the border of the parent widget
     int arrowLength_;       ///< length of the arrows in the parent widget
 
-    VolumeHistogramIntensity* histogram_; ///< the histogram that is painted
+    const VolumeHistogramIntensity* histogram_; ///< the histogram that is painted
 
     QPixmap* cache_;   ///< pixmap for caching the painted histogram
 };

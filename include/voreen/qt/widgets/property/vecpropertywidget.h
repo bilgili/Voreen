@@ -39,7 +39,6 @@ class VecPropertyWidget : public QPropertyWidget {
 public:
     VecPropertyWidget(VECTORPROP* const prop, const size_t numComponents, QWidget* parent = 0);
     virtual ~VecPropertyWidget() = 0;   // ensures that this class remains abstract.
-    virtual void updateFromProperty();
 
 protected:
     typename VECTORPROP::ElemType setPropertyComponent(QObject* sender, ELEMTYPE value);
@@ -53,6 +52,10 @@ protected:
     QBoxLayout* myLayout_;
     WIDGETTYPE** widgets_;
     VECTORPROP* vectorProp_;
+
+protected slots:
+    virtual void updateFromPropertySlot();
+
 };
 
 }   // namespace

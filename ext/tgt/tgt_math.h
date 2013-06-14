@@ -206,6 +206,11 @@ inline int clamp(int f, int min, int max) {
     return std::min(std::max(f, min), max);
 }
 
+/// Clamps \p f to range [\p min, \p max].
+inline size_t clamp(size_t f, size_t min, size_t max) {
+    return std::min(std::max(f, min), max);
+}
+
 /*
     logarithm
  */
@@ -261,6 +266,26 @@ inline int nearestPowerOfTwo(int i) {
     else {
         double log2 = log(static_cast<double>(i)) / log(2.0);
         return static_cast<int>(pow(2.0, tgt::round(log2 + 0.5)));
+    }
+}
+
+/// Returns the nearest power of two (excluding 1), which may be smaller than \p i
+inline size_t nearestPowerOfTwo(size_t i) {
+    if (i <= 2)
+        return 2;
+    else {
+        double log2 = log(static_cast<double>(i)) / log(2.0);
+        return static_cast<size_t>(pow(2.0, tgt::round(log2 + 0.5)));
+    }
+}
+
+/// Returns the next larger power of two (excluding 1).
+inline size_t nextLargerPowerOfTwo(size_t i) {
+    if (i <= 2)
+        return 2;
+    else {
+        double log2 = log(static_cast<double>(i)) / log(2.0);
+        return static_cast<size_t>(pow(2.0, ceil(log2)));
     }
 }
 

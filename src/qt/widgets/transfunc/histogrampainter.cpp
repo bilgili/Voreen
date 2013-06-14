@@ -51,11 +51,16 @@ HistogramPainter::~HistogramPainter() {
     delete cache_;
 }
 
-void HistogramPainter::setHistogram(VolumeHistogramIntensity* histogram) {
+void HistogramPainter::setHistogram(const VolumeHistogramIntensity* histogram) {
     //delete histogram_;
     histogram_ = histogram;
     delete cache_;
     cache_ = 0;
+    update();
+}
+
+const VolumeHistogramIntensity* HistogramPainter::getHistogram() const {
+    return histogram_;
 }
 
 void HistogramPainter::setYAxisLogarithmic(bool logarithmic) {

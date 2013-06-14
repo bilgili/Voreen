@@ -70,7 +70,6 @@ TransFunc1DKeysEditor::TransFunc1DKeysEditor(TransFuncProperty* prop, QWidget* p
     , doubleSlider_(0)
     , orientation_(orientation)
     , maxDigits_(7)
-    , setTFValues_(true)
 {
     title_ = QString("Intensity");
     transferFuncIntensity_ = dynamic_cast<TransFunc1DKeys*>(property_->get());
@@ -93,31 +92,7 @@ QLayout* TransFunc1DKeysEditor::createMappingLayout() {
     doubleSlider_->setOffsets(12, 27);
     hboxSlider->addWidget(doubleSlider_);
 
-    //spinboxes for threshold values
-    lowerThresholdSpin_ = new QDoubleSpinBox();
-    lowerThresholdSpin_->setRange(-9999999.0, 9999999.0);
-    lowerThresholdSpin_->setValue(0.0);
-    lowerThresholdSpin_->setDecimals(maxDigits_-1);
-    lowerThresholdSpin_->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    lowerThresholdSpin_->setFixedWidth(6*maxDigits_+25);
-    lowerThresholdSpin_->setKeyboardTracking(false);
-    upperThresholdSpin_ = new QDoubleSpinBox();
-    upperThresholdSpin_->setRange(-9999999.0, 9999999.0);
-    upperThresholdSpin_->setValue(1.0);
-    upperThresholdSpin_->setDecimals(maxDigits_-1);
-    upperThresholdSpin_->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    upperThresholdSpin_->setFixedWidth(6*maxDigits_+25);
-    upperThresholdSpin_->setKeyboardTracking(false);
-    QHBoxLayout* hboxSpin = new QHBoxLayout();
-    QLabel* thresLabel = new QLabel("Threshold");
-    //the spacing is added so that spinboxes and doubleslider are aligned vertically
-    hboxSpin->addSpacing(6);
-    hboxSpin->addWidget(lowerThresholdSpin_);
-    hboxSpin->addStretch();
-    hboxSpin->addWidget(thresLabel);
-    hboxSpin->addStretch();
-    hboxSpin->addWidget(upperThresholdSpin_);
-    hboxSpin->addSpacing(21);
+    //doubleSlider_->setVisible(false);
 
     //mapping settings:
     QHBoxLayout* hboxMapping = new QHBoxLayout();
@@ -135,7 +110,6 @@ QLayout* TransFunc1DKeysEditor::createMappingLayout() {
     lowerMappingSpin_->setDecimals(maxDigits_-1);
     upperMappingSpin_->setFixedWidth(6*maxDigits_+25);
     lowerMappingSpin_->setFixedWidth(6*maxDigits_+25);
-
 
     QLabel* mappingLabel = new QLabel();
     mappingLabel->setText("TF Domain Bounds");
@@ -161,7 +135,6 @@ QLayout* TransFunc1DKeysEditor::createMappingLayout() {
     upperData_ = new QLabel();
     //upperData_->setReadOnly(true);
 
-
     hboxAutoFit->addSpacing(6);
     hboxAutoFit->addWidget(lowerData_);
     hboxAutoFit->addStretch();
@@ -170,7 +143,6 @@ QLayout* TransFunc1DKeysEditor::createMappingLayout() {
     hboxAutoFit->addStretch();
     hboxAutoFit->addWidget(upperData_);
     hboxAutoFit->addSpacing(21);
-
 
     //add gradient that displays the transferfunction as image
     textureCanvas_ = new tgt::QtCanvas("", tgt::ivec2(1, 1), tgt::GLCanvas::RGBADD, 0, true);
@@ -194,7 +166,6 @@ QLayout* TransFunc1DKeysEditor::createMappingLayout() {
     vBox->addLayout(hboxTexture);//Widget(textureCanvas_);
     vBox->addWidget(additionalSpace);
     vBox->addLayout(hboxSlider);
-    vBox->addLayout(hboxSpin);
     vBox->addLayout(hboxMapping);
     vBox->addLayout(hboxAutoFit);
     vBox->addSpacing(1);
@@ -221,6 +192,10 @@ QLayout* TransFunc1DKeysEditor::createButtonLayout() {
     saveButton_->setIcon(QIcon(":/qt/icons/save.png"));
     saveButton_->setToolTip(tr("Save transfer function"));
 
+    makeRampButton_ = new QToolButton();
+    makeRampButton_->setIcon(QIcon(":/qt/icons/ramp.png"));
+    makeRampButton_->setToolTip(tr("Make Ramp"));
+
     //if (property_->getManualRepaint()) {
         //repaintButton_ = new QToolButton();
         //repaintButton_->setIcon(QIcon(":/qt/icons/view-refresh.png"));
@@ -232,6 +207,7 @@ QLayout* TransFunc1DKeysEditor::createButtonLayout() {
     buttonLayout->addWidget(clearButton_);
     buttonLayout->addWidget(loadButton_);
     buttonLayout->addWidget(saveButton_);
+    buttonLayout->addWidget(makeRampButton_);
     //if (property_->getManualRepaint())
         //buttonLayout->addWidget(repaintButton_);
 
@@ -304,6 +280,7 @@ void TransFunc1DKeysEditor::createWidgets() {
     mainLayout->addWidget(splitter);
 
     setLayout(mainLayout);
+    updateThresholdFromProperty();
 }
 
 void TransFunc1DKeysEditor::createConnections() {
@@ -311,6 +288,7 @@ void TransFunc1DKeysEditor::createConnections() {
     connect(clearButton_, SIGNAL(clicked()), this, SLOT(clearButtonClicked()));
     connect(loadButton_, SIGNAL(clicked()), this, SLOT(loadTransferFunction()));
     connect(saveButton_, SIGNAL(clicked()), this, SLOT(saveTransferFunction()));
+    connect(makeRampButton_, SIGNAL(clicked()), this, SLOT(makeRamp()));
 
     // signals from transferMappingCanvas
     connect(transCanvas_, SIGNAL(changed()), this, SLOT(updateTransferFunction()));
@@ -332,12 +310,8 @@ void TransFunc1DKeysEditor::createConnections() {
     connect(colorLumPicker_, SIGNAL(toggleInteractionMode(bool)), this, SLOT(toggleInteractionMode(bool)));
 
     // doubleslider
-    connect(doubleSlider_, SIGNAL(valuesChanged(float, float)), this, SLOT(thresholdChanged(float, float)));
+    connect(doubleSlider_, SIGNAL(valuesChanged(float, float)), this, SLOT(applyThreshold()));
     connect(doubleSlider_, SIGNAL(toggleInteractionMode(bool)), this, SLOT(toggleInteractionMode(bool)));
-
-    // threshold spinboxes
-    connect(lowerThresholdSpin_, SIGNAL(valueChanged(double)), this, SLOT(lowerThresholdSpinChanged(double)));
-    connect(upperThresholdSpin_, SIGNAL(valueChanged(double)), this, SLOT(upperThresholdSpinChanged(double)));
 
     connect(lowerMappingSpin_, SIGNAL(valueChanged(double)), this, SLOT(lowerMappingChanged(double)));
     connect(upperMappingSpin_, SIGNAL(valueChanged(double)), this, SLOT(upperMappingChanged(double)));
@@ -381,7 +355,7 @@ void TransFunc1DKeysEditor::fitDomainToData() {
 
     if(volume_) {
         updateMappingSpin(true);
-        updateThresholdSpin(false);
+        updateThresholdFromProperty();
         updateTransferFunction();
     }
 }
@@ -411,7 +385,6 @@ const TransFuncProperty* TransFunc1DKeysEditor::getTransFuncProp() const {
 }
 
 void TransFunc1DKeysEditor::updateTransferFunction() {
-
     if (!transferFuncIntensity_)
         return;
 
@@ -470,7 +443,7 @@ void TransFunc1DKeysEditor::loadTransferFunction() {
     if (!fileName.isEmpty()) {
         if (transferFuncIntensity_->load(fileName.toStdString())) {
             updateMappingSpin(true);
-            updateThresholdSpin(true);
+            updateThresholdFromProperty();
             updateTransferFunction();
         }
         else {
@@ -479,6 +452,38 @@ void TransFunc1DKeysEditor::loadTransferFunction() {
             LERROR("The selected transfer function could not be loaded. Maybe the file is corrupt.");
         }
     }
+}
+
+void TransFunc1DKeysEditor::makeRamp() {
+    if (transferFuncIntensity_) {
+        transferFuncIntensity_->makeRamp();
+        updateTransferFunction();
+    }
+}
+
+void TransFunc1DKeysEditor::updateDataBounds() {
+    if (!volume_)
+        return;
+
+    //calculate Min/Max values:
+    float min = 0.f;
+    float max = 1.f;
+
+    if (volume_->hasDerivedData<VolumeMinMax>()) {
+        min = volume_->getDerivedData<VolumeMinMax>()->getMinNormalized();
+        max = volume_->getDerivedData<VolumeMinMax>()->getMaxNormalized();
+    }
+    else {
+        volume_->getDerivedDataThreaded<VolumeMinMax>();
+    }
+
+    RealWorldMapping rwm = volume_->getRealWorldMapping();
+    min = rwm.normalizedToRealWorld(min);
+    max = rwm.normalizedToRealWorld(max);
+    //std::string unit = rwm.getUnit();
+
+    lowerData_->setText(QString::number(min));
+    upperData_->setText(QString::number(max));
 }
 
 //----------------------------------------------------------------------------------------------
@@ -527,7 +532,7 @@ void TransFunc1DKeysEditor::mappingChanged() {
         return;
 
     updateMappingSpin(false);
-    updateThresholdSpin(false);
+    updateThresholdFromProperty();
 
     updateTransferFunction();
     checkDomainVersusData();
@@ -546,7 +551,7 @@ void TransFunc1DKeysEditor::lowerMappingChanged(double value) {
     mappingChanged();
 }
 
- void TransFunc1DKeysEditor::upperMappingChanged(double value) {
+void TransFunc1DKeysEditor::upperMappingChanged(double value) {
     if (!transferFuncIntensity_)
         return;
 
@@ -559,108 +564,18 @@ void TransFunc1DKeysEditor::lowerMappingChanged(double value) {
     mappingChanged();
 }
 
-//----------------------------------------------------------------------------------------------
-//      update threshold
-//----------------------------------------------------------------------------------------------
-void TransFunc1DKeysEditor::updateThresholdSpin(bool fromTF){
+void TransFunc1DKeysEditor::updateThresholdFromProperty() {
     if (!transferFuncIntensity_)
         return;
 
-   lowerThresholdSpin_->blockSignals(true);
-   upperThresholdSpin_->blockSignals(true);
+   double min = transferFuncIntensity_->getThresholds().x;
+   double max = transferFuncIntensity_->getThresholds().y;
 
-    //set Range
-   lowerThresholdSpin_->setRange(lowerMappingSpin_->value(), upperMappingSpin_->value());
-   upperThresholdSpin_->setRange(lowerMappingSpin_->value(), upperMappingSpin_->value());
-
-   double min, max;
-
-   if(fromTF){
-       min = transferFuncIntensity_->normalizedToRealWorld(transferFuncIntensity_->getThresholds().x);
-       max = transferFuncIntensity_->normalizedToRealWorld(transferFuncIntensity_->getThresholds().y);
-   }
-   else{
-       min = lowerMappingSpin_->value();
-       max = upperMappingSpin_->value();
-       transferFuncIntensity_->setThresholds(tgt::vec2(transferFuncIntensity_->realWorldToNormalized(min),transferFuncIntensity_->realWorldToNormalized(max)));
-   }
-
-   double diff = max - min;
-   lowerThresholdSpin_->setValue(min);
-   upperThresholdSpin_->setValue(max);
-   transCanvas_->setThreshold(transferFuncIntensity_->realWorldToNormalized(min),transferFuncIntensity_->realWorldToNormalized(max));
-
-   //set decimals
-   if(abs(min) < 1.0)
-       lowerThresholdSpin_->setDecimals(maxDigits_-1);
-   else
-       lowerThresholdSpin_->setDecimals(maxDigits_-(static_cast<int>( log10( abs( min ) ) ) + 1));
-   if(abs(max) < 1.0)
-       upperThresholdSpin_->setDecimals(maxDigits_-1);
-   else
-       upperThresholdSpin_->setDecimals(maxDigits_-(static_cast<int>( log10( abs( max ) ) ) + 1));
-
-   //set stepsize
-   lowerThresholdSpin_->setSingleStep(diff/1000.0);
-   upperThresholdSpin_->setSingleStep(diff/1000.0);
-
-   lowerThresholdSpin_->blockSignals(false);
-   upperThresholdSpin_->blockSignals(false);
+   transCanvas_->setThreshold(min, max);
 
    doubleSlider_->blockSignals(true);
-   doubleSlider_->setValues(transferFuncIntensity_->realWorldToNormalized(min),transferFuncIntensity_->realWorldToNormalized(max));
+   doubleSlider_->setValues(min ,max);
    doubleSlider_->blockSignals(false);
-}
-
-
-void TransFunc1DKeysEditor::thresholdChanged(float min, float max) {
-    //sync with spinboxes
-    if(transferFuncIntensity_) {
-        upperThresholdSpin_->setValue(transferFuncIntensity_->normalizedToRealWorld(max));
-        lowerThresholdSpin_->setValue(transferFuncIntensity_->normalizedToRealWorld(min));
-    }
-
-    //apply threshold to transfer function
-    applyThreshold();
-}
-
-void TransFunc1DKeysEditor::lowerThresholdSpinChanged(double value) {
-    //increment value of upper spin when it equals value of lower spin
-    if (value > upperThresholdSpin_->value()) {
-        upperThresholdSpin_->blockSignals(true);
-        upperThresholdSpin_->setValue(value+0.01);//TODO: calculate diff
-        upperThresholdSpin_->blockSignals(false);
-    }
-
-    //update doubleSlider to new minValue
-    doubleSlider_->blockSignals(true);
-    if(transferFuncIntensity_)
-        doubleSlider_->setMinValue(transferFuncIntensity_->realWorldToNormalized(value));
-    doubleSlider_->blockSignals(false);
-
-    //apply threshold to transfer function
-    applyThreshold();
-}
-
-void TransFunc1DKeysEditor::upperThresholdSpinChanged(double value) {
-    if (!transferFuncIntensity_)
-        return;
-
-    //increment value of lower spin when it equals value of upper spin
-    if (value < lowerThresholdSpin_->value()) {
-        lowerThresholdSpin_->blockSignals(true);
-        lowerThresholdSpin_->setValue(value-0.01);//TODO: calculate diff
-        lowerThresholdSpin_->blockSignals(false);
-    }
-
-    //update doubleSlider to new maxValue
-    doubleSlider_->blockSignals(true);
-    if(transferFuncIntensity_)
-        doubleSlider_->setMaxValue(transferFuncIntensity_->realWorldToNormalized(value));
-    doubleSlider_->blockSignals(false);
-
-    //apply threshold to transfer function
-    applyThreshold();
 }
 
 void TransFunc1DKeysEditor::applyThreshold() {
@@ -681,29 +596,34 @@ void TransFunc1DKeysEditor::applyThreshold() {
 void TransFunc1DKeysEditor::checkDomainVersusData() {
     bool warnLower = false;
     bool warnUpper = false;
-    if (transferFuncIntensity_ && volume_ && volume_->getRepresentation<VolumeRAM>()) {
-        //calculate Min/Max values:
-        float min = volume_->getDerivedData<VolumeMinMax>()->getMinNormalized();
-        float max = volume_->getDerivedData<VolumeMinMax>()->getMaxNormalized();
+    if (transferFuncIntensity_ && volume_ /* && volume_->hasRepresentation<VolumeRAM>() */) {
 
-        RealWorldMapping rwm = volume_->getRealWorldMapping();
-        min = rwm.normalizedToRealWorld(min);
-        max = rwm.normalizedToRealWorld(max);
+        if (volume_->hasDerivedData<VolumeMinMax>()) { // if min/max already present, use them
+            //calculate Min/Max values:
+            float min = volume_->getDerivedData<VolumeMinMax>()->getMinNormalized();
+            float max = volume_->getDerivedData<VolumeMinMax>()->getMaxNormalized();
 
-        tgt::vec2 domain = transferFuncIntensity_->getDomain();
-        float avg = (domain.x + domain.y) / 2.0f;
+            RealWorldMapping rwm = volume_->getRealWorldMapping();
+            min = rwm.normalizedToRealWorld(min);
+            max = rwm.normalizedToRealWorld(max);
 
-        if(domain.x > min)
-            warnLower = true;
-        if(domain.y < max)
-            warnUpper = true;
+            tgt::vec2 domain = transferFuncIntensity_->getDomain();
+            float avg = (domain.x + domain.y) / 2.0f;
 
-        if(min > avg)
-            warnLower = true;
-        if(max < avg)
-            warnUpper = true;
+            if(domain.x > min)
+                warnLower = true;
+            if(domain.y < max)
+                warnUpper = true;
+
+            if(min > avg)
+                warnLower = true;
+            if(max < avg)
+                warnUpper = true;
+        }
+        else { // otherwise compute min/max values in background
+            volume_->getDerivedDataThreaded<VolumeMinMax>();
+        }
     }
-
 
     QPalette lowerPal(lowerMappingSpin_->palette());
     if(warnLower)
@@ -733,8 +653,9 @@ void TransFunc1DKeysEditor::updateFromProperty() {
         texturePainter_->setTransFunc(transferFuncIntensity_);
         transCanvas_->setTransFunc(transferFuncIntensity_);
 
+        updateDataBounds();
         updateMappingSpin(true);
-        updateThresholdSpin(true);
+        updateThresholdFromProperty();
 
         if (property_->get() && !transferFuncIntensity_) {
             if (isEnabled()) {
@@ -761,12 +682,11 @@ void TransFunc1DKeysEditor::updateFromProperty() {
     if (transferFuncIntensity_) {
         setEnabled(true);
 
-        if(setTFValues_){
         // update treshold widgets from tf
-            updateMappingSpin(true);
-            updateThresholdSpin(true);
-            setTFValues_ = false;
-        }
+        updateDataBounds();
+        updateMappingSpin(true);
+        updateThresholdFromProperty();
+
         // repaint control elements
         repaintAll();
     }
@@ -776,33 +696,24 @@ void TransFunc1DKeysEditor::updateFromProperty() {
 }
 
 void TransFunc1DKeysEditor::volumeChanged() {
-    if (volume_ && volume_->getRepresentation<VolumeRAM>()) {
+    if (volume_ /*&& volume_->hasRepresentation<VolumeRAM>()*/) {
 
-        //calculate Min/Max values:
-        float min = volume_->getDerivedData<VolumeMinMax>()->getMinNormalized();
-        float max = volume_->getDerivedData<VolumeMinMax>()->getMaxNormalized();
-
-        RealWorldMapping rwm = volume_->getRealWorldMapping();
-        min = rwm.normalizedToRealWorld(min);
-        max = rwm.normalizedToRealWorld(max);
-        //std::string unit = rwm.getUnit();
-
-        lowerData_->setText(QString::number(min));
-        upperData_->setText(QString::number(max));
+        updateDataBounds();
 
         /*if(unit == "")
             dataLabel_->setText("Data Bounds");
         else
             dataLabel_->setText(QString("Data Bounds [") + QString::fromStdString(unit) + "]");*/
 
+        RealWorldMapping rwm = volume_->getRealWorldMapping();
         if(property_->getAlwaysFitToDomain() || (((rwm.getOffset() != 0.0f) || (rwm.getScale() != 1.0f) ||
           (rwm.getUnit() != "")) && *transferFuncIntensity_ == TransFunc1DKeys())) {
             fitDomainToData();
         }
-        setTFValues_ = true;
         // propagate new volume to transfuncMappingCanvas
         transCanvas_->volumeChanged(volume_);
-    } else {
+    }
+    else {
         transCanvas_->volumeChanged(0);
     }
 
@@ -826,15 +737,5 @@ void TransFunc1DKeysEditor::resetEditor() {
 
     causeVolumeRenderingRepaint();
 }
-
-
-
-
-
-
-
-
-
-
 
 } // namespace voreen

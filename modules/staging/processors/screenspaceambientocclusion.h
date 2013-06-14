@@ -27,7 +27,7 @@
 #define VRN_SCREENSPACEAMBIENTOCCLUSION_H
 
 #include "voreen/core/processors/imageprocessorbypassable.h"
-#include "voreen/core/ports/allports.h"
+
 
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/cameraproperty.h"

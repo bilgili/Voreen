@@ -43,7 +43,7 @@ IntPropertyWidget::IntPropertyWidget(IntProperty* prop, QWidget* parent, bool ad
     widget_->setSliderTracking(property_->hasTracking());
     addWidget(widget_);
 
-    updateFromProperty();
+    updateFromPropertySlot();
 
     connect(widget_, SIGNAL(valueChanged(int)), this, SLOT(setProperty(int)));
     connect(widget_, SIGNAL(sliderPressedChanged(bool)), this, SLOT(toggleInteractionMode(bool)));
@@ -64,7 +64,7 @@ IntPropertyWidget::~IntPropertyWidget() {
     delete widget_;
 }
 
-void IntPropertyWidget::updateFromProperty() {
+void IntPropertyWidget::updateFromPropertySlot() {
     if (property_ != 0) {
         widget_->blockSignals(true);
         widget_->setMinValue(property_->getMinValue());
@@ -102,7 +102,7 @@ void IntPropertyWidget::mousePressEvent(QMouseEvent* event) {
         if(prec == instantValueChangeAction_) {
             property_->setTracking(!property_->hasTracking());
         }
-        updateFromProperty();
+        updateFromPropertySlot();
     }
     QWidget::mousePressEvent(event);
 }

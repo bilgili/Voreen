@@ -38,6 +38,7 @@ public:
     virtual std::string getClassName() const { return "CoProcessorPort"; }
 
     virtual void forwardData() const {};
+    virtual bool hasData() const {return false;}
 
     std::vector<Processor*> getConnectedProcessors() const;
 
@@ -48,6 +49,9 @@ public:
      * Returns true, if the port is connected.
      */
     virtual bool isReady() const;
+
+    virtual std::string getContentDescription() const;
+    virtual std::string getContentDescriptionHTML() const;
 
     virtual void clear() {}
 

@@ -45,6 +45,8 @@ const std::string TransFunc2DPrimitives::loggerCat_("voreen.TransFunc2DPrimitive
 TransFunc2DPrimitives::TransFunc2DPrimitives(int width, int height)
     : TransFunc(width, height, 1, GL_RGBA, GL_FLOAT, Texture::LINEAR)
     , fbo_(0)
+    , domainIntensity_(0.0f, 1.0f)
+    , domainGradientMagnitude_(0.0f, 1.0f)
 {
     loadFileFormats_.push_back("tfig");
 
@@ -70,6 +72,10 @@ TransFunc2DPrimitives::~TransFunc2DPrimitives() {
     }
 }
 
+std::string TransFunc2DPrimitives::getShaderDefines(const std::string& defineName) const {
+    return TransFunc::getShaderDefines(defineName) + "#define CLASSIFICATION_REQUIRES_GRADIENT\n";
+}
+
 bool TransFunc2DPrimitives::operator==(const TransFunc2DPrimitives& tf) {
 
     // check type information
@@ -86,11 +92,6 @@ bool TransFunc2DPrimitives::operator==(const TransFunc2DPrimitives& tf) {
 
 bool TransFunc2DPrimitives::operator!=(const TransFunc2DPrimitives& tf) {
     return !(*this == tf);
-}
-
-void TransFunc2DPrimitives::setScaleFactor(float /*factor*/) {
-    //for (size_t i = 0; i < primitives_.size(); ++i)
-    //    primitives_[i]->setScaleFactor(factor);
 }
 
 bool TransFunc2DPrimitives::save(const std::string& filename) {
@@ -256,11 +257,10 @@ void TransFunc2DPrimitives::clear() {
         primitives_.erase(it);
     }
 
-    textureInvalid_ = true;
+    invalidateTexture();
 }
 
 void TransFunc2DPrimitives::updateTexture() {
-
     // (re-)create tf texture and fbo, if necessary
     if (!fbo_ || !tex_ || (tex_->getDimensions() != dimensions_))
         createTex();
@@ -328,7 +328,14 @@ void TransFunc2DPrimitives::paintInEditor() {
         primitives_[i]->paintInEditor();
 }
 
-TransFuncPrimitive* TransFunc2DPrimitives::getPrimitive(int i) const {
+const TransFuncPrimitive* TransFunc2DPrimitives::getPrimitive(int i) const {
+    if ((i < 0) || (i >= static_cast<int>(primitives_.size())))
+        return 0;
+    else
+        return primitives_[i];
+}
+
+TransFuncPrimitive* TransFunc2DPrimitives::getPrimitive(int i) {
     if ((i < 0) || (i >= static_cast<int>(primitives_.size())))
         return 0;
     else
@@ -360,15 +367,40 @@ TransFuncPrimitive* TransFunc2DPrimitives::getPrimitiveForClickedControlPoint(co
 void TransFunc2DPrimitives::serialize(XmlSerializer& s) const {
     TransFunc::serialize(s);
     s.serialize("Primitives", primitives_, "Primitive");
+    s.serialize("domainIntensity", domainIntensity_);
+    s.serialize("domainGradientMagnitude", domainGradientMagnitude_);
 }
 
 void TransFunc2DPrimitives::deserialize(XmlDeserializer& s) {
     TransFunc::deserialize(s);
     s.deserialize("Primitives", primitives_, "Primitive");
+    s.optionalDeserialize("domainIntensity", domainIntensity_, tgt::vec2(0.0f, 1.0f));
+    s.optionalDeserialize("domainGradientMagnitude", domainGradientMagnitude_, tgt::vec2(0.0f, 1.0f));
 }
 
 void TransFunc2DPrimitives::reset() {
     clear();
+}
+
+tgt::vec2 TransFunc2DPrimitives::getDomain(int dimension /*= 0*/) const {
+    if(dimension == 0)
+        return domainIntensity_;
+    else if(dimension == 1)
+        return domainGradientMagnitude_;
+    else {
+        tgtAssert(false, "invalid dimension");
+        return tgt::vec2(0.0f, 1.0f);
+    }
+}
+
+void TransFunc2DPrimitives::setDomain(tgt::vec2 domain, int dimension) {
+    if(dimension == 0)
+        domainIntensity_ = domain;
+    else if(dimension == 1)
+        domainGradientMagnitude_ = domain;
+    else {
+        tgtAssert(false, "invalid dimension");
+    }
 }
 
 TransFunc* TransFunc2DPrimitives::clone() const {
@@ -380,6 +412,8 @@ TransFunc* TransFunc2DPrimitives::clone() const {
     func->format_ = format_;
     func->dataType_ = dataType_;
     func->filter_ = filter_;
+    func->domainIntensity_ = domainIntensity_;
+    func->domainGradientMagnitude_ = domainGradientMagnitude_;
 
     func->primitives_.clear();
     std::vector<TransFuncPrimitive*>::const_iterator it;

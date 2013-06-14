@@ -41,7 +41,6 @@ Q_OBJECT
 public:
     OpenCLPropertyWidget(OpenCLProperty* prop, QWidget* parent = 0);
 
-    void updateFromProperty();
     void disconnect();
 
     OpenCLPlugin* getPlugin() const {
@@ -59,6 +58,10 @@ protected:
     OpenCLPlugin* plugin_;
     OpenCLProperty* property_;
     QPushButton* editBt_;
+
+protected slots:
+    virtual void updateFromPropertySlot();
+
 };
 
 } // namespace

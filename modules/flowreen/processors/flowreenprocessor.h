@@ -26,7 +26,6 @@
 #ifndef VRN_FLOWREENPROCESSOR_H
 #define VRN_FLOWREENPROCESSOR_H
 
-#include "voreen/core/ports/allports.h"
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/cameraproperty.h"
 #include "voreen/core/properties/floatproperty.h"

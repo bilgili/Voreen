@@ -42,7 +42,7 @@ StringPropertyWidget::StringPropertyWidget(StringProperty* prop, QWidget* parent
     addVisibilityControls();
 }
 
-void StringPropertyWidget::updateFromProperty() {
+void StringPropertyWidget::updateFromPropertySlot() {
     lineEdit_->blockSignals(true);
     QString st = QString::fromStdString(property_->get());
     if(st != lineEdit_->text())

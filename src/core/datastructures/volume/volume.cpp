@@ -400,6 +400,8 @@ std::string VolumeURL::unescapeString(const std::string& str) const {
 
 VolumeBase::~VolumeBase() {
     notifyDelete();
+    clearFinishedThreads();
+    stopRunningThreads();
     clearDerivedData();
 }
 
@@ -535,11 +537,41 @@ MeshGeometry VolumeBase::getBoundingBox(bool applyTransformation) const {
     return boundingBox;
 }
 
+void VolumeBase::stopRunningThreads() {
+    // copy set of threads because they are removed from derivedDataThreads when they finish
+    derivedDataThreadMutex_.lock();
+    std::set<VolumeDerivedDataThreadBase*> copy = derivedDataThreads_;
+    derivedDataThreadMutex_.unlock();
+
+    for (std::set<VolumeDerivedDataThreadBase*>::iterator it=copy.begin(); it!=copy.end(); ++it) {
+        VolumeDerivedDataThreadBase* tmp = *it;
+        if(tmp->isRunning()) {
+            tmp->interrupt();
+            tmp->join();
+        }
+    }
+}
+
+void VolumeBase::clearFinishedThreads() {
+    derivedDataThreadMutex_.lock();
+    for (std::set<VolumeDerivedDataThreadBase*>::iterator it=derivedDataThreadsFinished_.begin(); it!=derivedDataThreadsFinished_.end(); ++it) {
+        if((*it)->isRunning()) {
+            (*it)->interrupt();
+            (*it)->join();
+        }
+        delete *it;
+    }
+    derivedData_.clear();
+    derivedDataThreadMutex_.unlock();
+}
+
 void VolumeBase::clearDerivedData() {
+    derivedDataMutex_.lock();
     for (std::set<VolumeDerivedData*>::iterator it=derivedData_.begin(); it!=derivedData_.end(); ++it) {
         delete *it;
     }
     derivedData_.clear();
+    derivedDataMutex_.unlock();
 }
 
 const VolumeURL& VolumeBase::getOrigin() const {
@@ -653,28 +685,27 @@ const VolumeRAM* VolumeBase::getRepresentation() const {
         return 0;
     }
 
-    //Check if rep. is available:
+    // check if rep. is available:
     for(size_t i=0; i<getNumRepresentations(); i++) {
         if(dynamic_cast<const VolumeRAM*>(getRepresentation(i))) {
             return static_cast<const VolumeRAM*>(getRepresentation(i));
         }
     }
 
-    //Check if conversion is possible:
+    // check if conversion is possible:
     ConverterFactory fac;
     for(size_t i=0; i<getNumRepresentations(); i++) {
         RepresentationConverter<VolumeRAM>* converter = fac.findConverter<VolumeRAM>(getRepresentation(i));
         if(converter) {
             const VolumeRAM* rep = static_cast<const VolumeRAM*>(useConverter(converter)); //we can static cast here because we know the converter returns VolumeRAM*
-
-            if(rep)
+            if (rep)
                 return rep;
         }
     }
 
-    LERROR("Found no way to return a VolumeRAM!");
     return 0;
 }
+
 // ----------------------------------------------------------------------------
 
 Volume::Volume(VolumeRepresentation* const volume, const tgt::vec3& spacing, const tgt::vec3& offset, const tgt::mat4& transformation)
@@ -729,6 +760,7 @@ Volume::~Volume() {
 }
 
 void Volume::releaseVolumes() {
+    stopRunningThreads();
    representations_.clear();
 }
 

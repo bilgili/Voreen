@@ -29,6 +29,8 @@
 #include "voreen/core/io/volumereader.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 
+#include "volumediskometiff.h"
+
 #include <tiffio.h>
 
 class TiXmlNode;
@@ -40,7 +42,7 @@ namespace voreen {
  * Reader for microscopy data stored in the OME-TIFF format.
  *
  * A specific channel and timestep in the 5D OME stack can be selected in the URL
- * via the "channel" and "timestep" search parameters, respectively. 
+ * via the "channel" and "timestep" search parameters, respectively.
  * If no channel/timestep is selected, the entire stack is loaded and put out as volume list.
  *
  * Supported extensions:
@@ -69,42 +71,44 @@ public:
     virtual std::vector<VolumeURL> listVolumes(const std::string& url) const
         throw (tgt::FileException);
 
-private:
-    /// Represents one tiff file on the disk.
-    struct OMETiffFile {
-        OMETiffFile(std::string filename, size_t numDirectories, size_t firstZ, size_t firstT, size_t firstC);
-        std::string toString() const;
-
-        std::string filename_;   //< absolute path to tiff file
-        size_t numDirectories_;  //< number of directories, i.e. slices, contained by the file
-        size_t firstZ_;          //< z coordinate of the first slice in the file
-        size_t firstT_;          //< t coordinate of the first slice in the file
-        size_t firstC_;          //< c coordinate of the first slice in the file
-    };
-
-    /// Extracts the OME-XML from the passed opened Tiff file and parses it for the dataset information.
-    void extractMetaData(TIFF* tiffFile, const std::string& path, std::string& dimensionOrder, tgt::svec3& dimensions, int& sizeC, int& sizeT, 
-        std::string& dataType, tgt::vec3& spacing, std::vector<OMETiffFile>& files) const
+    /**
+     * Loads either the entire passed datastack or a subset of it into RAM.
+     *
+     * @param datastack Description of the datastack from which the volume are to be loaded.
+     * @param channel The channel that should be loaded. The default value of -1 indicates that all channels are to be loaded.
+     * @param timestep The timestep that should be loaded. The default value of -1 indicates that all timesteps are to be loaded.
+     * @param firstZSlice first slice to load (inclusive). -1 indicates that all slices are to be loaded.
+     * @param lastZSlice last slice to load (inclusive). -1 indicates that all slices are to be loaded.
+     *
+     * @throws tgt::Exception if at least one of the requested channel/timesteps could not be loaded
+     */
+     std::vector<VolumeRAM*> loadVolumesIntoRam(const OMETiffStack& datastack, int channel = -1, int timestep = -1,
+        int firstZSlice = -1, int lastZSlice = -1) const
         throw (tgt::Exception);
 
-    /** 
-     * Determines the number of directories of each of the passed tiff files.
-     * Note: Requires to open each file and iterate over its directories.
-     */
-    void determineDirectoryCount(std::vector<OMETiffFile>& files, size_t& totalNumberOfSlices)
+private:
+    /// Extracts the OME-XML from the passed opened Tiff file and parses it for the dataset information.
+    OMETiffStack extractStackInformation(TIFF* tiffFile, const std::string& path) const
         throw (tgt::Exception);
 
     /**
-     * Reads the pixel data from the current directory of the passed opened Tiff file 
+     * Determines the number of directories of each of the passed tiff files.
+     * Note: Requires to open each file and iterate over its directories.
+     */
+    void determineDirectoryCount(OMETiffStack& stack)
+        throw (tgt::Exception);
+
+    /**
+     * Reads the pixel data from the current directory of the passed opened Tiff file
      * and copies it to the dest buffer.
      */
-    void readTiffDirectory(TIFF* tiffFile, const std::string& dataType, const tgt::svec3& volumeDim, void* destBuffer) const
+    void readTiffDirectory(TIFF* tiffFile, const std::string& dataType, const tgt::svec2& sliceDim, void* destBuffer) const
         throw (tgt::Exception);
 
     // XPath-like XML helper functions
-    const TiXmlNode* getXMLNode(const TiXmlNode* parent, const std::string& path) const 
+    const TiXmlNode* getXMLNode(const TiXmlNode* parent, const std::string& path) const
         throw (tgt::Exception);
-    const TiXmlElement* getXMLElement(const TiXmlNode* parent, const std::string& path) const 
+    const TiXmlElement* getXMLElement(const TiXmlNode* parent, const std::string& path) const
         throw (tgt::Exception);
     std::vector<const TiXmlNode*> getXMLNodeList(const TiXmlNode* parent, const std::string& path, const std::string& nodeName) const
         throw (tgt::Exception);

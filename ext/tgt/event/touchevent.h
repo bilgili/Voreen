@@ -37,56 +37,30 @@ namespace tgt {
 
 class TGT_API TouchEvent : public Event {
 public:
-
-    enum TouchPointState {
-        TouchPointPressed    = 0x01,
-        TouchPointMoved      = 0x02,
-        TouchPointStationary = 0x04,
-        TouchPointReleased   = 0x08,
-        TouchPointStateMask  = 0x0f,
-        TouchPointPrimary    = 0x10
-    };
-
-    typedef enum TouchPointState t_state;
-
-
     enum DeviceType{
         TouchScreen,
         TouchPad
     };
 
-    enum MouseAction {
-        ACTION_NONE = 0,
-        MOTION      = 1 << 0,
-        PRESSED     = 1 << 1,
-        RELEASED    = 1 << 2, CLICK = PRESSED | RELEASED,
-        ACTION_ALL  = CLICK | MOTION
-    };
-
-    TouchEvent(Event::Modifier mod, t_state touchPointStates, DeviceType deviceType, const std::deque<TouchPoint> &touchPoints);
+    TouchEvent(Event::Modifier mod, TouchPoint::State touchPointStates, DeviceType deviceType, const std::deque<TouchPoint> &touchPoints);
     ~TouchEvent();
     DeviceType deviceType() const;
-    t_state touchPointStates() const;
+    TouchPoint::State touchPointStates() const;
 
     const std::deque<TouchPoint> &touchPoints() const;
 
-    MouseAction action() const;
     Event::Modifier modifiers() const;
 
     virtual int getEventType();
 
-
-    //tgt::QtCanvas * widget () const;
-
 private:
     DeviceType deviceType_;
-    t_state touchPointStates_;
+    TouchPoint::State touchPointStates_;
     const std::deque<TouchPoint> &touchPoints_;
 
 protected:
     ivec2 coord_;
     ivec2 viewport_;
-    MouseAction action_;
     Event::Modifier mod_;
 
 };

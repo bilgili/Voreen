@@ -60,6 +60,10 @@ int main(int argc, char** argv) {
     vapp.getCommandLineParser()->addOption("workspace,w", workspaceFilename, CommandLineParser::MainOption,
         "Loads the specified workspace");
 
+    bool noInitialWorkspace = false;
+    vapp.getCommandLineParser()->addFlagOption("no-workspace", noInitialWorkspace, CommandLineParser::MainOption,
+        "Disables loading of an initial workspace on startup");
+
 #ifdef VRN_MODULE_PYTHON
     std::string scriptFilename;
     vapp.getCommandLineParser()->addOption("script", scriptFilename, CommandLineParser::MainOption,
@@ -118,7 +122,7 @@ int main(int argc, char** argv) {
     // create and show mainwindow
     if (showSplash)
         splash->showMessage("Creating main window...",0.30);
-    VoreenMainWindow mainWindow(workspaceFilename, resetSettings);
+    VoreenMainWindow mainWindow(workspaceFilename, noInitialWorkspace, resetSettings);
     vapp.setMainWindow(&mainWindow);
     mainWindow.show();
 

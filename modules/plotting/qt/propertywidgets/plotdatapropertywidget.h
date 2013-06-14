@@ -43,15 +43,13 @@ class PlotDataPropertyWidget : public QPropertyWidgetWithEditorWindow {
 public:
     PlotDataPropertyWidget(PlotDataProperty* prop, QWidget* parent = 0);
 
-    void updateFromProperty();
-
-private slots:
-    void toggleWidgetVisibility();
-
 protected:
     virtual QWidget* createEditorWindowWidget();
     virtual void customizeEditorWindow();
     virtual Property* getProperty();
+
+protected slots:
+    virtual void updateFromPropertySlot();
 
 private:
     QPushButton* editBt_;
@@ -61,6 +59,10 @@ private:
 
     //lazy evaluation, it is expensive to update the widget, so we do it only if necessary
     bool updateFromPropertyFlag_;
+
+private slots:
+    void toggleWidgetVisibility();
+
 };
 
 } // namespace

@@ -723,7 +723,7 @@ VolumeList* AnalyzeVolumeReader::readNifti(const std::string &fileName, bool sta
     }
 
     for(int i=start; i<stop; i++) {
-        VolumeRepresentation* volume = new VolumeDisk(rawFilename, voreenVoxelType, dimensions, headerskip + (i * volSize), bigEndian);
+        VolumeRepresentation* volume = new VolumeDiskRaw(rawFilename, voreenVoxelType, dimensions, headerskip + (i * volSize), bigEndian);
         Volume* vh = new Volume(volume, spacing, vec3(0.0f));
 
         VolumeURL origin(fileName);
@@ -853,7 +853,7 @@ VolumeList* AnalyzeVolumeReader::readAnalyze(const std::string &fileName, int vo
     VolumeList* vc = new VolumeList();
     size_t volSize = hmul(tgt::svec3(dimensions)) * (dimension.bitpix / 8);
     for(int i=start; i<stop; i++) {
-        VolumeRepresentation* volume = new VolumeDisk(getRelatedImgFileName(fileName), voreenVoxelType, dimensions, i * volSize, bigEndian);
+        VolumeRepresentation* volume = new VolumeDiskRaw(getRelatedImgFileName(fileName), voreenVoxelType, dimensions, i * volSize, bigEndian);
         Volume* vh = new Volume(volume, spacing, vec3(0.0f));
         vh->setOrigin(VolumeURL(fileName));
         vh->setPhysicalToWorldMatrix(pToW);

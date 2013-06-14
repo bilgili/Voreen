@@ -56,7 +56,7 @@ using tgt::vec3;
 
 namespace voreen {
 
-CameraWidget::CameraWidget(CameraProperty* cameraProp, float minDist, float maxDist, QWidget* parent)
+CameraWidget::CameraWidget(CameraProperty* cameraProp, QWidget* parent)
     : QWidget(parent)
     , cameraProp_(cameraProp)
     , CAM_DIST_SCALE_FACTOR(100.0f)
@@ -73,11 +73,7 @@ CameraWidget::CameraWidget(CameraProperty* cameraProp, float minDist, float maxD
 
     track_ = &cameraProp_->getTrackball();
 
-    minDist_ = tgt::iround(minDist * CAM_DIST_SCALE_FACTOR);
-    maxDist_ = tgt::iround(maxDist * CAM_DIST_SCALE_FACTOR);
-
     setWindowIcon(QIcon(":/qt/icons/trackball-reset.png"));
-    dist_ = 5;
     timer_ = new QBasicTimer();
     rotateX_ = rotateY_ = rotateZ_ = false;
 }
@@ -178,7 +174,10 @@ void CameraWidget::createWidgets() {
     upVector_->addWidget(up);
     gridLayout->addWidget(new QLabel(tr("Distance: ")), 2, 0);
     gridLayout->addWidget(slDistance_ = new QSlider(Qt::Horizontal, 0), 2, 1);
-    slDistance_->setRange(minDist_, maxDist_);
+
+    float minDist = tgt::iround(cameraProp_->getMinValue() * CAM_DIST_SCALE_FACTOR);
+    float maxDist = tgt::iround(cameraProp_->getMaxValue() * CAM_DIST_SCALE_FACTOR);
+    slDistance_->setRange(minDist, maxDist);
     slDistance_->setSliderPosition(static_cast<int>(CAM_DIST_SCALE_FACTOR));
     slDistance_->setToolTip(tr("Adjust distance of point of view"));
 
@@ -236,7 +235,7 @@ void CameraWidget::createWidgets() {
     bottomProp_ = new FloatProperty("frust.bottom", "Bottom", -1.f, -1000.f, 1000.f);
     topProp_    = new FloatProperty("frust.top", "Top", 1.f, -1000.f, 1000.f);
     nearProp_   = new FloatProperty("frust.near", "Near", 0.1f, 0.0001f, 100.f);
-    farProp_    = new FloatProperty("frust.far", "Far", 10.f, 0.0, maxDist_);
+    farProp_    = new FloatProperty("frust.far", "Far", 10.f, 0.0, maxDist);
     fovyProp_   = new FloatProperty("frust.fovy", "Fov", 45.f, 5.f, 175.f);
     ratioProp_  = new FloatProperty("frust.ratio", "Ratio", 1.f, 0.05f, 10.f);
 
@@ -447,15 +446,31 @@ void CameraWidget::applyOrientation(const quat& q) {
     keyframe.push_back(q.y);
     keyframe.push_back(q.z);
     keyframe.push_back(q.w);
-    keyframe.push_back(slDistance_->value() / CAM_DIST_SCALE_FACTOR);
+    // convert log value from slider to real distance
+    float dist = slDistance_->value() / CAM_DIST_SCALE_FACTOR;
+    float maxDist = cameraProp_->getMaxValue();
+    float minDist = cameraProp_->getMinValue();
+    float maxLog = log(maxDist);
+    float minLog = log(minDist);
+    float scale = (maxLog - minLog) / (maxDist - minDist);
+    dist = exp(minLog + scale * (dist - minDist));
+    keyframe.push_back(dist);
 
     applyOrientationAndDistanceAnimated(keyframe);
 }
 
 void CameraWidget::updateDistance() {
-    dist_ = slDistance_->value() / CAM_DIST_SCALE_FACTOR;
+    // convert log value from slider to real distance
+    float dist = slDistance_->value() / CAM_DIST_SCALE_FACTOR;
+    float maxDist = cameraProp_->getMaxValue();
+    float minDist = cameraProp_->getMinValue();
+    float maxLog = log(maxDist);
+    float minLog = log(minDist);
+    float scale = (maxLog - minLog) / (maxDist - minDist);
+    dist = exp(minLog + scale * (dist - minDist));
+
     slDistance_->blockSignals(true);
-    track_->zoomAbsolute(dist_);
+    track_->zoomAbsolute(dist);
     slDistance_->blockSignals(false);
 
     cameraProp_->invalidate();
@@ -567,10 +582,6 @@ void CameraWidget::checkCameraState() {
     nearProp_->set(f.getNearDist());
     farProp_->set(f.getFarDist());
 
-    //cameraPosition_->setMinValue(tgt::vec3(-cameraProp_->getMaxValue()));
-    //cameraPosition_->setMaxValue(tgt::vec3(cameraProp_->getMaxValue()));
-    //focusVector_->setMinValue(tgt::vec3(-cameraProp_->getMaxValue()));
-    //focusVector_->setMaxValue(tgt::vec3(cameraProp_->getMaxValue()));
     cameraPosition_->set(cameraProp_->get().getPosition());
     focusVector_->set(cameraProp_->get().getFocus());
     upVector_->set(cameraProp_->get().getUpVector());
@@ -586,7 +597,16 @@ void CameraWidget::checkCameraState() {
         // update distance slider
         slDistance_->blockSignals(true);
         slDistance_->setMaximum(tgt::iround(CAM_DIST_SCALE_FACTOR * cameraProp_->getMaxValue()));
-        slDistance_->setValue(tgt::iround(CAM_DIST_SCALE_FACTOR * track_->getCenterDistance()));
+        slDistance_->setMinimum(tgt::iround(CAM_DIST_SCALE_FACTOR * cameraProp_->getMinValue()));
+        // convert real distance to logarithmic distance for slider
+        float maxDist = cameraProp_->getMaxValue();
+        float minDist = cameraProp_->getMinValue();
+        float maxLog = log(maxDist);
+        float minLog = log(minDist);
+        float scale = (maxLog - minLog) / (maxDist - minDist);
+        float logDist = (log(track_->getCenterDistance()) - minLog) / scale + minDist;
+        logDist *= CAM_DIST_SCALE_FACTOR;
+        slDistance_->setValue(tgt::iround(logDist));
         slDistance_->blockSignals(false);
 
         // update orientation box

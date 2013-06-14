@@ -32,6 +32,8 @@
 
 #include <queue>
 
+#include "voreen/core/utils/glsl.h"
+
 namespace voreen {
 
 class TransFuncMappingKey;
@@ -43,6 +45,7 @@ struct PreIntegrationTableAttributes {
     float samplingStepSize_;
     size_t dimension_;
     bool useIntegral_;
+    bool computeOnGPU_;
 
     // operator< needed for inserting as keys into std::map
     bool operator< (const PreIntegrationTableAttributes& a) const {
@@ -54,6 +57,10 @@ struct PreIntegrationTableAttributes {
             else if (dimension_ == a.dimension_) {
                 if (useIntegral_ && !a.useIntegral_)
                     return true;
+                else if (useIntegral_ == a.useIntegral_) {
+                    if (computeOnGPU_ && !a.computeOnGPU_)
+                        return true;
+                }
             }
         }
 
@@ -70,11 +77,11 @@ class VRN_CORE_API PreIntegrationTableMap {
 
 public:
 
-    PreIntegrationTableMap(const TransFunc1DKeys* tf, size_t maxSize = 1);
+    PreIntegrationTableMap(TransFunc1DKeys* tf, size_t maxSize = 1);
 
     ~PreIntegrationTableMap();
 
-    void setTransFunc(const TransFunc1DKeys* tf);
+    void setTransFunc(TransFunc1DKeys* tf);
 
     /**
      * Returns the pre-integration table with the specified attributes.
@@ -85,7 +92,7 @@ public:
      * @param samplingStepSize the segment length used for rendering
      * @param useIntegral @see PreIntegrationTable
      */
-    const PreIntegrationTable* getPreIntegrationTable(float samplingStepSize = 1.f, size_t dimension = 0, bool useIntegral = true);
+    const PreIntegrationTable* getPreIntegrationTable(float samplingStepSize = 1.f, size_t dimension = 0, bool useIntegral = true, bool computeOnGPU = false, tgt::Shader* program = 0);
 
     /**
      * Delete alle pre-integration tables in the map (e.g. if tf has changed).
@@ -96,7 +103,7 @@ private:
 
     PreIntegrationTableMap();
 
-    const TransFunc1DKeys* tf_; ///< transfer function to compute the pre-integration tables
+    TransFunc1DKeys* tf_; ///< transfer function to compute the pre-integration tables
 
     std::map<PreIntegrationTableAttributes, PreIntegrationTable*> tableMap_; ///< map containing the pre-integration tables
     std::queue<PreIntegrationTableAttributes> queue_; ///< stores attributes of the tables in insertion order
@@ -105,6 +112,7 @@ private:
 
 };
 
+//-------------------------------------------------------------------------------------------------
 
 /**
  * One dimensional, piece-wise linear transfer function based on key values.
@@ -168,6 +176,15 @@ public:
      */
     void setToStandardFunc();
 
+    /// Returns true if the TransferFunction is the default function (@see setToStandardFunc())
+    bool isStandardFunc() const;
+
+    /*
+     * Transforms this TF into a ramp.
+     * (i.e., first key is at 0 (normalized) and alpha=0; last key is at 1 and has alpha=1)
+     */
+    void makeRamp();
+
     /**
      * Calculates the average for the segment [segStart,segEnd).
      *
@@ -200,7 +217,9 @@ public:
      * @param i the i-th key will be returned
      * @return the pointer to the appropriate key
      */
-    TransFuncMappingKey* getKey(int i) const;
+    const TransFuncMappingKey* getKey(int i) const;
+
+    TransFuncMappingKey* getKey(int i);
 
     /**
      * Returns all keys. Keys are sorted by their intensities in ascending order.
@@ -354,10 +373,11 @@ public:
      * If necessary, the table is (re-)computed.
      *
      * @param dimension width of the pre-integration table, 0 chooses the width according to the bit depth of the volume (up to 1024)
-     * @param samplingStepSize the segment length used for rendering
+     * @param samplingStepSize the segment length used for rendering, in texture (normalized) coordinates
      * @param useIntegral @see PreIntegrationTable
+     * @param computeOnGPU @see PreIntegrationTable
      */
-    const PreIntegrationTable* getPreIntegrationTable(float samplingStepSize = 1.f, size_t dimension = 0, bool useIntegral = true);
+    const PreIntegrationTable* getPreIntegrationTable(float samplingStepSize = 1.f, size_t dimension = 0, bool useIntegral = true, bool computeOnGPU = false);
 
 protected:
     /**
@@ -455,6 +475,8 @@ protected:
     tgt::vec2 domain_;
 
     PreIntegrationTableMap preIntegrationTableMap_; ///< contains several pre-integration tables for the tf
+
+    mutable tgt::Shader* preIntegrationProgram_; ///< shader program to compute pre-integration tables on the gpu
 
     static const std::string loggerCat_; ///< logger category
 };

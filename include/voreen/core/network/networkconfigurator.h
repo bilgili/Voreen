@@ -26,7 +26,14 @@
 #ifndef VRN_NETWORKCONFIGURATOR_H
 #define VRN_NETWORKCONFIGURATOR_H
 
-#include "voreen/core/properties/allproperties.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/vectorproperty.h"
+#include "voreen/core/properties/stringproperty.h"
+#include "voreen/core/properties/volumeurlproperty.h"
+#include "voreen/core/properties/optionproperty.h"
+
 #include "tgt/vector.h"
 
 #include <string>

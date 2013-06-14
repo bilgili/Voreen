@@ -27,6 +27,7 @@
 
 #include "voreen/core/datastructures/volume/volume.h"
 #include "voreen/core/datastructures/volume/volumelist.h"
+#include "voreen/core/properties/volumeinfoproperty.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/progressbar.h"
@@ -43,6 +44,7 @@ VolumeURLProperty::VolumeURLProperty(const std::string& id, const std::string& g
     : StringProperty(id, guiText, url, invalidationLevel)
     , volume_(0)
     , volumeOwner_(false)
+    , infoProp_(0)
     , progressBar_(0)
 {}
 
@@ -91,6 +93,9 @@ void VolumeURLProperty::setVolume(VolumeBase* handle, bool owner) {
     volume_ = handle;
     volumeOwner_ = owner;
 
+    if(infoProp_)
+        infoProp_->setVolume(handle);
+
     set(handle ? handle->getOrigin().getURL() : "");
 }
 
@@ -115,11 +120,16 @@ void VolumeURLProperty::loadVolume() throw (tgt::FileException, std::bad_alloc){
     VolumeList* volumeList = serializerPopulator.getVolumeSerializer()->read(url);
 
     if (volumeList && !volumeList->empty()) {
-
         VolumeBase* handle = volumeList->first();
         tgtAssert(handle, "No handle");
-
         setVolume(static_cast<Volume*>(handle));
+
+        // delete superfluous volumes
+        if (volumeList->size() > 1) {
+            LWARNING("More than one volume loaded from file: " + url + ". Discarding surplus volumes!");
+                for (size_t i=1; i<volumeList->size(); i++)
+                    delete volumeList->at(i);
+        }
 
         // property does take ownership of loaded handles
         volumeOwner_ = true;
@@ -133,8 +143,13 @@ void VolumeURLProperty::clear() {
         delete volume_;
     volume_ = 0;
     volumeOwner_ = false;
-
+    if(infoProp_)
+        infoProp_->setVolume(0);
     StringProperty::set("");
+}
+
+void VolumeURLProperty::addInfoProperty(VolumeInfoProperty* pointer) {
+    infoProp_ = pointer;
 }
 
 void VolumeURLProperty::serialize(XmlSerializer& s) const {

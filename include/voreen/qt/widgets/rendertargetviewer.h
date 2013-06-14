@@ -47,7 +47,7 @@ class RenderTarget;
 /**
  * Show currently used RenderTargets for debugging purposes.
  */
-class VRN_QT_API RenderTargetViewer : public QGLWidget, public NetworkEvaluator::ProcessWrapper {
+class VRN_QT_API RenderTargetViewer : public QGLWidget, public NetworkEvaluatorObserver {
 Q_OBJECT
 public:
     enum ShowType {

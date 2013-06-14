@@ -22,6 +22,7 @@
  * contact the authors.                                                            *
  *                                                                                 *
  ***********************************************************************************/
+
 #ifndef VRN_SAMPLERENDERPROCESSOR_H
 #define VRN_SAMPLERENDERPROCESSOR_H
 

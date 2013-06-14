@@ -58,10 +58,10 @@ FloatMat2PropertyWidget::FloatMat2PropertyWidget(FloatMat2Property* prop, QWidge
     mainLayout_->addWidget(y0_, 1, 1);
     mainLayout_->addWidget(x1_, 2, 0);
     mainLayout_->addWidget(y1_, 2, 1);
-    updateFromProperty();
+    updateFromPropertySlot();
 }
 
-void FloatMat2PropertyWidget::updateFromProperty() {
+void FloatMat2PropertyWidget::updateFromPropertySlot() {
     doubleValidator_->setTop(prop_->getMaxValue().t00);
     doubleValidator_->setBottom(prop_->getMinValue().t00);
 

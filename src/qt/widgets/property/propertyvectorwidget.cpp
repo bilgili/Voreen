@@ -136,7 +136,7 @@ void PropertyVectorWidget::initializePropertyMenu() {
     }
 }
 
-void PropertyVectorWidget::updateFromProperty() {
+void PropertyVectorWidget::updateFromPropertySlot() {
 }
 
 void PropertyVectorWidget::setProperty(PropertyVector* /*change*/) {

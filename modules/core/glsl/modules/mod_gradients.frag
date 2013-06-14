@@ -61,6 +61,7 @@ vec3 calcGradientRFD(sampler3D volume, VolumeParameters volumeStruct, vec3 sampl
     float v2 = textureLookup3DUnnormalized(volume, volumeStruct, samplePos + vec3(0, 0, offset.z)).r;
     vec3 gradient = vec3(v - v0, v - v1, v - v2);
     gradient *= volumeStruct.datasetSpacingRCP_;
+    gradient *= volumeStruct.rwmScale_;
     return gradient;
 }
 
@@ -80,6 +81,7 @@ vec3 calcGradientGFD(sampler3D volume, VolumeParameters volumeStruct, vec3 sampl
     float v2 = textureLookup3DUnnormalized(volume, volumeStruct, samplePos + vec3(0, 0, offset.z)).g;
     vec3 gradient = vec3(v - v0, v - v1, v - v2);
     gradient *= volumeStruct.datasetSpacingRCP_;
+    gradient *= volumeStruct.rwmScale_;
     return gradient;
 }
 
@@ -99,6 +101,7 @@ vec3 calcGradientBFD(sampler3D volume, VolumeParameters volumeStruct, vec3 sampl
     float v2 = textureLookup3DUnnormalized(volume, volumeStruct, samplePos + vec3(0, 0, offset.z)).b;
     vec3 gradient = vec3(v - v0, v - v1, v - v2);
     gradient *= volumeStruct.datasetSpacingRCP_;
+    gradient *= volumeStruct.rwmScale_;
     return gradient;
 }
 
@@ -118,6 +121,7 @@ vec3 calcGradientAFD(sampler3D volume, VolumeParameters volumeStruct, vec3 sampl
     float v2 = textureLookup3DUnnormalized(volume, volumeStruct, samplePos + vec3(0, 0, offset.z)).a;
     vec3 gradient = vec3(v - v0, v - v1, v - v2);
     gradient *= volumeStruct.datasetSpacingRCP_;
+    gradient *= volumeStruct.rwmScale_;
     return gradient;
 }
 
@@ -139,6 +143,7 @@ vec3 calcGradientR(sampler3D volume, VolumeParameters volumeStruct, vec3 sampleP
     float v5 = textureLookup3DUnnormalized(volume, volumeStruct, samplePos + vec3(0, 0, -offset.z)).r;
     vec3 gradient = vec3(v3 - v0, v4 - v1, v5 - v2);
     gradient *= volumeStruct.datasetSpacingRCP_ * 0.5;
+    gradient *= volumeStruct.rwmScale_;
     return gradient;
 }
 
@@ -160,6 +165,7 @@ vec3 calcGradientG(sampler3D volume, VolumeParameters volumeStruct, vec3 sampleP
     float v5 = textureLookup3DUnnormalized(volume, volumeStruct, samplePos + vec3(0, 0, -offset.z)).g;
     vec3 gradient = vec3(v3 - v0, v4 - v1, v5 - v2);
     gradient *= volumeStruct.datasetSpacingRCP_ * 0.5;
+    gradient *= volumeStruct.rwmScale_;
     return gradient;
 }
 
@@ -181,6 +187,7 @@ vec3 calcGradientB(sampler3D volume, VolumeParameters volumeStruct, vec3 sampleP
     float v5 = textureLookup3DUnnormalized(volume, volumeStruct, samplePos + vec3(0, 0, -offset.z)).b;
     vec3 gradient = vec3(v3 - v0, v4 - v1, v5 - v2);
     gradient *= volumeStruct.datasetSpacingRCP_ * 0.5;
+    gradient *= volumeStruct.rwmScale_;
     return gradient;
 }
 
@@ -202,6 +209,7 @@ vec3 calcGradientA(sampler3D volume, VolumeParameters volumeStruct, vec3 sampleP
     float v5 = textureLookup3DUnnormalized(volume, volumeStruct, samplePos + vec3(0, 0, -offset.z)).a;
     vec3 gradient = vec3(v3 - v0, v4 - v1, v5 - v2);
     gradient *= volumeStruct.datasetSpacingRCP_ * 0.5;
+    gradient *= volumeStruct.rwmScale_;
     return gradient;
 }
 
@@ -266,6 +274,8 @@ vec3 calcGradientSobel(sampler3D volume, VolumeParameters volumeStruct, vec3 sam
 
     vec3 gradient = -vec3(gx, gy, gz);
     gradient *= volumeStruct.datasetSpacingRCP_ * 0.5;
+    gradient /=  16.0; // sum of all positive elements
+    gradient *= volumeStruct.rwmScale_;
     return gradient;
 }
 

@@ -126,7 +126,7 @@ const VolumeBase* VolumeInfoPropertyWidget::getVolumeFromProperty() const {
     return infoProp->getVolume();
 }
 
-void VolumeInfoPropertyWidget::updateFromProperty() {
+void VolumeInfoPropertyWidget::updateFromPropertySlot() {
     const VolumeBase* handle = getVolumeFromProperty();
     if (handle) {
         dimensionLabel_->show();

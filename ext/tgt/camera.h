@@ -93,41 +93,29 @@ public:
     Camera* clone() const;
 
     /// Setter / Getter
-    void setPosition(const vec3& pos) {
-        if(eyeMode_ != EYE_MIDDLE)
-            stereoFrustumShift(getStereoShift(eyeMode_, EYE_MIDDLE));
-        position_ = pos;
-        if(eyeMode_ != EYE_MIDDLE)
-            stereoFrustumShift(getStereoShift(EYE_MIDDLE, eyeMode_));
-        invalidateVM();
-    }
-
-    void setFocus(const vec3& foc) {
-        if(eyeMode_ != EYE_MIDDLE)
-            stereoFrustumShift(getStereoShift(eyeMode_, EYE_MIDDLE));
-        focus_ = foc;
-        if(eyeMode_ != EYE_MIDDLE)
-            stereoFrustumShift(getStereoShift(EYE_MIDDLE, eyeMode_));
-        invalidateVM();
-    }
-
-    void setUpVector(const vec3& up) {
-        upVector_ = normalize(up);
-        invalidateVM();
-    }
+    void setPosition(const vec3& pos) { position_ = pos; }
+    void setFocus(const vec3& foc)    { focus_ = foc; }
+    void setUpVector(const vec3& up)  { upVector_ = normalize(up); }
 
     void setFrustum(const Frustum& frust) { frust_ = frust; }
 
     /// get Camera's strafe vector - a vector directing to the 'right'
-    vec3 getStrafe()   const { return normalize(cross(getLook(), getUpVector())); }
+    vec3 getStrafe()             const { return normalize(cross(getLook(), upVector_)); }
+    vec3 getStrafeWithOffsets()  const;
 
     vec3 getUpVector() const { return upVector_; }
-    vec3 getLook()     const { return normalize(getFocus() - getPosition()); }
-    vec3 getPosition() const { return position_; }
-    vec3 getFocus()    const { return focus_; }
 
-    Frustum& getFrustum() { return frust_; }
+    vec3 getPosition() const { return position_; }
+    vec3 getPositionWithOffsets() const;
+
+    vec3 getLookWithOffsets() const { return normalize(getFocusWithOffsets() - getPositionWithOffsets()); }
+    vec3 getLook()            const { return normalize(focus_ - position_); }
+
+    vec3 getFocus() const { return focus_; }
+    vec3 getFocusWithOffsets() const;
+
     const Frustum& getFrustum() const { return frust_; }
+    Frustum getFrustumWithOffsets() const;
 
     float getFovy() const { return frust_.getFovy(); }
     float getRatio() const { return frust_.getRatio(); }
@@ -226,13 +214,10 @@ public:
     }
 
     void setFocalLength(float f)   {
-        if(eyeMode_ != EYE_MIDDLE)
-            stereoShift(getStereoShift(eyeMode_, EYE_MIDDLE));
-        tgt::vec3 tmpPos = getPosition();
-        tgt::vec3 tmpLook = getLook();
-        if(eyeMode_ != EYE_MIDDLE)
-            stereoShift(getStereoShift(EYE_MIDDLE, eyeMode_));
-        setFocus(tmpPos + f * tmpLook);
+        if(f == 0.f)
+            return;
+
+        setFocus(position_ + f * getLook());
     }
 
     float getFocalLength() const   {
@@ -258,12 +243,6 @@ public:
         axisMode_ = mode;
         if(!updateCam)
             return false;
-
-        // un-shear / shear frustum if we are switching to / from HMD mode
-        if(mode == ON_AXIS_HMD && eyeMode_ != EYE_MIDDLE)
-            stereoFrustumShift(getStereoShift(eyeMode_, EYE_MIDDLE));
-        else if(eyeMode_ != EYE_MIDDLE)
-            stereoFrustumShift(getStereoShift(EYE_MIDDLE, eyeMode_));
 
         return true;
     }
@@ -338,6 +317,12 @@ public:
     line3 getViewRay(ivec2 vp, ivec2 pixel) const;
     vec3 project(ivec2 vp, vec3 point) const;
 
+    /// getter / setter for offset members
+    void enableOffset(bool b)          { useOffset_ = b;    }
+    bool isOffsetEnabled() const       { return useOffset_; }
+    vec3 getOffset() const             { return offset_;    }
+    void setOffset(const vec3& offset) { offset_ = offset;  }
+
     bool operator==(const Camera& rhs) const;
     bool operator!=(const Camera& rhs) const;
 
@@ -346,21 +331,11 @@ protected:
     /// viewMatrix will not always be up to date according to position-, focus- and upVector.
     /// Make sure it is up to date.
     void updateVM() const {
-        if (!viewMatrixValid_) {
-            viewMatrix_ = mat4::createLookAt(getPosition(), getFocus(), getUpVector() );
-        }
-        viewMatrixValid_ = true;
+        viewMatrix_ = mat4::createLookAt(getPositionWithOffsets(), getFocusWithOffsets(), getUpVector() );
     }
 
-    /// Mark viewMatrix as outdated.
-    void invalidateVM() const {
-        viewMatrixValid_ = false;
-    }
-
-    void stereoShift(tgt::vec3 shift);
-    void stereoFrustumShift(tgt::vec3 shift);
-    void stereoCameraShift(tgt::vec3 shift);
-    tgt::vec3 getStereoShift(StereoEyeMode from, StereoEyeMode to) const;
+    Frustum stereoFrustumShift() const;
+    tgt::vec3 getStereoShift() const;
 
     vec3 position_; /// location of the camera
     vec3 focus_;    /// location, the camera looks at
@@ -373,7 +348,6 @@ protected:
     /// This is the actual matrix that holds the current orientation and position of the
     /// Camera.
     mutable mat4 viewMatrix_;
-    mutable bool viewMatrixValid_; /// if the model-view matrix is up-to-date
 
     ProjectionMode projectionMode_;
 
@@ -381,6 +355,10 @@ protected:
     float eyeSeparation_;
     StereoEyeMode eyeMode_;
     StereoAxisMode axisMode_;
+
+    /// Parameters used for camera offsetting (e.g. headtracking)
+    bool useOffset_;
+    vec3 offset_;
 };
 
 } //namespace tgt

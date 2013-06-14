@@ -43,11 +43,13 @@ TransFuncProperty::TransFuncProperty(const std::string& ident, const std::string
     , editors_(editors)
     , lazyEditorInstantiation_(lazyEditorInstantiation)
     , alwaysFitDomain_(false)
+    , fitToDomainPending_(false)
 {}
 
 TransFuncProperty::TransFuncProperty()
     : TemplateProperty<TransFunc*>("", "", 0, Processor::INVALID_RESULT)
     , volume_(0)
+    , fitToDomainPending_(false)
 {}
 
 TransFuncProperty::~TransFuncProperty() {
@@ -90,6 +92,8 @@ void TransFuncProperty::set(TransFunc* tf) {
     if (tf == value_) {
         return;
     }
+
+    fitToDomainPending_ = false;
 
     // new tf object assigned -> check if contents are equal
     TransFunc1DKeys* tf_int = dynamic_cast<TransFunc1DKeys*>(tf);
@@ -138,22 +142,44 @@ void TransFuncProperty::setVolumeHandle(const VolumeBase* handle) {
     if (volume_ != handle) {
 
         volume_ = handle;
+
+        fitToDomainPending_ = false;
+
         if (volume_) {
             handle->addObserver(this);
 
+            // assign volume transfer function, if present
+            if (volume_->hasMetaData("Transfunc")) {
+                const TransFuncMetaData* tfMetaData = dynamic_cast<const TransFuncMetaData*>(volume_->getMetaData("Transfunc"));
+                if (tfMetaData) {
+                    if (tfMetaData->getTransferFunction()) {
+                        alwaysFitDomain_ = false;
+                        set(tfMetaData->getTransferFunction()->clone());
+                    }
+                    else {
+                        LWARNING("TransFuncMetaData has no transfer function");
+                    }
+                }
+                else {
+                    LWARNING("Meta data item with key 'transfunc' is not of expected type 'TransFuncMetaData'");
+                }
+            }
+
             // Resize texture of tf according to bitdepth of volume
-            int bits = volume_->getRepresentation<VolumeRAM>()->getBitsAllocated() / volume_->getRepresentation<VolumeRAM>()->getNumChannels();
+            size_t bits = (volume_->getBytesPerVoxel() * 8) / volume_->getNumChannels();
             if (bits > 16)
                 bits = 16; // handle float data as if it was 16 bit to prevent overflow
 
-            int max = static_cast<int>(pow(2.f, bits));
+            int max = static_cast<int>(pow(2.f, (int)bits));
+            max = std::min(max, GpuCaps.getMaxTextureSize());
 
             if (TransFunc1DKeys* tfi = dynamic_cast<TransFunc1DKeys*>(value_)) {
                 value_->resize(max);
                 RealWorldMapping rwm = volume_->getRealWorldMapping();
-                if((((rwm.getOffset() != 0.0f) || (rwm.getScale() != 1.0f) || (rwm.getUnit() != "")) && *tfi == TransFunc1DKeys()) || alwaysFitDomain_)
+                if ((((rwm.getOffset() != 0.0f) || (rwm.getScale() != 1.0f) || (rwm.getUnit() != "")) && *tfi == TransFunc1DKeys()) || alwaysFitDomain_)
                     fitDomainToData();
-            } else if (dynamic_cast<TransFunc2DPrimitives*>(value_)) {
+            }
+            else if (dynamic_cast<TransFunc2DPrimitives*>(value_)) {
                 // limit 2D tfs to 10 bit for reducing memory consumption
                 max = std::min(max, 1024);
                 value_->resize(max, max);
@@ -171,11 +197,23 @@ void TransFuncProperty::fitDomainToData() {
 
     if (TransFunc1DKeys* tfi = dynamic_cast<TransFunc1DKeys*>(value_)) {
         RealWorldMapping rwm = volume_->getRealWorldMapping();
-        float min = rwm.normalizedToRealWorld(volume_->getDerivedData<VolumeMinMax>()->getMinNormalized());
-        float max = rwm.normalizedToRealWorld(volume_->getDerivedData<VolumeMinMax>()->getMaxNormalized());
-        tfi->setDomain(tgt::vec2(min, max));
-        //notifyChange();
-        invalidateOwner();
+        if (volume_->hasDerivedData<VolumeMinMax>()) { //< if volume min/max values already computed, use them
+            float min = rwm.normalizedToRealWorld(volume_->getDerivedData<VolumeMinMax>()->getMinNormalized());
+            float max = rwm.normalizedToRealWorld(volume_->getDerivedData<VolumeMinMax>()->getMaxNormalized());
+            tfi->setDomain(tgt::vec2(min, max));
+            fitToDomainPending_ = false;
+        }
+        else {
+            // if min/max values not available, compute them asynchronously
+            // and fit to full normalized range in the mean time
+            volume_->getDerivedDataThreaded<VolumeMinMax>();
+            fitToDomainPending_ = true;
+
+            float min = rwm.normalizedToRealWorld(0.f);
+            float max = rwm.normalizedToRealWorld(1.f);
+            tfi->setDomain(tgt::vec2(min, max));
+        }
+        invalidate();
     }
 }
 
@@ -199,13 +237,23 @@ void TransFuncProperty::notifyChange() {
 void TransFuncProperty::volumeDelete(const VolumeBase* source) {
     if (volume_ == source) {
         volume_ = 0;
+        fitToDomainPending_ = false;
         updateWidgets();
     }
 }
 
 void TransFuncProperty::volumeChange(const VolumeBase* source) {
-    if (volume_ == source)
+    if (volume_ == source) {
+        fitToDomainPending_ = false;
         updateWidgets();
+    }
+}
+
+void TransFuncProperty::derivedDataThreadFinished(const VolumeBase* /*source*/, const VolumeDerivedData* derivedData) {
+    if (dynamic_cast<const VolumeMinMax*>(derivedData) && fitToDomainPending_)
+        fitDomainToData();
+
+    updateWidgets();
 }
 
 void TransFuncProperty::serialize(XmlSerializer& s) const {

@@ -160,7 +160,58 @@ bool Port::testConnectivity(const Port* inport) const {
     if (this->isLoopPort() != inport->isLoopPort())
         return false;
 
+    if (detectIllegalLoop(inport))
+        return false;
+
     return true;
+}
+
+bool Port::detectIllegalLoop(const Port* inport) const {
+    if(isLoopPort())
+        return false;
+
+    Processor* curProc = getProcessor();
+    Processor* newProc = inport->getProcessor();
+
+    if(curProc == newProc)
+        return true;
+
+    std::set<Processor*> regularSuccessors;
+    regularSuccessors.insert(curProc);
+    regularSuccessors.insert(newProc);
+
+    std::deque<Processor*> q;
+    q.push_back(curProc);
+    q.push_back(newProc);
+
+    while (!q.empty()) {
+        Processor* p = q.front();
+        q.pop_front();
+
+        // Get all outports, including co-processor outports
+        std::vector<Port*> ports = p->getOutports();
+        // TODO I think co-processor "loops" should be legal...? FL
+        //std::vector<CoProcessorPort*> coOutports = p->getCoProcessorOutports();
+        //for(size_t i = 0; i < coOutports.size(); i++)
+            //ports.push_back((Port*)coOutports.at(i));
+
+        for (size_t i = 0; i < ports.size(); ++i) {
+            // search only successors which are not part of a loop-port loop
+            if(!ports.at(i)->isLoopPort()) {
+                std::vector<const Port*> connectedPorts = ports.at(i)->getConnected();
+                for (size_t j = 0; j < connectedPorts.size(); ++j) {
+                    Processor* connectedProc = connectedPorts.at(j)->getProcessor();
+                    bool elemInserted = (regularSuccessors.insert(connectedProc)).second;
+                    if(elemInserted)
+                        q.push_back(connectedProc);
+                    else if(connectedProc == curProc)
+                        return true;
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 size_t Port::getNumConnections() const {
@@ -279,7 +330,11 @@ bool Port::isInport() const {
 
 std::string Port::getContentDescription() const {
     std::stringstream strstr;
-    strstr << getGuiName() << std::endl << "Type: " << getClassName();
+    strstr << getGuiName() << std::endl
+           << "Type: " << getClassName();
+    //set empty flag
+    if(!hasData())
+        strstr << std::endl << "Data: " << "<empty>";
     return strstr.str();
 }
 
@@ -287,6 +342,9 @@ std::string Port::getContentDescriptionHTML() const {
     std::stringstream strstr;
     strstr << "<center><font><b>" << getGuiName() << "</b></font></center>"
            << "Type: " << getClassName();
+    //set empty flag
+    if(!hasData())
+        strstr << "<br>" << "Data: " << "&lt;empty&gt;" ;
     return strstr.str();
 }
 
@@ -296,10 +354,6 @@ std::string Port::getQualifiedName() const {
         id = getProcessor()->getID() + ".";
     id += getID();
     return id;
-}
-
-bool Port::hasData() const {
-    return false;
 }
 
 bool Port::hasChanged() const {

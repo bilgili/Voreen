@@ -89,10 +89,12 @@ void GrayscaleCL::process() {
 
             commandQueue->enqueueAcquireGLObject(&in);
             commandQueue->enqueueAcquireGLObject(&out);
-            commandQueue->enqueue(k, inport_.getSize());
+            Event e = commandQueue->enqueue(k, inport_.getSize());
             commandQueue->enqueueReleaseGLObject(&in);
             commandQueue->enqueueReleaseGLObject(&out);
 
+            e.wait();
+            LINFO("Time: " << e.getProfilingStartToEnd());
             commandQueue->finish();
 
             outport_.validateResult();

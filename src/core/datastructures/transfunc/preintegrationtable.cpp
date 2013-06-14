@@ -32,8 +32,9 @@ namespace voreen {
 using tgt::vec3;
 using tgt::vec4;
 
-PreIntegrationTable::PreIntegrationTable(const TransFunc1DKeys* transFunc, size_t resolution, float d, bool useIntegral)
-    : transFunc_(transFunc), resolution_(resolution), samplingStepSize_(d), useIntegral_(useIntegral), table_(0), tex_(0) {
+PreIntegrationTable::PreIntegrationTable(TransFunc1DKeys* transFunc, size_t resolution, float d, bool useIntegral, bool computeOnGPU, tgt::Shader* program)
+    : transFunc_(transFunc), resolution_(resolution), samplingStepSize_(d), useIntegral_(useIntegral), computeOnGPU_(computeOnGPU), table_(0), tex_(0), program_(program)
+{
 
     //check values
     if (resolution <= 1)
@@ -41,19 +42,26 @@ PreIntegrationTable::PreIntegrationTable(const TransFunc1DKeys* transFunc, size_
     if (d <= 0.f)
         samplingStepSize_ = 1.f;
 
-    //create the table
-    table_ = new tgt::vec4[resolution_ * resolution_];
-
-    //compute the values within the table
-    computeTable();
+    //initialize render target if necessary
+    if (computeOnGPU_) {
+        renderTarget_.initialize(GL_RGBA16, GL_DEPTH_COMPONENT24);
+        renderTarget_.setDebugLabel("Pre-Integration Table");
+        renderTarget_.resize(tgt::vec2(static_cast<float>(resolution_)));
+    }
 }
 
 PreIntegrationTable::~PreIntegrationTable() {
-    //delete[] table_;
-    delete tex_;
+
+    //deinitialize render target or delete texture
+    if (computeOnGPU_)
+        renderTarget_.deinitialize();
+    else
+        delete tex_;
+
+    //delete renderTarget_;
 }
 
-void PreIntegrationTable::computeTable() {
+void PreIntegrationTable::computeTable() const {
     if (!transFunc_)
         return;
 
@@ -98,9 +106,9 @@ void PreIntegrationTable::computeTable() {
                         incr = -1;
 
                     vec4 result = vec4(0.0f);
-                    for(int s = sb; (incr == 1 ? s<=sf : s>=sf); s += incr) {
-                        /*float nIndex = static_cast<float>(s) / static_cast<float>(resolution_ - 1);
-                        vec4 curCol = apply1DTF(nIndex);*/
+                    for(int s = sb; (incr == 1 ? s<=sf : s>=sf) && (result.a < 0.95); s += incr) {
+                        //float nIndex = static_cast<float>(s) / static_cast<float>(resolution_ - 1);
+                        //vec4 curCol = apply1DTF(nIndex);
                         vec4 curCol = tfBuffer[s];
 
                         if (curCol.a > 0.0f) {
@@ -119,8 +127,8 @@ void PreIntegrationTable::computeTable() {
                     result.a = 1.f - pow(1.f - result.a, 1.0f / (samplingStepSize_ * 200.0f));
                     table_[lookupindex] = tgt::clamp(result, 0.f, 1.f);
                 } else {
-                    /*float nIndex = static_cast<float>(sf) / static_cast<float>(resolution_ - 1);
-                    table_[lookupindex] = tgt::clamp(apply1DTF(nIndex), 0.f, 1.f);*/
+                    //float nIndex = static_cast<float>(sf) / static_cast<float>(resolution_ - 1);
+                    //table_[lookupindex] = tgt::clamp(apply1DTF(nIndex), 0.f, 1.f);
                     table_[lookupindex] = tgt::clamp(tfBuffer[sf], 0.f, 1.f);
                 }
 //#ifndef VRN_MODULE_OPENMP
@@ -138,8 +146,8 @@ void PreIntegrationTable::computeTable() {
 
         for (int i = 0; i < static_cast<int>(resolution_); ++i) {
             //fetch current value from TF
-            /*float nIndex = static_cast<float>(i) / static_cast<float>(resolution_ - 1);
-            vec4 curCol = apply1DTF(nIndex);*/
+            //float nIndex = static_cast<float>(i) / static_cast<float>(resolution_ - 1);
+            //vec4 curCol = apply1DTF(nIndex);
             vec4 curCol = tfBuffer[i];
 
             //calculate new integral function
@@ -178,8 +186,8 @@ void PreIntegrationTable::computeTable() {
                     col.xyz() /= std::max(col.a, 0.001f);
                     col.a = 1.f - pow(1.f - col.a, 1.0f / (samplingStepSize_ * 200.0f));
                 } else {
-                    /*float nIndex = static_cast<float>(smin) / static_cast<float>(resolution_ - 1);
-                    col = apply1DTF(nIndex);*/
+                    //float nIndex = static_cast<float>(smin) / static_cast<float>(resolution_ - 1);
+                    //col = apply1DTF(nIndex);
                     col = tfBuffer[smin];
                 }
 //#ifdef VRN_MODULE_OPENMP
@@ -196,7 +204,68 @@ void PreIntegrationTable::computeTable() {
     delete[] tfBuffer;
 }
 
+void PreIntegrationTable::computeTableGPU() const {
+
+    //render pre-integration texture into render target
+    renderTarget_.activateTarget();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    //get texture of transfer function
+    tgt::TextureUnit transferUnit;
+    transferUnit.activate();
+
+    transFunc_->getTexture()->bind();
+    transFunc_->getTexture()->enable();
+
+    //activte shader program
+    program_->activate();
+
+    program_->setUniform("samplingStepSize_", samplingStepSize_);
+
+    //set transfer function texture
+    program_->setUniform("tfTex_", transferUnit.getUnitNumber());
+
+    bool oldIgnoreError = program_->getIgnoreUniformLocationError();
+    program_->setIgnoreUniformLocationError(true);
+    program_->setUniform("texParams_.dimensions_", tgt::vec2((float)resolution_));
+    program_->setUniform("texParams_.dimensionsRCP_", tgt::vec2(1.f) / tgt::vec2((float)resolution_));
+    program_->setUniform("texParams_.matrix_", tgt::mat4::identity);
+    program_->setIgnoreUniformLocationError(oldIgnoreError);
+
+    //render quad
+    glDepthFunc(GL_ALWAYS);
+    glBegin(GL_QUADS);
+        glVertex2f(-1.f, -1.f);
+        glVertex2f( 1.f, -1.f);
+        glVertex2f( 1.f,  1.f);
+        glVertex2f(-1.f,  1.f);
+    glEnd();
+    glDepthFunc(GL_LESS);
+
+    //clean up
+    transFunc_->getTexture()->disable();
+    renderTarget_.deactivateTarget();
+    program_->deactivate();
+
+    tgt::TextureUnit::setZeroUnit();
+    LGL_ERROR;
+
+    //set output texture
+    tex_ = renderTarget_.getColorTexture();
+
+}
+
+
+
 tgt::vec4 PreIntegrationTable::classify(float fs, float fe) const {
+
+    //lazy computation
+    if (!table_) {
+        //create the table
+        table_ = new tgt::vec4[resolution_ * resolution_];
+        computeTable();
+    }
+
     if (!table_)
         return tgt::vec4(0.f,0.f,0.f,0.f);
     else {
@@ -213,8 +282,15 @@ tgt::vec4 PreIntegrationTable::classify(float fs, float fe) const {
     }
 }
 
-void PreIntegrationTable::createTex() const {
+void PreIntegrationTable::createTexFromTable() const {
     delete tex_;
+
+    //lazy computation
+    if (!table_) {
+        //create the table
+        table_ = new tgt::vec4[resolution_ * resolution_];
+        computeTable();
+    }
 
     //tex_ = new tgt::Texture(reinterpret_cast<GLubyte*>(table_), tgt::ivec3(static_cast<int>(resolution_),static_cast<int>(resolution_),1),GL_RGBA, GL_RGBA, GL_FLOAT, tgt::Texture::LINEAR);
     tex_ = new tgt::Texture(reinterpret_cast<GLubyte*>(table_), tgt::ivec3(static_cast<int>(resolution_),static_cast<int>(resolution_),1),GL_RGBA, GL_RGBA32F, GL_FLOAT, tgt::Texture::LINEAR);
@@ -224,8 +300,15 @@ void PreIntegrationTable::createTex() const {
 }
 
 const tgt::Texture* PreIntegrationTable::getTexture() const {
-    if (!tex_)
-        createTex();
+
+    //check if texture has to be created and if computation should be made on the gpu
+    if (!tex_) {
+        if (computeOnGPU_ /*|| useIntegral_*/)
+            computeTableGPU();
+        else
+            createTexFromTable();
+    }
+
     tgtAssert(tex_, "No texture");
 
     return tex_;

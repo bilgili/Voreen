@@ -25,8 +25,6 @@
 
 #include "rawtexturesource.h"
 
-#include "voreen/core/ports/allports.h"
-
 #include "tgt/texturemanager.h"
 #include "tgt/gpucapabilities.h"
 

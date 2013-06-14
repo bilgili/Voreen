@@ -109,10 +109,10 @@ FloatMat4PropertyWidget::FloatMat4PropertyWidget(FloatMat4Property* prop, QWidge
     mainLayout_->addWidget(z3_, 4, 2);
     mainLayout_->addWidget(w3_, 4, 3);
 
-    updateFromProperty();
+    updateFromPropertySlot();
 }
 
-void FloatMat4PropertyWidget::updateFromProperty() {
+void FloatMat4PropertyWidget::updateFromPropertySlot() {
 
     // prevent property update during updating widgets
     x0_->blockSignals(true);

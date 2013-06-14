@@ -61,8 +61,13 @@ private:
     template<typename T>
     void storeGradient(tgt::vec3 gradient, const tgt::ivec3& pos, VolumeAtomic<tgt::Vector3<T> >* result);
 
+public:
     template<typename T>
-    tgt::vec3 calcGradientCentralDifferences(const VolumeAtomic<T>* input, const tgt::vec3& spacing, const tgt::svec3& pos);
+    static tgt::vec3 calcGradientCentralDifferences(const VolumeAtomic<T>* input, const tgt::vec3& spacing, const tgt::svec3& pos);
+
+    /// Returns gradient (in normalized values) SLOW
+    static tgt::vec3 calcGradientCentralDifferences(const VolumeRAM* input, const tgt::vec3& spacing, const tgt::svec3& pos);
+
     /**
      * Calculates gradients using linear regression according to Neumann et al.
      *
@@ -84,8 +89,10 @@ private:
     * Returns a Volume with a VolumeAtomic<Vector3<U>> Volume.
     */
     template<class T>
-    tgt::vec3 calcGradientSobel(const VolumeAtomic<T>* input, const tgt::vec3& spacing, const tgt::ivec3& pos);
+    static tgt::vec3 calcGradientSobel(const VolumeAtomic<T>* input, const tgt::vec3& spacing, const tgt::ivec3& pos);
 
+    /// Returns gradient (in normalized values) SLOW
+    static tgt::vec3 calcGradientSobel(const VolumeRAM* input, const tgt::vec3& spacing, const tgt::ivec3& pos);
 };
 
 //---------------------------------------------------------------------------------------------

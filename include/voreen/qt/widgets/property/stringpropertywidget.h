@@ -40,14 +40,16 @@ public:
 
     virtual ~StringPropertyWidget() {}
 
-    virtual void updateFromProperty();
-
 public slots:
     void setProperty(const QString& text);
 
 protected:
     StringProperty* property_;
     QLineEdit* lineEdit_;
+
+protected slots:
+    virtual void updateFromPropertySlot();
+
 };
 
 } // namespace

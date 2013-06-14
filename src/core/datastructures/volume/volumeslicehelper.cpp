@@ -28,6 +28,12 @@
 #include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 #include "tgt/logmanager.h"
 
+#include "voreen/core/datastructures/volume/volumeram.h"
+#include "voreen/core/datastructures/volume/volumedisk.h"
+#ifdef VRN_MODULE_STAGING
+#include "modules/staging/octree/datastructures/volumeoctreebase.h"
+#endif
+
 namespace voreen {
 
 using tgt::vec2;
@@ -136,13 +142,12 @@ tgt::mat4 Slice::getWorldToTextureMatrix() const {
 
 //-------------------------------------------------------------------------------------------------
 
-Slice* getVolumeSlice(const VolumeBase* vh, SliceAlignment alignment, int sliceIndex) {
+Slice* getVolumeSlice(const VolumeBase* vh, SliceAlignment alignment, int sliceIndex, int channel /*= 0*/) {
     vec3 urb = vh->getURB();
     vec3 llf = vh->getLLF();
     vec3 sp = vh->getSpacing();
     tgt::Bounds b(llf, urb);
     tgt::svec3 dims = vh->getDimensions();
-    const VolumeRAM* vol = vh->getRepresentation<VolumeRAM>();
 
     vec3 bb_urb = b.getURB();
     vec3 bb_llf = b.getLLF();
@@ -154,63 +159,201 @@ Slice* getVolumeSlice(const VolumeBase* vh, SliceAlignment alignment, int sliceI
 
     switch(alignment) {
         case YZ_PLANE: {
-                           float x = static_cast<float>(sliceIndex);
-                           float xcoord = llf.x + (x+0.5f) * sp.x; // We want our slice to be in the center of voxels
+            // representation preference:
+            // 1) use RAM volume, if present
+            // 2) else: use octree, if present
+            // 3) else: try to create RAM representation
+            // note: disk representation is not usable for this alignment
+            const VolumeRAM* ramVolume3D = 0;     //< RAM representation
+            const VolumeRAM* ramVolumeSlice = 0;  //< slice retrieved from octree (has to be deleted afterwards)
+            if (vh->hasRepresentation<VolumeRAM>()) {
+                ramVolume3D = vh->getRepresentation<VolumeRAM>();
+            }
+#ifdef VRN_MODULE_STAGING
+            else if (vh->hasRepresentation<VolumeOctreeBase>()) {
+                try {
+                    const VolumeOctreeBase* octree = vh->getRepresentation<VolumeOctreeBase>();
+                    tgtAssert(octree, "no octree");
+                    ramVolumeSlice = octree->createSlice(YZ_PLANE, sliceIndex, 0, channel);
+                    tgtAssert(ramVolumeSlice, "null pointer returned (exception expected)");
+                }
+                catch (tgt::Exception& e) {
+                    LERRORC("voreen.VolumeSliceHelper", "Failed to create YZ slice from octree: " << e.what());
+                    return 0;
+                }
+            }
+#endif
+            else {
+                ramVolume3D = vh->getRepresentation<VolumeRAM>();
+                if (!ramVolume3D) {
+                    LERRORC("voreen.VolumeSliceHelper",
+                        "Failed to create YZ slice: neither RAM nor octree representation available");
+                    return 0;
+                }
+            }
 
-                           origin = vec3(xcoord, bb_llf.y, bb_llf.z);
-                           xVec = vec3(xcoord, bb_urb.y, bb_llf.z);
-                           yVec = vec3(xcoord, bb_llf.y, bb_urb.z);
+            float x = static_cast<float>(sliceIndex);
+            float xcoord = llf.x + (x+0.5f) * sp.x; // We want our slice to be in the center of voxels
 
-                           tex = new tgt::Texture(tgt::ivec3(dims.yz(), 1), GL_ALPHA, GL_ALPHA32F_ARB, GL_FLOAT, tgt::Texture::LINEAR); //TODO: make dependent on input, add support for multiple channels
+            origin = vec3(xcoord, bb_llf.y, bb_llf.z);
+            xVec = vec3(xcoord, bb_urb.y, bb_llf.z);
+            yVec = vec3(xcoord, bb_llf.y, bb_urb.z);
 
-                           for(int y=0; y<static_cast<int>(dims.y); y++) {
-                               for(int z=0; z<static_cast<int>(dims.z); z++) {
-                                   float value = vol->getVoxelNormalized(sliceIndex, y, z);
-                                   tex->texel< float >(y, z) = value;
-                               }
-                           }
+            tex = new tgt::Texture(tgt::ivec3(dims.yz(), 1), GL_ALPHA, GL_ALPHA32F_ARB, GL_FLOAT, tgt::Texture::LINEAR); //TODO: make dependent on input, add support for multiple channels
 
-                           tex->uploadTexture();
-                       }
-                       break;
+            tgtAssert(ramVolume3D || ramVolumeSlice, "no volume");
+            for (int y=0; y<static_cast<int>(dims.y); y++) {
+                for(int z=0; z<static_cast<int>(dims.z); z++) {
+                    //float value = volumeRam->getVoxelNormalized(sliceIndex, y, z);
+                    //tex->texel< float >(y, z) = value;
+                    float value = ramVolume3D ?
+                        ramVolume3D->getVoxelNormalized(sliceIndex, y, z, channel) :
+                        ramVolumeSlice->getVoxelNormalized(0, y, z);
+                    tex->texel< float >(y, z) = value;
+                }
+            }
+
+            delete ramVolumeSlice;
+            ramVolumeSlice = 0;
+
+            tex->uploadTexture();
+        }
+        break;
+
         case XZ_PLANE: {
-                           float y = static_cast<float>(sliceIndex);
-                           float ycoord = llf.y + (y+0.5f) * sp.y; // We want our slice to be in the center of voxels
+            // representation preference:
+            // 1) use RAM volume, if present
+            // 2) else: use octree, if present
+            // 3) else: try to create RAM representation
+            // note: disk representation is not usable for this alignment
+            const VolumeRAM* ramVolume3D = 0;     //< RAM representation
+            const VolumeRAM* ramVolumeSlice = 0;  //< slice retrieved from octree (has to be deleted afterwards)
+            if (vh->hasRepresentation<VolumeRAM>()) {
+                ramVolume3D = vh->getRepresentation<VolumeRAM>();
+            }
+#ifdef VRN_MODULE_STAGING
+            else if (vh->hasRepresentation<VolumeOctreeBase>()) {
+                try {
+                    const VolumeOctreeBase* octree = vh->getRepresentation<VolumeOctreeBase>();
+                    tgtAssert(octree, "no octree");
+                    ramVolumeSlice = octree->createSlice(XZ_PLANE, sliceIndex, 0, channel);
+                    tgtAssert(ramVolumeSlice, "null pointer returned (exception expected)");
+                }
+                catch (tgt::Exception& e) {
+                    LERRORC("voreen.VolumeSliceHelper", "Failed to create XZ slice from octree: " << e.what());
+                    return 0;
+                }
+            }
+#endif
+            else {
+                ramVolume3D = vh->getRepresentation<VolumeRAM>();
+                if (!ramVolume3D) {
+                    LERRORC("voreen.VolumeSliceHelper",
+                        "Failed to create XZ slice: neither RAM nor octree representation available");
+                    return 0;
+                }
+            }
 
-                           origin = vec3(bb_llf.x, ycoord, bb_llf.z);
-                           xVec = vec3(bb_urb.x, ycoord, bb_llf.z);
-                           yVec = vec3(bb_llf.x, ycoord, bb_urb.z);
+            float y = static_cast<float>(sliceIndex);
+            float ycoord = llf.y + (y+0.5f) * sp.y; // We want our slice to be in the center of voxels
 
-                           tex = new tgt::Texture(tgt::ivec3(static_cast<int>(dims.x), static_cast<int>(dims.z), 1), GL_ALPHA, GL_ALPHA32F_ARB, GL_FLOAT, tgt::Texture::LINEAR); //TODO: make dependent on input, add support for multiple channels
-                           for(int x=0; x<static_cast<int>(dims.x); x++) {
-                               for(int z=0; z<static_cast<int>(dims.z); z++) {
-                                   float value = vol->getVoxelNormalized(x, sliceIndex, z);
-                                   tex->texel< float >(x, z) = value;
-                               }
-                           }
+            origin = vec3(bb_llf.x, ycoord, bb_llf.z);
+            xVec = vec3(bb_urb.x, ycoord, bb_llf.z);
+            yVec = vec3(bb_llf.x, ycoord, bb_urb.z);
 
-                           tex->uploadTexture();
-                       }
-                       break;
+            tgtAssert(ramVolume3D || ramVolumeSlice, "no volume");
+            tex = new tgt::Texture(tgt::ivec3(static_cast<int>(dims.x), static_cast<int>(dims.z), 1), GL_ALPHA, GL_ALPHA32F_ARB, GL_FLOAT, tgt::Texture::LINEAR); //TODO: make dependent on input, add support for multiple channels
+            for(int x=0; x<static_cast<int>(dims.x); x++) {
+                for(int z=0; z<static_cast<int>(dims.z); z++) {
+                    /*float value = volumeRam->getVoxelNormalized(x, sliceIndex, z);
+                    tex->texel< float >(x, z) = value; */
+                    float value = ramVolume3D ?
+                        ramVolume3D->getVoxelNormalized(x, sliceIndex, z, channel) :
+                        ramVolumeSlice->getVoxelNormalized(x, 0, z);
+                    tex->texel< float >(x, z) = value;
+                }
+            }
+
+            delete ramVolumeSlice;
+            ramVolumeSlice = 0;
+
+            tex->uploadTexture();
+        }
+        break;
+
         case XY_PLANE: {
-                           float z = static_cast<float>(sliceIndex);
-                           float zcoord = llf.z + (z+0.5f) * sp.z; // We want our slice to be in the center of voxels
+            // representation preference:
+            // 1) use RAM volume, if present
+            // 2) else: use octree, if present
+            // 3) else: use disk volume, if present
+            const VolumeRAM* ramVolume3D = 0;     //< RAM representation
+            const VolumeRAM* ramVolumeSlice = 0;  //< slice retrieved from octree or disk volume (has to be deleted)
+            if (vh->hasRepresentation<VolumeRAM>()) {
+                ramVolume3D = vh->getRepresentation<VolumeRAM>();
+            }
+#ifdef VRN_MODULE_STAGING
+            else if (vh->hasRepresentation<VolumeOctreeBase>()) {
+                try {
+                    const VolumeOctreeBase* octree = vh->getRepresentation<VolumeOctreeBase>();
+                    tgtAssert(octree, "no octree");
+                    ramVolumeSlice = octree->createSlice(XY_PLANE, sliceIndex, 0, channel);
+                    tgtAssert(ramVolumeSlice, "null pointer returned (exception expected)");
+                }
+                catch (tgt::Exception& e) {
+                    LERRORC("voreen.VolumeSliceHelper", "Failed to create XY slice from octeee: " << e.what());
+                    return 0;
+                }
+            }
+#endif
+            else {
+                ramVolume3D = vh->getRepresentation<VolumeRAM>();
+                if (!ramVolume3D) {
+                    LERRORC("voreen.VolumeSliceHelper",
+                        "Failed to create XY slice: neither RAM nor octree representation available");
+                    return 0;
+                }
+            }
+            /*else if (vh->hasRepresentation<VolumeDisk>()) {
+                try {
+                    ramVolumeSlice = vh->getRepresentation<VolumeDisk>()->loadSlices(sliceIndex, sliceIndex);
+                    tgtAssert(ramVolumeSlice, "null pointer returned (exception expected)");
+                }
+                catch (tgt::Exception& e) {
+                    LERRORC("voreen.VolumeSliceHelper", "Failed to load XY slice from disk volume: " << e.what());
+                    return 0;
+                }
+            }
+            else {
+                LERRORC("voreen.VolumeSliceHelper",
+                    "Failed to create XY slice: neither RAM, nor octree, nor disk volume representation available");
+                return 0;
+            } */
 
-                           origin = vec3(bb_llf.x, bb_llf.y, zcoord);
-                           xVec = vec3(bb_urb.x, bb_llf.y, zcoord);
-                           yVec = vec3(bb_llf.x, bb_urb.y, zcoord);
+            float z = static_cast<float>(sliceIndex);
+            float zcoord = llf.z + (z+0.5f) * sp.z; // We want our slice to be in the center of voxels
 
-                           tex = new tgt::Texture(tgt::ivec3(dims.xy(), 1), GL_ALPHA, GL_ALPHA32F_ARB, GL_FLOAT, tgt::Texture::LINEAR); //TODO: make dependent on input, add support for multiple channels
-                           for(int y=0; y<static_cast<int>(dims.y); y++) {
-                               for(int x=0; x<static_cast<int>(dims.x); x++) {
-                                   float value = vol->getVoxelNormalized(x, y, sliceIndex);
-                                   tex->texel< float >(x, y) = value;
-                               }
-                           }
+            origin = vec3(bb_llf.x, bb_llf.y, zcoord);
+            xVec = vec3(bb_urb.x, bb_llf.y, zcoord);
+            yVec = vec3(bb_llf.x, bb_urb.y, zcoord);
 
-                           tex->uploadTexture();
-                       }
-                       break;
+            tgtAssert(ramVolume3D || ramVolumeSlice, "no representation");
+            tex = new tgt::Texture(tgt::ivec3(dims.xy(), 1), GL_ALPHA, GL_ALPHA32F_ARB, GL_FLOAT, tgt::Texture::LINEAR); //TODO: make dependent on input, add support for multiple channels
+            for(int y=0; y<static_cast<int>(dims.y); y++) {
+                for(int x=0; x<static_cast<int>(dims.x); x++) {
+                    float value = ramVolume3D ?
+                        ramVolume3D->getVoxelNormalized(x, y, sliceIndex, channel) :
+                        ramVolumeSlice->getVoxelNormalized(x, y, 0);
+                    tex->texel< float >(x, y) = value;
+                }
+            }
+
+            delete ramVolumeSlice;
+            ramVolumeSlice = 0;
+
+            tex->uploadTexture();
+        }
+        break;
+
         default: tgtAssert(false, "should not get here!");
     }
 
@@ -226,10 +369,6 @@ Slice* getVolumeSlice(const VolumeBase* vh, SliceAlignment alignment, int sliceI
 //-------------------------------------------------------------------------------------------------
 
 Slice* getVolumeSlice(const VolumeBase* vh, tgt::plane pl, float samplingRate) {
-    const VolumeRAM* vol = vh->getRepresentation<VolumeRAM>();
-    if(!vol)
-        return 0;
-
     vec3 urb = vh->getURB();
     vec3 llf = vh->getLLF();
     vec3 center = (urb + llf) * 0.5f;
@@ -244,7 +383,7 @@ Slice* getVolumeSlice(const VolumeBase* vh, tgt::plane pl, float samplingRate) {
     // check whether the plane normal matches one of the main directions of the volume:
     tgt::plane plVoxel = pl.transform(vh->getWorldToVoxelMatrix());
     if(fabs(fabs(dot(vec3(1.0f, 0.0f, 0.0f), plVoxel.n)) - 1.0f) < 0.01f) {
-        float sliceNumber = vh->getDimensions().x - (plVoxel.d * plVoxel.n.x);
+        float sliceNumber = -plVoxel.d * plVoxel.n.x;
         sliceNumber -= 0.5f;
 
         float integral = tgt::round(sliceNumber);
@@ -253,7 +392,7 @@ Slice* getVolumeSlice(const VolumeBase* vh, tgt::plane pl, float samplingRate) {
         //else TODO
     }
     else if(fabs(fabs(dot(vec3(0.0f, 1.0f, 0.0f), plVoxel.n)) - 1.0f) < 0.01f) {
-        float sliceNumber = vh->getDimensions().y - (plVoxel.d * plVoxel.n.y);
+        float sliceNumber = -plVoxel.d * plVoxel.n.y;
         sliceNumber -= 0.5f;
 
         float integral = tgt::round(sliceNumber);
@@ -262,7 +401,7 @@ Slice* getVolumeSlice(const VolumeBase* vh, tgt::plane pl, float samplingRate) {
         //else TODO
     }
     else if(fabs(fabs(dot(vec3(0.0f, 0.0f, 1.0f), plVoxel.n)) - 1.0f) < 0.01f) {
-        float sliceNumber = vh->getDimensions().z - (plVoxel.d * plVoxel.n.z);
+        float sliceNumber = -plVoxel.d * plVoxel.n.z;
         sliceNumber -= 0.5f;
 
         float integral = tgt::round(sliceNumber);
@@ -270,6 +409,10 @@ Slice* getVolumeSlice(const VolumeBase* vh, tgt::plane pl, float samplingRate) {
             return getVolumeSlice(vh, XY_PLANE, static_cast<int>(sliceNumber));
         //else TODO
     }
+
+    const VolumeRAM* vol = vh->getRepresentation<VolumeRAM>();
+    if(!vol)
+        return 0;
 
     // transform to world coordinates:
     mat4 pToW = vh->getPhysicalToWorldMatrix();

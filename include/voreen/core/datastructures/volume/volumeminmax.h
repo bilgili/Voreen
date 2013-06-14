@@ -33,6 +33,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 namespace voreen {
 
@@ -41,6 +42,8 @@ public:
     /// Empty default constructor required by VolumeDerivedData interface.
     VolumeMinMax();
     VolumeMinMax(float min, float max, float minNorm, float maxNorm);
+    VolumeMinMax(const std::vector<float>& minValues, const std::vector<float>& maxValues,
+        const std::vector<float>& minNormValues, const std::vector<float>& maxNormValues);
     virtual std::string getClassName() const { return "VolumeMinMax"; }
 
     virtual VolumeDerivedData* create() const;
@@ -53,30 +56,24 @@ public:
     /// @see VolumeDerivedData
     virtual void deserialize(XmlDeserializer& s);
 
+    /// Returns the number of channels saved in this derived data.
+    size_t getNumChannels() const;
+
     /// Minimum (RealWorld)
-    float getMin() const {
-        return min_;
-    }
+    float getMin(size_t channel = 0) const;
 
     /// Maximum (RealWorld)
-    float getMax() const {
-        return max_;
-    }
+    float getMax(size_t channel = 0) const;
 
-    float getMinNormalized() const {
-        return minNorm_;
-    }
+    float getMinNormalized(size_t channel = 0) const;
 
-    float getMaxNormalized() const {
-        return maxNorm_;
-    }
+    float getMaxNormalized(size_t channel = 0) const;
 
 protected:
-
-    float min_;
-    float max_;
-    float minNorm_;
-    float maxNorm_;
+    std::vector<float> minValues_;
+    std::vector<float> maxValues_;
+    std::vector<float> minNormValues_;
+    std::vector<float> maxNormValues_;
 };
 
 } // namespace voreen

@@ -81,6 +81,12 @@ public:
      */
     void stopObservation(const ObservableBase* observable) const;
 
+    /**
+     * Clears the list of all observed objects. Like the destructor, this method
+     * removes this object itself from Observable objects.
+     */
+    void clearObserveds() const;
+
 private:
 
     /**
@@ -103,12 +109,6 @@ private:
      *          was not registered.
      */
     bool removeObserved(const ObservableBase* observed) const;
-
-    /**
-     * Clears the list of all observed objects. Like the destructor, this method
-     * removes this object itself from Observable objects.
-     */
-    void clearObserveds() const;
 
     /// Set of observed objects
     /// (mutable since we want to allow adding observeds to const objects)

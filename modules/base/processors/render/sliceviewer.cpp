@@ -35,6 +35,7 @@
 #include "tgt/textureunit.h"
 
 #include "voreen/core/datastructures/volume/volumeatomic.h"
+#include "voreen/core/datastructures/volume/volumeslicehelper.h"
 #include "voreen/core/voreenapplication.h"
 
 using tgt::TextureUnit;
@@ -47,6 +48,7 @@ const std::string SliceViewer::fontName_("Vera.ttf");
 SliceViewer::SliceViewer()
     : SliceRendererBase()
     , sliceAlignment_("sliceAlignmentProp", "Slice Alignment")
+    , channel_("channel", "Channel ", 0, 0, 3)
     , sliceIndex_("sliceIndex", "Slice Number ", 0, 0, 10000)
     , numGridRows_("numSlicesPerRow", "Num Rows", 1, 1, 5)
     , numGridCols_("numSlicesPerCol", "Num Columns", 1, 1, 5)
@@ -108,6 +110,7 @@ SliceViewer::SliceViewer()
         CallMemberAction<SliceViewer>(this, &SliceViewer::onSliceAlignmentChange) );
     addProperty(sliceAlignment_);
 
+    addProperty(channel_);
     addProperty(sliceIndex_);
     addProperty(numGridRows_);
     addProperty(numGridCols_);
@@ -119,6 +122,7 @@ SliceViewer::SliceViewer()
     addProperty(mouseZCoord_);
 
     // group slice arrangement properties
+    channel_.setGroupID("sliceArrangement");
     sliceAlignment_.setGroupID("sliceArrangement");
     sliceIndex_.setGroupID("sliceArrangement");
     numGridRows_.setGroupID("sliceArrangement");
@@ -133,7 +137,7 @@ SliceViewer::SliceViewer()
     mouseYCoord_.setVisible(false);
     mouseZCoord_.setVisible(false);
 
-    setPropertyGroupGuiName("sliceArrangement", "Slice Arrangement");
+    setPropertyGroupGuiName("sliceArrangement", "Slice Selection");
 
     // information overlay
     showCursorInfos_.addOption("never", "Never");
@@ -191,8 +195,14 @@ Processor* SliceViewer::create() const {
 void SliceViewer::updateSliceProperties() {
 
     tgt::ivec3 volumeDim(0);
-    if (inport_.getData() && inport_.getData()->getRepresentation<VolumeRAM>())
-        volumeDim = inport_.getData()->getRepresentation<VolumeRAM>()->getDimensions();
+    int numChannels = 1;
+    if (inport_.getData()) {
+        volumeDim = inport_.getData()->getDimensions();
+        numChannels = static_cast<int>(inport_.getData()->getNumChannels());
+    }
+
+    //channel_.setMaxValue(numChannels-1);
+    //channel_.setVisible(numChannels > 1);
 
     tgtAssert(sliceAlignment_.getValue() >= 0 && sliceAlignment_.getValue() <= 2, "Invalid alignment value");
     int numSlices = volumeDim[sliceAlignment_.getValue()];
@@ -234,17 +244,18 @@ void SliceViewer::process() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     LGL_ERROR;
 
-    if (!inport_.getData() || !inport_.getData()->getRepresentation<VolumeRAM>() ) {
+    if (!inport_.getData() || static_cast<int>(inport_.getData()->getNumChannels()) <= channel_.get()) {
         outport_.deactivateTarget();
         LGL_ERROR;
         return;
     }
 
-    const VolumeRAM* volume = inport_.getData()->getRepresentation<VolumeRAM>();
+    const VolumeBase* volume = inport_.getData();
 
+    const SliceAlignment alignment = sliceAlignment_.getValue();
     // get voxel volume dimensions
     tgt::ivec3 volDim = volume->getDimensions();
-    int numSlices = volDim[sliceAlignment_.getValue()];
+    int numSlices = volDim[alignment];
 
     // get the textures dimensions
     tgt::vec3 urf = inport_.getData()->getURB();
@@ -270,7 +281,7 @@ void SliceViewer::process() {
     // set slice's width and height according to currently slice alignment
     // and set the pointer to the slice rendering method to the matching version
     //
-    switch (sliceAlignment_.getValue()) {
+    switch (alignment) {
         case XZ_PLANE:
             texDim2D.x = texDim.x;
             texDim2D.y = texDim.z;
@@ -283,8 +294,8 @@ void SliceViewer::process() {
         case YZ_PLANE:
             texDim2D.x = texDim.y;
             texDim2D.y = texDim.z;
-            textureMatrix_.t02 = 1.f;   // setup a permutation matrix, swapping x-, y- and z-
-            textureMatrix_.t10 = -1.f;  // components on vectors being multiplied with it
+            textureMatrix_.t02 = 1.f;    // setup a permutation matrix, swapping x-, y- and z-
+            textureMatrix_.t10 = -1.f;   // components on vectors being multiplied with it
             textureMatrix_.t21 = 1.f;
             textureMatrix_.t13 = 1.f;
             textureMatrix_.t33 = 1.f;
@@ -361,16 +372,24 @@ void SliceViewer::process() {
     bool setupSuccessful;
     if (texMode_.isSelected("2d-texture")) {      // 2D texture
         setupSuccessful = setupSliceShader(sliceShader_, inport_.getData(), &transferUnit);
+        if(!setupSuccessful)
+            LERROR("2D texture could not been created.");
     }
     else if (texMode_.isSelected("3d-texture")) { // 3D texture
         // also binds the volume
         setupSuccessful = setupVolumeShader(sliceShader_, inport_.getData(), &texUnit, &transferUnit, 0, lightPosition_.get());
+        if(!setupSuccessful)
+            LERROR("3D texture could not been created. Try 2D texture mode.");
     }
     else {
         LERROR("unknown texture mode: " << texMode_.get());
         setupSuccessful = false;
     }
     if (!setupSuccessful) {
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
         outport_.deactivateTarget();
         return;
     }
@@ -393,15 +412,15 @@ void SliceViewer::process() {
 
         // calculate depth in llb/urf space
         depth = ((static_cast<float>(sliceNumber) / static_cast<float>(std::max(numSlices - 1, 1))) - 0.5f)
-            * texDim[sliceAlignment_.getValue()];
+            * texDim[alignment];
 
         // check whether the given slice is not within tex
-        if ((depth < llb[sliceAlignment_.getValue()]) || (depth > urf[sliceAlignment_.getValue()]))
+        if ((depth < llb[alignment]) || (depth > urf[alignment]))
             continue;
 
         // map depth to [0, 1]
-        depth -= texCenter[sliceAlignment_.getValue()];  // center around origin
-        depth /= texDim[sliceAlignment_.getValue()];     // map to [-0.5, -0.5]
+        depth -= texCenter[alignment];  // center around origin
+        depth /= texDim[alignment];     // map to [-0.5, -0.5]
         depth += 0.5f;                                   // map to [0, 1]
 
         glLoadIdentity();
@@ -414,24 +433,29 @@ void SliceViewer::process() {
 
         // render slice
         if (texMode_.isSelected("2d-texture")) {
+            Slice* slice = getVolumeSlice(volume, alignment, tgt::iround(depth*(volume->getDimensions()[alignment]-1)), channel_.get());
+            if (!slice)
+                continue;
+
+            if (!bindSliceTexture(sliceShader_, inport_.getData(), const_cast<tgt::Texture*>(slice->getTexture()), &texUnit))
+                continue;
+
             tgt::vec3 texLowerLeft = (textureMatrix_*tgt::vec4(0.f, 0.f, depth, 1.f)).xyz();
             tgt::vec3 texUpperRight = (textureMatrix_*tgt::vec4(1.f, 1.f, depth, 1.f)).xyz();
-            tgt::Texture* sliceTexture = generateAlignedSliceTexture(inport_.getData(), texLowerLeft, texUpperRight);
-            if (!sliceTexture)
-                continue;
-
-            if (!bindSliceTexture(sliceShader_, inport_.getData(), sliceTexture, &texUnit))
-                continue;
-
             sliceShader_->setUniform("textureMatrix_", tgt::mat4::identity);
             glBegin(GL_QUADS);
-                glTexCoord2f(0.f, 0.f);   glVertex2f(0.0f, 0.0f);
+                /*glTexCoord2f(0.f, 0.f);   glVertex2f(0.0f, 0.0f);
                 glTexCoord2f(1.f, 0.f);   glVertex2f(1.0f, 0.0f);
                 glTexCoord2f(1.f, 1.f);   glVertex2f(1.0f, 1.0f);
-                glTexCoord2f(0.f, 1.f);   glVertex2f(0.0f, 1.0f);
+                glTexCoord2f(0.f, 1.f);   glVertex2f(0.0f, 1.0f); */
+                glTexCoord2f(texLowerLeft[ (alignment+1) % 3], texLowerLeft[ (alignment+2) % 3]);  glVertex2f(0.0f, 0.0f);
+                glTexCoord2f(texUpperRight[(alignment+1) % 3], texLowerLeft[ (alignment+2) % 3]);  glVertex2f(1.0f, 0.0f);
+                glTexCoord2f(texUpperRight[(alignment+1) % 3], texUpperRight[(alignment+2) % 3]);  glVertex2f(1.0f, 1.0f);
+                glTexCoord2f(texLowerLeft[ (alignment+1) % 3], texUpperRight[(alignment+2) % 3]);  glVertex2f(0.0f, 1.0f);
             glEnd();
-            delete sliceTexture;
+            LGL_ERROR;
 
+            delete slice;
             LGL_ERROR;
         }
         else if (texMode_.isSelected("3d-texture")) {
@@ -540,8 +564,8 @@ void SliceViewer::renderInfoTexts() const {
     int numSlicesCol = numGridCols_.get();
     tgtAssert(numSlicesRow > 0 && numSlicesCol > 0, "Invalid slice counts");
 
-    tgtAssert(inport_.getData() && inport_.getData()->getRepresentation<VolumeRAM>(), "No volume");
-    const VolumeRAM* volume = inport_.getData()->getRepresentation<VolumeRAM>();
+    tgtAssert(inport_.getData(), "No volume");
+    const VolumeBase* volume = inport_.getData();
     tgt::ivec3 volDim = volume->getDimensions();
     int numSlices = volDim[sliceAlignment_.getValue()];
 
@@ -573,7 +597,10 @@ void SliceViewer::renderInfoTexts() const {
             std::ostringstream oss;
             oss << "(" << lastPickingPosition_.x << " " << lastPickingPosition_.y << " " << lastPickingPosition_.z << "): ";
             RealWorldMapping rwm = inport_.getData()->getRealWorldMapping();
-            oss << volume->getVoxelValueAsString(lastPickingPosition_, &rwm);
+            if (volume->hasRepresentation<VolumeRAM>()) { //< TODO: use other representations
+                const VolumeRAM* volume = inport_.getData()->getRepresentation<VolumeRAM>();
+                oss << volume->getVoxelValueAsString(lastPickingPosition_, &rwm);
+            }
             renderStr = oss.str();
 
             // determine bounds and render the string
@@ -667,10 +694,10 @@ void SliceViewer::renderInfoTexts() const {
 
 tgt::vec3 SliceViewer::screenToVoxelPos(tgt::ivec2 screenPos) const {
 
-    if (!inport_.getData() || !inport_.getData()->getRepresentation<VolumeRAM>() || !outport_.getRenderTarget())
+    if (!inport_.getData() || !outport_.getRenderTarget())
         return tgt::vec3(-1.f);
 
-    tgt::vec3 volumeDim(inport_.getData()->getRepresentation<VolumeRAM>()->getDimensions());
+    tgt::vec3 volumeDim(inport_.getData()->getDimensions());
     tgt::ivec2 screenDim = outport_.getSize();
 
     tgt::ivec2 p(0, 0);
@@ -720,10 +747,10 @@ tgt::vec3 SliceViewer::screenToVoxelPos(tgt::ivec2 screenPos) const {
 
 tgt::mat4 SliceViewer::generatePickingMatrix() const {
 
-    if (!inport_.hasData() || !inport_.getData()->getRepresentation<VolumeRAM>())
+    if (!inport_.hasData())
         return tgt::mat4::createIdentity();
 
-    tgt::vec3 volumeDim(inport_.getData()->getRepresentation<VolumeRAM>()->getDimensions());
+    tgt::vec3 volumeDim(inport_.getData()->getDimensions());
 
     // 1. translate slice to origin
     tgt::mat4 originTranslation = tgt::mat4::createTranslation(tgt::vec3(-sliceLowerLeft_.x, -sliceLowerLeft_.y, 0.f));
@@ -808,7 +835,7 @@ void SliceViewer::shiftEvent(tgt::MouseEvent* e) {
         return;
     }
 
-    tgt::vec3 volDim = tgt::vec3(inport_.getData()->getRepresentation<VolumeRAM>()->getDimensions()) - 1.f;
+    tgt::vec3 volDim = tgt::vec3(inport_.getData()->getDimensions()) - 1.f;
     tgt::vec2 mouseCoords((float)e->coord().x, (float)e->coord().y);
 
     tgt::vec2 mouseOffset = mouseCoords - tgt::vec2(mousePosition_);

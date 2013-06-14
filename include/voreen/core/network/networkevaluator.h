@@ -36,32 +36,72 @@
 #include "voreen/core/processors/renderprocessor.h"
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/processors/profiling.h"
+#include "voreen/core/utils/observer.h"
 
 namespace voreen {
 
 class ProcessorNetwork;
 
-class VRN_CORE_API NetworkEvaluator : public ProcessorNetworkObserver {
+/**
+ * Interface for NetworkEvaluator observers.
+ * Objects of this type can be registered at a NetworkEvaluator.
+ */
+class VRN_CORE_API NetworkEvaluatorObserver : public Observer {
+
 public:
+
     /**
-     * Wrapper around the process() calls. Can be used e.g. for benchmarking.
+     * This method is called when a new ProcessorNetwork has been assigned to the network evaluator,
+     * but before the network is initialized.
+     *
+     * @param newNetwork The newly assigned network. May be null.
+     * @param previousNetwork The network that has been previously assigned to the evaluator. May be null.
      */
-    class VRN_CORE_API ProcessWrapper  {
-        friend class NetworkEvaluator;
-    public:
-        virtual ~ProcessWrapper() {}
-    protected:
-        virtual void beforeProcess(Processor* /*p*/) {}
-        virtual void afterProcess(Processor* /*p*/) {}
-        virtual void beforeNetworkProcess() {}
-        virtual void afterNetworkProcess() {}
+    virtual void networkAssigned(ProcessorNetwork* newNetwork, ProcessorNetwork* previousNetwork) {}
 
-        virtual void beforeNetworkInitialize() {}
-        virtual void afterNetworkInitialize() {}
-        virtual void beforeNetworkDeinitialize() {}
-        virtual void afterNetworkDeinitialize() {}
-    };
+    /**
+     * This method is called \e before the network assigned to the observed evaluator is initialized.
+     * Note that the initialization is not only performed once after a network has been assigned,
+     * but also after each change of the network topology.
+     */
+    virtual void beforeNetworkInitialize() {}
 
+    /**
+     * This method is called \e after the network assigned to the observed evaluator has been initialized.
+     * Note that the initialization is not only performed once after a network has been assigned,
+     * but also after each change of the network topology.
+     */
+    virtual void afterNetworkInitialize() {}
+
+    /**
+     * This method is called \e before the network assigned to the observed evaluator is deinitialized.
+     * A network is deinitialized when a new network is assigned.
+     */
+    virtual void beforeNetworkDeinitialize() {}
+
+    /**
+     * This method is called \e after the network assigned to the observed evaluator has been deinitialized.
+     * A network is deinitialized when a new network is assigned.
+     */
+    virtual void afterNetworkDeinitialize() {}
+
+    /// This method is called \e before the currently assigned network is evaluated.
+    virtual void beforeNetworkProcess() {}
+
+    /// This method Is called \e after the currently assigned network has been evaluated.
+    virtual void afterNetworkProcess() {}
+
+    /// This method is called \e before a processor is evaluated.
+    virtual void beforeProcess(Processor* processor) {}
+
+    /// This method is called \e after a processor has been evaluated.
+    virtual void afterProcess(Processor* processor) {}
+
+};
+
+//-------------------------------------------------------------------------------------------------
+
+class VRN_CORE_API NetworkEvaluator : public ProcessorNetworkObserver, public Observable<NetworkEvaluatorObserver> {
 public:
 
     /**
@@ -153,21 +193,6 @@ public:
     void updateCanvases();
 
     /**
-     * Add a ProcessWrapper which is called before and after Processor::process() is called
-     */
-    void addProcessWrapper(ProcessWrapper* w);
-
-    /**
-     * Removes the passed ProcessWrapper object, if it is currently registered.
-     */
-    void removeProcessWrapper(const ProcessWrapper* w);
-
-    /**
-     * Removes all registered ProcessWrapper objects. The objects are not freed.
-     */
-    void clearProcessWrappers();
-
-    /**
      * \brief Locks the evaluator. In this state, it does not perform
      * any operations, such as initializing or processing, on the processor network.
      *
@@ -241,7 +266,7 @@ private:
      * Wrapper around the Processor::process() calls to check that OpenGL state conforms to
      * default settings. Log a warning message if not.
      */
-    class CheckOpenGLStateProcessWrapper : public ProcessWrapper {
+    class CheckOpenGLStateObserver : public NetworkEvaluatorObserver {
     protected:
         void afterProcess(Processor* p);
         void beforeNetworkProcess();
@@ -285,12 +310,9 @@ private:
 
     /**
      * If set to false, the network evaluator does not make any OpenGL calls and does
-     * also not use the OpenGLStateProcessWrapper.
+     * also not use the OpenGLStateObserver.
      */
     bool glMode_;
-
-    /// Vector holding all processor wrappers which might have been added.
-    std::vector<ProcessWrapper*> processWrappers_;
 
     /**
      * If this member is set to true, the method <code>assignRenderTargets()</code>

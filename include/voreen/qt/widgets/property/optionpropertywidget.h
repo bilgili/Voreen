@@ -39,14 +39,16 @@ Q_OBJECT
 public:
     OptionPropertyWidget(OptionPropertyBase* prop, QWidget* parent = 0);
 
-    void updateFromProperty();
-
 public slots:
     void setProperty(int index);
 
 protected:
     OptionPropertyBase* property_;
     QComboBox* cBox_;
+
+protected slots:
+    virtual void updateFromPropertySlot();
+
 };
 
 } // namespace

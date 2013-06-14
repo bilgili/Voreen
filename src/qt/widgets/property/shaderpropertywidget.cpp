@@ -55,7 +55,7 @@ ShaderPropertyWidget::ShaderPropertyWidget(ShaderProperty* prop, QWidget* parent
     editBt_->setFont(QFont(fontInfo.family(), QPropertyWidget::fontSize_));
 }
 
-void ShaderPropertyWidget::updateFromProperty() {
+void ShaderPropertyWidget::updateFromPropertySlot() {
     if (plugin_) {
         plugin_->updateFromProperty();
         plugin_->update();

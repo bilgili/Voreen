@@ -35,4 +35,20 @@ LoopPort::LoopPort(PortDirection direction, const std::string& name, const std::
     setLoopPort(true);
 }
 
+std::string LoopPort::getContentDescription() const {
+    std::stringstream strstr;
+    strstr << getGuiName() << std::endl
+           << "Type: " << getClassName()
+           << "Loop-Iterations: " << getNumLoopIterations();
+    return strstr.str();
+}
+
+std::string LoopPort::getContentDescriptionHTML() const {
+    std::stringstream strstr;
+    strstr << "<center><font><b>" << getGuiName() << "</b></font></center>"
+           << "Type: " << getClassName()
+           << "Loop-Iterations: " << getNumLoopIterations();
+    return strstr.str();
+}
+
 } // namespace

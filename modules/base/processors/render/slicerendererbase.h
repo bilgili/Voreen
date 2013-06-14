@@ -35,6 +35,7 @@
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/processors/volumerenderer.h"
 #include "voreen/core/datastructures/transfunc/transfunc.h"
+#include "voreen/core/datastructures/volume/volumeslicehelper.h"
 
 #include "voreen/core/properties/transfuncproperty.h"
 #include "voreen/core/properties/floatproperty.h"
@@ -60,12 +61,6 @@ public:
     enum TextureMode {
         TEXTURE_2D,
         TEXTURE_3D
-    };
-
-    enum SliceAlignment {
-        YZ_PLANE = 0,
-        XZ_PLANE = 1,
-        XY_PLANE = 2
     };
 
     SliceRendererBase();

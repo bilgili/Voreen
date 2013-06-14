@@ -68,6 +68,7 @@ private:
     // functions called by the event properties
     void zoomEvent(tgt::MouseEvent* e);
     void shiftEvent(tgt::MouseEvent* e);
+    void handleMultitouch(tgt::TouchEvent* e);
 
     // camera property the handler operates on
     CameraProperty* cameraProp_;
@@ -76,11 +77,13 @@ private:
     EventProperty<SliceCameraInteractionHandler>* zoomEvent_;
     EventProperty<SliceCameraInteractionHandler>* shiftEvent_;
     EventProperty<SliceCameraInteractionHandler>* wheelZoomEvent_;
+    EventProperty<SliceCameraInteractionHandler>* multiTouchEvent_;
 
     // Stores if a mousebutton (LEFT, MIDDLE, RIGHT) has been pressed but not released yet.
     std::bitset<3> pressedMouseButtons_;
 
     tgt::ivec2 lastMousePos_;
+    float lastDistance_;
 };
 
 } // namespace

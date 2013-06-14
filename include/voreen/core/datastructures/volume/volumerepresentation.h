@@ -47,8 +47,8 @@ public:
     /// Returns the number of voxels contained by the VolumeRepresentation.
     virtual size_t getNumVoxels() const;
 
-    virtual int getNumChannels() const = 0;
-    virtual int getBytesPerVoxel() const = 0;
+    virtual size_t getNumChannels() const = 0;
+    virtual size_t getBytesPerVoxel() const = 0;
 
     /// Returns the format of the volume as string (e.g., "uint8" or "Vector3(float)", @see VolumeFactory).
     virtual std::string getFormat() const = 0;

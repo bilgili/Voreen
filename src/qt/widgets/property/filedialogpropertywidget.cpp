@@ -111,7 +111,7 @@ void FileDialogPropertyWidget::updateButtonText(const std::string& filename) {
     openFileDialogBtn_->update();
 }
 
-void FileDialogPropertyWidget::updateFromProperty() {
+void FileDialogPropertyWidget::updateFromPropertySlot() {
     updateButtonText(property_->get());
 }
 

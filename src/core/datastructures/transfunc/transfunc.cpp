@@ -39,6 +39,7 @@ TransFunc::TransFunc(int width, int height, int depth,
     , format_(format)
     , dataType_(dataType)
     , filter_(filter)
+    , ignoreAlpha_(false)
     , textureInvalid_(true)
 {
     //fitDimensions(dimensions_.x, dimensions_.y, dimensions_.z);
@@ -72,15 +73,15 @@ bool TransFunc::isTextureInvalid() const {
 }
 
 void TransFunc::bind() {
-    if (textureInvalid_)
+    if (textureInvalid_) {
         updateTexture();
+    }
 
     tgtAssert(tex_, "No texture");
     tex_->bind();
 }
 
 void TransFunc::updateTexture() {
-
     if (!tex_ || (tex_->getDimensions() != dimensions_))
         createTex();
 
@@ -145,8 +146,8 @@ void TransFunc::setUniform(tgt::Shader* shader, const std::string& uniform, cons
     shader->setIgnoreUniformLocationError(oldIgnoreError);
 }
 
-std::string TransFunc::getShaderDefines() const {
-    return "#define TF_SAMPLER_TYPE " + getSamplerType() + "\n";
+std::string TransFunc::getShaderDefines(const std::string& defineName) const {
+    return ("#define " + defineName + " " + getSamplerType() + "\n");
 }
 
 void TransFunc::resize(int width, int height, int depth) {
@@ -191,16 +192,16 @@ bool TransFunc::load(const std::string& /*filename*/) {
     return false;  // override in a subclass
 }
 
-void TransFunc::serialize(XmlSerializer& /*s*/) const {
-    // nothing to serialize here
+void TransFunc::serialize(XmlSerializer& s) const {
+    s.serialize("ignoreAlpha", ignoreAlpha_);
 }
 
-void TransFunc::deserialize(XmlDeserializer& /*s*/) {
-    // nothing to deserialize here
+void TransFunc::deserialize(XmlDeserializer& s) {
+    s.optionalDeserialize("ignoreAlpha", ignoreAlpha_, false);
+    invalidateTexture();
 }
 
 void TransFunc::setPixelData(GLubyte* data) {
-
     if (!tex_ || (tex_->getDimensions() != dimensions_))
         createTex();
     tgtAssert(tex_, "No texture");
@@ -258,25 +259,116 @@ void TransFunc::setDomain(float lower, float upper, int dimension) {
 
 float TransFunc::realWorldToNormalized(float rw, int dimension) const {
     tgt::vec2 domain = getDomain(dimension);
+    return realWorldToNormalized(rw, domain);
+}
 
-    if(rw < domain.x)
-        return 0.0f;
-    else if(rw > domain.y)
-        return 1.0f;
+tgt::vec2 TransFunc::realWorldToNormalized(tgt::vec2 rw) const {
+    return tgt::vec2(realWorldToNormalized(rw.x, 0), realWorldToNormalized(rw.y, 1));
+}
+
+float TransFunc::realWorldToNormalized(float rw, const tgt::vec2& domain) {
+    tgtAssert(domain.x < domain.y, "invalid transfer function domain");
+    if (rw < domain.x)
+        return 0.f;
+    else if (rw > domain.y)
+        return 1.f;
     else {
-        if(domain.y == domain.x){
-            LERROR("Transfer Function Domain Length is 0! Causes Division by Zero!");
-            tgtAssert(false, "Transfer Function Domain Length is 0! Causes Division by Zero!");
-            return 1.0f;
-        } else
+        if (domain.y <= domain.x) { //< handle invalid domain gracefully in release mode
+            LERROR("Invalid transfer function domain:" << domain);
+            return 1.f;
+        }
+        else
             return (rw - domain.x) / (domain.y - domain.x);
     }
 }
 
 float TransFunc::normalizedToRealWorld(float n, int dimension) const {
     tgt::vec2 domain = getDomain(dimension);
+    return normalizedToRealWorld(n, domain);
+}
 
+tgt::vec2 TransFunc::normalizedToRealWorld(tgt::vec2 n) const {
+    return tgt::vec2(normalizedToRealWorld(n.x, 0), normalizedToRealWorld(n.y, 1));
+}
+
+float TransFunc::normalizedToRealWorld(float n, const tgt::vec2& domain) {
+    tgtAssert(domain.x < domain.y, "invalid domain");
     return domain.x + (domain.y - domain.x) * n;
+}
+
+void TransFunc::setIgnoreAlpha(bool ia) {
+    if(ia != ignoreAlpha_) {
+        ignoreAlpha_ = ia;
+        invalidateTexture();
+    }
+}
+
+bool TransFunc::getIgnoreAlpha() const {
+    return ignoreAlpha_;
+}
+
+///------------------------------------------------------------------------------------------------
+
+TransFuncMetaData::TransFuncMetaData()
+    : MetaDataBase()
+    , transFunc_(0)
+{}
+
+TransFuncMetaData::TransFuncMetaData(TransFunc* transfunc)
+    : MetaDataBase()
+    , transFunc_(transfunc)
+{}
+
+TransFuncMetaData::~TransFuncMetaData() {
+    delete transFunc_;
+    transFunc_ = 0;
+}
+
+MetaDataBase* TransFuncMetaData::clone() const {
+    if (transFunc_)
+        return new TransFuncMetaData(transFunc_->clone());
+    else
+        return new TransFuncMetaData(0);
+}
+
+void TransFuncMetaData::setTransferFunction(TransFunc* transfunc) {
+    delete transFunc_;
+    transFunc_ = transfunc;
+}
+
+TransFunc* TransFuncMetaData::getTransferFunction() const {
+    return transFunc_;
+}
+
+std::string TransFuncMetaData::toString() const {
+    return "TransFuncMetaData";
+}
+
+std::string TransFuncMetaData::toString(const std::string& /*component*/) const {
+    return toString();
+}
+
+void TransFuncMetaData::serialize(XmlSerializer& s) const {
+    if (transFunc_) {
+        try {
+            s.serialize("transfunc", transFunc_);
+        }
+        catch (SerializationException& e) {
+            LERRORC("voreen.TransFuncMetaData", std::string("Failed to serialize transfunc: ") + e.what());
+        }
+    }
+}
+
+void TransFuncMetaData::deserialize(XmlDeserializer& s) {
+    delete transFunc_;
+    transFunc_ = 0;
+    try {
+        s.deserialize("transfunc", transFunc_);
+    }
+    catch (SerializationException& e) {
+        LERRORC("voreen.TransFuncMetaData", std::string("Failed to deserialize transfunc: ") + e.what());
+    }
+
 }
 
 } // namespace voreen

@@ -31,6 +31,7 @@
 #include <stack>
 
 #include "voreen/core/processors/processor.h"
+#include "voreen/core/ports/coprocessorport.h"
 
 namespace voreen {
 

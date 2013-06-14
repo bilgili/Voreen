@@ -27,8 +27,6 @@
 
 #include "voreen/qt/widgets/property/qpropertywidget.h"
 #include "voreen/qt/widgets/property/processorpropertieswidget.h"
-#include "voreen/qt/widgets/property/volumeurlpropertywidget.h"
-#include "voreen/qt/widgets/property/volumeurllistpropertywidget.h"
 
 #include "voreen/core/ports/port.h"
 

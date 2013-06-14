@@ -72,13 +72,14 @@ void QtTimer::setTickTime(const int msec) {
 }
 
 void QtTimer::timerEvent(QTimerEvent* /*e*/) {
+    //add counter
     ++count_;
-    // check, if timer has been stopped
+    //test, if timer has been stopped
     if(!stopped_) {
-        // stop timer, if counter reaches limit
+        //stop timer, if counter reaches limit
         if(limit_ != 0 && count_ >= limit_)
             stop();
-        // if counter is in limit, broadcast event
+        //if counter is in limit, broadcast event
         if (limit_ == 0 || count_ <= limit_) {
             tgt::TimeEvent* te = new tgt::TimeEvent(this);
             eventHandler_->broadcast(te);

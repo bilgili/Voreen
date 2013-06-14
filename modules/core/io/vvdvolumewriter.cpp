@@ -72,30 +72,30 @@ void VvdVolumeWriter::write(const std::string& filename, const VolumeBase* volum
     try {
         s.write(textStream);
         if (textStream.fail())
-            throw SerializationException("Failed to write serialization data to string stream.");
+            throw tgt::IOException("Failed to write serialization data to string stream.");
     }
     catch (std::exception& e) {
-        throw SerializationException("Failed to write serialization data to string stream: " + std::string(e.what()));
+        throw tgt::IOException("Failed to write serialization data to string stream: " + std::string(e.what()));
     }
     catch (...) {
-        throw SerializationException("Failed to write serialization data to string stream (unknown exception).");
+        throw tgt::IOException("Failed to write serialization data to string stream (unknown exception).");
     }
 
     // Now we have a valid StringStream containing the serialization data.
     // => Open output file and write it to the file.
     std::fstream fileStream(vvdname.c_str(), std::ios_base::out);
     if (fileStream.fail())
-        throw SerializationException("Failed to open file '" + vvdname + "' for writing.");
+        throw tgt::IOException("Failed to open file '" + vvdname + "' for writing.");
 
     try {
         fileStream << textStream.str();
     }
     catch (std::exception& e) {
-        throw SerializationException("Failed to write serialization data stream to file '"
+        throw tgt::IOException("Failed to write serialization data stream to file '"
                                      + vvdname + "': " + std::string(e.what()));
     }
     catch (...) {
-        throw SerializationException("Failed to write serialization data stream to file '"
+        throw tgt::IOException("Failed to write serialization data stream to file '"
                                      + vvdname + "' (unknown exception).");
     }
     fileStream.close();
@@ -111,7 +111,7 @@ void VvdVolumeWriter::write(const std::string& filename, const VolumeBase* volum
 
     rawout.write(data, numbytes);
     if (rawout.bad())
-        throw tgt::IOException();
+        throw tgt::IOException("Failed to write volume data to file (bad stream)");
 
     rawout.close();
 }

@@ -26,7 +26,6 @@
 #include "imagesource.h"
 
 #include "voreen/core/datastructures/volume/volume.h"
-#include "voreen/core/ports/allports.h"
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/utils/stringutils.h"
 

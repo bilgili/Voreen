@@ -44,7 +44,7 @@ FloatPropertyWidget::FloatPropertyWidget(FloatProperty* prop, QWidget* parent, b
     widget_->setView(prop->getViews());
     QPropertyWidget::layout_->addWidget(widget_, Qt::AlignLeft);
 
-    updateFromProperty();
+    updateFromPropertySlot();
 
     connect(widget_, SIGNAL(valueChanged(double)), this, SLOT(setProperty(double)));
     connect(widget_, SIGNAL(sliderPressedChanged(bool)), this, SLOT(toggleInteractionMode(bool)));
@@ -68,7 +68,7 @@ FloatPropertyWidget::~FloatPropertyWidget() {
     delete widget_;
 }
 
-void FloatPropertyWidget::updateFromProperty() {
+void FloatPropertyWidget::updateFromPropertySlot() {
     if (property_ != 0) {
         widget_->blockSignals(true);
         widget_->setDecimals(property_->getNumDecimals());

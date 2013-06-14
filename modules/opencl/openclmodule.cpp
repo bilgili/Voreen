@@ -143,7 +143,7 @@ void OpenCLModule::initCL() throw (VoreenException) {
         LINFO("OpenGL sharing: disabled");
         context_ = new cl::Context(device_);
     }
-    queue_ = new cl::CommandQueue(context_, device_);
+    queue_ = new cl::CommandQueue(context_, device_, CL_QUEUE_PROFILING_ENABLE);
 
     device_.logInfos();
 }

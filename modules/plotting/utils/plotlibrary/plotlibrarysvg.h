@@ -257,7 +257,7 @@ public:
      * \param   axis            axis
      * \param   helperLines     flag whether to render helper lines
      **/
-    void renderAxisScales(Axis axis, bool helperLines, const std::string& label = "");
+    void renderAxisScales(Axis axis, bool helperLines, const std::string& label = "", plot_t offset = 0);
 
     /**
      * \brief   Renders the x axis scales using labels from \a data, and optionally helperlines.

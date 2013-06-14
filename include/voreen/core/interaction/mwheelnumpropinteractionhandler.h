@@ -60,6 +60,14 @@ public:
     virtual std::string getClassName() const   { return "MWheelNumPropInteractionHandler";     }
     virtual InteractionHandler* create() const { return new MWheelNumPropInteractionHandler(); }
 
+    virtual void setProperty(NumericProperty<T>* prop) {
+        numProp_ = prop;
+    }
+
+    virtual NumericProperty<T>* setProperty() {
+        return numProp_;
+    }
+
 private:
     virtual void onEvent(tgt::Event* e);
 

@@ -27,7 +27,7 @@
 #define VRN_UNARYIMAGEPROCESSOR_H
 
 #include "voreen/core/processors/imageprocessorbypassable.h"
-#include "voreen/core/ports/allports.h"
+#include "voreen/core/ports/renderport.h"
 #include "voreen/core/properties/shaderproperty.h"
 
 namespace voreen {

@@ -222,7 +222,7 @@ void VolumeComposer::stackVolumes() {
         if (numChannels != handle->getNumChannels())
             channelCountMatch = false;
         tgtAssert(handle->getRepresentation<VolumeRAM>() != 0, "no cpu representation");
-        bpp = std::max(bpp, handle->getRepresentation<VolumeRAM>()->getBytesPerVoxel());
+        bpp = std::max(bpp, (int)handle->getRepresentation<VolumeRAM>()->getBytesPerVoxel());
         numSlices += handle->getDimensions().z;
     }
     if (!dimsMatch) {

@@ -100,6 +100,7 @@ void rayTraversal(in vec3 first, in vec3 last, float entryDepth, float exitDepth
     float t     = 0.0;
     float tIncr = 0.0;
     float tEnd  = 1.0;
+    float lastIntensity = 0.0f; //used for pre-integrated transfer-functions
     vec3 rayDirection;
     raySetup(first, last, samplingStepSize_, rayDirection, tIncr, tEnd);
 
@@ -114,7 +115,7 @@ void rayTraversal(in vec3 first, in vec3 last, float entryDepth, float exitDepth
             vec4 color = applySegmentationClassification(samplePos, voxel, segmentationParameters_);
         #else
             // apply classification
-            vec4 color = RC_APPLY_CLASSIFICATION(transferFunc_, transferFuncTex_, voxel);
+            vec4 color = RC_APPLY_CLASSIFICATION(transferFunc_, transferFuncTex_, voxel, lastIntensity);
         #endif
 
         // if opacity greater zero, apply compositing
@@ -132,6 +133,7 @@ void rayTraversal(in vec3 first, in vec3 last, float entryDepth, float exitDepth
             result1 = RC_APPLY_COMPOSITING_1(result1, color, samplePos, voxel.xyz, t, samplingStepSize_, tDepth);
             result2 = RC_APPLY_COMPOSITING_2(result2, color, samplePos, voxel.xyz, t, samplingStepSize_, tDepth);
         }
+        lastIntensity = voxel.a;
 
         finished = earlyRayTermination(result.a, EARLY_RAY_TERMINATION_OPACITY);
         t += tIncr;

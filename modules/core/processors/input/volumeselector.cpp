@@ -28,7 +28,7 @@
 #include "voreen/core/datastructures/volume/volume.h"
 #include "voreen/core/datastructures/volume/volumelist.h"
 #include "voreen/core/processors/processorwidgetfactory.h"
-#include "voreen/core/ports/allports.h"
+#include <limits.h> //for std::numeric_limits
 
 namespace voreen {
 
@@ -36,7 +36,7 @@ const std::string VolumeSelector::loggerCat_("voreen.core.VolumeSelector");
 
 VolumeSelector::VolumeSelector()
     : Processor(),
-      volumeID_("volumeID", "Selected volume", 0, 0, 100),
+      volumeID_("volumeID", "Selected volume", 0, 0, std::numeric_limits<int>::max()),
       inport_(Port::INPORT, "volumecollection", "VolumeList Input", false),
       outport_(Port::OUTPORT, "volumehandle.volumehandle", "Volume Output", false)
 {

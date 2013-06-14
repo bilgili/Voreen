@@ -36,6 +36,7 @@
 #include <OpenCL/cl_gl.h>
 #endif
 
+#include "voreen/core/properties/optionproperty.h"
 #include <string>
 #include <vector>
 #include <set>
@@ -661,9 +662,9 @@ public:
 
     cl_int setArg(cl_uint index, int data) { return setArgTemplate(index, data); }
 
-    //cl_int setArg(cl_uint index, uint data) { return setArgTemplate(index, data); }
+    cl_int setArg(cl_uint index, uint32_t data) { return setArgTemplate(index, data); }
 
-    cl_int setArg(cl_uint index, size_t data) { return setArgTemplate(index, data); }
+    cl_int setArg(cl_uint index, uint64_t data) { return setArgTemplate(index, data); }
 
     cl_int setArg(cl_uint index, tgt::vec2 data) {
         return LCL_ERROR(clSetKernelArg(id_, index, sizeof(float)*2, data.elem));
@@ -796,6 +797,12 @@ VolumeWriteBuffer createVolumeWriteBuffer(const Context* context, VolumeRAM* vol
 typedef tgt::vec4 float4;
 typedef tgt::vec2 float2;
 
+void fillGradientModesPropertyCL(StringOptionProperty& gradientMode);
+void fillShadingModesPropertyCL(StringOptionProperty& shadeMode);
+void fillCompositingModesPropertyCL(StringOptionProperty& compositingMode);
+std::string getGradientDefineCL(std::string gradientMode, std::string functionName);
+std::string getShaderDefineCL(std::string shadeMode, std::string functionName, std::string n = "n", std::string pos = "pos", std::string lPos = "lPos", std::string cPos = "cPos", std::string ka = "ka", std::string kd = "kd", std::string ks = "ks");
+std::string getCompositingDefineCl(std::string compositingMode, std::string functionName, std::string result = "result", std::string color = "color", std::string samplePos = "samplePos", std::string gradient = "gradient", std::string t = "t", std::string samplingStepSize = "samplingStepSize", std::string tDepth = "tDepth");
 
 } //namespace cl
 

@@ -73,7 +73,6 @@ const std::string RenderTargetViewer::loggerCat_ = "voreen.RenderTargetViewer";
 
 RenderTargetViewer::RenderTargetViewer(const QGLWidget* sharedContext)
     : QGLWidget(0, sharedContext)
-    , NetworkEvaluator::ProcessWrapper()
     , colorProgram_(0)
     , inversecolorProgram_(0)
     , evaluator_(0)
@@ -230,13 +229,13 @@ void RenderTargetViewer::setSubWidget(int subWidgetFullscreenIndex, int showType
 void RenderTargetViewer::setEvaluator(NetworkEvaluator* evaluator) {
     setMouseTracking(false);
     if (evaluator_) {
-        evaluator_->removeProcessWrapper(this);
+        evaluator_->removeObserver(this);
     }
 
     evaluator_ = evaluator;
 
     if (evaluator_) {
-        evaluator_->addProcessWrapper(this);
+        evaluator_->addObserver(this);
         if (evaluator_->getProcessorNetwork()) {
             setMouseTracking(true);
         }
@@ -539,6 +538,8 @@ QString RenderTargetViewer::internalTypeToString(GLint internalType) {
         case GL_RGB16F_ARB: return "GL_RGB16F_ARB";
         case GL_RGBA16F_ARB: return "GL_RGBA16F_ARB";
         case GL_RGBA32F_ARB: return "GL_RGBA32F_ARB";
+        case GL_LUMINANCE: return "GL_LUMINANCE";
+        case GL_LUMINANCE32F_ARB: return "GL_LUMINANCE32F_ARB";
         case GL_DEPTH_COMPONENT16: return "GL_DEPTH_COMPONENT16";
         case GL_DEPTH_COMPONENT24: return "GL_DEPTH_COMPONENT24";
         case GL_DEPTH_COMPONENT32: return "GL_DEPTH_COMPONENT32";
@@ -592,7 +593,7 @@ void RenderTargetViewer::initializeGL() {
 
 void RenderTargetViewer::deinit() {
     if (evaluator_)
-        evaluator_->removeProcessWrapper(this);
+        evaluator_->removeObserver(this);
 
     delete fbo_;
     ShdrMgr.dispose(colorProgram_);

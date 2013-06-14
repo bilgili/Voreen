@@ -34,6 +34,7 @@ using tgt::vec3;
 
 SlicePositionRenderer::SlicePositionRenderer()
     : GeometryRendererBase()
+    , enable_("enable", "Enable", true)
     , renderXSlice_("renderXSlice", "Render X Slice", true)
     , xColor_("xColor", "X Color", tgt::vec4(1.0f, 0.0f, 0.0f, 1.0f))
     , xSliceIndexProp_("xSliceIndex", "X Slice Number", 0, 0, 10000)
@@ -52,6 +53,7 @@ SlicePositionRenderer::SlicePositionRenderer()
 {
     addPort(inport_);
 
+    addProperty(enable_);
     addProperty(renderXSlice_);
     addProperty(xColor_);
     addProperty(xSliceIndexProp_);
@@ -76,7 +78,7 @@ SlicePositionRenderer::SlicePositionRenderer()
 void SlicePositionRenderer::process() {}
 
 void SlicePositionRenderer::render() {
-    if (!inport_.isReady())
+    if (!inport_.isReady() || !enable_.get())
         return;
 
     glPushMatrix();
@@ -93,7 +95,7 @@ void SlicePositionRenderer::render() {
     glEnable(GL_LINE_STIPPLE);
     glLineStipple(stippleFactor_.get(), stipplePattern_.get());
 
-    tgt::ivec3 numSlices = inport_.getData()->getRepresentation<VolumeRAM>()->getDimensions();
+    tgt::ivec3 numSlices = inport_.getData()->getDimensions();
 
     // We want our slice to be in the center of voxels
     float xSlice = (((float) xSliceIndexProp_.get() + 0.5f) * sp.x) + geomLlf.x;
@@ -168,7 +170,7 @@ void SlicePositionRenderer::invalidate(int inv) {
     GeometryRendererBase::invalidate(inv);
 
     if (inport_.hasChanged() && inport_.hasData()) {
-        tgt::ivec3 numSlices = inport_.getData()->getRepresentation<VolumeRAM>()->getDimensions();
+        tgt::ivec3 numSlices = inport_.getData()->getDimensions();
 
         xSliceIndexProp_.setMaxValue(numSlices.x-1);
         ySliceIndexProp_.setMaxValue(numSlices.y-1);

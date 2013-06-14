@@ -29,14 +29,14 @@
 #include "voreen/core/processors/volumeprocessor.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 
+#include "voreen/core/ports/geometryport.h"
+
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/floatproperty.h"
 #include "voreen/core/properties/vectorproperty.h"
 #include "voreen/core/properties/cameraproperty.h"
 #include "voreen/core/properties/buttonproperty.h"
 #include "voreen/core/properties/intproperty.h"
-
-#include "voreen/core/ports/allports.h"
 
 #include <string>
 #include "tgt/vector.h"

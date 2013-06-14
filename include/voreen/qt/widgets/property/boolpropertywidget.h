@@ -39,14 +39,16 @@ Q_OBJECT
 public:
     BoolPropertyWidget(BoolProperty* prop, QWidget* parent = 0);
 
-    void updateFromProperty();
-
 public slots:
     void setProperty(bool value);
 
 protected:
     BoolProperty* property_;
     QCheckBox* chkBox_;
+
+protected slots:
+    virtual void updateFromPropertySlot();
+
 };
 
 } // namespace

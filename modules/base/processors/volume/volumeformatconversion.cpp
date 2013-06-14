@@ -71,8 +71,8 @@ void VolumeFormatConversion::process() {
     const VolumeRAM* inputVolume = inport_.getData()->getRepresentation<VolumeRAM>();
     tgtAssert(inputVolume, "no volume");
 
-    int numChannels = inputVolume->getNumChannels();
-    numChannels_.set(numChannels);
+    size_t numChannels = inputVolume->getNumChannels();
+    numChannels_.set((int)numChannels);
 
     if (!enableProcessing_.get()) {
         outport_.setData(const_cast<VolumeBase*>(inport_.getData()), false);

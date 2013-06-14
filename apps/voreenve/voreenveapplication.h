@@ -29,6 +29,10 @@
 #include "voreen/qt/voreenapplicationqt.h"
 #include <QApplication>
 
+#if !defined(WIN32) && !defined(APPLE) && defined(USE_XINPUT2)
+#include <QTouchEvent>
+#endif
+
 namespace voreen {
 
 class VoreenModuleVE;
@@ -62,6 +66,7 @@ public:
     /// Registers a VoreenVE module.
     const std::vector<VoreenModuleVE*>& getVEModules() const;
 
+
 protected:
     /// Adds VE modules.
     virtual void loadModules() throw (VoreenException);
@@ -71,6 +76,26 @@ private:
     std::vector<VoreenModuleVE*> veModules_;
 
     static const std::string loggerCat_;
+
+#if !defined(WIN32) && !defined(APPLE) && defined(USE_XINPUT2)
+// This adds experimental Linux Multitouch support.
+public:
+    virtual bool x11EventFilter(XEvent *event);
+    virtual void sendTouchEventsTo(QWidget *wid);
+
+private:
+    void initXinput();
+    bool handleX11TouchEvent(XEvent *ev);
+
+    Display* display_;
+    int xi_opcode_;
+    QMap<int, QTouchEvent::TouchPoint> touchPointMap_;
+    double minEvX_;
+    double maxEvX_;
+    double minEvY_;
+    double maxEvY_;
+    bool minMaxRetrieved_;
+#endif
 };
 
 } // namespace

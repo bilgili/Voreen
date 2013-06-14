@@ -4,6 +4,22 @@ IF(NOT COMMONCONF_PROCESSED)
 SET(VRN_HOME ${CMAKE_CURRENT_SOURCE_DIR})
 MESSAGE(STATUS "Voreen Home: ${VRN_HOME}")
 
+# set/create binary output path
+IF(NOT VRN_BINARY_OUTPUT_DIR)
+    SET(VRN_BINARY_OUTPUT_DIR ${VRN_HOME}/bin)
+ENDIF()
+IF(NOT EXISTS ${VRN_BINARY_OUTPUT_DIR})
+    MESSAGE(STATUS "VRN_BINARY_OUTPUT_DIR does not exist: ${VRN_BINARY_OUTPUT_DIR}. Creating it ...")
+    FILE(MAKE_DIRECTORY ${VRN_BINARY_OUTPUT_DIR})
+    IF(NOT EXISTS ${VRN_BINARY_OUTPUT_DIR})
+        MESSAGE(FATAL_ERROR "Failed to create VRN_BINARY_OUTPUT_DIR: ${VRN_BINARY_OUTPUT_DIR}")
+    ENDIF()
+ENDIF()
+MESSAGE(STATUS "Output Path: ${VRN_BINARY_OUTPUT_DIR}")
+SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${VRN_BINARY_OUTPUT_DIR})
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${VRN_BINARY_OUTPUT_DIR})
+SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${VRN_BINARY_OUTPUT_DIR})
+
 # detect compiler and architecture
 IF(${CMAKE_GENERATOR} STREQUAL "Visual Studio 9 2008")
     SET(VRN_MSVC2008 TRUE)
@@ -64,11 +80,6 @@ IF(EXISTS ${VRN_HOME}/config.cmake)
 ELSE()
     INCLUDE(${VRN_HOME}/config-default.cmake)
 ENDIF()
-
-# set binary output path
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${VRN_HOME}/bin")
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${VRN_HOME}/bin")
-SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${VRN_HOME}/bin")
 
 # common include directories
 LIST(APPEND VRN_INCLUDE_DIRECTORIES "${VRN_HOME}" "${VRN_HOME}/include" "${VRN_HOME}/ext")
@@ -157,12 +168,20 @@ IF(VRN_MSVC)
     ENDIF()
     
     # Windows deployment   
-    IF(VRN_WINDOWS_DEPLOYMENT)
+    IF(VRN_DEPLOYMENT)
+        LIST(APPEND VRN_DEFINITIONS "-DVRN_DEPLOYMENT") 
         MESSAGE("Windows deployment build:")
-        MESSAGE("* Install directory (CMAKE_INSTALL_PREFIX): ${CMAKE_INSTALL_PREFIX}")
-                
+
         MESSAGE("* Adding install target")
         SET(VRN_ADD_INSTALL_TARGET TRUE)
+        MESSAGE("* Install directory (CMAKE_INSTALL_PREFIX): ${CMAKE_INSTALL_PREFIX}")
+        
+        IF(NOT ${VRN_BINARY_OUTPUT_DIR} STREQUAL ${VRN_HOME}/bin)
+            MESSAGE("* Overriding binary output directory: ${VRN_HOME}/bin")
+            SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${VRN_HOME}/bin)
+            SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${VRN_HOME}/bin)
+            SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${VRN_HOME}/bin)
+        ENDIF()
 
         MESSAGE("* Adding Visual Studio redist libraries to install target")
         IF(VRN_MSVC2010)
@@ -202,16 +221,33 @@ IF(VRN_MSVC)
         ELSE()
             MESSAGE(WARNING "Deploying redist libraries only supported for Visual Studio 2010 or 2012")
         ENDIF()
-       
-    ENDIF()
+    ELSE(VRN_DEPLOYMENT)
+        # hardcode Voreen base path, if binary output dir has been modified and we are not in deployment mode
+        IF(NOT ${VRN_BINARY_OUTPUT_DIR} STREQUAL "${VRN_HOME}/bin")
+            LIST(APPEND VRN_DEFINITIONS "-DVRN_BASE_PATH=\"${VRN_HOME}\"")
+        ENDIF()
+    ENDIF(VRN_DEPLOYMENT)
 
 ELSEIF(UNIX)
 
     LIST(APPEND VRN_DEFINITIONS "-DUNIX")  
     LIST(APPEND VRN_DEFINITIONS "-D__STDC_CONSTANT_MACROS")  
+    
+    IF(VRN_DEPLOYMENT)
+        MESSAGE("Unix deployment build")        
+        LIST(APPEND VRN_DEFINITIONS "-DVRN_DEPLOYMENT") 
+    ENDIF()
+
+    # hardcode Voreen base path, if binary output dir has been modified
+    IF(NOT ${VRN_BINARY_OUTPUT_DIR} STREQUAL "${VRN_HOME}/bin")
+        LIST(APPEND VRN_DEFINITIONS "-DVRN_BASE_PATH=\"${VRN_HOME}\"")
+    ENDIF()
 
 ELSEIF(VRN_MINGW)
-    # nothing to do
+    # hardcode Voreen base path, if binary output dir has been modified
+    IF(NOT ${VRN_BINARY_OUTPUT_DIR} STREQUAL "${VRN_HOME}/bin")
+        LIST(APPEND VRN_DEFINITIONS "-DVRN_BASE_PATH=\"${VRN_HOME}\"")
+    ENDIF()
 ENDIF()
 
 # macosx

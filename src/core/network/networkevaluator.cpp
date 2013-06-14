@@ -48,7 +48,6 @@ NetworkEvaluator::NetworkEvaluator(bool glMode, tgt::GLCanvas* sharedContext)
     : network_(0)
     , sharedContext_(sharedContext)
     , glMode_(glMode)
-    , processWrappers_()
     , reuseRenderTargets_(false)
     , renderingOrder_()
     , networkChanged_(false)
@@ -57,24 +56,19 @@ NetworkEvaluator::NetworkEvaluator(bool glMode, tgt::GLCanvas* sharedContext)
 {
 #ifdef VRN_DEBUG
     if (glMode_)
-        addProcessWrapper(new CheckOpenGLStateProcessWrapper());
+        addObserver(new CheckOpenGLStateObserver());
 #endif
 }
 
 NetworkEvaluator::~NetworkEvaluator() {
 #ifdef VRN_DEBUG
-    // delete CheckOpenGLStateProcessWrapper
-    for (size_t i=0; i<processWrappers_.size(); ++i) {
-        if (dynamic_cast<CheckOpenGLStateProcessWrapper*>(processWrappers_[i]))
-            delete processWrappers_[i];
+    // delete CheckOpenGLStateObserver
+    std::vector<NetworkEvaluatorObserver*> observers = getObservers();
+    for (size_t i=0; i<observers.size(); ++i) {
+        if (dynamic_cast<CheckOpenGLStateObserver*>(observers[i]))
+            delete observers[i];
     }
 #endif
-
-    clearProcessWrappers();
-}
-
-void NetworkEvaluator::addProcessWrapper(ProcessWrapper* w) {
-    processWrappers_.push_back(w);
 }
 
 const std::set<Processor*> NetworkEvaluator::getEndProcessors() const {
@@ -105,9 +99,10 @@ bool NetworkEvaluator::initializeNetwork()  {
     if (glMode_ && sharedContext_)
         sharedContext_->getGLFocus();
 
-    // notify wrappers
-    for (size_t i = 0; i < processWrappers_.size(); ++i)
-        processWrappers_[i]->beforeNetworkInitialize();
+    // notify observers
+    const std::vector<NetworkEvaluatorObserver*> observers = getObservers();
+    for (size_t i = 0; i < observers.size(); ++i)
+        observers[i]->beforeNetworkInitialize();
     if (glMode_)
         LGL_ERROR;
 
@@ -125,7 +120,9 @@ bool NetworkEvaluator::initializeNetwork()  {
                 if (glMode_ && sharedContext_)
                     sharedContext_->getGLFocus();
                 processor->initialize();
+                //update  processor state
                 processor->processorState_ = Processor::PROCESSOR_STATE_NOT_READY;
+                processor->notifyStateChanged();
                 processor->invalidate();
                 if (glMode_ ) {
                     if (sharedContext_)
@@ -143,6 +140,7 @@ bool NetworkEvaluator::initializeNetwork()  {
                     << "' (" << processor->getClassName() << ") ...");
                 if (glMode_ && sharedContext_)
                     sharedContext_->getGLFocus();
+                //set state as initialized
                 processor->processorState_ = Processor::PROCESSOR_STATE_NOT_READY;
                 processor->deinitialize();
                 processor->processorState_ = Processor::PROCESSOR_STATE_NOT_INITIALIZED;
@@ -157,9 +155,9 @@ bool NetworkEvaluator::initializeNetwork()  {
 
     unlock();
 
-    // notify wrappers
-    for (size_t i = 0; i < processWrappers_.size(); ++i)
-        processWrappers_[i]->afterNetworkInitialize();
+    // notify observers
+    for (size_t i = 0; i < observers.size(); ++i)
+        observers[i]->afterNetworkInitialize();
     if (glMode_)
         LGL_ERROR;
 
@@ -180,9 +178,10 @@ bool NetworkEvaluator::deinitializeNetwork() {
     // prevent parallel execution in multithreaded/event dispatching environments
     lock();
 
-    // notify wrappers
-    for (size_t i = 0; i < processWrappers_.size(); ++i)
-        processWrappers_[i]->beforeNetworkDeinitialize();
+    // notify observers
+    const std::vector<NetworkEvaluatorObserver*> observers = getObservers();
+    for (size_t i = 0; i < observers.size(); ++i)
+        observers[i]->beforeNetworkDeinitialize();
     if (glMode_) {
         if (sharedContext_)
             sharedContext_->getGLFocus();
@@ -216,9 +215,9 @@ bool NetworkEvaluator::deinitializeNetwork() {
 
     unlock();
 
-    // notify wrappers
-    for (size_t i = 0; i < processWrappers_.size(); ++i)
-        processWrappers_[i]->afterNetworkDeinitialize();
+    // notify observers
+    for (size_t i = 0; i < observers.size(); ++i)
+        observers[i]->afterNetworkDeinitialize();
     if (glMode_) {
         if (sharedContext_)
             sharedContext_->getGLFocus();
@@ -301,9 +300,10 @@ void NetworkEvaluator::process() {
         //    processor->setProgress(0.f);
     }
 
-    // notify process wrappers
-    for (size_t j = 0; j < processWrappers_.size(); ++j)
-        processWrappers_[j]->beforeNetworkProcess();
+    // notify observers
+    const std::vector<NetworkEvaluatorObserver*> observers = getObservers();
+    for (size_t j = 0; j < observers.size(); ++j)
+        observers[j]->beforeNetworkProcess();
     if (glMode_)
         LGL_ERROR;
 
@@ -333,9 +333,9 @@ void NetworkEvaluator::process() {
                     port->setLoopIteration((port->getLoopIteration()+1) % port->getNumLoopIterations());
                 }
 
-                // notify process wrappers
-                for (size_t j=0; j < processWrappers_.size(); ++j)
-                    processWrappers_[j]->beforeProcess(currentProcessor);
+                // notify observers
+                for (size_t j=0; j < observers.size(); ++j)
+                    observers[j]->beforeProcess(currentProcessor);
                 if (glMode_)
                     LGL_ERROR;
 
@@ -354,6 +354,20 @@ void NetworkEvaluator::process() {
                             sharedContext_->getGLFocus();
                         LGL_ERROR;
                     }
+
+                    if(currentProcessor->getInvalidationLevel() >= Processor::INVALID_PORTS) {
+                        currentProcessor->unlockMutex();
+                        unlock();
+
+                        if (glMode_)
+                            LGL_ERROR;
+
+                        onNetworkChange();
+                        currentProcessor->invalidate();
+                        VoreenApplication::app()->scheduleNetworkProcessing();
+                        return;
+                    }
+
 #ifdef VRN_PRINT_PROFILING
                     currentProcessor->performanceRecord_.getLastSample()->print(0, currentProcessor->getID()+".");
 #endif
@@ -378,16 +392,17 @@ void NetworkEvaluator::process() {
 #endif
                     if (glMode_)
                         LGL_ERROR;
-                    // assumption: a processor is valid after calling process()
-                    currentProcessor->setValid();
+
                     currentProcessor->unlockMutex();
                 }
                 catch (VoreenException& e) {
+                    currentProcessor->unlockMutex();
                     LERROR("process(): VoreenException from "
                             << currentProcessor->getClassName()
                             << " (" << currentProcessor->getID() << "): " << e.what());
                 }
                 catch (std::exception& e) {
+                    currentProcessor->unlockMutex();
                     LERROR("process(): Exception from "
                             << currentProcessor->getClassName()
                             << " (" << currentProcessor->getID() << "): " << e.what());
@@ -395,9 +410,10 @@ void NetworkEvaluator::process() {
 
                 if (glMode_ && sharedContext_)
                     sharedContext_->getGLFocus();
-                // notify process wrappers
-                for (size_t j = 0; j < processWrappers_.size(); ++j)
-                    processWrappers_[j]->afterProcess(currentProcessor);
+
+                // notify observers
+                for (size_t j = 0; j < observers.size(); ++j)
+                    observers[j]->afterProcess(currentProcessor);
                 if (glMode_)
                     LGL_ERROR;
 
@@ -405,8 +421,9 @@ void NetworkEvaluator::process() {
                 if (checkForInvalidPorts()) {
                     unlock();
 
-                    for (size_t j = 0; j < processWrappers_.size(); ++j)
-                        processWrappers_[j]->afterNetworkProcess();
+                    // notify observers
+                    for (size_t j = 0; j < observers.size(); ++j)
+                        observers[j]->afterNetworkProcess();
                     if (glMode_)
                         LGL_ERROR;
 
@@ -419,7 +436,7 @@ void NetworkEvaluator::process() {
                 currentProcessor->clearOutports();
                 // set Processor valid, as it should not be processed while not ready
                 // TODO: rename "invalid" to "needsProcessing"
-                currentProcessor->setValid();
+                //currentProcessor->setValid();
             }
         }
 
@@ -430,9 +447,9 @@ void NetworkEvaluator::process() {
 
     unlock();
 
-    // notify process wrappers
-    for (size_t j = 0; j < processWrappers_.size(); ++j)
-        processWrappers_[j]->afterNetworkProcess();
+    // notify observers
+    for (size_t j = 0; j < observers.size(); ++j)
+        observers[j]->afterNetworkProcess();
     if (glMode_)
         LGL_ERROR;
 
@@ -443,21 +460,11 @@ void NetworkEvaluator::process() {
     }
 
     for(std::vector<Processor*>::const_iterator iter = getProcessorNetwork()->getProcessors().begin(); iter != getProcessorNetwork()->getProcessors().end(); ++iter)
-        if (!(*iter)->isValid() && (((*iter)->getClassName().compare("Canvas") != 0) && ((*iter)->getClassName().compare("StereoCanvas") != 0))){
+        if (((*iter)->isReady() && !(*iter)->isValid()) && (((*iter)->getClassName().compare("Canvas") != 0) && ((*iter)->getClassName().compare("StereoCanvas") != 0))){
             tgtAssert(VoreenApplication::app(), "VoreenApplication not instantiated");
             VoreenApplication::app()->scheduleNetworkProcessing();
             break;
         }
-}
-
-void NetworkEvaluator::removeProcessWrapper(const ProcessWrapper* w)  {
-    std::vector<ProcessWrapper*>::iterator it = std::find(processWrappers_.begin(), processWrappers_.end(), w);
-    if (it != processWrappers_.end())
-        processWrappers_.erase(it);
-}
-
-void NetworkEvaluator::clearProcessWrappers() {
-    processWrappers_.clear();
 }
 
 void NetworkEvaluator::setProcessorNetwork(ProcessorNetwork* network, bool deinitializeCurrent) {
@@ -467,7 +474,14 @@ void NetworkEvaluator::setProcessorNetwork(ProcessorNetwork* network, bool deini
             deinitializeNetwork();
     }
 
+    // assign new network
+    ProcessorNetwork* previousNetwork = network_;
     network_ = network;
+
+    // notify observers
+    const std::vector<NetworkEvaluatorObserver*> observers = getObservers();
+    for (size_t i=0; i<observers.size(); i++)
+        observers[i]->networkAssigned(network_, previousNetwork);
 
     if (network_)
         network_->addObserver(this);
@@ -838,15 +852,15 @@ bool checkGL(GLenum pname, const tgt::vec4 value) {
 
 } // namespace
 
-void NetworkEvaluator::CheckOpenGLStateProcessWrapper::afterProcess(Processor* p) {
+void NetworkEvaluator::CheckOpenGLStateObserver::afterProcess(Processor* p) {
     checkState(p);
 }
 
-void NetworkEvaluator::CheckOpenGLStateProcessWrapper::beforeNetworkProcess() {
+void NetworkEvaluator::CheckOpenGLStateObserver::beforeNetworkProcess() {
     checkState();
 }
 
-void NetworkEvaluator::CheckOpenGLStateProcessWrapper::checkState(Processor* p) {
+void NetworkEvaluator::CheckOpenGLStateObserver::checkState(Processor* p) {
 
     if (!checkGL(GL_BLEND, false)) {
         glDisable(GL_BLEND);
@@ -947,7 +961,7 @@ void NetworkEvaluator::CheckOpenGLStateProcessWrapper::checkState(Processor* p) 
     */
 }
 
-void NetworkEvaluator::CheckOpenGLStateProcessWrapper::warn(Processor* p, const std::string& message) {
+void NetworkEvaluator::CheckOpenGLStateObserver::warn(Processor* p, const std::string& message) {
     if (p) {
         LWARNING(p->getClassName() << " (" << p->getID()
                  << "): invalid OpenGL state after processing: " << message);

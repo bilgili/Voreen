@@ -1,6 +1,50 @@
 Voreen Changelog
 ----------------
 
+2013-06-14: Voreen 4.3
+----------------------
+
+   * Features:
+     o Octree-based out-of-core rendering and handling of large volume data:
+       - data structures and renderers: modules/staging/octree
+       - sample workspace: raycasting-largedata-cl.vws (requires OpenCL module)
+     o MultiVolumeGeometryRaycaster including arbitrary geometry in a multi-volume rendering:
+       - sample workspace: raycasting-multivolumegeometry.vws
+     o Transfer function user interface enhancements:
+       - 'Edit' property button has been replaced by a quick-access manipulation widget
+       - Colormap presets (without domain information) can be loaded via drop-down menu
+       - Window presets (currently only for CT) can be loaded
+       - Alpha-channel can be disabled via button (for slice viewers)
+     o GPU-computation of transfer function pre-integration table 
+     o OptimizedProxyGeometry: added 'Outer Faces' mode discarding all inner geometry
+     o MultiSliceViewer: added crosshair for improved navigation and measuring
+     o TripleView: support for multiple view configurations
+     o Released itk_wrapper application
+     o Added InveonVolumeReader
+     
+   * Framework/API Changes:
+     o Transformed VolumeDisk into base class for various disk formats:
+       - renamed previous VolumeDisk to VolumeDiskRaw
+       - added VolumeDisk::loadSlices and VolumeDisk::loadBrick
+       - added VolumeDisk::getHash computing the hash from filenames and meta-data
+         rather than from the volume data (performance reasons)
+       - added VolumeDiskOmeTiff for disk handling of OME-TIFF stacks
+     o CMake:
+       - added VRN_BINARY_OUTPUT_DIR option for applications and libraries (default: VRN_HOME/bin)
+       - replaced VRN_WINDOWS_DEPLOYMENT option by VRN_DEPLOYMENT
+     o VolumeDerivedData can now be computed in background threads
+     o VolumeSliceHelper uses VolumeOctree or VolumeDisk representation if available,
+       in order to avoid unnecessary loading of a disk volume into RAM
+     o VolumeMinMax and VolumeHistogram derived data support multi-channel volumes       
+     o Moved Processor::setValid from NetworkEvaluator to Processor::afterProcess
+       
+   * Bug Fixes/Minor Changes:
+     o 2D transfer function fixes
+     o SliceViewer supports channel selection
+     o OMETiffVolumeReader supports selection of channel and timestep
+     o Added enable switches to BoundingBoxRenderer, PlaneWidgetProcessor, SlicePositionRenderer
+   
+   
 2013-03-22: Voreen 4.2.1
 ------------------------
 

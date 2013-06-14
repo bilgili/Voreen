@@ -571,7 +571,7 @@ void TransFunc1DRampEditor::updateFromProperty() {
 
 void TransFunc1DRampEditor::volumeChanged() {
     if (volume_ && volume_->getRepresentation<VolumeRAM>()) {
-        int bits = volume_->getRepresentation<VolumeRAM>()->getBitsAllocated() / volume_->getRepresentation<VolumeRAM>()->getNumChannels();
+        size_t bits = volume_->getRepresentation<VolumeRAM>()->getBitsAllocated() / volume_->getRepresentation<VolumeRAM>()->getNumChannels();
         int maxNew = static_cast<int>(pow(2.f, static_cast<float>(bits))) - 1;
         if (maxNew != maximumIntensity_) {
             float lowerRelative = lowerThresholdSpin_->value() / static_cast<float>(maximumIntensity_);

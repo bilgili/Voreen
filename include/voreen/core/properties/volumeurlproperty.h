@@ -32,6 +32,7 @@
 namespace voreen {
 
 class VolumeBase;
+class VolumeInfoProperty;
 class ProgressBar;
 
 /**
@@ -105,6 +106,14 @@ public:
      */
     void clear();
 
+    /**
+     * Adds a VolumeInfoProperty to this. The VolumeInfoProperty will be
+     * synchronized with the laoded volume.
+     * @see VolumeInfoProperty
+     * @param pointer pointer to the property.
+     */
+    void addInfoProperty(VolumeInfoProperty* pointer);
+
     /// @see Property::serialize
     virtual void serialize(XmlSerializer& s) const;
 
@@ -119,8 +128,9 @@ private:
     /// Returns the property's progress bar and generates it on first access.
     ProgressBar* getProgressBar();
 
-    VolumeBase* volume_; ///< the volume belonging to the assigned URL
+    VolumeBase* volume_;             ///< the volume belonging to the assigned URL
     bool volumeOwner_;               ///< determines, if the property owns the volume_
+    VolumeInfoProperty* infoProp_;   ///< pointer to an info property, can be NULL
 
     ProgressBar* progressBar_;
 

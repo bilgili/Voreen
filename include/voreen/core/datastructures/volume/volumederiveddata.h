@@ -27,6 +27,9 @@
 #define VRN_VOLUMEDERIVEDDATA_H
 
 #include "voreen/core/voreenobject.h"
+#include "tgt/assert.h"
+
+#include <boost/thread.hpp>
 
 namespace voreen {
 
@@ -49,6 +52,7 @@ public:
 
     /**
      * Virtual constructor.
+     * Check for boo
      *
      * @param handle the volume to derive from
      * @return the constructed derived data object, or null if construction is not possible
@@ -58,6 +62,62 @@ public:
     virtual void serialize(XmlSerializer& s) const = 0;
     virtual void deserialize(XmlDeserializer& s) = 0;
 };
+
+/// Thread calculating a VolumeDerivedData, started by a Volume when calling getDerivedDataThreaded<T>().
+class VolumeDerivedDataThreadBase {
+public:
+    VolumeDerivedDataThreadBase() : result_(0), volume_(0) {}
+
+    virtual ~VolumeDerivedDataThreadBase() {
+        if(isRunning()) {
+            interrupt();
+            join();
+        }
+    }
+
+    void startThread(const VolumeBase* vb) {
+        if(isRunning()) {
+            tgtAssert(false, "Thread is already running!\n");
+            return;
+        }
+
+        volume_ = vb;
+        workerThread_ = boost::thread(&VolumeDerivedDataThreadBase::run, this);
+    }
+
+    void join() {
+        workerThread_.join();
+    }
+
+    void interrupt() {
+        workerThread_.interrupt();
+    }
+
+    bool isRunning() {
+        if(!workerThread_.timed_join(boost::posix_time::seconds(0)))
+            return true;
+        else
+            return false;
+    }
+
+    VolumeDerivedData* getResult() {
+        resultMutex_.lock();
+        VolumeDerivedData* tmp = result_;
+        resultMutex_.unlock();
+        return tmp;
+    }
+
+protected:
+    virtual void run() = 0;
+
+    VolumeDerivedData* result_;
+    boost::mutex resultMutex_;
+
+    const VolumeBase* volume_;
+
+    boost::thread workerThread_;
+};
+
 
 } // namespace voreen
 

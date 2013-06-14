@@ -51,7 +51,7 @@ VoxelTypePropertyWidget::VoxelTypePropertyWidget(VoxelTypeProperty* prop, QWidge
     addWidget(widget_);
     createWidgets();
 
-    updateFromProperty();
+    updateFromPropertySlot();
 
     /*connect(widget_, SIGNAL(valueChanged(int)), this, SLOT(setProperty(int)));
     connect(widget_, SIGNAL(sliderPressedChanged(bool)), this, SLOT(toggleInteractionMode(bool)));
@@ -72,7 +72,7 @@ VoxelTypePropertyWidget::~VoxelTypePropertyWidget() {
     delete widget_;
 }
 
-void VoxelTypePropertyWidget::updateFromProperty() {
+void VoxelTypePropertyWidget::updateFromPropertySlot() {
     tgtAssert(property_, "no property");
     setVolume(property_->getVolume());
 }
@@ -83,7 +83,7 @@ void VoxelTypePropertyWidget::mousePressEvent(QMouseEvent* event) {
         if(prec == instantValueChangeAction_) {
             property_->setTracking(!property_->hasTracking());
         } */
-        updateFromProperty();
+        updateFromPropertySlot();
     }
     QWidget::mousePressEvent(event);
 }

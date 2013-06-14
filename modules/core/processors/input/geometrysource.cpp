@@ -29,8 +29,10 @@
 #include "voreen/core/datastructures/geometry/meshlistgeometry.h"
 #include "voreen/core/datastructures/geometry/pointlistgeometry.h"
 #include "voreen/core/datastructures/geometry/pointsegmentlistgeometry.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 
 #include "voreen/core/properties/callmemberaction.h"
+#include "tgt/filesystem.h"
 
 #include <vector>
 #include <fstream>
@@ -39,6 +41,7 @@ using tgt::vec3;
 using tgt::ivec3;
 using tgt::ivec2;
 using std::vector;
+using std::string;
 
 namespace voreen {
 
@@ -85,18 +88,33 @@ void GeometrySource::initialize() throw (tgt::Exception) {
 }
 
 void GeometrySource::readGeometry() {
+    std::string filename = geometryFile_.get();
+
     if (geometryFile_.get() == "")
         return;
 
     if (geometryType_.isSelected("geometry")) {
         LINFO("Reading geometry file: " << geometryFile_.get());
-        try {
-            Geometry* geometry = readVoreenGeometry(geometryFile_.get());
-            tgtAssert(geometry, "null pointer returned (exception expected)");
-            outport_.setData(geometry);
+        if(endsWith(filename, ".ply")) {
+            LINFO("Reading PLY file.");
+            try {
+                Geometry* geometry = readPLYGeometry(filename);
+                tgtAssert(geometry, "null pointer returned (exception expected)");
+                outport_.setData(geometry);
+            }
+            catch (VoreenException& e) {
+                LERROR(e.what());
+            }
         }
-        catch (VoreenException& e) {
-            LERROR(e.what());
+        else {
+            try {
+                Geometry* geometry = readVoreenGeometry(geometryFile_.get());
+                tgtAssert(geometry, "null pointer returned (exception expected)");
+                outport_.setData(geometry);
+            }
+            catch (VoreenException& e) {
+                LERROR(e.what());
+            }
         }
     }
     else if (geometryType_.isSelected("pointlist") || geometryType_.isSelected("segmentlist")) {
@@ -124,6 +142,94 @@ void GeometrySource::readGeometry() {
     }
 
     updatePropertyVisibility();
+}
+
+Geometry* GeometrySource::readPLYGeometry(const std::string& filename) const
+    throw (VoreenException)
+{
+    // read PLY file (very incomplete reader!)
+    tgt::File* file = FileSys.open(filename);
+    std::string line = file->getLine();
+    if(line != "ply")
+        throw tgt::CorruptedFileException("Expected 'ply' at first", filename);
+
+    // read header:
+    line = trim(file->getLine());
+    int numVertices = -1;
+    int numFaces = -1;
+    while(line != "end_header") {
+        vector<std::string> expl = strSplit(line, ' ');
+        if(expl.size() > 0) {
+            string command = expl[0];
+
+            if(command == "format") {
+                if(expl.size() != 3)
+                    throw tgt::CorruptedFileException("Could not parse format", filename);
+                else {
+                    if((expl[1] != "ascii") || (expl[2] != "1.0"))
+                        throw tgt::CorruptedFileException("Unknown format: " + line, filename);
+                }
+            }
+            else if(command == "comment") {
+                LINFO(line);
+            }
+            else if(command == "element") {
+                if(expl.size() != 3)
+                    throw tgt::CorruptedFileException("Could not parse element" + line, filename);
+                else {
+                    string type = expl[1];
+                    if(type == "vertex") {
+                        numVertices = stoi(expl[2]);
+                        LINFO(numVertices << " vertices");
+                    }
+                    else if(type == "face") {
+                        numFaces = stoi(expl[2]);
+                        LINFO(numFaces << " faces");
+                    }
+                }
+            }
+            else if(command == "property") {
+            }
+        }
+
+        line = trim(file->getLine());
+    }
+
+    // read data:
+    vector<VertexVec3> vertices;
+    for(int i=0; i<numVertices; i++) {
+        line = trim(file->getLine());
+        vector<std::string> expl = strSplit(line, ' ');
+
+        if(expl.size() >= 3) {
+            vec3 pos;
+            pos.x = stof(expl[0]);
+            pos.y = stof(expl[1]);
+            pos.z = stof(expl[2]);
+            vertices.push_back(VertexVec3(pos, vec3(1.0f)));
+            //vertices.push_back(VertexVec3(pos, vec3(stof(expl[4]))));
+        }
+    }
+
+    TriangleMeshGeometryVec3* mesh = new TriangleMeshGeometryVec3();
+    for(int i=0; i<numFaces; i++) {
+        line = trim(file->getLine());
+        vector<std::string> expl = strSplit(line, ' ');
+
+        if(expl.size() == 4) {
+            if(expl[0] == "3") {
+                int v1 = stoi(expl[1]);
+                int v2 = stoi(expl[2]);
+                int v3 = stoi(expl[3]);
+                mesh->addTriangle(Triangle<VertexVec3>(vertices[v1], vertices[v2], vertices[v3]));
+            }
+        }
+    }
+    LINFO("Read " << vertices.size() << " vertices and " << mesh->getNumTriangles() << " triangles " << mesh->getBoundingBox());
+
+    file->close();
+    delete file;
+    return mesh;
 }
 
 Geometry* GeometrySource::readVoreenGeometry(const std::string& filename) const

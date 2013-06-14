@@ -62,6 +62,7 @@ private:
     VolumePort volumeInport_;
     GeometryPort geometryInport_;
 
+    BoolProperty enable_;
     FloatVec4Property bboxColor_;
     FloatProperty width_;
     IntProperty stippleFactor_;

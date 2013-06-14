@@ -42,17 +42,15 @@ TextPort::~TextPort() {
 
 std::string TextPort::getContentDescription() const {
     std::stringstream strstr;
-    strstr  << getGuiName() << std::endl
-            << "Type: " << getClassName() << std::endl
-            << "Content: " << getData();
+    strstr << Port::getContentDescription() << std::endl
+            << "Content: \"" << getData() << "\"";
     return strstr.str();
 }
 
 std::string TextPort::getContentDescriptionHTML() const {
     std::stringstream strstr;
-    strstr  << "<center><font size=\"4\"><b>" << getGuiName() << "</b></font></center>"
-            << "Type: " << getClassName() << "<br>"
-            << "Content: " << getData();
+    strstr  << Port::getContentDescriptionHTML() << "<br>"
+            << "Content: &quot;" << getData() << "&quot;";
     return strstr.str();
 }
 

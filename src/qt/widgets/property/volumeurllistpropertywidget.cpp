@@ -88,14 +88,14 @@ VolumeURLListPropertyWidget::VolumeURLListPropertyWidget(VolumeURLListProperty* 
 
     connect(selectAll_, SIGNAL(toggled(bool)), this, SLOT(selectAll(bool)));
 
-    updateFromProperty();
+    updateFromPropertySlot();
 }
 
 CustomLabel* VolumeURLListPropertyWidget::getNameLabel() const {
     return 0;
 }
 
-void VolumeURLListPropertyWidget::updateFromProperty() {
+void VolumeURLListPropertyWidget::updateFromPropertySlot() {
     if (!urlListProperty_)
         return;
     if (!volumeTreeWidget_->updatesEnabled())

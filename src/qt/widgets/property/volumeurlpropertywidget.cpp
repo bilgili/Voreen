@@ -84,8 +84,8 @@ VolumeURLPropertyWidget::VolumeURLPropertyWidget(VolumeURLProperty* volumeHandle
         return;
     }
     QVBoxLayout* mainLayout = new QVBoxLayout();
-    mainLayout->setAlignment(Qt::AlignLeft);
-    mainLayout->setContentsMargins(0, 2, 0, 0);
+    //mainLayout->setAlignment(Qt::AlignLeft);
+    //mainLayout->setContentsMargins(0, 2, 0, 0);
 
     layout_->addLayout(mainLayout);
 
@@ -143,7 +143,7 @@ VolumeURLPropertyWidget::VolumeURLPropertyWidget(VolumeURLProperty* volumeHandle
         &volumeIOHelper_, SLOT(loadURL(const std::string&, VolumeReader*)));
 #endif
 
-    updateFromProperty();
+    updateFromPropertySlot();
 }
 
 VolumeBase* VolumeURLPropertyWidget::getVolume() const {
@@ -157,7 +157,7 @@ VolumeBase* VolumeURLPropertyWidget::getVolume() const {
     return handleProp->getVolume();
 }
 
-void VolumeURLPropertyWidget::updateFromProperty() {
+void VolumeURLPropertyWidget::updateFromPropertySlot() {
     VolumeBase* handle = getVolume();
     if (handle) {
         clearButton_->setEnabled(true);

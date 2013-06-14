@@ -69,6 +69,21 @@ template<typename T, int ND>
             }
         }
 
+        uint64_t getBucket(size_t b1, size_t b2, ... /* size_t for each further dimension */) const {
+            int c[ND];
+            c[0] = static_cast<int>(b1);
+            c[1] = static_cast<int>(b2);
+
+            va_list args;
+            va_start(args, b2);
+            for(int i=2; i<ND; i++)
+                c[i] = static_cast<int>(va_arg(args, size_t));
+            va_end(args);
+
+            int b = getBucketNumber(c);
+            return getBucket(b);
+        }
+
         /// Returns the normalized count in the bucket (getBucket(b) / getMaxBucket())
         float getBucketNormalized(int b) const {
             return (float) getBucket(b) / (float) getMaxBucket();
@@ -268,9 +283,31 @@ class Histogram1DGeneric : public HistogramGeneric<T, 1> {
 class VRN_CORE_API Histogram1D : public Histogram1DGeneric<float> {
     public:
         Histogram1D(float minValue, float maxValue, int bucketCount) : Histogram1DGeneric<float>(minValue, maxValue, bucketCount) {}
+        Histogram1D() : Histogram1DGeneric<float>(0.f, 1.f, 256) {}
 };
 
-VRN_CORE_API Histogram1D createHistogram1DFromVolume(const VolumeBase* handle, int bucketCount);
+VRN_CORE_API Histogram1D createHistogram1DFromVolume(const VolumeBase* handle, int bucketCount, size_t channel = 0);
+
+//--------------------------------------------------------------------------
+
+template <typename T>
+class Histogram2DGeneric : public HistogramGeneric<T, 2> {
+    public:
+        Histogram2DGeneric(T minValue1, T maxValue1, int bucketCount1, T minValue2, T maxValue2, int bucketCount2) : HistogramGeneric<T, 2>(static_cast<double>(minValue1), static_cast<double>(maxValue1), bucketCount1, static_cast<double>(minValue2), static_cast<double>(maxValue2), bucketCount2) {}
+
+        void addSample(T value1, T value2) {
+            HistogramGeneric<T, 2>::addSample(static_cast<double>(value1), static_cast<double>(value2));
+        }
+
+    private:
+};
+
+class VRN_CORE_API Histogram2D : public Histogram2DGeneric<float> {
+    public:
+        Histogram2D(float minValue1, float maxValue1, int bucketCount1, float minValue2, float maxValue2, int bucketCount2) : Histogram2DGeneric<float>(minValue1, maxValue1, bucketCount1, minValue2, maxValue2, bucketCount2) {}
+};
+
+VRN_CORE_API Histogram2D createHistogram2DFromVolume(const VolumeBase* handle, int bucketCountIntensity, int bucketCountGradient);
 
 //--------------------------------------------------------------------------
 
@@ -280,7 +317,7 @@ public:
     /// Copy constructor.
     VolumeHistogramIntensity(const VolumeHistogramIntensity& h);
     VolumeHistogramIntensity(const Histogram1D& h);
-    VolumeHistogramIntensity(const VolumeBase* vol, int bucketCount);
+    VolumeHistogramIntensity(const std::vector<Histogram1D>& histograms);
 
     /// Empty default constructor required by VolumeDerivedData interface.
     VolumeHistogramIntensity();
@@ -294,28 +331,32 @@ public:
      */
     virtual VolumeDerivedData* createFrom(const VolumeBase* handle) const;
 
-    size_t getBucketCount() const;
+    /// Returns the number of channel histograms stored in this derived data.
+    size_t getNumChannels() const;
+    
+    /// Returns the number buckets of the specified channel histogram.
+    size_t getBucketCount(size_t channel = 0) const;
 
     /// get value in bucket i
-    uint64_t getValue(int i) const;
+    uint64_t getValue(int i, size_t channel = 0) const;
 
     /// get value in bucket i
-    uint64_t getValue(size_t i) const;
+    uint64_t getValue(size_t i, size_t channel = 0) const;
 
     /// get value in bucket nearest to i
-    uint64_t getValue(float i) const;
+    uint64_t getValue(float i, size_t channel = 0) const;
 
     /// Returns normalized (with max.) histogram value at bucket i
-    float getNormalized(int i) const;
+    float getNormalized(int i, size_t channel = 0) const;
 
     /// Returns normalized (with max.) histogram value at bucket nearest to i
-    float getNormalized(float i) const;
+    float getNormalized(float i, size_t channel = 0) const;
 
     /// Returns normalized logarithmic histogram value at bucket i
-    float getLogNormalized(int i) const;
+    float getLogNormalized(int i, size_t channel = 0) const;
 
     /// Returns normalized logarithmic histogram value at bucket nearest to i
-    float getLogNormalized(float i) const;
+    float getLogNormalized(float i, size_t channel = 0) const;
 
     /// @see VolumeDerivedData
     virtual void serialize(XmlSerializer& s) const;
@@ -323,11 +364,11 @@ public:
     /// @see VolumeDerivedData
     virtual void deserialize(XmlDeserializer& s);
 
-    const Histogram1D& getHistogram() const;
-    Histogram1D& getHistogram();
+    const Histogram1D& getHistogram(size_t channel = 0) const;
+    Histogram1D& getHistogram(size_t channel = 0);
 
 protected:
-    Histogram1D hist_;
+    std::vector<Histogram1D> histograms_;
 };
 
 // ----------------------------------------------------------------------------
@@ -335,29 +376,12 @@ protected:
 /// 2D histogram using intensity and gradient length.
 class VRN_CORE_API VolumeHistogramIntensityGradient : public VolumeDerivedData {
 public:
-    /**
-     * Calculate 2D Histogram.
-     *
-     * @param volumeGrad Holds the gradients
-     * @param volumeIntensity Holds the intensity
-     * @param bucketCounti Intensity bucket count
-     * @param bucketCountg Gradient strength bucket count
-     * @param scale should the histogram scaled to maximum gradient length in the dataset?
-     */
-    VolumeHistogramIntensityGradient(const VolumeBase* volumeGrad, const VolumeBase* volumeIntensity,
-                               int bucketCounti, int bucketCountg, bool scale = false);
-
     /// Empty default constructor required by VolumeDerivedData interface.
     VolumeHistogramIntensityGradient();
 
     virtual std::string getClassName() const { return "VolumeHistogramIntensityGradient"; }
     virtual VolumeDerivedData* create() const;
 
-    /**
-     * Returns 0, since histogram construction requires an additional gradient volume.
-     *
-     * @see VolumeDerivedData
-     */
     virtual VolumeDerivedData* createFrom(const VolumeBase* handle) const;
 
     /// Returns voxels in bucket.
@@ -370,20 +394,13 @@ public:
     float getLogNormalized(int i, int g) const;
 
     /// Returns the maximal bucket value in the histogram
-    int getMaxValue() const;
+    int getMaxBucket() const;
 
-    /// Returns the significant intensity range of the histogram, i.e.
-    /// the minimal / maximal bucket row
-    tgt::ivec2 getSignificantRangeIntensity() const;
-
-    /// Returns the significant gradient range of the histogram, i.e.
-    /// the minimal / maximal bucket column
-    tgt::ivec2 getSignificantRangeGradient() const;
+    float getMinValue(int dim) const;
+    float getMaxValue(int dim) const;
 
     size_t getBucketCountIntensity() const;
     size_t getBucketCountGradient() const;
-
-    float getScaleFactor() const;
 
     /// @see VolumeDerivedData (currently unimplemented)
     virtual void serialize(XmlSerializer& s) const;
@@ -392,16 +409,8 @@ public:
     virtual void deserialize(XmlDeserializer& s);
 
 protected:
-    std::vector<std::vector<int> > histValues_;  ///< 2D array representing the histogram (first index = intensity)
-    int maxValue_;
-    tgt::ivec2 significantRangeIntensity_;
-    tgt::ivec2 significantRangeGradient_;
-
-    float scaleFactor_;
-
-    // calculate the histogram
-    template<class U>
-    void calcHG(const VolumeAtomic<U>* volumeGrad, const VolumeRAM* volumeIntensity, int bucketCounti, int bucketCountg, bool scale);
+    Histogram2D hist_;
+    uint64_t maxBucket_;
 };
 
 } // namespace voreen

@@ -34,16 +34,13 @@ namespace tgt {
 class TGT_API TouchPoint {
 public:
 
-    enum TouchPointState {
+    enum State {
         TouchPointPressed    = 0x01,
         TouchPointMoved      = 0x02,
         TouchPointStationary = 0x04,
         TouchPointReleased   = 0x08,
-        TouchPointStateMask  = 0x0f,
-        TouchPointPrimary    = 0x10
+        TouchPointDblTouch   = 0x10
     };
-
-    typedef enum TouchPointState t_state;
 
     TouchPoint();
     ~TouchPoint();
@@ -67,11 +64,12 @@ public:
     vec2    startPos () const;
     vec2    startScenePos () const;
     vec2    startScreenPos () const;
-    t_state state() const;
+    State state() const;
 
     // internal
     void setId(int id);
-    void setState(t_state state);
+    void setPrimary(bool primary);
+    void setState(State state);
     void setPos(const vec2  &pos);
     void setScenePos(const vec2 &scenePos);
     void setScreenPos(const vec2 &screenPos);
@@ -93,7 +91,7 @@ public:
 private:
     int id_;
     bool isPrimary_;
-    t_state state_;
+    State state_;
     vec2 pos_;
     vec2 scenePos_;
     vec2 screenPos_;

@@ -126,11 +126,11 @@ FontPropertyWidget::FontPropertyWidget(FontProperty* prop, QWidget* parent)
     connect(tgtTextAlign_,        SIGNAL(currentIndexChanged(int)),     this,            SLOT(updateProperty()));
     connect(tgtVerticalTextAlign_,SIGNAL(currentIndexChanged(int)),     this,            SLOT(updateProperty()));
 
-    updateFromProperty();
+    updateFromPropertySlot();
     addVisibilityControls();
 }
 
-void FontPropertyWidget::updateFromProperty() {
+void FontPropertyWidget::updateFromPropertySlot() {
     int fontType = (int)property_->get()->getFontType();
     for(int i=0; i<tgtFontType_->count(); i++)
         if(fontType == tgtFontType_->itemData(i).toInt())

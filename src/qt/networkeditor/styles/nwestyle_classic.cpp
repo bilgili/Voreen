@@ -76,6 +76,11 @@ const QColor NWEStyle_Base::NWEStyle_ConnectionYes = Qt::green;
 const QColor NWEStyle_Base::NWEStyle_ConnectionMaybe = Qt::yellow;
 const QColor NWEStyle_Base::NWEStyle_ConnectionNo = Qt::red;
 
+QSvgRenderer NWEStyle_Base::NWEStyle_Error1Renderer;
+QSvgRenderer NWEStyle_Base::NWEStyle_Error2Renderer;
+const QString NWEStyle_Base::NWEStyle_Error1SVGPath = QString(":/qt/icons/yellow-warning.svg");
+const QString NWEStyle_Base::NWEStyle_Error2SVGPath = QString(":/qt/icons/red-warning.svg");
+
 //aggregation
 const QColor NWEStyle_Base::NWEStyle_AggregationColor1 = QColor(50,50,50,255);
 //port
@@ -380,15 +385,13 @@ void NWEStyle_Classic::ProcessorGI_paint(ProcessorGraphicsItem* item, QPainter* 
         painter->setOpacity(1.0);
         br.setHeight(br.height()*2.0);
         qreal size = br.height()/4.0;
-        QSvgRenderer* r = new QSvgRenderer(QString(":/qt/icons/yellow-warning.svg"));
-        r->render(painter,QRectF(br.width()-size-buttonsOffsetX/2.0,br.height()-size-buttonsOffsetY/2.0,size,size));
+        NWEStyle_Base::NWEStyle_Error1Renderer.render(painter,QRectF(br.width()-size-buttonsOffsetX/2.0,br.height()-size-buttonsOffsetY/2.0,size,size));
         break;}
     case ES_ERROR_T2:{
         painter->setOpacity(1.0);
         br.setHeight(br.height()*2.0);
         qreal size = br.height()/4.0;
-        QSvgRenderer* r = new QSvgRenderer(QString(":/qt/icons/red-warning.svg"));
-        r->render(painter,QRectF(br.width()-size-buttonsOffsetX/2.0,br.height()-size-buttonsOffsetY/2.0,size,size));
+        NWEStyle_Base::NWEStyle_Error2Renderer.render(painter,QRectF(br.width()-size-buttonsOffsetX/2.0,br.height()-size-buttonsOffsetY/2.0,size,size));
         break;}
     default:
         break;

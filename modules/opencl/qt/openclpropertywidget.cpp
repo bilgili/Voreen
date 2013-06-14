@@ -56,7 +56,7 @@ OpenCLPropertyWidget::OpenCLPropertyWidget(OpenCLProperty* prop, QWidget* parent
     editBt_->setFont(QFont(fontInfo.family(), QPropertyWidget::fontSize_));
 }
 
-void OpenCLPropertyWidget::updateFromProperty() {
+void OpenCLPropertyWidget::updateFromPropertySlot() {
     if (plugin_) {
         plugin_->updateFromProperty();
         plugin_->update();

@@ -102,7 +102,13 @@ public:
     virtual void process();
     virtual bool isReady() const;
 
+    virtual void onEvent(tgt::Event* e);
+
 protected:
+    int getSliceIndex() const;
+    const IntProperty* getSliceIndexProperty() const;
+    void setIntProperty(IntProperty& p, int value);
+
     virtual std::string generateHeader();
     virtual void compile();
     virtual void setDescriptions() {
@@ -115,6 +121,7 @@ protected:
     /// Adapts the min/max ranges of the respective properties to the dimensions of the currently connected volume.
     void updateSliceProperties();
     void alignCamera();
+    void adjustPropertyVisibility();
 
     tgt::Shader* sh_;
     tgt::Shader* eepShader_;
@@ -125,10 +132,20 @@ protected:
     BoolProperty restrictToMainVolume_;
     /// Property containing the available alignments: xy (axial), xz (coronal), yz (sagittal)
     OptionProperty<SliceAlignment> sliceAlignment_;
-    /// Property containing the currently selected slice
-    IntProperty sliceIndex_;
+    IntProperty xSliceIndexProp_;
+    IntProperty ySliceIndexProp_;
+    IntProperty zSliceIndexProp_;
     CameraProperty camera_;
     ButtonProperty alignCameraButton_;
+
+    BoolProperty renderCrosshair_;
+    FloatVec4Property crosshairColor_;
+    FloatProperty crosshairWidth_;
+    FloatProperty crosshairRadius_;
+    bool grabbedX_;
+    bool grabbedY_;
+    tgt::ivec2 lastMousePos_;
+
     FloatVec3Property plane_;
     FloatProperty planeDist_;
 
@@ -174,7 +191,8 @@ protected:
     VolumePort inport3_;
     VolumePort inport4_;
     GeometryPort geomPort_;
-    TextPort textPort_;
+    TextPort sliceIndexTextPort_;
+    TextPort intensityTextPort_;
     RenderPort outport_;
     RenderPort entryPort_;
 
