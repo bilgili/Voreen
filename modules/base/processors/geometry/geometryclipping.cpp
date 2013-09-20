@@ -36,7 +36,7 @@ GeometryClipping::GeometryClipping()
     , enabled_("enabled", "Enabled", true)
     , invert_("invert_", "Invert", false)
     , normal_("planeNormal", "Plane Normal", tgt::vec3(0, 1, 0), tgt::vec3(-1), tgt::vec3(1))
-    , position_("planePosition", "Plane Distance", 0.0f, -FLT_MAX, FLT_MAX, Processor::INVALID_RESULT, NumericProperty<float>::DYNAMIC)
+    , position_("planePosition", "Plane Position", 0.0f, -/*1e4*/FLT_MAX, /*1e4*/FLT_MAX, Processor::INVALID_RESULT, NumericProperty<float>::STATIC)
 {
     addPort(inport_);
     addPort(outport_);
@@ -66,8 +66,11 @@ void GeometryClipping::process() {
     tgt::vec3 n = normalize(normal_.get());
     float d = position_.get();
 
-    if (invert_.get())
-        n *= -1.0f;
+    n *= -1.f;
+    if (!invert_.get()) {
+        n *= -1.f;
+        d *= -1.f;
+    }
 
     tgt::plane plane = tgt::plane(n, d);
 
