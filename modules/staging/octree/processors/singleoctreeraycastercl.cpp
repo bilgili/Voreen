@@ -1105,7 +1105,7 @@ void SingleOctreeRaycasterCL::renderVolume() {
     renderKernel->setArg(14, matrixOutBufferCL); */
 
     tgt::svec2 globalWorkSize(tgt::nextLargerPowerOfTwo(internalRenderPort_.getSize().x), tgt::nextLargerPowerOfTwo(internalRenderPort_.getSize().y));
-    tgt::svec2 localWorkSize(16);
+    tgt::svec2 localWorkSize(8);
 
     // execute kernel
     commandQueue->enqueueAcquireGLObject(&entryTex);
