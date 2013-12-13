@@ -1,5 +1,11 @@
 PROJECT(Voreen)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.0 FATAL_ERROR)
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake ${CMAKE_SOURCE_DIR}/CMake/common)
+
+include(.gitexternals)
+include(Common)
+
 include(cmake/commonconf.cmake)
 
 ################################################################################
