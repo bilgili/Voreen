@@ -6,6 +6,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake ${CMAKE_SOURCE_DIR}/CMak
 include(.gitexternals)
 include(Common)
 
+set(CMAKE_CXX_FLAGS "")
+
 include(cmake/commonconf.cmake)
 
 ################################################################################
