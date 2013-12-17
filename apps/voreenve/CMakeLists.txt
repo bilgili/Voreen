@@ -137,6 +137,6 @@ ENDIF()
 ################################################################################
 IF(VRN_ADD_INSTALL_TARGET)
     INSTALL(TARGETS voreenve
-        RUNTIME DESTINATION .
+        RUNTIME DESTINATION bin
     )
 ENDIF()    

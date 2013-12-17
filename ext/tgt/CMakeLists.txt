@@ -85,7 +85,7 @@ ENDIF()
 ################################################################################
 IF(VRN_ADD_INSTALL_TARGET)
     INSTALL(TARGETS tgt 
-        RUNTIME DESTINATION .
+        LIBRARY DESTINATION lib
     )
 ENDIF()
 

@@ -470,6 +470,6 @@ ENDIF()
 ################################################################################
 IF(VRN_ADD_INSTALL_TARGET)
     INSTALL(TARGETS voreen_qt
-        RUNTIME DESTINATION .
+        LIBRARY DESTINATION lib
     )
 ENDIF()
