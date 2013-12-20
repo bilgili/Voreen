@@ -97,9 +97,9 @@ void CameraPositionRenderer::render() {
     if (enable_.get()) {
         GLUquadricObj* quadric = gluNewQuadric();
 
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glTranslatef(displayCamera_.get().getPosition().x, displayCamera_.get().getPosition().y, displayCamera_.get().getPosition().z);
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
+        MatStack.translate(displayCamera_.get().getPosition().x, displayCamera_.get().getPosition().y, displayCamera_.get().getPosition().z);
         LGL_ERROR;
 
         float m[16];
@@ -174,7 +174,7 @@ void CameraPositionRenderer::render() {
         gluCylinder(quadric,0.0f, conel * mult, conel, 20,20);
         glPopAttrib();
 
-        glPopMatrix();
+        MatStack.popMatrix();
         LGL_ERROR;
 
         gluDeleteQuadric(quadric);

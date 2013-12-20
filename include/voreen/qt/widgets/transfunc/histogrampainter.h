@@ -32,7 +32,7 @@
 namespace voreen {
 
 // forward declaration
-class VolumeHistogramIntensity;
+class Histogram1D;
 
 /**
  * This class draws a polygon that shows the histogram of a volume dataset.
@@ -73,7 +73,7 @@ public:
      */
     void setXRange(const tgt::vec2& xRange);
 
-    const VolumeHistogramIntensity* getHistogram() const;
+    const Histogram1D* getHistogram() const;
 
 public slots:
     /**
@@ -81,7 +81,7 @@ public slots:
      *
      * @param histogram the histogram that will be painted
      */
-    void setHistogram(const VolumeHistogramIntensity* histogram);
+    void setHistogram(const Histogram1D* histogram);
 
     /**
      * Determines whether a logarithmic scale is to be used on the y-axis.
@@ -103,7 +103,7 @@ private:
     int padding_;           ///< additional padding at the border of the parent widget
     int arrowLength_;       ///< length of the arrows in the parent widget
 
-    const VolumeHistogramIntensity* histogram_; ///< the histogram that is painted
+    const Histogram1D* histogram_; ///< the histogram that is painted
 
     QPixmap* cache_;   ///< pixmap for caching the painted histogram
 };

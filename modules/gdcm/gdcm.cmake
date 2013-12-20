@@ -159,6 +159,7 @@ SET(MOD_CORE_SOURCES
     ${MOD_DIR}/io/dicomdirparser.cpp
     ${MOD_DIR}/io/dicomnetworkconnector.cpp
     ${MOD_DIR}/io/gdcmvolumereader.cpp
+    ${MOD_DIR}/io/volumediskdicom.cpp
 )
 
 SET(MOD_CORE_HEADERS 
@@ -169,6 +170,7 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/io/dicomdirparser.h
     ${MOD_DIR}/io/dicomnetworkconnector.h
     ${MOD_DIR}/io/gdcmvolumereader.h
+    ${MOD_DIR}/io/volumediskdicom.h
 )
 
 # deployment

@@ -51,6 +51,14 @@ namespace voreen {
  */
 class VRN_CORE_API TransFunc : public VoreenSerializableObject {
 public:
+    /**
+     * Enum to determine, if the alpha value should be used or is constant zero or one.
+     */
+    enum AlphaMode {
+        TF_ZERO_ALPHA,
+        TF_USE_ALPHA,
+        TF_ONE_ALPHA
+    };
 
     /**
      * Constructor.
@@ -72,6 +80,11 @@ public:
 
     virtual std::string getClassName() const { return "TransFunc";     }
     virtual TransFunc* create() const        { return 0; /*new TransFunc();*/ }
+    virtual TransFunc* clone() const;
+
+    /// Assumes the member value of the passed transfunc.
+    virtual void updateFrom(const TransFunc* transfunc);
+
 
     /**
      * Returns a define for the usage of transfer functions in shaders.
@@ -129,7 +142,7 @@ public:
      * Marks the texture of the transfer function as invalid,
      * so it will be updated on next access.
      */
-    void invalidateTexture();
+    virtual void invalidateTexture();
 
     /**
      * Returns whether the texture will be updated on next access.
@@ -178,6 +191,15 @@ public:
      */
     virtual bool load(const std::string& filename);
 
+ /**
+     * Saves the transfer function to a file. Any data in the file will be overwritten.
+     * The supported extensions include:
+     *
+     * @param filename the name of the file the transfer function will be saved to
+     * @return true, if the operation was successfull, false otherwise
+     */
+    virtual bool save(const std::string& filename) const;
+
     /**
      * Returns a vector that contains the endings of suppported file formats for loading.
      *
@@ -205,11 +227,6 @@ public:
      * @see Serializable::deserialize
      */
     virtual void deserialize(XmlDeserializer& s);
-
-    /**
-     * Returns a copy of this object.
-     */
-    virtual TransFunc* clone() const;
 
     /**
      * Returns the format of the transfer function texture internally used.
@@ -257,6 +274,33 @@ public:
     /// @overload
     void setDomain(float lower, float upper, int dimension);
 
+     /**
+     * Sets the lower and upper intensity thresholds to given values. The thresholds have to be normalized
+     * to the range [0,1]. The texture is not updated at this time.
+     *
+     * @param lower lower threshold
+     * @param upper upper threshold
+     *
+     */
+    void setThresholds(float lower, float upper, size_t dimension = 0);
+
+    /**
+     * @overload
+     *
+     * @note This function should be overridden by concrete subclasses.
+     *  The default implementation is empty.
+     */
+    virtual void setThresholds(const tgt::vec2& thresholds, size_t dimension = 0);
+
+    /**
+     * Returns the lower and upper intensity thresholds of the tranfer function.
+     * The thresholds are normalized within the range [0,1].
+     *
+     * @note This function should be overridden by concrete subclasses.
+     *  The default implementation returns [0.0,1.0].
+     */
+    virtual tgt::vec2 getThresholds(size_t dimension = 0) const;
+
     /**
      * Converts the passed real-world data value to a normalized value in the range [0.0,1.0],
      * with regard to the currently set domain.
@@ -303,8 +347,11 @@ public:
      */
     static float normalizedToRealWorld(float n, const tgt::vec2& domain);
 
-    void setIgnoreAlpha(bool ia);
-    bool getIgnoreAlpha() const;
+    void setAlphaMode(AlphaMode mode);
+    AlphaMode getAlphaMode() const;
+
+    void setGammaValue(float gamma);
+    float getGammaValue() const;
 
 protected:
 
@@ -318,7 +365,8 @@ protected:
     GLint format_;                ///< format of the transfer function texture
     GLenum dataType_;             ///< data type of the transfer function texture
     tgt::Texture::Filter filter_; ///< filtering mode of the transfer function texture.
-    bool ignoreAlpha_;            ///< Ignore alpha values an make everything opaque.
+    AlphaMode alphaMode_;         ///< mode to determine the alpha value use.
+    float gammaValue_;            ///< value for gamma correction
 
     std::vector<std::string> loadFileFormats_; ///< endings that are supported for loading a transfer function
     std::vector<std::string> saveFileFormats_; ///< endings that are supported for saving a transfer function
@@ -350,13 +398,17 @@ class VRN_CORE_API TransFuncMetaData : public MetaDataBase {
 public:
     TransFuncMetaData();
     TransFuncMetaData(TransFunc* transfunc);
+    TransFuncMetaData(const std::vector<TransFunc*>& transfunc);
     virtual ~TransFuncMetaData();
     virtual MetaDataBase* create() const     { return new TransFuncMetaData(); }
     virtual std::string getClassName() const { return "TransFuncMetaData";     }
     virtual MetaDataBase* clone() const;
 
-    void setTransferFunction(TransFunc* transfunc);
-    TransFunc* getTransferFunction() const;
+    void setTransferFunction(TransFunc* transfunc, size_t channel = 0);
+    void setTransferFunction(const std::vector<TransFunc*>& transfunc);
+
+    TransFunc* getTransferFunction(size_t channel = 0) const;
+    const std::vector<TransFunc*>& getValue() const;
 
     virtual std::string toString() const;
     virtual std::string toString(const std::string& component) const;
@@ -364,8 +416,10 @@ public:
     virtual void serialize(XmlSerializer& s) const;
     virtual void deserialize(XmlDeserializer& s);
 
+    virtual size_t getNumChannels() const;
+
 private:
-    TransFunc* transFunc_;
+    std::vector<TransFunc*> transFunc_;
 };
 
 } // namespace voreen

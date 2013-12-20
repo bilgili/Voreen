@@ -66,7 +66,7 @@ Processor* ColorDepth::create() const {
 void ColorDepth::initialize() throw (tgt::Exception) {
     ImageProcessorBypassable::initialize();
 
-    std::string texturePath = VoreenApplication::app()->getResourcePath("transferfuncs/chromadepthspectrum.bmp");
+    std::string texturePath = VoreenApplication::app()->getResourcePath("textures/chromadepthspectrum.bmp");
     if (TexMgr.completePath(texturePath) == "")
         throw VoreenException("Texture file not found: " + texturePath);
     chromaDepthTex_ = TexMgr.load(texturePath);

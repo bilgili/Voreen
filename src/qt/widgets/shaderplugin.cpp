@@ -279,6 +279,9 @@ void ShaderPlugin::setProperty() {
     property_->setFragmentSource(codeEditFrag_->toPlainText().toStdString());
     property_->setVertexSource(codeEditVert_->toPlainText().toStdString());
     property_->setGeometrySource(codeEditGeom_->toPlainText().toStdString());
+    //force rebuild
+    if(property_->getOwner() && property_->getOwner()->getInvalidationLevel() < Processor::INVALID_PROGRAM)
+        property_->invalidate();
 }
 
 void ShaderPlugin::updateFromProperty() {

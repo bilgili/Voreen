@@ -26,6 +26,7 @@
 #ifndef VRN_PROGRESSBAR_H
 #define VRN_PROGRESSBAR_H
 
+#include "voreen/core/io/progressreporter.h"
 #include "voreen/core/voreencoreapi.h"
 #include <string>
 
@@ -34,7 +35,7 @@ namespace voreen {
 /**
  * Base class for GUI toolkit specific progress bars.
  */
-class VRN_CORE_API ProgressBar {
+class VRN_CORE_API ProgressBar : public ProgressReporter {
 public:
     ProgressBar();
     virtual ~ProgressBar() {}
@@ -73,25 +74,18 @@ public:
     virtual float getProgress() const;
 
     /**
-     * Sets the 'level' of progress. This is used if a processor
-     * has multiple expensive tasks to do in a single process call
-     * and wants to inform the user about the status of each.
-     * Usage: Use \sa setProgress as normal for the first tier
-     * after completion call setProgressTier(1) and start using
-     * \sa setProgress again, ranging from 0.f to 1.f as normal.
-     */
-    virtual void setProgressTier(int /*tier*/) {};
-
-    /**
      * Assigns a message that is to displayed by the
      * progress dialog.
      */
-    virtual void setMessage(const std::string& message);
+    virtual void setProgressMessage(const std::string& message);
 
     /**
      * Returns the message that is to displayed by the
      * progress dialog.
      */
+    virtual std::string getProgressMessage() const;
+
+    /// @overload
     virtual std::string getMessage() const;
 
     /**
@@ -99,6 +93,16 @@ public:
      * progress dialog.
      */
     virtual void setTitle(const std::string& title);
+
+    /**
+     * Assigns the range into which the progress value will be transformed,
+     * i.e., actualProgress = progressRange.x + progress*(progressRange.y-progressRange.x)
+     * The progress range must be a subrange of [0.f;1.f].
+     * The default range is [0.f;1.f].
+     */
+    virtual void setProgressRange(const tgt::vec2& progressRange);
+
+    virtual tgt::vec2 getProgressRange() const;
 
     /**
      * Returns the title that is to displayed by the
@@ -110,6 +114,8 @@ protected:
     float progress_;
     std::string message_;
     std::string title_;
+
+    tgt::vec2 progressRange_;
 
     bool printedErrorMessage_;
 

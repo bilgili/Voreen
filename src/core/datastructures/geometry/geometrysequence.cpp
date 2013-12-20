@@ -84,14 +84,14 @@ void GeometrySequence::clip(const tgt::plane& clipPlane, double epsilon) {
 }
 
 void GeometrySequence::render() const {
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    tgt::multMatrix(getTransformationMatrix());
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.multMatrix(getTransformationMatrix());
 
     for(size_t i=0; i<geometries_.size(); i++)
         geometries_[i]->render();
 
-    glPopMatrix();
+    MatStack.popMatrix();
 }
 
 tgt::Bounds GeometrySequence::getBoundingBox(bool transformed) const {

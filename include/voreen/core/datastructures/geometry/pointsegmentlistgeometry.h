@@ -87,9 +87,9 @@ public:
     int getNumPoints() const { return numPoints_; }
 
     virtual void render() const {
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        tgt::multMatrix(getTransformationMatrix());
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
+        MatStack.multMatrix(getTransformationMatrix());
 
         glBegin(GL_POINTS);
         for (size_t i=0; i < segmentList_.size(); ++i){
@@ -101,7 +101,7 @@ public:
         }
         glEnd();
 
-        glPopMatrix();
+        MatStack.popMatrix();
     }
 
     /**

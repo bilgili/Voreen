@@ -43,11 +43,11 @@ VolumeMinMax::VolumeMinMax(float min, float max, float minNorm, float maxNorm)
     maxNormValues_.push_back(maxNorm);
 }
 
-VolumeMinMax::VolumeMinMax(const std::vector<float>& minValues, const std::vector<float>& maxValues, 
+VolumeMinMax::VolumeMinMax(const std::vector<float>& minValues, const std::vector<float>& maxValues,
     const std::vector<float>& minNormValues, const std::vector<float>& maxNormValues )
 {
     tgtAssert(!minValues.empty() && !maxValues.empty() && !minNormValues.empty() && !minNormValues.empty(), "empty vector passed");
-    tgtAssert(minValues.size() == maxValues.size() && minValues.size() == minNormValues.size() && minValues.size() == maxNormValues.size(), 
+    tgtAssert(minValues.size() == maxValues.size() && minValues.size() == minNormValues.size() && minValues.size() == maxNormValues.size(),
         "passed vectors differ in size");
 
     minValues_ = minValues;
@@ -55,6 +55,13 @@ VolumeMinMax::VolumeMinMax(const std::vector<float>& minValues, const std::vecto
     minNormValues_ = minNormValues;
     maxNormValues_ = maxNormValues;
 }
+
+VolumeMinMax::VolumeMinMax(const VolumeMinMax& other)
+    : minValues_(other.minValues_)
+    , maxValues_(other.maxValues_)
+    , minNormValues_(other.minNormValues_)
+    , maxNormValues_(other.maxNormValues_)
+{}
 
 VolumeDerivedData* VolumeMinMax::create() const {
     return new VolumeMinMax();

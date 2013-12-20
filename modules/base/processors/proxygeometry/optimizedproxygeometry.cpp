@@ -73,7 +73,7 @@ OptimizedProxyGeometry::OptimizedProxyGeometry()
     , geometry_(0)
     , tmpGeometry_(0)
     , mode_("modeString", "Mode")
-    , transfunc_("transferfunction", "Transfer Function")
+    , tfChannel0_("transferfunction", "Transfer Function (Channel 0)")
     , resolutionMode_("resolutionMode", "Resolution Mode", Processor::VALID)
     , resolution_("resolution", "Resolution", 32, 1, 64)
     , resolutionVoxels_("resolutionvoxel", "Edge Length (Voxels)", 16, 1, 1024)
@@ -87,19 +87,13 @@ OptimizedProxyGeometry::OptimizedProxyGeometry()
     , clipTop_("topClippingPlane", "Top Clip Plane (z)", 1e5f, 0.f, 1e5f)
     , resetClipPlanes_("resetClipPlanes", "Reset Planes")
     , waitForOptimization_("waitForOptimization", "Wait for optimization", false, Processor::VALID)
-#ifdef VRN_PROXY_DEBUG
-    , setEnclosedOpaque_("enclosedopaque", "Set Enclosed Opaque", false)
-    , debugOutput_("debugOutput", "Debug Output")
-    , checkHalfNodes_("halfnodes", "Check and render half nodes", true)
-#endif
     , geometryInvalid_(true)
     , structureInvalid_(true)
     , volStructureSize_(0,0,0)
-#ifdef VRN_PROXY_DEBUG
-    , octreeRoot_(0)
-    , octreeInvalid_(true)
-#endif
     , backgroundThread_(0)
+    , tfChannel1_("transferfunction2", "Transfer Function (Channel 1)")
+    , tfChannel2_("transferfunction3", "Transfer Function (Channel 2)")
+    , tfChannel3_("transferfunction4", "Transfer Function (Channel 3)")
 {
     //create mesh list geometry
     geometry_ = new TriangleMeshGeometryVec4Vec3();
@@ -108,25 +102,24 @@ OptimizedProxyGeometry::OptimizedProxyGeometry()
     addPort(inport_);
     addPort(outport_);
 
-    mode_.addOption("boundingbox",          "Bounding Box");
-    mode_.addOption("minboundingbox",       "Minimal Visible Bounding Box");
-    mode_.addOption("visiblebricks",        "Visible Bricks");
-    mode_.addOption("outerfaces",           "Visible Bricks (Outer Faces)");
-#ifdef VRN_MODULE_STAGING
-    mode_.addOption("volumeoctree",         "Volume Octree");
-#endif
-#ifdef VRN_PROXY_DEBUG
-    mode_.addOption("octreebricks",         "Visible Bricks (Octree)");
-    mode_.addOption("brutemincube", "Brute Force Minimal Bounding Box");
-    mode_.addOption("bruteforce", "Brute Force Bricks");
-    mode_.addOption("structurecubes", "Bricks");
-    mode_.addOption("octree", "Octree Bricks");
-#endif
+    mode_.addOption("boundingbox",              "Bounding Box");
+    mode_.addOption("minboundingbox",           "Minimal Visible Bounding Box");
+    mode_.addOption("visiblebricks",            "Visible Bricks");
+    mode_.addOption("outerfaces",               "Visible Bricks (Outer Faces)");
+    mode_.addOption("volumeoctree",             "Volume Octree");
+    mode_.addOption("volumeoctreeouterfaces",   "Volume Octree (Outer Faces)");
     mode_.set("visiblebricks");
     addProperty(mode_);
 
-    addProperty(transfunc_);
-    transfunc_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onTransFuncChange));
+    addProperty(tfChannel0_);
+    tfChannel0_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onTransFuncChange));
+
+    addProperty(tfChannel1_);
+    addProperty(tfChannel2_);
+    addProperty(tfChannel3_);
+    tfChannel1_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onTransFuncChange));
+    tfChannel2_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onTransFuncChange));
+    tfChannel3_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onTransFuncChange));
 
     resolutionMode_.addOption("subdivide", "Subdivide Shortest Side");
     resolutionMode_.addOption("voxel", "Subdivide in Voxels");
@@ -139,12 +132,6 @@ OptimizedProxyGeometry::OptimizedProxyGeometry()
 
     addProperty(threshold_);
     threshold_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onThresholdChange));
-#ifdef VRN_PROXY_DEBUG
-    addProperty(setEnclosedOpaque_);
-    setEnclosedOpaque_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onSetEnclosedOpaqueChange));
-    addProperty(checkHalfNodes_);
-    checkHalfNodes_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onCheckHalfNodesChange));
-#endif
 
     clipRight_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onClipRightChange));
     clipLeft_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onClipLeftChange));
@@ -164,10 +151,7 @@ OptimizedProxyGeometry::OptimizedProxyGeometry()
     addProperty(clipTop_);
     addProperty(resetClipPlanes_);
     addProperty(waitForOptimization_);
-#ifdef VRN_PROXY_DEBUG
-    debugOutput_.set(false);
-    addProperty(debugOutput_);
-#endif
+
     clipRight_.setGroupID("clipping");
     clipLeft_.setGroupID("clipping");
     clipFront_.setGroupID("clipping");
@@ -183,11 +167,9 @@ OptimizedProxyGeometry::OptimizedProxyGeometry()
     updatePropertyVisibility();
 
     mode_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onModeChange));
-    transfunc_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onTransFuncChange));
+    tfChannel0_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onTransFuncChange));
     resolution_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onResolutionChange));
     resolutionVoxels_.onChange(CallMemberAction<OptimizedProxyGeometry>(this, &OptimizedProxyGeometry::onResolutionVoxelChange));
-
-    tfCopy_ = 0;
 }
 
 OptimizedProxyGeometry::~OptimizedProxyGeometry() {
@@ -201,10 +183,11 @@ OptimizedProxyGeometry::~OptimizedProxyGeometry() {
     tmpGeometry_->clear();
     delete geometry_;
     delete tmpGeometry_;
-#ifdef VRN_PROXY_DEBUG
-    delete octreeRoot_;
-#endif
-    delete tfCopy_;
+
+    for (std::vector<TransFunc*>::iterator i = tfCopies_.begin(); i != tfCopies_.end(); ++i) {
+        delete *i;
+    }
+    tfCopies_.clear();
 }
 
 Processor* OptimizedProxyGeometry::create() const {
@@ -220,6 +203,11 @@ void OptimizedProxyGeometry::volumeDelete(const VolumeBase* source) {
     }
 
     setVolumeHasChanged();
+
+    tfChannel0_.setVolumeHandle(0);
+    tfChannel1_.setVolumeHandle(0);
+    tfChannel2_.setVolumeHandle(0);
+    tfChannel3_.setVolumeHandle(0);
 }
 
 void OptimizedProxyGeometry::volumeChange(const VolumeBase* source) {
@@ -229,6 +217,11 @@ void OptimizedProxyGeometry::volumeChange(const VolumeBase* source) {
         delete backgroundThread_;
         backgroundThread_ = 0;
     }
+
+    tfChannel0_.setVolumeHandle(0);
+    tfChannel1_.setVolumeHandle(0);
+    tfChannel2_.setVolumeHandle(0);
+    tfChannel3_.setVolumeHandle(0);
 
     setVolumeHasChanged();
 }
@@ -252,87 +245,26 @@ void OptimizedProxyGeometry::process() {
         setVolumeHasChanged(false);
     }
 
-    const VolumeRAM* volumeRam = inport_.getData()->getRepresentation<VolumeRAM>();
-    if (!volumeRam && !mode_.isSelected("boundingbox"))
-        LWARNING("VolumeRAM not available. Falling back to bounding box.");
+    //check if VolumeRAM is availabe (if necessary)
+    if (!mode_.isSelected("boundingbox") &&
+            (!mode_.hasKey("volumeoctree") || (!mode_.isSelected("volumeoctree") && !mode_.isSelected("volumeoctreeouterfaces")))) {
 
-    if (mode_.get() == "boundingbox" || !volumeRam) {
-        processCube();
-    }
-    else if (mode_.isSelected("minboundingbox")) {
-        tgtAssert(transfunc_.get(), "no transfunc");
+        inport_.getData()->getRepresentation<VolumeRAM>();
+        bool hasVolumeRam = inport_.getData()->hasRepresentation<VolumeRAM>();
 
-        //if background thread finished computation: do nothing (background thread invalidated processor, mesh geometry is valid)
-        //else: compute new geometry in background thread and set temporary geometry to outport
-        if (!backgroundThread_ || !backgroundThread_->isFinished()) {
-
-            if (backgroundThread_) {
-                backgroundThread_->interrupt();
-                unlockMutex();
-                delete backgroundThread_;
-                lockMutex();
-                backgroundThread_ = 0;
-            }
-
-            //copy transfer function
-            if(!tfCopy_)
-                tfCopy_ = transfunc_.get()->clone();
-
-            // determine TF type
-            TransFunc1DKeys* tfi = 0;
-
-            if (tfCopy_) {
-                tfi = dynamic_cast<TransFunc1DKeys*>(tfCopy_);
-                if (tfi == 0) {
-                    TransFunc2DPrimitives* tfig = dynamic_cast<TransFunc2DPrimitives*>(tfCopy_);
-                    if (tfig == 0) {
-                        LERROR("Unsupported transfer function.");
-                        return;
-                    }
-                    LWARNING("2D Transfer Function currently not supported: using bounding box mode.");
-                    processCube();
-                    return;
-                }
-            }
-            else {
-                LERROR("No valid transfer function");
-                return;
-            }
-
-            //create worker thread that computes min bounding box
-            int stepSize = resolutionVoxels_.get();
-            tgt::vec3 clipLlf(clipRight_.get(), clipFront_.get(), clipBottom_.get());
-            tgt::vec3 clipUrb(clipLeft_.get() + 1.f, clipBack_.get() + 1.f, clipTop_.get() + 1.f);
-#ifdef VRN_PROXY_DEBUG
-            backgroundThread_ = new MinCubeBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()),
-                geometry_, &volumeStructure_, volStructureSize_, stepSize, debugOutput_.get(), enableClipping_.get(), clipLlf, clipUrb);
-#else
-            backgroundThread_ = new MinCubeBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()),
-                geometry_, &volumeStructure_, volStructureSize_, stepSize, false, enableClipping_.get(), clipLlf, clipUrb);
-#endif
-
-            //start background computation
-            backgroundThread_->run();
-
-            if (waitForOptimization_.get()) {
-                // wait for background thread to finish computation
-                unlockMutex();
-                backgroundThread_->join();
-                lockMutex();
-            }
-            else {
-                //while background computation is not finished: use temporary bounding box geometry
-                processTmpCube();
-                outport_.setData(tmpGeometry_, false);
-
-                return;
-            }
+        if (!hasVolumeRam) {
+            LWARNING("VolumeRAM not available. Falling back to bounding box.");
+            mode_.set("boundingbox");
+            invalidate();
+            return;
         }
     }
-#ifdef VRN_MODULE_STAGING
-    else if (mode_.isSelected("volumeoctree")) {
 
-        tgtAssert(transfunc_.get(), "no transfunc");
+    if (mode_.isSelected("boundingbox")) {
+         processCube();
+    }
+    else {
+        tgtAssert(tfChannel0_.get(), "no transfunc");
 
         //if background thread finished computation: do nothing (background thread invalidated processor, mesh geometry is valid)
         //else: compute new geometry in background thread and set temporary geometry to outport
@@ -346,204 +278,108 @@ void OptimizedProxyGeometry::process() {
                 backgroundThread_ = 0;
             }
 
-            //copy transfer function
-            if(!tfCopy_)
-                tfCopy_ = transfunc_.get()->clone();
+            //get number of channels in volume
+            size_t numChannels = inport_.getData()->getNumChannels();
 
-            // determine TF type
-            TransFunc1DKeys* tfi = 0;
-
-            if (tfCopy_) {
-                tfi = dynamic_cast<TransFunc1DKeys*>(tfCopy_);
-                if (tfi == 0) {
-                    TransFunc2DPrimitives* tfig = dynamic_cast<TransFunc2DPrimitives*>(tfCopy_);
-                    if (tfig == 0) {
-                        LERROR("Unsupported transfer function.");
-                        return;
-                    }
-                    LWARNING("2D Transfer Function currently not supported: using bounding box mode.");
-                    processCube();
-                    return;
-                }
-            }
-            else {
-                LERROR("No valid transfer function");
+            //only 4 channels supported
+            if (numChannels > 4) {
+                LERROR("Currently only 4 channels supported. Falling back to Bounding Box mode.");
+                mode_.set("boundingbox");
+                invalidate();
                 return;
             }
 
+            //copy transfer functions
+            if (tfCopies_.size() != numChannels) {
+                for (std::vector<TransFunc*>::iterator i = tfCopies_.begin(); i != tfCopies_.end(); ++i) {
+                    delete *i;
+                }
+                tfCopies_.clear();
+
+                tfCopies_.push_back(tfChannel0_.get()->clone());
+                if (numChannels > 1)
+                    tfCopies_.push_back(tfChannel1_.get()->clone());
+                if (numChannels > 2)
+                    tfCopies_.push_back(tfChannel2_.get()->clone());
+                if (numChannels > 3)
+                    tfCopies_.push_back(tfChannel3_.get()->clone());
+            }
+
+            // determine TF types and set up list of transfuncs
+            std::vector<TransFunc1DKeys*> tfVector;
+            TransFunc1DKeys* tfi = 0;
+
+            for (int i = 0; i < tfCopies_.size(); ++i) {
+
+                if (!tfCopies_.at(i)) {
+                    LERROR("No valid transfer function (Channel " << i << ")");
+                    return;
+                }
+
+                tfi = dynamic_cast<TransFunc1DKeys*>(tfCopies_.at(i));
+                if (tfi == 0) {
+                    TransFunc2DPrimitives* tfig = dynamic_cast<TransFunc2DPrimitives*>(tfCopies_.at(i));
+                    if (tfig == 0)
+                        LERROR("Unsupported transfer function (Channel " << i << "): using bounding box mode.");
+                    else
+                        LWARNING("2D Transfer Function currently not supported (Channel " << i <<"): using bounding box mode.");
+                    mode_.set("boundingbox");
+                    invalidate();
+                    return;
+                }
+
+                tfVector.push_back(tfi);
+                tfi = 0;
+            }
+
+            //get step size (for modes using bricks) and clipping parameters
             int stepSize = resolutionVoxels_.get();
             tgt::vec3 clipLlf(clipRight_.get(), clipFront_.get(), clipBottom_.get());
             tgt::vec3 clipUrb(clipLeft_.get() + 1.f, clipBack_.get() + 1.f, clipTop_.get() + 1.f);
 
-            //select if the volume has an octree representation and start a VolumeOctreeBackgroundThread or use visible bricks as fallback mode
-            if (inport_.getData()->hasRepresentation<VolumeOctree>()) {
-                LDEBUG("VolumeOctree representation available");
+
+            //create background thread according to selected mode
+            if (mode_.isSelected("minboundingbox"))
+                backgroundThread_ = new MinCubeBackgroundThread(this, inport_.getData(), tfVector, static_cast<float>(threshold_.get()),
+                    geometry_, &volumeStructure_, volStructureSize_, stepSize, false, enableClipping_.get(), clipLlf, clipUrb);
+            else if (mode_.isSelected("visiblebricks"))
+                backgroundThread_ = new VisibleBricksBackgroundThread(this, inport_.getData(), tfVector, static_cast<float>(threshold_.get()),
+                    geometry_, &volumeStructure_, volStructureSize_, stepSize, false, enableClipping_.get(), clipLlf, clipUrb);
+            else if (mode_.isSelected("outerfaces"))
+                backgroundThread_ = new OuterFacesBackgroundThread(this, inport_.getData(), tfVector, static_cast<float>(threshold_.get()),
+                    geometry_, &volumeStructure_, volStructureSize_, stepSize, false, enableClipping_.get(), clipLlf, clipUrb);
+            else if (mode_.isSelected("volumeoctree")) {
+                //select if the volume has an octree representation and start a VolumeOctreeBackgroundThread or use visible bricks as fallback mode
+                if (inport_.getData()->hasRepresentation<VolumeOctreeBase>()) {
+                    LDEBUG("VolumeOctree representation available");
 
                 //create worker thread that computes a proxy geometry based on the volume octree
-                backgroundThread_ = new VolumeOctreeBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()),
-                    geometry_, stepSize, enableClipping_.get(), clipLlf, clipUrb);
-            }
-            else { 
-                LWARNING("VolumeOctree representation not available... using Visible Bricks mode as fallback.");
-
-                //create worker thread that computes visible bricks proxy geometry
-#ifdef VRN_PROXY_DEBUG
-                backgroundThread_ = new VisibleBricksBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()),
-                    geometry_, &volumeStructure_, volStructureSize_, stepSize, debugOutput_.get(), enableClipping_.get(), clipLlf, clipUrb);
-#else
-                backgroundThread_ = new VisibleBricksBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()),
-                    geometry_, &volumeStructure_, volStructureSize_, stepSize, false, enableClipping_.get(), clipLlf, clipUrb);
-#endif
-            }
-
-            //start background computation
-            backgroundThread_->run();
-
-            if (waitForOptimization_.get()) {
-                // wait for background thread to finish computation
-                unlockMutex();
-                backgroundThread_->join();
-                lockMutex();
-            }
-            else {
-                //while background computation is not finished: use temporary bounding box geometry
-                processTmpCube();
-                outport_.setData(tmpGeometry_, false);
-
-                return;
-            }
-        }
-    }
-#endif
-    else if (mode_.isSelected("visiblebricks")) {
-        tgtAssert(transfunc_.get(), "no transfunc");
-#ifdef VRN_PROXY_DEBUG
-        if (setEnclosedOpaque_.get())
-            processMaximalCubesSetEnclosedOpaque();
-        else {
-#endif
-        //if background thread finished computation: do nothing (background thread invalidated processor, mesh geometry is valid)
-        //else: compute new geometry in background thread and set temporary geometry to outport
-        if (!backgroundThread_ || !backgroundThread_->isFinished()) {
-
-            if (backgroundThread_) {
-                backgroundThread_->interrupt();
-                unlockMutex();
-                delete backgroundThread_;
-                lockMutex();
-                backgroundThread_ = 0;
-            }
-
-            //copy transfer function
-            if(!tfCopy_)
-                tfCopy_ = transfunc_.get()->clone();
-
-            // determine TF type
-            TransFunc1DKeys* tfi = 0;
-
-            if (tfCopy_) {
-                tfi = dynamic_cast<TransFunc1DKeys*>(tfCopy_);
-                if (tfi == 0) {
-                    TransFunc2DPrimitives* tfig = dynamic_cast<TransFunc2DPrimitives*>(tfCopy_);
-                    if (tfig == 0) {
-                        LERROR("Unsupported transfer function.");
-                        return;
-                    }
-                    LWARNING("2D Transfer Function currently not supported: using bounding box mode.");
-                    processCube();
+                backgroundThread_ = new VolumeOctreeBackgroundThread(this, inport_.getData(), tfVector,
+                        static_cast<float>(threshold_.get()), geometry_, stepSize, enableClipping_.get(), clipLlf, clipUrb);
+                }
+                else {
+                    LERROR("VolumeOctree representation not available (try to use OctreeCreator). Falling back to Visible Bricks mode.");
+                    mode_.set("visiblebricks");
+                    invalidate();
                     return;
                 }
             }
-            else {
-                LERROR("No valid transfer function");
-                return;
-            }
+            else if (mode_.isSelected("volumeoctreeouterfaces")) {
+                //select if the volume has an octree representation and start a VolumeOctreeOuterFacesBackgroundThread or use outer faces as fallback mode
+                if (inport_.getData()->hasRepresentation<VolumeOctreeBase>()) {
+                    LDEBUG("VolumeOctree representation available");
 
-            //create worker thread that computes visible bricks proxy geometry
-            int stepSize = resolutionVoxels_.get();
-            tgt::vec3 clipLlf(clipRight_.get(), clipFront_.get(), clipBottom_.get());
-            tgt::vec3 clipUrb(clipLeft_.get() + 1.f, clipBack_.get() + 1.f, clipTop_.get() + 1.f);
-#ifdef VRN_PROXY_DEBUG
-            backgroundThread_ = new VisibleBricksBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()),
-                geometry_, &volumeStructure_, volStructureSize_, stepSize, debugOutput_.get(), enableClipping_.get(), clipLlf, clipUrb);
-#else
-            backgroundThread_ = new VisibleBricksBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()),
-                geometry_, &volumeStructure_, volStructureSize_, stepSize, false, enableClipping_.get(), clipLlf, clipUrb);
-#endif
-
-            //start background computation
-            backgroundThread_->run();
-
-            if (waitForOptimization_.get()) {
-                // wait for background thread to finish computation
-                unlockMutex();
-                backgroundThread_->join();
-                lockMutex();
-            }
-            else {
-                //while background computation is not finished: use temporary bounding box geometry
-                processTmpCube();
-                outport_.setData(tmpGeometry_, false);
-
-                return;
-            }
-        }
-
-#ifdef VRN_PROXY_DEBUG
-        }
-#endif
-    }
-    else if (mode_.get() == "outerfaces") {
-        tgtAssert(transfunc_.get(), "no transfunc");
-
-        //if background thread finished computation: do nothing (background thread invalidated processor, mesh geometry is valid)
-        //else: compute new geometry in background thread and set temporary geometry to outport
-        if (!backgroundThread_ || !backgroundThread_->isFinished()) {
-
-            if (backgroundThread_) {
-                backgroundThread_->interrupt();
-                unlockMutex();
-                delete backgroundThread_;
-                lockMutex();
-                backgroundThread_ = 0;
-            }
-
-            //copy transfer function
-            if(!tfCopy_)
-                tfCopy_ = transfunc_.get()->clone();
-
-            // determine TF type
-            TransFunc1DKeys* tfi = 0;
-
-            if (tfCopy_) {
-                tfi = dynamic_cast<TransFunc1DKeys*>(tfCopy_);
-                if (tfi == 0) {
-                    TransFunc2DPrimitives* tfig = dynamic_cast<TransFunc2DPrimitives*>(tfCopy_);
-                    if (tfig == 0) {
-                        LERROR("Unsupported transfer function.");
-                        return;
-                    }
-                    LWARNING("2D Transfer Function currently not supported: using bounding box mode.");
-                    processCube();
+                //create worker thread that computes a proxy geometry based on the volume octree
+                backgroundThread_ = new VolumeOctreeOuterFacesBackgroundThread(this, inport_.getData(), tfVector,
+                        static_cast<float>(threshold_.get()), geometry_, stepSize, enableClipping_.get(), clipLlf, clipUrb);
+                }
+                else {
+                    LERROR("VolumeOctree representation not available (try to use OctreeCreator). Falling back to Outer Faces mode.");
+                    mode_.set("outerfaces");
+                    invalidate();
                     return;
                 }
             }
-            else {
-                LERROR("No valid transfer function");
-                return;
-            }
-
-            //create worker thread that computes the outer facves proxy geometry
-            int stepSize = resolutionVoxels_.get();
-            tgt::vec3 clipLlf(clipRight_.get(), clipFront_.get(), clipBottom_.get());
-            tgt::vec3 clipUrb(clipLeft_.get() + 1.f, clipBack_.get() + 1.f, clipTop_.get() + 1.f);
-#ifdef VRN_PROXY_DEBUG
-            backgroundThread_ = new OuterFacesBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()),
-                geometry_, &volumeStructure_, volStructureSize_, stepSize, debugOutput_.get(), enableClipping_.get(), clipLlf, clipUrb);
-#else
-            backgroundThread_ = new OuterFacesBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()),
-                geometry_, &volumeStructure_, volStructureSize_, stepSize, false, enableClipping_.get(), clipLlf, clipUrb);
-#endif
 
             //start background computation
             backgroundThread_->run();
@@ -563,91 +399,6 @@ void OptimizedProxyGeometry::process() {
             }
         }
     }
-#ifdef VRN_PROXY_DEBUG
-    else if (mode_.isSelected("octreebricks")) {
-        tgtAssert(transfunc_.get(), "no transfunc");
-
-        //if background thread finished computation: do nothing (background thread invalidated processor, mesh geometry is valid)
-        //else: compute new geometry in background thread and set temporary geometry to outport
-        if (!backgroundThread_ || !backgroundThread_->isFinished()) {
-
-            if (backgroundThread_) {
-                backgroundThread_->interrupt();
-                unlockMutex();
-                delete backgroundThread_;
-                lockMutex();
-                backgroundThread_ = 0;
-            }
-
-            //copy transfer function
-            if(!tfCopy_)
-                tfCopy_ = transfunc_.get()->clone();
-
-            // determine TF type
-            TransFunc1DKeys* tfi = 0;
-
-            if (tfCopy_) {
-                tfi = dynamic_cast<TransFunc1DKeys*>(tfCopy_);
-                if (tfi == 0) {
-                    TransFunc2DPrimitives* tfig = dynamic_cast<TransFunc2DPrimitives*>(tfCopy_);
-                    if (tfig == 0) {
-                        LERROR("Unsupported transfer function.");
-                        return;
-                    }
-                    LWARNING("2D Transfer Function currently not supported: using bounding box mode.");
-                    processCube();
-                    return;
-                }
-            }
-            else {
-                LERROR("No valid transfer function");
-                return;
-            }
-
-            //create worker thread that computes the octree visible bricks proxy geometry
-            int stepSize = resolutionVoxels_.get();
-            tgt::vec3 clipLlf(clipRight_.get(), clipFront_.get(), clipBottom_.get());
-            tgt::vec3 clipUrb(clipLeft_.get() + 1.f, clipBack_.get() + 1.f, clipTop_.get() + 1.f);
-
-            backgroundThread_ = new OctreeBackgroundThread(this, inport_.getData(), tfi, static_cast<float>(threshold_.get()),
-                geometry_, &octreeRoot_, checkHalfNodes_.get(), stepSize, debugOutput_.get(), enableClipping_.get(), clipLlf, clipUrb);
-
-            //start background computation
-            backgroundThread_->run();
-
-            if (waitForOptimization_.get()) {
-                // wait for background thread to finish computation
-                unlockMutex();
-                backgroundThread_->join();
-                lockMutex();
-            }
-            else {
-                //while background computation is not finished: use temporary bounding box geometry
-                processTmpCube();
-                outport_.setData(tmpGeometry_, false);
-
-                return;
-            }
-
-        }
-    }
-    else if (mode_.get() == "brutemincube") {
-        tgtAssert(transfunc_.get(), "no transfunc");
-        processBruteMinCube();
-    }
-    else if (mode_.get() == "bruteforce") {
-        tgtAssert(transfunc_.get(), "no transfunc");
-        processBruteForceCubes();
-    }
-    else if (mode_.get() == "octree") {
-        tgtAssert(transfunc_.get(), "no transfunc");
-        processOctree();
-    }
-    else if (mode_.get() == "structurecubes") {
-        tgtAssert(transfunc_.get(), "no transfunc");
-        processCubes();
-    }
-#endif
 
     outport_.setData(geometry_, false);
 }
@@ -665,14 +416,6 @@ void OptimizedProxyGeometry::processCube() {
     tgt::vec3 coordUrb = inputVolume->getURB();
     const tgt::vec3 noClippingTexLlf(0, 0, 0);
     const tgt::vec3 noClippingTexUrb(1, 1, 1);
-
-#ifdef VRN_PROXY_DEBUG
-    //for debug output: compute volume of the proxy geometry before clipping
-    float geometryVolume;
-    if (debugOutput_.get())
-        geometryVolume = tgt::Bounds(inputVolume->getPhysicalToVoxelMatrix() * coordLlf,
-                                     inputVolume->getPhysicalToVoxelMatrix() * coordUrb).volume();
-#endif
 
     tgt::vec3 texLlf;
     tgt::vec3 texUrb;
@@ -699,10 +442,7 @@ void OptimizedProxyGeometry::processCube() {
     geometry_->addCube(VertexVec3(texLlf, texLlf), VertexVec3(texUrb, texUrb));
     //geometry_->addCube(VertexVec3(coordLlf, texLlf), VertexVec3(coordUrb, texUrb));
     geometry_->setTransformationMatrix(inputVolume->getTextureToWorldMatrix());
-#ifdef VRN_PROXY_DEBUG
-    if (debugOutput_.get())
-        LINFO("Created bounding box proxy geometry with volume " + ftos(geometryVolume) + " (before clipping)");
-#endif
+
 }
 
 void OptimizedProxyGeometry::processTmpCube() {
@@ -973,50 +713,73 @@ void OptimizedProxyGeometry::adjustClipPropertiesVisibility() {
 
 void OptimizedProxyGeometry::updatePropertyVisibility() {
     if (mode_.get() == "boundingbox") {
-        transfunc_.setVisible(false);
+        tfChannel0_.setVisible(false);
+        tfChannel1_.setVisible(false);
+        tfChannel2_.setVisible(false);
+        tfChannel3_.setVisible(false);
         resolutionMode_.setVisible(false);
         resolution_.setVisible(false);
         resolutionVoxels_.setVisible(false);
         threshold_.setVisible(false);
         enableClipping_.setVisible(true);
         adjustClipPropertiesVisibility();
-#ifdef VRN_PROXY_DEBUG
-        checkHalfNodes_.setVisible(false);
-        setEnclosedOpaque_.setVisible(false);
-        debugOutput_.setVisible(true);
-#endif
     }
     else {
-        transfunc_.setVisible(true);
-        resolutionMode_.setVisible(true);
-        if (resolutionMode_.get() == "voxel") {
-            resolution_.setVisible(false);
-            resolutionVoxels_.setVisible(true);
+
+        //check number of channels and set transfer functions visible
+        tfChannel0_.setVisible(true);
+
+        if (inport_.getData()) {
+            size_t numChannels = inport_.getData()->getNumChannels();
+
+            if (numChannels > 1)
+                tfChannel1_.setVisible(true);
+            else
+                tfChannel1_.setVisible(false);
+
+            if (numChannels > 2)
+                tfChannel2_.setVisible(true);
+            else
+                tfChannel2_.setVisible(false);
+
+            if (numChannels > 3)
+                tfChannel3_.setVisible(true);
+            else
+                tfChannel3_.setVisible(false);
+
+            if (numChannels > 4)
+                LWARNING("Number of channels in volume is greater than 4, only 4 channels currently supported!");
         }
         else {
+            tfChannel1_.setVisible(false);
+            tfChannel2_.setVisible(false);
+            tfChannel3_.setVisible(false);
+        }
+
+        if (!mode_.hasKey("volumeoctree") || (!mode_.isSelected("volumeoctree") && !mode_.isSelected("volumeoctreeouterfaces"))) {
+            resolutionMode_.setVisible(true);
+            if (resolutionMode_.get() == "voxel") {
+                resolution_.setVisible(false);
+                resolutionVoxels_.setVisible(true);
+            }
+            else {
+                resolution_.setVisible(true);
+                resolutionVoxels_.setVisible(false);
+            }
             resolution_.setVisible(true);
+        }
+        else {
+            //volume octree mode does not support resolution
+            resolutionMode_.setVisible(false);
+            resolution_.setVisible(false);
             resolutionVoxels_.setVisible(false);
         }
-        resolution_.setVisible(true);
+
         threshold_.setVisible(true);
 
         enableClipping_.setVisible(true);
         adjustClipPropertiesVisibility();
-#ifdef VRN_PROXY_DEBUG
-        if (mode_.get() == "octreebricks")
-           checkHalfNodes_.setVisible(true);
-        else
-           checkHalfNodes_.setVisible(false);
-
-        debugOutput_.setVisible(true);
-
-        if (mode_.get() == "visiblebricks")
-            setEnclosedOpaque_.setVisible(true);
-        else
-            setEnclosedOpaque_.setVisible(false);
-#endif
     }
-
 }
 
 void OptimizedProxyGeometry::adjustClippingToVolumeROI() {
@@ -1080,8 +843,11 @@ void OptimizedProxyGeometry::onTransFuncChange() {
         backgroundThread_ = 0;
     }
 
-    delete tfCopy_;
-    tfCopy_ = 0;
+    //transfunc copies are invalid
+    for (std::vector<TransFunc*>::iterator i = tfCopies_.begin(); i != tfCopies_.end(); ++i) {
+        delete *i;
+    }
+    tfCopies_.clear();
 }
 
 void OptimizedProxyGeometry::onResolutionModeChange() {
@@ -1113,19 +879,13 @@ void OptimizedProxyGeometry::onVolumeChange() {
 
     //invalidate data structures
     structureInvalid_ = true;
-#ifdef VRN_PROXY_DEBUG
-    octreeInvalid_ = true;
-#endif
+
     // adapt clipping plane properties on volume change
     adjustClipPropertiesRanges();
 
     // extract ROI from volume and adjust clipping sliders accordingly
     adjustClippingToVolumeROI();
-#ifdef VRN_PROXY_DEBUG
-    //delete octree
-    delete octreeRoot_;
-    octreeRoot_ = 0;
-#endif
+
     //clear region structure
     volumeStructure_.clear();
 
@@ -1145,6 +905,41 @@ void OptimizedProxyGeometry::onVolumeChange() {
             resolutionVoxels_.set(stepSize);
         }
     }
+
+    size_t numChannels = inport_.getData()->getNumChannels();
+
+    if (!mode_.isSelected("boundingbox")) {
+        //check number of channels and set transfer functions visible
+
+        if (numChannels > 1)
+            tfChannel1_.setVisible(true);
+        else
+            tfChannel1_.setVisible(false);
+
+        if (numChannels > 2)
+            tfChannel2_.setVisible(true);
+        else
+            tfChannel2_.setVisible(false);
+
+        if (numChannels > 3)
+            tfChannel3_.setVisible(true);
+        else
+            tfChannel3_.setVisible(false);
+
+        if (numChannels > 4)
+            LWARNING("Number of channels in volume is greater than 4, only 4 channels currently supported!");
+    }
+
+    tfChannel0_.setVolumeHandle(inport_.getData());
+
+    if (numChannels > 1)
+        tfChannel1_.setVolumeHandle(inport_.getData(), 1);
+
+    if (numChannels > 2)
+        tfChannel2_.setVolumeHandle(inport_.getData(), 2);
+
+    if (numChannels > 3)
+        tfChannel3_.setVolumeHandle(inport_.getData(), 3);
 }
 
 void OptimizedProxyGeometry::onResolutionChange() {
@@ -1173,9 +968,7 @@ void OptimizedProxyGeometry::onResolutionChange() {
 void OptimizedProxyGeometry::onResolutionVoxelChange() {
     //invalidate the structure
     structureInvalid_ = true;
-#ifdef VRN_PROXY_DEBUG
-    octreeInvalid_ = true;
-#endif
+
     if (backgroundThread_) {
         backgroundThread_->interrupt();
         delete backgroundThread_;
@@ -1187,12 +980,6 @@ bool OptimizedProxyGeometry::structureInvalid() const {
     return structureInvalid_;
 }
 
-#ifdef VRN_PROXY_DEBUG
-bool OptimizedProxyGeometry::octreeInvalid() const {
-    return octreeInvalid_;
-}
-#endif
-
 bool OptimizedProxyGeometry::geometryInvalid() const {
     return geometryInvalid_;
 }
@@ -1200,12 +987,6 @@ bool OptimizedProxyGeometry::geometryInvalid() const {
 void OptimizedProxyGeometry::setStructureInvalid(bool value) {
     structureInvalid_ = value;
 }
-
-#ifdef VRN_PROXY_DEBUG
-void OptimizedProxyGeometry::setOctreeInvalid(bool value) {
-    octreeInvalid_ = value;
-}
-#endif
 
 void OptimizedProxyGeometry::setGeometryInvalid(bool value) {
     geometryInvalid_ = value;
@@ -1223,1046 +1004,16 @@ void OptimizedProxyGeometry::setVolumeHasChanged(bool value) {
     volumeHasChanged_ = value;
 }
 
-/*
- * Modes only availabe in debug mode
- *-----------------------------------*/
-
-#ifdef VRN_PROXY_DEBUG
-
-void OptimizedProxyGeometry::onCheckHalfNodesChange() {
-    geometryInvalid_ = true;
-
-    if (backgroundThread_) {
-        backgroundThread_->interrupt();
-        delete backgroundThread_;
-        backgroundThread_ = 0;
-    }
-}
-
-bool OptimizedProxyGeometry::isRegionEmptyPi(float min, float max, const PreIntegrationTable* piTable) const {
-    return (piTable->classify(min, max).a <= 0.0001 * static_cast<float>(threshold_.get()));
-}
-
-void OptimizedProxyGeometry::computeOctreeRecursively(const VolumeBase* inputVolume) {
-
-    stopWatch_.reset();
-    stopWatch_.start();
-
-    tgt::ivec3 dim = inputVolume->getDimensions();
-    //const int res = resolution_.get();
-
-    const VolumeRAM* vol = inputVolume->getRepresentation<VolumeRAM>();
-    RealWorldMapping rwm = inputVolume->getRealWorldMapping();
-
-    int stepSize = resolutionVoxels_.get();
-    const tgt::ivec3 step = tgt::ivec3(stepSize);
-
-    //determine size for this resolution
-    const tgt::ivec3 size(
-            static_cast<int>(std::ceil(static_cast<float>(dim.x) / static_cast<float>(stepSize))),
-            static_cast<int>(std::ceil(static_cast<float>(dim.y) / static_cast<float>(stepSize))),
-            static_cast<int>(std::ceil(static_cast<float>(dim.z) / static_cast<float>(stepSize))));
-
-    //create root for new octree
-    octreeRoot_ = new ProxyGeometryOctreeNode();
-
-    tgt::ivec3 pos(0);
-    subdivideOctreeNodeRecursively(octreeRoot_, pos, size, stepSize, vol, dim, rwm);
-
-    stopWatch_.stop();
-    if (debugOutput_.get())
-        std::cout << "Recursive octree construction took " << stopWatch_.getRuntime() <<  " milliseconds" << std::endl;
-}
-
-void OptimizedProxyGeometry::subdivideOctreeNodeRecursively(ProxyGeometryOctreeNode* current, tgt::ivec3 pos, tgt::ivec3 size, int stepSize,
-    const VolumeRAM* vol, tgt::ivec3 dim, RealWorldMapping rwm)
-{
-    if (!current) {
-        LERROR("Encounter node 0 during octree creation...");
-        return;
-    }
-
-    //if there is no further subdividing possible: make current node leaf and compute min and max values as well as bounds
-    if ((size.x == 1) || (size.y == 1) || (size.z == 1)) {
-        current->isLeaf_ = true;
-        tgt::ivec3 llf = pos * stepSize;
-        tgt::ivec3 urb = (pos + size) * stepSize;
-
-        //since a voxel is the center, add/subtract 0.5 to/from the coordinates to get the bounding box
-        current->bounds_ = tgt::Bounds(tgt::vec3(llf) - tgt::vec3(0.5f), tgt::vec3(urb) + tgt::vec3(0.5f));
-
-        // find min and max intensities
-        float minIntensity = std::numeric_limits<float>::max();
-        float maxIntensity = std::numeric_limits<float>::min();
-        llf = tgt::max(llf - tgt::ivec3(1),tgt::ivec3(0));
-        llf = tgt::min(llf,dim - 1);
-        urb = tgt::max(urb + tgt::ivec3(1),tgt::ivec3(0));
-        urb = tgt::min(urb,dim - 1);
-
-        //don't use macro because of interruption points within the loops...
-        //VRN_FOR_EACH_VOXEL(pos, llf, urb) {
-        for (pos = llf; pos.z < urb.z; ++pos.z) {
-            //interruption point after each slice
-
-            for (pos.y = llf.y; pos.y < urb.y; ++pos.y) {
-                for (pos.x = llf.x; pos.x < urb.x; ++pos.x) {
-                    float currentIntensity = vol->getVoxelNormalized(pos);
-                    //apply realworld mapping
-                    currentIntensity = rwm.normalizedToRealWorld(currentIntensity);
-                    minIntensity = std::min(minIntensity,currentIntensity);
-                    maxIntensity = std::max(maxIntensity,currentIntensity);
-                }
-            }
-        }
-
-        current->minMaxIntensity_ = tgt::vec2(minIntensity, maxIntensity);
-    }
-    else {
-        //subdivide the current node
-        tgt::ivec3 sizeLlf = size / 2;
-        tgt::ivec3 sizeUrb = size - sizeLlf;
-        tgt::ivec3 posUrb = pos + sizeLlf;
-
-        //recursively compute children
-        current->llf_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->llf_, pos, sizeLlf, stepSize, vol, dim, rwm);
-
-        current->lrf_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->lrf_, tgt::ivec3(posUrb.x, pos.y, pos.z),
-            tgt::ivec3(sizeUrb.x, sizeLlf.y, sizeLlf.z), stepSize, vol, dim, rwm);
-
-        current->ulf_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->ulf_, tgt::ivec3(pos.x, posUrb.y, pos.z),
-            tgt::ivec3(sizeLlf.x, sizeUrb.y, sizeLlf.z), stepSize, vol, dim, rwm);
-
-        current->urf_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->urf_, tgt::ivec3(posUrb.x, posUrb.y, pos.z),
-            tgt::ivec3(sizeUrb.x, sizeUrb.y, sizeLlf.z), stepSize, vol, dim, rwm);
-
-        current->llb_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->llb_, tgt::ivec3(pos.x, pos.y, posUrb.z),
-            tgt::ivec3(sizeLlf.x, sizeLlf.y, sizeUrb.z), stepSize, vol, dim, rwm);
-
-        current->lrb_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->lrb_, tgt::ivec3(posUrb.x, pos.y, posUrb.z),
-            tgt::ivec3(sizeUrb.x, sizeLlf.y, sizeUrb.z), stepSize, vol, dim, rwm);
-
-        current->ulb_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->ulb_, tgt::ivec3(pos.x, posUrb.y, posUrb.z),
-            tgt::ivec3(sizeLlf.x, sizeUrb.y, sizeUrb.z), stepSize, vol, dim, rwm);
-
-        current->urb_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->urb_, posUrb, sizeUrb, stepSize, vol, dim, rwm);
-
-        //compute bounds and min/max from child nodes, set parent to child nodes
-        current->llf_->parent_ = current;
-        current->lrf_->parent_ = current;
-        current->ulf_->parent_ = current;
-        current->urf_->parent_ = current;
-        current->llb_->parent_ = current;
-        current->lrb_->parent_ = current;
-        current->ulb_->parent_ = current;
-        current->urb_->parent_ = current;
-
-        current->bounds_ = current->llf_->bounds_;
-        current->bounds_.addVolume(current->lrf_->bounds_);
-        current->bounds_.addVolume(current->ulf_->bounds_);
-        current->bounds_.addVolume(current->urf_->bounds_);
-        current->bounds_.addVolume(current->llb_->bounds_);
-        current->bounds_.addVolume(current->lrb_->bounds_);
-        current->bounds_.addVolume(current->ulb_->bounds_);
-        current->bounds_.addVolume(current->urb_->bounds_);
-
-        float min, max;
-        min = current->llf_->minMaxIntensity_.x;
-        max = current->llf_->minMaxIntensity_.y;
-        min = std::min(min, current->lrf_->minMaxIntensity_.x);
-        max = std::max(max, current->lrf_->minMaxIntensity_.y);
-        min = std::min(min, current->ulf_->minMaxIntensity_.x);
-        max = std::max(max, current->ulf_->minMaxIntensity_.y);
-        min = std::min(min, current->urf_->minMaxIntensity_.x);
-        max = std::max(max, current->urf_->minMaxIntensity_.y);
-        min = std::min(min, current->llb_->minMaxIntensity_.x);
-        max = std::max(max, current->llb_->minMaxIntensity_.y);
-        min = std::min(min, current->lrb_->minMaxIntensity_.x);
-        max = std::max(max, current->lrb_->minMaxIntensity_.y);
-        min = std::min(min, current->ulb_->minMaxIntensity_.x);
-        max = std::max(max, current->ulb_->minMaxIntensity_.y);
-        min = std::min(min, current->urb_->minMaxIntensity_.x);
-        max = std::max(max, current->urb_->minMaxIntensity_.y);
-
-        current->minMaxIntensity_ = tgt::vec2(min, max);
-    }
-}
-
-
-
-bool OptimizedProxyGeometry::isRegionEmpty(const VolumeRAM* vol, tgt::ivec3 llf, tgt::ivec3 urb, const tgt::Texture* tfTexture, float threshold) {
-
-    const tgt::ivec3 dim = inport_.getData()->getDimensions();
-
-    llf = tgt::max(llf,tgt::ivec3(0));
-    llf = tgt::min(llf,dim - 1);
-
-    urb = tgt::max(urb + tgt::ivec3(1),tgt::ivec3(0));
-    urb = tgt::min(urb,dim - 1);
-
-    VRN_FOR_EACH_VOXEL(pos, llf, urb) {
-                float current = vol->getVoxelNormalized(pos);
-                //apply realworld mapping and TF domain
-                current = inport_.getData()->getRealWorldMapping().normalizedToRealWorld(current);
-                current = transfunc_.get()->realWorldToNormalized(current);
-
-                //check both intensity values (floor and ceil) to account for linear interpolation
-                int widthMinusOne = tfTexture->getWidth()-1;
-                tgt::vec4 valueFloor = tgt::vec4(tfTexture->texel<tgt::col4>(static_cast<size_t>(tgt::clamp(static_cast<int>(std::floor(current * widthMinusOne)), 0, widthMinusOne)))) / 255.f;
-                tgt::vec4 valueCeil = tgt::vec4(tfTexture->texel<tgt::col4>(static_cast<size_t>(tgt::clamp(static_cast<int>(std::ceil(current * widthMinusOne)), 0, widthMinusOne)))) / 255.f;
-
-               if (std::max(valueFloor.a, valueCeil.a) > threshold)
-                  return false;
-    }
-
-    return true;
-}
-
-tgt::ivec3 OptimizedProxyGeometry::getUrbPi(tgt::ivec3 llf, TransFunc1DKeys* tfi, const PreIntegrationTable* piTable) {
-    const tgt::ivec3 size = volStructureSize_;
-    tgt::bvec3 inc(true);
-    tgt::ivec3 urb(llf);
-
-    while(inc.x||inc.y||inc.z) {
-        if (inc.x) {
-            if (urb.x+1>size.x-1) {
-                inc.x=false;
-            } else {
-                if (isVolNotEmptyPiNotBound(
-                    tgt::ivec3(urb.x+1,llf.y,llf.z),
-                    tgt::ivec3(urb.x+1,urb.y,urb.z),
-                    tfi, piTable))
-                {
-                    urb.x += 1;
-                } else {
-                    inc.x=false;
-                }
-            }
-        }
-        if (inc.y) {
-            if (urb.y+1>size.y-1) {
-                inc.y=false;
-            } else {
-                if (isVolNotEmptyPiNotBound(
-                    tgt::ivec3(llf.x,urb.y+1,llf.z),
-                    tgt::ivec3(urb.x,urb.y+1,urb.z),
-                    tfi, piTable)) {
-                    urb.y += 1;
-                } else {
-                    inc.y=false;
-                }
-            }
-        }
-        if (inc.z) {
-            if (urb.z+1>size.z-1) {
-                inc.z=false;
-            } else {
-                if (isVolNotEmptyPiNotBound(
-                    tgt::ivec3(llf.x,llf.y,urb.z+1),
-                    tgt::ivec3(urb.x,urb.y,urb.z+1),
-                    tfi, piTable)) {
-                    urb.z += 1;
-                } else {
-                    inc.z=false;
-                }
-            }
-        }
-    }
-
-    setVolBound(llf,urb);
-    return urb;
-}
-
-
-tgt::ivec3 OptimizedProxyGeometry::getUrbOpaque(tgt::ivec3 llf) {
-    const tgt::ivec3 size = volStructureSize_;
-    tgt::bvec3 inc(true);
-    tgt::ivec3 urb(llf);
-
-    while(inc.x||inc.y||inc.z) {
-        if (inc.x) {
-            if (urb.x+1>size.x-1) {
-                inc.x=false;
-            } else {
-                if (isVolOpaqueNotBound(
-                    tgt::ivec3(urb.x+1,llf.y,llf.z),
-                    tgt::ivec3(urb.x+1,urb.y,urb.z)))
-                {
-                    urb.x += 1;
-                } else {
-                    inc.x=false;
-                }
-            }
-        }
-        if (inc.y) {
-            if (urb.y+1>size.y-1) {
-                inc.y=false;
-            } else {
-                if (isVolOpaqueNotBound(
-                    tgt::ivec3(llf.x,urb.y+1,llf.z),
-                    tgt::ivec3(urb.x,urb.y+1,urb.z))) {
-                    urb.y += 1;
-                } else {
-                    inc.y=false;
-                }
-            }
-        }
-        if (inc.z) {
-            if (urb.z+1>size.z-1) {
-                inc.z=false;
-            } else {
-                if (isVolOpaqueNotBound(
-                    tgt::ivec3(llf.x,llf.y,urb.z+1),
-                    tgt::ivec3(urb.x,urb.y,urb.z+1))) {
-                    urb.z += 1;
-                } else {
-                    inc.z=false;
-                }
-            }
-        }
-    }
-
-    setVolBound(llf,urb);
-    return urb;
-}
-
-void OptimizedProxyGeometry::setVolBound(tgt::ivec3 llf, tgt::ivec3 urb, bool value) {
-    for (int z=llf.z; z<=urb.z;z++) {
-        for (int y=llf.y; y<=urb.y; y++) {
-            for (int x=llf.x; x<=urb.x; x++) {
-                ProxyGeometryVolumeRegion* v = getVolumeRegion(tgt::ivec3(x,y,z));
-                v->setBound(value);
-            }
-        }
-    }
-}
-
-bool OptimizedProxyGeometry::isVolNotEmptyPiNotBound(tgt::ivec3 llf, tgt::ivec3 urb, TransFunc1DKeys* tfi, const PreIntegrationTable* piTable) {
-    for (int z=llf.z; z<=urb.z;z++) {
-        for (int y=llf.y; y<=urb.y; y++) {
-            for (int x=llf.x; x<=urb.x; x++) {
-                ProxyGeometryVolumeRegion* v = getVolumeRegion(tgt::ivec3(x,y,z));
-                if (v->isBound())
-                    return false;
-                if (isRegionEmptyPi(tfi->realWorldToNormalized(v->getMinIntensity()), tfi->realWorldToNormalized(v->getMaxIntensity()), piTable))
-                    return false;
-            }
-        }
-    }
-    return true;
-}
-
-bool OptimizedProxyGeometry::isVolNotEmptyPiNotBound(tgt::ivec3 pos, TransFunc1DKeys* tfi, const PreIntegrationTable* piTable) {
-     ProxyGeometryVolumeRegion* v = getVolumeRegion(pos);
-     if (v->isBound())
-        return false;
-     if (isRegionEmptyPi(tfi->realWorldToNormalized(v->getMinIntensity()), tfi->realWorldToNormalized(v->getMaxIntensity()), piTable))
-        return false;
-
-     return true;
-}
-
-bool OptimizedProxyGeometry::isVolOpaqueNotBound(tgt::ivec3 llf, tgt::ivec3 urb) {
-    for (int z=llf.z; z<=urb.z;z++) {
-        for (int y=llf.y; y<=urb.y; y++) {
-            for (int x=llf.x; x<=urb.x; x++) {
-                ProxyGeometryVolumeRegion* v = getVolumeRegion(tgt::ivec3(x,y,z));
-                if (v->isBound())
-                    return false;
-                if (!v->isOpaque())
-                    return false;
-            }
-        }
-    }
-    return true;
-}
-
-bool OptimizedProxyGeometry::isVolOpaqueNotBound(tgt::ivec3 pos) {
-     ProxyGeometryVolumeRegion* v = getVolumeRegion(pos);
-     if (v->isBound())
-        return false;
-     if (!v->isOpaque())
-        return false;
-
-     return true;
-}
-
-ProxyGeometryVolumeRegion* OptimizedProxyGeometry::getVolumeRegion(tgt::ivec3 pos) {
-    return &volumeStructure_[pos.z * (volStructureSize_.x * volStructureSize_.y) + pos.y * volStructureSize_.x + pos.x];
-}
-
-void OptimizedProxyGeometry::computeRegionStructure(const VolumeBase* inputVolume) {
-    volumeStructure_.clear();
-
-    stopWatch_.reset();
-    stopWatch_.start();
-
-    tgt::ivec3 dim = inputVolume->getDimensions();
-    //const int res = resolution_.get();
-
-    const VolumeRAM* vol = inputVolume->getRepresentation<VolumeRAM>();
-    RealWorldMapping rwm = inputVolume->getRealWorldMapping();
-
-    /*
-    //determine shortest side and for this side the step size
-    int minDim = std::min(std::min(dim.x, dim.y), dim.z);
-    int stepSize = std::max(1, tgt::iround(static_cast<float>(minDim) / static_cast<float>(res)));
-    const tgt::ivec3 step = tgt::ivec3(stepSize);
-    */
-    int stepSize = resolutionVoxels_.get();
-    const tgt::ivec3 step = tgt::ivec3(stepSize);
-
-    //determine size for this resolution
-    const tgt::ivec3 size(
-            static_cast<int>(std::ceil(static_cast<float>(dim.x) / static_cast<float>(stepSize))),
-            static_cast<int>(std::ceil(static_cast<float>(dim.y) / static_cast<float>(stepSize))),
-            static_cast<int>(std::ceil(static_cast<float>(dim.z) / static_cast<float>(stepSize))));
-
-    volStructureSize_ = size;
-
-    tgt::ivec3 pos, llf, urb;
-
-    for (VolumeIterator it(size); !it.outofrange(); it.next()) {
-        pos = it.value();
-        llf = pos * step;
-        urb = (pos+1) * step - tgt::ivec3(1);
-        //urb = tgt::min(urb, dim);
-
-        //since a voxel is the center, add/subtract 0.5 to/from the coordinates to get the bounding box
-        tgt::Bounds regionBounds(tgt::vec3(llf) - tgt::vec3(0.5f), tgt::vec3(urb) + tgt::vec3(0.5f));
-
-        // find min and max intensities
-        float minIntensity = std::numeric_limits<float>::max();
-        float maxIntensity = std::numeric_limits<float>::min();
-        llf = tgt::max(llf - tgt::ivec3(1),tgt::ivec3(0));
-        llf = tgt::min(llf,dim - 1);
-        urb = tgt::max(urb + tgt::ivec3(1),tgt::ivec3(0));
-        urb = tgt::min(urb,dim - 1);
-
-        VRN_FOR_EACH_VOXEL(pos, llf, urb) {
-           float current = vol->getVoxelNormalized(pos);
-           //apply realworld mapping
-           current = rwm.normalizedToRealWorld(current);
-           minIntensity = std::min(minIntensity,current);
-           maxIntensity = std::max(maxIntensity,current);
-        }
-
-        //add region
-        volumeStructure_.push_back(ProxyGeometryVolumeRegion(regionBounds,tgt::vec2(minIntensity,maxIntensity)));
-
-    }
-
-    stopWatch_.stop();
-    if (debugOutput_.get())
-        std::cout << "Computing region structure took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-}
-
-
-
-float OptimizedProxyGeometry::traverseOctreeAndCreateGeometry(ProxyGeometryOctreeNode* node, TransFunc1DKeys* tfi,
-        const PreIntegrationTable* piTable, tgt::ivec3 dim, tgt::Bounds clipBounds) {
-
-    float proxyVolume = 0.f;
-
-    if (!node) {
-        LERROR("Encountered 0 pointer instead of valid node during octree traversal...");
-        return 0.f;
-    }
-
-    // get min and max intensity of this region
-    float minIntensity = tfi->realWorldToNormalized(node->minMaxIntensity_.x);
-    float maxIntensity = tfi->realWorldToNormalized(node->minMaxIntensity_.y);
-
-    // if region is empty: do not traverse any further
-    if (isRegionEmptyPi(minIntensity, maxIntensity, piTable))
-        return 0.f;
-
-    //if region is leaf: add geometry
-    if (node->isLeaf_) {
-        if (enableClipping_.get()) {
-            //only add and clip mesh if necessary
-            if (clipBounds.containsVolume(node->bounds_))
-                addCubeMesh(geometry_, node->bounds_, dim);
-            else if (clipBounds.intersects(node->bounds_))
-                addCubeMeshClip(geometry_, node->bounds_,dim,clipBounds);
-        }
-        else
-            addCubeMesh(geometry_, node->bounds_,dim/*,inputVolume->getVoxelToPhysicalMatrix()*/);
-
-        proxyVolume += node->bounds_.volume();
-    }
-    else {
-        //recursively traverse
-        proxyVolume += traverseOctreeAndCreateGeometry(node->llf_, tfi, piTable, dim, clipBounds);
-        proxyVolume += traverseOctreeAndCreateGeometry(node->lrf_, tfi, piTable, dim, clipBounds);
-        proxyVolume += traverseOctreeAndCreateGeometry(node->ulf_, tfi, piTable, dim, clipBounds);
-        proxyVolume += traverseOctreeAndCreateGeometry(node->urf_, tfi, piTable, dim, clipBounds);
-        proxyVolume += traverseOctreeAndCreateGeometry(node->llb_, tfi, piTable, dim, clipBounds);
-        proxyVolume += traverseOctreeAndCreateGeometry(node->lrb_, tfi, piTable, dim, clipBounds);
-        proxyVolume += traverseOctreeAndCreateGeometry(node->ulb_, tfi, piTable, dim, clipBounds);
-        proxyVolume += traverseOctreeAndCreateGeometry(node->urb_, tfi, piTable, dim, clipBounds);
-    }
-
-    return proxyVolume;
-}
-
-void OptimizedProxyGeometry::setEnclosedOpaque() {
-    tgt::ivec3 pos;
-
-    setVolBound(tgt::ivec3(0),volStructureSize_-1,false);
-
-    for (VolumeIterator it(volStructureSize_); !it.outofrange(); it.next()) {
-        pos = it.value();
-        ProxyGeometryVolumeRegion* current = getVolumeRegion(pos);
-        if (!current->isOpaque() && !current->isBound()) {
-            if (isEnclosed(pos)) {
-                current->setOpaque(true);
-            }
-        }
-    }
-}
-
-bool OptimizedProxyGeometry::isEnclosed(tgt::ivec3 pos) {
-    const tgt::ivec3 tpos[6] = {tgt::ivec3(0,0,-1)
-                         ,tgt::ivec3(0,0,1)
-                         ,tgt::ivec3(-1,0,0)
-                         ,tgt::ivec3(1,0,0)
-                         ,tgt::ivec3(0,-1,0)
-                         ,tgt::ivec3(0,1,0)};
-    std::queue<tgt::ivec3> q;
-    tgt::ivec3 qpos,ipos;
-    tgt::bvec3 tless, tgreater;
-    bool enclosed = true;
-
-    q.push(pos);
-    while (!q.empty()) {
-        qpos = q.front(); q.pop();
-        ProxyGeometryVolumeRegion* qCurrent = getVolumeRegion(pos);
-        if (!qCurrent->isOpaque()) {if (!qCurrent->isBound()) {qCurrent->setBound(true);
-
-        for (int i=0; i<6; i++) {
-            ipos = qpos + tpos[i];
-            tless = tgt::lessThan(ipos,tgt::ivec3(0));
-            tgreater = tgt::greaterThan(ipos,volStructureSize_-1);
-            if (tless.x || tless.y || tless.z || tgreater.x || tgreater.y || tgreater.z) enclosed = false;
-            else q.push(ipos);
-        }
-
-        }}
-    }
-
-    return enclosed;
-}
-
-void OptimizedProxyGeometry::processMaximalCubesSetEnclosedOpaque() {
-    //get input data
-    const VolumeBase* inputVolume = inport_.getData();
-    tgt::ivec3 dim = inputVolume->getDimensions();
-    //const int res = resolution_.get();
-
-    // determine TF type
-    TransFunc1DKeys* tfi = 0;
-    //TransFunc2DPrimitives* tfig = 0;
-    //intensityGradientTF_ = false;
-
-    if (transfunc_.get()) {
-        tfi = dynamic_cast<TransFunc1DKeys*>(transfunc_.get());
-        if (tfi == 0) {
-            TransFunc2DPrimitives* tfig = dynamic_cast<TransFunc2DPrimitives*>(transfunc_.get());
-            if (tfig == 0) {
-                LWARNING("CPURaycaster::process: unsupported tf");
-                return;
-            }
-            LERROR("2D Transfer Function currently not supported: using bounding box mode.");
-            processCube();
-            return;
-        }
-    }
-
-    if (structureInvalid_) {
-        //invalidate geometry
-        geometryInvalid_ = true;
-        //clear structure
-        volumeStructure_.clear();
-        //compute new structure
-        computeRegionStructure(inputVolume);
-        structureInvalid_ = false;
-    }
-
-    if (geometryInvalid_) {
-        geometry_->clear();
-
-        stopWatch_.reset();
-        stopWatch_.start();
-
-        const PreIntegrationTable* piTable = tfi->getPreIntegrationTable(1.f, 256);
-
-        stopWatch_.stop();
-        if (debugOutput_.get())
-            std::cout << "Fetching PreIntegration table took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-
-        stopWatch_.reset();
-        stopWatch_.start();
-
-        setVolBound(tgt::ivec3(0),volStructureSize_-1,false);
-
-        //for every region: determine opacity
-        std::vector<ProxyGeometryVolumeRegion>::iterator regionIterator;
-        for (regionIterator = volumeStructure_.begin(); regionIterator != volumeStructure_.end(); ++regionIterator) {
-            //apply tf domain
-            float minIntensity = tfi->realWorldToNormalized(regionIterator->getMinIntensity());
-            float maxIntensity = tfi->realWorldToNormalized(regionIterator->getMaxIntensity());
-            if (isRegionEmptyPi(minIntensity,maxIntensity,piTable))
-                regionIterator->setOpaque(false);
-            else
-                regionIterator->setOpaque(true);
-        }
-
-        //set enclosed regions opaque
-        setEnclosedOpaque();
-
-        //now build maximal cubes
-        int numberOfCubes = 0; //number of created cubes
-        float proxyVolume = 0.f;
-
-        tgt::ivec3 pos, urbVol;
-        tgt::vec3 llf, urb;
-        for (VolumeIterator it(volStructureSize_); !it.outofrange(); it.next()) {
-            pos = it.value();
-            if (isVolOpaqueNotBound(pos)) {
-                urbVol = getUrbOpaque(pos);
-                llf = getVolumeRegion(pos)->getBounds().getLLF();
-                urb = getVolumeRegion(urbVol)->getBounds().getURB();
-                tgt::Bounds cubeBounds(llf,urb);
-                if (enableClipping_.get()) {
-                    //get clipping planes
-                    tgt::vec3 clipLlf(clipRight_.get(), clipFront_.get(), clipBottom_.get());
-                    tgt::vec3 clipUrb(clipLeft_.get() + 1.f, clipBack_.get() + 1.f, clipTop_.get() + 1.f);
-                    tgt::Bounds clipBounds(clipLlf, clipUrb);
-                    //only add and clip cube mesh if necessary
-                    if (clipBounds.containsVolume(cubeBounds))
-                        addCubeMesh(geometry_, cubeBounds, dim);
-                    else if (clipBounds.intersects(cubeBounds))
-                        addCubeMeshClip(geometry_, cubeBounds,dim,clipBounds);
-                }
-                else
-                    addCubeMesh(geometry_, cubeBounds,dim);
-
-                if (debugOutput_.get()) {
-                    proxyVolume += cubeBounds.volume();
-                    numberOfCubes++;
-                }
-            }
-        }
-
-        stopWatch_.stop();
-        if (debugOutput_.get()) {
-            std::cout << "Determined maximal cubes (setting enclosed opaque in " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-            std::cout << "Created Proxy Geometry consisting of " << numberOfCubes
-                      << " cubes using maximal cubes mode with setting enclosed regions opaque," << std::endl;
-            std::cout << " volume < " << proxyVolume << " (before clipping)" << std::endl;
-        }
-
-        //if mesh list is empty: add first region (empty mesh geometry might lead to camera problem)
-        if (geometry_->isEmpty() && !volumeStructure_.empty()) {
-            ProxyGeometryVolumeRegion& region = volumeStructure_[0];
-            addCubeMesh(geometry_, region.getBounds(),dim);
-        }
-
-        geometry_->setTransformationMatrix(inputVolume->getTextureToWorldMatrix());
-        geometryInvalid_ = false;
-    }
-
-}
-
-
-void OptimizedProxyGeometry::onSetEnclosedOpaqueChange() {
-    geometryInvalid_ = true;
-
-    if (backgroundThread_) {
-        backgroundThread_->interrupt();
-        delete backgroundThread_;
-        backgroundThread_ = 0;
-    }
-}
-
-void OptimizedProxyGeometry::processBruteMinCube() {
-
-    geometry_->clear();
-
-    const VolumeBase* inputVolume = inport_.getData();
-
-    //determine TF type
-    TransFunc1DKeys* tfi = 0;
-    //TransFunc2DPrimitives* tfig = 0;
-    //intensityGradientTF_ = false;
-
-    if (transfunc_.get()) {
-        tfi = dynamic_cast<TransFunc1DKeys*>(transfunc_.get());
-        if (tfi == 0) {
-            TransFunc2DPrimitives* tfig = dynamic_cast<TransFunc2DPrimitives*>(transfunc_.get());
-            if (tfig == 0) {
-                LWARNING("CPURaycaster::process: unsupported tf");
-                return;
-            }
-            LERROR("2D Transfer Function currently not supported: using cube mode.");
-            processCube();
-            return;
-        }
-    }
-
-    // retrieve tf texture
-    tgt::Texture* tfTexture = transfunc_.get()->getTexture();
-    tfTexture->downloadTexture();
-
-    tgt::ivec3 dim = inputVolume->getDimensions();
-
-    const VolumeRAM* vol = inputVolume->getRepresentation<VolumeRAM>();
-
-    /*
-    //determine shortest side and for this side the step size
-    int minDim = std::min(std::min(dim.x, dim.y), dim.z);
-    int stepSize = std::max(1, tgt::iround(static_cast<float>(minDim) / static_cast<float>(res)));
-    const tgt::ivec3 step = tgt::ivec3(stepSize);
-    */
-    int stepSize = resolutionVoxels_.get();
-    const tgt::ivec3 step = tgt::ivec3(stepSize);
-
-    stopWatch_.reset();
-
-    //determine size for this resolution
-    const tgt::ivec3 size(
-            static_cast<int>(std::ceil(static_cast<float>(dim.x) / static_cast<float>(stepSize))),
-            static_cast<int>(std::ceil(static_cast<float>(dim.y) / static_cast<float>(stepSize))),
-            static_cast<int>(std::ceil(static_cast<float>(dim.z) / static_cast<float>(stepSize))));
-
-    tgt::ivec3 pos, llf, urb;
-
-    tgt::Bounds bounds; //bounding box
-    //find bounds
-    stopWatch_.start(); //get runtime for determining volume
-    for (VolumeIterator it(size); !it.outofrange(); it.next()) {
-        pos = it.value();
-        llf = pos * step;
-        urb = (pos+1) * step - tgt::ivec3(1);
-        //check if the region is empty and if not: include the region
-        if (!isRegionEmpty(vol, llf - tgt::ivec3(1),urb + tgt::ivec3(1), tfTexture, static_cast<float>(threshold_.get())*0.001f)) {
-            bounds.addVolume(tgt::Bounds(llf,urb));
-        }
-    }
-    stopWatch_.stop();
-
-    //since a voxel is the center, add/subtract 0.5 to/from the coordinates
-    bounds = tgt::Bounds(bounds.getLLF() - tgt::vec3(0.5f), bounds.getURB() + tgt::vec3(0.5f));
-
-    if (enableClipping_.get()) {
-        tgt::vec3 clipLlf(clipRight_.get(), clipFront_.get(), clipBottom_.get());
-        tgt::vec3 clipUrb(clipLeft_.get() + 1.f, clipBack_.get() + 1.f, clipTop_.get() + 1.f);
-        tgt::Bounds clipBounds(clipLlf, clipUrb);
-
-        addCubeMeshClip(geometry_, bounds, dim, clipBounds);
-    }
-    else
-        addCubeMesh(geometry_, bounds, dim);
-
-    geometry_->setTransformationMatrix(inputVolume->getTextureToWorldMatrix());
-
-    if (debugOutput_.get()) {
-        std::cout << "Created minimal cube proxy geometry with volume " << bounds.volume() << " (before clipping)" << std::endl;
-        std::cout << "Determined minimal cube (brute-force) in " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-    }
-}
-
-void OptimizedProxyGeometry::processBruteForceCubes() {
-
-    geometry_->clear();
-
-    const VolumeBase* inputVolume = inport_.getData();
-
-    // determine TF type
-    TransFunc1DKeys* tfi = 0;
-    //TransFunc2DPrimitives* tfig = 0;
-    //intensityGradientTF_ = false;
-
-    if (transfunc_.get()) {
-        tfi = dynamic_cast<TransFunc1DKeys*>(transfunc_.get());
-        if (tfi == 0) {
-            TransFunc2DPrimitives* tfig = dynamic_cast<TransFunc2DPrimitives*>(transfunc_.get());
-            if (tfig == 0) {
-                LWARNING("CPURaycaster::process: unsupported tf");
-                return;
-            }
-            LERROR("2D Transfer Function currently not supported: using cube mode.");
-            processCube();
-            return;
-        }
-    }
-
-    // retrieve tf texture
-    tgt::Texture* tfTexture = transfunc_.get()->getTexture();
-    tfTexture->downloadTexture();
-
-    const VolumeRAM* vol = inputVolume->getRepresentation<VolumeRAM>();
-
-    tgt::ivec3 dim = inputVolume->getDimensions();
-    //const int res = resolution_.get();
-
-    /*
-    //determine shortest side and for this side the step size
-    int minDim = std::min(std::min(dim.x, dim.y), dim.z);
-    int stepSize = std::max(1, tgt::iround(static_cast<float>(minDim) / static_cast<float>(res)));
-    const tgt::ivec3 step = tgt::ivec3(stepSize);
-    */
-    int stepSize = resolutionVoxels_.get();
-    const tgt::ivec3 step = tgt::ivec3(stepSize);
-
-    //determine size for this resolution
-    const tgt::ivec3 size(
-            static_cast<int>(std::ceil(static_cast<float>(dim.x) / static_cast<float>(stepSize))),
-            static_cast<int>(std::ceil(static_cast<float>(dim.y) / static_cast<float>(stepSize))),
-            static_cast<int>(std::ceil(static_cast<float>(dim.z) / static_cast<float>(stepSize))));
-
-    tgt::ivec3 pos, llf, urb;
-
-    int numberOfCubes = 0; //number of created cubes
-    float proxyVolume = 0.f; //volume of the created proxy geometry
-
-    stopWatch_.reset();
-    stopWatch_.start();
-    for (VolumeIterator it(size); !it.outofrange(); it.next()) {
-        pos = it.value();
-        llf = pos * step;
-        urb = (pos+1) * step - tgt::ivec3(1);
-
-        //since a voxel is the center, add/subtract 0.5 to/from the coordinates
-        tgt::Bounds regionBounds(tgt::vec3(llf) - tgt::vec3(0.5f), tgt::vec3(urb) + tgt::vec3(0.5f));
-
-        if (!isRegionEmpty(vol, llf - tgt::ivec3(1),urb + tgt::ivec3(1), tfTexture, static_cast<float>(threshold_.get())*0.001f)) {
-            if (enableClipping_.get()) {
-                //get clipping planes
-                tgt::vec3 clipLlf(clipRight_.get(), clipFront_.get(), clipBottom_.get());
-                tgt::vec3 clipUrb(clipLeft_.get() + 1.f, clipBack_.get() + 1.f, clipTop_.get() + 1.f);
-                tgt::Bounds clipBounds(clipLlf, clipUrb);
-                //only add and clip cube mesh if necessary
-                if (clipBounds.containsVolume(regionBounds))
-                    addCubeMesh(geometry_, regionBounds, dim);
-                else if (clipBounds.intersects(regionBounds))
-                    addCubeMeshClip(geometry_, regionBounds,dim,clipBounds);
-            }
-            else
-                addCubeMesh(geometry_, regionBounds,dim);
-
-            //for debugging output
-            if (debugOutput_.get()) {
-                proxyVolume += regionBounds.volume();
-                numberOfCubes++;
-            }
-        }
-    }
-    stopWatch_.stop();
-    if (debugOutput_.get()) {
-        std::cout << "Built proxy geometry using brute-force cubes in " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-        std::cout << "Created Proxy Geometry consisting of " << numberOfCubes << " cubes using brute force cube mode," << std::endl;
-        std::cout << " volume < " << proxyVolume << " (before clipping)" << std::endl;
-    }
-
-    geometry_->setTransformationMatrix(inputVolume->getTextureToWorldMatrix());
-}
-
-void OptimizedProxyGeometry::processCubes() {
-
-    //get input data
-    const VolumeBase* inputVolume = inport_.getData();
-    tgt::ivec3 dim = inputVolume->getDimensions();
-    //const int res = resolution_.get();
-
-    // determine TF type
-    TransFunc1DKeys* tfi = 0;
-    //TransFunc2DPrimitives* tfig = 0;
-    //intensityGradientTF_ = false;
-
-    if (transfunc_.get()) {
-        tfi = dynamic_cast<TransFunc1DKeys*>(transfunc_.get());
-        if (tfi == 0) {
-            TransFunc2DPrimitives* tfig = dynamic_cast<TransFunc2DPrimitives*>(transfunc_.get());
-            if (tfig == 0) {
-                LWARNING("CPURaycaster::process: unsupported tf");
-                return;
-            }
-            LERROR("2D Transfer Function currently not supported: using cube mode.");
-            processCube();
-            return;
-        }
-    }
-
-    if (structureInvalid_) {
-        //invalidate geometry
-        geometryInvalid_ = true;
-        //clear structure
-        volumeStructure_.clear();
-        //compute new structure
-        computeRegionStructure(inputVolume);
-        structureInvalid_ = false;
-    }
-
-    if (geometryInvalid_) {
-        geometry_->clear();
-
-        stopWatch_.reset();
-        stopWatch_.start();
-
-        const PreIntegrationTable* piTable = tfi->getPreIntegrationTable(1.f, 256);
-
-        stopWatch_.stop();
-        if (debugOutput_.get())
-            std::cout << "Fetching PreIntegration table took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-
-        stopWatch_.reset();
-        stopWatch_.start();
-
-        //scan through region structure, classify every region and add the non-transparent blocks to the MeshGeometry
-        int numberOfCubes = 0; //number of created cubes
-        float proxyVolume = 0.f;
-
-        std::vector<ProxyGeometryVolumeRegion>::const_iterator i;
-        for (i = volumeStructure_.begin(); i != volumeStructure_.end(); ++i) {
-            //apply tf domain
-            float minIntensity = tfi->realWorldToNormalized(i->getMinIntensity());
-            float maxIntensity = tfi->realWorldToNormalized(i->getMaxIntensity());
-            if (!isRegionEmptyPi(minIntensity,maxIntensity,piTable)) {
-                if (enableClipping_.get()) {
-                    //get clipping planes
-                    tgt::vec3 clipLlf(clipRight_.get(), clipFront_.get(), clipBottom_.get());
-                    tgt::vec3 clipUrb(clipLeft_.get() + 1.f, clipBack_.get() + 1.f, clipTop_.get() + 1.f);
-                    tgt::Bounds clipBounds(clipLlf, clipUrb);
-                    //only add and clip cube mesh if necessary
-                    if (clipBounds.containsVolume(i->getBounds()))
-                        addCubeMesh(geometry_, i->getBounds(), dim);
-                    else if (clipBounds.intersects(i->getBounds()))
-                        addCubeMeshClip(geometry_, i->getBounds(),dim,clipBounds);
-                }
-                else
-                    addCubeMesh(geometry_, i->getBounds(),dim/*,inputVolume->getVoxelToPhysicalMatrix()*/);
-
-                if (debugOutput_.get()) {
-                    proxyVolume += i->getBounds().volume();
-                    numberOfCubes++;
-                }
-            }
-        }
-
-        stopWatch_.stop();
-
-        if (debugOutput_.get()) {
-            std::cout << "Created cubes in " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-            std::cout << "Created Proxy Geometry consisting of " << numberOfCubes << " cubes using cube mode," << std::endl;
-            std::cout << " volume < " << proxyVolume << " (before clipping)" << std::endl;
-        }
-
-        geometry_->setTransformationMatrix(inputVolume->getTextureToWorldMatrix());
-        geometryInvalid_ = false;
-    }
-}
-
-void OptimizedProxyGeometry::processOctree() {
-    //get input data
-    const VolumeBase* inputVolume = inport_.getData();
-    tgt::ivec3 dim = inputVolume->getDimensions();
-    //const int res = resolution_.get();
-
-    // determine TF type
-    TransFunc1DKeys* tfi = 0;
-    //TransFunc2DPrimitives* tfig = 0;
-    //intensityGradientTF_ = false;
-
-    if (transfunc_.get()) {
-        tfi = dynamic_cast<TransFunc1DKeys*>(transfunc_.get());
-        if (tfi == 0) {
-            TransFunc2DPrimitives* tfig = dynamic_cast<TransFunc2DPrimitives*>(transfunc_.get());
-            if (tfig == 0) {
-                LWARNING("CPURaycaster::process: unsupported tf");
-                return;
-            }
-            LERROR("2D Transfer Function currently not supported: using cube mode.");
-            processCube();
-            return;
-        }
-    }
-
-    if (octreeInvalid_) {
-        delete octreeRoot_;
-        octreeRoot_ = 0;
-    }
-
-    if (!octreeRoot_) {
-        computeOctreeRecursively(inputVolume);
-        octreeInvalid_ = false;
-        //invalidate geometry
-        geometryInvalid_ = true;
-    }
-
-    if (geometryInvalid_) {
-        geometry_->clear();
-
-        stopWatch_.reset();
-        stopWatch_.start();
-
-        const PreIntegrationTable* piTable = tfi->getPreIntegrationTable(1.f, 256);
-
-        stopWatch_.stop();
-        if (debugOutput_.get())
-            std::cout << "Fetching PreIntegration table took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-
-        //get clipping planes
-        tgt::vec3 clipLlf(clipRight_.get(), clipFront_.get(), clipBottom_.get());
-        tgt::vec3 clipUrb(clipLeft_.get() + 1.f, clipBack_.get() + 1.f, clipTop_.get() + 1.f);
-        tgt::Bounds clipBounds(clipLlf, clipUrb);
-
-        stopWatch_.reset();
-        stopWatch_.start();
-
-        //traverse octree
-        float proxyVolume = traverseOctreeAndCreateGeometry(octreeRoot_, tfi, piTable, dim, clipBounds);
-
-        stopWatch_.stop();
-        if (debugOutput_.get()) {
-            std::cout << "Octree traversal and geometry creation took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-            std::cout << "Created Proxy Geometry consisting of " << geometry_->getNumTriangles()
-                      << " triangles using octree cubes mode." << std::endl;
-            std::cout << "Volume < " << proxyVolume << " (before clipping)" << std::endl;
-        }
-
-        //if mesh list is empty: add leftmost node (empty mesh geometry might lead to camera problem)
-        if (geometry_->isEmpty() && octreeRoot_) {
-            ProxyGeometryOctreeNode* node = octreeRoot_;
-            while (!node->isLeaf_)
-                node = node->llf_;
-            addCubeMesh(geometry_, node->bounds_,dim);
-        }
-
-        geometry_->setTransformationMatrix(inputVolume->getTextureToWorldMatrix());
-        geometryInvalid_ = false;
-    }
-
-}
-#endif
 
 //-------------------------------------------------------------------------------------------------
 // background threads
 
 OptimizedProxyGeometryBackgroundThread::OptimizedProxyGeometryBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume,
-          TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec4Vec3* geometry, int stepSize, bool debugOutput,
+          std::vector<TransFunc1DKeys*> tfVector, float threshold, TriangleMeshGeometryVec4Vec3* geometry, int stepSize, bool debugOutput,
           bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
         : ProcessorBackgroundThread<OptimizedProxyGeometry>(processor)
         , volume_(volume)
-        , tf_(tf)
+        , tfCopyVector_(tfVector)
         , threshold_(threshold)
         , geometry_(geometry)
         , stepSize_(stepSize)
@@ -2285,9 +1036,9 @@ bool OptimizedProxyGeometryBackgroundThread::isRegionEmptyPi(float min, float ma
 // StructureProxyGeometryBackgroundThread
 
 StructureProxyGeometryBackgroundThread::StructureProxyGeometryBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume,
-          TransFunc1DKeys* tf, float threshold, TriangleMeshGeometryVec4Vec3* geometry, std::vector<ProxyGeometryVolumeRegion>* volumeStructure,
+          std::vector<TransFunc1DKeys*> tfVector, float threshold, TriangleMeshGeometryVec4Vec3* geometry, std::vector<ProxyGeometryVolumeRegion>* volumeStructure,
           tgt::ivec3 volStructureSize, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
-        : OptimizedProxyGeometryBackgroundThread(processor, volume, tf, threshold, geometry, stepSize, debugOutput, clippingEnabled, clipLlf, clipUrb)
+        : OptimizedProxyGeometryBackgroundThread(processor, volume, tfVector, threshold, geometry, stepSize, debugOutput, clippingEnabled, clipLlf, clipUrb)
         , volumeStructure_(volumeStructure)
         , volStructureSize_(volStructureSize)
 {}
@@ -2309,6 +1060,7 @@ void StructureProxyGeometryBackgroundThread::computeRegionStructure() {
 
     const VolumeRAM* vol = volume_->getRepresentation<VolumeRAM>();
     RealWorldMapping rwm = volume_->getRealWorldMapping();
+    int numChannels = static_cast<int>(volume_->getNumChannels());
 
     interruptionPoint();
 
@@ -2340,9 +1092,9 @@ void StructureProxyGeometryBackgroundThread::computeRegionStructure() {
 
         interruptionPoint();
 
-        // find min and max intensities
-        float minIntensity = std::numeric_limits<float>::max();
-        float maxIntensity = std::numeric_limits<float>::min();
+        // find min and max intensities for all channels
+        float minIntensity[4] = {std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()};
+        float maxIntensity[4] = {std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min()};
         llf = tgt::max(llf - tgt::ivec3(1),tgt::ivec3(0));
         llf = tgt::min(llf,dim - 1);
         urb = tgt::max(urb + tgt::ivec3(1),tgt::ivec3(0));
@@ -2356,17 +1108,26 @@ void StructureProxyGeometryBackgroundThread::computeRegionStructure() {
 
             for (pos.y = llf.y; pos.y < urb.y; ++pos.y) {
                 for (pos.x = llf.x; pos.x < urb.x; ++pos.x) {
-                    float current = vol->getVoxelNormalized(pos);
-                    //apply realworld mapping
-                    current = rwm.normalizedToRealWorld(current);
-                    minIntensity = std::min(minIntensity,current);
-                    maxIntensity = std::max(maxIntensity,current);
+
+                    for (int i = 0; i < numChannels; ++i) {
+                        float current = vol->getVoxelNormalized(pos, i);
+                        //apply realworld mapping
+                        current = rwm.normalizedToRealWorld(current);
+                        minIntensity[i] = std::min(minIntensity[i],current);
+                        maxIntensity[i] = std::max(maxIntensity[i],current);
+                    }
                 }
             }
         }
 
+        //create list of min-max intensities
+        std::vector<tgt::vec2> minMaxIntensities(numChannels);
+        for (int i = 0; i < numChannels; ++i) {
+            minMaxIntensities.at(i) = tgt::vec2(minIntensity[i], maxIntensity[i]);
+        }
+
         //add region
-        volumeStructure_->push_back(ProxyGeometryVolumeRegion(regionBounds,tgt::vec2(minIntensity,maxIntensity)));
+        volumeStructure_->push_back(ProxyGeometryVolumeRegion(regionBounds,minMaxIntensities));
 
     }
 
@@ -2384,11 +1145,11 @@ ProxyGeometryVolumeRegion& StructureProxyGeometryBackgroundThread::getVolumeRegi
 //-------------------------------------------------------------------------------------------------
 // MinCubeBackgroundThread
 
-MinCubeBackgroundThread::MinCubeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf,
+MinCubeBackgroundThread::MinCubeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, std::vector<TransFunc1DKeys*> tfVector,
                                                  float threshold, TriangleMeshGeometryVec4Vec3* geometry,
                                                  std::vector<ProxyGeometryVolumeRegion>* volumeStructure, tgt::ivec3 volStructureSize,
                                                  int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
-        : StructureProxyGeometryBackgroundThread(processor, volume, tf, threshold, geometry, volumeStructure, volStructureSize, stepSize,
+        : StructureProxyGeometryBackgroundThread(processor, volume, tfVector, threshold, geometry, volumeStructure, volStructureSize, stepSize,
                                                  debugOutput, clippingEnabled, clipLlf, clipUrb)
 {}
 
@@ -2435,11 +1196,15 @@ void MinCubeBackgroundThread::computeMinCube() {
             stopWatch_.start();
         }
 
-        const PreIntegrationTable* piTable = tf_->getPreIntegrationTable(1.f, 256);
+        //compute pre-integration tables for every TF
+        std::vector<const PreIntegrationTable*> piTables;
+        for (int i = 0; i < volume_->getNumChannels(); ++i) {
+            piTables.push_back(tfCopyVector_.at(i)->getPreIntegrationTable(1.f, 256));
+        }
 
         if (debugOutput_) {
             stopWatch_.stop();
-            std::cout << "Fetching PreIntegration table took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
+            std::cout << "Fetching PreIntegration tables took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
 
             stopWatch_.reset();
             stopWatch_.start();
@@ -2453,11 +1218,16 @@ void MinCubeBackgroundThread::computeMinCube() {
         std::vector<ProxyGeometryVolumeRegion>::const_iterator i;
         for (i = volumeStructure_->begin(); i != volumeStructure_->end(); ++i) {
             interruptionPoint();
-            //apply tf domain
-            float minIntensity = tf_->realWorldToNormalized(i->getMinIntensity());
-            float maxIntensity = tf_->realWorldToNormalized(i->getMaxIntensity());
-            if (!isRegionEmptyPi(minIntensity,maxIntensity,piTable))
-                minBounds.addVolume(i->getBounds());
+            //check every channel if the region is opaque
+            for (int channel = 0; channel < volume_->getNumChannels(); ++channel) {
+                //apply tf domain
+                float minIntensity = tfCopyVector_.at(channel)->realWorldToNormalized(i->getMinIntensity(channel));
+                float maxIntensity = tfCopyVector_.at(channel)->realWorldToNormalized(i->getMaxIntensity(channel));
+                if (!isRegionEmptyPi(minIntensity,maxIntensity,piTables.at(channel))) {
+                    minBounds.addVolume(i->getBounds());
+                    break;
+                }
+            }
         }
 
         if (debugOutput_) {
@@ -2481,13 +1251,6 @@ void MinCubeBackgroundThread::computeMinCube() {
             else
                 OptimizedProxyGeometry::addCubeMesh(geometry_, minBounds,dim);
         }
-        /*else {
-            //if mesh list is empty: add first region (empty mesh geometry might lead to camera problem)
-            if (!volumeStructure_->empty()) {
-                VolumeRegion& region = (*volumeStructure_)[0];
-                OptimizedProxyGeometry::addCubeMesh(geometry_, region.getBounds(),dim);
-            }
-        }*/
 
         geometry_->setTransformationMatrix(volume_->getTextureToWorldMatrix());
         processor_->setGeometryInvalid(false);
@@ -2503,12 +1266,12 @@ void MinCubeBackgroundThread::computeMinCube() {
 //-------------------------------------------------------------------------------------------------
 // VisibleBricksBackgroundThread
 
-VisibleBricksBackgroundThread::VisibleBricksBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf,
+VisibleBricksBackgroundThread::VisibleBricksBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, std::vector<TransFunc1DKeys*> tfVector,
                                                             float threshold, TriangleMeshGeometryVec4Vec3* geometry,
                                                             std::vector<ProxyGeometryVolumeRegion>* volumeStructure,
                                                             tgt::ivec3 volStructureSize, int stepSize, bool debugOutput,
                                                             bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
-        : StructureProxyGeometryBackgroundThread(processor, volume, tf, threshold, geometry, volumeStructure, volStructureSize, stepSize,
+        : StructureProxyGeometryBackgroundThread(processor, volume, tfVector, threshold, geometry, volumeStructure, volStructureSize, stepSize,
                                                 debugOutput, clippingEnabled, clipLlf, clipUrb)
 {}
 
@@ -2555,11 +1318,15 @@ void VisibleBricksBackgroundThread::computeMaximalBricks() {
             stopWatch_.start();
         }
 
-        const PreIntegrationTable* piTable = tf_->getPreIntegrationTable(1.f, 256);
+        //compute pre-integration tables for every TF
+        std::vector<const PreIntegrationTable*> piTables;
+        for (int i = 0; i < volume_->getNumChannels(); ++i) {
+            piTables.push_back(tfCopyVector_.at(i)->getPreIntegrationTable(1.f, 256));
+        }
 
         if (debugOutput_) {
             stopWatch_.stop();
-            std::cout << "Fetching PreIntegration table took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
+            std::cout << "Fetching PreIntegration tables took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
             stopWatch_.reset();
             stopWatch_.start();
         }
@@ -2576,8 +1343,8 @@ void VisibleBricksBackgroundThread::computeMaximalBricks() {
         for (VolumeIterator it(volStructureSize_); !it.outofrange(); it.next()) {
             interruptionPoint();
             pos = it.value();
-            if (isVolNotEmptyPiNotBound(pos,tf_, piTable)) {
-                urbVol = getUrbPi(pos,tf_, piTable);
+            if (isVolNotEmptyPiNotBound(pos,tfCopyVector_, piTables)) {
+                urbVol = getUrbPi(pos,tfCopyVector_, piTables);
                 llf = getVolumeRegion(pos).getBounds().getLLF();
                 urb = getVolumeRegion(urbVol).getBounds().getURB();
 
@@ -2593,7 +1360,7 @@ void VisibleBricksBackgroundThread::computeMaximalBricks() {
                         OptimizedProxyGeometry::addCubeMeshClip(geometry_, cubeBounds,dim,clipBounds);
                 }
                 else
-                    OptimizedProxyGeometry::addCubeMesh(geometry_, cubeBounds,dim);
+                    OptimizedProxyGeometry::addCubeMesh(geometry_, cubeBounds, dim);
 
                 if (debugOutput_) {
                     proxyVolume += cubeBounds.volume();
@@ -2611,12 +1378,6 @@ void VisibleBricksBackgroundThread::computeMaximalBricks() {
         }
 
         interruptionPoint();
-
-        //if mesh list is empty: add first region (empty mesh geometry might lead to camera problem)
-        /*if (geometry_->isEmpty() && !volumeStructure_->empty()) {
-            VolumeRegion& region = (*volumeStructure_)[0];
-            OptimizedProxyGeometry::addCubeMesh(geometry_, region.getBounds(),dim);
-        }*/
 
         geometry_->setTransformationMatrix(volume_->getTextureToWorldMatrix());
         processor_->setGeometryInvalid(false);
@@ -2636,18 +1397,29 @@ void VisibleBricksBackgroundThread::setVolBound(tgt::ivec3 llf, tgt::ivec3 urb, 
     }
 }
 
-bool VisibleBricksBackgroundThread::isVolNotEmptyPiNotBound(tgt::ivec3 pos, TransFunc1DKeys* tfi, const PreIntegrationTable* piTable) {
-     ProxyGeometryVolumeRegion& v = getVolumeRegion(pos);
-     if (v.isBound())
-        return false;
-     if (isRegionEmptyPi(tfi->realWorldToNormalized(v.getMinIntensity()), tfi->realWorldToNormalized(v.getMaxIntensity()), piTable))
+bool VisibleBricksBackgroundThread::isVolNotEmptyPiNotBound(tgt::ivec3 pos, const std::vector<TransFunc1DKeys*>& tfs, const std::vector<const PreIntegrationTable*>& piTables) {
+    ProxyGeometryVolumeRegion& v = getVolumeRegion(pos);
+    if (v.isBound())
         return false;
 
-     return true;
+    //check every channel
+    bool empty = true;
+
+    for (int channel = 0; channel < piTables.size(); ++channel) {
+        //apply tf domain
+        float minIntensity = tfs.at(channel)->realWorldToNormalized(v.getMinIntensity(channel));
+        float maxIntensity = tfs.at(channel)->realWorldToNormalized(v.getMaxIntensity(channel));
+        if (!isRegionEmptyPi(minIntensity,maxIntensity,piTables.at(channel))) {
+            empty = false;
+            break;
+        }
+     }
+
+     return (!empty);
 }
 
-bool VisibleBricksBackgroundThread::isVolNotEmptyPiNotBound(tgt::ivec3 llf, tgt::ivec3 urb, TransFunc1DKeys* tfi,
-                                                            const PreIntegrationTable* piTable)
+bool VisibleBricksBackgroundThread::isVolNotEmptyPiNotBound(tgt::ivec3 llf, tgt::ivec3 urb,
+        const std::vector<TransFunc1DKeys*>& tfs, const std::vector<const PreIntegrationTable*>& piTables)
 {
     for (int z=llf.z; z<=urb.z;z++) {
         interruptionPoint();
@@ -2656,15 +1428,32 @@ bool VisibleBricksBackgroundThread::isVolNotEmptyPiNotBound(tgt::ivec3 llf, tgt:
                 ProxyGeometryVolumeRegion& v = getVolumeRegion(tgt::ivec3(x,y,z));
                 if (v.isBound())
                     return false;
-                if (isRegionEmptyPi(tfi->realWorldToNormalized(v.getMinIntensity()), tfi->realWorldToNormalized(v.getMaxIntensity()), piTable))
+
+                //check every channel
+                bool empty = true;
+
+                for (int channel = 0; channel < piTables.size(); ++channel) {
+                    //apply tf domain
+                    float minIntensity = tfs.at(channel)->realWorldToNormalized(v.getMinIntensity(channel));
+                    float maxIntensity = tfs.at(channel)->realWorldToNormalized(v.getMaxIntensity(channel));
+                    if (!isRegionEmptyPi(minIntensity,maxIntensity,piTables.at(channel))) {
+                        empty = false;
+                        break;
+                    }
+                }
+
+                if (empty)
                     return false;
             }
         }
     }
+
     return true;
 }
 
-tgt::ivec3 VisibleBricksBackgroundThread::getUrbPi(tgt::ivec3 llf, TransFunc1DKeys* tfi, const PreIntegrationTable* piTable) {
+tgt::ivec3 VisibleBricksBackgroundThread::getUrbPi(tgt::ivec3 llf, const std::vector<TransFunc1DKeys*>& tfs,
+        const std::vector<const PreIntegrationTable*>& piTables)
+{
 
     interruptionPoint();
 
@@ -2681,7 +1470,7 @@ tgt::ivec3 VisibleBricksBackgroundThread::getUrbPi(tgt::ivec3 llf, TransFunc1DKe
                 if (isVolNotEmptyPiNotBound(
                     tgt::ivec3(urb.x+1,llf.y,llf.z),
                     tgt::ivec3(urb.x+1,urb.y,urb.z),
-                    tfi, piTable))
+                    tfs, piTables))
                 {
                     urb.x += 1;
                 } else {
@@ -2696,7 +1485,7 @@ tgt::ivec3 VisibleBricksBackgroundThread::getUrbPi(tgt::ivec3 llf, TransFunc1DKe
                 if (isVolNotEmptyPiNotBound(
                     tgt::ivec3(llf.x,urb.y+1,llf.z),
                     tgt::ivec3(urb.x,urb.y+1,urb.z),
-                    tfi, piTable)) {
+                    tfs, piTables)) {
                     urb.y += 1;
                 } else {
                     inc.y=false;
@@ -2710,7 +1499,7 @@ tgt::ivec3 VisibleBricksBackgroundThread::getUrbPi(tgt::ivec3 llf, TransFunc1DKe
                 if (isVolNotEmptyPiNotBound(
                     tgt::ivec3(llf.x,llf.y,urb.z+1),
                     tgt::ivec3(urb.x,urb.y,urb.z+1),
-                    tfi, piTable)) {
+                    tfs, piTables)) {
                     urb.z += 1;
                 } else {
                     inc.z=false;
@@ -2727,12 +1516,12 @@ tgt::ivec3 VisibleBricksBackgroundThread::getUrbPi(tgt::ivec3 llf, TransFunc1DKe
 //-------------------------------------------------------------------------------------------------
 // OuterFacesBackgroundThread
 
-OuterFacesBackgroundThread::OuterFacesBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf,
+OuterFacesBackgroundThread::OuterFacesBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, std::vector<TransFunc1DKeys*> tfVector,
                                                             float threshold, TriangleMeshGeometryVec4Vec3* geometry,
                                                             std::vector<ProxyGeometryVolumeRegion>* volumeStructure,
                                                             tgt::ivec3 volStructureSize, int stepSize, bool debugOutput,
                                                             bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
-        : StructureProxyGeometryBackgroundThread(processor, volume, tf, threshold, geometry, volumeStructure, volStructureSize, stepSize,
+        : StructureProxyGeometryBackgroundThread(processor, volume, tfVector, threshold, geometry, volumeStructure, volStructureSize, stepSize,
                                                 debugOutput, clippingEnabled, clipLlf, clipUrb)
 {}
 
@@ -2779,7 +1568,11 @@ void OuterFacesBackgroundThread::computeOuterFaces() {
             stopWatch_.start();
         }
 
-        const PreIntegrationTable* piTable = tf_->getPreIntegrationTable(1.f, 256);
+        //compute pre-integration tables for every TF
+        std::vector<const PreIntegrationTable*> piTables;
+        for (int i = 0; i < volume_->getNumChannels(); ++i) {
+            piTables.push_back(tfCopyVector_.at(i)->getPreIntegrationTable(1.f, 256));
+        }
 
         if (debugOutput_) {
             stopWatch_.stop();
@@ -2794,13 +1587,21 @@ void OuterFacesBackgroundThread::computeOuterFaces() {
         std::vector<ProxyGeometryVolumeRegion>::iterator i;
         for (i = volumeStructure_->begin(); i != volumeStructure_->end(); ++i) {
             interruptionPoint();
-            //apply tf domain
-            float minIntensity = tf_->realWorldToNormalized(i->getMinIntensity());
-            float maxIntensity = tf_->realWorldToNormalized(i->getMaxIntensity());
-            if (!isRegionEmptyPi(minIntensity,maxIntensity,piTable))
-                i->setOpaque(true);
-            else
-                i->setOpaque(false);
+
+            //check every channel
+            bool empty = true;
+
+            for (int channel = 0; channel < piTables.size(); ++channel) {
+                //apply tf domain
+                float minIntensity = tfCopyVector_.at(channel)->realWorldToNormalized(i->getMinIntensity(channel));
+                float maxIntensity = tfCopyVector_.at(channel)->realWorldToNormalized(i->getMaxIntensity(channel));
+                if (!isRegionEmptyPi(minIntensity,maxIntensity,piTables.at(channel))) {
+                    empty = false;
+                    break;
+                }
+            }
+
+            i->setOpaque(!empty);
         }
 
         //second pass: scan through region structure
@@ -2845,61 +1646,6 @@ void OuterFacesBackgroundThread::computeOuterFaces() {
                         //get the coordinates of the current block
                         tgt::vec3 llf = current.getBounds().getLLF();
                         tgt::vec3 urb = current.getBounds().getURB();
-
-                        //modify the coordinates according to the neighboring blocks
-                        //not necessary anymore as coordinates have already been corrected when building the bricks
-                        /*if (sign < 0)
-                            llf.elem[dim] -= 0.5;
-                        else
-                            urb.elem[dim] += 0.5;
-
-                        for (int incr = 1; incr <= 2; ++incr) {
-                            int curDim = (dim + incr) % 3;
-
-                            //positively into this direction
-                            neighborPos = pos;
-                            neighborPos.elem[curDim] += 1;
-
-                            if (neighborPos[curDim] >= volStructureSize_.elem[curDim]) {
-                                //no neighbors in this direction
-                                urb[curDim] += 0.5f;
-                            }
-                            else {
-                                neighborPos.elem[dim] += sign;
-
-                                if ((neighborPos.elem[dim] >= 0) && (neighborPos.elem[dim] < volStructureSize_.elem[dim]) && getVolumeRegion(neighborPos).isOpaque())
-                                    urb[curDim] -= 0.5f;
-                                else {
-                                    neighborPos.elem[dim] -= sign;
-                                    if (getVolumeRegion(neighborPos).isOpaque())
-                                        urb[curDim] -= 0.5f;
-                                    else    //both transparent
-                                        urb[curDim] += 0.5f;
-                                }
-                            }
-
-                            //negatively into this direction
-                            neighborPos = pos;
-                            neighborPos.elem[curDim] -= 1;
-
-                            if (neighborPos[curDim] < 0) {
-                                //no neighbors in this direction
-                                llf[curDim] -= 0.5f;
-                            }
-                            else {
-                                neighborPos.elem[dim] += sign;
-
-                                if ((neighborPos.elem[dim] >= 0) && (neighborPos.elem[dim] < volStructureSize_.elem[dim]) && getVolumeRegion(neighborPos).isOpaque())
-                                    llf[curDim] += 0.5f;
-                                else {
-                                    neighborPos.elem[dim] -= sign;
-                                    if (getVolumeRegion(neighborPos).isOpaque())
-                                        llf[curDim] += 0.5f;
-                                    else    //both transparent
-                                        llf[curDim] -= 0.5f;
-                                }
-                            }
-                        }*/
 
                         tgt::vec3 coordllf = tgt::max(llf, tgt::vec3(0.f));
                         tgt::vec3 coordurb = tgt::min(urb, tgt::vec3(volDim));
@@ -3016,14 +1762,12 @@ void OuterFacesBackgroundThread::computeOuterFaces() {
     }
 }
 
-#ifdef VRN_MODULE_STAGING
 //-------------------------------------------------------------------------------------------------
 // VolumeOctreeBackgroundThread
 
-VolumeOctreeBackgroundThread::VolumeOctreeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf,
-                                               float threshold, TriangleMeshGeometryVec4Vec3* geometry, int stepSize, bool clippingEnabled, tgt::vec3 clipLlf,
-                                               tgt::vec3 clipUrb)
-        : OptimizedProxyGeometryBackgroundThread(processor, volume, tf, threshold, geometry, stepSize, false, clippingEnabled, clipLlf, clipUrb)
+VolumeOctreeBackgroundThread::VolumeOctreeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, std::vector<TransFunc1DKeys*> tfVector,
+            float threshold, TriangleMeshGeometryVec4Vec3* geometry, int stepSize, bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
+        : OptimizedProxyGeometryBackgroundThread(processor, volume, tfVector, threshold, geometry, stepSize, false, clippingEnabled, clipLlf, clipUrb)
 {}
 
 VolumeOctreeBackgroundThread::~VolumeOctreeBackgroundThread() {
@@ -3035,7 +1779,7 @@ void VolumeOctreeBackgroundThread::threadMain() {
     computeVolumeOctreeGeometry();
 }
 
-void VolumeOctreeBackgroundThread::computeVolumeOctreeGeometry() { 
+void VolumeOctreeBackgroundThread::computeVolumeOctreeGeometry() {
     interruptionPoint();
 
     //TODO: check if computation is necessary?!
@@ -3046,19 +1790,24 @@ void VolumeOctreeBackgroundThread::computeVolumeOctreeGeometry() {
 
         tgt::svec3 volumeDim = volume_->getDimensions();
 
-        const PreIntegrationTable* piTable = tf_->getPreIntegrationTable(1.f, 256);
+        //compute pre-integration tables for every TF
+        std::vector<const PreIntegrationTable*> piTables;
+        for (int i = 0; i < volume_->getNumChannels(); ++i) {
+            piTables.push_back(tfCopyVector_.at(i)->getPreIntegrationTable(1.f, 256));
+        }
 
         interruptionPoint();
 
         tgt::Bounds clipBounds(clipLlf_, clipUrb_);
-        
+
         //get VolumeOctree representation and traverse it to create the geometry
-        const VolumeOctree* octree = volume_->getRepresentation<VolumeOctree>();
+        const VolumeOctreeBase* octree = volume_->getRepresentation<VolumeOctreeBase>();
         const VolumeOctreeNode* root = octree->getRootNode();
-    
+        int numChannels = static_cast<int>(volume_->getNumChannels());
+
         tgt::svec3 octreeDim = octree->getOctreeDim();
-    
-        traverseOctreeAndCreateGeometry(root, tgt::vec3(0.f), tgt::vec3(octreeDim), tf_, piTable, clipBounds, volumeDim);
+
+        traverseOctreeAndCreateGeometry(root, tgt::vec3(0.f), tgt::vec3(octreeDim), tfCopyVector_, numChannels, piTables, clipBounds, volumeDim);
 
         interruptionPoint();
 
@@ -3069,24 +1818,38 @@ void VolumeOctreeBackgroundThread::computeVolumeOctreeGeometry() {
     interruptionPoint();
 }
 
-void VolumeOctreeBackgroundThread::traverseOctreeAndCreateGeometry(const VolumeOctreeNode* node, const tgt::vec3& nodeLlf, const tgt::vec3& nodeUrb, TransFunc1DKeys* tf, const PreIntegrationTable* piTable, tgt::Bounds clipBounds, tgt::ivec3 volumeDim) {
+void VolumeOctreeBackgroundThread::traverseOctreeAndCreateGeometry(const VolumeOctreeNode* node, const tgt::vec3& nodeLlf, const tgt::vec3& nodeUrb,
+            /*TransFunc1DKeys* tf, const PreIntegrationTable* piTable,*/
+            std::vector<TransFunc1DKeys*> tfVector, int numVolumeChannels, std::vector<const PreIntegrationTable*> piTables, tgt::Bounds clipBounds,
+            tgt::ivec3 volumeDim)
+{
 
     interruptionPoint();
-    //TODO: set a maximum level for traversal (do not always traverse all the way down)
+
     if (node->isLeaf()) {
         //compute intensity values
         RealWorldMapping rwm = volume_->getRealWorldMapping();
 
-        // transform normalized voxel intensities to real-world
-        float minRealWorld = rwm.normalizedToRealWorld(node->getMinValue() / 65535.f);
-        float maxRealWorld = rwm.normalizedToRealWorld(node->getMaxValue() / 65535.f);
-        
-        float minIntensity = tf->realWorldToNormalized(minRealWorld);
-        float maxIntensity = tf->realWorldToNormalized(maxRealWorld);
+        //check if any of the channels is not transparent
+        bool isOpaque = false;
+        for (int i = 0; i < numVolumeChannels; ++i) {
+            // transform normalized voxel intensities to real-world
+            float minRealWorld = rwm.normalizedToRealWorld(node->getMinValue(i) / 65535.f);
+            float maxRealWorld = rwm.normalizedToRealWorld(node->getMaxValue(i) / 65535.f);
 
-        //check pre-integration heuristic
-        if (isRegionEmptyPi(minIntensity, maxIntensity, piTable))
-           return; 
+            float minIntensity = tfVector.at(i)->realWorldToNormalized(minRealWorld);
+            float maxIntensity = tfVector.at(i)->realWorldToNormalized(maxRealWorld);
+
+            //check pre-integration heuristic
+            if (!isRegionEmptyPi(minIntensity, maxIntensity, piTables.at(i))) {
+                isOpaque = true;
+                break;
+            }
+        }
+
+        //do not render if all channels are transparent
+        if (!isOpaque)
+            return;
 
         //check if node is outside volume dimensions
         if (tgt::hor(tgt::greaterThanEqual(nodeLlf, tgt::vec3(volumeDim))))
@@ -3094,7 +1857,7 @@ void VolumeOctreeBackgroundThread::traverseOctreeAndCreateGeometry(const VolumeO
 
         //clamp node to volume dimensions
         tgt::vec3 correctNodeUrb = tgt::min(nodeUrb, tgt::vec3(volumeDim));
-        
+
         //not transparent -> create cube (if necessery: clipping)
         tgt::Bounds nodeBounds(nodeLlf, correctNodeUrb);    //get bounding box
 
@@ -3118,105 +1881,85 @@ void VolumeOctreeBackgroundThread::traverseOctreeAndCreateGeometry(const VolumeO
                 tgt::vec3 childLlf = nodeLlf + static_cast<tgt::vec3>(childCoord)*nodeHalfDim;
                 tgt::vec3 childUrb = childLlf + nodeHalfDim;
 
-                traverseOctreeAndCreateGeometry(childNode, childLlf, childUrb, tf, piTable, clipBounds, volumeDim);
+                //traverseOctreeAndCreateGeometry(childNode, childLlf, childUrb, tf, piTable, clipBounds, volumeDim);
+                traverseOctreeAndCreateGeometry(childNode, childLlf, childUrb, tfVector, numVolumeChannels, piTables, clipBounds, volumeDim);
             }
         }
     }
 }
 
-#endif
-
-#ifdef VRN_PROXY_DEBUG
 //-------------------------------------------------------------------------------------------------
-// OctreeBackgroundThread
+// VolumeOctreeOuterFacesBackgroundThread
 
-OctreeBackgroundThread::OctreeBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, TransFunc1DKeys* tf,
-                                               float threshold, TriangleMeshGeometryVec4Vec3* geometry, ProxyGeometryOctreeNode** octreeRoot,
-                                               bool checkHalfNodes, int stepSize, bool debugOutput, bool clippingEnabled, tgt::vec3 clipLlf,
-                                               tgt::vec3 clipUrb)
-        : OptimizedProxyGeometryBackgroundThread(processor, volume, tf, threshold, geometry, stepSize, debugOutput, clippingEnabled, clipLlf, clipUrb)
-        , octreeRoot_(octreeRoot)
-        , checkHalfNodes_(checkHalfNodes)
+VolumeOctreeOuterFacesBackgroundThread::VolumeOctreeOuterFacesBackgroundThread(OptimizedProxyGeometry* processor, const VolumeBase* volume, std::vector<TransFunc1DKeys*> tfVector,
+            float threshold, TriangleMeshGeometryVec4Vec3* geometry, int stepSize, bool clippingEnabled, tgt::vec3 clipLlf, tgt::vec3 clipUrb)
+        : OptimizedProxyGeometryBackgroundThread(processor, volume, tfVector, threshold, geometry, stepSize, false, clippingEnabled, clipLlf, clipUrb)
 {}
 
-OctreeBackgroundThread::~OctreeBackgroundThread() {
+VolumeOctreeOuterFacesBackgroundThread::~VolumeOctreeOuterFacesBackgroundThread() {
     //wait for internal thread to finish
     join();
 }
 
-void OctreeBackgroundThread::threadMain() {
-    computeOctreeMaxBricks();
+void VolumeOctreeOuterFacesBackgroundThread::threadMain() {
+    computeVolumeOctreeGeometry();
 }
 
-void OctreeBackgroundThread::computeOctreeMaxBricks() {
-
+void VolumeOctreeOuterFacesBackgroundThread::computeVolumeOctreeGeometry() {
     interruptionPoint();
 
-    tgt::ivec3 dim = volume_->getDimensions();
-
-    if (processor_->octreeInvalid()) {
-        delete *octreeRoot_;
-        *octreeRoot_ = 0;
-    }
-
-    if (!(*octreeRoot_)) {
-        computeOctreeRecursively(volume_);
-        processor_->setOctreeInvalid(false);
-        //invalidate geometry
-        processor_->setGeometryInvalid();
-    }
+    //TODO: check if computation is necessary?!
+    processor_->setGeometryInvalid(true);
 
     if (processor_->geometryInvalid()) {
         geometry_->clear();
 
-        if (debugOutput_) {
-            stopWatch_.reset();
-            stopWatch_.start();
-        }
+        tgt::svec3 volumeDim = volume_->getDimensions();
 
-        const PreIntegrationTable* piTable;
+        //compute pre-integration tables for every TF
+        std::vector<const PreIntegrationTable*> piTables;
+        for (int i = 0; i < volume_->getNumChannels(); ++i) {
+            piTables.push_back(tfCopyVector_.at(i)->getPreIntegrationTable(1.f, 256));
+        }
 
         interruptionPoint();
-
-        piTable = tf_->getPreIntegrationTable(1.f, 256);
-
-        if (debugOutput_) {
-            stopWatch_.stop();
-            std::cout << "Fetching PreIntegration table took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-        }
 
         tgt::Bounds clipBounds(clipLlf_, clipUrb_);
 
-        if (debugOutput_) {
-            stopWatch_.reset();
-            stopWatch_.start();
-        }
+        //get VolumeOctree representation and some meta information
+        const VolumeOctreeBase* octree = volume_->getRepresentation<VolumeOctreeBase>();
+        const VolumeOctreeNode* root = octree->getRootNode();
+        int numChannels = static_cast<int>(volume_->getNumChannels());
 
-        //traverse octree for the first time and set visibility for each node
-        traverseOctreeAndSetVisibility(*octreeRoot_, tf_, piTable);
+        tgt::svec3 octreeDim = octree->getOctreeDim();
+        octreeDepth_ = octree->getActualTreeDepth();
+
+        //compute number of bricks in every direction
+        brickDim_ = octree->getBrickDim();
+        volDim_ = octree->getVolumeDim();
+        brickStructureSize_ = volDim_ / brickDim_;
+        if (volDim_.x % brickDim_.x != 0)
+            brickStructureSize_.x += 1;
+        if (volDim_.y % brickDim_.y != 0)
+            brickStructureSize_.y += 1;
+        if (volDim_.z % brickDim_.z != 0)
+            brickStructureSize_.z += 1;
+
+        //now allocate memory for the brick structure
+        //TODO: allocate that in the processor, set flags -> do not re-compute the bricks if only the TF has changed?!
+        brickStructure_ = std::vector<ProxyGeometryVolumeRegion>(brickStructureSize_.x * brickStructureSize_.y * brickStructureSize_.z,
+                ProxyGeometryVolumeRegion());
+
+        //set to zero to mark all bricks as being not opaque
+        //std::memset(&brickStructure_, 0, brickStructure_.capacity() * sizeof(ProxyGeometryVolumeRegion));
+
+        //do the actual traversal to create the brick structure
+        traverseOctreeAndCreateBrickStructure(root, 0, tgt::svec3((size_t) 0), octreeDim, tfCopyVector_, numChannels, piTables, clipBounds, volumeDim);
 
         interruptionPoint();
 
-        //traverse octree for the second time and create proxy geometry
-        float proxyVolume = traverseOctreeAndCreateMaxCubeGeometry(*octreeRoot_, dim, clipBounds);
-
-        if (debugOutput_) {
-            stopWatch_.stop();
-            std::cout << "Traversing octree to create maximal cubes took " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
-            std::cout << "Created Proxy Geometry consisting of " << geometry_->getNumTriangles()
-                      << " triangles using octree max cubes mode." << std::endl;
-            std::cout << "Volume < " << proxyVolume << " (before clipping)" << std::endl;
-        }
-
-        interruptionPoint();
-
-        //if mesh list is empty: add leftmost node (empty mesh geometry might lead to camera problem)
-        /*if (geometry_->isEmpty() && *octreeRoot_) {
-            OctreeNode* node = *octreeRoot_;
-            while (!node->isLeaf_)
-                node = node->llf_;
-            OptimizedProxyGeometry::addCubeMesh(geometry_, node->bounds_,dim);
-        }*/
+        //create the outer faces geometry from the brick structure
+        computeOuterFaces();
 
         geometry_->setTransformationMatrix(volume_->getTextureToWorldMatrix());
         processor_->setGeometryInvalid(false);
@@ -3225,475 +1968,254 @@ void OctreeBackgroundThread::computeOctreeMaxBricks() {
     interruptionPoint();
 }
 
-void OctreeBackgroundThread::traverseOctreeAndSetVisibility(ProxyGeometryOctreeNode* node, TransFunc1DKeys* tfi, const PreIntegrationTable* piTable) {
-    if (!node) {
-        if (debugOutput_)
-            std::cout << "Encountered 0 pointer instead of valid node during octree traversal..." << std::endl;
-        return;
-    }
+void VolumeOctreeOuterFacesBackgroundThread::traverseOctreeAndCreateBrickStructure (const VolumeOctreeNode* node, size_t level,
+        const tgt::svec3& nodeLlf, const tgt::svec3& nodeUrb, std::vector<TransFunc1DKeys*> tfVector, int numVolumeChannels,
+        std::vector<const PreIntegrationTable*> piTables, tgt::Bounds clipBounds, tgt::ivec3 volumeDim)
+{
 
     interruptionPoint();
 
-    //leaf: determine visibility
-    if (node->isLeaf_) {
-        // get min and max intensity of this region
-        float minIntensity = tfi->realWorldToNormalized(node->minMaxIntensity_.x);
-        float maxIntensity = tfi->realWorldToNormalized(node->minMaxIntensity_.y);
+    if (node->isLeaf()) {
+        //compute intensity values
+        RealWorldMapping rwm = volume_->getRealWorldMapping();
 
-        // set opacity
-        node->opacity_ = isRegionEmptyPi(minIntensity, maxIntensity, piTable) ?
-            ProxyGeometryOctreeNode::TRANSPARENT_NODE : ProxyGeometryOctreeNode::OPAQUE_NODE;
-        return;
-    }
+        //check if any of the channels is not transparent
+        bool isOpaque = false;
+        for (int i = 0; i < numVolumeChannels; ++i) {
+            // transform normalized voxel intensities to real-world
+            float minRealWorld = rwm.normalizedToRealWorld(node->getMinValue(i) / 65535.f);
+            float maxRealWorld = rwm.normalizedToRealWorld(node->getMaxValue(i) / 65535.f);
 
-    //not a leaf: traverse further
-    traverseOctreeAndSetVisibility(node->llf_, tfi, piTable);
-    traverseOctreeAndSetVisibility(node->lrf_, tfi, piTable);
-    traverseOctreeAndSetVisibility(node->ulf_, tfi, piTable);
-    traverseOctreeAndSetVisibility(node->urf_, tfi, piTable);
-    traverseOctreeAndSetVisibility(node->llb_, tfi, piTable);
-    traverseOctreeAndSetVisibility(node->lrb_, tfi, piTable);
-    traverseOctreeAndSetVisibility(node->ulb_, tfi, piTable);
-    traverseOctreeAndSetVisibility(node->urb_, tfi, piTable);
+            float minIntensity = tfVector.at(i)->realWorldToNormalized(minRealWorld);
+            float maxIntensity = tfVector.at(i)->realWorldToNormalized(maxRealWorld);
 
-    // set opacity according to the child nodes
-    if ((node->llf_->opacity_ == ProxyGeometryOctreeNode::TRANSPARENT_NODE) &&
-        (node->lrf_->opacity_ == ProxyGeometryOctreeNode::TRANSPARENT_NODE) &&
-        (node->ulf_->opacity_ == ProxyGeometryOctreeNode::TRANSPARENT_NODE) &&
-        (node->urf_->opacity_ == ProxyGeometryOctreeNode::TRANSPARENT_NODE) &&
-        (node->llb_->opacity_ == ProxyGeometryOctreeNode::TRANSPARENT_NODE) &&
-        (node->lrb_->opacity_ == ProxyGeometryOctreeNode::TRANSPARENT_NODE) &&
-        (node->ulb_->opacity_ == ProxyGeometryOctreeNode::TRANSPARENT_NODE) &&
-        (node->urb_->opacity_ == ProxyGeometryOctreeNode::TRANSPARENT_NODE))
-    {
-        node->opacity_ = ProxyGeometryOctreeNode::TRANSPARENT_NODE;
-        if ((node->llf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-            (node->lrf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-            (node->ulf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-            (node->urf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-            (node->llb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-            (node->lrb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-            (node->ulb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-            (node->urb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE))
-        {
-            node->opacity_ = ProxyGeometryOctreeNode::OPAQUE_NODE;
-        }
-    }
-    else
-       node->opacity_ = ProxyGeometryOctreeNode::PARTOPAQUE_NODE;
-}
-
-float OctreeBackgroundThread::traverseOctreeAndCreateMaxCubeGeometry(ProxyGeometryOctreeNode* node, tgt::ivec3 dim, tgt::Bounds clipBounds) {
-
-    if (!node) {
-
-        if (debugOutput_)
-            std::cout << "Encountered 0 pointer instead of valid node during octree traversal...";
-
-        return 0.f;
-    }
-
-    interruptionPoint();
-
-    if (node->opacity_ == ProxyGeometryOctreeNode::TRANSPARENT_NODE) {
-        return 0.f;
-    }
-    else if (node->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) {
-        if (clippingEnabled_) {
-            if (clipBounds.containsVolume(node->bounds_))
-                OptimizedProxyGeometry::addCubeMesh(geometry_, node->bounds_, dim);
-            else if (clipBounds.intersects(node->bounds_))
-                OptimizedProxyGeometry::addCubeMeshClip(geometry_, node->bounds_,dim,clipBounds);
-         }
-         else
-            OptimizedProxyGeometry::addCubeMesh(geometry_, node->bounds_,dim);
-
-         return node->bounds_.volume();
-    }
-    else {
-
-        float proxyVolume = 0.f;
-
-        //leaf: traversal is at end (shouldn't be happening, leaf cannot be partially opaque)
-        if (node->isLeaf_)
-            return 0.f;
-
-        if (checkHalfNodes_) {
-            //check if the half of this node sould be rendered
-            if ((node->llf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                (node->lrf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                (node->ulf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                (node->urf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE))
-            {
-                //visualize front
-                tgt::Bounds regionBounds = node->llf_->bounds_;
-                regionBounds.addVolume(node->lrf_->bounds_);
-                regionBounds.addVolume(node->ulf_->bounds_);
-                regionBounds.addVolume(node->urf_->bounds_);
-
-                if (clippingEnabled_) {
-                //only add and clip mesh if necessary
-                if (clipBounds.containsVolume(regionBounds))
-                    OptimizedProxyGeometry::addCubeMesh(geometry_, regionBounds, dim);
-                else if (clipBounds.intersects(regionBounds))
-                    OptimizedProxyGeometry::addCubeMeshClip(geometry_, regionBounds,dim,clipBounds);
-                }
-                else
-                    OptimizedProxyGeometry::addCubeMesh(geometry_, regionBounds,dim);
-
-                proxyVolume += regionBounds.volume();
-
-                //traverse rest
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->llb_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->lrb_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->ulb_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->urb_, dim, clipBounds);
-            }
-            else if ((node->llb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                    (node->lrb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                    (node->ulb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                    (node->urb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE))
-            {
-                //visualize back
-                tgt::Bounds regionBounds = node->llb_->bounds_;
-                regionBounds.addVolume(node->lrb_->bounds_);
-                regionBounds.addVolume(node->ulb_->bounds_);
-                regionBounds.addVolume(node->urb_->bounds_);
-
-                if (clippingEnabled_) {
-                    //only add and clip mesh if necessary
-                    if (clipBounds.containsVolume(regionBounds))
-                        OptimizedProxyGeometry::addCubeMesh(geometry_, regionBounds, dim);
-                    else if (clipBounds.intersects(regionBounds))
-                        OptimizedProxyGeometry::addCubeMeshClip(geometry_, regionBounds,dim,clipBounds);
-                }
-                else
-                    OptimizedProxyGeometry::addCubeMesh(geometry_, regionBounds,dim);
-
-                proxyVolume += regionBounds.volume();
-
-                //traverse rest
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->llf_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->lrf_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->ulf_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->urf_, dim, clipBounds);
-            }
-            else if ((node->llf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                     (node->lrf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                     (node->llb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                     (node->lrb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE))
-            {
-                //visualize lower half
-                tgt::Bounds regionBounds = node->llf_->bounds_;
-                regionBounds.addVolume(node->lrf_->bounds_);
-                regionBounds.addVolume(node->llb_->bounds_);
-                regionBounds.addVolume(node->lrb_->bounds_);
-
-                if (clippingEnabled_) {
-                    //only add and clip mesh if necessary
-                    if (clipBounds.containsVolume(regionBounds))
-                        OptimizedProxyGeometry::addCubeMesh(geometry_, regionBounds, dim);
-                    else if (clipBounds.intersects(regionBounds))
-                        OptimizedProxyGeometry::addCubeMeshClip(geometry_, regionBounds,dim,clipBounds);
-                }
-                else
-                    OptimizedProxyGeometry::addCubeMesh(geometry_, regionBounds,dim);
-
-                proxyVolume += regionBounds.volume();
-
-                //traverse rest
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->ulb_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->urb_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->ulf_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->urf_, dim, clipBounds);
-            }
-            else if ((node->ulf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                     (node->urf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                     (node->ulb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                     (node->urb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE))
-            {
-                //visualize upper half
-                tgt::Bounds regionBounds = node->ulf_->bounds_;
-                regionBounds.addVolume(node->urf_->bounds_);
-                regionBounds.addVolume(node->ulb_->bounds_);
-                regionBounds.addVolume(node->urb_->bounds_);
-
-                if (clippingEnabled_) {
-                    //only add and clip mesh if necessary
-                    if (clipBounds.containsVolume(regionBounds))
-                        OptimizedProxyGeometry::addCubeMesh(geometry_, regionBounds, dim);
-                    else if (clipBounds.intersects(regionBounds))
-                        OptimizedProxyGeometry::addCubeMeshClip(geometry_, regionBounds,dim,clipBounds);
-                }
-                else
-                    OptimizedProxyGeometry::addCubeMesh(geometry_, regionBounds,dim);
-
-                proxyVolume += regionBounds.volume();
-
-                //traverse rest
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->llf_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->llb_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->lrf_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->lrb_, dim, clipBounds);
-            }
-            else if ((node->llf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                     (node->ulf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                     (node->llb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                     (node->ulb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE))
-            {
-                //visualize left half
-                tgt::Bounds regionBounds = node->llf_->bounds_;
-                regionBounds.addVolume(node->ulf_->bounds_);
-                regionBounds.addVolume(node->llb_->bounds_);
-                regionBounds.addVolume(node->ulb_->bounds_);
-
-                if (clippingEnabled_) {
-                    //only add and clip mesh if necessary
-                    if (clipBounds.containsVolume(regionBounds))
-                        OptimizedProxyGeometry::addCubeMesh(geometry_, regionBounds, dim);
-                    else if (clipBounds.intersects(regionBounds))
-                        OptimizedProxyGeometry::addCubeMeshClip(geometry_, regionBounds,dim,clipBounds);
-                }
-                else
-                    OptimizedProxyGeometry::addCubeMesh(geometry_, regionBounds,dim);
-
-                proxyVolume += regionBounds.volume();
-
-                //traverse rest
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->lrf_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->urf_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->lrb_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->urb_, dim, clipBounds);
-            }
-            else if ((node->lrf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                     (node->urf_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                     (node->lrb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE) &&
-                     (node->urb_->opacity_ == ProxyGeometryOctreeNode::OPAQUE_NODE))
-            {
-                //visualize right half
-                tgt::Bounds regionBounds = node->lrf_->bounds_;
-                regionBounds.addVolume(node->urf_->bounds_);
-                regionBounds.addVolume(node->lrb_->bounds_);
-                regionBounds.addVolume(node->urb_->bounds_);
-
-                if (clippingEnabled_) {
-                    //only add and clip mesh if necessary
-                    if (clipBounds.containsVolume(regionBounds))
-                        OptimizedProxyGeometry::addCubeMesh(geometry_, regionBounds, dim);
-                    else if (clipBounds.intersects(regionBounds))
-                        OptimizedProxyGeometry::addCubeMeshClip(geometry_, regionBounds,dim,clipBounds);
-                }
-                else
-                    OptimizedProxyGeometry::addCubeMesh(geometry_, regionBounds,dim);
-
-                proxyVolume += regionBounds.volume();
-
-                //traverse rest
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->llf_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->llb_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->ulf_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->ulb_, dim, clipBounds);
-            }
-            else {
-                //else: traverse further
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->llf_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->lrf_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->ulf_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->urf_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->llb_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->lrb_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->ulb_, dim, clipBounds);
-                proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->urb_, dim, clipBounds);
+            //check pre-integration heuristic
+            if (!isRegionEmptyPi(minIntensity, maxIntensity, piTables.at(i))) {
+                isOpaque = true;
+                break;
             }
         }
-        else {
-            //traverse further
-            proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->llf_, dim, clipBounds);
-            proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->lrf_, dim, clipBounds);
-            proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->ulf_, dim, clipBounds);
-            proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->urf_, dim, clipBounds);
-            proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->llb_, dim, clipBounds);
-            proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->lrb_, dim, clipBounds);
-            proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->ulb_, dim, clipBounds);
-            proxyVolume += traverseOctreeAndCreateMaxCubeGeometry(node->urb_, dim, clipBounds);
-        }
 
-        return proxyVolume;
+        //do not change the corresponding brick(s) if all channels are transparent
+        if (!isOpaque)
+            return;
+
+        //check if node is outside volume dimensions and discard it
+        if (tgt::hor(tgt::greaterThanEqual(nodeLlf, tgt::svec3(volumeDim))))
+            return;
+
+        //set bricks in vector opaque
+        tgt::svec3 brickLlf = nodeLlf / brickDim_;
+        tgt::svec3 brickUrb = nodeUrb / brickDim_ - tgt::svec3(1);
+        setBricksVisible(brickLlf, brickUrb);
+
+        //tgt::Bounds b(tgt::vec3(brickLlf), tgt::vec3(brickUrb));
+        //std::cout << brickLlf << " " << brickUrb << std::endl;
+
+    } else {
+
+        //for every child: compute bounding box and traverse further
+        tgt::svec3 tmpNodeDim = tgt::svec3(nodeUrb-nodeLlf);
+        tgt::svec3 nodeHalfDim = tgt::svec3(tmpNodeDim.x / 2, tmpNodeDim.y / 2, tmpNodeDim.z / 2);
+        for (size_t childID=0; childID<8; childID++) {
+            const VolumeOctreeNode* childNode = node->children_[childID];
+            if (childNode) {
+                tgt::svec3 childCoord = linearCoordToCubic(childID, tgt::svec3::two);
+                tgt::svec3 childLlf = nodeLlf + childCoord*nodeHalfDim;
+                tgt::svec3 childUrb = childLlf + nodeHalfDim;
+
+                //traverseOctreeAndCreateGeometry(childNode, childLlf, childUrb, tf, piTable, clipBounds, volumeDim);
+                traverseOctreeAndCreateBrickStructure(childNode, level + 1, childLlf, childUrb, tfVector, numVolumeChannels, piTables, clipBounds, volumeDim);
+            }
+        }
     }
 }
 
-void OctreeBackgroundThread::computeOctreeRecursively(const VolumeBase* inputVolume) {
-
-    if (debugOutput_) {
-        stopWatch_.reset();
-        stopWatch_.start();
+void VolumeOctreeOuterFacesBackgroundThread::setBricksVisible(tgt::svec3 llf, tgt::svec3 urb) {
+    for (size_t z=llf.z; z<=urb.z && z < brickStructureSize_.z;z++) {
+        interruptionPoint();
+        for (size_t y=llf.y; y<=urb.y && y < brickStructureSize_.y; y++) {
+            for (size_t x=llf.x; x<=urb.x && x < brickStructureSize_.x; x++) {
+                tgt::vec3 rllf = tgt::vec3(brickDim_ * tgt::svec3(x,y,z)) - tgt::vec3(0.5f);
+                tgt::vec3 rurb = tgt::vec3((brickDim_ * tgt::svec3(x+1,y+1,z+1)) - tgt::svec3(1)) + tgt::vec3(0.5f);
+                tgt::Bounds regionBounds(rllf, rurb);
+                //std::cout << rllf << " " << rurb << std::endl;
+                std::vector<tgt::vec2> minMaxIntensities;       //<- not needed here, may be empty
+                ProxyGeometryVolumeRegion& v = getVolumeRegion(tgt::ivec3((int)x,(int)y,(int)z));
+                v = ProxyGeometryVolumeRegion(regionBounds,minMaxIntensities);
+            }
+        }
     }
+}
+
+ProxyGeometryVolumeRegion& VolumeOctreeOuterFacesBackgroundThread::getVolumeRegion(tgt::ivec3 pos) {
+    return brickStructure_.at(pos.z * (brickStructureSize_.x * brickStructureSize_.y) + pos.y * brickStructureSize_.x + pos.x);
+}
+
+void VolumeOctreeOuterFacesBackgroundThread::computeOuterFaces() {
+
+    //get volume dimensions
+    tgt::ivec3 volDim = volume_->getDimensions();
 
     interruptionPoint();
 
-    tgt::ivec3 dim = inputVolume->getDimensions();
+    //second pass: scan through region structure
+    //for every opaque region and for every side of the brick check the neighbors and add a face if the neighbor is transparent
+    tgt::ivec3 pos;
+    for (VolumeIterator it(brickStructureSize_); !it.outofrange(); it.next()) {
 
-    const VolumeRAM* vol = inputVolume->getRepresentation<VolumeRAM>();
-    RealWorldMapping rwm = inputVolume->getRealWorldMapping();
+        interruptionPoint();
 
-    const tgt::ivec3 step = tgt::ivec3(stepSize_);
+        tgt::Bounds clipBounds(clipLlf_, clipUrb_);
 
-    //determine size for this resolution
-    const tgt::ivec3 size(
-            static_cast<int>(std::ceil(static_cast<float>(dim.x) / static_cast<float>(stepSize_))),
-            static_cast<int>(std::ceil(static_cast<float>(dim.y) / static_cast<float>(stepSize_))),
-            static_cast<int>(std::ceil(static_cast<float>(dim.z) / static_cast<float>(stepSize_))));
+        //get position of current brick and a reference to the brick
+        pos = it.value();
+        ProxyGeometryVolumeRegion& current  = getVolumeRegion(pos);
 
-    interruptionPoint();
+        //if the current brick is transparent no faces are generated
+        if (!current.isOpaque())
+            continue;
 
-    //create root for new octree
-    *octreeRoot_ = new ProxyGeometryOctreeNode();
+        //if clipping is enabled and the current brick is completely outside the clipping area no faces are generated
+        if (clippingEnabled_ && !clipBounds.containsVolume(current.getBounds()) && !clipBounds.intersects(current.getBounds()))
+            continue;
 
-    tgt::ivec3 pos(0);
-    subdivideOctreeNodeRecursively(*octreeRoot_, pos, size, stepSize_, vol, dim, rwm);
+        //std::cout << current.getBounds().getLLF() << " " << current.getBounds().getURB() << std::endl;
+
+        //outer loop: set sign of the normal from -1 to +1
+        for (int sign = -1; sign <= 1; sign += 2) {
+            //inner loop: iterate over the three dimensions
+            for (int dim = 0; dim < 3; ++dim) {
+
+                interruptionPoint();
+
+                if (!clippingEnabled_ || clipBounds.containsVolume(current.getBounds())) {
+                    //no clipping
+                    //if direct neighbor in direction sign*dim is existing and opaque: continue
+                    tgt::ivec3 neighborPos = pos;
+                    neighborPos.elem[dim] += sign;
+
+                    if ((neighborPos.elem[dim] >= 0) && (neighborPos.elem[dim] < brickStructureSize_.elem[dim]) && getVolumeRegion(neighborPos).isOpaque())
+                        continue;
+
+                    //else: create a face in direction sign*dim
+
+                    //get the coordinates of the current block
+                    tgt::vec3 llf = current.getBounds().getLLF();
+                    tgt::vec3 urb = current.getBounds().getURB();
+
+                    tgt::vec3 coordllf = tgt::max(llf, tgt::vec3(0.f));
+                    tgt::vec3 coordurb = tgt::min(urb, tgt::vec3(volDim));
+
+                    tgt::vec3 texllf = coordllf / tgt::vec3(volDim);
+                    texllf = tgt::clamp(texllf, 0.f, 1.f);
+
+                    tgt::vec3 texurb = coordurb / tgt::vec3(volDim);
+                    texurb = tgt::clamp(texurb, 0.f, 1.f);
+
+                    // four vertices for the quad
+                    tgt::vec3 vertices[4];
+
+                    // set the coordinate of the face side according to dim and sign
+                    for (int i = 0; i < 4; ++i) {
+                        vertices[i].elem[dim] = (sign < 0) ? texllf.elem[dim] : texurb.elem[dim];
+                    }
+
+                    //set the other coordinates
+                    for (int incr = 1; incr <= 2; ++incr) {
+                        int curDim = (dim + incr) % 3;
+
+                        vertices[0].elem[curDim] = texllf.elem[curDim];
+                        vertices[1].elem[curDim] = (incr == 1) ? texurb.elem[curDim] : texllf.elem[curDim];
+                        vertices[2].elem[curDim] = texurb.elem[curDim];
+                        vertices[3].elem[curDim] = (incr == 1) ? texllf.elem[curDim] : texurb.elem[curDim];
+                    }
+
+                    VertexVec3 ll(vertices[0], vertices[0]);
+                    VertexVec3 lr(vertices[1], vertices[1]);
+                    VertexVec3 ur(vertices[2], vertices[2]);
+                    VertexVec3 ul(vertices[3], vertices[3]);
+
+                    //counter-clockwise order of vertices
+                    if (sign > 0)
+                        geometry_->addQuad(ll, lr, ur, ul);
+                    else
+                        geometry_->addQuad(ll, ul, ur, lr);
+
+                }
+                else {
+                    //clipping needed
+
+                    //if direct neighbor in direction sign*dim is existing and opaque AND is not completely outside the clipping area: continue
+                    tgt::ivec3 neighborPos = pos;
+                    neighborPos.elem[dim] += sign;
+
+                    if ((neighborPos.elem[dim] >= 0) && (neighborPos.elem[dim] < brickStructureSize_.elem[dim]) && getVolumeRegion(neighborPos).isOpaque()
+                            && (clipBounds.containsVolume(getVolumeRegion(neighborPos).getBounds()) || clipBounds.intersects(getVolumeRegion(neighborPos).getBounds())))
+                       continue;
+
+                    //else: create a face in direction sign*dim
+
+                    //get the coordinates of the current block
+                    tgt::vec3 llf = current.getBounds().getLLF();
+                    tgt::vec3 urb = current.getBounds().getURB();
+
+                    tgt::vec3 coordllf = tgt::max(llf, tgt::vec3(0.f));
+                    tgt::vec3 coordurb = tgt::min(urb, tgt::vec3(volDim));
+
+
+                    //clip the coordinates
+                    coordllf = tgt::max(coordllf, clipLlf_);
+                    coordurb = tgt::min(coordurb, clipUrb_);
+
+                    tgt::vec3 texllf = coordllf / tgt::vec3(volDim);
+                    texllf = tgt::clamp(texllf, 0.f, 1.f);
+
+                    tgt::vec3 texurb = coordurb / tgt::vec3(volDim);
+                    texurb = tgt::clamp(texurb, 0.f, 1.f);
+
+                    // four vertices for the quad
+                    tgt::vec3 vertices[4];
+
+                    // set the coordinate of the face side according to dim and sign
+                    for (int i = 0; i < 4; ++i) {
+                        vertices[i].elem[dim] = (sign < 0) ? texllf.elem[dim] : texurb.elem[dim];
+                    }
+
+                    //set the other coordinates
+                    for (int incr = 1; incr <= 2; ++incr) {
+                        int curDim = (dim + incr) % 3;
+
+                        vertices[0].elem[curDim] = texllf.elem[curDim];
+                        vertices[1].elem[curDim] = (incr == 1) ? texurb.elem[curDim] : texllf.elem[curDim];
+                        vertices[2].elem[curDim] = texurb.elem[curDim];
+                        vertices[3].elem[curDim] = (incr == 1) ? texllf.elem[curDim] : texurb.elem[curDim];
+                    }
+
+                    VertexVec3 ll(vertices[0], vertices[0]);
+                    VertexVec3 lr(vertices[1], vertices[1]);
+                    VertexVec3 ur(vertices[2], vertices[2]);
+                    VertexVec3 ul(vertices[3], vertices[3]);
+
+                    //counter-clockwise order of vertices
+                    if (sign > 0)
+                        geometry_->addQuad(ll, lr, ur, ul);
+                    else
+                        geometry_->addQuad(ll, ul, ur, lr);
+                }
+            }
+        }
+    }
 
     if (debugOutput_) {
         stopWatch_.stop();
-        std::cout << "Recursive octree construction took " << stopWatch_.getRuntime() <<  " milliseconds" << std::endl;
-    }
-}
-
-void OctreeBackgroundThread::subdivideOctreeNodeRecursively(ProxyGeometryOctreeNode* current, tgt::ivec3 pos, tgt::ivec3 size, int stepSize,
-                                                            const VolumeRAM* vol, tgt::ivec3 dim, RealWorldMapping rwm)
-{
-    if (!current) {
-
-        if (debugOutput_)
-            std::cout << "Encounter node 0 during octree creation..." << std::endl;
-
-        return;
+        std::cout << "Created outer faces proxy geometry in " << stopWatch_.getRuntime() << " milliseconds" << std::endl;
     }
 
     interruptionPoint();
 
-    //if there is no further subdividing possible: make current node leaf and compute min and max values as well as bounds
-    if ((size.x == 1) || (size.y == 1) || (size.z == 1)) {
-        current->isLeaf_ = true;
-        tgt::ivec3 llf = pos * stepSize;
-        tgt::ivec3 urb = (pos + size) * stepSize;
-
-        //since a voxel is the center, add/subtract 0.5 to/from the coordinates to get the bounding box
-        current->bounds_ = tgt::Bounds(tgt::vec3(llf) - tgt::vec3(0.5f), tgt::vec3(urb) + tgt::vec3(0.5f));
-
-        // find min and max intensities
-        float minIntensity = std::numeric_limits<float>::max();
-        float maxIntensity = std::numeric_limits<float>::min();
-        llf = tgt::max(llf - tgt::ivec3(1),tgt::ivec3(0));
-        llf = tgt::min(llf,dim - 1);
-        urb = tgt::max(urb + tgt::ivec3(1),tgt::ivec3(0));
-        urb = tgt::min(urb,dim - 1);
-
-        interruptionPoint();
-
-        //don't use macro because of interruption points within the loops...
-        //VRN_FOR_EACH_VOXEL(pos, llf, urb) {
-        for (pos = llf; pos.z < urb.z; ++pos.z) {
-            //interruption point after each slice
-            interruptionPoint();
-
-            for (pos.y = llf.y; pos.y < urb.y; ++pos.y) {
-                for (pos.x = llf.x; pos.x < urb.x; ++pos.x) {
-                    float currentIntensity = vol->getVoxelNormalized(pos);
-                    //apply realworld mapping
-                    currentIntensity = rwm.normalizedToRealWorld(currentIntensity);
-                    minIntensity = std::min(minIntensity,currentIntensity);
-                    maxIntensity = std::max(maxIntensity,currentIntensity);
-                }
-            }
-        }
-
-        current->minMaxIntensity_ = tgt::vec2(minIntensity, maxIntensity);
-    }
-    else {
-        //subdivide the current node
-        tgt::ivec3 sizeLlf = size / 2;
-        tgt::ivec3 sizeUrb = size - sizeLlf;
-        tgt::ivec3 posUrb = pos + sizeLlf;
-
-        interruptionPoint();
-
-        //recursively compute children
-        current->llf_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->llf_, pos, sizeLlf, stepSize, vol, dim, rwm);
-
-        current->lrf_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->lrf_, tgt::ivec3(posUrb.x, pos.y, pos.z),
-            tgt::ivec3(sizeUrb.x, sizeLlf.y, sizeLlf.z), stepSize, vol, dim, rwm);
-
-        current->ulf_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->ulf_, tgt::ivec3(pos.x, posUrb.y, pos.z),
-            tgt::ivec3(sizeLlf.x, sizeUrb.y, sizeLlf.z), stepSize, vol, dim, rwm);
-
-        current->urf_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->urf_, tgt::ivec3(posUrb.x, posUrb.y, pos.z),
-            tgt::ivec3(sizeUrb.x, sizeUrb.y, sizeLlf.z), stepSize, vol, dim, rwm);
-
-        current->llb_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->llb_, tgt::ivec3(pos.x, pos.y, posUrb.z),
-            tgt::ivec3(sizeLlf.x, sizeLlf.y, sizeUrb.z), stepSize, vol, dim, rwm);
-
-        current->lrb_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->lrb_, tgt::ivec3(posUrb.x, pos.y, posUrb.z),
-            tgt::ivec3(sizeUrb.x, sizeLlf.y, sizeUrb.z), stepSize, vol, dim, rwm);
-
-        current->ulb_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->ulb_, tgt::ivec3(pos.x, posUrb.y, posUrb.z),
-            tgt::ivec3(sizeLlf.x, sizeUrb.y, sizeUrb.z), stepSize, vol, dim, rwm);
-
-        current->urb_ = new ProxyGeometryOctreeNode();
-        subdivideOctreeNodeRecursively(current->urb_, posUrb, sizeUrb, stepSize, vol, dim, rwm);
-
-        interruptionPoint();
-
-        //compute bounds and min/max from child nodes, set parent to child nodes
-        current->llf_->parent_ = current;
-        current->lrf_->parent_ = current;
-        current->ulf_->parent_ = current;
-        current->urf_->parent_ = current;
-        current->llb_->parent_ = current;
-        current->lrb_->parent_ = current;
-        current->ulb_->parent_ = current;
-        current->urb_->parent_ = current;
-
-        interruptionPoint();
-
-        current->bounds_ = current->llf_->bounds_;
-        current->bounds_.addVolume(current->lrf_->bounds_);
-        current->bounds_.addVolume(current->ulf_->bounds_);
-        current->bounds_.addVolume(current->urf_->bounds_);
-        current->bounds_.addVolume(current->llb_->bounds_);
-        current->bounds_.addVolume(current->lrb_->bounds_);
-        current->bounds_.addVolume(current->ulb_->bounds_);
-        current->bounds_.addVolume(current->urb_->bounds_);
-
-        interruptionPoint();
-
-        float min, max;
-        min = current->llf_->minMaxIntensity_.x;
-        max = current->llf_->minMaxIntensity_.y;
-        min = std::min(min, current->lrf_->minMaxIntensity_.x);
-        max = std::max(max, current->lrf_->minMaxIntensity_.y);
-        min = std::min(min, current->ulf_->minMaxIntensity_.x);
-        max = std::max(max, current->ulf_->minMaxIntensity_.y);
-        min = std::min(min, current->urf_->minMaxIntensity_.x);
-        max = std::max(max, current->urf_->minMaxIntensity_.y);
-        min = std::min(min, current->llb_->minMaxIntensity_.x);
-        max = std::max(max, current->llb_->minMaxIntensity_.y);
-        min = std::min(min, current->lrb_->minMaxIntensity_.x);
-        max = std::max(max, current->lrb_->minMaxIntensity_.y);
-        min = std::min(min, current->ulb_->minMaxIntensity_.x);
-        max = std::max(max, current->ulb_->minMaxIntensity_.y);
-        min = std::min(min, current->urb_->minMaxIntensity_.x);
-        max = std::max(max, current->urb_->minMaxIntensity_.y);
-
-        current->minMaxIntensity_ = tgt::vec2(min, max);
-    }
+    geometry_->setTransformationMatrix(volume_->getTextureToWorldMatrix());
+    processor_->setGeometryInvalid(false);
 }
-#endif
 
 } // namespace

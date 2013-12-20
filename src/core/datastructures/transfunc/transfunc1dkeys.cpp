@@ -121,9 +121,8 @@ const std::string TransFunc1DKeys::loggerCat_("voreen.TransFunc1DKeys");
 
 TransFunc1DKeys::TransFunc1DKeys(int width)
     : TransFunc(width, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, tgt::Texture::NEAREST)
-    , lowerThreshold_(0.f)
-    , upperThreshold_(1.f)
-    , domain_(0.0, 1.0f)
+    , threshold_(0.f, 1.f)
+    , domain_(0.f, 1.f)
     , preIntegrationTableMap_(NULL, 10)
     , preIntegrationProgram_(0)
 {
@@ -169,11 +168,13 @@ TransFunc1DKeys::~TransFunc1DKeys() {
 }
 
 bool TransFunc1DKeys::operator==(const TransFunc1DKeys& tf) {
-    if(lowerThreshold_ != tf.lowerThreshold_)
-        return false;
-    if(upperThreshold_ != tf.upperThreshold_)
+    if(threshold_ != tf.threshold_)
         return false;
     if(domain_ != tf.getDomain(0))
+        return false;
+    if(gammaValue_ != tf.gammaValue_)
+        return false;
+    if(alphaMode_ != tf.alphaMode_)
         return false;
 
     if (keys_.size() != tf.keys_.size())
@@ -190,12 +191,51 @@ bool TransFunc1DKeys::operator!=(const TransFunc1DKeys& tf) {
     return !(*this == tf);
 }
 
+TransFunc* TransFunc1DKeys::clone() const {
+    TransFunc1DKeys* func = new TransFunc1DKeys();
+
+    func->updateFrom(this);
+
+    return func;
+}
+
+
+void TransFunc1DKeys::updateFrom(const TransFunc* transfunc) {
+    tgtAssert(transfunc, "null pointer passed");
+
+    const TransFunc1DKeys* tf1DKeys = dynamic_cast<const TransFunc1DKeys*>(transfunc);
+    if (!tf1DKeys) {
+        LWARNING("updateFrom(): passed parameter is not of type TransFunc1DKeys");
+        return;
+    }
+
+    dimensions_ = tf1DKeys->getDimensions();
+    format_ = tf1DKeys->format_;
+    dataType_ = tf1DKeys->dataType_;
+    filter_ = tf1DKeys->filter_;
+    gammaValue_ = tf1DKeys->gammaValue_;
+    alphaMode_ = tf1DKeys->alphaMode_;
+
+    threshold_ = tf1DKeys->threshold_;
+
+    domain_ = tf1DKeys->domain_;
+
+    keys_.clear();
+    std::vector<TransFuncMappingKey*>::const_iterator it;
+    for (it = tf1DKeys->keys_.begin(); it!=tf1DKeys->keys_.end(); it++) {
+        keys_.push_back((*it)->clone());
+    }
+
+    textureInvalid_ = true;
+}
+
 bool TransFunc1DKeys::isStandardFunc() const {
     if(getDomain() == tgt::vec2(0.0f, 1.0f) && (getNumKeys() == 2)) {
         const TransFuncMappingKey* k0 = getKey(0);
         if((k0->getIntensity() == 0.0f) && !(k0->isSplit()) && (k0->getColorL() == col4(0, 0, 0, 0))) {
             const TransFuncMappingKey* k1 = getKey(1);
-            if((k1->getIntensity() == 1.0f) && !(k1->isSplit()) && (k1->getColorL() == col4(255)))
+            if((k1->getIntensity() == 1.0f) && !(k1->isSplit()) && (k1->getColorL() == col4(255)) &&
+                gammaValue_ == 1.f && alphaMode_ == TF_USE_ALPHA)
                 return true;
         }
     }
@@ -217,17 +257,18 @@ void TransFunc1DKeys::makeRamp() {
             keys_[i]->setAlphaR(v);
         }
     }
-    textureInvalid_ = true;
-    preIntegrationTableMap_.clear();
+    invalidateTexture();
 }
 
 void TransFunc1DKeys::setToStandardFunc() {
     clearKeys();
     keys_.push_back(new TransFuncMappingKey(0.f, col4(0, 0, 0, 0)));
     keys_.push_back(new TransFuncMappingKey(1.f, col4(255)));
+    setThresholds(0.f,1.f);
+    setGammaValue(1.f);
+    setAlphaMode(TF_USE_ALPHA);
 
-    textureInvalid_ = true;
-    preIntegrationTableMap_.clear();
+    invalidateTexture();
 }
 
 tgt::vec4 TransFunc1DKeys::getMeanValue(float segStart, float segEnd) const {
@@ -253,6 +294,11 @@ col4 TransFunc1DKeys::getMappingForValue(float value) const {
     value = (value < 0.f) ? 0.f : value;
     value = (value > 1.f) ? 1.f : value;
 
+    //use gamma correction
+    if(gammaValue_ != 1.f) {
+        value = powf(value,gammaValue_);
+    }
+
     // iterate through all keys until we get to the correct position
     std::vector<TransFuncMappingKey*>::const_iterator keyIterator = keys_.begin();
 
@@ -277,8 +323,10 @@ col4 TransFunc1DKeys::getMappingForValue(float value) const {
         color.b += static_cast<uint8_t>((rightDest.b - leftDest.b) * fraction);
         color.a += static_cast<uint8_t>((rightDest.a - leftDest.a) * fraction);
     }
-    if(ignoreAlpha_)
+    if(alphaMode_ == TF_ONE_ALPHA)
         color.a = 255;
+    else if (alphaMode_ == TF_ZERO_ALPHA)
+        color.a = 0;
 
     return color;
 }
@@ -290,15 +338,16 @@ void TransFunc1DKeys::updateTexture() {
     tgtAssert(tex_, "No texture");
 
     //get tresholds of the transfer function
-    int front_end = tgt::iround(lowerThreshold_*dimensions_.x);
-    int back_start = tgt::iround(upperThreshold_*dimensions_.x);
+    int front_end = tgt::iround(threshold_.x*dimensions_.x);
+    int back_start = tgt::iround(threshold_.y*dimensions_.x);
     //all values before front_end and after back_start are set to zero
     //all other values are taken from the TF
     for (int x = 0; x < front_end; ++x)
         tex_->texel<col4>(x) = col4(0, 0, 0, 0);
 
-    for (int x = front_end; x < back_start; ++x)
-        tex_->texel<col4>(x) = col4(getMappingForValue(static_cast<float>(x) / dimensions_.x));
+    for (int x = front_end; x < back_start; ++x) {
+        tex_->texel<col4>(x) = getMappingForValue(static_cast<float>(x) / dimensions_.x);
+    }
 
     for (int x = back_start; x < dimensions_.x; ++x)
         tex_->texel<col4>(x) = col4(0, 0, 0, 0);
@@ -309,19 +358,13 @@ void TransFunc1DKeys::updateTexture() {
     textureInvalid_ = false;
 }
 
-void TransFunc1DKeys::setThresholds(float lower, float upper) {
-    lowerThreshold_ = lower;
-    upperThreshold_ = upper;
-    textureInvalid_ = true;
-    preIntegrationTableMap_.clear();
+void TransFunc1DKeys::setThresholds(const tgt::vec2& thresholds, size_t dimension) {
+    threshold_ = thresholds;
+    invalidateTexture();
 }
 
-void TransFunc1DKeys::setThresholds(const tgt::vec2& thresholds) {
-    setThresholds(thresholds.x, thresholds.y);
-}
-
-tgt::vec2 TransFunc1DKeys::getThresholds() const {
-    return tgt::vec2(lowerThreshold_, upperThreshold_);
+tgt::vec2 TransFunc1DKeys::getThresholds(size_t dimension) const {
+    return threshold_;
 }
 
 int TransFunc1DKeys::getNumKeys() const {
@@ -342,8 +385,7 @@ const std::vector<TransFuncMappingKey*> TransFunc1DKeys::getKeys() const {
 
 void TransFunc1DKeys::setKeys(std::vector<TransFuncMappingKey*> keys) {
     keys_ = keys;
-    textureInvalid_ = true;
-    preIntegrationTableMap_.clear();
+    invalidateTexture();
 }
 
 void TransFunc1DKeys::reset(){
@@ -362,8 +404,7 @@ void TransFunc1DKeys::addKey(TransFuncMappingKey* key) {
         keyIterator++;
     keys_.insert(keyIterator, key);
 
-    textureInvalid_ = true;
-    preIntegrationTableMap_.clear();
+    invalidateTexture();
 }
 
 bool sortFunction(TransFuncMappingKey* a, TransFuncMappingKey* b) {
@@ -373,8 +414,7 @@ bool sortFunction(TransFuncMappingKey* a, TransFuncMappingKey* b) {
 void TransFunc1DKeys::updateKey(TransFuncMappingKey* /*key*/) {
     std::sort(keys_.begin(), keys_.end(), sortFunction);
 
-    textureInvalid_ = true;
-    preIntegrationTableMap_.clear();
+    invalidateTexture();
 }
 
 void TransFunc1DKeys::removeKey(TransFuncMappingKey* key) {
@@ -383,8 +423,7 @@ void TransFunc1DKeys::removeKey(TransFuncMappingKey* key) {
         keys_.erase(keyIterator);
     delete key;
 
-    textureInvalid_ = true;
-    preIntegrationTableMap_.clear();
+    invalidateTexture();
 }
 
 void TransFunc1DKeys::clearKeys() {
@@ -397,12 +436,16 @@ void TransFunc1DKeys::clearKeys() {
     // then delete the entries in the vector
     keys_.clear();
 
-    textureInvalid_ = true;
-    preIntegrationTableMap_.clear();
+    invalidateTexture();
 }
 
 bool TransFunc1DKeys::isEmpty() const {
     return keys_.empty();
+}
+
+void TransFunc1DKeys::invalidateTexture() {
+    TransFunc::invalidateTexture();
+    preIntegrationTableMap_.clear();
 }
 
 bool TransFunc1DKeys::save(const std::string& filename) const {
@@ -634,18 +677,16 @@ bool TransFunc1DKeys::loadTfi(const std::string& filename) {
 
     // log result
     if (success)
-        LINFO("Loaded transfer function from file: " << filename);
+        LDEBUG("Loaded transfer function from file: " << filename);
     else
         LWARNING("Loading transfer function failed.");
 
     invalidateTexture();
-    preIntegrationTableMap_.clear();
     return success;
 }
 
 void TransFunc1DKeys::updateFrom(const TransFunc1DKeys& tf) {
-    lowerThreshold_ = tf.lowerThreshold_;
-    upperThreshold_ = tf.upperThreshold_;
+    threshold_ = tf.threshold_;
 
     domain_ = tf.domain_;
 
@@ -654,32 +695,29 @@ void TransFunc1DKeys::updateFrom(const TransFunc1DKeys& tf) {
         TransFuncMappingKey* k = new TransFuncMappingKey(*(tf.keys_.at(i)));
         addKey(k);
     }
+    gammaValue_ = tf.gammaValue_;
+    alphaMode_ = tf.alphaMode_;
 }
 
 void TransFunc1DKeys::serialize(XmlSerializer& s) const {
     TransFunc::serialize(s);
+    // serialize domain/threshold
+    s.serialize("domain", domain_);
+    s.serialize("threshold", threshold_);
 
     // serialize keys...
     s.serialize("Keys", keys_, "key");
-
-    // serialize thresholds...
-    s.serialize("lower", lowerThreshold_);
-    s.serialize("upper", upperThreshold_);
-
-    s.serialize("domain", domain_);
 }
 
 void TransFunc1DKeys::deserialize(XmlDeserializer& s) {
     TransFunc::deserialize(s);
 
+    // deserialize thresholds...
+    s.optionalDeserialize("domain", domain_, tgt::vec2(0.0f, 1.0f));
+    s.optionalDeserialize("threshold", threshold_,tgt::vec2(0.0f, 1.0f));
+
     // deserialize keys...
     s.deserialize("Keys", keys_, "key");
-
-    // deserialize thresholds...
-    s.deserialize("lower", lowerThreshold_);
-    s.deserialize("upper", upperThreshold_);
-
-    s.optionalDeserialize("domain", domain_, tgt::vec2(0.0f, 1.0f));
 }
 
 bool TransFunc1DKeys::loadTextTable(const std::string& filename) {
@@ -1064,32 +1102,6 @@ void TransFunc1DKeys::generateKeys(unsigned char* data) {
     }
 }
 
-TransFunc* TransFunc1DKeys::clone() const {
-    TransFunc1DKeys* func = new TransFunc1DKeys();
-
-    func->dimensions_.x = dimensions_.x;
-    func->dimensions_.y = dimensions_.y;
-    func->dimensions_.z = dimensions_.z;
-    func->format_ = format_;
-    func->dataType_ = dataType_;
-    func->filter_ = filter_;
-
-    func->lowerThreshold_ = lowerThreshold_;
-    func->upperThreshold_ = upperThreshold_;
-
-    func->domain_ = domain_;
-
-    func->keys_.clear();
-    std::vector<TransFuncMappingKey*>::const_iterator it;
-    for(it = keys_.begin(); it!=keys_.end(); it++) {
-        func->keys_.push_back((*it)->clone());
-    }
-
-    func->textureInvalid_ = true;
-
-    return func;
-}
-
 tgt::vec2 TransFunc1DKeys::getDomain(int dimension) const {
     tgtAssert(dimension == 0, "Only one dimension!");
 
@@ -1116,6 +1128,25 @@ const PreIntegrationTable* TransFunc1DKeys::getPreIntegrationTable(float samplin
 void TransFunc1DKeys::deleteTexture() {
     TransFunc::deleteTexture();
     preIntegrationTableMap_.clear();
+}
+
+void TransFunc1DKeys::invertKeys() {
+    std::vector<TransFuncMappingKey*> oldkeys(keys_);
+    keys_.clear();
+
+    for(std::vector<TransFuncMappingKey*>::reverse_iterator it = oldkeys.rbegin(); it != oldkeys.rend(); it++) {
+        TransFuncMappingKey* key = *it;
+        key->setIntensity(1.f - key->getIntensity());
+        float tmp;
+        tmp = key->getAlphaL();
+        key->setAlphaL(key->getAlphaR());
+        key->setAlphaR(tmp);
+        tgt::col4 tmp2 = key->getColorL();
+        key->setColorL(key->getColorR());
+        key->setColorR(tmp2);
+        keys_.push_back(key);
+    }
+    invalidateTexture();
 }
 
 // --------------------------------------------------------------------------------

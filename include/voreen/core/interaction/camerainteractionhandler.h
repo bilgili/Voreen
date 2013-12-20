@@ -146,6 +146,7 @@ private:
 
     // trackball properties
     EventProperty<CameraInteractionHandler>* rotateEvent_;
+    EventProperty<CameraInteractionHandler>* contRotateEvent_;
     EventProperty<CameraInteractionHandler>* zoomEvent_;
     EventProperty<CameraInteractionHandler>* shiftEvent_;
     EventProperty<CameraInteractionHandler>* wheelZoomEvent_;

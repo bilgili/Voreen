@@ -43,6 +43,8 @@ public:
 
     Property* getProperty() const;
 
+    std::string getGroupName() const;
+
     /// Check if there is a visible property (used to hide grouping widget in user mode if necessary)
     bool isAnyPropertyVisible(Property::LODSetting lod);
 
@@ -55,8 +57,10 @@ private:
     QGridLayout* gridLayout_;
     std::vector<QPropertyWidget*> propertyWidgets_;
     QTabWidget* tabWidget_;
+    QGroupBox* groupBox_;
     Property* prop_;
     bool tabbed_;
+    std::string groupName_;
 
 };
 

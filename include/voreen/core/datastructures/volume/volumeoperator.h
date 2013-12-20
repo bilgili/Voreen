@@ -28,7 +28,7 @@
 
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "voreen/core/datastructures/volume/volume.h"
-#include "voreen/core/io/progressbar.h"
+#include "voreen/core/io/progressreporter.h"
 #include "voreen/core/utils/exception.h"
 #include "tgt/vector.h"
 
@@ -210,7 +210,7 @@ void UniversalBinaryVolumeOperatorGeneric<BASE_TYPE>::addInstance(BASE_TYPE* ins
 #define APPLY_B_OP(vh1, vh2, ...) get(vh1, vh2)->apply(vh1, vh2, ## __VA_ARGS__)
 
 /**
- * Variation of VRN_FOR_EACH_VOXEL that updates a progress bar
+ * Variation of VRN_FOR_EACH_VOXEL that updates a progress reporter
  * for each z-slice that has been processed. The PROGRESS parameter
  * may be null.
  */
@@ -220,7 +220,7 @@ void UniversalBinaryVolumeOperatorGeneric<BASE_TYPE>::addInstance(BASE_TYPE* ins
             for ((INDEX).x = (POS).x; (INDEX).x < (SIZE).x; ++(INDEX).x)
 
 /**
- * Variation of VRN_FOR_EACH_VOXEL that updates a progress bar
+ * Variation of VRN_FOR_EACH_VOXEL that updates a progress reporter
  * for each z-slice that has been processed. In contrast to
  * VRN_FOR_EACH_VOXEL_WITH_PROGRESS, this macro is supposed
  * to be used for tasks that require to traverse the volume

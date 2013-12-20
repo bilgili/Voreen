@@ -176,13 +176,13 @@ void DistanceMeasure::process() {
         label = label.substr(0, label.find(".")+numDigits_.get()+1);
         label += " "+unit_.get();
 
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
-        glTranslatef(-1.0f, -1.0f, 0.0f);
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
+        MatStack.loadIdentity();
+        MatStack.translate(-1.0f, -1.0f, 0.0f);
         float scaleFactorX = 2.0f / static_cast<float>(imgInport_.getSize().x);
         float scaleFactorY = 2.0f / static_cast<float>(imgInport_.getSize().y);
-        glScalef(scaleFactorX, scaleFactorY, 1);
+        MatStack.scale(scaleFactorX, scaleFactorY, 1);
         glColor4f(0.0f, 0.0f, 0.0f, 1.f);
         font_->render(tgt::vec3(static_cast<float>(mouseCurPos2D_.x+11), static_cast<float>(mouseCurPos2D_.y+11), 0.0f), label);
         glColor4f(0.7f, 0.7f, 0.7f, 1.f);
@@ -197,7 +197,7 @@ void DistanceMeasure::process() {
             glVertex2i(mouseStartPos2D_.x+1, mouseStartPos2D_.y+1);
             glVertex2i(mouseCurPos2D_.x+1, mouseCurPos2D_.y+1);
         glEnd();
-        glPopMatrix();
+        MatStack.popMatrix();
         glEnable(GL_DEPTH_TEST);
 
         if(renderSpheres_.get()) {
@@ -216,24 +216,24 @@ void DistanceMeasure::process() {
             glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, wh_diffuse);
             glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, wh_specular);
             // set modelview and projection matrices
-            glMatrixMode(GL_PROJECTION);
-            glPushMatrix();
-            tgt::loadMatrix(camera_.get().getProjectionMatrix(outport_.getSize()));
-            glMatrixMode(GL_MODELVIEW);
-            glPushMatrix();
-            glLoadIdentity();
-            tgt::loadMatrix(camera_.get().getViewMatrix());
+            MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+            MatStack.pushMatrix();
+            MatStack.loadMatrix(camera_.get().getProjectionMatrix(outport_.getSize()));
+            MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+            MatStack.pushMatrix();
+            MatStack.loadIdentity();
+            MatStack.loadMatrix(camera_.get().getViewMatrix());
 
-            glPushMatrix();
-            glTranslatef(mouseStartPos3D_.x, mouseStartPos3D_.y, mouseStartPos3D_.z);
+            MatStack.pushMatrix();
+            MatStack.translate(mouseStartPos3D_.x, mouseStartPos3D_.y, mouseStartPos3D_.z);
             gluSphere(quadric, 0.02f, 20, 20);
-            glPopMatrix();
-            glTranslatef(mouseCurPos3D_.x, mouseCurPos3D_.y, mouseCurPos3D_.z);
+            MatStack.popMatrix();
+            MatStack.translate(mouseCurPos3D_.x, mouseCurPos3D_.y, mouseCurPos3D_.z);
             gluSphere(quadric, 0.02f, 20, 20);
-            glMatrixMode(GL_PROJECTION);
-            glPopMatrix();
-            glMatrixMode(GL_MODELVIEW);
-            glPopMatrix();
+            MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+            MatStack.popMatrix();
+            MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+            MatStack.popMatrix();
             gluDeleteQuadric(quadric);
             glPopAttrib();
         }

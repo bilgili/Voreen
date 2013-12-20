@@ -59,9 +59,9 @@ void ClassificationModes::bindTexture(const std::string mode, TransFunc* tf, flo
     if (tf) {
         TransFunc1DKeys* tf1d = dynamic_cast<TransFunc1DKeys*>(tf);
 
-        if(mode == "pre-integrated-fast")
-            tf1d->getPreIntegrationTable(samplingStepSize, 0, true)->getTexture()->bind();
-        else if(mode == "pre-integrated")
+        //if(mode == "pre-integrated-fast")
+        //    tf1d->getPreIntegrationTable(samplingStepSize, 0, true)->getTexture()->bind();
+        /*else*/ if(mode == "pre-integrated-cpu")
             tf1d->getPreIntegrationTable(samplingStepSize, 0, false)->getTexture()->bind();
         else if(mode == "pre-integrated-gpu")
             tf1d->getPreIntegrationTable(samplingStepSize, 0, false, true)->getTexture()->bind();
@@ -84,9 +84,9 @@ bool ClassificationModes::usesTransferFunction(const std::string mode) {
 void ClassificationModes::fillProperty(StringOptionProperty* prop) {
     prop->addOption("none", "none");
     prop->addOption("transfer-function", "Transfer Function");
-    prop->addOption("pre-integrated-fast", "Pre-integrated TF (fast)");
-    prop->addOption("pre-integrated", "Pre-integrated TF");
     prop->addOption("pre-integrated-gpu", "Pre-Integrated TF (GPU)");
+    prop->addOption("pre-integrated-cpu", "Pre-integrated TF (CPU)");
+    //prop->addOption("pre-integrated-fast", "Pre-integrated TF (fast)");
     prop->select("transfer-function");
 }
 

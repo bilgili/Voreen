@@ -80,8 +80,6 @@ public:
 
     void resize(const QPointF& center, qreal width, qreal height);
 
-    void setProgressTier(int tier);
-
 protected:
     qreal width_;
     qreal height_;

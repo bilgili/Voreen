@@ -85,9 +85,9 @@ void Canny::process() {
             processed[y*privatePort_.getSize().x+x] = false;
     outport_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     tgt::ivec2 dimensions = privatePort_.getSize();
     glOrtho(0.0, dimensions.x, 0.0, dimensions.y, 0.0, 1.0);
     for (int x = 0; x < dimensions.x; ++x) {
@@ -137,9 +137,9 @@ void Canny::process() {
             }
         }
     }
-    glPopMatrix();
+    MatStack.popMatrix();
     outport_.deactivateTarget();
-    glMatrixMode(GL_MODELVIEW);
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
     privatePort_.getColorTexture()->destroy();
     delete[] processed;
 }

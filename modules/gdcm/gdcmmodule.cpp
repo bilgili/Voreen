@@ -35,7 +35,9 @@ GdcmModule::GdcmModule(const std::string& modulePath)
       incomingPortProperty_("incomingPort", "Incoming DICOM Port", 104, 1, 65535),
       scpUrlProperty_("scpUrl", "Default SCP URL", "www.dicomserver.co.uk"),
       scpAetProperty_("scpAet", "Default SCP AE Title", "ANY-SCP"),
-      scpPortProperty_("scpPort", "Default SCP Port", 104, 1, 65535)
+      scpPortProperty_("scpPort", "Default SCP Port", 104, 1, 65535),
+      ignoreSliceSpacing_("ignorespacing", "Ignore differences in slice spacing above 10%", false),
+      useGdcmRescaling_("gdcmrescaling", "Use GDCM Rescaling", true)
 {
     //module name
     setID("Grassroots DICOM");
@@ -49,6 +51,8 @@ GdcmModule::GdcmModule(const std::string& modulePath)
     addProperty(scpUrlProperty_);
     addProperty(scpAetProperty_);
     addProperty(scpPortProperty_);
+    addProperty(ignoreSliceSpacing_);
+    addProperty(useGdcmRescaling_);
 
 }
 

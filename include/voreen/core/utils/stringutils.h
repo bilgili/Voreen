@@ -26,8 +26,11 @@
 #ifndef VRN_STRINGUTILS_H
 #define VRN_STRINGUTILS_H
 
+#include "ext/tgt/vector.h"
 #include "voreen/core/voreencoreapi.h"
 #include "voreen/core/utils/exception.h"
+
+#include "tgt/vector.h"
 
 #include <string>
 #include <vector>
@@ -38,6 +41,11 @@ namespace voreen {
 
 /// Converts an int to a string.
 VRN_CORE_API std::string itos(int i, int stringLength = -1, char fillChar = '0');
+
+#ifdef __APPLE__
+/// Long unsigned int / size_t is an own type on MacOS, provide special implementation to avoid ambiguousness.
+VRN_CORE_API std::string itos(long unsigned int i, int stringLength = -1, char fillChar = '0');
+#endif
 
 /// Converts an uint32_t to a string.
 VRN_CORE_API std::string itos(uint32_t i, int stringLength = -1, char fillChar = '0');
@@ -81,7 +89,7 @@ T genericFromString(const std::string& str)
     throw (VoreenException);
 
 /// MSVC++ 2010 and later already provides the sto* functions in the <string> header
-#if !defined(_MSC_VER) || (_MSC_VER < 1600)
+#if (!defined(_MSC_VER) || (_MSC_VER < 1600)) && !defined(__GXX_EXPERIMENTAL_CXX0X__)
 /// Converts a string to an int using stringstreams
 VRN_CORE_API int stoi(const std::string& s);
 
@@ -137,6 +145,17 @@ VRN_CORE_API bool endsWith(const std::string& input, const std::string& ending);
 /// Returns true if \p input starts with \p ending
 VRN_CORE_API bool startsWith(const std::string& input, const std::string& start);
 
+/// Formats the passed byte size as string using the appropriate unit (bytes/kB/MB/GB).
+VRN_CORE_API std::string formatMemorySize(uint64_t bytes);
+
+/// Formats the passed length in mm as string using the appropriate unit (km/m/cm/mm/micron/nm).
+VRN_CORE_API std::string formatSpatialLength(float base_mm);
+
+/// Formats the passed spatial position in mm as vector string using the appropriate unit (km/m/cm/mm/micron/nm).
+VRN_CORE_API std::string formatSpatialLength(const tgt::vec3& position);
+
+/// Formats the passed time in ms as string using the appropriate unit (min/sec/ms).
+VRN_CORE_API std::string formatTime(const size_t time);
 
 // ----------------------------------------------------------------------------
 // template definitions

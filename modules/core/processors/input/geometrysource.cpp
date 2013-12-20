@@ -29,7 +29,7 @@
 #include "voreen/core/datastructures/geometry/meshlistgeometry.h"
 #include "voreen/core/datastructures/geometry/pointlistgeometry.h"
 #include "voreen/core/datastructures/geometry/pointsegmentlistgeometry.h"
-#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometryindexed.h"
 
 #include "voreen/core/properties/callmemberaction.h"
 #include "tgt/filesystem.h"
@@ -54,6 +54,8 @@ GeometrySource::GeometrySource()
     skipItemCount_("skipItems", "Items to skip after each point", 0),
     loadGeometry_("loadGeometry", "Load Geometry"),
     clearGeometry_("clearGeometry", "Clear Geometry"),
+    useIndexedGeometry_("useIndexed", "Use indexed geometry (.ply)", false),
+    calculateNormals_("calcNormals", "Calculate Normals (.ply)", false),
     outport_(Port::OUTPORT, "geometry.pointlist", "PointList Output")
 {
     geometryType_.addOption("geometry", "Voreen Geometry (.vge)");
@@ -64,12 +66,16 @@ GeometrySource::GeometrySource()
     clearGeometry_.onChange(CallMemberAction<GeometrySource>(this, &GeometrySource::clearGeometry));
     geometryFile_.onChange(CallMemberAction<GeometrySource>(this, &GeometrySource::updatePropertyVisibility));
     geometryType_.onChange(CallMemberAction<GeometrySource>(this, &GeometrySource::updatePropertyVisibility));
+    useIndexedGeometry_.onChange(CallMemberAction<GeometrySource>(this, &GeometrySource::readGeometry));
 
     addProperty(geometryFile_);
     addProperty(geometryType_);
     addProperty(skipItemCount_);
     addProperty(loadGeometry_);
     addProperty(clearGeometry_);
+
+    addProperty(useIndexedGeometry_);
+    addProperty(calculateNormals_);
 
     addPort(outport_);
 }
@@ -211,7 +217,18 @@ Geometry* GeometrySource::readPLYGeometry(const std::string& filename) const
         }
     }
 
-    TriangleMeshGeometryVec3* mesh = new TriangleMeshGeometryVec3();
+    // let the user choose between clippable trianglemeshgeom and non-clippable (at least, for now, on the CPU), but rendering-wise more efficient indexed geometry
+    Geometry* mesh;
+    if(useIndexedGeometry_.get())
+        mesh = new TriangleMeshGeometryUInt32IndexedVec3();
+    else
+        mesh = new TriangleMeshGeometryVec3();
+
+    std::vector<tgt::ivec3> faces;
+    std::vector<tgt::vec3> vertexNormals;
+    if(calculateNormals_.get())
+        vertexNormals.resize(numVertices, tgt::vec3(0.f));
+
     for(int i=0; i<numFaces; i++) {
         line = trim(file->getLine());
         vector<std::string> expl = strSplit(line, ' ');
@@ -221,11 +238,35 @@ Geometry* GeometrySource::readPLYGeometry(const std::string& filename) const
                 int v1 = stoi(expl[1]);
                 int v2 = stoi(expl[2]);
                 int v3 = stoi(expl[3]);
-                mesh->addTriangle(Triangle<VertexVec3>(vertices[v1], vertices[v2], vertices[v3]));
+
+                faces.push_back(tgt::ivec3(v1, v2, v3));
+
+                if(calculateNormals_.get()) {
+                    tgt::vec3 norm = normalize(cross(vertices[v2].pos_ - vertices[v1].pos_, vertices[v3].pos_ - vertices[v1].pos_));
+                    vertexNormals[v1] += norm;
+                    vertexNormals[v2] += norm;
+                    vertexNormals[v3] += norm;
+                }
             }
         }
     }
-    LINFO("Read " << vertices.size() << " vertices and " << mesh->getNumTriangles() << " triangles " << mesh->getBoundingBox());
+
+    if(calculateNormals_.get()) {
+        for(int i = 0; i < numVertices; i++)
+            vertices[i].attr1_ = normalize(vertexNormals.at(i));
+    }
+
+    if(useIndexedGeometry_.get())
+        (static_cast<TriangleMeshGeometryUInt32IndexedVec3*>(mesh))->setVertices(vertices);
+
+    for(int i=0; i<numFaces; i++) {
+        if(useIndexedGeometry_.get())
+            (static_cast<TriangleMeshGeometryUInt32IndexedVec3*>(mesh))->addTriangle(faces.at(i));
+        else
+            (static_cast<TriangleMeshGeometryVec3*>(mesh))->addTriangle(Triangle<VertexVec3>(vertices[faces.at(i).x], vertices[faces.at(i).y], vertices[faces.at(i).z]));
+    }
+
+    LINFO("Read " << vertices.size() << " vertices and " << numFaces << " triangles " << mesh->getBoundingBox());
 
     file->close();
     delete file;
@@ -355,6 +396,9 @@ void GeometrySource::updatePropertyVisibility() {
     loadGeometry_.setWidgetsEnabled(geometryFile_.get() != "");
     clearGeometry_.setWidgetsEnabled(outport_.getData());
     skipItemCount_.setVisible(!geometryType_.isSelected("geometry"));
+
+    useIndexedGeometry_.setVisible(endsWith(geometryFile_.get(), ".ply"));
+    calculateNormals_.setVisible(endsWith(geometryFile_.get(), ".ply"));
 }
 
 } // namespace voreen

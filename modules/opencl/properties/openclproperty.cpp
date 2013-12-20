@@ -53,21 +53,25 @@ void OpenCLSource::deserialize(XmlDeserializer& s) {
 
 //---------------------------------------------------------------------------------------------------------------
 
+const std::string OpenCLProperty::loggerCat_("voreen.opencl.OpenCLProperty");
+
 OpenCLProperty::OpenCLProperty(const std::string& id, const std::string& guiText, const std::string& programFilename, Processor::InvalidationLevel invalidationLevel)
                        : TemplateProperty<OpenCLSource>(id, guiText, OpenCLSource(programFilename), invalidationLevel)
-                       , programDefines_("")
+                       , programDefines_()
                        , originalProgramFilename_(programFilename)
-                       , program_(0)
+                       , programs_()
 {
     value_.programFilename_ = originalProgramFilename_;
+    programDefines_.push_back("");
 }
 
 OpenCLProperty::OpenCLProperty()
-    : program_(0)
-{}
+{
+    programDefines_.push_back("");
+}
 
 OpenCLProperty::~OpenCLProperty() {
-    if (program_) {
+    if (!programs_.empty()) {
         LWARNINGC("voreen.OpenCLProperty",
             getFullyQualifiedGuiName() << " has not been deinitialized before destruction.");
     }
@@ -107,12 +111,20 @@ void OpenCLProperty::deserialize(XmlDeserializer& s) {
     updateWidgets();
 }
 
-void OpenCLProperty::setDefines(std::string defs) {
-    programDefines_ = defs;
+void OpenCLProperty::setDefines(std::string defs, size_t programID) {
+    while (programID >= programDefines_.size())
+        programDefines_.push_back("");
+    programDefines_.at(programID) = defs;
 }
 
-std::string OpenCLProperty::getDefines() const {
-    return programDefines_;
+std::string OpenCLProperty::getDefines(size_t programID) const {
+    tgtAssert(!programDefines_.empty(), "no program defines");
+    if (programID >= programDefines_.size()) {
+        LERROR("No program configuration for index " + itos(programID) + " available");
+        return "";
+    }
+
+    return programDefines_.at(programID);
 }
 
 std::string OpenCLProperty::getProgramAsString(std::string filename) {
@@ -167,38 +179,63 @@ void OpenCLProperty::setProgramFilename(const std::string& programFilename) {
     }
 }
 
-void OpenCLProperty::rebuild() {
-    delete program_;
-    program_ = new cl::Program(OpenCLModule::getInstance()->getCLContext());
+bool OpenCLProperty::rebuild() {
+    tgtAssert(!programDefines_.empty(), "no program defines");
 
-    if (!value_.programFilename_.empty()) {
+    bool success = true;
 
-        if (!value_.programModified_) {
-            program_->loadSource(value_.programFilename_);
-            value_.programSource_ = getProgramAsString(value_.programFilename_);
+    clearProgram();
+
+    // create for all assigned build configurations
+    for (size_t i=0; i<programDefines_.size(); i++) {
+        cl::Program* program = new cl::Program(OpenCLModule::getInstance()->getCLContext());
+
+        if (!value_.programFilename_.empty()) {
+
+            if (!value_.programModified_) {
+                program->loadSource(value_.programFilename_);
+                value_.programSource_ = getProgramAsString(value_.programFilename_);
+            }
+            else {
+                program->setSource(value_.programSource_);
+            }
+
+            program->setBuildOptions(programDefines_.at(i));
+            bool success = program->build(OpenCLModule::getInstance()->getCLDevice());
+
+            if (!success) {
+                LERROR("Unable to build program " + itos(i));
+                delete program;
+                program = 0;
+                success = false;
+            }
+
+            programs_.push_back(program);
         }
-        else {
-            program_->setSource(value_.programSource_);
-        }
 
-        program_->setBuildOptions(programDefines_);
-        bool success = program_->build(OpenCLModule::getInstance()->getCLDevice());
-
-        if (!success)
-            throw VoreenException("Unable to build program");
     }
 
     updateWidgets();
+
+    return success;
 }
 
 void OpenCLProperty::clearProgram() {
-    delete program_;
-    program_ = 0;
+    for (size_t i=0; i<programs_.size(); i++)
+        delete programs_.at(i);
+    programs_.clear();
     LGL_ERROR;
 }
 
-cl::Program* OpenCLProperty::getProgram() const {
-   return program_;
+cl::Program* OpenCLProperty::getProgram(size_t programID) const {
+    if (programID >= programs_.size() || programs_.at(programID) == 0) {
+        if (programID > 0)
+            LWARNING("Program with id " + itos(programID) + " not available");
+        else
+            LDEBUG("Program not available");
+        return 0;
+    }
+    return programs_.at(programID);
 }
 
 }   // namespace

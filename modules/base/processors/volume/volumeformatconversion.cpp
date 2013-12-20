@@ -82,7 +82,7 @@ void VolumeFormatConversion::process() {
     Volume* outputVolume = 0;
 
     VolumeOperatorConvert voConvert;
-    voConvert.setProgressBar(progressBar_);
+    voConvert.setProgressReporter(this);
     if (numChannels == 1) {
         if (targetFormat_.isSelected("uint8_t")) {
             outputVolume = voConvert.apply<uint8_t>(inport_.getData());

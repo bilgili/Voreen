@@ -38,6 +38,7 @@ PlaneWidgetProcessor::PlaneWidgetProcessor()
     , arrowDisplayList_(0)
     , sphereDisplayList_(0)
     , enable_("enable", "Enable", true)
+    , showHandles_("showHandles", "Show Handles", true)
     , manipulatorScaling_("manipulatorScaling", "Manipulator scaling", 1.0f, 0.1f, 10.0f)
     , xColor_("xColor", "x Color", tgt::vec4(1.0f, 0.0f, 0.0f, 1.0f))
     , yColor_("yColor", "y Color", tgt::vec4(0.0f, 1.0f, 0.0f, 1.0f))
@@ -73,6 +74,9 @@ PlaneWidgetProcessor::PlaneWidgetProcessor()
 
     addProperty(enable_);
 
+    addProperty(showHandles_);
+    //enable_.setGroupID("vis");
+
     moveEventProp_ = new EventProperty<PlaneWidgetProcessor>(
         "mouseEvent.clipplaneMovement", "Clipplane movement", this,
         &PlaneWidgetProcessor::planeMovement,
@@ -89,34 +93,64 @@ PlaneWidgetProcessor::PlaneWidgetProcessor()
     addEventProperty(syncMoveEventProp_);
 
     addProperty(width_);
+        //width_.setGroupID("vis");
     addProperty(manipulatorScaling_);
+        //manipulatorScaling_.setGroupID("vis");
+    //setPropertyGroupGuiName("vis", "Visual Settings");
 
-    addProperty(clipEnabledRightX_);
-    addProperty(clipRightX_);
-    addProperty(clipUseSphereManipulatorRightX_);
-    addProperty(clipEnabledLeftX_);
-    addProperty(clipLeftX_);
-    addProperty(clipUseSphereManipulatorLeftX_);
     addProperty(xColor_);
+        xColor_.setGroupID("x");
+    addProperty(clipEnabledRightX_);
+        clipEnabledRightX_.setGroupID("x");
+    addProperty(clipRightX_);
+        clipRightX_.setGroupID("x");
+    addProperty(clipUseSphereManipulatorRightX_);
+        clipUseSphereManipulatorRightX_.setGroupID("x");
+    addProperty(clipEnabledLeftX_);
+        clipEnabledLeftX_.setGroupID("x");
+    addProperty(clipLeftX_);
+        clipLeftX_.setGroupID("x");
+    addProperty(clipUseSphereManipulatorLeftX_);
+        clipUseSphereManipulatorLeftX_.setGroupID("x");
+    setPropertyGroupGuiName("x", "X Axis Clipping");
 
-    addProperty(clipEnabledFrontY_);
-    addProperty(clipFrontY_);
-    addProperty(clipUseSphereManipulatorFrontY_);
-    addProperty(clipEnabledBackY_);
-    addProperty(clipBackY_);
-    addProperty(clipUseSphereManipulatorBackY_);
     addProperty(yColor_);
-
-    addProperty(clipEnabledBottomZ_);
-    addProperty(clipBottomZ_);
-    addProperty(clipUseSphereManipulatorBottomZ_);
-    addProperty(clipEnabledTopZ_);
-    addProperty(clipTopZ_);
-    addProperty(clipUseSphereManipulatorTopZ_);
+        yColor_.setGroupID("y");
+    addProperty(clipEnabledFrontY_);
+        clipEnabledFrontY_.setGroupID("y");
+    addProperty(clipFrontY_);
+        clipFrontY_.setGroupID("y");
+    addProperty(clipUseSphereManipulatorFrontY_);
+        clipUseSphereManipulatorFrontY_.setGroupID("y");
+    addProperty(clipEnabledBackY_);
+        clipEnabledBackY_.setGroupID("y");
+    addProperty(clipBackY_);
+        clipBackY_.setGroupID("y");
+    addProperty(clipUseSphereManipulatorBackY_);
+        clipUseSphereManipulatorBackY_.setGroupID("y");
+    setPropertyGroupGuiName("y", "Y Axis Clipping");
 
     addProperty(zColor_);
+        zColor_.setGroupID("z");
+    addProperty(clipEnabledBottomZ_);
+        clipEnabledBottomZ_.setGroupID("z");
+    addProperty(clipBottomZ_);
+        clipBottomZ_.setGroupID("z");
+    addProperty(clipUseSphereManipulatorBottomZ_);
+        clipUseSphereManipulatorBottomZ_.setGroupID("z");
+    addProperty(clipEnabledTopZ_);
+        clipEnabledTopZ_.setGroupID("z");
+    addProperty(clipTopZ_);
+        clipTopZ_.setGroupID("z");
+    addProperty(clipUseSphereManipulatorTopZ_);
+        clipUseSphereManipulatorTopZ_.setGroupID("z");
+    setPropertyGroupGuiName("z", "Z Axis Clipping");
+
     addProperty(showInnerBB_);
+        showInnerBB_.setGroupID("bb");
     addProperty(innerColor_);
+        innerColor_.setGroupID("bb");
+    setPropertyGroupGuiName("bb", "Inner Bounding Box");
 
     //X
     manipulators_.push_back(Manipulator(0, 0, &clipLeftX_, &clipRightX_, true));
@@ -135,6 +169,13 @@ PlaneWidgetProcessor::PlaneWidgetProcessor()
     manipulators_.push_back(Manipulator(2, 2, &clipBottomZ_, &clipTopZ_, false));
     manipulators_.push_back(Manipulator(2, 0, &clipTopZ_, &clipBottomZ_, true));
     manipulators_.push_back(Manipulator(2, 2, &clipTopZ_, &clipBottomZ_, true));
+
+    ON_PROPERTY_CHANGE(clipEnabledRightX_,PlaneWidgetProcessor,propertyVisibilityOnChange);
+    ON_PROPERTY_CHANGE(clipEnabledLeftX_,PlaneWidgetProcessor,propertyVisibilityOnChange);
+    ON_PROPERTY_CHANGE(clipEnabledFrontY_,PlaneWidgetProcessor,propertyVisibilityOnChange);
+    ON_PROPERTY_CHANGE(clipEnabledBackY_,PlaneWidgetProcessor,propertyVisibilityOnChange);
+    ON_PROPERTY_CHANGE(clipEnabledTopZ_,PlaneWidgetProcessor,propertyVisibilityOnChange);
+    ON_PROPERTY_CHANGE(clipEnabledBottomZ_,PlaneWidgetProcessor,propertyVisibilityOnChange);
 }
 
 PlaneWidgetProcessor::~PlaneWidgetProcessor() {
@@ -152,12 +193,14 @@ void PlaneWidgetProcessor::initialize() throw (tgt::Exception) {
     if (!arrowDisplayList_) {
         GLUquadricObj* quadric = gluNewQuadric();
         arrowDisplayList_ = glGenLists(1);
+        MatStack.pushMatrix();
         glNewList(arrowDisplayList_, GL_COMPILE);
-        glTranslatef(0.0f,0.0f,-0.05f);
+        MatStack.translate(0.0f,0.0f,-0.05f);
         gluCylinder(quadric, 0.025f, 0.0f, 0.05f, 30, 10);
-        glTranslatef(0.0f,0.0f,-0.035f);
+        MatStack.translate(0.0f,0.0f,-0.035f);
         gluCylinder(quadric, 0.01f, 0.01f, 0.06f, 20, 2);
         glEndList();
+        MatStack.popMatrix();
         gluDeleteQuadric(quadric);
     }
     if (!arrowDisplayList_) {
@@ -255,6 +298,24 @@ void PlaneWidgetProcessor::invalidate(int inv) {
     GeometryRendererBase::invalidate(inv);
 }
 
+void PlaneWidgetProcessor::propertyVisibilityOnChange() {
+    //x settings
+    clipRightX_.setVisible(clipEnabledRightX_.get());
+    clipUseSphereManipulatorRightX_.setVisible(clipEnabledRightX_.get());
+    clipLeftX_.setVisible(clipEnabledLeftX_.get());
+    clipUseSphereManipulatorLeftX_.setVisible(clipEnabledLeftX_.get());
+    //y settings
+    clipFrontY_.setVisible(clipEnabledFrontY_.get());
+    clipUseSphereManipulatorFrontY_.setVisible(clipEnabledFrontY_.get());
+    clipBackY_.setVisible(clipEnabledBackY_.get());
+    clipUseSphereManipulatorBackY_.setVisible(clipEnabledBackY_.get());
+    //z settings
+    clipTopZ_.setVisible(clipEnabledTopZ_.get());
+    clipUseSphereManipulatorTopZ_.setVisible(clipEnabledTopZ_.get());
+    clipBottomZ_.setVisible(clipEnabledBottomZ_.get());
+    clipUseSphereManipulatorBottomZ_.setVisible(clipEnabledBottomZ_.get());
+}
+
 void PlaneWidgetProcessor::setIDManager(IDManager* idm) {
     if(idm == idManager_)
         return;
@@ -291,8 +352,8 @@ void PlaneWidgetProcessor::planeMovement(tgt::MouseEvent* e) {
         if(grabbed_ != -1) {
             e->accept();
 
-            glPushMatrix();
-            tgt::multMatrix(inport_.getData()->getPhysicalToWorldMatrix());
+            MatStack.pushMatrix();
+            MatStack.multMatrix(inport_.getData()->getPhysicalToWorldMatrix());
 
             //adjacent vertices
             tgt::vec3 vertex1 = getCorner(manipulators_[grabbed_].axis_, manipulators_[grabbed_].corner_, 1.0f);
@@ -328,7 +389,7 @@ void PlaneWidgetProcessor::planeMovement(tgt::MouseEvent* e) {
                     manipulators_[grabbed_].oppositeProp_->set(temp);
             }
 
-            glPopMatrix();
+            MatStack.popMatrix();
 
             invalidate();
         }
@@ -366,14 +427,14 @@ void PlaneWidgetProcessor::planeMovementSync(tgt::MouseEvent* e) {
 }
 
 void PlaneWidgetProcessor::renderPicking() {
-    if (!enable_.get())
+    if (!showHandles_.get())
         return;
 
     if (!idManager_)
         return;
 
-    glPushMatrix();
-    tgt::multMatrix(inport_.getData()->getPhysicalToWorldMatrix());
+    MatStack.pushMatrix();
+    MatStack.multMatrix(inport_.getData()->getPhysicalToWorldMatrix());
 
     if(clipEnabledLeftX_.get()) {
         idManager_->setGLColor(&manipulators_[0]);
@@ -417,19 +478,19 @@ void PlaneWidgetProcessor::renderPicking() {
         paintManipulator(manipulators_[11], clipUseSphereManipulatorBottomZ_.get());
     }
 
-    glPopMatrix();
+    MatStack.popMatrix();
 
     LGL_ERROR;
 }
 
 void PlaneWidgetProcessor::render() {
-    if (!enable_.get())
+    if (!enable_.get() || !showHandles_.get())
         return;
 
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-    glPushMatrix();
-    tgt::multMatrix(inport_.getData()->getPhysicalToWorldMatrix());
+    MatStack.pushMatrix();
+    MatStack.multMatrix(inport_.getData()->getPhysicalToWorldMatrix());
 
     glLineWidth(width_.get());
 
@@ -577,10 +638,10 @@ void PlaneWidgetProcessor::render() {
     glEnable(GL_LIGHT0);
 
     // set light pos to camera pos
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glLightfv(GL_LIGHT0, GL_POSITION, tgt::vec4(0.f, 0.f, 1.f, 0.f).elem);
-    glPopMatrix();
+    MatStack.popMatrix();
 
     /*vec3 spec(1.0f, 1.0f, 1.0f);
     glMaterialf( GL_FRONT_AND_BACK,    GL_SHININESS,    25.0f);
@@ -624,7 +685,7 @@ void PlaneWidgetProcessor::render() {
     }
 
     glPopAttrib();
-    glPopMatrix();
+    MatStack.popMatrix();
 
     LGL_ERROR;
 }
@@ -656,17 +717,17 @@ void PlaneWidgetProcessor::paintManipulator(const Manipulator& a, bool useSphere
 
 void PlaneWidgetProcessor::paintManipulator(tgt::vec3 translation, tgt::vec3 rotationAxis, float rotationAngle, float scaleFactor, bool useSphereManipulator)
 {
-    glPushMatrix();
-    glTranslatef(translation.x, translation.y, translation.z);
-    glRotatef(rotationAngle, rotationAxis.x, rotationAxis.y, rotationAxis.z);
-    glScalef(scaleFactor, scaleFactor, scaleFactor);
+    MatStack.pushMatrix();
+    MatStack.translate(translation.x, translation.y, translation.z);
+    MatStack.rotate(rotationAngle, rotationAxis.x, rotationAxis.y, rotationAxis.z);
+    MatStack.scale(scaleFactor, scaleFactor, scaleFactor);
 
     if(useSphereManipulator)
         glCallList(sphereDisplayList_);
     else
         glCallList(arrowDisplayList_);
 
-    glPopMatrix();
+    MatStack.popMatrix();
 }
 
 tgt::vec3 PlaneWidgetProcessor::getLlf() {

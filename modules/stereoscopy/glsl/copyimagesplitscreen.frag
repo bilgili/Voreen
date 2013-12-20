@@ -23,32 +23,31 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#include "modules/mod_sampler2d.frag"
-
+uniform vec2 screenDim_;
+uniform vec2 screenDimRCP_;
+ 
 uniform sampler2D colorTexLeft_;
 uniform sampler2D colorTexRight_;
 
 uniform sampler2D depthTexLeft_;
 uniform sampler2D depthTexRight_;
 
-uniform bool useDepthTex_;
-uniform TextureParameters texParams_;
+uniform bool useDepthTexLeft_;
+uniform bool useDepthTexRight_;
 
 void main() {
     if(gl_FragCoord.x < screenDim_.x){//left part of screen 
         vec2 fragCoord = gl_FragCoord.xy * screenDimRCP_;
-        vec4 fragColor = textureLookup2Dnormalized(colorTexLeft_, texParams_, fragCoord);
+        vec4 fragColor = texture2D(colorTexLeft_, fragCoord);
         FragData0 = fragColor;
-        
-        if(useDepthTex_)
-            gl_FragDepth = textureLookup2Dnormalized(depthTexLeft_, texParams_, fragCoord).z;
+        if(useDepthTexLeft_)
+            gl_FragDepth = texture2D(depthTexLeft_, fragCoord).z;
   
     } else {//right part of screen   
         vec2 fragCoord = (gl_FragCoord.xy-ivec2(screenDim_.x,0)) * screenDimRCP_;
-        vec4 fragColor = textureLookup2Dnormalized(colorTexRight_, texParams_, fragCoord);
-        FragData0 = fragColor;
-        
-        if(useDepthTex_)
-            gl_FragDepth = textureLookup2Dnormalized(depthTexRight_, texParams_, fragCoord).z;
+        vec4 fragColor = texture2D(colorTexRight_, fragCoord);
+        FragData0 = fragColor;        
+        if(useDepthTexRight_)
+            gl_FragDepth = texture2D(depthTexRight_, fragCoord).z;
     }    
 }

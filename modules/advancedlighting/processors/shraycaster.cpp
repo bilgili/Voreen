@@ -148,15 +148,6 @@ void SHRaycaster::process() {
 
     //transferFunc_.setVolumeHandle(volumeInport_.getData());
 
-    TextureUnit entryUnit, entryDepthUnit, exitUnit, exitDepthUnit;
-    // bind entry params
-    entryPort_.bindTextures(entryUnit.getEnum(), entryDepthUnit.getEnum(), GL_NEAREST);
-    LGL_ERROR;
-
-    // bind exit params
-    exitPort_.bindTextures(exitUnit.getEnum(), exitDepthUnit.getEnum(), GL_NEAREST);
-    LGL_ERROR;
-
     // vector containing the volumes to bind; is passed to bindVolumes()
     std::vector<VolumeStruct> volumeTextures;
 
@@ -182,12 +173,17 @@ void SHRaycaster::process() {
     // line needed for sh
     sh_->setRCShaderUniforms(raycastPrg);
 
+    TextureUnit entryUnit, entryDepthUnit, exitUnit, exitDepthUnit;
+    entryPort_.bindTextures(entryUnit, entryDepthUnit, GL_NEAREST);
+    exitPort_.bindTextures(exitUnit, exitDepthUnit, GL_NEAREST);
+    LGL_ERROR;
+
     // pass the remaining uniforms to the shader
     raycastPrg->setUniform("entryPoints_", entryUnit.getUnitNumber());
-    //raycastPrg->setUniform("entryPointsDepth_", entryDepthUnit.getUnitNumber());
+    raycastPrg->setUniform("entryPointsDepth_", entryDepthUnit.getUnitNumber());
     entryPort_.setTextureParameters(raycastPrg, "entryParameters_");
     raycastPrg->setUniform("exitPoints_", exitUnit.getUnitNumber());
-    //raycastPrg->setUniform("exitPointsDepth_", exitDepthUnit.getUnitNumber());
+    raycastPrg->setUniform("exitPointsDepth_", exitDepthUnit.getUnitNumber());
     exitPort_.setTextureParameters(raycastPrg, "exitParameters_");
 
     TextureUnit transferUnit;

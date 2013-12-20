@@ -29,6 +29,7 @@
 #include <deque>
 #include <iostream>
 #include <stack>
+#include <vector>
 
 #include "voreen/core/processors/processor.h"
 #include "voreen/core/ports/coprocessorport.h"
@@ -354,6 +355,7 @@ void NetworkGraph::fullTraverseDepthFirst(GraphVisitor* const onDiscoveryVisitor
     }
 }
 
+
 std::vector<Processor*> NetworkGraph::getProcessors(const bool sortByID) const {
     std::vector<Processor*> processors;
 
@@ -380,6 +382,15 @@ std::vector<Processor*> NetworkGraph::getProcessors(const bool sortByID) const {
                 processors.push_back(nodes[i]->getProcessor());
     }
     return processors;
+}
+
+std::vector<NetworkGraph::GraphNode*> NetworkGraph::getGraphNodes() const {
+    std::vector<NetworkGraph::GraphNode*> nodes;
+
+    for (NodeSet::const_iterator it = nodes_.begin(); it != nodes_.end(); ++it)
+            nodes.push_back((*it));
+
+    return nodes;
 }
 
 NetworkGraph* NetworkGraph::getSubGraph(const PortTypeCheck& type, const PortTypeCheck& loopType,
@@ -428,6 +439,12 @@ std::set<Processor*> NetworkGraph::getPredecessors(const std::set<Processor*>& p
 
     // perform successor search on transposed graph
     return networkGraphTransposed_->getSuccessors(processors);
+}
+
+std::set<Processor*> NetworkGraph::getPredecessors(const std::vector<Processor*>& processors) const {
+    std::set<Processor*> proSet;
+    std::copy(processors.begin(), processors.end(), std::inserter(proSet,proSet.begin()));
+    return getPredecessors(proSet);
 }
 
 std::set<Processor*> NetworkGraph::getPredecessors(Processor* processor) const {

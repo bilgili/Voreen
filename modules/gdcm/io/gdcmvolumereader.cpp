@@ -58,6 +58,7 @@
 #include "voreen/core/utils/stringutils.h"
 #include "voreen/core/datastructures/meta/primitivemetadata.h"
 #include "voreen/core/datastructures/meta/filelistmetadata.h"
+#include "voreen/core/datastructures/volume/volumefactory.h"
 
 #include <algorithm>
 
@@ -849,7 +850,7 @@ vector<string> GdcmVolumeReader::getFilesInSeries(vector<string> filenames, stri
     vector<string>::iterator fileIterator;
     for (fileIterator = filenames.begin(); fileIterator != filenames.end(); fileIterator++) {
         if (getProgressBar()) {
-            getProgressBar()->setMessage("Reading files...");
+            getProgressBar()->setProgressMessage("Reading files...");
             getProgressBar()->setProgress(static_cast<float>(progress) / static_cast<float>(filenames.size()));
             progress++;
         }
@@ -891,7 +892,7 @@ vector<vector<string> > GdcmVolumeReader::subdivideSeriesFilesByCustomDict(vecto
     for (fileIterator = fileNames.begin(); fileIterator != fileNames.end(); ++fileIterator) {
 
         if (getProgressBar()) {
-            getProgressBar()->setMessage("Reading values of subdivision keywords from file \n" + (*fileIterator));
+            getProgressBar()->setProgressMessage("Reading values of subdivision keywords from file \n" + (*fileIterator));
             getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float>(fileNames.size()));
             itemused++;
         }
@@ -1149,7 +1150,7 @@ VolumeList* GdcmVolumeReader::selectAndLoadDicomFiles(const std::vector<std::str
     for (i = fileNames.begin(); i != fileNames.end(); i++) {
 
         if (getProgressBar()) {
-            getProgressBar()->setMessage("Checking SeriesInstanceUID of files...");
+            getProgressBar()->setProgressMessage("Checking SeriesInstanceUID of files...");
             getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float>(fileNames.size()));
             itemused++;
         }
@@ -1235,7 +1236,7 @@ VolumeList* GdcmVolumeReader::readDicomDir(const VolumeURL &origin)
             for (sequenceIterator.setIteratorToFirstElement(); !(sequenceIterator.iteratorIsAtEnd()); sequenceIterator.setIteratorToNextElement()) {
 
                 if (getProgressBar()) {
-                    getProgressBar()->setMessage("Reading DirectoryRecordSequence ...");
+                    getProgressBar()->setProgressMessage("Reading DirectoryRecordSequence ...");
                     getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float>(sequenceIterator.getNumberOfItems()));
                     itemused++;
                 }
@@ -1398,7 +1399,7 @@ VolumeList* GdcmVolumeReader::subdivideAndLoadDicomFiles(const std::vector<std::
     for (dictIt = customDicts.begin(); dictIt != customDicts.end(); dictIt++) {
 
         if (getProgressBar()) {
-            getProgressBar()->setMessage("Checking CustomDicomDict-Files...");
+            getProgressBar()->setProgressMessage("Checking CustomDicomDict-Files...");
             getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float> (customDicts.size()));
             itemused++;
         }
@@ -1614,7 +1615,7 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
 
     while (it_files != fileNames.end()) {
         if (getProgressBar()) {
-            getProgressBar()->setMessage("Reading slice '" + tgt::FileSystem::fileName(*it_files) + "' ...");
+            getProgressBar()->setProgressMessage("Reading slice '" + tgt::FileSystem::fileName(*it_files) + "' ...");
             getProgressBar()->setProgress(static_cast<float>(i) / static_cast<float>(fileNames.size()));
         }
         i++;
@@ -1698,9 +1699,9 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
         }
 
         //check samples per pixel and warn, if != 1
-        if (info_.getSamplesPerPixel() != 1) {
+        /*if (info_.getSamplesPerPixel() != 1) {
             LWARNING("Unsupported Pixel Format: " + itos(info_.getSamplesPerPixel()) + " Samples per Pixel instead of 1! Might lead to unexpected results.");
-        }
+        }*/
 
 
     }
@@ -1775,7 +1776,14 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
                 }
                 if (getProgressBar())
                     getProgressBar()->hide();
-                throw tgt::FileException("Slice Spacing is not steady (differs > 10% Tolerance)!");
+                //either throw exception or display warning
+                bool abort = dynamic_cast<const GdcmModule*>(VoreenApplication::app()->getModule("gdcm"))->ignoreSliceSpacing();
+                if (abort)
+                    throw tgt::FileException("Slice Spacing is not steady (differs > 10% Tolerance)! To ignore this set the option to ignore slice spacing differences in the module options and try to load the data set again.");
+                else {
+                    LWARNING("Slice Spacing is not steady (differs > 10% Tolerance)! The data set might be missing one or more slices!");
+                    break;
+                }
             }
         }
 
@@ -1799,35 +1807,16 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
     //get pixel representation
     info_.setPixelRepresentation(yar.GetImage().GetPixelFormat().GetPixelRepresentation());
 
-    //determine bytes per voxel
-    switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
-        case  8: info_.setBytesPerVoxel(1); break;
-        case  9: info_.setBytesPerVoxel(2); break;
-        case 10: info_.setBytesPerVoxel(2); break;
-        case 11: info_.setBytesPerVoxel(2); break;
-        case 12: info_.setBytesPerVoxel(2); break;
-        case 13: info_.setBytesPerVoxel(2); break;
-        case 14: info_.setBytesPerVoxel(2); break;
-        case 15: info_.setBytesPerVoxel(2); break;
-        case 16: info_.setBytesPerVoxel(2); break;
-        case 24: info_.setBytesPerVoxel(3); break;
-        case 32: info_.setBytesPerVoxel(4); break;
-        default:
-            if (getProgressBar())
-            getProgressBar()->hide();
-            throw tgt::CorruptedFileException("Unknown bit depth: " + itos(info_.getBitsStored()*info_.getSamplesPerPixel()), slices[0].first);
-    }
-
-    // casts needed to handle files > 4 GB
-    scalars_ = new char[(size_t) info_.getDx() * (size_t) info_.getDy() * (size_t) info_.getDz() * (size_t) info_.getBytesPerVoxel()];
-
     LINFO("We have " << info_.getDz() << " slices. [" << info_.getDx() << "x" << info_.getDy() << "]");
     LINFO("Spacing: (" << info_.getXSpacing() << "; " << info_.getYSpacing() << "; " << info_.getZSpacing() << ")");
 
-    //Determine scalar type of the data set if not already known (and if possible)
-    if ((scalarType_ == gdcm::PixelFormat::UNKNOWN) && (info_.getSamplesPerPixel() == 1)) {
+    //Determine scalar base type of the data set if not already known (and if possible)
+    if (scalarType_ == gdcm::PixelFormat::UNKNOWN) {
+
+        LWARNING("Pixel Format: Scalar Type in DICOM files is UNKNOWN or format is not well defined... trying to compute the right format.");
+
         if (info_.getPixelRepresentation()) { //signed
-            switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
+            switch (info_.getBitsStored()) {
             case 8:
                 scalarType_ = gdcm::PixelFormat::INT8;
                 break;
@@ -1841,6 +1830,7 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
             case 16:
                 scalarType_ = gdcm::PixelFormat::INT16;
                 break;
+            case 24:
             case 32:
                 scalarType_ = gdcm::PixelFormat::INT32;
                 break;
@@ -1849,7 +1839,7 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
             }
         }
         else {  //unsigned
-            switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
+            switch (info_.getBitsStored()) {
             case 8:
                 scalarType_ = gdcm::PixelFormat::UINT8;
                 break;
@@ -1863,6 +1853,7 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
             case 16:
                 scalarType_ = gdcm::PixelFormat::UINT16;
                 break;
+            case 24:
             case 32:
                 scalarType_ = gdcm::PixelFormat::UINT32;
                 break;
@@ -1873,6 +1864,7 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
     }
 
     bool rwmDiffers = slopeDiffers || interceptDiffers;
+    info_.setRwmDiffers(rwmDiffers);
 
     if (rwmDiffers) {
         if ((scalarType_ != gdcm::PixelFormat::UNKNOWN) && (info_.getSamplesPerPixel() == 1)) {
@@ -1884,183 +1876,80 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
             LWARNING("Rescaling of pixel data not possible due to unknown data type. Result may be broken.");
     }
 
-    // Now read the actual slices from the files
-    LINFO("Building volume...");
-    LINFO("Reading slice data from " << slices.size() << " files...");
-
-    size_t posScalar = 0;
-
-    std::vector<pair<string, double> >::iterator it_slices = slices.begin();
-
-    i = 0;
-    while (it_slices != slices.end()) {
-        if (getProgressBar()) {
-            getProgressBar()->setMessage("Loading slice '" + tgt::FileSystem::fileName((*it_slices).first) + "' ...");
-            getProgressBar()->setProgress(static_cast<float>(i) / static_cast<float>(slices.size()));
-        }
-        i++;
-
-        int slicesize = loadSlice((*it_slices).first, posScalar,info_.getNumberOfFrames(), rwmDiffers);
-
-        if (slicesize == 0) {
-            //obviously an error in loadSlice method
-            delete[] scalars_;
-            scalars_ = 0;
-
-            if (getProgressBar())
-                getProgressBar()->hide();
-            throw tgt::FileException("Failed to read Pixel data.", (*it_slices).first);
-        }
-
-        posScalar += slicesize;
-        it_slices++;
+    //write data base type as string to info object
+    switch (scalarType_) {
+        case gdcm::PixelFormat::UINT8:
+            info_.setBaseType("uint8"); break;
+        case gdcm::PixelFormat::INT8:
+            info_.setBaseType("int8"); break;
+        case gdcm::PixelFormat::UINT12:
+            info_.setBaseType("uint16"); LWARNING("unsigned int (12 bit) is interpreted as 16 bit - might lead to unexpected results"); break;
+        case gdcm::PixelFormat::INT12:
+            info_.setBaseType("int16"); LWARNING("signed int (12 bit) is interpreted as 16 bit - might lead to unexpected results"); break;
+        case gdcm::PixelFormat::UINT16:
+            info_.setBaseType("uint16"); break;
+        case gdcm::PixelFormat::INT16:
+            info_.setBaseType("int16"); break;
+        case gdcm::PixelFormat::UINT32:
+            info_.setBaseType("uint32"); break;
+        case gdcm::PixelFormat::INT32:
+            info_.setBaseType("int32"); break;
+        case gdcm::PixelFormat::FLOAT32:
+            info_.setBaseType("float"); break;
+        case gdcm::PixelFormat::FLOAT64:
+            info_.setBaseType("double"); break;
+        case gdcm::PixelFormat::FLOAT16:
+            throw tgt::Exception("Data format: 16 bit float not supported");
+        case gdcm::PixelFormat::UNKNOWN:
+            throw tgt::Exception("Unknown data format!");
+        default:
+            throw tgt::Exception("Data format could not be computed!");
     }
-    if (getProgressBar())
-        getProgressBar()->hide();
 
-    //now build the actual volume
-    VolumeRAM* dataset = 0;
+    //determine format by using samples per pixel and base type
+    if (info_.getSamplesPerPixel() == 1)
+        info_.setFormat(info_.getBaseType());
+    else if (info_.getSamplesPerPixel() < 1 || info_.getSamplesPerPixel() > 4)
+        throw tgt::Exception("Unsupported format: " + itos(info_.getSamplesPerPixel()) + " samples per pixel");
+    else {
+        //build format as vector type
+        std::stringstream s;
+        s << "Vector" << info_.getSamplesPerPixel() << "(" << info_.getBaseType() << ")";
+        info_.setFormat(s.str());
+    }
 
-    //select type of scalar data
-    if ((scalarType_ == gdcm::PixelFormat::UNKNOWN) || (info_.getSamplesPerPixel() != 1)) {
-        //Pixel Format is not well defined... trying to compute the correct pixel format
-        if (scalarType_ == gdcm::PixelFormat::UNKNOWN)
-            LWARNING("Pixel Format: Scalar Type in DICOM files is UNKNOWN... trying to compute the right format.");
+    //determine bytes per voxel
+    VolumeFactory volumeFac;
+    info_.setBytesPerVoxel(volumeFac.getBytesPerVoxel(info_.getFormat()));
 
-        if (info_.getPixelRepresentation()) { //signed
+    //copy slices into new vector for disk representation
+    std::vector<std::string> sliceFilenamesOnly(slices.size());
+    for (size_t i = 0; i < slices.size(); ++i)
+        sliceFilenamesOnly.at(i) = slices.at(i).first;
 
-            switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
-            case 8:
-                dataset = new VolumeRAM_Int8(reinterpret_cast<int8_t*>(scalars_),
-                                         tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-                scalarType_ = gdcm::PixelFormat::INT8;
-                break;
-            case 9:
-            case 10:
-            case 11:
-            case 12:
-            case 13:
-            case 14:
-            case 15:
-            case 16:
-                dataset = new VolumeRAM_Int16(reinterpret_cast<int16_t*>(scalars_), tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-                scalarType_ = gdcm::PixelFormat::INT16;
-                break;
-            case 24:
-                dataset = new VolumeRAM_3xUInt8(reinterpret_cast<tgt::col3*>(scalars_),
-                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-                break;
-            case 32:
-                dataset = new VolumeRAM_Int32(reinterpret_cast<int32_t*>(scalars_),
-                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-                scalarType_ = gdcm::PixelFormat::INT32;
-                break;
-            default:
-                LERROR("Unsupported bit depth: " << info_.getBitsStored()*info_.getSamplesPerPixel());
-                delete[] scalars_;
-                scalars_ = 0;
-                if (getProgressBar())
-                    getProgressBar()->hide();
-                return 0;
-            }
-        }
-        else {  //unsigned
+    Volume* vh;
 
-            switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
-            case 8:
-                dataset = new VolumeRAM_UInt8(reinterpret_cast<uint8_t*>(scalars_),
-                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-                scalarType_ = gdcm::PixelFormat::UINT8;
-                break;
-            case 9:
-            case 10:
-            case 11:
-            case 12:
-            case 13:
-            case 14:
-            case 15:
-            case 16:
-                dataset = new VolumeRAM_UInt16(reinterpret_cast<uint16_t*>(scalars_),
-                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-                scalarType_ = gdcm::PixelFormat::UINT16;
-                break;
-            case 24:
-                dataset = new VolumeRAM_3xUInt8(reinterpret_cast<tgt::col3*>(scalars_),
-                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-                break;
-            case 32:
-                dataset = new VolumeRAM_UInt32(reinterpret_cast<uint32_t*>(scalars_),
-                                           tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-                scalarType_ = gdcm::PixelFormat::UINT32;
-                break;
-            default:
-                LERROR("Unsupported bit depth: " << info_.getBitsStored()*info_.getSamplesPerPixel());
-                delete[] scalars_;
-                scalars_ = 0;
-                if (getProgressBar())
-                    getProgressBar()->hide();
-                return 0;
-            }
-        }
+    if (info_.getNumberOfFrames() > 1) {
+        LWARNING("Multiframe DICOM file... loading VolumeRAM representation instead of VolumeDisk");
+        VolumeRAM* ram = loadMultiframeDicomFile(info_, sliceFilenamesOnly);
+        vh = new Volume(ram,
+            tgt::vec3(static_cast<float>(info_.getXSpacing()),static_cast<float>(info_.getYSpacing()),static_cast<float>(info_.getZSpacing())), tgt::vec3(0.f));
     }
     else {
-        //select scalar type
-        switch (scalarType_) {
-        case gdcm::PixelFormat::UINT8:
-            dataset = new VolumeRAM_UInt8(reinterpret_cast<uint8_t*>(scalars_),
-                                       tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-            break;
-        case gdcm::PixelFormat::INT8:
-            dataset = new VolumeRAM_Int8(reinterpret_cast<int8_t*>(scalars_),
-                                     tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-            break;
-        case gdcm::PixelFormat::UINT12:
-        case gdcm::PixelFormat::UINT16:
-            dataset = new VolumeRAM_UInt16(reinterpret_cast<uint16_t*>(scalars_),
-                                       tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-            break;
-        case gdcm::PixelFormat::INT12:
-        case gdcm::PixelFormat::INT16:
-            dataset = new VolumeRAM_Int16(reinterpret_cast<int16_t*>(scalars_), tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-            break;
-        case gdcm::PixelFormat::UINT32:
-            dataset = new VolumeRAM_UInt32(reinterpret_cast<uint32_t*>(scalars_),
-                                       tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-            break;
-        case gdcm::PixelFormat::INT32:
-            dataset = new VolumeRAM_Int32(reinterpret_cast<int32_t*>(scalars_),
-                                       tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-            break;
-        case gdcm::PixelFormat::FLOAT16:
-            LWARNING("Scalar Type: FLOAT16 not supported... might lead to unexpected results.");
-        case gdcm::PixelFormat::FLOAT32:
-            dataset = new VolumeRAM_Float(reinterpret_cast<float*>(scalars_),
-                                     tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-            break;
-        case gdcm::PixelFormat::FLOAT64:
-            dataset = new VolumeRAM_Double(reinterpret_cast<double*>(scalars_),
-                                     tgt::ivec3(info_.getDx(), info_.getDy(), info_.getDz()));
-            break;
-        default:
-             LERROR("Unsupported scalar type: " << yar.GetImage().GetPixelFormat().GetScalarTypeAsString());
-             delete[] scalars_;
-             scalars_ = 0;
-             if (getProgressBar())
-                 getProgressBar()->hide();
-             return 0;
-        }
+        //build volume disk representation
+        VolumeDiskDicom* diskVolume = new VolumeDiskDicom(info_.getFormat(), tgt::svec3(info_.getDx(), info_.getDy(), info_.getDz()), info_, sliceFilenamesOnly);
+
+        //build: VolumeDisk -> Volume
+        vh = new Volume(diskVolume,
+            tgt::vec3(static_cast<float>(info_.getXSpacing()),static_cast<float>(info_.getYSpacing()),static_cast<float>(info_.getZSpacing())), tgt::vec3(0.f));
     }
-
-    LINFO("Building volume complete.");
-
-    //build: VolumeRAM -> Volume
-    Volume* vh = new Volume(dataset, tgt::vec3(static_cast<float>(info_.getXSpacing()),static_cast<float>(info_.getYSpacing()),static_cast<float>(info_.getZSpacing())), tgt::vec3(0.f));
 
     //get volume origin in world coordinates:
     tgt::vec3 os(static_cast<float>(info_.getOffset().x), static_cast<float>(info_.getOffset().y), static_cast<float>(info_.getOffset().z));
 
     //construct PhysicalToWorld-Matrix for correct positioning of Volume
-    tgt::dmat4 ptw(tgt::dvec4(info_.getXOrientationPatient(), os.x), tgt::dvec4(info_.getYOrientationPatient(), os.y), tgt::dvec4(info_.getSliceNormal(), os.z), tgt::dvec4(0,0,0,1));
+    tgt::dmat4 ptw(tgt::dvec4(info_.getXOrientationPatient(), os.x),
+            tgt::dvec4(info_.getYOrientationPatient(), os.y), tgt::dvec4(info_.getSliceNormal(), os.z), tgt::dvec4(0,0,0,1));
     vh->setPhysicalToWorldMatrix(ptw);
 
     //set Modality and VolumeURL
@@ -2070,89 +1959,22 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
     //setting RealWorldMapping for denormalization and rescaling
     RealWorldMapping denormalize;
 
-    if ((scalarType_ == gdcm::PixelFormat::UNKNOWN) || (info_.getSamplesPerPixel() != 1)) {
-        if (info_.getPixelRepresentation()) { //signed
-
-            switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
-            case 8:
-                denormalize = RealWorldMapping::createDenormalizingMapping<int8_t>();
-                break;
-            case 9:
-            case 10:
-            case 11:
-            case 12:
-            case 13:
-            case 14:
-            case 15:
-            case 16:
-                denormalize = RealWorldMapping::createDenormalizingMapping<int16_t>();
-                break;
-            case 24:
-                denormalize = RealWorldMapping::createDenormalizingMapping<tgt::col3>();
-                break;
-            case 32:
-                denormalize = RealWorldMapping::createDenormalizingMapping<int32_t>();
-                break;
-            }
-        }
-        else { //unsigned
-            switch (info_.getBitsStored()*info_.getSamplesPerPixel()) {
-            case 8:
-                denormalize = RealWorldMapping::createDenormalizingMapping<uint8_t>();
-                break;
-            case 9:
-            case 10:
-            case 11:
-            case 12:
-            case 13:
-            case 14:
-            case 15:
-            case 16:
-                denormalize = RealWorldMapping::createDenormalizingMapping<uint16_t>();
-                break;
-            case 24:
-                denormalize = RealWorldMapping::createDenormalizingMapping<tgt::col3>();
-                break;
-            case 32:
-                denormalize = RealWorldMapping::createDenormalizingMapping<uint32_t>();
-                break;
-            }
-        }
-    }
-    else {
-        //select scalar type
-        switch (scalarType_) {
-        case gdcm::PixelFormat::UINT8:
-            denormalize = RealWorldMapping::createDenormalizingMapping<uint8_t>();
-            break;
-        case gdcm::PixelFormat::INT8:
-            denormalize = RealWorldMapping::createDenormalizingMapping<int8_t>();
-            break;
-        case gdcm::PixelFormat::UINT12:
-        case gdcm::PixelFormat::UINT16:
-            denormalize = RealWorldMapping::createDenormalizingMapping<uint16_t>();
-            break;
-        case gdcm::PixelFormat::INT12:
-        case gdcm::PixelFormat::INT16:
-            denormalize = RealWorldMapping::createDenormalizingMapping<int16_t>();
-            break;
-        case gdcm::PixelFormat::UINT32:
-            denormalize = RealWorldMapping::createDenormalizingMapping<uint32_t>();
-            break;
-        case gdcm::PixelFormat::INT32:
-            denormalize = RealWorldMapping::createDenormalizingMapping<int32_t>();
-            break;
-        case gdcm::PixelFormat::FLOAT16:
-        case gdcm::PixelFormat::FLOAT32:
-            denormalize = RealWorldMapping::createDenormalizingMapping<float>();
-            break;
-        case gdcm::PixelFormat::FLOAT64:
-            denormalize = RealWorldMapping::createDenormalizingMapping<double>();
-            break;
-        default:
-            break;
-        }
-    }
+    if (info_.getBaseType() == "uint8")
+        denormalize = RealWorldMapping::createDenormalizingMapping<uint8_t>();
+    else if (info_.getBaseType() == "int8")
+        denormalize = RealWorldMapping::createDenormalizingMapping<int8_t>();
+    else if (info_.getBaseType() == "uint16")
+        denormalize = RealWorldMapping::createDenormalizingMapping<uint16_t>();
+    else if (info_.getBaseType() == "int16")
+        denormalize = RealWorldMapping::createDenormalizingMapping<int16_t>();
+    else if (info_.getBaseType() == "uint32")
+        denormalize = RealWorldMapping::createDenormalizingMapping<uint32_t>();
+    else if (info_.getBaseType() == "int32")
+        denormalize = RealWorldMapping::createDenormalizingMapping<int32_t>();
+    else if (info_.getBaseType() == "float")
+        denormalize = RealWorldMapping::createDenormalizingMapping<float>();
+    else if (info_.getBaseType() == "double")
+        denormalize = RealWorldMapping::createDenormalizingMapping<double>();
 
     RealWorldMapping rwm(info_.getSlope(), info_.getIntercept(), info_.getRescaleType());
 
@@ -2162,7 +1984,8 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
       ------------------------------------*/
 
     LINFO("Setting Meta Information:");
-    //add all Tags that are found in the Standard Dictionary to the MetaInformation of the Volume, if the attribute metaData is set to true and if the value is not empty
+    //add all Tags that are found in the Standard Dictionary to the MetaInformation of the Volume,
+    //if the attribute metaData is set to true and if the value is not empty
     setMetaDataFromDict(&(vh->getMetaDataContainer()), dict_, slices[0].first);
 
     //Set VolumeDateTime, depending on the tags found in the file
@@ -2181,18 +2004,120 @@ Volume* GdcmVolumeReader::readDicomFiles(const vector<string> &fileNames, const 
     }
 
     //set file list meta data
-    vector<string> fileList;
+    /*vector<string> fileList;
     std::vector<pair<string, double> >::iterator sliceIt;
     for (sliceIt = slices.begin(); sliceIt != slices.end(); ++sliceIt) {
         fileList.push_back(sliceIt->first);
     }
     FileListMetaData* fileListMetaData = new FileListMetaData(fileList);
-    vh->getMetaDataContainer().addMetaData("FileList", fileListMetaData);
+    vh->getMetaDataContainer().addMetaData("FileList", fileListMetaData);*/
 
     if (getProgressBar())
         getProgressBar()->hide();
 
     return vh;
+}
+
+VolumeRAM* GdcmVolumeReader::loadMultiframeDicomFile(const DicomInfo& info, const std::vector<std::string>& sliceFiles)
+    throw (tgt::FileException)
+{
+    if (sliceFiles.size() != 1)
+        throw tgt::FileException("Multiple files containing multiframe DICOM data not supported");
+
+    //now build the actual volume
+    VolumeFactory volumeFac;
+    VolumeRAM* dataset = 0;
+    try {
+        dataset = volumeFac.create(info.getFormat(), tgt::svec3(info.getDx(), info.getDy(), info.getDz()));
+    }
+    catch (std::exception& e) {
+        LERROR(e.what());
+        if (getProgressBar())
+            getProgressBar()->hide();
+        throw e;
+    }
+
+    // Now read the actual slices from the files
+    LINFO("Building volume from multiframe DICOM file...");
+
+    if (getProgressBar()) {
+        getProgressBar()->setProgressMessage("Loading slice '" + tgt::FileSystem::fileName(sliceFiles.at(0)) + "' ...");
+        getProgressBar()->setProgress(0.f);
+    }
+
+    size_t posScalar = 0;
+    int slicesize = loadSlice(reinterpret_cast<char*>(dataset->getData()), sliceFiles.at(0), posScalar, info);
+
+    if (getProgressBar())
+        getProgressBar()->hide();
+
+    if (slicesize == 0) {
+        //obviously an error in loadSlice method
+        delete dataset;
+        throw tgt::FileException("Failed to read Pixel data.", sliceFiles.at(0));
+    }
+
+    LINFO("Building volume complete.");
+
+    return dataset;
+}
+
+
+VolumeRAM* GdcmVolumeReader::loadDicomSlices(DicomInfo info, std::vector<std::string> sliceFiles)
+    throw (tgt::FileException)
+{
+
+    if (sliceFiles.size() < 1)
+        throw tgt::FileException("No slice files to build volume!");
+
+    LINFO("Building volume...");
+
+    //build the actual volume
+    VolumeFactory volumeFac;
+    VolumeRAM* dataset = 0;
+    try {
+        //create data set for the slices
+        dataset = volumeFac.create(info.getFormat(), tgt::svec3(info.getDx(), info.getDy(), sliceFiles.size()));
+    }
+    catch (std::exception& e) {
+        LERROR(e.what());
+        if (getProgressBar())
+            getProgressBar()->hide();
+        throw e;
+    }
+
+    LINFO("Reading slice data from " << sliceFiles.size() << " files...");
+
+    size_t posScalar = 0;
+
+    std::vector<std::string>::iterator it_slices = sliceFiles.begin();
+    size_t i = 0;
+    while (it_slices != sliceFiles.end()) {
+        if (getProgressBar()) {
+            getProgressBar()->setProgressMessage("Loading slice '" + tgt::FileSystem::fileName(*it_slices) + "' ...");
+            getProgressBar()->setProgress(static_cast<float>(i) / static_cast<float>(sliceFiles.size()));
+            i++;
+        }
+
+        int slicesize = loadSlice(reinterpret_cast<char*>(dataset->getData()), *it_slices, posScalar, info);
+
+        if (slicesize == 0) {
+            //obviously an error in loadSlice method
+            delete[] dataset;
+            if (getProgressBar())
+                getProgressBar()->hide();
+            throw tgt::FileException("Failed to read Pixel data.", *it_slices);
+        }
+
+        posScalar += slicesize;
+        it_slices++;
+    }
+    if (getProgressBar())
+        getProgressBar()->hide();
+
+    LINFO("Building volume complete.");
+
+    return dataset;
 }
 
 void GdcmVolumeReader::computeCorrectRescaleValues(std::vector<pair<string, double> > slices) {
@@ -2208,7 +2133,7 @@ void GdcmVolumeReader::computeCorrectRescaleValues(std::vector<pair<string, doub
     int i = 0;
     while (it_slices != slices.end()) {
         if (getProgressBar()) {
-            getProgressBar()->setMessage("Calculating pixel rescaling...");
+            getProgressBar()->setProgressMessage("Calculating pixel rescaling...");
             getProgressBar()->setProgress(static_cast<float>(i) / static_cast<float>(slices.size()));
         }
         i++;
@@ -2242,7 +2167,7 @@ void GdcmVolumeReader::computeCorrectRescaleValues(std::vector<pair<string, doub
 }
 
 
-int GdcmVolumeReader::loadSlice(const std::string& fileName, size_t posScalar, int numberOfFrames, bool rwmDiffers){
+int GdcmVolumeReader::loadSlice(char* dataStorage, const std::string& fileName, size_t posScalar, DicomInfo info){
 
     gdcm::ImageReader reader;
     reader.SetFileName(fileName.c_str());
@@ -2252,46 +2177,160 @@ int GdcmVolumeReader::loadSlice(const std::string& fileName, size_t posScalar, i
         return 0;
     }
 
-    size_t dataLength = (static_cast<size_t>(info_.getDx()) * static_cast<size_t>(info_.getDy()) * static_cast<size_t>(info_.getBytesPerVoxel()) * static_cast<size_t>(numberOfFrames));
+    size_t dataLength = (static_cast<size_t>(info.getDx()) * static_cast<size_t>(info.getDy())
+                        * static_cast<size_t>(info.getBytesPerVoxel()) * static_cast<size_t>(info.getNumberOfFrames()));
 
     if (reader.GetImage().GetBufferLength() != dataLength){
         LERROR("Failed to read Pixel data from file " << fileName << " because of unexpected Buffer Length!");
         return 0;
     }
 
+    gdcm::PixelFormat scalarType = baseTypeStringToGdcm(info.getBaseType());
+
     //get pixel data
-    if (rwmDiffers && (scalarType_ != gdcm::PixelFormat::UNKNOWN) && (info_.getSamplesPerPixel() == 1)) {
+    if (info.rwmDiffers() && (scalarType != gdcm::PixelFormat::UNKNOWN) && (info.getSamplesPerPixel() == 1)) {
         //if rescale intercept and slope differ: recalculate the scalar values so that these fit the correct rescaling
         float slope = static_cast<float>(reader.GetImage().GetSlope());
         float intercept = static_cast<float>(reader.GetImage().GetIntercept());
 
-        float nSlope = slope / info_.getSlope();
-        float nIntercept = intercept - info_.getIntercept();
+        float nSlope = slope / info.getSlope();
+        float nIntercept = intercept - info.getIntercept();
 
         //save the original buffer temporarily
         char* sliceScalars = new char[dataLength];
         reader.GetImage().GetBuffer(sliceScalars);
 
-        //rescale and write buffer
-        gdcm::Rescaler ir;
-        ir.SetSlope(static_cast<double>(nSlope));
-        ir.SetIntercept(static_cast<double>(nIntercept));
-        ir.SetPixelFormat(scalarType_);
-        ir.SetUseTargetPixelType(true);
-        ir.SetTargetPixelType(scalarType_);
-        ir.SetMinMaxForPixelType(static_cast<double>(gdcm::PixelFormat(scalarType_).GetMin()), static_cast<double>(gdcm::PixelFormat(scalarType_).GetMax()));
-        ir.Rescale(&scalars_[posScalar * info_.getBytesPerVoxel()], sliceScalars, dataLength);
 
+        //rescale and write buffer: use either gdcm rescaling or naive implementation (slower but might work for some data sets that the other method might not)
+        bool useGdcmRescaling = dynamic_cast<const GdcmModule*>(VoreenApplication::app()->getModule("gdcm"))->useGdcmRescaling();
+        if (useGdcmRescaling) {
+            gdcm::Rescaler ir;
+            ir.SetSlope(static_cast<double>(nSlope));
+            ir.SetIntercept(static_cast<double>(nIntercept));
+            ir.SetPixelFormat(scalarType);
+            ir.SetUseTargetPixelType(true);
+            ir.SetTargetPixelType(scalarType);
+            ir.SetMinMaxForPixelType(static_cast<double>(gdcm::PixelFormat(scalarType).GetMin()), static_cast<double>(gdcm::PixelFormat(scalarType).GetMax()));
+            ir.Rescale(&dataStorage[posScalar * info.getBytesPerVoxel()], sliceScalars, dataLength);
+        }
+        else {
+            //do a dynamic cast depending on the data type and rescale every value
+            switch (scalarType) {
+                case gdcm::PixelFormat::UINT8:
+                    {
+                        uint8_t* typeScalars = reinterpret_cast<uint8_t*>(sliceScalars);
+                        size_t length = dataLength;
+
+                        for (size_t voxelIndex = 0; voxelIndex < length; ++voxelIndex) {
+                            float valueToRescale = static_cast<float>(typeScalars[voxelIndex]);
+                            float rescaledValue = ((valueToRescale * slope + intercept) - info.getIntercept()) / info.getSlope();
+                            typeScalars[voxelIndex] = static_cast<uint8_t>(rescaledValue);
+                        }
+                    }
+                    break;
+                case gdcm::PixelFormat::INT8:
+                    {
+                        int8_t* typeScalars = reinterpret_cast<int8_t*>(sliceScalars);
+                        size_t length = dataLength;
+
+                        for (size_t voxelIndex = 0; voxelIndex < length; ++voxelIndex) {
+                            float valueToRescale = static_cast<float>(typeScalars[voxelIndex]);
+                            float rescaledValue = ((valueToRescale * slope + intercept) - info.getIntercept()) / info.getSlope();
+                            typeScalars[voxelIndex] = static_cast<int8_t>(rescaledValue);
+                        }
+                    }
+                    break;
+                case gdcm::PixelFormat::UINT12:
+                case gdcm::PixelFormat::UINT16:
+                    {
+                        uint16_t* typeScalars = reinterpret_cast<uint16_t*>(sliceScalars);
+                        size_t length = dataLength / 2;
+
+                        for (size_t voxelIndex = 0; voxelIndex < length; ++voxelIndex) {
+                            float valueToRescale = static_cast<float>(typeScalars[voxelIndex]);
+                            float rescaledValue = ((valueToRescale * slope + intercept) - info.getIntercept()) / info.getSlope();
+                            typeScalars[voxelIndex] = static_cast<uint16_t>(rescaledValue);
+                        }
+                    }
+                    break;
+                case gdcm::PixelFormat::INT12:
+                case gdcm::PixelFormat::INT16:
+                    {
+                        int16_t* typeScalars = reinterpret_cast<int16_t*>(sliceScalars);
+                        size_t length = dataLength / 2;
+
+                        for (size_t voxelIndex = 0; voxelIndex < length; ++voxelIndex) {
+                            float valueToRescale = static_cast<float>(typeScalars[voxelIndex]);
+                            float rescaledValue = ((valueToRescale * slope + intercept) - info.getIntercept()) / info.getSlope();
+                            typeScalars[voxelIndex] = static_cast<int16_t>(rescaledValue);
+                        }
+                    }
+                    break;
+                case gdcm::PixelFormat::UINT32:
+                    {
+                        uint32_t* typeScalars = reinterpret_cast<uint32_t*>(sliceScalars);
+                        size_t length = dataLength / 4;
+
+                        for (size_t voxelIndex = 0; voxelIndex < length; ++voxelIndex) {
+                            float valueToRescale = static_cast<float>(typeScalars[voxelIndex]);
+                            float rescaledValue = ((valueToRescale * slope + intercept) - info.getIntercept()) / info.getSlope();
+                            typeScalars[voxelIndex] = static_cast<uint32_t>(rescaledValue);
+                        }
+                    }
+                    break;
+                case gdcm::PixelFormat::INT32:
+                    {
+                        int32_t* typeScalars = reinterpret_cast<int32_t*>(sliceScalars);
+                        size_t length = dataLength / 4;
+
+                        for (size_t voxelIndex = 0; voxelIndex < length; ++voxelIndex) {
+                            float valueToRescale = static_cast<float>(typeScalars[voxelIndex]);
+                            float rescaledValue = ((valueToRescale * slope + intercept) - info.getIntercept()) / info.getSlope();
+                            typeScalars[voxelIndex] = static_cast<int32_t>(rescaledValue);
+                        }
+                    }
+                    break;
+                case gdcm::PixelFormat::FLOAT16:
+                case gdcm::PixelFormat::FLOAT32:
+                    {
+                        float* typeScalars = reinterpret_cast<float*>(sliceScalars);
+                        size_t length = dataLength / 4;
+
+                        for (size_t voxelIndex = 0; voxelIndex < length; ++voxelIndex) {
+                            float valueToRescale = typeScalars[voxelIndex];
+                            float rescaledValue = ((valueToRescale * slope + intercept) - info.getIntercept()) / info.getSlope();
+                            typeScalars[voxelIndex] = rescaledValue;
+                        }
+                    }
+                    break;
+                case gdcm::PixelFormat::FLOAT64:
+                    {
+                        double* typeScalars = reinterpret_cast<double*>(sliceScalars);
+                        size_t length = dataLength / 8;
+
+                        for (size_t voxelIndex = 0; voxelIndex < length; ++voxelIndex) {
+                            double valueToRescale = typeScalars[voxelIndex];
+                            double rescaledValue = ((valueToRescale * slope + intercept) - info.getIntercept()) / info.getSlope();
+                            typeScalars[voxelIndex] = rescaledValue;
+                        }
+                    }
+                    break;
+                default:
+                    LERROR("Unexpected datatype while rescaling... no rescaling applied!");
+            }
+
+            //copy the rescaled values into the scalar buffer
+            std::memcpy(&dataStorage[posScalar * info.getBytesPerVoxel()], sliceScalars, dataLength);
+        }
         //delete temporary data
         delete[] sliceScalars;
     }
     else {
-        reader.GetImage().GetBuffer(&scalars_[posScalar * info_.getBytesPerVoxel()]);
+        reader.GetImage().GetBuffer(&dataStorage[posScalar * info.getBytesPerVoxel()]);
     }
 
-
     // Return number of voxels rendered
-    return info_.getDx() * info_.getDy() * numberOfFrames;
+    return info.getDx() * info.getDy() * info.getNumberOfFrames();
 }
 
 
@@ -2417,7 +2456,7 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDirectory(const VolumeURL& o
     for (fileIterator = filenames.begin(); fileIterator != filenames.end(); fileIterator++) {
 
         if (getProgressBar()) {
-            getProgressBar()->setMessage("Reading file " + (*fileIterator));
+            getProgressBar()->setProgressMessage("Reading file " + (*fileIterator));
             getProgressBar()->setProgress(static_cast<float>(itemused)/static_cast<float>(filenames.size()));
             itemused++;
         }
@@ -2468,7 +2507,7 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDirectory(const VolumeURL& o
     for (seriesIterator = seriesInstanceUIDvalues.begin(); seriesIterator != seriesInstanceUIDvalues.end(); ++seriesIterator) {
 
         if (getProgressBar()) {
-            getProgressBar()->setMessage("Checking Volume ...");
+            getProgressBar()->setProgressMessage("Checking Volume ...");
             getProgressBar()->setProgress(static_cast<float>(count-1) / static_cast<float>(seriesInstanceUIDvalues.size()));
             count++;
         }
@@ -2624,7 +2663,7 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDicomDir(const VolumeURL& or
         for (sequence.setIteratorToFirstElement(); !(sequence.iteratorIsAtEnd()); sequence.setIteratorToNextElement()) {
 
             if (getProgressBar()) {
-                getProgressBar()->setMessage("Reading DirectoryRecordSequence ...");
+                getProgressBar()->setProgressMessage("Reading DirectoryRecordSequence ...");
                 getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float>(sequence.getNumberOfItems()));
                 itemused++;
             }
@@ -2682,7 +2721,7 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDicomDir(const VolumeURL& or
     for (seriesIterator = seriesInstanceUIDs.begin(); seriesIterator != seriesInstanceUIDs.end(); ++seriesIterator) {
 
         if (getProgressBar()) {
-            getProgressBar()->setMessage("Checking Volume ...");
+            getProgressBar()->setProgressMessage("Checking Volume ...");
             getProgressBar()->setProgress(static_cast<float>(count-1) / static_cast<float>(seriesInstanceUIDs.size()));
             count++;
         }
@@ -2725,7 +2764,7 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesDicomDir(const VolumeURL& or
             for (dictIt = customDicts.begin(); dictIt != customDicts.end(); dictIt++) {
 
                 if (getProgressBar()) {
-                    getProgressBar()->setMessage("Checking CustomDicomDict-Files...");
+                    getProgressBar()->setProgressMessage("Checking CustomDicomDict-Files...");
                     getProgressBar()->setProgress(static_cast<float>(itemused) / static_cast<float> (customDicts.size()));
                     itemused++;
                 }
@@ -2896,6 +2935,30 @@ std::vector<VolumeURL> GdcmVolumeReader::listVolumesSingleDicomImage(const Volum
         getProgressBar()->hide();
     return v;
 }
+
+gdcm::PixelFormat GdcmVolumeReader::baseTypeStringToGdcm(const std::string& type) const {
+    if (type == "uint8")
+        return gdcm::PixelFormat::UINT8;
+    else if (type == "int8")
+        return gdcm::PixelFormat::INT8;
+    else if (type == "uint16")
+        return gdcm::PixelFormat::UINT16;
+    else if (type == "int16")
+        return gdcm::PixelFormat::INT16;
+    else if (type == "uint32")
+        return gdcm::PixelFormat::UINT32;
+    else if (type == "int32")
+        return gdcm::PixelFormat::INT32;
+    else if (type == "float")
+        return gdcm::PixelFormat::FLOAT32;
+    else if (type == "double")
+        return gdcm::PixelFormat::FLOAT64;
+    else
+        return gdcm::PixelFormat::UNKNOWN;
+}
+
+
+
 
 #ifdef VRN_GDCM_VERSION_22 // network support
 

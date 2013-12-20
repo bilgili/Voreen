@@ -36,20 +36,20 @@ namespace voreen {
  */
 class VRN_CORE_API VolumeOperatorSubsetBase : public UnaryVolumeOperatorBase {
 public:
-    virtual Volume* apply(const VolumeBase* volume, tgt::ivec3 pos, tgt::ivec3 size, ProgressBar* progressBar = 0) const = 0;
+    virtual Volume* apply(const VolumeBase* volume, tgt::ivec3 pos, tgt::ivec3 size, ProgressReporter* progressReporter = 0) const = 0;
 };
 
 // Generic implementation:
 template<typename T>
 class VolumeOperatorSubsetGeneric : public VolumeOperatorSubsetBase {
 public:
-    virtual Volume* apply(const VolumeBase* volume, tgt::ivec3 pos, tgt::ivec3 size, ProgressBar* progressBar = 0) const;
+    virtual Volume* apply(const VolumeBase* volume, tgt::ivec3 pos, tgt::ivec3 size, ProgressReporter* progressReporter = 0) const;
     //Implement isCompatible using a handy macro:
     IS_COMPATIBLE
 };
 
 template<typename T>
-Volume* VolumeOperatorSubsetGeneric<T>::apply(const VolumeBase* vh, tgt::ivec3 pos, tgt::ivec3 size, ProgressBar* progressBar) const {
+Volume* VolumeOperatorSubsetGeneric<T>::apply(const VolumeBase* vh, tgt::ivec3 pos, tgt::ivec3 size, ProgressReporter* progressReporter) const {
     const VolumeRAM* volRam = 0;
     const VolumeDisk* volDisk = 0;
 
@@ -87,7 +87,7 @@ Volume* VolumeOperatorSubsetGeneric<T>::apply(const VolumeBase* vh, tgt::ivec3 p
         // create values for ranges less than zero and greater equal dimensions_
         subset->clear(); // TODO: This can be optomized by avoiding to clear the values in range
 
-        VRN_FOR_EACH_VOXEL_WITH_PROGRESS(index, tgt::svec3(0, 0, 0), diff, progressBar)
+        VRN_FOR_EACH_VOXEL_WITH_PROGRESS(index, tgt::svec3(0, 0, 0), diff, progressReporter)
             subset->voxel(index) = volume->voxel(index+start);
 
         subsetRAM = subset;

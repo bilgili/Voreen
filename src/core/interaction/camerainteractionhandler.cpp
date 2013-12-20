@@ -82,6 +82,13 @@ CameraInteractionHandler::CameraInteractionHandler(const std::string& id, const 
         tgt::Event::MODIFIER_NONE, sharing, enabled);
     addEventProperty(rotateEvent_);
 
+    contRotateEvent_ = new EventProperty<CameraInteractionHandler>(id + ".rotatecont", guiName + " Rotate Continuously", this,
+        &CameraInteractionHandler::rotateEvent,
+        MouseEvent::MOUSE_BUTTON_LEFT,
+        MouseEvent::ACTION_ALL,
+        tgt::Event::CTRL, sharing, enabled);
+    addEventProperty(contRotateEvent_);
+
     zoomEvent_ = new EventProperty<CameraInteractionHandler>(id + ".zoom", guiName + " Zoom", this,
         &CameraInteractionHandler::zoomEvent,
         MouseEvent::MOUSE_BUTTON_RIGHT,
@@ -170,6 +177,37 @@ CameraInteractionHandler::~CameraInteractionHandler() {
 void CameraInteractionHandler::handleMultitouch(tgt::TouchEvent* e){
     tgtAssert(cameraProp_, "No camera property");
     tgtAssert(fpNavi_, "No trackball navigation");
+    if (e->touchPoints().size() == 1) {
+        if (!navigationMetaphor_.isSelected("trackball"))
+            return;
+
+        tgtAssert(cameraProp_, "No camera property");
+        tgtAssert(tbNavi_, "No trackball navigation");
+
+        tgt::TouchPoint tp = e->touchPoints().front();
+
+        // propagate event to trackball navigation
+        if (tp.state() & TouchPoint::TouchPointPressed) {
+            cameraProp_->toggleInteractionMode(true, this);
+            tgt::MouseEvent event = tgt::MouseEvent((int)tp.pos().x, (int)tp.pos().y, tgt::MouseEvent::PRESSED, tgt::Event::MODIFIER_NONE, tgt::MouseEvent::MOUSE_BUTTON_LEFT, e->getViewport());
+            tbNavi_->mousePressEvent(&event);
+            e->accept();
+            if(motionTimer_) motionTimer_->stop();
+        }
+        else if (tp.state() & TouchPoint::TouchPointReleased) {
+            tgt::MouseEvent event = tgt::MouseEvent((int)tp.pos().x, (int)tp.pos().y, tgt::MouseEvent::RELEASED, tgt::Event::MODIFIER_NONE, tgt::MouseEvent::MOUSE_BUTTON_LEFT, e->getViewport());
+            tbNavi_->mouseReleaseEvent(&event);
+            e->accept();
+            cameraProp_->toggleInteractionMode(false, this);
+            cameraProp_->invalidate(); //< necessary to cause processor to re-render without interaction mode
+        }
+        else if (tp.state() & (TouchPoint::TouchPointMoved | TouchPoint::TouchPointStationary)) {
+            tgt::MouseEvent event = tgt::MouseEvent((int)tp.pos().x, (int)tp.pos().y, tgt::MouseEvent::MOTION, tgt::Event::MODIFIER_NONE, tgt::MouseEvent::MOUSE_BUTTON_LEFT, e->getViewport());
+            tbNavi_->mouseMoveEvent(&event);
+            e->accept();
+            cameraProp_->invalidate();
+        }
+    }
 
     if (e->touchPoints().size() == 2) {
 
@@ -205,12 +243,16 @@ void CameraInteractionHandler::rotateEvent(tgt::MouseEvent* e) {
             cameraProp_->toggleInteractionMode(true, this);
             tbNavi_->mousePressEvent(e);
             e->accept();
-            //cameraProp_->invalidate(); //< no need to issue an invalidation here, since camera has not changed yet
+            if(motionTimer_) motionTimer_->stop();
         }
         else if (e->action() == MouseEvent::RELEASED) {
-            cameraProp_->toggleInteractionMode(false, this);
             tbNavi_->mouseReleaseEvent(e);
             e->accept();
+            // if continuous modifier was used, start timer to coninuously spin the trackball
+            if((e->modifiers() & contRotateEvent_->getModifier()) && motionTimer_)
+                motionTimer_->start(10, 0);
+            else
+                cameraProp_->toggleInteractionMode(false, this);
             cameraProp_->invalidate(); //< necessary to cause processor to re-render without interaction mode
         }
         else if (e->action() == MouseEvent::MOTION) {
@@ -243,13 +285,13 @@ void CameraInteractionHandler::rotateEvent(tgt::MouseEvent* e) {
             }
         }
         else if (e->action() == MouseEvent::MOTION){
-            motionTimer_->stop();
+            if(motionTimer_) motionTimer_->stop();
 
             fpNavi_->mouseMoveEvent(e);
             cameraProp_->invalidate();
 
             // Restart motionTimer_, if necessary
-            if (fpNavi_->isMoving())
+            if (fpNavi_->isMoving() && motionTimer_)
                 motionTimer_->start(40, 0);
         }
     }
@@ -307,14 +349,14 @@ void CameraInteractionHandler::zoomEvent(tgt::MouseEvent* e) {
             cameraProp_->invalidate();
         }
         else if (e->action() == MouseEvent::MOTION){
-            motionTimer_->stop();
+            if(motionTimer_) motionTimer_->stop();
 
             fpNavi_->mouseMoveEvent(e);
             e->accept();
             cameraProp_->invalidate();
 
             // Restart motionTimer_, if necessary
-            if (fpNavi_->isMoving())
+            if (fpNavi_->isMoving() && motionTimer_)
                 motionTimer_->start(40, 0);
         }
     }
@@ -376,15 +418,15 @@ void CameraInteractionHandler::keyEvent(tgt::KeyEvent* e){
         if (e->pressed()){
             if (fpNavi_->isMoving()){
                 cameraProp_->toggleInteractionMode(true, this);
-                motionTimer_->start(40, 0);
+                if(motionTimer_) motionTimer_->start(40, 0);
             }
             else
-                 motionTimer_->stop();
+                if(motionTimer_) motionTimer_->stop();
         }
         else{
             if (!fpNavi_->isMoving()){
                 cameraProp_->toggleInteractionMode(pressedMouseButtons_.any(), this);
-                    motionTimer_->stop();
+                if(motionTimer_) motionTimer_->stop();
             }
         }
 
@@ -396,14 +438,17 @@ void CameraInteractionHandler::onEvent(Event* eve) {
     tgtAssert(cameraProp_, "No camera property");
     tgtAssert(fpNavi_, "No first person Navigation");
 
-    if (navigationMetaphor_.isSelected("first-person")){
-        if (tgt::TimeEvent* timeEve = dynamic_cast<tgt::TimeEvent*>(eve)){
+    if (tgt::TimeEvent* timeEve = dynamic_cast<tgt::TimeEvent*>(eve)){
+        if (navigationMetaphor_.isSelected("first-person")){
             if (fpNavi_->isMoving()){
                 cameraProp_->toggleInteractionMode(true, this);
                 fpNavi_->timerEvent(timeEve);
-
                 eve->accept();
             }
+        } else if (navigationMetaphor_.isSelected("trackball")) {
+            tgt::quat q = cameraProp_->getTrackball().getLastOrientationChange();
+            cameraProp_->getTrackball().rotate(q);
+            eve->accept();
         }
     }
 

@@ -66,6 +66,9 @@ public:
 
     virtual std::string getClassName() const { return "TransFunc2DPrimitives";     }
     virtual TransFunc* create() const        { return new TransFunc2DPrimitives(); }
+    virtual TransFunc* clone() const;
+
+    virtual void updateFrom(const TransFunc* transfunc);
 
     virtual std::string getShaderDefines(const std::string& defineName = "TF_SAMPLER_TYPE") const;
 
@@ -183,11 +186,6 @@ public:
      * @see Serializable::deserialize
      */
     virtual void deserialize(XmlDeserializer& s);
-
-    /**
-     * Returns a copy of this object.
-     */
-    virtual TransFunc* clone() const;
 
     /**
      * Sets function to default value

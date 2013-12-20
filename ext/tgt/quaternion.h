@@ -530,57 +530,32 @@ Matrix4<T> generateMatrixFromQuat(const Quaternion<T>& q) {
 template<class T>
 Quaternion<T> generateQuatFromMatrix(const Matrix4<T>& mat) {
     Quaternion<T> q;
-    T t = mat[0][0] + mat[1][1] + mat[2][2] + T(1);
+    T t = mat[0][0] + mat[1][1] + mat[2][2];
 
-//     if (t > 0) {
-//         double s = 0.5 / std::sqrt(t);
-//         q.w = 0.25 / s;
-//         q.x = ( mat[2][1] - mat[1][2] ) * s;
-//         q.y = ( mat[0][2] - mat[2][0] ) * s;
-//         q.z = ( mat[1][0] - mat[0][1] ) * s;
-//     } else if ((mat[0][0] > mat[1][1]) && (mat[0][0] > mat[2][2])) {
-//         double s = std::sqrt( 1.0 + mat[0][0] - mat[1][1] - mat[2][2] ) * 2.0;
-//         q.x = 0.25 / s;
-//         q.y = (mat[0][1] + mat[1][0] ) / s;
-//         q.z = (mat[0][2] + mat[2][0] ) / s;
-//         q.w = (mat[1][2] - mat[2][1] ) / s;
-//     } else if (mat[1][1] > mat[2][2]) {
-//         double s = std::sqrt( 1.0 + mat[1][1] - mat[0][0] - mat[2][2] ) * 2.0;
-//         q.x = (mat[0][1] + mat[1][0] ) / s;
-//         q.y = 0.25 / s;
-//         q.z = (mat[1][2] + mat[2][1] ) / s;
-//         q.w = (mat[0][2] - mat[2][0] ) / s;
-//     } else {
-//         double s = std::sqrt( 1.0 + mat[2][2] - mat[0][0] - mat[1][1] ) * 2.0;
-//         q.x = (mat[0][2] + mat[2][0] ) / s;
-//         q.y = (mat[1][2] + mat[2][1] ) / s;
-//         q.z = 0.25 / s;
-//         q.w = (mat[0][1] - mat[1][0] ) / s;
-//     }
     if (t > T(0)) {
-        T s = T(0.5) / std::sqrt(t);
-        q.w = T(0.25) / s;
-        q.x = ( mat[1][2] - mat[2][1] ) * s;
-        q.y = ( mat[2][0] - mat[0][2] ) * s;
-        q.z = ( mat[0][1] - mat[1][0] ) * s;
+        T s = T(2.0) * std::sqrt(t + T(1));
+        q.w = T(0.25) * s;
+        q.x = ( mat[1][2] - mat[2][1] ) / s;
+        q.y = ( mat[2][0] - mat[0][2] ) / s;
+        q.z = ( mat[0][1] - mat[1][0] ) / s;
     } else if ((mat[0][0] > mat[1][1]) && (mat[0][0] > mat[2][2])) {
         T s = std::sqrt( T(1.0) + mat[0][0] - mat[1][1] - mat[2][2] ) * T(2.0);
-        q.x = T(0.25) / s;
+        q.w = (mat[1][2] - mat[2][1] ) / s;
+        q.x = T(0.25) * s;
         q.y = (mat[1][0] + mat[0][1] ) / s;
         q.z = (mat[2][0] + mat[0][2] ) / s;
-        q.w = (mat[2][1] - mat[1][2] ) / s;
     } else if (mat[1][1] > mat[2][2]) {
         T s = std::sqrt( T(1.0) + mat[1][1] - mat[0][0] - mat[2][2] ) * T(2.0);
-        q.x = (mat[1][0] + mat[0][1] ) / s;
-        q.y = T(0.25) / s;
-        q.z = (mat[2][1] + mat[1][2] ) / s;
         q.w = (mat[2][0] - mat[0][2] ) / s;
+        q.x = (mat[1][0] + mat[0][1] ) / s;
+        q.y = T(0.25) * s;
+        q.z = (mat[2][1] + mat[1][2] ) / s;
     } else {
         T s = std::sqrt( T(1.0) + mat[2][2] - mat[0][0] - mat[1][1] ) * T(2.0);
-        q.x = (mat[2][0] + mat[0][2] ) / s;
-        q.y = (mat[2][1] + mat[1][2] ) / s;
-        q.z = T(0.25) / s;
-        q.w = (mat[1][0] - mat[0][1] ) / s;
+        q.w = (mat[0][1] - mat[1][0] ) / s;
+        q.x = (mat[0][2] + mat[2][0] ) / s;
+        q.y = (mat[1][2] + mat[2][1] ) / s;
+        q.z = T(0.25) * s;
     }
 
     return q;

@@ -27,10 +27,14 @@
 
 #include "volumediskometiff.h"
 
+#include "voreen/core/voreenapplication.h"
+#include "voreen/core/voreenmodule.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
+#include "voreen/core/datastructures/meta/realworldmappingmetadata.h"
 #include "voreen/core/io/progressbar.h"
 #include "voreen/core/utils/stringutils.h"
 #include "voreen/core/datastructures/volume/volumefactory.h"
+#include "voreen/core/properties/boolproperty.h"
 
 #include <tinyxml/tinyxml.h>
 
@@ -109,7 +113,7 @@ VolumeList* OMETiffVolumeReader::read(const std::string &url)
 
     if (getProgressBar()) {
         getProgressBar()->setTitle("Opening OME-TIFF datastack");
-        getProgressBar()->setMessage("Scanning files...");
+        getProgressBar()->setProgressMessage("Scanning files...");
         getProgressBar()->show();
         getProgressBar()->forceUpdate();
     }
@@ -158,9 +162,9 @@ VolumeList* OMETiffVolumeReader::read(const std::string &url)
     /*else
         LINFO("Loading " << stack.sizeC_ << " channels with " << stack.sizeT_ << " timesteps each"); */
 
-    LDEBUG("TIFF files:");
+    /*LDEBUG("TIFF files:");
     for (size_t i=0; i<stack.files_.size(); i++)
-        LDEBUG(stack.files_.at(i).toString());
+        LDEBUG(stack.files_.at(i).toString()); */
 
     // check requested channel and timestep
     if (requestedChannel >= static_cast<int>(stack.sizeC_)) {
@@ -172,20 +176,27 @@ VolumeList* OMETiffVolumeReader::read(const std::string &url)
             masterFileName, getProgressBar());
     }
 
+    // create real-world-mapping that maps the normalizes data range to an integer range
+    int maxVal = (1 << (8*VolumeFactory().getBytesPerVoxel(stack.datatype_))) - 1;
+    RealWorldMapping realWorldMapping((float)maxVal, 0.f, "counts");
+
     // create disk volume for each channel/timestep
     VolumeList* volumeList = new VolumeList();
     for (size_t c=0; c<stack.sizeC_; c++) {
         for (size_t t=0; t<stack.sizeT_; t++) {
             if ((c == requestedChannel || requestedChannel == -1) && (t == requestedTimestep || requestedTimestep == -1)) {
                 VolumeDiskOmeTiff* diskRep = new VolumeDiskOmeTiff(stack.datatype_, stack.volumeDim_, stack, c, t);
-                Volume* volumeHandle = new Volume(diskRep, stack.voxelSpacing_, vec3(0.0f));
+                tgt::vec3 offset = -(stack.voxelSpacing_*(tgt::vec3)stack.volumeDim_) / 2.f;
+                Volume* volumeHandle = new Volume(diskRep, stack.voxelSpacing_, offset);
                 volumeHandle->setTimestep(static_cast<float>(t));
-                volumeHandle->setMetaDataValue<SizeTMetaData, size_t>("Channel", c);
+                volumeHandle->setMetaDataValue<IntMetaData, int>("Channel", (int)c);
 
                 VolumeURL origin("ome-tiff", masterFileName);
                 origin.addSearchParameter("channel", itos(c));
                 origin.addSearchParameter("timestep", itos(t));
                 volumeHandle->setOrigin(origin);
+
+                volumeHandle->setRealWorldMapping(realWorldMapping);
 
                 volumeList->add(volumeHandle);
             }
@@ -255,13 +266,22 @@ std::vector<VolumeURL> OMETiffVolumeReader::listVolumes(const std::string& urlSt
 }
 
 std::vector<VolumeRAM*> OMETiffVolumeReader::loadVolumesIntoRam(const OMETiffStack& stack,
-    int requestedChannel /*= -1*/, int requestedTimestep /*= -1*/, int firstZSlice /*= -1*/, int lastZSlice /*= -1*/) const throw (tgt::Exception)
+    int requestedChannel /*= -1*/, int requestedTimestep /*= -1*/,
+    tgt::ivec3 llf /*= tgt::ivec3(-1)*/, tgt::ivec3 urb /*= tgt::ivec3(-1)*/) const throw (tgt::Exception)
 {
-    tgtAssert(requestedChannel == -1 || requestedChannel < (int)stack.sizeC_, "invalid channel");
-    tgtAssert(requestedTimestep == -1 || requestedTimestep < (int)stack.sizeT_, "invalid timestep");
-    tgtAssert(firstZSlice < 0 || (firstZSlice <= lastZSlice && firstZSlice < (int)stack.volumeDim_.z), "invalid firstSlice");
-    tgtAssert(lastZSlice < 0 || (lastZSlice < (int)stack.volumeDim_.z), "invalid lastSlice");
+    // check parameters
+    if (requestedChannel >= (int)stack.sizeC_)
+        throw std::invalid_argument("Invalid channel: " + itos(requestedChannel));
+    if (requestedTimestep >= (int)stack.sizeT_)
+        throw std::invalid_argument("Invalid timestep: " + itos(requestedTimestep));
+    if (tgt::hor(tgt::greaterThanEqual(llf, tgt::ivec3(stack.volumeDim_))))
+        throw std::invalid_argument("Invalid llf: " + genericToString(llf));
+    if (tgt::hor(tgt::greaterThanEqual(urb, tgt::ivec3(stack.volumeDim_))))
+        throw std::invalid_argument("Invalid urb: " + genericToString(urb));
+    if (tgt::hor(tgt::greaterThan(llf, urb)))
+        throw std::invalid_argument("Invalid llf/urb combination: llf=" + genericToString(llf) + ", urb=" + genericToString(urb));
 
+    // stack parameter is created internally, so assertions should suffice
     tgtAssert(!stack.files_.empty(), "no files passed");
     tgtAssert(!stack.dimensionOrder_.empty(), "no dimension order passed");
     tgtAssert(!stack.datatype_.empty(), "no dimension order passed");
@@ -270,21 +290,22 @@ std::vector<VolumeRAM*> OMETiffVolumeReader::loadVolumesIntoRam(const OMETiffSta
     tgtAssert(stack.sizeT_ > 0, "sizeT must be greater 0");
     tgtAssert(stack.numSlices_ > 0, "num slices must be greater 0")
 
-    // either both or none of the slice parameters must be given
-    if (firstZSlice < 0 || lastZSlice < 0) {
-        firstZSlice = -1;
-        lastZSlice = -1;
+    // either both or none of the llf/urb parameters must be given
+    if (tgt::hor(tgt::lessThan(llf, tgt::ivec3::zero)) || tgt::hor(tgt::lessThan(urb, tgt::ivec3::zero))) {
+        llf = tgt::ivec3(-1);
+        urb = tgt::ivec3(-1);
     }
 
-    bool singleSlice = requestedChannel >= 0 && requestedTimestep >= 0 && firstZSlice >= 0 && firstZSlice == lastZSlice;
-    if (getProgressBar() && !singleSlice) { // do not show progress bar for a single slice
+    // do not show progress bar for a single sub-volume (slice or brick)
+    bool showProgress = requestedChannel < 0 || requestedTimestep < 0 || tgt::hor(tgt::lessThan(llf, tgt::ivec3(0)));
+    if (showProgress && getProgressBar()) {
         getProgressBar()->setTitle("Loading OME-TIFF data set");
         getProgressBar()->show();
         getProgressBar()->forceUpdate();
     }
 
     // determine dimensions of output volumes: stack volume dim, if no slice range has been selected, or slice range otherwise
-    const tgt::svec3 outputVolDim(stack.volumeDim_.x, stack.volumeDim_.y, (firstZSlice >= 0) ? (lastZSlice-firstZSlice + 1) : stack.volumeDim_.z);
+    const tgt::svec3 outputVolDim(llf.z >= 0 ? tgt::svec3(urb-llf+1) : stack.volumeDim_);
 
     // create two nested vectors of output volumes: first coordinate=channel, second coordinate=time
     // (volumes will be created on demand)
@@ -323,15 +344,11 @@ std::vector<VolumeRAM*> OMETiffVolumeReader::loadVolumesIntoRam(const OMETiffSta
     size_t curSlice = 0;
     for (int fileID = 0; fileID < static_cast<int>(stack.files_.size()); fileID++) {
         const OMETiffFile& curFile = stack.files_.at(fileID);
-        if (getProgressBar() && !singleSlice)
-            getProgressBar()->setMessage("Loading " + curFile.filename_ + " ...");
+        if (showProgress && getProgressBar())
+            getProgressBar()->setProgressMessage("Loading " + curFile.filename_ + " ...");
 
-        // open current tiff file
-        TIFF* curTiffFile = TIFFOpen(curFile.filename_.c_str(), "r");
-        if (!curTiffFile) {
-            deleteVolumes(volumes);
-            raiseIOException("Failed to open TIFF file", curFile.filename_, getProgressBar());
-        }
+        // current tiff file (open on demand)
+        TIFF* curTiffFile = 0;
 
         // check firstZ, firstC, firstT parameters of current file against current coordinates
         if (curFile.firstZ_ != curZ || curFile.firstC_ != curC || curFile.firstT_ != curT) {
@@ -347,7 +364,7 @@ std::vector<VolumeRAM*> OMETiffVolumeReader::loadVolumesIntoRam(const OMETiffSta
             tgtAssert(curC < (int)volumes.size(), "current C value larger than volumes vector");
             tgtAssert(curT < (int)volumes[curC].size(), "current T value larger than volumes vector");
 
-            if (getProgressBar() && !singleSlice) {
+            if (showProgress && getProgressBar()) {
                 getProgressBar()->setProgress(static_cast<float>(curSlice) / static_cast<float>(stack.numSlices_-1));
                 getProgressBar()->forceUpdate();
             }
@@ -355,8 +372,22 @@ std::vector<VolumeRAM*> OMETiffVolumeReader::loadVolumesIntoRam(const OMETiffSta
             // ignore slice, if a specific channel/timestep/slice is requested, which does not match current channel/timestep/slice
             bool skipSlice = (requestedChannel >= 0  && curC != requestedChannel)  ||
                              (requestedTimestep >= 0 && curT != requestedTimestep) ||
-                             (firstZSlice >= 0 && (firstZSlice > curZ || lastZSlice < curZ));
+                             (llf.z >= 0 && (llf.z > curZ || urb.z < curZ));
             if (!skipSlice) {
+
+                // open current TIFF file, if not already happened
+                if (!curTiffFile) {
+                    curTiffFile = TIFFOpen(curFile.filename_.c_str(), "r");
+                    if (!curTiffFile) {
+                        deleteVolumes(volumes);
+                        raiseIOException("Failed to open TIFF file", curFile.filename_, getProgressBar());
+                    }
+                }
+                tgtAssert(curTiffFile, "cur tiff file not opened");
+
+                // set current TIFF directory
+                TIFFSetDirectory(curTiffFile,static_cast<tdir_t>(tiffDir));
+
                 // retrieve current volume and create it, if not created yet
                 VolumeRAM*& currentVolume = volumes[curC][curT];
                 if (!currentVolume) {
@@ -366,6 +397,8 @@ std::vector<VolumeRAM*> OMETiffVolumeReader::loadVolumesIntoRam(const OMETiffSta
                     catch (std::exception& e) {
                         LERROR(e.what());
                         deleteVolumes(volumes);
+                        if (curTiffFile)
+                            TIFFClose(curTiffFile);
                         if (getProgressBar())
                             getProgressBar()->hide();
                         throw e;
@@ -375,20 +408,51 @@ std::vector<VolumeRAM*> OMETiffVolumeReader::loadVolumesIntoRam(const OMETiffSta
 
                 // read current directory/slice
                 try {
-                    tgtAssert(firstZSlice == -1 || firstZSlice <= curZ, "invalid curZ (should have skipped this slice)");
-                    size_t zSliceInOutputVolume = firstZSlice >= 0 ? curZ-firstZSlice : curZ;
-                    size_t curSliceByteOffset = tgt::hmul(outputVolDim.xy()) * zSliceInOutputVolume * currentVolume->getBytesPerVoxel();
-                    void* curSlicePointer = reinterpret_cast<void*>(reinterpret_cast<char*>(currentVolume->getData()) + curSliceByteOffset);
-                    readTiffDirectory(curTiffFile, stack.datatype_, stack.volumeDim_.xy(), curSlicePointer);
+                    tgtAssert(llf.z == -1 || llf.z <= curZ, "invalid curZ (should have skipped this slice)");
+                    const size_t bytesPerVoxel = currentVolume->getBytesPerVoxel();
+                    const size_t zSliceInOutputVolume = llf.z >= 0 ? curZ-llf.z : curZ;
+                    const size_t curSliceByteOffset = tgt::hmul(outputVolDim.xy()) * zSliceInOutputVolume * bytesPerVoxel;
+                    char* curSlicePointer = reinterpret_cast<char*>(currentVolume->getData()) + curSliceByteOffset;
+
+                    // should the entire slice be written to the output volume or has a brick been requested?
+                    bool brickMode = tgt::hor(tgt::greaterThan(llf.xy(), tgt::ivec2(0)));
+                    brickMode |=     urb.x > -1 && tgt::hor(tgt::lessThan(urb.xy(), tgt::ivec2(stack.volumeDim_.xy())-1));
+                    if (brickMode) { // brick only => read entire tiff slice into temp buffer and extract sub-slice
+                        tgt::ivec2 subsliceDim = urb.xy()-llf.xy() + tgt::ivec2(1);
+                        tgtAssert(tgt::hand(tgt::greaterThan(subsliceDim, tgt::ivec2(0))) &&
+                                  tgt::hand(tgt::lessThan(subsliceDim, tgt::ivec2(stack.volumeDim_.xy()))), "invalid subsliceDim");
+                        size_t subSliceByteSize = tgt::hmul(subsliceDim) * bytesPerVoxel;
+
+                        // read full slice
+                        size_t sliceBytesize = tgt::hmul(stack.volumeDim_.xy()) * bytesPerVoxel;
+                        char* sliceBuffer = new char[sliceBytesize];
+                        readTiffDirectory(curTiffFile, stack.datatype_, stack.volumeDim_.xy(), sliceBuffer);
+
+                        // copy sub-slice to output volume
+                        size_t sliceBufferOffset = (llf.y * stack.volumeDim_.x + llf.x) * bytesPerVoxel;
+                        size_t subSliceBufferOffset = 0;
+                        for (size_t y=0; y<(size_t)subsliceDim.y; y++) {
+                            tgtAssert((sliceBufferOffset + subsliceDim.x*bytesPerVoxel) <= sliceBytesize, "invalid sliceBufferOffset");
+                            tgtAssert((subSliceBufferOffset + subsliceDim.x*bytesPerVoxel) <= subSliceByteSize, "invalid subSliceBufferOffset");
+                            memcpy(curSlicePointer + subSliceBufferOffset, sliceBuffer + sliceBufferOffset, subsliceDim.x*bytesPerVoxel);
+                            // advance one line in full slice and sub slice buffer
+                            sliceBufferOffset    += stack.volumeDim_.x * bytesPerVoxel;
+                            subSliceBufferOffset += subsliceDim.x * bytesPerVoxel;
+                        }
+
+                        delete[] sliceBuffer;
+                    }
+                    else { // full slice => write tiff slice directly into output volume
+                        readTiffDirectory(curTiffFile, stack.datatype_, stack.volumeDim_.xy(), curSlicePointer);
+                    }
                 }
                 catch (tgt::Exception& e) {
                     deleteVolumes(volumes);
+                    if (curTiffFile)
+                        TIFFClose(curTiffFile);
                     raiseIOException("Failed to read tiff slice: " + std::string(e.what()), curFile.filename_, getProgressBar());
                 }
             }
-
-            // increment directory in tiff file
-            TIFFReadDirectory(curTiffFile);
 
             // update stack indices (pointers to curZ, curC, curT)
             curSlice++;
@@ -406,8 +470,11 @@ std::vector<VolumeRAM*> OMETiffVolumeReader::loadVolumesIntoRam(const OMETiffSta
 
         } // directory iteration
 
-        TIFFClose(curTiffFile);
-        curTiffFile = 0;
+        // close current TIFF file, if open
+        if (curTiffFile) {
+            TIFFClose(curTiffFile);
+            curTiffFile = 0;
+        }
 
     } // file iteration
 
@@ -506,7 +573,7 @@ OMETiffStack OMETiffVolumeReader::extractStackInformation(TIFF* tiffFile, const 
     // log xml string for debugging
     TiXmlPrinter printer;
     xmlDoc.Accept(&printer);
-    LDEBUG("OME XML string: " << printer.Str());
+    //LDEBUG("OME XML string: " << printer.Str());
 
     // Is there a root element?
     const TiXmlElement* rootElem = xmlDoc.RootElement();
@@ -594,8 +661,8 @@ OMETiffStack OMETiffVolumeReader::extractStackInformation(TIFF* tiffFile, const 
     if (tgt::hor(tgt::lessThan(physicalsize, tgt::vec3::zero))) {
         std::ostringstream stream;
         stream << physicalsize;
-        LWARNING("negative physicalsize: " + stream.str() + ", overwriting with 1.0");
-        stack.voxelSpacing_ = tgt::vec3(1.f);
+        LWARNING("negative physicalsize: " + stream.str() + ", using absolute value");
+        physicalsize = tgt::abs(physicalsize);
     }
     else if (tgt::hor(tgt::equal(physicalsize, tgt::vec3::zero))) {
         std::ostringstream stream;
@@ -670,36 +737,88 @@ OMETiffStack OMETiffVolumeReader::extractStackInformation(TIFF* tiffFile, const 
     return stack;
 }
 
-void OMETiffVolumeReader::determineDirectoryCount(OMETiffStack& stack)
+void OMETiffVolumeReader::determineDirectoryCount(OMETiffStack& stack) const
     throw (tgt::Exception)
 {
+    bool estimateDirCount = true;
+
+    VoreenModule* tiffModule = 0;
+    BoolProperty* estimateProperty = 0;
+    if ((tiffModule = VoreenApplication::app()->getModule("TIFF")) &&
+        (estimateProperty = dynamic_cast<BoolProperty*>(tiffModule->getProperty("estimateDirectoryCount"))))
+    {
+        estimateDirCount = estimateProperty->get();
+    }
+    else {
+        LWARNING("BoolProperty 'estimateDirectoryCount' not found in TIFF module");
+    }
 
     // determine number of directories for each TIFF file
     stack.numSlices_ = 0;
-    for (size_t i=0; i<stack.files_.size(); i++) {
-        OMETiffFile& file = stack.files_.at(i);
-        file.numDirectories_ = 0;
-        TIFF* tiffFile = TIFFOpen(file.filename_.c_str(), "r");
-        if (tiffFile) {
-            do {
-                file.numDirectories_++;
-            } while (TIFFReadDirectory(tiffFile));
-            TIFFClose(tiffFile);
-            if (file.numDirectories_ == 0)
-                throw tgt::Exception("No directories found in TIFF file '" + file.filename_ + "'");
+
+    if (estimateDirCount) { // open only first and last file, and assign their directory counts to all files
+        size_t firstFileCount = determineDirectoryCount(stack.files_.front().filename_);
+        tgtAssert(firstFileCount > 0, "file has no directories");
+        size_t lastFileCount = determineDirectoryCount(stack.files_.back().filename_);
+        tgtAssert(lastFileCount > 0, "file has no directories");
+
+        if (firstFileCount == lastFileCount) {
+            for (size_t i=0; i<stack.files_.size(); i++) {
+                stack.files_.at(i).numDirectories_ = firstFileCount;
+                stack.numSlices_ += firstFileCount;
+            }
+        }
+        else {
+            LDEBUG("determineDirectoryCount(): directory counts of first and last files differ => disabling estimation");
+            estimateDirCount = false;
+        }
+    }
+
+    if (!estimateDirCount) { // detetermine directory count for all files (potentially time-consuming)
+        for (size_t i=0; i<stack.files_.size(); i++) {
+            OMETiffFile& file = stack.files_.at(i);
+            file.numDirectories_ = 0;
+
+            if (getProgressBar()) {
+                getProgressBar()->setProgressMessage("Scanning file '" + tgt::FileSystem::fileName(file.filename_) + "' ...");
+                getProgressBar()->setProgress((float)i / stack.files_.size());
+                //getProgressBar()->forceUpdate();
+            }
+
+            file.numDirectories_ = determineDirectoryCount(file.filename_);
+            tgtAssert(file.numDirectories_ > 0, "file has no directories");
             stack.numSlices_ += file.numDirectories_;
         }
-        else
-            throw tgt::Exception("Failed to open TIFF file '" + file.filename_ + "'");
     }
     tgtAssert(stack.numSlices_ > 0, "num slices must not be 0");
 
-    // TODO
-    /*if (numSlices != stack.volumeDim_.z*stack.sizeC_*stack.sizeT_) {
-        raiseIOException("Total number of slices in TIFF files (" + itos(numSlices) +
-            ") does not match stack size (dim.z*sizeC*sizeT = " + itos(stack.volumeDim_.z*stack.sizeC_*stack.sizeT_) + ") ", masterFileName, getProgressBar());
-    } */
+    // check slice count
+    if (stack.numSlices_ != stack.volumeDim_.z*stack.sizeC_*stack.sizeT_) {
+        raiseIOException("Total number of slices in TIFF files (" + itos(stack.numSlices_) +
+            ") does not match stack size (dim.z*sizeC*sizeT = " + itos(stack.volumeDim_.z*stack.sizeC_*stack.sizeT_) + ") ",
+            stack.files_.front().filename_, getProgressBar());
+    }
 
+}
+
+size_t OMETiffVolumeReader::determineDirectoryCount(const std::string& filename) const
+    throw (tgt::Exception)
+{
+    int numDirectories = 0;
+
+    TIFF* tiffFile = TIFFOpen(filename.c_str(), "r");
+    if (tiffFile) {
+        do {
+            numDirectories++;
+        } while (TIFFSetDirectory(tiffFile, static_cast<tdir_t>(numDirectories)));
+        TIFFClose(tiffFile);
+        if (numDirectories == 0)
+            throw tgt::Exception("No directories found in TIFF file '" + filename + "'");
+    }
+    else
+        throw tgt::Exception("Failed to open TIFF file '" + filename + "'");
+
+    return numDirectories;
 }
 
 const TiXmlNode* OMETiffVolumeReader::getXMLNode(const TiXmlNode* parent, const std::string& path) const

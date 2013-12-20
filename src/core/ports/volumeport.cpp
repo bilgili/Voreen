@@ -28,6 +28,9 @@
 #include "voreen/core/datastructures/volume/volumeram.h"
 #include "voreen/core/datastructures/volume/volumelist.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
+#include "voreen/core/datastructures/volume/volumedisk.h"
+#include "voreen/core/datastructures/volume/volumegl.h"
+#include "voreen/core/datastructures/octree/volumeoctreebase.h"
 #include "voreen/core/io/volumeserializer.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 
@@ -79,25 +82,21 @@ std::string VolumePort::getContentDescription() const {
 
         strstr << std::endl <<"Data Type: " << vol->getFormat() << std::endl
                << "Dimension: " << vol->getDimensions()[0] << " x " << vol->getDimensions()[1] << " x " << vol->getDimensions()[2]  << std::endl
-               << "Spacing: "   << vol->getSpacing()[0] << " x " << vol->getSpacing()[1] << " x " << vol->getSpacing()[2] << " mm" << std::endl
-               << "Number of Channels: " << vol->getNumChannels() << std::endl
-               << "Bytes per Voxel: " << vol->getBytesPerVoxel() << " bytes" << std::endl
-               << "Memory Size: ";
-        size_t bytes = vol->getNumVoxels()*vol->getNumChannels()*vol->getBytesPerVoxel();
-        float gb = tgt::round(bytes/107374182.4f) / 10.f;
-        float mb = tgt::round(bytes/104857.6f) / 10.f;    //calculate mb with 0.1f precision
-        float kb = tgt::round(bytes/102.4f) / 10.f;
-        if (gb >= 0.5f) {
-            strstr << gb << "GB";
-        } else if (mb >= 0.5f) {
-            strstr << mb << " MB";
-        }
-        else if (kb >= 0.5f) {
-            strstr << kb << " kB";
-        }
-        else {
-            strstr << bytes << " bytes";
-        }
+               << "Voxel Size: "   << vol->getSpacing()[0] << " x " << vol->getSpacing()[1] << " x " << vol->getSpacing()[2] << " mm" << std::endl
+               //<< "Bytes per Voxel: " << vol->getBytesPerVoxel() << " bytes" << std::endl
+               << "Memory Size: " << formatMemorySize(vol->getNumVoxels()*vol->getNumChannels()*vol->getBytesPerVoxel()) << "\n";
+
+        std::vector<std::string> representations;
+        if (vol->hasRepresentation<VolumeDisk>())
+            representations.push_back("Disk");
+        if (vol->hasRepresentation<VolumeRAM>())
+            representations.push_back("RAM");
+        if (vol->hasRepresentation<VolumeOctreeBase>())
+            representations.push_back("Octree");
+        if (vol->hasRepresentation<VolumeGL>())
+            representations.push_back("VolumeGL");
+        strstr << "Representations: " << strJoin(representations, ",");
+
     }
     return strstr.str();
 }
@@ -109,27 +108,23 @@ std::string VolumePort::getContentDescriptionHTML() const {
 
     if (hasData()) {
         const VolumeBase* vol = getData();
-        strstr << "<br>" << "Data Type: " << vol->getFormat() << "<br>"
-               << "Dimension: " << vol->getDimensions()[0] << " x " << vol->getDimensions()[1] << " x " << vol->getDimensions()[2]  << "<br>"
-               << "Spacing: "   << vol->getSpacing()[0] << " x " << vol->getSpacing()[1] << " x " << vol->getSpacing()[2] << " mm"  << "<br>"
-               << "Number of Channels: " << vol->getNumChannels() << "<br>"
-               << "Bytes per Voxel: " << vol->getBytesPerVoxel() << "<br>"
-               << "Memory Size: ";
-        size_t bytes = vol->getNumChannels()*vol->getNumVoxels()*vol->getBytesPerVoxel();
-        float gb = tgt::round(bytes/107374182.4f) / 10.f;
-        float mb = tgt::round(bytes/104857.6f) / 10.f;    //calculate mb with 0.1f precision
-        float kb = tgt::round(bytes/102.4f) / 10.f;
-        if (gb >= 0.5f) {
-            strstr << gb << "GB";
-        } else if (mb >= 0.5f) {
-            strstr << mb << " MB";
-        }
-        else if (kb >= 0.5f) {
-            strstr << kb << " kB";
-        }
-        else {
-            strstr << bytes << " bytes";
-        }
+        strstr << "<br/>" << "Data Type: " << vol->getFormat() << "<br/>"
+               << "Dimension: " << vol->getDimensions()[0] << " x " << vol->getDimensions()[1] << " x " << vol->getDimensions()[2]  << "<br/>"
+               << "Voxel Size: "   << vol->getSpacing()[0] << " x " << vol->getSpacing()[1] << " x " << vol->getSpacing()[2] << " mm"  << "<br/>"
+               //<< "Bytes per Voxel: " << vol->getBytesPerVoxel() << "<br/>"
+               << "Memory Size: " << formatMemorySize(vol->getNumChannels()*vol->getNumVoxels()*vol->getBytesPerVoxel()) << "<br/>";
+
+        std::vector<std::string> representations;
+        if (vol->hasRepresentation<VolumeDisk>())
+            representations.push_back("Disk");
+        if (vol->hasRepresentation<VolumeRAM>())
+            representations.push_back("RAM");
+        if (vol->hasRepresentation<VolumeOctreeBase>())
+            representations.push_back("Octree");
+        if (vol->hasRepresentation<VolumeGL>())
+            representations.push_back("VolumeGL");
+        strstr << "Representations: " << strJoin(representations, ", ");
+
     }
     return strstr.str();
 }

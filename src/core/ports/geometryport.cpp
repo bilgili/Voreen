@@ -157,17 +157,21 @@ tgt::col3 GeometryPort::getColorHint() const {
 std::string GeometryPort::getContentDescription() const {
     std::stringstream strstr;
     strstr << Port::getContentDescription();
-    if(hasData())
+    if(hasData()) {
+        strstr << std::endl << "Geometry Type: " << getData()->getClassName();
         strstr << std::endl << "Bounding Box: " << getData()->getBoundingBox().getLLF() << " x " << getData()->getBoundingBox().getURB();
-        return strstr.str();
     }
+    return strstr.str();
+}
 
 std::string GeometryPort::getContentDescriptionHTML() const {
-        std::stringstream strstr;
-        strstr << Port::getContentDescriptionHTML();
-        if(hasData())
-            strstr << "<br>" << "Bounding Box: " << getData()->getBoundingBox().getLLF() << " x " << getData()->getBoundingBox().getURB();
-        return strstr.str();
+    std::stringstream strstr;
+    strstr << Port::getContentDescriptionHTML();
+    if(hasData()) {
+        strstr << "<br>" << "Geometry Type: " << getData()->getClassName();
+        strstr << "<br>" << "Bounding Box: " << getData()->getBoundingBox().getLLF() << " x " << getData()->getBoundingBox().getURB();
     }
+    return strstr.str();
+}
 
 } // namespace

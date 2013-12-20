@@ -40,39 +40,39 @@ ScalingProcessor::ScalingProcessor()
 void ScalingProcessor::applyScalingMatrix(int scalingMode, RenderPort* inport, RenderPort* outport) {
     float aspectRatioIn = (float)inport->getSize().x / (float)inport->getSize().y;
     float aspectRatioOut = (float)outport->getSize().x / (float)outport->getSize().y;
-    glLoadIdentity();
+    MatStack.loadIdentity();
     switch(scalingMode) {
         case 0:
             break;
         case 1:
             //map pixels 1:1
-            glScalef((float)inport->getSize().x / (float)outport->getSize().x, (float)inport->getSize().y / (float)outport->getSize().y, 1.0f);
+            MatStack.scale((float)inport->getSize().x / (float)outport->getSize().x, (float)inport->getSize().y / (float)outport->getSize().y, 1.0f);
             break;
         case 2:
             //scale respecting aspect ratio and view all of the inport:
             if (aspectRatioOut < aspectRatioIn) {
-                glScalef(1.0f, aspectRatioOut/aspectRatioIn, 1.0f);
+                MatStack.scale(1.0f, aspectRatioOut/aspectRatioIn, 1.0f);
             }
             else {
-                glScalef(aspectRatioIn/aspectRatioOut, 1.0f, 1.0f);
+                MatStack.scale(aspectRatioIn/aspectRatioOut, 1.0f, 1.0f);
             }
             break;
         case 3:
             //scale respecting aspect ratio and fill outport:
             if (aspectRatioOut < aspectRatioIn) {
-                glScalef(aspectRatioIn/aspectRatioOut, 1.0f, 1.0f);
+                MatStack.scale(aspectRatioIn/aspectRatioOut, 1.0f, 1.0f);
             }
             else {
-                glScalef(1.0f, aspectRatioOut/aspectRatioIn, 1.0f);
+                MatStack.scale(1.0f, aspectRatioOut/aspectRatioIn, 1.0f);
             }
             break;
         case 4:
             //scale to height:
-            glScalef(aspectRatioIn/aspectRatioOut, 1.0f, 1.0f);
+            MatStack.scale(aspectRatioIn/aspectRatioOut, 1.0f, 1.0f);
             break;
         case 5:
             //scale to width:
-            glScalef(1.0f, aspectRatioIn*aspectRatioOut, 1.0f);
+            MatStack.scale(1.0f, aspectRatioIn*aspectRatioOut, 1.0f);
             break;
         default:
             break;
@@ -174,7 +174,7 @@ void SingleScale::process() {
     inport_.setTextureParameters(program_, "colorTexParameters_");
     inport_.setTextureParameters(program_, "depthTexParameters_");
 
-    glMatrixMode(GL_MODELVIEW);
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
     applyScalingMatrix(scalingMode_.getValue(), &inport_, &outport_);
 
     outport_.activateTarget();
@@ -184,7 +184,7 @@ void SingleScale::process() {
     glDepthFunc(GL_LESS);
     outport_.deactivateTarget();
 
-    glLoadIdentity();
+    MatStack.loadIdentity();
 
     program_->deactivate();
     glActiveTexture(GL_TEXTURE0);

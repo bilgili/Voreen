@@ -44,8 +44,12 @@ Camera::Camera(const vec3& position, const vec3& focus, const vec3& up,
       upVector_(normalize(up)),
       frust_(Frustum(fovy, ratio, distn, distf)),
       projectionMode_(pm),
-      eyeSeparation_(1.0f),
+      eyeSeparation_(65.f),
+      stereoFocalLength_(600.f),
+      stereoWidth_(450.f),
       eyeMode_(EYE_MIDDLE),
+      stereoRelativeFocalLength_(0.05f),
+      useRealWorldFrustum_(false),
       axisMode_(ON_AXIS),
       useOffset_(false),
       offset_(tgt::vec3(0.f))
@@ -60,7 +64,11 @@ Camera::Camera(const Camera& cam)
       frust_(cam.getFrustum()),
       projectionMode_(cam.getProjectionMode()),
       eyeSeparation_(cam.getStereoEyeSeparation()),
+      stereoFocalLength_(cam.getStereoFocalLength()),
+      stereoWidth_(cam.getStereoWidth()),
       eyeMode_(cam.getStereoEyeMode()),
+      stereoRelativeFocalLength_(cam.getStereoRelativeFocalLength()),
+      useRealWorldFrustum_(cam.getUseRealWorldFrustum()),
       axisMode_(cam.getStereoAxisMode()),
       useOffset_(cam.isOffsetEnabled()),
       offset_(cam.getOffset())
@@ -77,6 +85,10 @@ Camera* Camera::clone() const {
     cam->setStereoAxisMode(axisMode_);
     cam->setStereoEyeMode(eyeMode_, false);
     cam->setStereoEyeSeparation(eyeSeparation_, false);
+    cam->setStereoFocalLength(stereoFocalLength_, false);
+    cam->setStereoWidth(stereoWidth_, false);
+    cam->setStereoRelativeFocalLength(stereoRelativeFocalLength_, false);
+    cam->setUseRealWorldFrustum(useRealWorldFrustum_, false);
     cam->enableOffset(useOffset_);
     cam->setOffset(offset_);
     return cam;
@@ -93,15 +105,15 @@ bool Camera::operator!=(const Camera& rhs) const {
 
 // This is called to set up the Camera-View
 void Camera::look(float windowRatio) {
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+    MatStack.matrixMode(MatrixStack::PROJECTION);
+    MatStack.loadIdentity();
     updateFrustum();
-    loadMatrix(getFrustumMatrix(windowRatio));
+    MatStack.loadMatrix(getFrustumMatrix(windowRatio));
     //getProjectionMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
     updateVM();
-    loadMatrix(viewMatrix_);
+    MatStack.loadMatrix(viewMatrix_);
 }
 
 void Camera::look(ivec2 windowSize) {
@@ -150,15 +162,15 @@ mat4 Camera::getViewMatrixInverse() const {
         return mat4::identity;
 }
 
-tgt::Frustum Camera::getFrustumWithOffsets() const {
+tgt::Frustum Camera::getFrustumWithOffsets(float windowRatio) const {
     if(eyeMode_ != EYE_MIDDLE && axisMode_ == ON_AXIS)
-        return stereoFrustumShift();
+        return stereoFrustumShift(windowRatio);
     else
         return frust_;
 }
 
 mat4 Camera::getFrustumMatrix(float windowRatio) const {
-    Frustum f = getFrustumWithOffsets();
+    Frustum f = getFrustumWithOffsets(windowRatio);
     return mat4::createFrustum(f.getLeft() * windowRatio, f.getRight() * windowRatio,
                                f.getBottom(), f.getTop(),
                                f.getNearDist(), f.getFarDist());
@@ -196,6 +208,20 @@ mat4 Camera::getProjectionMatrix(float windowRatio) const {
     }
     else
         return getFrustumMatrix(windowRatio);
+}
+
+float Camera::getFarDist(bool includeOffsets) const {
+    if(!includeOffsets || eyeMode_ == EYE_MIDDLE || !useRealWorldFrustum_)
+        return frust_.getFarDist();
+
+    return std::max(frust_.getFarDist(), 2.f * stereoFocalLength_);
+}
+
+float Camera::getNearDist(bool includeOffsets) const {
+    if(!includeOffsets || eyeMode_ == EYE_MIDDLE || !useRealWorldFrustum_)
+        return frust_.getNearDist();
+
+    return std::max(frust_.getNearDist(), 2.f * stereoFocalLength_ / 50000.f);
 }
 
 line3 Camera::getViewRay(ivec2 vp, ivec2 pixel) const {
@@ -271,6 +297,22 @@ vec3 Camera::project(ivec2 vp, vec3 point) const {
 
 bool Camera::setStereoEyeSeparation(float separation, bool updateCam) {
     eyeSeparation_ = separation;
+    return updateCam;
+}
+
+bool Camera::setStereoFocalLength(float focallength, bool updateCam) {
+    if(focallength <= 0.f || focallength == stereoFocalLength_)
+        return false;
+
+    stereoFocalLength_ = focallength;
+    return updateCam;;
+}
+
+bool Camera::setStereoWidth(float width, bool updateCam) {
+    if(width <= 0.f || width == stereoFocalLength_)
+        return false;
+
+    stereoWidth_ = width;
     return updateCam;;
 }
 
@@ -281,13 +323,33 @@ bool Camera::setStereoEyeMode(StereoEyeMode mode, bool updateCam) {
     return updateCam;
 }
 
+bool Camera::setStereoRelativeFocalLength(float stereoRelativeFocalLength, bool updateCam) {
+    if(stereoRelativeFocalLength < 0.001f || stereoRelativeFocalLength > 1.f || stereoRelativeFocalLength == stereoRelativeFocalLength_)
+        return false;
+    stereoRelativeFocalLength_ = stereoRelativeFocalLength;
+    return updateCam;
+}
+
+bool Camera::setUseRealWorldFrustum(bool useRealWorldFrustum, bool updateCam) {
+    if(useRealWorldFrustum == useRealWorldFrustum_)
+        return false;
+    useRealWorldFrustum_ = useRealWorldFrustum;
+    return updateCam;
+}
+
 tgt::vec3 Camera::getStereoShift() const {
     if(eyeMode_ == EYE_MIDDLE)
         return tgt::vec3(0.f);
-    else if(eyeMode_ == EYE_LEFT)
-        return getStrafeWithOffsets() * (-eyeSeparation_ * 0.5f);
+
+    float eyeSep = eyeSeparation_;
+    // heuristic: in non-real-world mode, adapt eye-separation to 1 / 1000.f of relative focal length times frustum size
+    if(!useRealWorldFrustum_)
+        eyeSep *= stereoRelativeFocalLength_ * (frust_.getFarDist() - frust_.getNearDist()) * 0.001f;
+
+    if(eyeMode_ == EYE_LEFT)
+        return getStrafeWithOffsets() * (-eyeSep * 0.5f);
     else
-        return getStrafeWithOffsets() * (eyeSeparation_ * 0.5f);
+        return getStrafeWithOffsets() * ( eyeSep * 0.5f);
 
     //should not get here, but removes a warning
     return tgt::vec3(0.f);
@@ -302,13 +364,11 @@ tgt::vec3 Camera::getStrafeWithOffsets() const {
 
 tgt::vec3 Camera::getFocusWithOffsets() const {
     tgt::vec3 foc = focus_;
-    if(eyeMode_ != EYE_MIDDLE) {
-        tgt::vec3 shift = getStereoShift();
-        tgt::vec3 strafe = getStrafeWithOffsets();
-        float moveXScalar = tgt::dot(shift, strafe);
-        float moveYScalar = tgt::dot(shift, upVector_);
-        foc += moveXScalar * strafe + moveYScalar * upVector_;
-    }
+    if(eyeMode_ != EYE_MIDDLE)
+        foc += getStereoShift();
+    // TODO necessary??
+    //if(useOffset_);
+        //foc += offset_;
     return foc;
 }
 
@@ -321,23 +381,37 @@ tgt::vec3 Camera::getPositionWithOffsets() const {
     return pos;
 }
 
-tgt::Frustum Camera::stereoFrustumShift() const {
+tgt::Frustum Camera::stereoFrustumShift(float windowRatio) const {
     Frustum f = frust_;
-    tgt::vec3 shift = getStereoShift();
 
+    // for stereo, compute frustum based on near value, specified display distance and width
+    float left, right;
+    if(useRealWorldFrustum_) {
+        right = f.getNearDist() * 0.5f * stereoWidth_ * (1.f / stereoFocalLength_);
+        left  = -right;
+        f.setFarDist(std::max(f.getFarDist(), 2.f * stereoFocalLength_));
+        f.setNearDist(std::max(frust_.getNearDist(), 2.f * stereoFocalLength_ / 50000.f));
+    } else {
+        right = f.getRight();
+        left  = f.getLeft();
+    }
+
+    float focalLength;
+    if(useRealWorldFrustum_)
+        focalLength = stereoFocalLength_;
+    else
+        focalLength = f.getNearDist() + (f.getFarDist() - f.getNearDist()) * stereoRelativeFocalLength_;
+
+    tgt::vec3 shift = getStereoShift() / windowRatio;
     float moveXScalar = tgt::dot(shift, getStrafe());
-    float moveYScalar = tgt::dot(shift, getUpVector());
 
-    float oDist = getFocalLength();
-    //float nDist = length(getPosition() - getFocus() + shift);
-    float nDist = getFocalLength();
+    if(useRealWorldFrustum_) {
+        f.setBottom(left);
+        f.setTop(right);
+    }
+    f.setRight((right * focalLength - moveXScalar * f.getNearDist()) / focalLength);
+    f.setLeft( ( left * focalLength - moveXScalar * f.getNearDist()) / focalLength);
 
-    f.setRight((getFrustRight() * oDist - moveXScalar * getNearDist())/nDist);
-    //should be +dis... but left frustum value is < 0 so --=+
-    f.setLeft((getFrustLeft() * oDist - moveXScalar * getNearDist())/nDist);
-    f.setTop((getFrustTop() * oDist - moveYScalar * getNearDist())/nDist);
-    //should be +dis... but left frustum value is < 0 so --=+
-    f.setBottom((getFrustBottom() * oDist - moveYScalar * getNearDist())/nDist);
     return f;
 }
 

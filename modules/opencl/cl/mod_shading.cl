@@ -31,12 +31,12 @@
  */
 
 /// This struct contains all information about a light source.
-typedef struct __attribute__ ((packed)){
-    float3 position_;        // light position in world space
-    float3 ambientColor_;    // ambient color (r,g,b)
-    float3 diffuseColor_;    // diffuse color (r,g,b)
-    float3 specularColor_;   // specular color (r,g,b)
-    float3 attenuation_;     // attenuation (constant, linear, quadratic)
+typedef struct _LightSource/*__attribute__ ((packed))*/{
+    float4 position_;        // light position in world space
+    float4 ambientColor_;    // ambient color (r,g,b)
+    float4 diffuseColor_;    // diffuse color (r,g,b)
+    float4 specularColor_;   // specular color (r,g,b)
+    float4 attenuation_;     // attenuation (constant, linear, quadratic)
     float shininess_;
 } LightSource;
 
@@ -46,11 +46,11 @@ typedef struct __attribute__ ((packed)){
  *
  * @param d Distance to the light source.
  */
-float getAttenuation(float d, __global LightSource* lightSource_) {
-    float att = 1.0 / (lightSource_->attenuation_.x +
+float getAttenuation(float d, __constant LightSource* lightSource_) {
+    float att = 1.0f / (lightSource_->attenuation_.x +
                        lightSource_->attenuation_.y * d +
                        lightSource_->attenuation_.z * d * d);
-    return min(att, 1.0);
+    return min(att, 1.0f);
 }
 
 
@@ -61,8 +61,8 @@ float getAttenuation(float d, __global LightSource* lightSource_) {
  * @param ka The ambient color to be used, which is fetched from the
  * transfer function.
  */
-float3 getAmbientTerm(float3 ka, __global LightSource* lightSource_) {
-    return ka * lightSource_->ambientColor_;
+float3 getAmbientTerm(float3 ka, __constant LightSource* lightSource_) {
+    return ka * lightSource_->ambientColor_.xyz;
 }
 
 
@@ -75,9 +75,9 @@ float3 getAmbientTerm(float3 ka, __global LightSource* lightSource_) {
  * @param N The surface normal used for lambert shading.
  * @param L The normalized light vector used for lambert shading.
  */
-float3 getDiffuseTerm(float3 kd, float3 N, float3 L, __global LightSource* lightSource_) {
-    float NdotL = max(dot(N, L), 0.0);
-    return kd * lightSource_->diffuseColor_ * NdotL;
+float3 getDiffuseTerm(float3 kd, float3 N, float3 L, __constant LightSource* lightSource_) {
+    float NdotL = max(dot(N, L), 0.0f);
+    return kd * lightSource_->diffuseColor_.xyz * NdotL;
 }
 
 
@@ -91,11 +91,11 @@ float3 getDiffuseTerm(float3 kd, float3 N, float3 L, __global LightSource* light
  * @param N The surface normal used for lambert shading.
  * @param L The normalized light vector used for lambert shading.
  */
-float3 getLerpDiffuseTerm(float3 kd, float3 N, float3 L, __global LightSource* lightSource_) {
-    float alpha = 0.5;
+float3 getLerpDiffuseTerm(float3 kd, float3 N, float3 L, __constant LightSource* lightSource_) {
+    float alpha = 0.5f;
     float3 NV = mix(N, L, alpha);
-    float NVdotL = max(dot(NV, L), 0.0);
-    return kd * lightSource_->diffuseColor_ * NVdotL;
+    float NVdotL = max(dot(NV, L), 0.0f);
+    return kd * lightSource_->diffuseColor_.xyz * NVdotL;
 }
 
 
@@ -109,10 +109,10 @@ float3 getLerpDiffuseTerm(float3 kd, float3 N, float3 L, __global LightSource* l
  * @param V The viewing vector used.
  * @param alpha The shininess coefficient used.
  */
-float3 getSpecularTerm(float3 ks, float3 N, float3 L, float3 V, __global LightSource* lightSource_) {
+float3 getSpecularTerm(float3 ks, float3 N, float3 L, float3 V, __constant LightSource* lightSource_) {
     float3 H = normalize(V + L);
-    float NdotH = pow(max(dot(N, H), 0.0), lightSource_->shininess_);
-    return ks * lightSource_->specularColor_ * NdotH;
+    float NdotH = pow(max(dot(N, H), 0.0f), lightSource_->shininess_);
+    return ks * lightSource_->specularColor_.xyz * NdotH;
 }
 
 /**
@@ -128,9 +128,9 @@ float3 getSpecularTerm(float3 ks, float3 N, float3 L, float3 V, __global LightSo
  * @param kd The diffuse material color to be used.
  * @param ks The specular material color to be used.
  */
-float3 phongShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ka, float3 kd, float3 ks, __global LightSource* lightSource_) {
+float3 phongShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ka, float3 kd, float3 ks, __constant LightSource* lightSource_) {
     float3 N = fast_normalize(n);
-    float3 L = lPos - pos;              // using light position in volume physical space
+    float3 L = lPos - pos;          // using light position in volume physical space
     float3 V = fast_normalize(cPos - pos);  // using camera position in volume physical space
 
     // get light source distance for attenuation and normalize light vector
@@ -160,7 +160,7 @@ float3 phongShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ka, f
  * @param kd The diffuse material color to be used.
  * @param ks The specular material color to be used.
  */
-float3 phongShadingDS(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd, float3 ks, __global LightSource* lightSource_) {
+float3 phongShadingDS(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd, float3 ks, __constant LightSource* lightSource_) {
     float3 N = fast_normalize(n);
     float3 L = lPos - pos;              // using light position in volume physical space
     float3 V = fast_normalize(cPos - pos);  // using camera position in volume physical space
@@ -169,7 +169,7 @@ float3 phongShadingDS(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd,
     float d = length(L);
     L /= d;
 
-    float3 shadedColor = (float3)(0.0);
+    float3 shadedColor = (float3)(0.0f);
     shadedColor += getDiffuseTerm(kd, N, L, lightSource_);
     shadedColor += getSpecularTerm(ks, N, L, V, lightSource_);
     #ifdef PHONG_APPLY_ATTENUATION
@@ -190,7 +190,7 @@ float3 phongShadingDS(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd,
  * @param cPos Camera Position
  * @param ks The specular material color to be used.
  */
-float3 phongShadingS(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ks, __global LightSource* lightSource_) {
+float3 phongShadingS(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ks, __constant LightSource* lightSource_) {
     float3 N = fast_normalize(n);
     float3 L = lPos - pos;              // using light position in volume physical space
     float3 V = fast_normalize(cPos - pos);  // using camera position in volume physical space
@@ -199,7 +199,7 @@ float3 phongShadingS(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ks, 
     float d = length(L);
     L /= d;
 
-    float3 shadedColor = (float3)(0.0);
+    float3 shadedColor = (float3)(0.0f);
     shadedColor += getSpecularTerm(ks, N, L, V, lightSource_);
     #ifdef PHONG_APPLY_ATTENUATION
         shadedColor *= getAttenuation(d, lightSource_);
@@ -219,7 +219,7 @@ float3 phongShadingS(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ks, 
  * @param kd The diffuse material color to be used.
  * @param ka The ambient material color to be used.
  */
-float3 phongShadingDA(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd, float3 ka, __global LightSource* lightSource_) {
+float3 phongShadingDA(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd, float3 ka, __constant LightSource* lightSource_) {
     float3 N = fast_normalize(n);
     float3 L = lPos - pos;    // using light position in volume physical space
 
@@ -227,7 +227,7 @@ float3 phongShadingDA(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd,
     float d = fast_length(L);
     L /= d;
 
-    float3 shadedColor = (float3)(0.0);
+    float3 shadedColor = (float3)(0.0f);
     shadedColor += getAmbientTerm(ka, lightSource_);
     shadedColor += getDiffuseTerm(kd, N, L, lightSource_);
     #ifdef PHONG_APPLY_ATTENUATION
@@ -247,7 +247,7 @@ float3 phongShadingDA(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd,
  * @param cPos Camera Position
  * @param kd The diffuse material color to be used.
  */
-float3 phongShadingD(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd, __global LightSource* lightSource_) {
+float3 phongShadingD(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd, __constant LightSource* lightSource_) {
     float3 N = fast_normalize(n);
     float3 L = lPos - pos;    // using light position in volume physical space
 
@@ -255,7 +255,7 @@ float3 phongShadingD(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd, 
     float d = fast_length(L);
     L /= d;
 
-    float3 shadedColor = (float3)(0.0);
+    float3 shadedColor = (float3)(0.0f);
     shadedColor += getDiffuseTerm(kd, N, L, lightSource_);
     #ifdef PHONG_APPLY_ATTENUATION
         shadedColor *= getAttenuation(d, lightSource_);
@@ -272,12 +272,12 @@ float3 phongShadingD(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd, 
  * @param cPos Camera Position
  * @param numShades The number of different shadings.
  */
-float3 toonShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd, int numShades, __global LightSource* lightSource_) {
+float3 toonShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd, int numShades, __constant LightSource* lightSource_) {
     float3 N = fast_normalize(n);
     float3 L = lPos - pos;    // using light position in volume physical space
-    float NdotL = max(dot(N,L),0.0);
+    float NdotL = max(dot(N,L),0.0f);
 
-    kd *= lightSource_->diffuseColor_;
+    kd *= lightSource_->diffuseColor_.xyz;
 
     for (int i=1; i <= numShades; i++) {
         if (NdotL <= (float)(i) / (float)(numShades)) {
@@ -301,7 +301,7 @@ float3 toonShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 kd, in
  * @param kd The diffuse material color to be used.
  * @param ks The specular material color to be used.
  */
-float3 cookTorranceShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ka, float3 kd, float3 ks, __global LightSource* lightSource_) {
+float3 cookTorranceShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ka, float3 kd, float3 ks, __constant LightSource* lightSource_) {
     //'Shininess' is mapped as combined parameter for roughness and specular reflection
 
     // Material roughness [0, 1]
@@ -327,7 +327,7 @@ float3 cookTorranceShading(float3 n, float3 pos, float3 lPos, float3 cPos, float
 
     //solid angle depending on light distance
     float distance = fast_length(L);
-    dw = distance * 1.0;
+    dw = distance * 1.0f;
 
     float NH = dot(N,H);
     float NV = dot(N,V);
@@ -340,24 +340,24 @@ float3 cookTorranceShading(float3 n, float3 pos, float3 lPos, float3 cPos, float
     //geometric attenuation
     float G1 = (2.0f * NH * NL) / VH;
     float G2 = (2.0f * NH * NV) / VH;
-    float G = min(1.0, max(0.0, min(G1, G2)));
+    float G = min(1.0f, max(0.0f, min(G1, G2)));
 
     //Beckmann microfacette distribution-function
     float mq = m*m + 1e-5;       // Add small value
     float NHq = NH*NH + 1e-5;    // to avoid division by zero
 
-    float D1 = 1.0 / (4.0 * mq * NHq * NHq);
-    float D2 = exp(-(1.0 - NHq) / (mq * NHq));
+    float D1 = 1.0f / (4.0f * mq * NHq * NHq);
+    float D2 = exp(-(1.0f - NHq) / (mq * NHq));
     float D = D1 * D2;
 
     //diffuse reflection
-    float3 Rd = kd * lightSource_->diffuseColor_ * correctionFactor * NL;
+    float3 Rd = kd * lightSource_->diffuseColor_.xyz * correctionFactor * NL;
 
     //specular reflection
-    float3 Rs = F * D * G /(3.1415926 * NV * NL) * ks * lightSource_->specularColor_;
+    float3 Rs = F * D * G /(3.1415926f * NV * NL) * ks * lightSource_->specularColor_.xyz;
 
     //final shaded color
-    float3 shadedColor = (float3)(0.0);
+    float3 shadedColor = (float3)(0.0f);
     shadedColor += getAmbientTerm(ka, lightSource_);
     shadedColor += (NL * dw * (s*Rs + d*Rd));
     return shadedColor;
@@ -374,9 +374,9 @@ float3 cookTorranceShading(float3 n, float3 pos, float3 lPos, float3 cPos, float
  * @param ka The ambient material color to be used.
  * @param kd The diffuse material color to be used.
  */
-float3 orenNayarShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ka, float3 kd, __global LightSource* lightSource_) {
+float3 orenNayarShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ka, float3 kd, __constant LightSource* lightSource_) {
     // Material Roughness
-    float m = lightSource_->shininess_ / 128.0;
+    float m = lightSource_->shininess_ / 128.0f;
 
     float3 N = fast_normalize(n);
     float3 L = fast_normalize(lPos - pos);
@@ -385,7 +385,7 @@ float3 orenNayarShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 k
 
     float VdotN = dot( V, N );
     float LdotN = dot( L, N );
-    float NdotL = max(0.0000001, dot( N, L ));
+    float NdotL = max(0.0000001f, dot( N, L ));
 
     float cosPhi = dot(V - N * VdotN, L - N * LdotN);
     float alpha = max( acos( VdotN ), acos( LdotN ) );
@@ -393,15 +393,15 @@ float3 orenNayarShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 k
 
     float mq = m*m;
 
-    float A = 1.0 - 0.5 * (mq / (mq + 0.57));
-    float B = 0.45 * (mq / (mq + 0.09));
+    float A = 1.0f - 0.5f * (mq / (mq + 0.57f));
+    float B = 0.45f * (mq / (mq + 0.09f));
 
-    float3 result = (float3)(0.0);
-    result += (A + B * max( 0.0, cosPhi ) * sin(alpha) * tan(beta));
+    float3 result = (float3)(0.0f);
+    result += (A + B * max( 0.0f, cosPhi ) * sin(alpha) * tan(beta));
 
-    float3 shadedColor = (float3)(0.0);
+    float3 shadedColor = (float3)(0.0f);
     shadedColor += getAmbientTerm(ka, lightSource_);
-    shadedColor += kd * lightSource_->diffuseColor_ * NdotL * result;
+    shadedColor += kd * lightSource_->diffuseColor_.xyz * NdotL * result;
     return shadedColor;
 }
 
@@ -417,11 +417,11 @@ float3 orenNayarShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 k
  * @param kd The diffuse material color to be used.
  * @param ks The specular material color to be used.
  */
-float3 wardShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ka, float3 kd, float3 ks, __global LightSource* lightSource_) {
+float3 wardShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ka, float3 kd, float3 ks, __constant LightSource* lightSource_) {
     // Material roughness (isotropic)
-    float alphaX = lightSource_->shininess_ / 128.0;
+    float alphaX = lightSource_->shininess_ / 128.0f;
     //float alphaY = alphaX * 0.5;
-    float alphaY = alphaX * 2.0;
+    float alphaY = alphaX * 2.0f;
 
     float3 N = fast_normalize(n);
     float3 L = fast_normalize(lPos - pos);
@@ -430,7 +430,7 @@ float3 wardShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ka, fl
 
 
     // Coordinateframe
-    float3 epsilon = (float3)( 1.0, 0.0, 0.0 );
+    float3 epsilon = (float3)( 1.0f, 0.0f, 0.0f );
     float3 X = fast_normalize( cross( N, epsilon ) );  // Tangent
     float3 Y = fast_normalize( cross( N, X ));         // Orthogonal
 
@@ -440,13 +440,13 @@ float3 wardShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ka, fl
     float HdotL = dot( H, L );
     float HdotX = dot( H, X );
     float HdotY = dot( H, Y );
-    float NdotL = max(0.0000001, dot( N, L));
+    float NdotL = max(0.0000001f, dot( N, L));
 
-    alphaX += 0.0000001; // Add small value
-    alphaY += 0.0000001; // to avoid division by zero
+    alphaX += 0.0000001f; // Add small value
+    alphaY += 0.0000001f; // to avoid division by zero
 
     // Diffuse reflection
-    float3 Rd = kd * lightSource_->diffuseColor_;
+    float3 Rd = kd * lightSource_->diffuseColor_.xyz;
 
     // Specular Exponent
     float A = HdotX / alphaX;
@@ -455,23 +455,23 @@ float3 wardShading(float3 n, float3 pos, float3 lPos, float3 cPos, float3 ka, fl
     float B = HdotY / alphaY;
           B *= B;
 
-    float exponent = -2.0 * ( ( A + B ) / ( 1.0 + HdotN ) );
+    float exponent = -2.0f * ( ( A + B ) / ( 1.0f + HdotN ) );
 
     // Specular Nenner
-    float denominator  = 4.0 * 3.14159;
+    float denominator  = 4.0f * 3.14159f;
           denominator  *= alphaX;
           denominator  *= alphaY;
           denominator  *= sqrt( LdotN * VdotN );
 
-    if (denominator < 0.0)
-        denominator = min(0.0000001, denominator);
+    if (denominator < 0.0f)
+        denominator = min(0.0000001f, denominator);
     else
-        denominator = max(0.0000001, denominator);
+        denominator = max(0.0000001f, denominator);
 
     // Specular reflection
-    float3 Rs = ks * lightSource_->specularColor_ * ( exp( exponent ) / denominator );
+    float3 Rs = ks * lightSource_->specularColor_.xyz * ( exp( exponent ) / denominator );
 
-    float3 shadedColor = (float3)(0.0);
+    float3 shadedColor = (float3)(0.0f);
     shadedColor += getAmbientTerm(ka, lightSource_);
     shadedColor += (NdotL * (Rs + Rd));
     return shadedColor;

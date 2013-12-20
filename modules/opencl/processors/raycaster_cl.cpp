@@ -184,9 +184,7 @@ void RaycasterCL::process() {
         LGL_ERROR;
         glFinish();
 
-        //tgt::svec3 dims = tgt::svec3(entryPort_.getColorTexture()->getDimensions());
         tgt::svec3 dims = tgt::svec3(outport_.getColorTexture()->getDimensions());
-
         float samplingStepSize = 1.f / (tgt::min(volumePort_.getData()->getRepresentation<VolumeRAM>()->getDimensions()) * samplingRate_.get());
 
         kernel->setArg(0, volumeTex_);
@@ -198,6 +196,7 @@ void RaycasterCL::process() {
         //kernel->setArg(6, exitTexDepth_);
         //kernel->setArg(7, outDepth_);
         kernel->setArg(5, samplingStepSize);
+        kernel->setArg(6, static_cast<tgt::ivec2>(outport_.getColorTexture()->getDimensions().xy()));
 
         queue_->enqueueAcquireGLObject(entryTexCol_);
         queue_->enqueueAcquireGLObject(exitTexCol_);
@@ -207,7 +206,7 @@ void RaycasterCL::process() {
         //queue_->enqueueAcquireGLObject(&exitTexDepth_);
         //queue_->enqueueAcquireGLObject(&outDepth_);
 
-        queue_->enqueue(kernel, dims.xy());
+        queue_->enqueue(kernel, dims.xy() + tgt::svec2(8 - dims.x % 8, 8 - dims.y % 8), tgt::ivec2(8));
 
         queue_->enqueueReleaseGLObject(entryTexCol_);
         queue_->enqueueReleaseGLObject(exitTexCol_);

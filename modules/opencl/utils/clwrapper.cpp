@@ -667,6 +667,18 @@ bool Device::isExtensionSupported(std::string ext) const {
         return false;
 }
 
+bool Device::hasImageSupport() const {
+    return imageSupport_;
+}
+
+tgt::ivec2 Device::getMaxImageSize2D() const  {
+    return maxImageSize2D_;
+}
+
+tgt::ivec3 Device::getMaxImageSize3D() const {
+    return maxImageSize3D_;
+}
+
 //-------------------------------------------------------------------------------------
 
 const std::string Context::loggerCat_ = "voreen.OpenCL.Context";
@@ -747,275 +759,170 @@ CommandQueue::~CommandQueue() {
     clReleaseCommandQueue(id_);
 }
 
-Event CommandQueue::enqueue(const Kernel* kernel) {
-    cl_event event;
-    LCL_ERROR(clEnqueueTask(id_, kernel->getId(), 0, 0, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+void CommandQueue::enqueue(const Kernel* kernel, Event* event /*= 0*/) {
+    LCL_ERROR(clEnqueueTask(id_, kernel->getId(), 0, 0, event ? &event->id_ : 0));
 }
 
-Event CommandQueue::enqueue(const Kernel* kernel, size_t globalWorkSize, size_t localWorkSize) {
+void CommandQueue::enqueue(const Kernel* kernel, size_t globalWorkSize, size_t localWorkSize, Event* event /*= 0*/) {
     if (globalWorkSize < localWorkSize) {
         LWARNING("globalWorkSize (" << globalWorkSize << ") must be greater than localWorkSize (" << localWorkSize << ")");
     }
     if (globalWorkSize % localWorkSize != 0) {
         LWARNING("globalWorkSize (" << globalWorkSize << ") must be a multiple of localWorkSize (" << localWorkSize << ")");
     }
-    cl_event event;
-    LCL_ERROR(clEnqueueNDRangeKernel(id_, kernel->getId(), 1, 0, &globalWorkSize, &localWorkSize, 0, 0, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+    LCL_ERROR(clEnqueueNDRangeKernel(id_, kernel->getId(), 1, 0, &globalWorkSize, &localWorkSize, 0, 0, event ? &event->id_ : 0));
 }
 
-Event CommandQueue::enqueue(const Kernel* kernel, size_t globalWorkSize) {
-    cl_event event;
-    LCL_ERROR(clEnqueueNDRangeKernel(id_, kernel->getId(), 1, 0, &globalWorkSize, 0, 0, 0, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+void CommandQueue::enqueue(const Kernel* kernel, size_t globalWorkSize, Event* event /*= 0*/) {
+    LCL_ERROR(clEnqueueNDRangeKernel(id_, kernel->getId(), 1, 0, &globalWorkSize, 0, 0, 0, event ? &event->id_ : 0));
 }
 
-Event CommandQueue::enqueue(const Kernel* kernel, tgt::svec2 globalWorkSizes, tgt::svec2 localWorkSizes) {
-    cl_event event;
-    LCL_ERROR(clEnqueueNDRangeKernel(id_, kernel->getId(), 2, 0, &globalWorkSizes[0], &localWorkSizes[0], 0, 0, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+void CommandQueue::enqueue(const Kernel* kernel, tgt::svec2 globalWorkSizes, tgt::svec2 localWorkSizes, Event* event /*= 0*/) {
+    LCL_ERROR(clEnqueueNDRangeKernel(id_, kernel->getId(), 2, 0, &globalWorkSizes[0], &localWorkSizes[0], 0, 0, event ? &event->id_ : 0));
 }
 
-Event CommandQueue::enqueue(const Kernel* kernel, tgt::svec2 globalWorkSizes) {
-    cl_event event;
-    LCL_ERROR(clEnqueueNDRangeKernel(id_, kernel->getId(), 2, 0, &globalWorkSizes[0], 0, 0, 0, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+void CommandQueue::enqueue(const Kernel* kernel, tgt::svec2 globalWorkSizes, Event* event /*= 0*/) {
+    LCL_ERROR(clEnqueueNDRangeKernel(id_, kernel->getId(), 2, 0, &globalWorkSizes[0], 0, 0, 0, event ? &event->id_ : 0));
 }
 
-Event CommandQueue::enqueue(const Kernel* kernel, tgt::svec3 globalWorkSizes, tgt::svec3 localWorkSizes) {
-    cl_event event;
-    LCL_ERROR(clEnqueueNDRangeKernel(id_, kernel->getId(), 3, 0, &globalWorkSizes[0], &localWorkSizes[0], 0, 0, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+void CommandQueue::enqueue(const Kernel* kernel, tgt::svec3 globalWorkSizes, tgt::svec3 localWorkSizes, Event* event /*= 0*/) {
+    LCL_ERROR(clEnqueueNDRangeKernel(id_, kernel->getId(), 3, 0, &globalWorkSizes[0], &localWorkSizes[0], 0, 0, event ? &event->id_ : 0));
 }
 
-Event CommandQueue::enqueue(const Kernel* kernel, tgt::svec3 globalWorkSizes) {
-    cl_event event;
-    LCL_ERROR(clEnqueueNDRangeKernel(id_, kernel->getId(), 3, 0, &globalWorkSizes[0], 0, 0, 0, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+void CommandQueue::enqueue(const Kernel* kernel, tgt::svec3 globalWorkSizes, Event* event /*= 0*/) {
+    LCL_ERROR(clEnqueueNDRangeKernel(id_, kernel->getId(), 3, 0, &globalWorkSizes[0], 0, 0, 0, event ? &event->id_ : 0));
 }
 
-Event CommandQueue::enqueue(const Kernel* kernel, const std::vector<size_t>& globalWorkSizes, const std::vector<size_t>& localWorkSizes) {
+void CommandQueue::enqueue(const Kernel* kernel, const std::vector<size_t>& globalWorkSizes, const std::vector<size_t>& localWorkSizes, Event* event /*= 0*/) {
     tgtAssert(globalWorkSizes.size() == localWorkSizes.size(), "Dimension mismatch!");
-    cl_event event;
     LCL_ERROR(clEnqueueNDRangeKernel(id_, kernel->getId(), static_cast<cl_uint>(globalWorkSizes.size()),
-        0, &globalWorkSizes[0], &localWorkSizes[0], 0, 0, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+        0, &globalWorkSizes[0], &localWorkSizes[0], 0, 0, event ? &event->id_ : 0));
 }
 
-Event CommandQueue::enqueueReadBuffer(const Buffer* buffer, void* data, bool blocking) {
-    cl_event event;
-    LCL_ERROR(clEnqueueReadBuffer(id_, buffer->getId(), blocking, 0, buffer->getSize(), data, 0, 0, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+void CommandQueue::enqueueReadBuffer(const Buffer* buffer, void* data, bool blocking, Event* event /*= 0*/) {
+    LCL_ERROR(clEnqueueReadBuffer(id_, buffer->getId(), blocking, 0, buffer->getSize(), data, 0, 0, event ? &event->id_ : 0));
 }
 
-Event CommandQueue::enqueueReadBuffer(const Buffer* buffer, size_t byteOffset, size_t numBytes, void* data, bool blocking /*= true*/) {
+void CommandQueue::enqueueReadBuffer(const Buffer* buffer, size_t byteOffset, size_t numBytes, void* data, bool blocking /*= true*/, Event* event /*= 0*/) {
     tgtAssert(byteOffset < buffer->getSize(), "offset outside buffer");
     tgtAssert(byteOffset+numBytes < buffer->getSize(), "offset+numBytes outside buffer");
 
-    cl_event event;
-    LCL_ERROR(clEnqueueReadBuffer(id_, buffer->getId(), blocking, byteOffset, numBytes, data, 0, 0, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+    LCL_ERROR(clEnqueueReadBuffer(id_, buffer->getId(), blocking, byteOffset, numBytes, data, 0, 0, event ? &event->id_ : 0));
 }
 
-Event CommandQueue::enqueueWriteBuffer(const Buffer* buffer, void* data, bool blocking) {
-    cl_event event;
-    LCL_ERROR(clEnqueueWriteBuffer(id_, buffer->getId(), blocking, 0, buffer->getSize(), data, 0, 0, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+void CommandQueue::enqueueWriteBuffer(const Buffer* buffer, void* data, bool blocking, Event* event /*= 0*/) {
+    LCL_ERROR(clEnqueueWriteBuffer(id_, buffer->getId(), blocking, 0, buffer->getSize(), data, 0, 0, event ? &event->id_ : 0));
 }
 
-Event CommandQueue::enqueueWriteBuffer(const Buffer* buffer, size_t byteOffset, size_t numBytes, void* data, bool blocking /*= true*/ ) {
+void CommandQueue::enqueueWriteBuffer(const Buffer* buffer, size_t byteOffset, size_t numBytes, void* data, bool blocking /*= true*/, Event* event /*= 0*/ ) {
     tgtAssert(byteOffset < buffer->getSize(), "offset outside buffer");
     tgtAssert(byteOffset+numBytes < buffer->getSize(), "offset+numBytes outside buffer");
 
-    cl_event event;
-    LCL_ERROR(clEnqueueWriteBuffer(id_, buffer->getId(), blocking, byteOffset, numBytes, data, 0, 0, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+    LCL_ERROR(clEnqueueWriteBuffer(id_, buffer->getId(), blocking, byteOffset, numBytes, data, 0, 0, event ? &event->id_ : 0));
 }
 
-Event CommandQueue::enqueueCopyBuffer(const Buffer &src,
+void CommandQueue::enqueueCopyBuffer(const Buffer &src,
                         const Buffer &dst,
-                        size_t src_offset, size_t dst_offset, size_t size)
+                        size_t src_offset, size_t dst_offset, size_t size, Event* event /*= 0*/)
 {
-    cl_event event;
     LCL_ERROR(
-        clEnqueueCopyBuffer(id_, src.getId(), dst.getId(), src_offset, dst_offset, size, 0, 0, &event)
+        clEnqueueCopyBuffer(id_, src.getId(), dst.getId(), src_offset, dst_offset, size, 0, 0, event ? &event->id_ : 0)
     );
-
-    Event e(event);
-
-    return e;
 }
 
-Event CommandQueue::enqueueCopyImage(const ImageObject2D &src,
+void CommandQueue::enqueueCopyImage(const ImageObject2D &src,
                            const ImageObject2D &dst,
                            const size_t src_origin[3],
                            const size_t dst_origin[3],
-                           const size_t region[3])
+                           const size_t region[3],
+                           Event* event /*= 0*/)
 {
-    cl_event event;
     LCL_ERROR(
         clEnqueueCopyImage(id_, src.getId(), dst.getId(), (const size_t *)src_origin,
                             (const size_t *)dst_origin, (const size_t *)region,
-                            0, 0, &event)
+                            0, 0, event ? &event->id_ : 0)
     );
-
-    Event e(event);
-
-    return e;
 }
 
-Event CommandQueue::enqueueWriteImage(const ImageObject2D &img,
+void CommandQueue::enqueueWriteImage(const ImageObject2D &img,
                         tgt::Texture *tex,
                         const size_t origin[3],
                         const size_t region[3],
-                        bool blocking)
+                        bool blocking,
+                        Event* event /*= 0*/)
 {
-    cl_event event;
     LCL_ERROR(
         clEnqueueWriteImage(id_, img.getId(), blocking, (const size_t *)origin,
                             (const size_t *)region, 0, 0, tex->getPixelData(), 0, 0,
-                            &event)
+                            event ? &event->id_ : 0)
     );
-
-    Event e(event);
-
-    return e;
 }
 
-Event CommandQueue::enqueueReadImage(const ImageObject2D &img,
+void CommandQueue::enqueueReadImage(const ImageObject2D &img,
                        tgt::Texture *tex,
                        const size_t origin[3],
                        const size_t region[3],
-                       bool blocking)
+                       bool blocking,
+                       Event* event /*= 0*/)
 {
-    cl_event event;
     LCL_ERROR(
         clEnqueueReadImage(id_, img.getId(), blocking, (const size_t *)origin,
                             (const size_t *)region, 0, 0, tex->getPixelData(), 0, 0,
-                            &event)
+                            event ? &event->id_ : 0)
     );
-
-    Event e(event);
-
-    return e;
 }
 
-Event CommandQueue::enqueueReadImage(const ImageObject2D &img,
+void CommandQueue::enqueueReadImage(const ImageObject2D &img,
                        tgt::Texture *tex,
-                       bool blocking)
+                       bool blocking,
+                       Event* event /*= 0*/)
 {
-    cl_event event;
-
     size_t region[] = {tex->getDimensions().x, tex->getDimensions().y, 1};
     size_t origin[] = {0, 0, 0};
 
     LCL_ERROR(
         clEnqueueReadImage(id_, img.getId(), blocking, (const size_t *)origin,
                             (const size_t *)region, 0, 0, tex->getPixelData(), 0, 0,
-                            &event)
+                            event ? &event->id_ : 0)
     );
-
-    Event e(event);
-
-    return e;
 }
 
-Event CommandQueue::enqueueCopyImageToBuffer(const ImageObject2D &src,
+void CommandQueue::enqueueCopyImageToBuffer(const ImageObject2D &src,
                                              const Buffer &dst,
                                              const size_t origin[3],
                                              const size_t region[3],
-                                             size_t   dst_offset /* = 0 */)
+                                             size_t   dst_offset /* = 0 */,
+                                             Event* event /*= 0*/)
 {
-    cl_event event;
     LCL_ERROR(
-        clEnqueueCopyImageToBuffer(id_, src.getId(), dst.getId(), origin, region, dst_offset, 0, 0, &event)
+        clEnqueueCopyImageToBuffer(id_, src.getId(), dst.getId(), origin, region, dst_offset, 0, 0, event ? &event->id_ : 0)
     );
-
-    Event e(event);
-
-    return e;
 }
 
-Event CommandQueue::enqueueCopyBufferToImage(const Buffer &src,
+void CommandQueue::enqueueCopyBufferToImage(const Buffer &src,
                                              const ImageObject2D &dst,
                                              size_t src_offset,
                                              const size_t dst_origin[3],
-                                             const size_t region[3])
+                                             const size_t region[3],
+                                             Event* event /*= 0*/)
 {
-    cl_event event;
     LCL_ERROR(
-        clEnqueueCopyBufferToImage(id_, src.getId(), dst.getId(), src_offset, dst_origin, region, 0, 0, &event)
+        clEnqueueCopyBufferToImage(id_, src.getId(), dst.getId(), src_offset, dst_origin, region, 0, 0, event ? &event->id_ : 0)
     );
-
-    Event e(event);
-
-    return e;
 }
 
-Event CommandQueue::enqueueAcquireGLObject(const MemoryObject* obj) {
-    cl_event event;
+void CommandQueue::enqueueAcquireGLObject(const MemoryObject* obj, Event* event /*= 0*/) {
     cl_mem mem = obj->getId();
-    LCL_ERROR(clEnqueueAcquireGLObjects(id_, 1, &mem, 0, 0, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+    LCL_ERROR(clEnqueueAcquireGLObjects(id_, 1, &mem, 0, 0, event ? &event->id_ : 0));
 }
 
-Event CommandQueue::enqueueReleaseGLObject(const MemoryObject* obj) {
-    cl_event event;
+void CommandQueue::enqueueReleaseGLObject(const MemoryObject* obj, Event* event /*= 0*/) {
     cl_mem mem = obj->getId();
-    LCL_ERROR(clEnqueueReleaseGLObjects(id_, 1, &mem, 0, 0, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+    LCL_ERROR(clEnqueueReleaseGLObjects(id_, 1, &mem, 0, 0, event ? &event->id_ : 0));
 }
 
-Event CommandQueue::enqueueMarker() {
-    cl_event event;
-    LCL_ERROR(clEnqueueMarker(id_, &event));
-    Event e(event);
-    //if(event)
-        //LCL_ERROR(clReleaseEvent(event));
-    return e;
+void CommandQueue::enqueueMarker(Event* event /*= 0*/) {
+    LCL_ERROR(clEnqueueMarker(id_, event ? &event->id_ : 0));
 }
 
 void CommandQueue::enqueueBarrier() {
@@ -1216,7 +1123,7 @@ bool Program::build(const Device& device) {
     cl_device_id devId = device.getId();
     cl_int err = LCL_ERROR(clBuildProgram(id_, 1, &devId, buildOptions_.c_str(), 0, 0));
     if(err == CL_SUCCESS) {
-        LINFO("Succesfully build program for device: " << device.getName());
+        LINFO("Successfully built program for device: " << device.getName());
         createKernels();
         return true;
     }
@@ -1335,7 +1242,7 @@ void Program::createKernels() {
     for(size_t i=0; i<numKernels; ++i) {
         Kernel* k = new Kernel(kernels[i]);
         std::string name = k->getName();
-        LINFO("Found kernel " << name << " with " << k->getNumArgs() << " arguments." );
+        LINFO("Found kernel '" << name << "' with " << k->getNumArgs() << " arguments." );
         kernels_[name] = k;
     }
     delete[] kernels;
@@ -1406,11 +1313,17 @@ MemoryObject::~MemoryObject() {
 
 //---------------------------------------------------------
 
-Buffer::Buffer(const Context* context, cl_mem_flags flags, size_t size, const void* hostPtr) : MemoryObject(), size_(size) {
-    cl_int err;
-    //FIXME: const_cast (stefan)
-    id_ = clCreateBuffer(context->getId(), flags, size, const_cast<void*>(hostPtr), &err);
-    LCL_ERROR(err);
+Buffer::Buffer(const Context* context, cl_mem_flags flags, size_t size, const void* hostPtr,  cl_int* err) : MemoryObject(), size_(size) {
+    if(err) {
+        //FIXME: const_cast (stefan)
+        id_ = clCreateBuffer(context->getId(), flags, size, const_cast<void*>(hostPtr), err);
+    }
+    else {
+        cl_int tmpErr;
+        //FIXME: const_cast (stefan)
+        id_ = clCreateBuffer(context->getId(), flags, size, const_cast<void*>(hostPtr), &tmpErr);
+        LCL_ERROR(tmpErr);
+    }
 }
 
 //Buffer::Buffer(const Context *context, cl_mem_flags flags, size_t size, void* hostPtr) : MemoryObject(), size_(size) {
@@ -1809,65 +1722,86 @@ void fillCompositingModesPropertyCL(StringOptionProperty& compositingMode) {
     compositingMode.addOption("fhn", "FHN");
 }
 
+void fillClassificationModesPropertyCL(StringOptionProperty* prop) {
+    prop->addOption("none", "none");
+    prop->addOption("transfer-function", "Transfer Function");
+    prop->addOption("pre-integrated-fast", "Pre-integrated TF (fast)");
+    prop->addOption("pre-integrated", "Pre-integrated TF");
+    //prop->addOption("pre-integrated-gpu", "Pre-Integrated TF (GPU)");
+    prop->select("transfer-function");
+}
 
 std::string getGradientDefineCL(std::string gradientMode, std::string functionName) {
-    std::string headerSource = "#define " + functionName + "(volume, volumeStruct, samplePos) ";
+    std::string headerSource = " -D " + functionName + "(volume,volumeStruct,samplePos)=";
     if (gradientMode == "none")
-        headerSource += "(color - (float4)(0.5))*2.0;\n";
+        headerSource += "(color-(float4)(0.5))*2.0";
     else if (gradientMode == "forward-differences")
-        headerSource += "calcGradientAFD(volume, volumeStruct, samplePos);\n";
+        headerSource += "calcGradientAFD(volume,volumeStruct,samplePos)";
     else if (gradientMode == "central-differences")
-        headerSource += "calcGradientA(volume, volumeStruct, samplePos);\n";
+        headerSource += "calcGradientA(volume,volumeStruct,samplePos)";
     else if (gradientMode == "filtered")
-        headerSource += "calcGradientFiltered(volume, volumeStruct, samplePos);\n";
+        headerSource += "calcGradientFiltered(volume,volumeStruct,samplePos)";
     else if (gradientMode == "sobel")
-        headerSource += "calcGradientSobel(volume, volumeStruct, samplePos);\n";
+        headerSource += "calcGradientSobel(volume,volumeStruct,samplePos)";
 
     return headerSource;
 }
 
 std::string getShaderDefineCL(std::string shadeMode, std::string functionName, std::string n, std::string pos, std::string lPos, std::string cPos, std::string ka, std::string kd, std::string ks) {
-    std::string headerSource = "#define " + functionName + "(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ", lightSource_" +") ";
+    std::string headerSource = " -D " + functionName + "(" + n + "," + pos + "," + lPos + "," + cPos + "," + ka + "," + kd + "," + ks + ",lightSource_" +")=";
     if (shadeMode == "none")
-        headerSource += "" + ka + ";\n";
+        headerSource += "" + ka + ";";
     else if (shadeMode == "phong-diffuse")
-        headerSource += "phongShadingD(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + kd + ", lightSource_" + ");\n";
+        headerSource += "phongShadingD(" + n + "," + pos + "," + lPos + "," + cPos + "," + kd + ",lightSource_" + ")";
     else if (shadeMode == "phong-specular")
-        headerSource += "phongShadingS(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ks + ", lightSource_" + ");\n";
+        headerSource += "phongShadingS(" + n + "," + pos + "," + lPos + "," + cPos + "," + ks + ",lightSource_" + ")";
     else if (shadeMode == "phong-diffuse-ambient")
-        headerSource += "phongShadingDA(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + kd + ", " + ka + ", lightSource_" + ");\n";
+        headerSource += "phongShadingDA(" + n + "," + pos + "," + lPos + "," + cPos + "," + kd + "," + ka + ",lightSource_" + ")";
     else if (shadeMode == "phong-diffuse-specular")
-        headerSource += "phongShadingDS(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + kd + ", " + ks + ", lightSource_" + ");\n";
+        headerSource += "phongShadingDS(" + n + "," + pos + "," + lPos + "," + cPos + "," + kd + "," + ks + ",lightSource_" + ")";
     else if (shadeMode == "phong")
-        headerSource += "phongShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ", lightSource_"+ ");\n";
+        headerSource += "phongShading(" + n + "," + pos + "," + lPos + "," + cPos + "," + ka + "," + kd + "," + ks + ",lightSource_"+ ")";
     else if (shadeMode == "toon")
-        headerSource += "toonShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + kd + ", 3" + ", lightSource_" + ");\n";
+        headerSource += "toonShading(" + n + "," + pos + "," + lPos + "," + cPos + "," + kd + ",3" + ",lightSource_" + ")";
     else if (shadeMode == "cook-torrance")
-        headerSource += "cookTorranceShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ", lightSource_" + ");\n";
+        headerSource += "cookTorranceShading(" + n + "," + pos + "," + lPos + "," + cPos + "," + ka + "," + kd + "," + ks + ",lightSource_" + ")";
     else if (shadeMode == "oren-nayar")
-        headerSource += "orenNayarShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", lightSource_" + ");\n";
+        headerSource += "orenNayarShading(" + n + "," + pos + "," + lPos + "," + cPos + "," + ka + "," + kd + ",lightSource_" + ")";
     else if (shadeMode == "lafortune")
-        headerSource += "lafortuneShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ", lightSource_" + ");\n";
+        headerSource += "lafortuneShading(" + n + "," + pos + "," + lPos + "," + cPos + "," + ka + "," + kd + "," + ks + ",lightSource_" + ")";
     else if (shadeMode == "ward")
-        headerSource += "wardShading(" + n + ", " + pos + ", " + lPos + ", " + cPos + ", " + ka + ", " + kd + ", " + ks + ", lightSource_" + ");\n";
+        headerSource += "wardShading(" + n + "," + pos + "," + lPos + "," + cPos + "," + ka + "," + kd + "," + ks + ",lightSource_" + ")";
 
     return headerSource;
 }
 
 std::string getCompositingDefineCl(std::string compositingMode, std::string functionName, std::string result, std::string color, std::string samplePos, std::string gradient, std::string t, std::string samplingStepSize, std::string tDepth) {
-    std::string headerSource = "#define " + functionName +"(" + result + ", " + color + ", " +samplePos + ", " + gradient + ", " + t + ", " + samplingStepSize + ", " + tDepth + ") ";
+    std::string headerSource = " -D " + functionName +"(" + result + "," + color + "," +samplePos + "," + gradient + "," + t + "," + samplingStepSize + "," + tDepth + ")=";
     if (compositingMode == "dvr")
-        headerSource += "compositeDVR(result, color, t, samplingStepSize, tDepth);\n";
+        headerSource += "compositeDVR(result,color,t,samplingStepSize,tDepth)";
     else if (compositingMode == "mip")
-        headerSource += "compositeMIP(result, color, t, tDepth);\n";
+        headerSource += "compositeMIP(result,color,t,tDepth)";
     else if (compositingMode == "mida")
-        headerSource += "compositeMIDA(result, voxel, color, f_max_i, t, samplingStepSize, tDepth, gammaValue_);\n";
+        headerSource += "compositeMIDA(result,voxel,color,f_max_i,t,samplingStepSize,tDepth,gammaValue_)";
     else if (compositingMode == "iso")
-        headerSource += "compositeISO(result, color, t, tDepth, isoValue_);\n";
+        headerSource += "compositeISO(result,color,t,tDepth,isoValue_)";
     else if (compositingMode == "fhp")
-        headerSource += "compositeFHP(samplePos, result, t, tDepth);\n";
+        headerSource += "compositeFHP(samplePos,result,t,tDepth)";
     else if (compositingMode == "fhn")
-        headerSource += "compositeFHN(gradient, result, t, tDepth);\n";
+        headerSource += "compositeFHN(gradient,result,t,tDepth)";
+
+    return headerSource;
+}
+
+std::string getShaderDefineFunctionCL(const std::string mode, const std::string& defineName) {
+    std::string headerSource = " -D " + defineName + "(transFunc,transFuncTex,voxel,lastIntensity)=";
+
+    if (mode == "none")
+        headerSource += "voxel";
+    else if (mode == "transfer-function")
+        headerSource += "applyTF(transFunc,transFuncTex,voxel)";
+    else if (startsWith(mode, "pre-integrated"))
+        headerSource += "applyTFpi(transFunc,transFuncTex,voxel,lastIntensity)";
 
     return headerSource;
 }

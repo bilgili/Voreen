@@ -53,7 +53,7 @@ namespace voreen {
  *
  * @note Requires the tiff library.
  */
-class OMETiffVolumeReader : public VolumeReader {
+class VRN_CORE_API OMETiffVolumeReader : public VolumeReader {
 public:
     OMETiffVolumeReader(ProgressBar* progress = 0);
     ~OMETiffVolumeReader() {}
@@ -77,13 +77,15 @@ public:
      * @param datastack Description of the datastack from which the volume are to be loaded.
      * @param channel The channel that should be loaded. The default value of -1 indicates that all channels are to be loaded.
      * @param timestep The timestep that should be loaded. The default value of -1 indicates that all timesteps are to be loaded.
-     * @param firstZSlice first slice to load (inclusive). -1 indicates that all slices are to be loaded.
-     * @param lastZSlice last slice to load (inclusive). -1 indicates that all slices are to be loaded.
+     * @param llf lower-left-front voxel of the volume region to load (inclusive).
+     *        vec3(-1) indicates that the entire volume is to be loaded.
+     * @param urb upper-right-back voxel of the volume region to load (inclusive).
+     *        vec3(-1) indicates that the entire volume is to be loaded.
      *
      * @throws tgt::Exception if at least one of the requested channel/timesteps could not be loaded
      */
      std::vector<VolumeRAM*> loadVolumesIntoRam(const OMETiffStack& datastack, int channel = -1, int timestep = -1,
-        int firstZSlice = -1, int lastZSlice = -1) const
+        tgt::ivec3 llf = tgt::ivec3(-1), tgt::ivec3 urb = tgt::ivec3(-1)) const
         throw (tgt::Exception);
 
 private:
@@ -93,9 +95,16 @@ private:
 
     /**
      * Determines the number of directories of each of the passed tiff files.
-     * Note: Requires to open each file and iterate over its directories.
+     * @note Requires to open each file and iterate over its directories, except the estimateDirCount option is set.
+     * @see TiffModule
      */
-    void determineDirectoryCount(OMETiffStack& stack)
+    void determineDirectoryCount(OMETiffStack& stack) const
+        throw (tgt::Exception);
+
+    /**
+     * Returns the number of directories the passed Tiff file contains (requires to open the file).
+     */
+    size_t determineDirectoryCount(const std::string& filename) const
         throw (tgt::Exception);
 
     /**

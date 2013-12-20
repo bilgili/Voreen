@@ -32,6 +32,7 @@
 #include <QGraphicsScene>
 #include <QLinearGradient>
 #include <QPainter>
+#include <QThread>
 
 namespace voreen {
 
@@ -43,7 +44,10 @@ ProgressBarGraphicsItem::ProgressBarGraphicsItem(PortOwnerGraphicsItem* parent, 
     setParentItem(parent);
     resize(center, width, height);
     time_.start();
-    setProgressTier(0);
+
+    upperForegroundColor1_ = QColor(176, 191, 217);
+    upperForegroundColor2_ = QColor(60, 109, 194);
+    lowerForegroundColor_ = QColor(22, 87, 199);
 }
 
 //---------------------------------------------------------------------------------------------------------------
@@ -103,6 +107,11 @@ void ProgressBarGraphicsItem::forceUpdate() {
 }
 
 void ProgressBarGraphicsItem::update() {
+    //prevent crash if set in background thread
+    bool isGuiThread = (QThread::currentThread() == QCoreApplication::instance()->thread());
+    if (!isGuiThread)
+        return;
+
     if (time_.elapsed() > 500 || progress_ == 1.f || progress_ == 0.f) {
         QGraphicsItem::update();
         scene()->invalidate();
@@ -111,34 +120,5 @@ void ProgressBarGraphicsItem::update() {
     }
 }
 
-
-void ProgressBarGraphicsItem::setProgressTier(int tier) {
-    tier = tier % 3; // we currently only support three colors
-
-    switch (tier) {
-    case 0:
-        upperForegroundColor1_ = QColor(176, 191, 217);
-        upperForegroundColor2_ = QColor(60, 109, 194);
-        lowerForegroundColor_ = QColor(22, 87, 199);
-        break;
-    case 1:
-        upperForegroundColor1_ = QColor(176, 217, 193);
-        upperForegroundColor2_ = QColor(60, 194, 116);
-        lowerForegroundColor_ = QColor(22, 199, 96);
-        break;
-    case 2:
-        upperForegroundColor1_ = QColor(217, 176, 176);
-        upperForegroundColor2_ = QColor(194, 60, 60);
-        lowerForegroundColor_ = QColor(199, 22, 22);
-        break;
-    }
-
-    QGraphicsItem::update();
-    if (scene())
-        scene()->invalidate();
-    qApp->processEvents();
-    time_.restart();
-
-}
 
 } // namespace

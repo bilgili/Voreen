@@ -57,9 +57,9 @@ public:
     const T& operator[](size_t index) const { return points_[index]; };
 
     virtual void render() const {
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        tgt::multMatrix(getTransformationMatrix());
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
+        MatStack.multMatrix(getTransformationMatrix());
 
         glBegin(GL_POINTS);
         for (size_t i=0; i < points_.size(); ++i){
@@ -69,7 +69,7 @@ public:
         }
         glEnd();
 
-        glPopMatrix();
+        MatStack.popMatrix();
     }
 
     /**

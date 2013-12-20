@@ -33,20 +33,20 @@ namespace voreen {
 // Base class, defines interface for the operator (-> apply):
 class VRN_CORE_API VolumeOperatorMedianBase : public UnaryVolumeOperatorBase {
 public:
-    virtual Volume* apply(const VolumeBase* volume, int kernelSize = 3, ProgressBar* progressBar = 0) const = 0;
+    virtual Volume* apply(const VolumeBase* volume, int kernelSize = 3, ProgressReporter* progressReporter = 0) const = 0;
 };
 
 // Generic implementation:
 template<typename T>
 class VolumeOperatorMedianGeneric : public VolumeOperatorMedianBase {
 public:
-    virtual Volume* apply(const VolumeBase* volume, int kernelSize = 3, ProgressBar* progressBar = 0) const;
+    virtual Volume* apply(const VolumeBase* volume, int kernelSize = 3, ProgressReporter* progressReporter = 0) const;
     //Implement isCompatible using a handy macro:
     IS_COMPATIBLE
 };
 
 template<typename T>
-Volume* VolumeOperatorMedianGeneric<T>::apply(const VolumeBase* vh, int kernelSize, ProgressBar* progressBar) const {
+Volume* VolumeOperatorMedianGeneric<T>::apply(const VolumeBase* vh, int kernelSize, ProgressReporter* progressReporter) const {
     const VolumeRAM* v = vh->getRepresentation<VolumeRAM>();
     if (!v)
         return 0;
@@ -59,7 +59,7 @@ Volume* VolumeOperatorMedianGeneric<T>::apply(const VolumeBase* vh, int kernelSi
 
     size_t halfKernelDim = static_cast<size_t>(kernelSize / 2);
     tgt::svec3 volDim = vh->getDimensions();
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, tgt::ivec3(0), volDim, progressBar) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, tgt::ivec3(0), volDim, progressReporter) {
         size_t zmin = pos.z >= halfKernelDim ? pos.z - halfKernelDim : 0;
         size_t zmax = std::min(pos.z+halfKernelDim, volDim.z-1);
         size_t ymin = pos.y >= halfKernelDim ? pos.y - halfKernelDim : 0;
@@ -81,8 +81,8 @@ Volume* VolumeOperatorMedianGeneric<T>::apply(const VolumeBase* vh, int kernelSi
         output->voxel(pos) = values[len / 2];
     }
 
-    if (progressBar)
-        progressBar->setProgress(1.f);
+    if (progressReporter)
+        progressReporter->setProgress(1.f);
 
     return new Volume(output, vh);
 }

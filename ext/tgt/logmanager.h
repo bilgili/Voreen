@@ -78,6 +78,9 @@ public:
     virtual void addCat(const std::string &cat, bool Children = true, LogLevel level = Debug);
     virtual bool isOpen() = 0;
 
+    /// Sets the log level of all filters registered at this Log.
+    virtual void setLogLevel(LogLevel level);
+
     /// Returns if the messages are time-stamped.
     inline bool getTimeStamping() const { return timeStamping_; }
     inline void setTimeStamping(const bool timeStamping) { timeStamping_ = timeStamping; }
@@ -143,9 +146,11 @@ protected:
 class TGT_API HtmlLog : public Log {
 public:
     HtmlLog(const std::string &filename, bool dateStamping = false, bool timeStamping= true,
-            bool showCat = true, bool showLevel = true);
+            bool showCat = true, bool showLevel = true, bool append = true);
     ~HtmlLog();
     bool isOpen();
+
+    std::string getAbsFilename() const;
 
 protected:
     void logFiltered(const std::string &cat, LogLevel level, const std::string &msg, const std::string &extendedInfo="");
@@ -153,6 +158,7 @@ protected:
     std::string getLevelColor(LogLevel level);
 
     FILE* file_;
+    std::string absFilename_;
 };
 
 
@@ -194,14 +200,22 @@ public:
     // Remove a log from the manager.
     void removeLog(Log* log);
 
+    /// Removes all registered logs.
+    void clear();
+
+    /// Sets the log level of all registered Logs.
+    void setLogLevel(LogLevel level);
+
     /// Return the ConsoleLog (or 0 if there is none)
     ConsoleLog* getConsoleLog() { return consoleLog_; }
+
+    /// Returns all Logs currently registered at the LogManager.
+    std::vector<Log*> getLogs() const;
 
 protected:
     std::string logDir_;
     std::vector<Log*> logs_;
     ConsoleLog* consoleLog_;
-
 
 };
 
@@ -378,7 +392,14 @@ protected:
         } while (0)
      #endif
 #else
-    #define LDEBUG(msg)
+
+    //#define LDEBUG(msg)
+    #define LDEBUG(msg) \
+    do { \
+        std::ostringstream _tmp; \
+        _tmp << msg; \
+        LogMgr.log(loggerCat_, tgt::Debug, _tmp.str()); \
+    } while (0)
 
     #define LINFO(msg) \
     do { \
@@ -412,7 +433,13 @@ protected:
     // with category parameter
     //
 
-    #define LDEBUGC(cat, msg)
+    //#define LDEBUGC(cat, msg)
+    #define LDEBUGC(cat, msg) \
+    do { \
+        std::ostringstream _tmp; \
+        _tmp << msg; \
+        LogMgr.log(cat, tgt::Debug, _tmp.str()); \
+    } while (0)
 
     #define LINFOC(cat, msg) \
     do { \

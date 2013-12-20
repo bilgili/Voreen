@@ -64,6 +64,11 @@ void Log::addCat(const std::string &cat, bool children, LogLevel level) {
     filters_.push_back(newFilter);
 }
 
+void Log::setLogLevel(LogLevel level) {
+    for (size_t i=0; i<filters_.size(); i++)
+        filters_.at(i).level_ = level;
+}
+
 std::string Log::getTimeString() {
     time_t long_time = 0;
     tm *now = 0;
@@ -256,13 +261,12 @@ void HtmlLog::logFiltered(const std::string &cat, LogLevel level, const std::str
     fflush(file_);
 }
 
-HtmlLog::HtmlLog(const std::string &filename, bool dateStamping, bool timeStamping, bool showCat, bool showLevel) {
-    std::string absFilename;
+HtmlLog::HtmlLog(const std::string &filename, bool dateStamping, bool timeStamping, bool showCat, bool showLevel, bool append) {
     if (FileSystem::isAbsolutePath(filename))
-        absFilename = filename;
+        absFilename_ = filename;
     else
-        absFilename = FileSystem::absolutePath((LogMgr.getLogDir().empty() ? "" : LogMgr.getLogDir() + "/") + filename);
-    file_ = fopen(absFilename.c_str(), "w");
+        absFilename_ = FileSystem::absolutePath((LogMgr.getLogDir().empty() ? "" : LogMgr.getLogDir() + "/") + filename);
+    file_ = fopen(absFilename_.c_str(), append ? "a" : "w");
 
     timeStamping_ = timeStamping;
     dateStamping_ = dateStamping;
@@ -299,6 +303,10 @@ bool HtmlLog::isOpen() {
     return (file_ != 0);
 }
 
+std::string HtmlLog::getAbsFilename() const {
+    return absFilename_;
+}
+
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 LogManager::LogManager(const std::string& logDir)
@@ -307,11 +315,7 @@ LogManager::LogManager(const std::string& logDir)
 
 
 LogManager::~LogManager() {
-    vector<Log*>::iterator it;
-     for (it = logs_.begin(); it != logs_.end(); it++)
-        delete (*it);
-
-    delete consoleLog_;
+    clear();
 }
 
 void LogManager::reinit(const std::string& logDir) {
@@ -354,6 +358,28 @@ void LogManager::removeLog(Log* log) {
                 ++iter;
         }
     }
+}
+
+void LogManager::setLogLevel(LogLevel level) {
+    for (size_t i=0; i<logs_.size(); i++)
+        logs_.at(i)->setLogLevel(level);
+
+    if (consoleLog_)
+        consoleLog_->setLogLevel(level);
+}
+
+void LogManager::clear() {
+    vector<Log*>::iterator it;
+    for (it = logs_.begin(); it != logs_.end(); it++)
+        delete (*it);
+    logs_.clear();
+
+    delete consoleLog_;
+    consoleLog_ = 0;
+}
+
+std::vector<Log*> LogManager::getLogs() const {
+    return logs_;
 }
 
 } // namespace tgt

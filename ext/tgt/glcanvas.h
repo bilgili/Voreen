@@ -61,7 +61,7 @@ public:
         DOUBLE_BUFFER       = 1 << 3,
         STENCIL_BUFFER      = 1 << 4,
         ACCUM_BUFFER        = 1 << 5,
-        STEREO_VIEWING      = 1 << 6,
+        QUAD_BUFFER         = 1 << 6, //activates stereo viewing in qt. must be used with double_buffer
         MULTISAMPLING       = 1 << 7,
         RGBA_BUFFER         = RGB_BUFFER | ALPHA_BUFFER,
 
@@ -74,7 +74,9 @@ public:
         RGBAD   = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER,
         RGBADS  = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER | STENCIL_BUFFER,
         RGBADD  = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER | DOUBLE_BUFFER,
-        RGBADDS = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER | DOUBLE_BUFFER | STENCIL_BUFFER
+        RGBADDS = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER | DOUBLE_BUFFER | STENCIL_BUFFER,
+        RGBADDQ  = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER | DOUBLE_BUFFER | QUAD_BUFFER,
+        RGBADDQS = RGB_BUFFER | ALPHA_BUFFER | DEPTH_BUFFER | DOUBLE_BUFFER | QUAD_BUFFER | STENCIL_BUFFER
     };
 
     /// A Constructor
@@ -206,7 +208,7 @@ protected:
     int     depthSize_;
     int     stencilSize_;
     bool    doubleBuffered_;
-    bool    stereoViewing_;
+    bool    quadBuffered_;
     bool    fullscreen_;
     bool    autoFlush_; ///< whether to call glFlush or swap automatically
     bool    initialized_; // FIXME: does this make sense?

@@ -149,7 +149,10 @@ public:
         throw (SerializationException)
     {
         serialize(key+".numItems", data.size());
-        serializeBinaryBlob(key+".data", reinterpret_cast<const unsigned char*>(&data[0]), sizeof(T) * data.size());
+        if (!data.empty())
+            serializeBinaryBlob(key+".data", reinterpret_cast<const unsigned char*>(&data[0]), sizeof(T) * data.size());
+        else
+            serializeBinaryBlob(key+".data", 0, 0);
     }
 
     /**

@@ -37,7 +37,7 @@ namespace voreen {
 using tgt::vec3;
 using tgt::ivec3;
 
-Histogram1D createHistogram1DFromVolume(const VolumeBase* handle, int bucketCount, size_t channel /*= 0*/) {
+Histogram1D createHistogram1DFromVolume(const VolumeBase* handle, size_t bucketCount, size_t channel /*= 0*/) {
     RealWorldMapping rwm = handle->getRealWorldMapping();
 
     const VolumeMinMax* volumeMinMax = handle->getDerivedData<VolumeMinMax>();
@@ -47,7 +47,16 @@ Histogram1D createHistogram1DFromVolume(const VolumeBase* handle, int bucketCoun
     min = rwm.normalizedToRealWorld(min);
     max = rwm.normalizedToRealWorld(max);
 
-    Histogram1D h(min, max, bucketCount);
+    return createHistogram1DFromVolume(handle, bucketCount, min, max, channel);
+}
+
+VRN_CORE_API Histogram1D createHistogram1DFromVolume(const VolumeBase* handle, size_t bucketCount,
+    float realWorldMin, float realWorldMax, size_t channel /*= 0*/)
+{
+    tgtAssert(realWorldMin <= realWorldMax, "invalid real world range");
+
+    RealWorldMapping rwm = handle->getRealWorldMapping();
+    Histogram1D h(realWorldMin, realWorldMax, (int)bucketCount);
 
     // prefer RAM over disk representation, but only if RAM volume is already present
     const VolumeRAM* volumeRam = 0;
@@ -57,7 +66,7 @@ Histogram1D createHistogram1DFromVolume(const VolumeBase* handle, int bucketCoun
     else if (handle->hasRepresentation<VolumeDisk>())
         volumeDisk = handle->getRepresentation<VolumeDisk>();
     else {
-        LWARNINGC("voreen.Histogram", "Unable to compute 1D histogram: neither disk nor ram represenation available");
+        LWARNINGC("voreen.Histogram", "Unable to compute 1D histogram: neither disk nor RAM representation available");
         return h;
     }
     tgtAssert(volumeRam || volumeDisk, "no representation");
@@ -184,15 +193,18 @@ VolumeHistogramIntensity::VolumeHistogramIntensity() :
     histograms_()
 {}
 
-VolumeHistogramIntensity::VolumeHistogramIntensity(const VolumeHistogramIntensity& h) : histograms_() {
-}
+VolumeHistogramIntensity::VolumeHistogramIntensity(const VolumeHistogramIntensity& h)
+    : VolumeDerivedData()
+    , histograms_(h.histograms_)
+{}
 
 VolumeHistogramIntensity::VolumeHistogramIntensity(const Histogram1D& h) {
     histograms_.push_back(h);
 }
 
-VolumeHistogramIntensity::VolumeHistogramIntensity(const std::vector<Histogram1D>& histograms) :
-    histograms_(histograms)
+VolumeHistogramIntensity::VolumeHistogramIntensity(const std::vector<Histogram1D>& histograms)
+    : VolumeDerivedData()
+    , histograms_(histograms)
 {}
 
 VolumeDerivedData* VolumeHistogramIntensity::createFrom(const VolumeBase* handle) const {
@@ -248,7 +260,7 @@ float VolumeHistogramIntensity::getNormalized(float i, size_t channel) const {
 float VolumeHistogramIntensity::getLogNormalized(int i, size_t channel) const {
     tgtAssert(channel < histograms_.size(), "invalid channel");
     const Histogram1D& hist = histograms_.at(channel);
-    return (logf(static_cast<float>(1+hist.getBucket(i)) ) / logf( static_cast<float>(1+hist.getMaxBucket())));
+    return hist.getBucketLogNormalized(i);
 }
 
 float VolumeHistogramIntensity::getLogNormalized(float i, size_t channel) const {

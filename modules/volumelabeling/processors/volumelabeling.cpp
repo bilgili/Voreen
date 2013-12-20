@@ -1362,13 +1362,13 @@ void VolumeLabeling::renderLabels() {
 
     LGL_ERROR;
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
     glDisable(GL_TEXTURE_2D);
 
@@ -1456,7 +1456,7 @@ void VolumeLabeling::renderLabels() {
 
         // render text quads (second pass only)
         if (pass == 2) {
-            glMatrixMode(GL_MODELVIEW);
+            MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
             for (size_t i = 0; i < labels_.size(); ++i) {
 
                 // render quad with label texture for extern labels
@@ -1486,10 +1486,10 @@ void VolumeLabeling::renderLabels() {
                     LGL_ERROR;
 
                     // scale and translate quad
-                    glPushMatrix();
-                    glTranslatef(labels_[i].labelPosWorld.x, labels_[i].labelPosWorld.y, 0);
-                    glRotatef(labels_[i].rotAngle, 0.f, 0.f, 1.f);
-                    glScalef(labels_[i].labelData->text.widthWorld/2.f,
+                    MatStack.pushMatrix();
+                    MatStack.translate(labels_[i].labelPosWorld.x, labels_[i].labelPosWorld.y, 0);
+                    MatStack.rotate(labels_[i].rotAngle, 0.f, 0.f, 1.f);
+                    MatStack.scale(labels_[i].labelData->text.widthWorld/2.f,
                         labels_[i].labelData->text.heightWorld/2.f, 1.f);
 
                     LGL_ERROR;
@@ -1522,7 +1522,7 @@ void VolumeLabeling::renderLabels() {
 
                     LGL_ERROR;
 
-                    glPopMatrix();
+                    MatStack.popMatrix();
 
                     LGL_ERROR;
 
@@ -1534,22 +1534,22 @@ void VolumeLabeling::renderLabels() {
 
                     // render bezier patches for internal labels
 
-                    glMatrixMode(GL_PROJECTION);
-                    glPushMatrix();
-                    glLoadIdentity();
+                    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+                    MatStack.pushMatrix();
+                    MatStack.loadIdentity();
 
-                    glMatrixMode(GL_MODELVIEW);
-                    glPushMatrix();
-                    glLoadIdentity();
+                    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+                    MatStack.pushMatrix();
+                    MatStack.loadIdentity();
 
                     // if 3D shape fitting is enabled, the bezier patch's control points
                     // have been specified in model coords of the proxy geometry
                     // -> load projection and camera view matrix
                     if ( shape3D_.get() ) {
-                        glMatrixMode(GL_PROJECTION);
-                        tgt::loadMatrix(camera_.get().getProjectionMatrix(labelingPort_.getSize()));
-                        glMatrixMode(GL_MODELVIEW);
-                        tgt::loadMatrix(camera_.get().getViewMatrix());
+                        MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+                        MatStack.loadMatrix(camera_.get().getProjectionMatrix(labelingPort_.getSize()));
+                        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+                        MatStack.loadMatrix(camera_.get().getViewMatrix());
                     }
 
                     for (size_t i=0; i<labels_.size(); ++i) {
@@ -1584,10 +1584,10 @@ void VolumeLabeling::renderLabels() {
                         }
                     }
 
-                    glMatrixMode(GL_PROJECTION);
-                    glPopMatrix();
-                    glMatrixMode(GL_MODELVIEW);
-                    glPopMatrix();
+                    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+                    MatStack.popMatrix();
+                    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+                    MatStack.popMatrix();
 
                     LGL_ERROR;
 
@@ -1630,10 +1630,10 @@ void VolumeLabeling::renderLabels() {
     glLineWidth(1.f);
     glPointSize(1.f);
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 
     labelingPort_.deactivateTarget();
 

@@ -117,9 +117,9 @@ double VertexGeometry::getDistance(const VertexGeometry& vertex) const {
 }
 
 void VertexGeometry::render() const {
-    //glMatrixMode(GL_MODELVIEW);
-    //glPushMatrix();
-    //tgt::multMatrix(getTransformationMatrix());
+    //MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    //MatStack.pushMatrix();
+    //MatStack.multMatrix(getTransformationMatrix());
 
     glBegin(GL_POINTS);
 
@@ -131,7 +131,7 @@ void VertexGeometry::render() const {
 
     glEnd();
 
-    //glPopMatrix();
+    //MatStack.popMatrix();
 }
 
 void VertexGeometry::combine(const VertexGeometry& vertex) {

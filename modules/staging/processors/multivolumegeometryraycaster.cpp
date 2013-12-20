@@ -64,7 +64,7 @@ MultiVolumeGeometryRaycaster::MultiVolumeGeometryRaycaster()
     //, outport1_(Port::OUTPORT, "output2", "Image Output 2", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB)
     //, outport2_(Port::OUTPORT, "output3", "Image Output 3", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB)
     , tmpPort_(Port::OUTPORT, "tmp", "Temp", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_DEFAULT, GL_RGBA16F_ARB)
-    , headPort_(Port::OUTPORT, "head", "Head", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_DEFAULT, GL_R32F)
+    , headPort_(Port::OUTPORT, "head", "Head", true, Processor::INVALID_PROGRAM, RenderPort::RENDERSIZE_DEFAULT, GL_R32UI)
     , rcShaderProp_("raycast_shader", "Raycasting Shader", "oit_rc.frag", "passthrough.vert")
     , oitShaderProp_("oit_shader", "OIT Shader", "oit.frag", "oit.vert")
     , oitClearShaderProp_("oitClear_shader", "OIT Clear Shader", "oit_clear.frag", "oit_clear.vert")
@@ -385,6 +385,20 @@ void MultiVolumeGeometryRaycaster::beforeProcess() {
     transferFunc2_.setVolumeHandle(volumeInport2_.getData());
     transferFunc3_.setVolumeHandle(volumeInport3_.getData());
     transferFunc4_.setVolumeHandle(volumeInport4_.getData());
+
+    if(volumeInport1_.hasChanged() || volumeInport2_.hasChanged() || volumeInport3_.hasChanged() || volumeInport4_.hasChanged()) {
+        tgt::Bounds b;
+        if(volumeInport1_.hasData())
+            b.addVolume(volumeInport1_.getData()->getBoundingBox().getBoundingBox());
+        if(volumeInport2_.hasData())
+            b.addVolume(volumeInport2_.getData()->getBoundingBox().getBoundingBox());
+        if(volumeInport3_.hasData())
+            b.addVolume(volumeInport3_.getData()->getBoundingBox().getBoundingBox());
+        if(volumeInport4_.hasData())
+            b.addVolume(volumeInport4_.getData()->getBoundingBox().getBoundingBox());
+        if(length(b.diagonal()) != 0.0)
+            camera_.adaptInteractionToScene(b);
+    }
 }
 
 void MultiVolumeGeometryRaycaster::clearDatastructures() {
@@ -418,10 +432,10 @@ void MultiVolumeGeometryRaycaster::renderGeometries(const std::vector<ProxyGeome
     LGL_ERROR;
 
     // set modelview and projection matrices
-    glMatrixMode(GL_PROJECTION);
-    tgt::loadMatrix(camera_.get().getProjectionMatrix(outport_.getSize()));
-    glMatrixMode(GL_MODELVIEW);
-    tgt::loadMatrix(camera_.get().getViewMatrix());
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.loadMatrix(camera_.get().getProjectionMatrix(outport_.getSize()));
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadMatrix(camera_.get().getViewMatrix());
     LGL_ERROR;
 
     // activate shader:
@@ -443,18 +457,20 @@ void MultiVolumeGeometryRaycaster::renderGeometries(const std::vector<ProxyGeome
 
     // render other geometries:
     shader->setUniform("proxyGeometryId_", 0);
-    if(geometryPort_.isReady())
-        geometryPort_.getData()->render();
+    if(geometryPort_.isReady()) {
+        for(size_t i = 0; i < geometryPort_.getAllData().size(); i++)
+            geometryPort_.getAllData().at(i)->render();
+    }
 
     shader->deactivate();
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
     // reset matrices:
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.loadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
     LGL_ERROR;
 
     tmpPort_.deactivateTarget();
@@ -591,6 +607,27 @@ void MultiVolumeGeometryRaycaster::performRaycasting() {
         volumeHandles.push_back(volumeInport4_.getData());
     }
 
+    //portGroup_.activateTargets(); //TODO
+    //portGroup_.clearTargets();
+    outport_.activateTarget();
+    glClearDepth(1.0);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    LGL_ERROR;
+    LGL_ERROR;
+
+    glBindImageTexture(3 /* unit */, headPort_.getColorTexture()->getId(), 0, false, 0, GL_READ_WRITE, GL_R32UI);
+    //glBindImageTexture(3 [> unit <], headPort_.getColorTexture()->getId(), 0, false, 0, GL_READ_ONLY, GL_R32UI); //TODO
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, storageBuffer_);
+
+    // set common uniforms used by all shaders
+    tgt::Camera cam = camera_.get();
+    setGlobalShaderParameters(raycastPrg, &cam);
+    raycastPrg->setUniform("near_", cam.getNearDist());
+    raycastPrg->setUniform("far_", cam.getFarDist());
+    // bind the volumes and pass the necessary information to the shader
+    bindVolumes(raycastPrg, volumeTextures, &cam, lightPosition_.get());
+
     // determine ray step length in world coords
     float samplingStepSizeWorld = 0.0f;
     if (volumeTextures.size() > 0) {
@@ -646,26 +683,6 @@ void MultiVolumeGeometryRaycaster::performRaycasting() {
     if (transferFunc4_.get() && volumeInport4_.getData())
         ClassificationModes::bindTexture(classificationMode4_.get(), transferFunc4_.get(), getVoxelSamplingStepSize(volumeInport4_.getData(), samplingStepSizeWorld));
 
-    //portGroup_.activateTargets(); //TODO
-    //portGroup_.clearTargets();
-    outport_.activateTarget();
-    glClearDepth(1.0);
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-    LGL_ERROR;
-    LGL_ERROR;
-
-    glBindImageTexture(3 /* unit */, headPort_.getColorTexture()->getId(), 0, false, 0, GL_READ_WRITE, GL_R32UI);
-    //glBindImageTexture(3 [> unit <], headPort_.getColorTexture()->getId(), 0, false, 0, GL_READ_ONLY, GL_R32UI); //TODO
-
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, storageBuffer_);
-
-    // set common uniforms used by all shaders
-    tgt::Camera cam = camera_.get();
-    setGlobalShaderParameters(raycastPrg, &cam);
-    raycastPrg->setUniform("near_", cam.getNearDist());
-    raycastPrg->setUniform("far_", cam.getFarDist());
-    // bind the volumes and pass the necessary information to the shader
-    bindVolumes(raycastPrg, volumeTextures, &cam, lightPosition_.get());
 
     raycastPrg->setUniform("clippingGradientDepth_", clippingGradientDepth_.get());
 

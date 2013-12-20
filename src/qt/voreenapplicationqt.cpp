@@ -57,6 +57,11 @@ VoreenApplicationQt::VoreenApplicationQt(const std::string& name, const std::str
     , resetApplicationSettingsButton_("resetApplicationSettings", "Reset Window Settings")
     , scaleProcessorFontSizeProperty_("scaleProcessorFontSize","Scale Processor Fonts:",100,50,150)
     , networkEditorStyleProperty_("networkEditorStyleProperty","Style:")
+    , networkEditorGraphLayoutsProperty_("networkEditorGraphLayoutsProperty","Graph Layout:")
+    , sugiShiftXProperty_("sugiShiftXProperty", "Processor Gap:",300.f,100.f,1000.f)
+    , sugiOverlapProperty_("sugiOverlapProperty", "Overlapping", false)
+    , sugiMedianProperty_("sugiMedianProperty", "Median", true)
+    , sugiPortFlushProperty_("sugiPortFlushProperty", "Port Alignment", true)
     , mainWindow_(0)
     , clearSettings_(false)
 {
@@ -75,6 +80,17 @@ VoreenApplicationQt::VoreenApplicationQt(const std::string& name, const std::str
         networkEditorStyleProperty_.addOption("first","Classic",NWESTYLE_CLASSIC);
         networkEditorStyleProperty_.addOption("second","Classic Print",NWESTYLE_CLASSIC_PRINT);
         networkEditorStyleProperty_.setGroupID("nwe");
+    addProperty(networkEditorGraphLayoutsProperty_);
+        networkEditorGraphLayoutsProperty_.addOption("first","Sugiyama",NWEGL_SUGIYAMA);
+        networkEditorGraphLayoutsProperty_.setGroupID("nwe");
+    addProperty(sugiShiftXProperty_);
+        sugiShiftXProperty_.setGroupID("nwe");
+    addProperty(sugiOverlapProperty_);
+        sugiOverlapProperty_.setGroupID("nwe");
+    addProperty(sugiMedianProperty_);
+        sugiMedianProperty_.setGroupID("nwe");
+    addProperty(sugiPortFlushProperty_);
+        sugiPortFlushProperty_.setGroupID("nwe");
     setPropertyGroupGuiName("nwe","Network Editor");
 
     qtApp_ = this;
@@ -146,6 +162,13 @@ ProgressDialog* VoreenApplicationQt::createProgressDialog() const {
         return new ProgressDialog(getMainWindow());
     else
         return 0;
+}
+
+void VoreenApplicationQt::showMessageBox(const std::string& title, const std::string& message, bool error/*=false*/) const {
+    if (error)
+        QMessageBox::warning(getMainWindow(), QString::fromStdString(title), QString::fromStdString(message));
+    else
+        QMessageBox::information(getMainWindow(), QString::fromStdString(title), QString::fromStdString(message));
 }
 
 void VoreenApplicationQt::registerQtModule(VoreenModuleQt* qtModule) {

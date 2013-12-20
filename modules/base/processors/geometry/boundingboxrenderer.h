@@ -32,6 +32,7 @@
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/floatproperty.h"
 #include "voreen/core/properties/vectorproperty.h"
+#include "voreen/core/properties/fontproperty.h"
 
 #include "voreen/core/ports/volumeport.h"
 #include "voreen/core/ports/geometryport.h"
@@ -59,16 +60,26 @@ protected:
     virtual void render();
 
 private:
+    /// ports
     VolumePort volumeInport_;
     GeometryPort geometryInport_;
-
+    /// enable
     BoolProperty enable_;
-    FloatVec4Property bboxColor_;
+    /// line
     FloatProperty width_;
     IntProperty stippleFactor_;
     IntProperty stipplePattern_;
+    FloatVec4Property bboxColor_;
+    /// grid
     BoolProperty showGrid_;
-    IntVec3Property tilesProp_;
+    IntProperty tilesSections_;
+    FloatProperty tilesOpacity_;
+    /// legend
+    BoolProperty showLegend_;
+    FontProperty fontProp_;
+
+    tgt::mat4 inputToWorldTransformation_;
+
 
     static const std::string loggerCat_;
 };

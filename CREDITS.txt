@@ -45,3 +45,4 @@ Carolin Walter
 Michael Weinkath
 Frank Wisniewski
 Marco Ziolkowski
+Johannes Zurhorst

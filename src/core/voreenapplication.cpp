@@ -25,10 +25,10 @@
 
 #include "voreen/core/voreenapplication.h"
 #include "voreen/core/voreenmodule.h"
-#include "modules/core/coremodule.h"
 #include "voreen/core/version.h"
 #include "voreen/core/utils/commandlineparser.h"
 #include "voreen/core/utils/stringutils.h"
+#include "voreen/core/utils/memoryinfo.h"
 #include "voreen/core/network/networkevaluator.h"
 #include "voreen/core/network/processornetwork.h"
 #include "voreen/core/processors/processor.h"
@@ -46,6 +46,10 @@
 #include "voreen/core/io/serialization/xmlserializer.h"
 #include "voreen/core/io/serialization/xmldeserializer.h"
 #include "voreen/core/processors/cache.h"
+
+// core module is always available
+#include "modules/core/coremodule.h"
+#include "modules/core/processors/input/octreecreator.h"
 
 #include "tgt/init.h"
 #include "tgt/filesystem.h"
@@ -184,10 +188,10 @@ VoreenApplication::VoreenApplication(const std::string& binaryName, const std::s
     : PropertyOwner(binaryName, guiName)
     , appFeatures_(appType)
     , binaryName_(binaryName)
-    , enableLogging_(true)
-    , logLevel_(tgt::Info)
-    , enableFileLogging_(true)
-    , logFile_(binaryName_ + "-log.html")
+    , enableLogging_(new BoolProperty("enableLogging", "Enable Logging", true))
+    , logLevel_(0)
+    , enableHTMLLogging_(new BoolProperty("htmlLogging", "Enable HTML File Logging", true))
+    , htmlLogFile_(new FileDialogProperty("htmlLogFile", "HTML Log File", "Select HTML Log File", "", ".html", FileDialogProperty::SAVE_FILE))
     , overrideGLSLVersion_("")
     , loadModules_(true)
 #ifdef VRN_DEPLOYMENT
@@ -200,9 +204,13 @@ VoreenApplication::VoreenApplication(const std::string& binaryName, const std::s
     , schedulingTimer_(0)
     , eventHandler_()
     , useCaching_(new BoolProperty("useCaching", "Use Caching", true))
-    , cacheLimit_(new IntProperty("cacheLimit", "Max Cache Size (MB)", 1024, 1, 999999))
+    , volumeCacheLimit_(new IntProperty("cacheLimit", "Volume Cache Size (GB)", 10, 0, 1000 /*1 TB*/))
+    , octreeCacheLimit_(new IntProperty("octreeCacheLimit", "Octree Cache Size (GB)", 100, 0, 1000 /*1 TB*/))
+    , cachePath_(new FileDialogProperty("cachePath", "Cache Directory", "Select Cache Directory...", "", "", FileDialogProperty::DIRECTORY))
+    , resetCachePath_(new ButtonProperty("resetCachePath", "Reset Cache Path"))
     , deleteCache_(new ButtonProperty("deleteCache", "Delete Cache"))
-    , availableGraphicsMemory_(new FloatProperty("availableGraphicsMemory", "Available Graphics Memory (MB)", -1.f, -1.f, 10000.f))
+    , cpuRamLimit_(new IntProperty("cpuRamLimit", "CPU RAM Limit (MB)", 4000, 0, 64000))
+    , availableGraphicsMemory_(new IntProperty("availableGraphicsMemory", "Available Graphics Memory (MB)", -1, -1, 10000))
     , refreshAvailableGraphicsMemory_(new ButtonProperty("refreshAvailableGraphicsMemory", "Refresh"))
     , testDataPath_(new FileDialogProperty("testDataPath", "Test Data Directory", "Select Test Data Directory...",
         "", "", FileDialogProperty::DIRECTORY))
@@ -219,21 +227,21 @@ VoreenApplication::VoreenApplication(const std::string& binaryName, const std::s
     // command line options
     cmdParser_->addFlagOption("help,h", CommandLineParser::AdditionalOption, "Print help message");
 
-    cmdParser_->addOption("logging", enableLogging_, CommandLineParser::AdditionalOption,
-        "If set to false, logging is disabled entirely (not recommended)",
-        enableLogging_, enableLogging_ ? "true" : "false");
+    cmdParser_->addOption<bool>("logging", CommandLineParser::AdditionalOption,
+        "If set to false, logging is disabled entirely (not recommended)"
+        /*, enableLogging_->get(), enableLogging_->get() ? "true" : "false" */);
 
-    cmdParser_->addOption("logLevel", logLevel_, CommandLineParser::AdditionalOption,
-        "Sets the verbosity of the logger \n(debug|info|warning|error|fatal)",
-        logLevel_, loglevelToString(logLevel_));
+    cmdParser_->addOption<tgt::LogLevel>("logLevel", CommandLineParser::AdditionalOption,
+        "Sets the verbosity of the logger \n(debug|info|warning|error|fatal)"
+        /*, tgt::Info, loglevelToString(tgt::Info)*/);
 
-    cmdParser_->addOption("fileLogging", enableFileLogging_, CommandLineParser::AdditionalOption,
-        "Enables HTML file logging \n(ignored, if logging is disabled)",
-        enableFileLogging_, enableFileLogging_ ? "true" : "false");
+    cmdParser_->addOption<bool>("fileLogging", CommandLineParser::AdditionalOption,
+        "Enables HTML file logging \n(ignored, if logging is disabled)"
+        /*, enableHTMLLogging_->get(), enableHTMLLogging_->get() ? "true" : "false" */);
 
-    cmdParser_->addOption("logFile", logFile_, CommandLineParser::AdditionalOption,
-        "Specifies the HTML log file",
-        logFile_);
+    cmdParser_->addOption<std::string>("logFile", CommandLineParser::AdditionalOption,
+        "Specifies the HTML log file"
+        /*, htmlLogFile_->get() */);
 
     cmdParser_->addOption<bool>("useCaching", CommandLineParser::AdditionalOption,
         "Enables or disables data caching. Overrides the setting stored in the application settings.");
@@ -243,14 +251,26 @@ VoreenApplication::VoreenApplication(const std::string& binaryName, const std::s
         overrideGLSLVersion_);
 
     // caching properties
+    resetCachePath_->onChange(CallMemberAction<VoreenApplication>(this, &VoreenApplication::resetCachePath));
     deleteCache_->onChange(CallMemberAction<VoreenApplication>(this, &VoreenApplication::deleteCache));
     addProperty(useCaching_);
-    addProperty(cacheLimit_);
+    addProperty(volumeCacheLimit_);
+    addProperty(octreeCacheLimit_);
+    addProperty(cachePath_);
+    addProperty(resetCachePath_);
     addProperty(deleteCache_);
     useCaching_->setGroupID("caching");
-    cacheLimit_->setGroupID("caching");
+    volumeCacheLimit_->setGroupID("caching");
+    octreeCacheLimit_->setGroupID("caching");
+    cachePath_->setGroupID("caching");
+    resetCachePath_->setGroupID("caching");
     deleteCache_->setGroupID("caching");
     setPropertyGroupGuiName("caching", "Data Caching");
+
+    // CPU RAM properties
+    addProperty(cpuRamLimit_);
+    cpuRamLimit_->setGroupID("cpu-ram");
+    setPropertyGroupGuiName("cpu-ram", "CPU Memory");
 
     // gpu memory properties
     //availableGraphicsMemory_->setWidgetsEnabled(false);
@@ -261,6 +281,31 @@ VoreenApplication::VoreenApplication(const std::string& binaryName, const std::s
     availableGraphicsMemory_->setGroupID("graphicsMemory");
     refreshAvailableGraphicsMemory_->setGroupID("graphicsMemory");
     setPropertyGroupGuiName("graphicsMemory", "Graphics Memory");
+
+    // logging properties
+    addProperty(enableLogging_);
+    enableLogging_->setVisible(false);
+    logLevel_ = new OptionProperty<tgt::LogLevel>("logLevel", "Log Level");
+    logLevel_->addOption("debug",   "Debug",    tgt::Debug);
+    logLevel_->addOption("info",    "Info",     tgt::Info);
+    logLevel_->addOption("warning", "Warning",  tgt::Warning);
+    logLevel_->addOption("error",   "Error",    tgt::Error);
+    logLevel_->addOption("fatal",   "Fatal",    tgt::Fatal);
+    logLevel_->selectByKey("info");
+    logLevel_->setDefaultValue("info");
+    addProperty(logLevel_);
+    addProperty(enableHTMLLogging_);
+    htmlLogFile_->set(binaryName_ + "-log.html");
+    htmlLogFile_->setDefaultValue(binaryName_ + "-log.html");
+    addProperty(htmlLogFile_);
+
+    logLevel_->onChange(CallMemberAction<VoreenApplication>(this, &VoreenApplication::logLevelChanged));
+
+    enableLogging_->setGroupID("logging");
+    logLevel_->setGroupID("logging");
+    enableHTMLLogging_->setGroupID("logging");
+    htmlLogFile_->setGroupID("logging");
+    setPropertyGroupGuiName("logging", "Logging");
 
     // regression test properties
     addProperty(testDataPath_);
@@ -289,15 +334,33 @@ VoreenApplication::~VoreenApplication() {
 
     delete useCaching_;
     useCaching_ = 0;
-    delete cacheLimit_;
-    cacheLimit_ = 0;
+    delete volumeCacheLimit_;
+    volumeCacheLimit_ = 0;
+    delete octreeCacheLimit_;
+    octreeCacheLimit_ = 0;
+    delete cachePath_;
+    cachePath_ = 0;
+    delete resetCachePath_;
+    resetCachePath_ = 0;
     delete deleteCache_;
     deleteCache_ = 0;
+
+    delete cpuRamLimit_;
+    cpuRamLimit_ = 0;
 
     delete availableGraphicsMemory_;
     availableGraphicsMemory_ = 0;
     delete refreshAvailableGraphicsMemory_;
     refreshAvailableGraphicsMemory_ = 0;
+
+    delete enableLogging_;
+    enableLogging_ = 0;
+    delete logLevel_;
+    logLevel_ = 0;
+    delete enableHTMLLogging_;
+    enableHTMLLogging_ = 0;
+    delete htmlLogFile_;
+    htmlLogFile_ = 0;
 
     delete testDataPath_;
     testDataPath_ = 0;
@@ -319,51 +382,42 @@ VoreenApplication::ApplicationFeatures VoreenApplication::getApplicationType() c
 }
 
 void VoreenApplication::setLoggingEnabled(bool enabled) {
-    if (isInitialized()) {
-        LERROR("Trying to change logging after application initialization");
-    }
-    else
-        enableLogging_ = enabled;
+    tgtAssert(enableLogging_, "property not created");
+    enableLogging_->set(enabled);
 }
 
 bool VoreenApplication::isLoggingEnabled() const {
-    return enableLogging_;
+    return enableLogging_->get();
 }
 
 void VoreenApplication::setLogLevel(tgt::LogLevel logLevel) {
-    if (isInitialized()) {
-        LERROR("Trying to change log level after application initialization");
-    }
-    else
-        logLevel_ = logLevel;
+    tgtAssert(logLevel_, "property not created");
+    logLevel_->selectByValue(logLevel);
 }
 
 tgt::LogLevel VoreenApplication::getLogLevel() const {
-    return logLevel_;
+    tgtAssert(logLevel_, "property not created");
+    return logLevel_->getValue();
 }
 
 void VoreenApplication::setFileLoggingEnabled(bool enabled) {
-    if (isInitialized()) {
-        LERROR("Trying to change file logging after application initialization");
-    }
-    else
-        enableFileLogging_ = enabled;
+    tgtAssert(enableHTMLLogging_, "property not created");
+    enableHTMLLogging_->set(enabled);
 }
 
 bool VoreenApplication::isFileLoggingEnabled() const {
-    return enableFileLogging_;
+    tgtAssert(enableHTMLLogging_, "property not created");
+    return enableHTMLLogging_->get();
 }
 
 void VoreenApplication::setLogFile(const std::string& logFile) {
-    if (isInitialized()) {
-        LERROR("Trying to change log file after application initialization");
-    }
-    else
-        logFile_ = logFile;
+    tgtAssert(htmlLogFile_, "property not created");
+    htmlLogFile_->set(logFile);
 }
 
 const std::string& VoreenApplication::getLogFile() const {
-    return logFile_;
+    tgtAssert(htmlLogFile_, "property not created");
+    return htmlLogFile_->get();
 }
 
 void VoreenApplication::setOverrideGLSLVersion(const std::string& version) {
@@ -444,7 +498,7 @@ void VoreenApplication::initialize() throw (VoreenException) {
 
     // detect base path based on program location
     // (program path is available before command line parser execution
-    string prog = cmdParser_->getProgramPath();
+    string programPath = cmdParser_->getProgramPath();
 
 #if defined(VRN_BASE_PATH) // use base path passed by CMAKE, if present
     basePath_ = VRN_BASE_PATH;
@@ -458,10 +512,10 @@ void VoreenApplication::initialize() throw (VoreenException) {
 #else // else try to find base path starting at program path
     basePath_ = ".";
     // cut path from program location
-    string::size_type p = prog.find_last_of("/\\");
+    string::size_type p = programPath.find_last_of("/\\");
     if (p != string::npos) {
-        basePath_ = prog.substr(0, p);
-        prog = prog.substr(p + 1);
+        basePath_ = programPath.substr(0, p);
+        //programPath = programPath.substr(p + 1);
     }
 
     // try to find base path starting at program path
@@ -474,6 +528,9 @@ void VoreenApplication::initialize() throw (VoreenException) {
 #endif
 
     // use user directory for custom data, if in deployment mode
+//#ifdef WIN32
+    userDataPath_ = tgt::FileSystem::cleanupPath(getBasePath("data"));
+//#else
     if (getDeploymentMode() && !documentsPath.empty()) {
         char lastChar = *documentsPath.rbegin();
         if (lastChar != '/' && lastChar != '\\')
@@ -482,7 +539,7 @@ void VoreenApplication::initialize() throw (VoreenException) {
     }
     else // use VRN_HOME/data as data directory
         userDataPath_ = tgt::FileSystem::cleanupPath(getBasePath("data"));
-
+//#endif
 
     //
     // Execute command line parser
@@ -535,49 +592,20 @@ void VoreenApplication::initialize() throw (VoreenException) {
     //
     // tgt initialization
     //
-    tgt::InitFeature::Features featureset;
-    if (enableLogging_)
-        featureset = tgt::InitFeature::ALL;
-    else
-        featureset = tgt::InitFeature::Features(tgt::InitFeature::ALL &~ tgt::InitFeature::LOG_TO_CONSOLE);
-    tgt::init(featureset, logLevel_);
+    tgt::init(tgt::InitFeature::ALL, tgt::Info);
 
-    // HTML file logging
     std::string absLogPath;
-    if (enableLogging_ && enableFileLogging_) {
-        if (logFile_.empty()) {
-            // should be never be empty (neither default value nor cmd line param)
-            LERROR("HTML log file path is empty.");
-        }
-        else {
-            // add HTML file logger
-            tgt::Log* log = 0;
-            if (tgt::FileSystem::isAbsolutePath(logFile_)) {
-                log = new tgt::HtmlLog(logFile_);
-                absLogPath = logFile_;
-            }
-            else {
-                LogMgr.reinit(getUserDataPath()); //< write log file to user data dir by default
-                log = new tgt::HtmlLog(logFile_);
-                absLogPath = tgt::FileSystem::absolutePath(LogMgr.getLogDir() + "/" + logFile_);
-
-            }
-            tgtAssert(log, "no log");
-
-            log->addCat("", true, logLevel_);
-            LogMgr.addLog(log);
-
-            std::cout << "Log file: " << absLogPath << "\n";
-         }
-    }
+    initLogging(absLogPath);
 
     // log basic information
     LINFO("Program: " << getBinaryName());
     VoreenVersion::logAll("voreen.VoreenApplication");
-    LINFO("Base path: " << basePath_);
+    LINFO("Base path:      " << basePath_);
+    LINFO("Program path:   " << tgt::FileSystem::dirName(programPath));
     LINFO("User data path: " << getUserDataPath() << (getDeploymentMode() ? " (Deployment mode)" : " (Developer mode)"));
-    if (!absLogPath.empty())
-        LINFO("HTML log file:  " << absLogPath);
+
+    LINFO(MemoryInfo::getTotalMemoryAsString());
+    LINFO(MemoryInfo::getAvailableMemoryAsString());
 
     // mac app resources path
 #ifdef __APPLE__
@@ -609,6 +637,41 @@ void VoreenApplication::initialize() throw (VoreenException) {
     // load settings
     initApplicationSettings();
     loadApplicationSettings();
+
+    // apply command-line logging parameters, if specified
+    if (cmdParser_->isOptionSet("logging")) {
+        bool logging;
+        cmdParser_->getOptionValue("logging", logging);
+        setLoggingEnabled(logging);
+    }
+    else {
+        setLoggingEnabled(true);
+    }
+    if (cmdParser_->isOptionSet("logLevel")) {
+        tgt::LogLevel logLevel;
+        cmdParser_->getOptionValue("logLevel", logLevel);
+        setLogLevel(logLevel);
+    }
+    if (cmdParser_->isOptionSet("fileLogging")) {
+        bool fileLogging;
+        cmdParser_->getOptionValue("fileLogging", fileLogging);
+        setFileLoggingEnabled(fileLogging);
+    }
+    if (cmdParser_->isOptionSet("logFile")) {
+        std::string logFile;
+        cmdParser_->getOptionValue("logFile", logFile);
+        if (!logFile.empty())
+            setLogFile(logFile);
+    }
+
+    // reinit logging, if default settings have been overwritten
+    if (enableLogging_->get() != enableLogging_->getDefault()         || logLevel_->get() != logLevel_->getDefault()        ||
+        enableHTMLLogging_->get() != enableHTMLLogging_->getDefault() || htmlLogFile_->get() != htmlLogFile_->getDefault()  )
+    {
+        initLogging(absLogPath);
+    }
+    if (!absLogPath.empty())
+        LINFO("HTML log file:  " << absLogPath);
 
     // override caching setting, if specified on command line
     if (cmdParser_->isOptionSet("useCaching")) {
@@ -667,7 +730,7 @@ void VoreenApplication::initialize() throw (VoreenException) {
 }
 
 void VoreenApplication::deinitialize() throw (VoreenException) {
-    cleanCache(cacheLimit_->get());
+    cleanCache();
 
     if (!initialized_)
         throw VoreenException("Application not initialized");
@@ -817,6 +880,19 @@ void VoreenApplication::setUseCaching(bool useCaching) {
     useCaching_->set(useCaching);
 }
 
+size_t VoreenApplication::getCpuRamLimit() const {
+    tgtAssert(cpuRamLimit_, "CPU RAM limit property not created");
+    if (cpuRamLimit_->get() > 0)
+        return static_cast<size_t>(static_cast<uint64_t>(cpuRamLimit_->get()) << 20); //< property specifies the limit in MB
+    else
+        return static_cast<size_t>(static_cast<uint64_t>(cpuRamLimit_->getMaxValue()) << 20); //< use max value
+}
+
+void VoreenApplication::setCpuRamLimit(size_t ramLimit) {
+    tgtAssert(cpuRamLimit_, "CPU RAM limit property not created");
+    cpuRamLimit_->set(static_cast<int>(ramLimit >> 20)); //< property specifies the limit in MB
+}
+
 void VoreenApplication::registerModule(VoreenModule* module) {
     tgtAssert(module, "null pointer passed");
 
@@ -929,12 +1005,31 @@ ProgressBar* VoreenApplication::createProgressDialog() const {
     return 0;
 }
 
+void VoreenApplication::showMessageBox(const std::string& /*title*/, const std::string& message, bool /*error=false*/) const {
+    LINFO("showMessageBox() not implemented: message=" << message);
+}
+
 std::string VoreenApplication::getBasePath(const std::string& filename) const {
     return tgt::FileSystem::cleanupPath(basePath_ + (filename.empty() ? "" : "/" + filename));
 }
 
 std::string VoreenApplication::getCachePath(const std::string& filename) const {
-    return tgt::FileSystem::cleanupPath(getUserDataPath("cache") + (filename.empty() ? "" : "/" + filename));
+    tgtAssert(cachePath_, "cache path property not created");
+    std::string cacheBasePath;
+
+    // use property value, if set and directory does exist
+    if (cachePath_->get() != "") {
+        cacheBasePath = cachePath_->get();
+        if (!tgt::FileSystem::dirExists(cacheBasePath)) {
+            LWARNING("Cache path does not exist: " << cacheBasePath << ". Switching to user data path: " << getUserDataPath("cache"));
+            cacheBasePath = "";
+        }
+    }
+    // otherwise use user data path
+    if (cacheBasePath == "")
+        cacheBasePath = getUserDataPath("cache");
+
+    return tgt::FileSystem::cleanupPath(cacheBasePath + (filename.empty() ? "" : "/" + filename));
 }
 
 std::string VoreenApplication::getProgramPath() const {
@@ -942,11 +1037,17 @@ std::string VoreenApplication::getProgramPath() const {
     return tgt::FileSystem::dirName(cmdParser_->getProgramPath());
 }
 
-void VoreenApplication::cleanCache(int maxSize) const {
+void VoreenApplication::cleanCache() const {
+    // clean volume cache
+    int volumeCacheLimitMB = volumeCacheLimit_->get() >> 10; //< property specifies GB
     CacheCleaner cleaner;
     cleaner.initialize(getCachePath());
     cleaner.deleteUnused();
-    cleaner.limitCache(maxSize);
+    cleaner.limitCache(volumeCacheLimitMB);
+
+    // clean octree cache
+    uint64_t octreeCacheLimitBytes = (uint64_t)octreeCacheLimit_->get() << 30;//< property specifies GB
+    OctreeCreator::limitCacheSize(getCachePath(), octreeCacheLimitBytes, false);
 }
 
 void VoreenApplication::deleteCache() {
@@ -959,6 +1060,10 @@ void VoreenApplication::deleteCache() {
     std::vector<std::string> dirs = FileSys.listSubDirectories(cacheDir);
     for(size_t i=0; i<dirs.size(); i++)
         FileSys.deleteDirectoryRecursive(cacheDir+"/"+dirs[i]);
+}
+
+void VoreenApplication::resetCachePath() {
+    cachePath_->set("");
 }
 
 std::string VoreenApplication::getResourcePath(const std::string& filename) const {
@@ -1017,12 +1122,13 @@ void VoreenApplication::timerEvent(tgt::TimeEvent* /*e*/) {
         return;
 
     if (networkEvaluationRequired_) {
+        networkEvaluationRequired_ = false;
         for (std::set<NetworkEvaluator*>::iterator it = networkEvaluators_.begin(); it != networkEvaluators_.end(); it++) {
             if(!(*it)->isLocked())
                 (*it)->process();
         }
     }
-    networkEvaluationRequired_ = false;
+
 
     // check every 100 ms if the network has to be re-evaluated,
     // unless a re-evaluation has been explicitly scheduled via scheduleNetworkProcessing
@@ -1035,7 +1141,7 @@ void VoreenApplication::timerEvent(tgt::TimeEvent* /*e*/) {
 void VoreenApplication::queryAvailableGraphicsMemory() {
     tgtAssert(availableGraphicsMemory_, "availableGraphicsMemory property not instantiated");
     if (tgt::Singleton<tgt::GpuCapabilities>::isInited()) {
-        float mem = (GpuCaps.retrieveAvailableTextureMemory() != -1 ? GpuCaps.retrieveAvailableTextureMemory() / 1024.f : -1.f);
+        int mem = (GpuCaps.retrieveAvailableTextureMemory() != -1 ? (GpuCaps.retrieveAvailableTextureMemory() >> 10) : -1);
         availableGraphicsMemory_->setMinValue(mem);
         availableGraphicsMemory_->setMaxValue(mem);
         availableGraphicsMemory_->setDefaultValue(mem);
@@ -1147,6 +1253,80 @@ const VoreenSerializableObject* VoreenApplication::getSerializableType(const std
             return instance;
     }
     return 0;
+}
+
+void VoreenApplication::initLogging(std::string& htmlLogFile) {
+    tgtAssert(enableLogging_, "property not created");
+    tgtAssert(logLevel_, "property not created");
+    tgtAssert(enableHTMLLogging_, "property not created");
+    tgtAssert(htmlLogFile_, "property not created");
+
+    if (!tgt::Singleton<tgt::LogManager>::isInited()) {
+        std::cerr << "LogManager not initialized";
+        return;
+    }
+
+    // extract current HTML file path
+    std::string previousLogFile;
+    std::vector<tgt::Log*> previousLogs = LogMgr.getLogs();
+    for (size_t i=0; i<previousLogs.size(); i++)
+        if (dynamic_cast<const tgt::HtmlLog*>(previousLogs.at(i)))
+            previousLogFile = static_cast<const tgt::HtmlLog*>(previousLogs.at(i))->getAbsFilename();
+
+    LogMgr.clear();
+
+    if (!enableLogging_->get()) {
+        std::cout << "Logging disabled!" << std::endl;
+        return;
+    }
+
+    // Console log
+    tgt::ConsoleLog* log = new tgt::ConsoleLog();
+    log->addCat("", true, logLevel_->getValue());
+    LogMgr.addLog(log);
+
+    // HTML file logging
+    if (!htmlLogFile_->get().empty()) {
+        std::string absLogPath;
+
+        // add HTML file logger
+        tgt::Log* log = 0;
+        htmlLogFile = htmlLogFile_->get();
+        if (tgt::FileSystem::isAbsolutePath(htmlLogFile)) {
+            absLogPath = htmlLogFile;
+        }
+        else {
+            LogMgr.reinit(getUserDataPath()); //< write log file to user data dir by default
+            absLogPath = tgt::FileSystem::absolutePath(LogMgr.getLogDir() + "/" + htmlLogFile);
+        }
+        log = new tgt::HtmlLog(htmlLogFile, false, true, true, true, tgt::FileSystem::cleanupPath(absLogPath) == tgt::FileSystem::cleanupPath(previousLogFile));
+        tgtAssert(log, "no log");
+
+        log->addCat("", true, logLevel_->getValue());
+        LogMgr.addLog(log);
+
+        htmlLogFile = absLogPath;
+
+        //std::cout << "HTML Log File: " << htmlLogFile << "\n";
+    }
+    else {
+        // should be never be empty (neither default value nor cmd line param)
+        LERROR("HTML log file path is empty.");
+    }
+
+}
+
+void VoreenApplication::logLevelChanged() {
+    if (!initialized_)
+        return;
+
+    if (!tgt::Singleton<tgt::LogManager>::isInited()) {
+        std::cerr << "LogManager not initialized";
+        return;
+    }
+
+    LogMgr.setLogLevel(logLevel_->getValue());
+
 }
 
 } // namespace

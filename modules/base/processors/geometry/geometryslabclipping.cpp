@@ -68,8 +68,8 @@ void GeometrySlabClipping::process() {
 
     Geometry* outputGeometry = inputGeometry->clone();
     double epsilon = static_cast<double>(tgt::length(outputGeometry->getBoundingBox(false).diagonal())) * 1e-6;
-    outputGeometry->clip(tgt::plane(tgt::normalize( normal_.get()),  position_.get()), epsilon);
-    outputGeometry->clip(tgt::plane(tgt::normalize(-normal_.get()), -position_.get()), epsilon);
+    outputGeometry->clip(tgt::plane(tgt::normalize(normal_.get()),  position_.get() + 0.5f * thickness_.get()), epsilon);
+    outputGeometry->clip(tgt::plane(tgt::normalize(-normal_.get()), -position_.get() + 0.5f * thickness_.get()), epsilon);
 
     outport_.setData(outputGeometry);
 }

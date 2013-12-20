@@ -86,6 +86,10 @@ void VolumeRaycaster::initialize() throw (tgt::Exception) {
 
     // load rescale shader program
     rescaleShader_ = ShdrMgr.loadSeparate("passthrough.vert", "copyimage.frag", generateHeader(), false);
+
+    // if no camera property has been passed to the light property until now, try to find one automatically
+    if(!lightPosition_.hasCamera())
+        lightPosition_.getCamera();
 }
 
 void VolumeRaycaster::deinitialize() throw (tgt::Exception) {

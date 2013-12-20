@@ -41,6 +41,7 @@ class QSpinBox;
 class QDoubleSpinBox;
 class QToolButton;
 class QPushButton;
+class QMenu;
 
 namespace voreen {
 
@@ -50,6 +51,7 @@ class ColorPicker;
 class TransFunc1DKeys;
 class TransFuncMappingCanvas;
 class TransFunc1DKeysPainter;
+class Histogram1D;
 
 /**
  * TransFuncEditorIntensity is an editor widget for an intensity transfer function.
@@ -67,10 +69,8 @@ public:
      *
      * @param prop the transfer function property
      * @param parent the parent frame to which this is added
-     * @param orientation orientation of the widget, e.g. position of the color and luminancepicker
      */
-    TransFunc1DKeysEditor(TransFuncProperty* prop, QWidget* parent = 0,
-                             Qt::Orientation orientation = Qt::Horizontal);
+    TransFunc1DKeysEditor(TransFuncProperty* prop, QWidget* parent = 0);
 
     /**
      * Standard destructor
@@ -102,13 +102,6 @@ public:
      * the editor to the new volume when necessary.
      */
     void updateFromProperty();
-
-    /**
-     * Updates the histogram and minimum and maximum threshold values. Additionally the volume
-     * is passed to the mapping canvas where the histogram is calculated.
-     * The transfer function and current thresholds remain the same.
-     */
-    void volumeChanged();
 
     /**
      * Tests whether the value inside the transFuncProp is the same as transfuncIntensity_.
@@ -146,6 +139,9 @@ public slots:
     /// Transform the currently loaded TF into a ramp.
     void makeRamp();
 
+    /// Inverts the currently loaded TF.
+    void invertMap();
+
     /**
      * This Function is called if one of the mapping spinboxes have changed.
      */
@@ -163,8 +159,7 @@ public slots:
      */
     void upperMappingChanged(double value);
 
-    /** set checkbox*/
-    void alwaysFitChanged(int state);
+    void domainFittingStrategyChanged(int index);
 
     /**
      * Resets the transfer function to default.
@@ -174,7 +169,19 @@ public slots:
     /**
      * Applies the current set thresholds to the transfer function.
      */
-    void applyThreshold();
+    void applyThreshold(bool fromSlider);
+    void applySliderThreshold() {applyThreshold(true);}
+    void applySpinThreshold() {applyThreshold(false);}
+
+    /**
+     * Applies the current gamma to the transfer function.
+     */
+    void gammaChanged(double gamma);
+
+    /**
+     * Sets the alpha mode of the transfer function.
+     */
+    void setAlpha(QAction* action);
 
     /**
      * This slot is called whenever the color of a key was changed.
@@ -198,7 +205,13 @@ public slots:
      */
     void fitDomainToData();
 
+    // VolumeObserver methods: //TODO: REMOVE
+    virtual void volumeDelete(const VolumeBase* source) {}
+    virtual void volumeChange(const VolumeBase* source) {}
+    virtual void derivedDataThreadFinished(const VolumeBase* source, const VolumeDerivedData* derivedData) {}
+
 protected:
+    void updateAlphaButton(TransFunc::AlphaMode mode);
     /**
      * Calls the repaint method for doubleslider, mapping canvas
      * and texture canvas.
@@ -213,18 +226,23 @@ protected:
     QLayout* createMappingLayout();
 
     /**
-     * Creates the layout with load, save and reset button.
-     *
-     * @return the layout with load, save and reset button
-     */
-    QLayout* createButtonLayout();
-
-    /**
      * Creates the layout with colorpicker and luminancepicker.
      *
      * @return the layout with colorpicker and luminancepicker
      */
     QLayout* createColorLayout();
+
+    /**
+     * Creates the layout with load, save and reset button.
+     *
+     * @return the layout with load, save and reset button
+     */
+    QLayout* createBaseButtonLayout();
+
+    QLayout* createDomainLayout();
+
+    QLayout* createTFLayout();
+
 
     /// Check if the mapping makes sense, otherwise highlight widgets as warning //FIXME: not in Windows
     void checkDomainVersusData();
@@ -254,20 +272,28 @@ protected:
     QToolButton* saveButton_;               ///< button for saving a transfer function
     QToolButton* clearButton_;              ///< button for resetting transfer function to default
     QToolButton* makeRampButton_;           ///< button to transform a TF into a ramp
-    QToolButton* repaintButton_;            ///< button for forcing a repaint of the volume rendering
+    QToolButton* invertButton_;             ///< button to invert the TF
     ColorPicker* colorPicker_;              ///< picker for choosing the color of a key in transfer function
     ColorLuminancePicker* colorLumPicker_;  ///< picker for choosing the alpha value of a key
-    DoubleSlider* doubleSlider_;            ///< 2 slider for adjusting the thresholds
-    QDoubleSpinBox* lowerMappingSpin_;          ///< spinbox for lower mapping value
-    QDoubleSpinBox* upperMappingSpin_;          ///< spinbox for upper mapping value
+    DoubleSlider* thresholdSlider_;            ///< 2 slider for adjusting the thresholds
+    QDoubleSpinBox* lowerDomainSpin_;          ///< spinbox for lower mapping value
+    QDoubleSpinBox* upperDomainSpin_;          ///< spinbox for upper mapping value
+    QDoubleSpinBox* lowerThresholdSpin_;          ///< spinbox for lower mapping value
+    QDoubleSpinBox* upperThresholdSpin_;          ///< spinbox for upper mapping value
     QLabel* lowerData_;          ///< label of lower volume bound
     QLabel* upperData_;          ///< label of opper volume bound
     QPushButton* fitDomainToData_;
-    QCheckBox* alwaysFit_;
+    QComboBox* domainFittingStrategy_;
 
-    Qt::Orientation orientation_; ///< orientation of the widget, e.g. position of the color and luminancepicker
+    QToolButton* alphaButton_;
+    QMenu* alphaMenu_;
+    QDoubleSpinBox* gammaSpin_;          ///< spinbox for upper mapping value
 
     int maxDigits_; ///< maximal digits of domain and threshold
+
+    const Histogram1D* histogram_; ///< histogram used for domain bounds and passed to mapping canvas
+    float domainMinValue_;
+    float domainMaxValue_;
 
     static const std::string loggerCat_; ///< the logger category
 };

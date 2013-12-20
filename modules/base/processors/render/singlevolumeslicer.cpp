@@ -117,13 +117,13 @@ void SingleVolumeSlicer::process() {
 
     glDisable(GL_DEPTH_TEST);
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    tgt::loadMatrix(camera_.get().getProjectionMatrix(outport_.getSize()));
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadMatrix(camera_.get().getProjectionMatrix(outport_.getSize()));
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    tgt::loadMatrix(camera_.get().getViewMatrix());
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadMatrix(camera_.get().getViewMatrix());
 
     unsigned int numSlices = static_cast<unsigned int>(maxLength_ / sliceDistance_);
 
@@ -145,10 +145,10 @@ void SingleVolumeSlicer::process() {
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
 
-    glPopMatrix();
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
 
     slicingPrg->deactivate();
     outport_.deactivateTarget();

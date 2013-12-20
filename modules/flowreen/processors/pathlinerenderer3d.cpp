@@ -231,10 +231,10 @@ void PathlineRenderer3D::process() {
     // important: save current camera state before using the processor's camera or
     // successive processors will use those settings!
     //
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
 
     camProp_.look(imgOutport_.getSize());
 
@@ -268,10 +268,10 @@ void PathlineRenderer3D::process() {
     glActiveTexture(GL_TEXTURE0);
     imgOutport_.deactivateTarget();
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 }
 
 void PathlineRenderer3D::initialize() throw (tgt::Exception) {

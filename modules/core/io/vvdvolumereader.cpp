@@ -91,7 +91,7 @@ VolumeList* VvdVolumeReader::read(const std::string &url)
         throw tgt::FileException("Deserialization from file '" + fileName + "' failed (unknown exception).");
     }
     if (vec.empty())
-        throw tgt::FileException("Deserialization from file '" + fileName + "' failed: no volume found");
+        throw tgt::FileException("Deserialization from file '" + fileName + "' failed: no VvdObject deserialized");
 
     VolumeList* vc = new VolumeList();
     for(size_t i=0; i<vec.size(); i++) {

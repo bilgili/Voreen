@@ -54,6 +54,7 @@ protected:
     }
 
     virtual void process();
+    virtual void adjustPropertiesToInput();
 
 private:
     /// Crops the input volume according to the property values
@@ -78,9 +79,6 @@ private:
     /// Ensure useful clipping planes on clip top property change.
     virtual void onClipTopChange();
 
-    /// Adapt ranges of clip plane properties to the input volume's dimensions.
-    void adjustClipPropertiesRanges();
-
     VolumePort inport_;
     VolumePort outport_;
 
@@ -97,8 +95,6 @@ private:
     IntVec3Property croppedDimensions_;
     /// Read-only property displaying the data size of the cropped volume in MB.
     IntProperty croppedSize_;
-
-    tgt::ivec3 oldVolumeDimensions_;
 
     static const std::string loggerCat_; ///< category used in logging
 };

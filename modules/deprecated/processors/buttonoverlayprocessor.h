@@ -50,7 +50,7 @@ public:
 
     virtual std::string getCategory() const { return "Image Processing"; }
     virtual std::string getClassName() const { return "ButtonOverlayProcessor"; }
-    virtual Processor::CodeState getCodeState() const { return CODE_STATE_EXPERIMENTAL; }
+    virtual Processor::CodeState getCodeState() const { return CODE_STATE_OBSOLETE; }
     virtual std::string getProcessorInfo() const;
     virtual Processor* create() const { return new ButtonOverlayProcessor(); }
 

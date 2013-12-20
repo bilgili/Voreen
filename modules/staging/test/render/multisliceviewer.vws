@@ -5,13 +5,13 @@
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
-                        <item type="MultiSliceViewer" ref="ref1" />
+                        <item type="MultiSliceViewer" ref="ref2" />
                     </values>
                 </MetaItem>
                 <MetaItem name="Zoom" type="ZoomMetaData">
                     <transform.row0 x="0.7087056040763855" y="0" z="0" />
                     <transform.row1 x="0" y="0.7087056040763855" z="0" />
-                    <transform.row2 x="118.696746826171875" y="551.6341552734375" z="1" />
+                    <transform.row2 x="118.69674682617187" y="551.6341552734375" z="1" />
                 </MetaItem>
                 <MetaItem name="ZoomCenter" type="Vec2MetaData">
                     <value x="230.51472473" y="85.80270386" />
@@ -44,7 +44,7 @@
                         <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="-719" y="284" width="256" height="256" />
                         <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
                         <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
-                            <value x="-719" y="284" />
+                            <value x="712" y="388" />
                         </MetaItem>
                         <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
                             <value x="256" y="256" />
@@ -56,6 +56,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/3d_textures.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -88,7 +89,7 @@
                         <Property mapKey="cacheSize" name="cacheSize" value="20" />
                         <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-0.52209961" frustRight="0.52209961" frustBottom="-0.52209961" frustTop="0.52209961" frustNear="0.01" frustFar="4.01576567" fovy="177.80543518" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref54">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1280" y="0" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="631" y="308" />
                             </MetaData>
                             <position x="-1.53605998" y="0" z="1.29310203" />
                             <focus x="0.00000008" y="0" z="-0.00000015" />
@@ -106,9 +107,9 @@
                         <Property mapKey="crosshairWidth" name="crosshairWidth" value="1" />
                         <Property mapKey="mainInport" name="mainInport" value="1" id="ref19" />
                         <Property mapKey="plane" name="plane">
-                            <value x="0.76501375" y="-0" z="-0.64401388" />
+                            <value x="-0.76501375" y="0" z="0.64401388" />
                         </Property>
-                        <Property mapKey="planeDist" name="planeDist" value="0.31763107" />
+                        <Property mapKey="planeDist" name="planeDist" value="-0.31763107" />
                         <Property mapKey="renderCrosshair" name="renderCrosshair" value="false" />
                         <Property mapKey="restrictToMainVolume" name="restrictToMainVolume" value="false" />
                         <Property mapKey="samplingRate" name="samplingRate" value="3.18000007" />
@@ -126,11 +127,11 @@
                         <Property mapKey="textureMode2" name="textureMode2" value="3d-texture" />
                         <Property mapKey="textureMode3" name="textureMode3" value="3d-texture" />
                         <Property mapKey="textureMode4" name="textureMode4" value="3d-texture" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false" id="ref13">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0" id="ref13">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" width="619" height="463" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" ignoreAlpha="false" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -142,11 +143,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false" id="ref15">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0" id="ref15">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" width="619" height="463" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" ignoreAlpha="false" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.06692913" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -172,11 +173,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false" id="ref11">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1" id="ref11">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" ignoreAlpha="false" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -188,11 +189,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false" id="ref27">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1" id="ref27">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" ignoreAlpha="false" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -281,7 +282,7 @@
                 </Processor>
                 <Processor type="MultiSliceViewer" name="MultiSliceViewer 2D" id="ref2">
                     <MetaData>
-                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="31" y="-221" />
+                        <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="31" y="-222" />
                     </MetaData>
                     <Properties>
                         <Property mapKey="alignCameraButton" name="alignCameraButton" id="ref6" />
@@ -296,7 +297,7 @@
                         <Property mapKey="cacheSize" name="cacheSize" value="20" />
                         <Property mapKey="camera" name="camera" projectionMode="0" maxValue="500" minValue="0.01" frustLeft="-0.52209961" frustRight="0.52209961" frustBottom="-0.52209961" frustTop="0.52209961" frustNear="0.01" frustFar="4.01576567" fovy="177.80543518" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref55">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1280" y="0" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="631" y="308" />
                             </MetaData>
                             <position x="-1.53605998" y="0" z="1.29310203" />
                             <focus x="0.00000008" y="0" z="-0.00000015" />
@@ -314,9 +315,9 @@
                         <Property mapKey="crosshairWidth" name="crosshairWidth" value="1" />
                         <Property mapKey="mainInport" name="mainInport" value="1" id="ref18" />
                         <Property mapKey="plane" name="plane">
-                            <value x="0.76501375" y="-0" z="-0.64401388" />
+                            <value x="-0.76501375" y="0" z="0.64401388" />
                         </Property>
-                        <Property mapKey="planeDist" name="planeDist" value="0.31763107" />
+                        <Property mapKey="planeDist" name="planeDist" value="-0.31763107" />
                         <Property mapKey="renderCrosshair" name="renderCrosshair" value="false" />
                         <Property mapKey="restrictToMainVolume" name="restrictToMainVolume" value="false" />
                         <Property mapKey="samplingRate" name="samplingRate" value="4" />
@@ -334,11 +335,11 @@
                         <Property mapKey="textureMode2" name="textureMode2" value="2d-texture" />
                         <Property mapKey="textureMode3" name="textureMode3" value="2d-texture" />
                         <Property mapKey="textureMode4" name="textureMode4" value="2d-texture" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false" id="ref12">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0" id="ref12">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" width="619" height="463" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" ignoreAlpha="false" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -350,11 +351,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false" id="ref14">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0" id="ref14">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" width="619" height="463" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" ignoreAlpha="false" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.06692913" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -380,11 +381,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false" id="ref10">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1" id="ref10">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" ignoreAlpha="false" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -396,11 +397,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false" id="ref26">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1" id="ref26">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" ignoreAlpha="false" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -508,7 +509,7 @@
                 <Processor type="Canvas" name="2D Textures" id="ref4">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="5" y="-94" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="-401" y="280" width="256" height="256" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="996" y="398" width="256" height="256" />
                         <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
                         <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
                             <value x="-1132" y="151" />
@@ -523,6 +524,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/2d_textures.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>

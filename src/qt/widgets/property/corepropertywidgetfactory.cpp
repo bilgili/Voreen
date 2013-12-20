@@ -35,6 +35,7 @@
 #include "voreen/core/properties/lightsourceproperty.h"
 #include "voreen/core/properties/matrixproperty.h"
 #include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/progressproperty.h"
 #include "voreen/core/properties/propertyvector.h"
 #include "voreen/core/properties/shaderproperty.h"
 #include "voreen/core/properties/stringexpressionproperty.h"
@@ -65,6 +66,7 @@
 #include "voreen/qt/widgets/property/intvec4propertywidget.h"
 #include "voreen/qt/widgets/property/lightpropertywidget.h"
 #include "voreen/qt/widgets/property/optionpropertywidget.h"
+#include "voreen/qt/widgets/property/progresspropertywidget.h"
 #include "voreen/qt/widgets/property/propertyvectorwidget.h"
 #include "voreen/qt/widgets/property/shaderpropertywidget.h"
 #include "voreen/qt/widgets/property/stringexpressionpropertywidget.h"
@@ -154,6 +156,9 @@ PropertyWidget* CorePropertyWidgetFactory::createWidget(Property* prop) const {
     // dynamic cast necessary, since we are dealing with an abstract base class
     if (dynamic_cast<OptionPropertyBase*>(prop))
         return new OptionPropertyWidget(static_cast<OptionPropertyBase*>(prop), 0);
+
+    if (typeid(*prop) == typeid(ProgressProperty))
+        return new ProgressPropertyWidget(static_cast<ProgressProperty*>(prop), 0);
 
     if (typeid(*prop) == typeid(PropertyVector))
         return new PropertyVectorWidget(static_cast<PropertyVector*>(prop), 0);

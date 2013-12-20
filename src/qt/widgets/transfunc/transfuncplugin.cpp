@@ -26,7 +26,6 @@
 #include "voreen/qt/widgets/transfunc/transfuncplugin.h"
 
 #include "voreen/qt/widgets/transfunc/transfunc1dkeyseditor.h"
-#include "voreen/qt/widgets/transfunc/transfunc1drampeditor.h"
 #include "voreen/qt/widgets/transfunc/transfunc2dprimitiveseditor.h"
 
 #include "voreen/core/datastructures/transfunc/transfunc1dkeys.h"
@@ -52,11 +51,7 @@ TransFuncPlugin::TransFuncPlugin(TransFuncProperty* prop, QWidget* parent, Qt::O
 void TransFuncPlugin::createEditors(QWidget* parent, Qt::Orientation orientation) {
     TransFuncEditor* tfEditor;
     if (property_->isEditorEnabled(TransFuncProperty::INTENSITY)) {
-        tfEditor = new TransFunc1DKeysEditor(property_, parent, orientation);
-        editors_.push_back(tfEditor);
-    }
-    if (property_->isEditorEnabled(TransFuncProperty::INTENSITY_RAMP)) {
-        tfEditor = new TransFunc1DRampEditor(property_, parent, orientation);
+        tfEditor = new TransFunc1DKeysEditor(property_, parent);
         editors_.push_back(tfEditor);
     }
     if (property_->isEditorEnabled(TransFuncProperty::INTENSITY_GRADIENT)) {

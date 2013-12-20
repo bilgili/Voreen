@@ -61,7 +61,7 @@ uniform TF_SAMPLER_TYPE transferFuncTex_;
  * Performs the ray traversal
  * returns the final fragment color.
  ***/
-void rayTraversal(in vec3 first, in vec3 last) {
+void rayTraversal(in vec3 first, in vec3 last, float entryDepth, float exitDepth) {
 
     // calculate the required ray parameters
     float t     = 0.0;
@@ -98,10 +98,8 @@ void rayTraversal(in vec3 first, in vec3 last) {
         t += tIncr;
         finished = finished || (t > tEnd);
     } END_WHILE
-    gl_FragDepth = getDepthValue(tDepth, tEnd, entryPointsDepth_, entryParameters_, exitPointsDepth_, exitParameters_);
 
-    // FIXME no image without manually setting gl_FragDepth < 1.0
-    gl_FragDepth = 0.5;
+    gl_FragDepth = getDepthValue(tDepth, tEnd, entryDepth, exitDepth);
 }
 
 /***
@@ -112,6 +110,8 @@ void main() {
     vec2 p = gl_FragCoord.xy * screenDimRCP_;
     vec3 frontPos = textureLookup2Dnormalized(entryPoints_, entryParameters_, p).rgb;
     vec3 backPos = textureLookup2Dnormalized(exitPoints_, exitParameters_, p).rgb;
+    float entryDepth = textureLookup2Dnormalized(entryPointsDepth_, entryParameters_, p).z;
+    float exitDepth = textureLookup2Dnormalized(exitPointsDepth_, exitParameters_, p).z;
 
     // determine whether the ray has to be casted
     if (frontPos == backPos)
@@ -119,7 +119,7 @@ void main() {
         discard;
     else
          //fragCoords are lying inside the bounding box
-        rayTraversal(frontPos, backPos);
+        rayTraversal(frontPos, backPos, entryDepth, exitDepth);
 
     //result = vec4(0.0, 1.0, 0.0, 1.0);
     FragData0 = result;

@@ -88,7 +88,11 @@ public:
     void setNearDist(float dist);
 
     bool setStereoEyeSeparation(float separation);
+    bool setStereoFocalLength(float focallength);
+    bool setStereoWidth(float width);
     bool setStereoEyeMode(tgt::Camera::StereoEyeMode mode);
+    bool setStereoRelativeFocalLength(float stereoRelativeFocalLength);
+    bool setUseRealWorldFrustum(bool useRealWorldFrustum);
     //bool stereoShift(tgt::vec3 shift);
     bool setStereoAxisMode(tgt::Camera::StereoAxisMode mode);
 

@@ -73,7 +73,7 @@ VoreenSettingsDialog::VoreenSettingsDialog(QWidget* parent)
     for(size_t i=0; i<modules.size(); i++) {
         if(!modules[i]->getProperties().empty()) {
             widgetLayout->addSpacerItem(new QSpacerItem(1, 8));
-            PropertyOwnerWidget* modulePow = new PropertyOwnerWidget(this, modules[i], "Module: " + modules[i]->getID(), true, false);
+            PropertyOwnerWidget* modulePow = new PropertyOwnerWidget(this, modules[i], "Module: " + modules[i]->getGuiName(), true, false);
             widgetLayout->addWidget(modulePow);
         }
     }

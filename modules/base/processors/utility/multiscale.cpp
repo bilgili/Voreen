@@ -127,7 +127,7 @@ void MultiScale::process() {
     program_->setUniform("depthTexParameters_.matrix_", tgt::mat4::identity);
     program_->setIgnoreUniformLocationError(false);
 
-    glMatrixMode(GL_MODELVIEW);
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
 
     glDepthFunc(GL_ALWAYS);
     if (outport1_.isReady()) {
@@ -160,7 +160,7 @@ void MultiScale::process() {
     }
     glDepthFunc(GL_LESS);
 
-    glLoadIdentity();
+    MatStack.loadIdentity();
 
     program_->deactivate();
     glActiveTexture(GL_TEXTURE0);

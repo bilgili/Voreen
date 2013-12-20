@@ -120,9 +120,15 @@ void runTest(const TestFunctionPointer& testFunction, const std::string& testNam
 
 void testPath() {
     std::string path = "path/to/file.dat";
+#ifdef WIN32
+    std::string pathExpected = "path\\to\\file.dat";
+#else
+    std::string pathExpected = path;
+#endif
+
     VolumeURL origin(path);
 
-    test(origin.getPath(), path, "path incorrect");
+    test(origin.getPath(), pathExpected, "path incorrect");
     test<std::string>(origin.getProtocol(), "", "empty protocol expected");
     test<std::string>(origin.getSearchString(), "", "empty search string expected");
     test<std::string>(origin.getSearchParameter("key1"), "", "search value not empty");
@@ -132,12 +138,19 @@ void testParseURL() {
     std::string protocol = "dicom";
     std::string path = "path/to/file.dat";
     std::string searchString = "key1=value1&key2=value2";
-
     std::string url = protocol + "://" + path + "?" + searchString;
+
+#ifdef WIN32
+    std::string pathExpected = "path\\to\\file.dat";
+#else
+    std::string pathExpected = path;
+#endif
+    std::string urlExpected = protocol + "://" + pathExpected + "?" + searchString;
+
     VolumeURL origin(url);
 
-    test(origin.getURL(), url, "url incorrect");
-    test(origin.getPath(), path, "path incorrect");
+    test(origin.getURL(), urlExpected, "url incorrect");
+    test(origin.getPath(), pathExpected, "path incorrect");
     test(origin.getProtocol(), protocol, "protocol incorrect");
     test(origin.getSearchParameter("key1"), std::string("value1"), "search string incorrect");
     test(origin.getSearchParameter("key2"), std::string("value2"), "search string incorrect");
@@ -146,29 +159,61 @@ void testParseURL() {
 void testParseURLWinSeparators() {
     std::string protocol = "dicom";
     std::string path = "path\\to\\file.dat";
-    std::string pathCleaned = "path/to/file.dat";
     std::string searchString = "key1=value1&key2=value2";
-
     std::string url = protocol + "://" + path + "?" + searchString;
-    std::string urlCleaned = protocol + "://" + pathCleaned + "?" + searchString;
+
+#ifdef WIN32
+    std::string pathExpected = path;
+#else
+    std::string pathExpected = "path/to/file.dat";
+#endif
+    std::string urlExpected = protocol + "://" + pathExpected + "?" + searchString;
+
     VolumeURL origin(url);
 
-    test(origin.getURL(), urlCleaned, "url incorrect");
-    test(origin.getPath(), pathCleaned, "path incorrect");
+    test(origin.getURL(), urlExpected, "url incorrect");
+    test(origin.getPath(), pathExpected, "path incorrect");
     test(origin.getProtocol(), protocol, "protocol incorrect");
     test(origin.getSearchParameter("key1"), std::string("value1"), "search string incorrect");
     test(origin.getSearchParameter("key2"), std::string("value2"), "search string incorrect");
 }
 
+#ifdef WIN32
+void testParseURLWinNetworkPath() {
+    std::string protocol = "dicom";
+    std::string path = "\\\\path/to\\file.dat";
+    std::string searchString = "key1=value1&key2=value2";
+    std::string url = protocol + "://" + path + "?" + searchString;
+
+    std::string pathExpected = "\\\\path\\to\\file.dat";
+    std::string urlExpected = protocol + "://" + pathExpected + "?" + searchString;
+
+    VolumeURL origin(url);
+
+    test(origin.getURL(), urlExpected, "url incorrect");
+    test(origin.getPath(), pathExpected, "path incorrect");
+    test(origin.getProtocol(), protocol, "protocol incorrect");
+    test(origin.getSearchParameter("key1"), std::string("value1"), "search string incorrect");
+    test(origin.getSearchParameter("key2"), std::string("value2"), "search string incorrect");
+}
+#endif
+
 void testParseProtocolPath() {
     std::string protocol = "dicom";
     std::string path = "path/to/file.dat";
-
     std::string url = protocol + "://" + path;
+
+#ifdef WIN32
+    std::string pathExpected = "path\\to\\file.dat";
+#else
+    std::string pathExpected = path;
+#endif
+    std::string urlExpected = protocol + "://" + pathExpected;
+
     VolumeURL origin(url);
 
-    test(origin.getURL(), url, "url incorrect");
-    test(origin.getPath(), path, "path incorrect");
+    test(origin.getURL(), urlExpected, "url incorrect");
+    test(origin.getPath(), pathExpected, "path incorrect");
     test(origin.getProtocol(), protocol, "protocol incorrect");
     test(origin.getSearchString(), std::string(""), "search string not empty");
     test(origin.getSearchParameter("key1"), std::string(""), "search value not empty");
@@ -177,12 +222,19 @@ void testParseProtocolPath() {
 void testParsePathSearchString() {
     std::string path = "path/to/file.dat";
     std::string searchString = "key1=value1";
-
     std::string url = path + "?" + searchString;
+
+#ifdef WIN32
+    std::string pathExpected = "path\\to\\file.dat";
+#else
+    std::string pathExpected = path;
+#endif
+    std::string urlExpected = pathExpected + "?" + searchString;
+
     VolumeURL origin(url);
 
-    test(origin.getURL(), url, "url incorrect");
-    test(origin.getPath(), path, "path incorrect");
+    test(origin.getURL(), urlExpected, "url incorrect");
+    test(origin.getPath(), pathExpected, "path incorrect");
     test(origin.getProtocol(), std::string(""), "empty protocol exptected");
     test(origin.getSearchString(), searchString, "search string incorrect");
 }
@@ -195,6 +247,7 @@ void testParseURLSpecialChars() {
     std::string url = origin.getURL();
 
     VolumeURL originParsed(url);
+
     test(origin == originParsed, "origins not equal");
     test(origin.getSearchParameter("key1"), std::string("value1"), "search string incorrect");
     test(origin.getSearchParameter("key2"), std::string("value?a b&c\\d/e="), "search string incorrect");
@@ -206,11 +259,17 @@ void testConstructURL() {
     std::string path = "path/to/file.dat";
     std::string searchString = "key1=value1";
 
+#ifdef WIN32
+    std::string pathExpected = "path\\to\\file.dat";
+#else
+    std::string pathExpected = path;
+#endif
+    std::string urlExpected = protocol + "://" + pathExpected + "?" + searchString;
+
     VolumeURL origin(protocol, path, searchString);
 
-    std::string url = protocol + "://" + path + "?" + searchString;
-    test(origin.getURL(), url, "url incorrect");
-    test(origin.getPath(), path, "path incorrect");
+    test(origin.getURL(), urlExpected, "url incorrect");
+    test(origin.getPath(), pathExpected, "path incorrect");
     test(origin.getProtocol(), protocol, "protocol incorrect");
     test(origin.getSearchParameter("key1"), std::string("value1"), "search string incorrect");
 }
@@ -220,12 +279,17 @@ void testConstructURLWinSeparators() {
     std::string path = "path\\to\\file.dat";
     std::string searchString = "key1=value1&key2=value2";
 
+#ifdef WIN32
+    std::string pathExpected = path;
+#else
+    std::string pathExpected = "path/to/file.dat";
+#endif
+    std::string urlExpected = protocol + "://" + pathExpected + "?" + searchString;
+
     VolumeURL origin(protocol, path, searchString);
 
-    std::string pathCleaned = "path/to/file.dat";
-    std::string urlCleaned = protocol + "://" + pathCleaned + "?" + searchString;
-    test(origin.getURL(), urlCleaned, "url incorrect");
-    test(origin.getPath(), pathCleaned, "path incorrect");
+    test(origin.getURL(), urlExpected, "url incorrect");
+    test(origin.getPath(), pathExpected, "path incorrect");
     test(origin.getProtocol(), protocol, "protocol incorrect");
     test(origin.getSearchParameter("key1"), std::string("value1"), "search string incorrect");
     test(origin.getSearchParameter("key2"), std::string("value2"), "search string incorrect");
@@ -235,11 +299,17 @@ void testConstructProtocolPath() {
     std::string protocol = "dicom";
     std::string path = "path/to/file.dat";
 
+#ifdef WIN32
+    std::string pathExpected = "path\\to\\file.dat";
+#else
+    std::string pathExpected = path;
+#endif
+    std::string urlExpected = protocol + "://" + pathExpected;
+
     VolumeURL origin(protocol, path);
 
-    std::string url = protocol + "://" + path;
-    test(origin.getURL(), url, "url incorrect");
-    test(origin.getPath(), path, "path incorrect");
+    test(origin.getURL(), urlExpected, "url incorrect");
+    test(origin.getPath(), pathExpected, "path incorrect");
     test(origin.getProtocol(), protocol, "protocol incorrect");
     test(origin.getSearchString(), std::string(""), "search string not empty");
 }
@@ -248,11 +318,17 @@ void testConstructPathSearchString() {
     std::string path = "path/to/file.dat";
     std::string searchString = "key1=value1&key2=value2";
 
+#ifdef WIN32
+    std::string pathExpected = "path\\to\\file.dat";
+#else
+    std::string pathExpected = path;
+#endif
+    std::string urlExpected = pathExpected + "?" + searchString;
+
     VolumeURL origin("", path, searchString);
 
-    std::string url = path + "?" + searchString;
-    test(origin.getURL(), url, "url incorrect");
-    test(origin.getPath(), path, "path incorrect");
+    test(origin.getURL(), urlExpected, "url incorrect");
+    test(origin.getPath(), pathExpected, "path incorrect");
     test(origin.getProtocol(), std::string(""), "empty protocol exptected");
     test(origin.getSearchString(), searchString, "search string incorrect");
 }
@@ -411,6 +487,9 @@ int main(int argc, char** argv) {
     // URL constructing
     runTest(testConstructURL, "construct complete url");
     runTest(testConstructURLWinSeparators, "construct complete url with windows separators");
+#ifdef WIN32
+    runTest(testParseURLWinNetworkPath, "construct complete url with windows network path");
+#endif
     runTest(testConstructProtocolPath, "construct protocol/path");
     runTest(testConstructPathSearchString, "construct path/search string");
 

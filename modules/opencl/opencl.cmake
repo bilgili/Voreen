@@ -97,6 +97,8 @@ ELSEIF(UNIX)
               /usr/lib
     )
 
+LIST(APPEND MOD_DEFINITIONS "-DCL_USE_DEPRECATED_OPENCL_1_1_APIS")
+
 ENDIF()
 
 IF(OPENCL_INCLUDE_DIR AND OPENCL_LIBRARY)
@@ -121,6 +123,7 @@ SET(MOD_CORE_SOURCES
     ${MOD_DIR}/processors/grayscale_cl.cpp
     ${MOD_DIR}/processors/raycaster_cl.cpp
     ${MOD_DIR}/processors/raytracingentryexitpoints.cpp
+    ${MOD_DIR}/processors/singleoctreeraycastercl.cpp
     ${MOD_DIR}/processors/volumegradient_cl.cpp
     ${MOD_DIR}/utils/voreenblascl.cpp
     ${MOD_DIR}/properties/openclproperty.cpp
@@ -132,6 +135,7 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/processors/grayscale_cl.h
     ${MOD_DIR}/processors/raycaster_cl.h
     ${MOD_DIR}/processors/raytracingentryexitpoints.h
+    ${MOD_DIR}/processors/singleoctreeraycastercl.h
     ${MOD_DIR}/processors/volumegradient_cl.h
     ${MOD_DIR}/utils/voreenblascl.h
     ${MOD_DIR}/properties/openclproperty.h
@@ -140,6 +144,7 @@ SET(MOD_CORE_HEADERS
 # deployment
 SET(MOD_INSTALL_DIRECTORIES
     ${MOD_DIR}/cl
+    ${MOD_DIR}/glsl
 )
 
 ################################################################################

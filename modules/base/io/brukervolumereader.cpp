@@ -821,7 +821,7 @@ VolumeList* BrukerVolumeReader::read(const std::string &url, int volumeId)
 
             if (getProgressBar()) {
                 getProgressBar()->setTitle("Loading Volume");
-                getProgressBar()->setMessage("Loading volume: " + fileName);
+                getProgressBar()->setProgressMessage("Loading volume: " + fileName);
             }
 
             ivec3 dims = ivec3(resolution, static_cast<int>(sliceCols[frame].getNumSlices()));

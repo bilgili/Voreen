@@ -38,20 +38,20 @@ namespace voreen {
  */
 class VRN_CORE_API VolumeOperatorHalfsampleBase : public UnaryVolumeOperatorBase {
 public:
-    virtual Volume* apply(const VolumeBase* volume, ProgressBar* progressBar = 0) const = 0;
+    virtual Volume* apply(const VolumeBase* volume, ProgressReporter* progressReporter = 0) const = 0;
 };
 
 // Generic implementation:
 template<typename T>
 class VolumeOperatorHalfsampleGeneric : public VolumeOperatorHalfsampleBase {
 public:
-    virtual Volume* apply(const VolumeBase* volume, ProgressBar* progressBar = 0) const;
+    virtual Volume* apply(const VolumeBase* volume, ProgressReporter* progressReporter = 0) const;
     //Implement isCompatible using a handy macro:
     IS_COMPATIBLE
 };
 
 template<typename T>
-Volume* VolumeOperatorHalfsampleGeneric<T>::apply(const VolumeBase* vh, ProgressBar* progressBar) const {
+Volume* VolumeOperatorHalfsampleGeneric<T>::apply(const VolumeBase* vh, ProgressReporter* progressReporter) const {
     const VolumeRAM* v = vh->getRepresentation<VolumeRAM>();
     if(!v)
         return 0;
@@ -65,7 +65,7 @@ Volume* VolumeOperatorHalfsampleGeneric<T>::apply(const VolumeBase* vh, Progress
     VolumeAtomic<T>* newVolume = new VolumeAtomic<T>(halfDims);
 
     typedef typename VolumeElement<T>::DoubleType Double;
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(index, tgt::svec3(0, 0, 0), halfDims, progressBar) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(index, tgt::svec3(0, 0, 0), halfDims, progressReporter) {
         tgt::svec3 pos = index*tgt::svec3(2); // tgt::ivec3(2*x,2*y,2*z);
         newVolume->voxel(index) =
             T(  Double(volume->voxel(pos.x, pos.y, pos.z))          * (1.0/8.0) //LLF
@@ -77,8 +77,8 @@ Volume* VolumeOperatorHalfsampleGeneric<T>::apply(const VolumeBase* vh, Progress
               + Double(volume->voxel(pos.x+1, pos.y+1, pos.z))      * (1.0/8.0) //URF
               + Double(volume->voxel(pos.x+1, pos.y+1, pos.z+1))    * (1.0/8.0)); //URB
     }
-    if (progressBar)
-        progressBar->setProgress(1.f);
+    if (progressReporter)
+        progressReporter->setProgress(1.f);
 
     Volume* ret = new Volume(newVolume, vh);
     ret->setSpacing(vh->getSpacing()*2.f);

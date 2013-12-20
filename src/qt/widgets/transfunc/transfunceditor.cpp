@@ -25,19 +25,11 @@
 
 #include "voreen/qt/widgets/transfunc/transfunceditor.h"
 
-#include "voreen/core/utils/voreenpainter.h"
-#include "voreen/core/voreenapplication.h"
-
-#include <QFileDialog>
-#include <QUrl>
-#include <QDesktopServices>
-
 namespace voreen {
 
 TransFuncEditor::TransFuncEditor(TransFuncProperty* prop, QWidget* parent)
     : QWidget(parent)
     , property_(prop)
-    , volume_(0)
 {
 }
 
@@ -46,71 +38,6 @@ TransFuncEditor::~TransFuncEditor() {
 
 void TransFuncEditor::toggleInteractionMode(bool on) {
     property_->toggleInteractionMode(on, this);
-}
-
-const QString TransFuncEditor::getOpenFileName(QString filter) {
-    QFileDialog fileDialog(this);
-    fileDialog.setWindowTitle(tr("Choose a transfer function to open"));
-    fileDialog.setDirectory(VoreenApplication::app()->getResourcePath("transferfuncs").c_str());
-    fileDialog.setFilter(filter);
-
-    QList<QUrl> urls;
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("transferfuncs").c_str());
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getUserDataPath().c_str());
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("modules").c_str());
-    if (QDir(VoreenApplication::app()->getBasePath("custommodules").c_str()).exists())
-        urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("custommodules").c_str());
-    urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
-    urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
-    fileDialog.setSidebarUrls(urls);
-
-    if (fileDialog.exec() && !fileDialog.selectedFiles().empty()) {
-        return fileDialog.selectedFiles()[0];
-    }
-
-    return QString();
-}
-
-const QString TransFuncEditor::getSaveFileName(QStringList filters) {
-    QFileDialog fileDialog(this);
-    fileDialog.setWindowTitle(tr("Choose a filename to save transfer function"));
-    fileDialog.setDirectory(VoreenApplication::app()->getResourcePath("transferfuncs").c_str());
-    fileDialog.setFilters(filters);
-    fileDialog.setAcceptMode(QFileDialog::AcceptSave);
-
-    QList<QUrl> urls;
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getResourcePath("transferfuncs").c_str());
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getUserDataPath().c_str());
-    urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("modules").c_str());
-    if (QDir(VoreenApplication::app()->getBasePath("custommodules").c_str()).exists())
-        urls << QUrl::fromLocalFile(VoreenApplication::app()->getBasePath("custommodules").c_str());
-    urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
-    urls << QUrl::fromLocalFile(QDesktopServices::storageLocation(QDesktopServices::HomeLocation));
-    fileDialog.setSidebarUrls(urls);
-
-    QStringList fileList;
-    if (fileDialog.exec() && !fileDialog.selectedFiles().empty()) {
-        QString endingFilter = fileDialog.selectedFilter();
-        int pos = endingFilter.lastIndexOf(".");
-        //removes closing bracket
-        endingFilter.chop(1);
-        endingFilter = endingFilter.mid(pos);
-
-        //look whether the user specified an ending
-        fileList = fileDialog.selectedFiles();
-        size_t dotPosition = fileList[0].toStdString().rfind(".");
-        if (dotPosition == std::string::npos) {
-            // no ending given -> add ending of selected filter
-            fileList[0].append(endingFilter);
-        }
-        else {
-            // an ending was given -> test whether it matches the selected filter
-            if (fileList[0].mid(static_cast<int>(dotPosition)) != endingFilter)
-                fileList[0].append(endingFilter);
-        }
-        return fileList[0];
-    }
-    return QString();
 }
 
 const QString TransFuncEditor::getTitle() {

@@ -93,9 +93,9 @@ VertexGeometry& FaceGeometry::operator[](size_t index) {
 }
 
 void FaceGeometry::render() const {
-    //glMatrixMode(GL_MODELVIEW);
-    //glPushMatrix();
-    //tgt::multMatrix(getTransformationMatrix());
+    //MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    //MatStack.pushMatrix();
+    //MatStack.multMatrix(getTransformationMatrix());
 
     if(getVertexCount() >= 3) {
         glBegin(GL_POLYGON);
@@ -126,7 +126,7 @@ void FaceGeometry::render() const {
         glEnd();
     }
 
-    //glPopMatrix();
+    //MatStack.popMatrix();
 }
 
 void FaceGeometry::clip(const tgt::plane& clipPlane, double epsilon) {

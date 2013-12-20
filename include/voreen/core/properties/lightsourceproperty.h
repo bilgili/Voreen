@@ -62,6 +62,7 @@ public:
     void setMaxDist(float d);
     float getMaxDist() const;
 
+    bool hasCamera() const;
     CameraProperty* getCamera();
     void setCamera(CameraProperty* cam);
 

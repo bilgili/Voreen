@@ -99,10 +99,10 @@ bool GeometryProcessor::isReady() const {
 void GeometryProcessor::process() {
 
     // set modelview and projection matrices
-    glMatrixMode(GL_PROJECTION);
-    tgt::loadMatrix(camera_.get().getProjectionMatrix(outport_.getSize()));
-    glMatrixMode(GL_MODELVIEW);
-    tgt::loadMatrix(camera_.get().getViewMatrix());
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.loadMatrix(camera_.get().getProjectionMatrix(outport_.getSize()));
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadMatrix(camera_.get().getViewMatrix());
     LGL_ERROR;
 
     //
@@ -156,10 +156,10 @@ void GeometryProcessor::process() {
     idManager_.deactivateTarget();
 
     // restore matrices
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.loadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
     LGL_ERROR;
 
     // if inport is connected, combine both results:

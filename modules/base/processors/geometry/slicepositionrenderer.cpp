@@ -26,6 +26,7 @@
 #include "slicepositionrenderer.h"
 
 #include "tgt/glmath.h"
+#include "tgt/quadric.h"
 
 namespace voreen {
 
@@ -34,45 +35,116 @@ using tgt::vec3;
 
 SlicePositionRenderer::SlicePositionRenderer()
     : GeometryRendererBase()
-    , enable_("enable", "Enable", true)
-    , renderXSlice_("renderXSlice", "Render X Slice", true)
-    , xColor_("xColor", "X Color", tgt::vec4(1.0f, 0.0f, 0.0f, 1.0f))
-    , xSliceIndexProp_("xSliceIndex", "X Slice Number", 0, 0, 10000)
-    , renderYSlice_("renderYSlice", "Render Y Slice", true)
-    , yColor_("yColor", "Y Color", tgt::vec4(0.0f, 1.0f, 0.0f, 1.0f))
-    , ySliceIndexProp_("ySliceIndex", "Y Slice Number", 0, 0, 10000)
-    , renderZSlice_("renderZSlice", "Render Z Slice", true)
-    , zColor_("zColor", "Z Color", tgt::vec4(0.0f, 0.0f, 1.0f, 1.0f))
-    , zSliceIndexProp_("zSliceIndex", "Z Slice Number", 0, 0, 10000)
-    , width_("boundingBoxWidth", "Line Width", 1.0f, 1.0f, 10.0f)
-    , stippleFactor_("boundingBoxStippleFactor", "Stipple Factor", 1, 0, 255)
-    , stipplePattern_("boundingBoxStipplePattern", "Stipple Pattern", 65535, 1,65535)
-    , renderPlanes_("renderPlanes", "Render Planes", true)
-    , planeAlphaFactor_("planeAlpha", "Plane Alpha Factor", 0.25f, 0.f, 1.f)
+    //port
     , inport_(Port::INPORT, "volume", "Volume Input")
+    //properties
+    , enable_("enable", "Enable", true)
+        //x slice
+    , renderXSlice_("renderXSlice", "Render X Slice", true)
+    , xSliceIndexProp_("xSliceIndex", "X Slice Number", 0, 0, 10000)
+    , xColor_("xColor", "X Color", tgt::vec4(1.0f, 0.0f, 0.0f, 1.0f))
+    , lineXWidth_("lineXWidth","Line X Width",1.f,1.f,10.f)
+    , alphaFactorXPlane_("alphaFactorXPlane"," X Plane Alpha", 0.f, 0.f, 1.f)
+        //y slice
+    , renderYSlice_("renderYSlice", "Render Y Slice", true)
+    , ySliceIndexProp_("ySliceIndex", "Y Slice Number", 0, 0, 10000)
+    , yColor_("yColor", "Y Color", tgt::vec4(0.0f, 1.0f, 0.0f, 1.0f))
+    , lineYWidth_("lineYWidth","Line Y Width",1.f,1.f,10.f)
+    , alphaFactorYPlane_("alphaFactorYPlane"," Y Plane Alpha", 0.f, 0.f, 1.f)
+        //z slice
+    , renderZSlice_("renderZSlice", "Render Z Slice", true)
+    , zSliceIndexProp_("zSliceIndex", "Z Slice Number", 0, 0, 10000)
+    , lineZWidth_("lineZWidth","Line Z Width",1.f,1.f,10.f)
+    , zColor_("zColor", "Z Color", tgt::vec4(0.0f, 0.0f, 1.0f, 1.0f))
+    , alphaFactorZPlane_("alphaFactorZPlane"," Z Plane Alpha", 0.f, 0.f, 1.f)
+    // position
+    , renderSphere_("renderSphere", "Render Voxel Position", false)
+    , sphereColor_("sphereColor", "Sphere Color", tgt::vec4(1.0f, 1.0f, 0.0f, 1.0f))
+    , sphereRadius_("sphereRadius", "Sphere Radius",0.01f,0.001f,0.1f)
+    , sphereDepthTest_("sphereDepthTest","Depth Test", false)
+    , sphereXPos_("sphereXPos", "X Voxel", 0, -1, 10000)
+    , sphereYPos_("sphereYPos", "Y Voxel", 0, -1, 10000)
+    , sphereZPos_("sphereZPos", "Z Voxel", 0, -1, 10000)
+        // deprecated
+    , stippleFactor_("deprecatedStippleFactor", "Stipple Factor", 1, 0, 255)
+    , stipplePattern_("deprecatedStipplePattern", "Stipple Pattern", 65535, 1,65535)
 {
+    //ports
     addPort(inport_);
-
+    //properties
     addProperty(enable_);
+        // x slice
     addProperty(renderXSlice_);
-    addProperty(xColor_);
+    renderXSlice_.setGroupID("x");
     addProperty(xSliceIndexProp_);
+    xSliceIndexProp_.setGroupID("x");
+    addProperty(xColor_);
+    xColor_.setGroupID("x");
+    addProperty(lineXWidth_);
+    lineXWidth_.setGroupID("x");
+    addProperty(alphaFactorXPlane_);
+    alphaFactorXPlane_.setGroupID("x");
+    setPropertyGroupGuiName("x","X Slice");
+        // y slice
     addProperty(renderYSlice_);
-    addProperty(yColor_);
+    renderYSlice_.setGroupID("y");
     addProperty(ySliceIndexProp_);
+    ySliceIndexProp_.setGroupID("y");
+    addProperty(yColor_);
+    yColor_.setGroupID("y");
+    addProperty(lineYWidth_);
+    lineYWidth_.setGroupID("y");
+    addProperty(alphaFactorYPlane_);
+    alphaFactorYPlane_.setGroupID("y");
+    setPropertyGroupGuiName("y","Y Slice");
+        // z slice
     addProperty(renderZSlice_);
-    addProperty(zColor_);
+    renderZSlice_.setGroupID("z");
     addProperty(zSliceIndexProp_);
-
-    addProperty(width_);
+    zSliceIndexProp_.setGroupID("z");
+    addProperty(zColor_);
+    zColor_.setGroupID("z");
+    addProperty(lineZWidth_);
+    lineZWidth_.setGroupID("z");
+    addProperty(alphaFactorZPlane_);
+    alphaFactorZPlane_.setGroupID("z");
+    setPropertyGroupGuiName("z","Z Slice");
+        //position
+    addProperty(renderSphere_);
+    renderSphere_.setGroupID("pos");
+    addProperty(sphereColor_);
+    sphereColor_.setGroupID("pos");
+    addProperty(sphereRadius_);
+    sphereRadius_.setGroupID("pos");
+    addProperty(sphereDepthTest_);
+    sphereDepthTest_.setGroupID("pos");
+    addProperty(sphereXPos_);
+    sphereXPos_.setGroupID("pos");
+    addProperty(sphereYPos_);
+    sphereYPos_.setGroupID("pos");
+    addProperty(sphereZPos_);
+    sphereZPos_.setGroupID("pos");
+    setPropertyGroupGuiName("pos","Voxel Position");
+        //deprecated
     addProperty(stippleFactor_);
     addProperty(stipplePattern_);
-    addProperty(renderPlanes_);
-    addProperty(planeAlphaFactor_);
 
+    //set property mode
     xColor_.setViews(Property::COLOR);
     yColor_.setViews(Property::COLOR);
     zColor_.setViews(Property::COLOR);
+    sphereColor_.setViews(Property::COLOR);
+
+    sphereRadius_.setNumDecimals(3);
+
+    stippleFactor_.setVisible(false);
+    stipplePattern_.setVisible(false);
+
+    ON_PROPERTY_CHANGE(renderXSlice_,SlicePositionRenderer,togglePropertyVisibility);
+    ON_PROPERTY_CHANGE(renderYSlice_,SlicePositionRenderer,togglePropertyVisibility);
+    ON_PROPERTY_CHANGE(renderZSlice_,SlicePositionRenderer,togglePropertyVisibility);
+    ON_PROPERTY_CHANGE(renderSphere_,SlicePositionRenderer,togglePropertyVisibility);
+    togglePropertyVisibility();
 }
 
 void SlicePositionRenderer::process() {}
@@ -81,8 +153,8 @@ void SlicePositionRenderer::render() {
     if (!inport_.isReady() || !enable_.get())
         return;
 
-    glPushMatrix();
-    tgt::multMatrix(inport_.getData()->getPhysicalToWorldMatrix());
+    MatStack.pushMatrix();
+    MatStack.multMatrix(inport_.getData()->getPhysicalToWorldMatrix());
 
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glDisable(GL_LIGHTING);
@@ -91,7 +163,6 @@ void SlicePositionRenderer::render() {
     tgt::vec3 geomUrb = inport_.getData()->getURB();
     tgt::vec3 sp = inport_.getData()->getSpacing();
 
-    glLineWidth(width_.get());
     glEnable(GL_LINE_STIPPLE);
     glLineStipple(stippleFactor_.get(), stipplePattern_.get());
 
@@ -102,8 +173,43 @@ void SlicePositionRenderer::render() {
     float ySlice = (((float) ySliceIndexProp_.get() + 0.5f) * sp.y) + geomLlf.y;
     float zSlice = (((float) zSliceIndexProp_.get() + 0.5f) * sp.z) + geomLlf.z;
 
+    // Voxel Position
+    if (renderSphere_.get() && sphereColor_.get().a > 0.f &&
+        sphereXPos_.get() >= 0 && sphereYPos_.get() >= 0 && sphereZPos_.get() >= 0)
+    {
+        tgt::vec3 spherePos = ((tgt::vec3((float)sphereXPos_.get(),(float)sphereYPos_.get(),(float)sphereZPos_.get()) + tgt::vec3(0.5f)) * sp) + geomLlf;
+
+        // calc radius
+        tgt::Sphere sphere(tgt::length(geomUrb - geomLlf)*sphereRadius_.get(),36,16);
+        GLfloat mat_specular[] = { 0.0, 0.0, 0.0, 0.0 };
+        GLfloat mat_shininess[] = { 1 };//100.0 };
+        glMaterialfv(GL_FRONT, GL_AMBIENT, sphereColor_.get().elem);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, sphereColor_.get().elem);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+        glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+        glLightfv(GL_LIGHT0, GL_POSITION, tgt::vec4(camera_.getPosition(),0.f).elem);
+
+        MatStack.translate(spherePos.x,spherePos.y,spherePos.z);
+        if(!sphereDepthTest_.get())
+            glDepthRange(0.f,0.f); //pushes sphere to the front
+        glEnable(GL_LIGHTING);
+        glEnable(GL_LIGHT0);
+        glEnable(GL_CULL_FACE);
+        sphere.render();
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_LIGHT0);
+        glDisable(GL_LIGHTING);
+        glDepthRange(0.f,1.f);
+        MatStack.translate(-spherePos.x,-spherePos.y,-spherePos.z);
+    }
+
+    if(lineXWidth_.get() != 1.f || lineYWidth_.get() != 1.f || lineZWidth_.get() != 1.f)
+        glEnable(GL_LINE_SMOOTH);
+
+    // X Slice
     if (xColor_.get().a > 0.f && renderXSlice_.get()) {
-        glColor4f(xColor_.get().r, xColor_.get().g, xColor_.get().b, xColor_.get().a);
+        glColor4fv(xColor_.get().elem);
+        glLineWidth(lineXWidth_.get());
         glBegin(GL_LINE_LOOP);
         glVertex3f(xSlice, geomUrb.y, geomUrb.z);
         glVertex3f(xSlice, geomLlf.y, geomUrb.z);
@@ -111,8 +217,8 @@ void SlicePositionRenderer::render() {
         glVertex3f(xSlice, geomUrb.y, geomLlf.z);
         glEnd();
 
-        if (renderPlanes_.get()) {
-            glColor4f(xColor_.get().r, xColor_.get().g, xColor_.get().b, xColor_.get().a * planeAlphaFactor_.get());
+        if (alphaFactorXPlane_.get() > 0.f) {
+            glColor4f(xColor_.get().r, xColor_.get().g, xColor_.get().b, xColor_.get().a * alphaFactorXPlane_.get());
             glBegin(GL_QUADS);
             glVertex3f(xSlice, geomUrb.y, geomUrb.z);
             glVertex3f(xSlice, geomLlf.y, geomUrb.z);
@@ -121,9 +227,10 @@ void SlicePositionRenderer::render() {
             glEnd();
         }
     }
-
+    // Y Slice
     if (yColor_.get().a > 0.f && renderYSlice_.get()) {
-        glColor4f(yColor_.get().r, yColor_.get().g, yColor_.get().b, yColor_.get().a);
+        glColor4fv(yColor_.get().elem);
+        glLineWidth(lineYWidth_.get());
         glBegin(GL_LINE_LOOP);
         glVertex3f(geomLlf.x, ySlice, geomLlf.z);
         glVertex3f(geomLlf.x, ySlice, geomUrb.z);
@@ -131,8 +238,8 @@ void SlicePositionRenderer::render() {
         glVertex3f(geomUrb.x, ySlice, geomLlf.z);
         glEnd();
 
-        if (renderPlanes_.get()) {
-            glColor4f(yColor_.get().r, yColor_.get().g, yColor_.get().b, yColor_.get().a * planeAlphaFactor_.get());
+        if (alphaFactorYPlane_.get() > 0.f) {
+            glColor4f(yColor_.get().r, yColor_.get().g, yColor_.get().b, yColor_.get().a * alphaFactorYPlane_.get());
             glBegin(GL_QUADS);
             glVertex3f(geomLlf.x, ySlice, geomLlf.z);
             glVertex3f(geomLlf.x, ySlice, geomUrb.z);
@@ -141,9 +248,10 @@ void SlicePositionRenderer::render() {
             glEnd();
         }
     }
-
+    // Z Slice
     if (zColor_.get().a > 0.f && renderZSlice_.get()) {
-        glColor4f(zColor_.get().r, zColor_.get().g, zColor_.get().b, zColor_.get().a);
+        glColor4fv(zColor_.get().elem);
+        glLineWidth(lineZWidth_.get());
         glBegin(GL_LINE_LOOP);
         glVertex3f(geomLlf.x, geomUrb.y, zSlice);
         glVertex3f(geomLlf.x, geomLlf.y, zSlice);
@@ -151,8 +259,8 @@ void SlicePositionRenderer::render() {
         glVertex3f(geomUrb.x, geomUrb.y, zSlice);
         glEnd();
 
-        if (renderPlanes_.get()) {
-            glColor4f(zColor_.get().r, zColor_.get().g, zColor_.get().b, zColor_.get().a * planeAlphaFactor_.get());
+        if (alphaFactorZPlane_.get() > 0.f) {
+            glColor4f(zColor_.get().r, zColor_.get().g, zColor_.get().b, zColor_.get().a * alphaFactorZPlane_.get());
             glBegin(GL_QUADS);
             glVertex3f(geomLlf.x, geomUrb.y, zSlice);
             glVertex3f(geomLlf.x, geomLlf.y, zSlice);
@@ -162,7 +270,9 @@ void SlicePositionRenderer::render() {
         }
     }
 
-    glPopMatrix();
+    glDisable(GL_LINE_SMOOTH);
+
+    MatStack.popMatrix();
     glPopAttrib();
 }
 
@@ -176,32 +286,34 @@ void SlicePositionRenderer::invalidate(int inv) {
         ySliceIndexProp_.setMaxValue(numSlices.y-1);
         zSliceIndexProp_.setMaxValue(numSlices.z-1);
 
-        if (xSliceIndexProp_.get() > xSliceIndexProp_.getMaxValue())
-            xSliceIndexProp_.set(xSliceIndexProp_.getMaxValue());
-        if (ySliceIndexProp_.get() > ySliceIndexProp_.getMaxValue())
-            ySliceIndexProp_.set(ySliceIndexProp_.getMaxValue());
-        if (zSliceIndexProp_.get() > zSliceIndexProp_.getMaxValue())
-            zSliceIndexProp_.set(zSliceIndexProp_.getMaxValue());
+        sphereXPos_.setMaxValue(numSlices.x-1);
+        sphereYPos_.setMaxValue(numSlices.y-1);
+        sphereZPos_.setMaxValue(numSlices.z-1);
     }
 }
 
 void SlicePositionRenderer::togglePropertyVisibility() {
-    xColor_.setVisible(renderXSlice_.get());
+    /*xColor_.setVisible(renderXSlice_.get());
     xSliceIndexProp_.setVisible(renderXSlice_.get());
+    lineXWidth_.setVisible(renderXSlice_.get());
+    alphaFactorXPlane_.setVisible(renderXSlice_.get());
 
     yColor_.setVisible(renderYSlice_.get());
     ySliceIndexProp_.setVisible(renderYSlice_.get());
+    lineYWidth_.setVisible(renderYSlice_.get());
+    alphaFactorYPlane_.setVisible(renderYSlice_.get());
 
     zColor_.setVisible(renderZSlice_.get());
     zSliceIndexProp_.setVisible(renderZSlice_.get());
+    lineZWidth_.setVisible(renderZSlice_.get());
+    alphaFactorZPlane_.setVisible(renderZSlice_.get());
 
-    bool noneVisible = !renderXSlice_.get() && !renderYSlice_.get() && !renderZSlice_.get();
-    if (noneVisible)
-        renderPlanes_.set(false);
-    planeAlphaFactor_.setVisible(renderPlanes_.get());
-
-    stippleFactor_.setVisible(noneVisible);
-    stipplePattern_.setVisible(noneVisible);
+    sphereColor_.setVisible(renderSphere_.get());
+    sphereRadius_.setVisible(renderSphere_.get());
+    sphereDepthTest_.setVisible(renderSphere_.get());
+    sphereXPos_.setVisible(renderSphere_.get());
+    sphereYPos_.setVisible(renderSphere_.get());
+    sphereZPos_.setVisible(renderSphere_.get()); */
 }
 
 }

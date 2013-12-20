@@ -96,9 +96,9 @@ RegionOfInterest2D::RegionOfInterestGeometry::RegionOfInterestGeometry()
 
 void RegionOfInterest2D::RegionOfInterestGeometry::renderBoundingBox() const {
     // apply roi transformation matrix
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    tgt::multMatrix(transformMatrix_);
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.multMatrix(transformMatrix_);
 
     vec2 ll = vec2(boundingBox_.x, boundingBox_.y);
     vec2 ur = vec2(boundingBox_.z, boundingBox_.w);
@@ -112,7 +112,7 @@ void RegionOfInterest2D::RegionOfInterestGeometry::renderBoundingBox() const {
     vertex(ul);
     glEnd();
 
-    glPopMatrix();
+    MatStack.popMatrix();
 
     LGL_ERROR;
 }
@@ -143,8 +143,8 @@ void RegionOfInterest2D::RegionOfInterestGeometry::render() const {
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     // apply roi transformation matrix
-    glPushMatrix();
-    tgt::multMatrix(transformMatrix_);
+    MatStack.pushMatrix();
+    MatStack.multMatrix(transformMatrix_);
 
     // Use OpenGL anti-aliasing?
     if (antialiasing_) {
@@ -276,7 +276,7 @@ void RegionOfInterest2D::RegionOfInterestGeometry::render() const {
         LERROR("Unknown ROI geometry mode");
 
     // revert roi transformation
-    glPopMatrix();
+    MatStack.popMatrix();
 
     glPopAttrib();
     LGL_ERROR;
@@ -561,22 +561,22 @@ void RegionOfInterest2D::renderROIs(RoiMode roiMode) {
 
         // set up transformation matrices for specifying
         // ROI points in screen coordinates
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadIdentity();
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
+        MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+        MatStack.pushMatrix();
+        MatStack.loadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
 
         // viewport transformation
-        glLoadIdentity();
-        glTranslatef(-1.f, -1.f, 0.f);
+        MatStack.loadIdentity();
+        MatStack.translate(-1.f, -1.f, 0.f);
         ivec2 viewportDim = inport_.getSize();
-        glScalef(2.f/viewportDim.x , 2.f / viewportDim.y, 1.f);
+        MatStack.scale(2.f/viewportDim.x , 2.f / viewportDim.y, 1.f);
 
         // inverse transformation matrix taking us back to screen coords
         mat4 transformMatrixInverse;
         roiTransformMatrix_.get().invert(transformMatrixInverse);
-        tgt::multMatrix(transformMatrixInverse);
+        MatStack.multMatrix(transformMatrixInverse);
         LGL_ERROR;
 
         if (roiMode == PICKING_MODE) {
@@ -619,10 +619,10 @@ void RegionOfInterest2D::renderROIs(RoiMode roiMode) {
         glDepthFunc(GL_LESS);
         glColor4f(0.f, 0.f, 0.f, 0.f);
 
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
+        MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+        MatStack.popMatrix();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.popMatrix();
 
         LGL_ERROR;
     }
@@ -636,22 +636,22 @@ void RegionOfInterest2D::renderROIMask(RegionOfInterestGeometry* roi) {
 
     // set up transformation matrices for specifying
     // ROI points in screen coordinates
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
 
     // viewport transformation
-    glLoadIdentity();
-    glTranslatef(-1.f, -1.f, 0.f);
+    MatStack.loadIdentity();
+    MatStack.translate(-1.f, -1.f, 0.f);
     ivec2 viewportDim = inport_.getSize();
-    glScalef(2.f/viewportDim.x , 2.f / viewportDim.y, 1.f);
+    MatStack.scale(2.f/viewportDim.x , 2.f / viewportDim.y, 1.f);
 
     // inverse transformation matrix taking us back to screen coords
     mat4 transformMatrixInverse;
     roiTransformMatrix_.get().invert(transformMatrixInverse);
-    tgt::multMatrix(transformMatrixInverse);
+    MatStack.multMatrix(transformMatrixInverse);
     LGL_ERROR;
 
     glColor4fv(roi->maskColor_.elem);
@@ -663,10 +663,10 @@ void RegionOfInterest2D::renderROIMask(RegionOfInterestGeometry* roi) {
     glDepthFunc(GL_LESS);
     glColor4f(0.f, 0.f, 0.f, 0.f);
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 
     LGL_ERROR;
 }
@@ -677,22 +677,22 @@ void RegionOfInterest2D::renderBoundingBox(RegionOfInterestGeometry* roi) const 
 
     // set up transformation matrices for specifying
     // ROI points in screen coordinates
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
 
     // viewport transformation
-    glLoadIdentity();
-    glTranslatef(-1.f, -1.f, 0.f);
+    MatStack.loadIdentity();
+    MatStack.translate(-1.f, -1.f, 0.f);
     ivec2 viewportDim = inport_.getSize();
-    glScalef(2.f/viewportDim.x , 2.f / viewportDim.y, 1.f);
+    MatStack.scale(2.f/viewportDim.x , 2.f / viewportDim.y, 1.f);
 
     // inverse transformation matrix taking us back to screen coords
     mat4 transformMatrixInverse;
     roiTransformMatrix_.get().invert(transformMatrixInverse);
-    tgt::multMatrix(transformMatrixInverse);
+    MatStack.multMatrix(transformMatrixInverse);
 
     // render bounding box
     glColor4fv(boundingBoxColor_.get().elem);
@@ -701,10 +701,10 @@ void RegionOfInterest2D::renderBoundingBox(RegionOfInterestGeometry* roi) const 
     // restore attributes and matrices
     glPopAttrib();
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 
     LGL_ERROR;
 }

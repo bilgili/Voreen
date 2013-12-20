@@ -78,7 +78,7 @@ void TransFuncPrimitive::deselect() {
 }
 
 void TransFuncPrimitive::paintControlPoint(const tgt::vec2& v) {
-    glTranslatef(v.x, v.y, 0.1f);
+    MatStack.translate(v.x, v.y, 0.1f);
     tgt::vec2 t;
 
     glBegin(GL_POLYGON);
@@ -90,7 +90,7 @@ void TransFuncPrimitive::paintControlPoint(const tgt::vec2& v) {
     }
     glEnd();
 
-    glTranslatef(0.f, 0.f, 0.1f);
+    MatStack.translate(0.f, 0.f, 0.1f);
 
     glBegin(GL_LINE_LOOP);
     if (selected_)
@@ -104,7 +104,7 @@ void TransFuncPrimitive::paintControlPoint(const tgt::vec2& v) {
     }
     glEnd();
 
-    glTranslatef(-v.x, -v.y, -0.2f);
+    MatStack.translate(-v.x, -v.y, -0.2f);
 }
 
 void TransFuncPrimitive::serialize(XmlSerializer& s) const {
@@ -140,7 +140,7 @@ void TransFuncQuad::paint() {
     tgt::vec2 center = coords_[0] + coords_[1] + coords_[2] + coords_[3];
     center /= 4.f;
 
-    glTranslatef(0.f, 0.f, -0.5f);
+    MatStack.translate(0.f, 0.f, -0.5f);
     glBegin(GL_QUADS);
 
         for (int i = 1; i <= 4; ++i) {
@@ -158,7 +158,7 @@ void TransFuncQuad::paint() {
         tgt::vertex(fuzziness_ * coords_[3] + (1.f - fuzziness_) * center);
 
     glEnd();
-    glTranslatef(0.f, 0.f, 0.5f);
+    MatStack.translate(0.f, 0.f, 0.5f);
 }
 
 void TransFuncQuad::paintForSelection(GLubyte id) {
@@ -283,10 +283,10 @@ TransFuncBanana::TransFuncBanana(const tgt::vec2& a, const tgt::vec2& b1, const 
 TransFuncBanana::~TransFuncBanana() {}
 
 void TransFuncBanana::paint() {
-    glTranslatef(0.f, 0.f, -0.5f);
+    MatStack.translate(0.f, 0.f, -0.5f);
     glColor4ubv(color_.elem);
     paintInner();
-    glTranslatef(0.f, 0.f, 0.5f);
+    MatStack.translate(0.f, 0.f, 0.5f);
 }
 
 void TransFuncBanana::paintForSelection(GLubyte id) {

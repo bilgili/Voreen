@@ -159,6 +159,7 @@ int Texture::calcBpp(GLint internalformat) {
 
         case 2:
         case GL_LUMINANCE_ALPHA:
+        case GL_RG:
         case GL_INTENSITY16:
         case GL_DEPTH_COMPONENT16:
             bpp = 2;
@@ -175,7 +176,9 @@ int Texture::calcBpp(GLint internalformat) {
         case GL_BGRA:
         case GL_DEPTH_COMPONENT32:
         case GL_R32F:
+        case GL_R32UI:
         case GL_LUMINANCE32F_ARB:
+        case GL_RG32F:
             bpp = 4;
             break;
 
@@ -211,6 +214,7 @@ int Texture::calcNumChannels(GLint format) {
     case 1:
     case GL_COLOR_INDEX:
     case GL_RED:
+    case GL_RED_INTEGER:
     case GL_R32F:
     case GL_GREEN:
     case GL_BLUE:
@@ -225,6 +229,7 @@ int Texture::calcNumChannels(GLint format) {
 
     case 2:
     case GL_LUMINANCE_ALPHA:
+    case GL_RG:
         return 2;
         break;
 
@@ -240,6 +245,7 @@ int Texture::calcNumChannels(GLint format) {
     case GL_RGBA16:
     case GL_RGBA16F_ARB:
     case GL_LUMINANCE32F_ARB:
+    case GL_RG32F:
         return 4;
         break;
 

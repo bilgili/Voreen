@@ -159,7 +159,7 @@ void DicomNetworkConnector::moveSeries(VolumeURL origin, const std::string& path
     if (progressBar_) {
         progressBar_->setTitle("Moving Series...");
         progressBar_->setProgress(0.f);
-        progressBar_->setMessage("Executing C-FIND to find images.");
+        progressBar_->setProgressMessage("Executing C-FIND to find images.");
         progressBar_->update();
     }
     std::set<gdcm::Tag> emptySet;
@@ -186,7 +186,7 @@ void DicomNetworkConnector::moveSeries(VolumeURL origin, const std::string& path
         if (progressBar_) {
             progressBar_->setTitle("Moving Series...");
             progressBar_->setProgress(static_cast<float>(progressCount)/static_cast<float>(imageDataSetVector.size()));
-            progressBar_->setMessage("Moving images...");
+            progressBar_->setProgressMessage("Moving images...");
             progressBar_->update();
             progressCount++;
         }

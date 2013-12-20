@@ -28,6 +28,7 @@
 #include "tgt/tgt_gl.h"
 
 #include "tgt/matrix.h"
+#include "tgt/matrixstack.h"
 #include "tgt/plane.h"
 
 /*

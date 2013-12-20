@@ -59,7 +59,7 @@ void setNormal(inout LinkedListStruct lls, in vec3 n) {
 }
 
 // TODO define bindings
-coherent restrict uniform layout (binding=3, r32ui) uimage2D headOffset;  // image containing head pointer
+coherent uniform layout (binding=3, r32ui) uimage2D headOffset;  // image containing head pointer
 //coherent restrict readonly uniform layout (binding = 3, r32ui) uimage2D headOffset;  // image containing head pointer
 
 coherent layout(std140, binding=4) buffer LinkedList {

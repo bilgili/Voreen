@@ -23,10 +23,12 @@
  *                                                                                 *
  ***********************************************************************************/
 
+#include "mod_sampler3d.cl"
 #include "mod_gradients.cl"
 
 __constant sampler_t smpNorm = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;
 __constant float SAMPLING_BASE_INTERVAL_RCP = 200.0;
+
 
 /**
  * Makes a simple raycast through the volume for entry to exit point with minimal diffuse shading.
@@ -47,7 +49,7 @@ float4 simpleRaycast(read_only image3d_t volumeTex, read_only image2d_t tfData, 
 
         //calculate sample position and get corresponding voxel
         float4 sample = entryPoint + t * direction;
-        float4 color = read_imagef(tfData, smpNorm, (float2)(read_imagef(volumeTex, smpNorm, sample).x, 0.0));
+        float4 color = read_imagef(tfData, smpNorm, (float2)(read_imagef(volumeTex, smpNorm, sample).x, 0.5));
 
         if(color.w > 0.0) {
 
@@ -55,8 +57,14 @@ float4 simpleRaycast(read_only image3d_t volumeTex, read_only image2d_t tfData, 
             color.w = 1.f - pow(1.f - color.w, stepSize * SAMPLING_BASE_INTERVAL_RCP);
 
             // Add a little shading.  calcGradient is declared in mod_gradients.cl
-            float4 norm = normalize(calcGradient(sample, volumeTex));
-            color *= fabs(dot(norm, direction));
+            // TODO
+            VolumeParameters volumeParams;
+            volumeParams.datasetDimensionsRCP_ = (float4)(1.0) / convert_float4(get_image_dim(volumeTex));
+            volumeParams.datasetSpacingRCP_ = (float4)(1.0);
+            volumeParams.rwmScale_ = 2.0;
+            float4 norm = normalize(calcGradient(volumeTex, volumeParams, sample));
+            float angle = dot(norm, -direction);
+            color.xyz *= max(0.0, angle);
 
             //calculate ray integral
             result.xyz = result.xyz + (1.0 - result.w) * color.w * color.xyz;
@@ -90,13 +98,18 @@ __kernel void raycast( read_only image3d_t volumeTex,
                       //__global read_only image2d_t entryTexDepth,
                       //__global read_only image2d_t exitTexDepth,
                       //__global write_only image2d_t outDepth,
-                      float stepSize
+                      float stepSize,
+                      int2 screenDims
                       )
 {
     //output image pixel coordinates
     int2 target = (int2)(get_global_id(0), get_global_id(1));
+
+    if(target.x >= screenDims.x || target.y >= screenDims.y)
+    return;
+
     // Need to add 0.5 in order to get the correct coordinate. We could also use the integer coordinate directly...
-    float2 targetNorm = (convert_float2(target) + (float2)(0.5)) / convert_float2((int2)(get_global_size(0), get_global_size(1)));
+    float2 targetNorm = (convert_float2(target) + (float2)(0.5)) / convert_float2(screenDims);
 
     float4 color;
     float depth = 1.0;

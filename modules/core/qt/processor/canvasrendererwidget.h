@@ -44,7 +44,7 @@ public:
     CanvasRendererWidget(QWidget* parent, CanvasRenderer* canvasRenderer);
     virtual ~CanvasRendererWidget();
 
-    void initialize() throw (VoreenException);
+    virtual void initialize() throw (VoreenException);
 
     void showScreenshotTool();
 
@@ -56,8 +56,8 @@ protected:
 
     void createScreenshotTool();
 
+    tgt::QtCanvas* canvasWidget_;   ///< canvas also used by stereocanvasrendererwidget
 private:
-    tgt::QtCanvas* canvasWidget_;
     ScreenshotPlugin* screenshotTool_;
 };
 

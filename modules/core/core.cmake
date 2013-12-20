@@ -9,6 +9,7 @@ SET(MOD_CORE_SOURCES
     ${MOD_DIR}/processors/input/imageselector.cpp
     ${MOD_DIR}/processors/input/imagesequencesource.cpp
     ${MOD_DIR}/processors/input/imagesource.cpp
+    ${MOD_DIR}/processors/input/octreecreator.cpp
     ${MOD_DIR}/processors/input/textsource.cpp
     ${MOD_DIR}/processors/input/volumelistsource.cpp
     ${MOD_DIR}/processors/input/volumeselector.cpp
@@ -34,6 +35,7 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/processors/input/imageselector.h
     ${MOD_DIR}/processors/input/imagesequencesource.h
     ${MOD_DIR}/processors/input/imagesource.h
+    ${MOD_DIR}/processors/input/octreecreator.h
     ${MOD_DIR}/processors/input/textsource.h
     ${MOD_DIR}/processors/input/volumelistsource.h
     ${MOD_DIR}/processors/input/volumeselector.h

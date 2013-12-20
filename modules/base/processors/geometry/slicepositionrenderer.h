@@ -59,26 +59,40 @@ protected:
 private:
     void togglePropertyVisibility();
 
+    //port
+    VolumePort inport_;
+
     BoolProperty enable_;
-
+    //x slice
     BoolProperty renderXSlice_;
-    FloatVec4Property xColor_;
     IntProperty xSliceIndexProp_;
-
+    FloatVec4Property xColor_;
+    FloatProperty lineXWidth_;
+    FloatProperty alphaFactorXPlane_;
+    //y slice
     BoolProperty renderYSlice_;
-    FloatVec4Property yColor_;
     IntProperty ySliceIndexProp_;
-
+    FloatVec4Property yColor_;
+    FloatProperty lineYWidth_;
+    FloatProperty alphaFactorYPlane_;
+    //z slice
     BoolProperty renderZSlice_;
-    FloatVec4Property zColor_;
     IntProperty zSliceIndexProp_;
+    FloatVec4Property zColor_;
+    FloatProperty lineZWidth_;
+    FloatProperty alphaFactorZPlane_;
+    //position
+    BoolProperty renderSphere_;
+    FloatVec4Property sphereColor_;
+    FloatProperty sphereRadius_;
+    BoolProperty sphereDepthTest_;
+    IntProperty sphereXPos_;
+    IntProperty sphereYPos_;
+    IntProperty sphereZPos_;
 
-    FloatProperty width_;
+    //deprecated
     IntProperty stippleFactor_;
     IntProperty stipplePattern_;
-    BoolProperty renderPlanes_;
-    FloatProperty planeAlphaFactor_;
-    VolumePort inport_;
 };
 
 }

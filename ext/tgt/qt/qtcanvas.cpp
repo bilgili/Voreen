@@ -58,7 +58,7 @@ QtCanvas::QtCanvas(const std::string& title,
     stencilSize_ = format().stencilBufferSize();
     depthSize_ = format().depthBufferSize();
     doubleBuffered_ = doubleBuffer();
-    stereoViewing_ = format().stereo();
+    quadBuffered_ = format().stereo();
 }
 
 QtCanvas::QtCanvas(QWidget* parent, bool shared, Qt::WFlags f, char* /*name*/)
@@ -78,7 +78,7 @@ QtCanvas::QtCanvas(QWidget* parent, bool shared, Qt::WFlags f, char* /*name*/)
     stencilSize_ = format().stencilBufferSize();
     depthSize_ = format().depthBufferSize();
     doubleBuffered_ = doubleBuffer();
-    stereoViewing_ = format().stereo();
+    quadBuffered_ = format().stereo();
 }
 
 QtCanvas::~QtCanvas() {}
@@ -260,7 +260,7 @@ QGLFormat QtCanvas::getQGLFormat(const Buffers buffers) {
     format.setDoubleBuffer(buffers & GLCanvas::DOUBLE_BUFFER);
     format.setStencil(buffers & GLCanvas::STENCIL_BUFFER);
     format.setAccum(buffers & GLCanvas::ACCUM_BUFFER);
-    format.setStereo(buffers & GLCanvas::STEREO_VIEWING);
+    format.setStereo(buffers & GLCanvas::QUAD_BUFFER);
     format.setSampleBuffers(buffers & GLCanvas::MULTISAMPLING);
 
     return format;

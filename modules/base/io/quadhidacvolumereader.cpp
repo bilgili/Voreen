@@ -342,7 +342,7 @@ VolumeList* QuadHidacVolumeReader::read(const std::string &url)
 
         LINFO("Reading frame " << frame+1 << "/" << header.ntf << " ...");
         if (getProgressBar()) {
-            getProgressBar()->setMessage("Loading frame " + itos(frame+1) + "/" + itos(header.ntf) + " ...");
+            getProgressBar()->setProgressMessage("Loading frame " + itos(frame+1) + "/" + itos(header.ntf) + " ...");
             getProgressBar()->setProgress(static_cast<float>(frame)/(maxFrame + 1.f));
         }
 

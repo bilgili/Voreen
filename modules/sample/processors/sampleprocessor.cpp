@@ -64,8 +64,7 @@ std::string SampleProcessor::getCategory() const {
 }
 
 void SampleProcessor::setDescriptions() {
-    setDescription("My sample processor which adds a " \
-                   "user defined prefix to a given text.");
+    setDescription("Minimal sample processor that appends a user-defined prefix to a given text.");
 }
 
 void SampleProcessor::process() {

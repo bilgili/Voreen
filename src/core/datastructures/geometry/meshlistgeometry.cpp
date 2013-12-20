@@ -118,14 +118,14 @@ tgt::Bounds MeshListGeometry::getBoundingBox(bool transformed) const {
 }
 
 void MeshListGeometry::render() const {
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    tgt::multMatrix(getTransformationMatrix());
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.multMatrix(getTransformationMatrix());
 
     for (const_iterator it = begin(); it != end(); ++it)
         it->render();
 
-    glPopMatrix();
+    MatStack.popMatrix();
 }
 
 void MeshListGeometry::clip(const tgt::plane& clipPlane, MeshListGeometry& closingFaces, double epsilon) {

@@ -191,6 +191,9 @@ protected:
     virtual void renderInportToImage(const std::string& filename)
         throw (VoreenException);
 
+    /// Determines the canvas widget should be visible.
+    BoolProperty showCanvas_;
+
     /// Stores the current canvas size and may be used for adjusting it.
     IntVec2Property canvasSize_;
 

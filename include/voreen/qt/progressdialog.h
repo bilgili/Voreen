@@ -43,7 +43,7 @@ public:
     ~ProgressDialog();
 
     void update();
-    void setMessage(const std::string& message);
+    virtual void setProgressMessage(const std::string& message);
     void setTitle(const std::string& title);
     void show();
     void hide();

@@ -77,6 +77,7 @@ uniform mat4 lightMatsGTrans_[1];
 uniform mat4 lightMatsBTrans_[1];
 #endif
 
+uniform sampler3D tfVolume_;
 //uniform bool interactiveMode_;
 
 mat4 transCoeffsI_;
@@ -88,6 +89,7 @@ mat4 transCoeffsB_;
 #endif
 
 vec3 shShading(in vec3 gradient, in vec3 samplePos, in vec3 view, in vec3 color) {
+    //return texture3DLod(tfVolume_, samplePos, 0).xyz;
 
     #ifdef SH_UNSHADOWED
         vec4 normal = vec4(normalize(gradient), 1.0);
@@ -120,6 +122,7 @@ vec3 shShading(in vec3 gradient, in vec3 samplePos, in vec3 view, in vec3 color)
     mat4 finalIntensityCoeffs = matrixCompMult(transCoeffsI_, lightMatsRTrans_[0]);
     temp = finalIntensityCoeffs[0] + finalIntensityCoeffs[1] + finalIntensityCoeffs[2] + finalIntensityCoeffs[3];
     intensityFacs = vec3(temp.x + temp.y + temp.z + temp.w);
+    intensityFacs = clamp(intensityFacs, vec3(0.0), vec3(1.0));
 
     // 1 band version for testing
     //intensityFacs = vec3(finalIntensityCoeffs[0].x);
@@ -149,6 +152,7 @@ vec3 shShading(in vec3 gradient, in vec3 samplePos, in vec3 view, in vec3 color)
 
     #ifndef SH_SUBSURFACE
     color *= intensityFacs;
+    //color = abs(vec3(transCoeffsI_[0][0]));
     #endif
     //color = intensityFacs;
     //color = 2.0*texture3D(shcoeffsI0_, samplePos).xyz - 1.0;
@@ -230,19 +234,22 @@ vec3 shShading(in vec3 gradient, in vec3 samplePos, in vec3 view, in vec3 color)
 
     #ifndef SH_LIGHTPROBE
     vec3 finalSubColor;
-    finalIntensityCoeffs = matrixCompMult(lightMatsRTrans_[0], subCoeffsR);
+    finalIntensityCoeffs = matrixCompMult(transCoeffsI_, subCoeffsR);
+    //finalIntensityCoeffs = matrixCompMult(lightMatsRTrans_[0], subCoeffsR);
     //finalIntensityCoeffs = matrixCompMult(lightMatR, subCoeffsR);
     temp = finalIntensityCoeffs[0] + finalIntensityCoeffs[1] + finalIntensityCoeffs[2];
     finalSubColor.r = temp.x + temp.y + temp.z + temp.w;
     //finalSubColor.r = finalIntensityCoeffs[0].x + finalIntensityCoeffs[0].y + finalIntensityCoeffs[0].z + finalIntensityCoeffs[0].w;
 
-    finalIntensityCoeffs = matrixCompMult(lightMatsRTrans_[0], subCoeffsG);
+    finalIntensityCoeffs = matrixCompMult(transCoeffsI_, subCoeffsG);
+    //finalIntensityCoeffs = matrixCompMult(lightMatsRTrans_[0], subCoeffsG);
     //finalIntensityCoeffs = matrixCompMult(lightMatR, subCoeffsG);
     temp = finalIntensityCoeffs[0] + finalIntensityCoeffs[1] + finalIntensityCoeffs[2];
     finalSubColor.g = temp.x + temp.y + temp.z + temp.w;
     //finalSubColor.g = finalIntensityCoeffs[0].x + finalIntensityCoeffs[0].y + finalIntensityCoeffs[0].z + finalIntensityCoeffs[0].w;
 
-    finalIntensityCoeffs = matrixCompMult(lightMatsRTrans_[0], subCoeffsB);
+    finalIntensityCoeffs = matrixCompMult(transCoeffsI_, subCoeffsB);
+    //finalIntensityCoeffs = matrixCompMult(lightMatsRTrans_[0], subCoeffsB);
     //finalIntensityCoeffs = matrixCompMult(lightMatR, subCoeffsB);
     temp = finalIntensityCoeffs[0] + finalIntensityCoeffs[1] + finalIntensityCoeffs[2];
     finalSubColor.b = temp.x + temp.y + temp.z + temp.w;
@@ -324,8 +331,31 @@ vec3 shShading(in vec3 gradient, in vec3 samplePos, in vec3 view, in vec3 color)
     #ifdef SH_BLEED_SUB
     color = finalSubColor;
     #else
-    color = 0.5*(finalSubColor + intensityFacs) + color * intensityFacs;
+    intensityFacs = clamp(intensityFacs, vec3(0.0), vec3(1.0));
+    finalSubColor = clamp(finalSubColor, vec3(0.0), vec3(1.0));
+
+
+    //color = (finalSubColor + color) * intensityFacs;
+    //color = finalSubColor * intensityFacs;
+    //color = finalSubColor * intensityFacs;
+    //color = intensityFacs * color + finalSubColor;
+    //color = 0.1 * finalSubColor * intensityFacs;
+    //color = 0.1 * finalSubColor;
+    color = finalSubColor;
+    //color = abs(vec3(subCoeffsR[0][0]));
+    //color = abs(vec3(transCoeffsI_[0][0]));
+    //color = 0.5*(finalSubColor + intensityFacs) + color * intensityFacs;
     //color = finalSubColor;
+    //color = color * intensityFacs + finalSubColor;
+    //color = color * intensityFacs;
+    //color = intensityFacs;
+    //if(intensityFacs.z * finalSubColor.x  < 0.1)
+    //if(finalSubColor.x * intensityFacs.z > 0.1)
+    //if(finalSubColor.y < 0.0)
+    //if(finalSubColor.x < -0.1)
+        //color = vec3(1.0);
+    //else
+        //color = vec3(0.0);
     #endif
 
     //color = finalSubColor + color * intensityFacs;

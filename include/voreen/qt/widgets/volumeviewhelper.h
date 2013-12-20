@@ -89,7 +89,7 @@ public:
      */
     static std::string getVolumeMemorySize(const VolumeBase*);
 
-    static size_t getVolumeMemorySizeByte(const VolumeBase*);
+    static uint64_t getVolumeMemorySizeByte(const VolumeBase*);
 
 };
 

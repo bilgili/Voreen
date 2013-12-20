@@ -26,7 +26,7 @@
 #include "stereoscopyprocessorwidgetfactory.h"
 
 #include "../../processors/stereocanvasrenderer.h"
-#include "modules/core/qt/processor/canvasrendererwidget.h"
+#include "stereocanvasrendererwidget.h"
 
 #include "voreen/qt/voreenapplicationqt.h"
 
@@ -44,7 +44,7 @@ ProcessorWidget* StereoscopyProcessorWidgetFactory::createWidget(Processor* proc
     QWidget* parent = VoreenApplicationQt::qtApp()->getMainWindow();
 
     if (typeid(*processor) == typeid(StereoCanvasRenderer))
-        return new CanvasRendererWidget(parent, static_cast<StereoCanvasRenderer*>(processor));
+        return new StereoCanvasRendererWidget(parent, static_cast<StereoCanvasRenderer*>(processor));
     else
         return 0;
 }

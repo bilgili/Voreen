@@ -32,7 +32,7 @@ PROJECT_NAME           = "Voreen"
 # This could be handy for archiving the generated documentation or
 # if some version control system is used.
 
-PROJECT_NUMBER         = "4.3"
+PROJECT_NUMBER         = "4.4"
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer
@@ -735,8 +735,8 @@ EXCLUDE_SYMLINKS       = NO
 # against the file with absolute path, so to exclude all test directories
 # for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       = ext/* \
-                         modules/*/ext/* \
+EXCLUDE_PATTERNS       = */ext/* \
+                         */modules/*/ext/* \
                          *.gch*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names

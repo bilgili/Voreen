@@ -31,11 +31,14 @@
 
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "voreen/core/datastructures/volume/volume.h"
+#include "voreen/core/datastructures/volume/volumedisk.h"
+#include "voreen/core/datastructures/volume/volumegl.h"
 #include "voreen/core/io/progressbar.h"
 #include "voreen/core/io/volumeserializerpopulator.h"
 #include "voreen/core/network/processornetwork.h"
 #include "voreen/core/ports/volumeport.h"
 #include "voreen/core/voreenapplication.h"
+#include "voreen/core/datastructures/octree/volumeoctreebase.h"
 
 #include "voreen/qt/voreenapplicationqt.h"
 #include "voreen/qt/progressdialog.h"
@@ -217,6 +220,9 @@ void VolumeViewer::clear() {
     tgtAssert(containerInfo_, "no containerInfo_");
     volumeInfos_->clear();
     containerInfo_->clear();
+
+    if (parentWidget() && parentWidget()->parentWidget())
+        parentWidget()->parentWidget()->setWindowTitle("Volume Viewer");
 }
 
 void VolumeViewer::paintEvent(QPaintEvent* event) {
@@ -262,10 +268,20 @@ void VolumeViewer::updateFromNetwork() {
         for (size_t j=0; j<ports.size(); j++) {
             if (dynamic_cast<VolumePort*>(ports.at(j))) {
                 const VolumeBase* handle = static_cast<VolumePort*>(ports.at(j))->getData();
-                if (handle) {
+                if (handle && !tempHashMap_.count(handle)) {
                     tempVolumes.push_back(handle);
-                    // TODO hashing seems to be quite slow at times
-                    //tempHashMap_.insert(std::make_pair(handle, handle->getHash()));
+                    std::string hashString = handle->getHash();
+                    // add representations to hash string so representation changes are detected
+                    if (handle->hasRepresentation<VolumeDisk>())
+                        hashString += "-Disk";
+                    if (handle->hasRepresentation<VolumeRAM>())
+                        hashString += "-RAM";
+                    if (handle->hasRepresentation<VolumeOctreeBase>())
+                        hashString += "-Octree";
+                    if (handle->hasRepresentation<VolumeGL>())
+                        hashString += "-VolumeGL";
+
+                    tempHashMap_.insert(std::make_pair(handle, hashString));
                     tempPortMap_.insert(std::make_pair(handle, ports.at(j)));
                 }
             }
@@ -281,11 +297,10 @@ void VolumeViewer::updateFromNetwork() {
             if (tempVolumes.at(i) != volumeHandles_.at(i))
                 changed = true;
             else {
-                // TODO hashing seems to be quite slow at times
-                /*tgtAssert(tempHashMap_.find(tempVolumes.at(i)) != tempHashMap_.end(), "missing entry in tempHashMap");
+                tgtAssert(tempHashMap_.find(tempVolumes.at(i)) != tempHashMap_.end(), "missing entry in tempHashMap");
                 tgtAssert(handleToHashMap_.find(volumeHandles_.at(i)) != handleToHashMap_.end(), "missing entry in handleToHashMap_");
                 if (tempHashMap_[tempVolumes.at(i)] != handleToHashMap_[volumeHandles_.at(i)])
-                    changed = true; */
+                    changed = true;
             }
         }
     }
@@ -311,8 +326,13 @@ void VolumeViewer::updateFromNetwork() {
         volumeInfos_->addTopLevelItem(treeWidgetItem);
     }
 
-    if (!volumeHandles_.empty())
+    if (!volumeHandles_.empty()) {
         containerInfo_->setText(QString::fromStdString(calculateVolumeSizeString(volumeHandles_)));
+        if (parentWidget() && parentWidget()->parentWidget()) {
+            size_t numVolumes = volumeHandles_.size();
+            parentWidget()->parentWidget()->setWindowTitle(QString::fromStdString("Volume Viewer (" + itos(volumeHandles_.size()) + (numVolumes > 1 ? " Volumes)" : " Volume)")));
+        }
+    }
 }
 
 QTreeWidgetItem* VolumeViewer::createTreeWidgetItem(const VolumeBase* handle, const Port* port) {
@@ -322,37 +342,70 @@ QTreeWidgetItem* VolumeViewer::createTreeWidgetItem(const VolumeBase* handle, co
     QTreeWidgetItem* treeItem = new QTreeWidgetItem(volumeInfos_);
     std::string name = VolumeViewHelper::getStrippedVolumeName(handle);
     std::string path = VolumeViewHelper::getVolumePath(handle);
-    if (name.empty())
-        name = "<unnamed>";
-
-    QFontInfo fontInfo(treeItem->font(0));
+    /*if (name.empty())
+        name = "-";
+    if (path.empty())
+        path += "-"; */
 
     //QLabel* infos = new QLabel(QString(name.c_str()) + " (" + QString(VolumeViewHelper::getVolumeType(volume).c_str()) + ")" + QString(QChar::LineSeparator)
     //              + QString(path.c_str()) + QString(QChar::LineSeparator)
     //              + "Dimension: " + QString(VolumeViewHelper::getVolumeDimension(volume).c_str()));
     //infos->setWordWrap(true);
 
+    QFontInfo fontInfo(treeItem->font(0));
     treeItem->setFont(0, QFont(fontInfo.family(), fontSize));
-    treeItem->setText(0, QString::fromStdString(port->getQualifiedName()) + QString(QChar::LineSeparator)
-        + QString::fromStdString(name) + " (" + QString::fromStdString(VolumeViewHelper::getVolumeType(handle)) + ")" + QString(QChar::LineSeparator)
-        + QString::fromStdString(path) + QString(QChar::LineSeparator)
-        + "Dimension: " + QString::fromStdString(VolumeViewHelper::getVolumeDimension(handle)));
 
+    // description lines
+    std::vector<std::string> descLines;
+    descLines.push_back(port->getProcessor()->getGuiName() + "." + port->getGuiName());
+    descLines.push_back("File: " + VolumeViewHelper::getStrippedVolumeName(handle));
+    descLines.push_back("Data Type: " + VolumeViewHelper::getVolumeType(handle));
+    descLines.push_back("Dimension: " + VolumeViewHelper::getVolumeDimension(handle));
+
+    std::vector<std::string> representations;
+    if (handle->hasRepresentation<VolumeDisk>())
+        representations.push_back("Disk");
+    if (handle->hasRepresentation<VolumeRAM>())
+        representations.push_back("RAM");
+    if (handle->hasRepresentation<VolumeOctreeBase>())
+        representations.push_back("Octree");
+    if (handle->hasRepresentation<VolumeGL>())
+        representations.push_back("GL");
+    descLines.push_back("MemSize: " + VolumeViewHelper::getVolumeMemorySize(handle) + " (" + strJoin(representations, ",") + ")");
+
+    // format description lines
+    QFontMetrics fontMetrics(QFontMetrics(treeItem->font(0)));
+    int maxTextWidth = 175;
+    QString descString;
+    for (size_t i=0; i<descLines.size(); i++) {
+        descString += fontMetrics.elidedText(QString::fromStdString(descLines.at(i)), Qt::ElideMiddle, maxTextWidth);
+        if (i < descLines.size()-1)
+            descString.append(QString(QChar::LineSeparator));
+    }
+    treeItem->setText(0, descString);
+
+    // icon
     treeItem->setIcon(0, QIcon(VolumeViewHelper::generateBorderedPreview(handle, 63, 0)));
     treeItem->setSizeHint(0,QSize(65,65));
-    treeItem->setToolTip(0, QString::fromStdString(port->getQualifiedName()) + "\n"
-        + QString::fromStdString(name
-            + " ("+VolumeViewHelper::getVolumeType(handle)+")"+ "\n"+ path
-            + "\nDimensions: " + VolumeViewHelper::getVolumeDimension(handle) + "\nVoxel Spacing: "
-            + VolumeViewHelper::getVolumeSpacing(handle) +"\nMemory Size: "
-            + VolumeViewHelper::getVolumeMemorySize(handle)));
+
+    // tooltip
+    treeItem->setToolTip(0, QString::fromStdString("Port: " + port->getProcessor()->getGuiName() + "." + port->getGuiName()) + "\n"
+        + QString::fromStdString("File: " + name) + "\n"
+        + QString::fromStdString("Path: " + path) + "\n"
+        + QString::fromStdString("Data Type: " + VolumeViewHelper::getVolumeType(handle)) + "\n"
+        + QString::fromStdString("Dimensions: " + VolumeViewHelper::getVolumeDimension(handle)) + "\n"
+        + QString::fromStdString("Voxel Size: " + VolumeViewHelper::getVolumeSpacing(handle)) + "\n"
+        + QString::fromStdString("Memory Size: " + VolumeViewHelper::getVolumeMemorySize(handle)) + "\n"
+        + QString::fromStdString("Representations: " + strJoin(representations, ", "))
+    );
 
     return treeItem;
 }
 
 std::string VolumeViewer::calculateVolumeSizeString(const std::vector<const VolumeBase*>& handles) {
 
-    size_t volumeSize = 0;
+    uint64_t volumeSize = 0;
+    uint64_t volumeSizeRam = 0;
 
     // use set to eliminate duplicates
     std::set<const VolumeBase*> handleSet;
@@ -360,28 +413,21 @@ std::string VolumeViewer::calculateVolumeSizeString(const std::vector<const Volu
 
     for (std::set<const VolumeBase*>::iterator it = handleSet.begin(); it != handleSet.end(); ++it) {
         volumeSize += VolumeViewHelper::getVolumeMemorySizeByte(*it);
+        if ((*it)->hasRepresentation<VolumeRAM>())
+            volumeSizeRam += VolumeViewHelper::getVolumeMemorySizeByte(*it);
     }
     int volumeCount = static_cast<int>(handleSet.size());
 
-    size_t bytes = volumeSize;
     std::stringstream out;
-    if(volumeCount == 1) {
+    /*if(volumeCount == 1) {
         out << volumeCount << " Volume (";
     }
     else if (volumeCount > 1) {
         out << volumeCount << " Volumes (";
-    }
-    float mb = tgt::round(bytes/104857.6f) / 10.f;    //calculate mb with 0.1f precision
-    float kb = tgt::round(bytes/102.4f) / 10.f;
-    if (mb >= 0.5f) {
-        out << mb << " MB)";
-    }
-    else if (kb >= 0.5f) {
-        out << kb << " kB)";
-    }
-    else {
-        out << bytes << " bytes)";
-    }
+    }*/
+
+    out << "Total: " << formatMemorySize(volumeSize) << " | RAM: " << formatMemorySize(volumeSizeRam);
+
     return out.str();
 }
 

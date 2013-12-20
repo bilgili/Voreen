@@ -116,21 +116,21 @@ void QuadricRenderer::render() {
         tgt::Material material(color_.get(), color_.get(), color_.get(), materialShininess_.get());
         material.activate();
 
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
         glLightfv(GL_LIGHT0, GL_POSITION, lightPosition_.get().elem);
-        glPopMatrix();
+        MatStack.popMatrix();
     }
     else { // no lighting
         glColor4fv(color_.get().elem);
     }
     LGL_ERROR;
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
 
     if (quadricType_.isSelected("cylinder")) {
-        glTranslatef(start_.get().x, start_.get().y, start_.get().z);
+        MatStack.translate(start_.get().x, start_.get().y, start_.get().z);
 
         //calculate correct rotation matrix:
         vec3 rotz = normalize(end_.get() - start_.get());
@@ -164,7 +164,7 @@ void QuadricRenderer::render() {
         gluCylinder(quadric, radius_.get(), radius_.get(), l, 200, 200);
     }
     else if (quadricType_.isSelected("sphere")) {
-        glTranslatef(position_.get().x, position_.get().y, position_.get().z);
+        MatStack.translate(position_.get().x, position_.get().y, position_.get().z);
         gluSphere(quadric, radius_.get(), 20, 20);
     }
     else {
@@ -172,7 +172,7 @@ void QuadricRenderer::render() {
     }
     LGL_ERROR;
 
-    glPopMatrix();
+    MatStack.popMatrix();
     glPopAttrib();
 
     gluDeleteQuadric(quadric);

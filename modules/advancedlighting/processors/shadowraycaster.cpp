@@ -209,22 +209,22 @@ void ShadowRaycaster::process() {
 }
 
 void ShadowRaycaster::renderSlices() {
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    tgt::loadMatrix(camera_.get().getProjectionMatrix(outport_.getSize()));
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    tgt::loadMatrix(camera_.get().getViewMatrix());
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadMatrix(camera_.get().getProjectionMatrix(outport_.getSize()));
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadMatrix(camera_.get().getViewMatrix());
     LGL_ERROR;
 
     lightVolumeGenerator_->renderSlice(zSlice_.get());
 
     LGL_ERROR;
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 
 }
 
@@ -820,14 +820,14 @@ void LightVolumeGenerator::createTexture(TextureUnit* lightUnit, TextureUnit* bl
     glViewport(0, 0, shadowTextureBlend_->getWidth(), shadowTextureBlend_->getHeight());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glOrtho(0.f, 1.f, 0.f, 1.f, -2.f, 1.f);
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
     createBlendTexture(blendUnit);
 
@@ -864,11 +864,11 @@ void LightVolumeGenerator::createTexture(TextureUnit* lightUnit, TextureUnit* bl
 
     LGL_ERROR;
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
     LGL_ERROR;
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 
     TextureUnit::setZeroUnit();
 

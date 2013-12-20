@@ -84,26 +84,26 @@ float normConst_;
 #endif
 
 //marble
-#define sigma_srR 2.19
-#define sigma_srG 2.62
-#define sigma_srB 3.00
-#define sigma_aR 0.0021
-#define sigma_aG 0.0041
-#define sigma_aB 0.0071
-#define fres_drR 0.83
-#define fres_drG 0.79
-#define fres_drB 0.75
+//#define sigma_srR 2.19
+//#define sigma_srG 2.62
+//#define sigma_srB 3.00
+//#define sigma_aR 0.0021
+//#define sigma_aG 0.0041
+//#define sigma_aB 0.0071
+//#define fres_drR 0.83
+//#define fres_drG 0.79
+//#define fres_drB 0.75
 
 //skin 1
-//#define sigma_srR 0.74
-//#define sigma_srG 0.88
-//#define sigma_srB 1.01
-//#define sigma_aR 0.032
-//#define sigma_aG 0.17
-//#define sigma_aB 0.48
-//#define fres_drR 0.44
-//#define fres_drG 0.22
-//#define fres_drB 0.13
+#define sigma_srR 0.74
+#define sigma_srG 0.88
+#define sigma_srB 1.01
+#define sigma_aR 0.032
+#define sigma_aG 0.17
+#define sigma_aB 0.48
+#define fres_drR 0.44
+#define fres_drG 0.22
+#define fres_drB 0.13
 
  ////skin 2
 //#define sigma_srR 1.09
@@ -185,8 +185,8 @@ void accumulateSHCoeffs(in vec3 pos, inout mat4 result0, inout mat4 result1) {
 
     //int rad = 16;
     //int rad = 12;
-    const int rad = 8;
-    //const int rad = 4;
+    //const int rad = 8;
+    const int rad = 4;
     //int rad = 2;
     //int rad = 1;
 
@@ -254,6 +254,7 @@ void accumulateSHCoeffs(in vec3 pos, inout mat4 result0, inout mat4 result1) {
                 //R_d /= millimeterPerVoxel*millimeterPerVoxel;
                 //R_d = normalize(R_d);
                 //R_d *= (1.0 / (pow(2.0*float(rad)+1.0, 3.0) - 1.0));
+                //R_d = vec3(1.0);
 
                 #ifdef SH_SUBSURFACE
                 result0[0]     += neighbourCoeffs[0]     * R_d.r;
@@ -292,6 +293,19 @@ void accumulateSHCoeffs(in vec3 pos, inout mat4 result0, inout mat4 result1) {
         }
     }
 
+    //float sum = pow(float(2*rad - 1), 3.0);
+    //result0 /= sum;
+    //result1 /= sum;
+
+    result0[0] = clamp(result0[0], vec4(-1.0), vec4(1.0));
+    result0[1] = clamp(result0[1], vec4(-1.0), vec4(1.0));
+    result0[2] = clamp(result0[2], vec4(-1.0), vec4(1.0));
+    result0[3] = clamp(result0[3], vec4(-1.0), vec4(1.0));
+    result1[0] = clamp(result1[0], vec4(-1.0), vec4(1.0));
+    result1[1] = clamp(result1[1], vec4(-1.0), vec4(1.0));
+    result1[2] = clamp(result1[2], vec4(-1.0), vec4(1.0));
+    result1[3] = clamp(result1[3], vec4(-1.0), vec4(1.0));
+
     // finally, the accumulated coefficients are renormalized, and we are done for this voxel!
     result0 = 0.5*result0 + 0.5;
     result1 = 0.5*result1 + 0.5;
@@ -308,7 +322,9 @@ void main() {
     // the 3d-texture-coordinate is composed of the screen-coordinate for x and y, and the slice-number for z.  To remap it
     // to 0..1 range, we divide this by the size of the volume we render into.
     vec3 pos = vec3(vec2(gl_FragCoord.xy), float(curSlice_)) / vec3(volSize_);
-    pos.z += 0.5 / float(volSize_.z);
+    //pos.z += 0.5 / float(volSize_.z);
+    //pos += 0.5 / float(volSize_.z);
+    //pos += 0.5 / vec3(volSize_);
 
     #ifdef SH_SUBSURFACE
     if(texture3D(shcoeffsI0_, pos).r == 0.5) {
@@ -337,7 +353,7 @@ void main() {
         FragData3 = result0[3];
         FragData4 = result1[0];
         FragData5 = result1[1];
-        FragData6 = vec4(result1[2].xyz, 0.0);
+        FragData6 = vec4(result1[2].xyz, 0.5);
     }
 }
 

@@ -327,7 +327,8 @@ void MultiVolumeRaycaster::process() {
     bindVolumes(raycastPrg, volumeTextures, &cam, lightPosition_.get());
     LGL_ERROR;
 
-    // determine ray step length in world coords
+    // determine ray step length in world coords. Must be done AFTER bindVolumes(), since that method also sets
+    // the uniform "samplingStepSize_" using a texture space step length depending only on the first volume
     float samplingStepSizeWorld = 0.0f;
     if (volumeTextures.size() > 0) {
         float voxelSizeWorld = 999.f;

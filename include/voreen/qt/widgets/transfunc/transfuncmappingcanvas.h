@@ -28,7 +28,6 @@
 
 #include "tgt/vector.h"
 
-#include "voreen/core/datastructures/volume/volume.h"
 #include "voreen/qt/voreenqtapi.h"
 
 #include <QWidget>
@@ -41,12 +40,10 @@ class QMouseEvent;
 namespace voreen {
 
 // Forward Declarations
-class VolumeHistogramIntensity;
+class Histogram1D;
 class HistogramPainter;
 class TransFuncMappingKey;
 class TransFunc1DKeys;
-class Volume;
-class Volume;
 
 // ------------------------------------------------------------------------- //
 
@@ -56,7 +53,7 @@ class Volume;
  * down left mouse button. Furthermore keys can be splitted, merged and deleted. The color of a key
  * can also be changed.
  */
-class VRN_QT_API TransFuncMappingCanvas : public QWidget, public VolumeObserver {
+class VRN_QT_API TransFuncMappingCanvas : public QWidget {
     Q_OBJECT
 public:
     /**
@@ -132,15 +129,6 @@ public:
     virtual void keyReleaseEvent(QKeyEvent* event);
 
     /**
-     * Method that is called when the volume associated with the transfer function
-     * shown in this widget changes. It calculates the new histogram and propagates it
-     * to the histogram painter.
-     *
-     * @param volume volume that is associated with this transfer function
-     */
-    void volumeChanged(const VolumeBase* volume);
-
-    /**
      * Sets the lower and upper threshold to the given values.
      *
      * @param l lower threshold
@@ -194,11 +182,6 @@ public:
      * @param text caption of the y axis
      */
     void setYAxisText(const std::string& text);
-
-    // VolumeObserver methods:
-    virtual void volumeDelete(const VolumeBase* source);
-    virtual void volumeChange(const VolumeBase* source);
-    virtual void derivedDataThreadFinished(const VolumeBase* source, const VolumeDerivedData* derivedData);
 
 signals:
     /**
@@ -346,11 +329,6 @@ protected:
     virtual void resizeEvent(QResizeEvent* event);
 
     /**
-     * Triggers calculation of the histogram if necessary when canvas is shown.
-     */
-    virtual void showEvent(QShowEvent* event);
-
-    /**
      * Helper function for calculation of pixel coordinates from relative coordinates.
      *
      * @param p relative coordinates in the interval [0,1]
@@ -395,11 +373,6 @@ protected:
      */
     void updateCoordinates(QPoint pos, tgt::vec2 values);
 
-    /**
-     * Re-calculated the histogram if necessary, i.e., the volume was changed.
-     */
-    void updateHistogram();
-
     TransFunc1DKeys* tf_;             ///< pointer to the transfer function that is displayed
     HistogramPainter* histogramPainter_; ///< painter that draws the histogram onto this widget
 
@@ -442,13 +415,8 @@ protected:
     QAction* resetAction_;      ///< action for reset transfer function context menu entry
     QAction* yAxisLogarithmicAction_;  ///< action for determining the scale on the histogram y-axis
 
-    bool histogramNeedsUpdate_;        ///< volume was changed, histogram must be re-calculated
-    bool histogramThreadRunning_;
-
-    const VolumeBase* volume_; ///< the currently assigned volume
-
-protected slots:
-    void setHistogram(const VolumeHistogramIntensity* histogram);
+public slots:
+    void setHistogram(const Histogram1D* histogram);
 
 };
 

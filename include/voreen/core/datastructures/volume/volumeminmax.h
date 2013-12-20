@@ -41,6 +41,7 @@ class VRN_CORE_API VolumeMinMax : public VolumeDerivedData {
 public:
     /// Empty default constructor required by VolumeDerivedData interface.
     VolumeMinMax();
+    VolumeMinMax(const VolumeMinMax& other);
     VolumeMinMax(float min, float max, float minNorm, float maxNorm);
     VolumeMinMax(const std::vector<float>& minValues, const std::vector<float>& maxValues,
         const std::vector<float>& minNormValues, const std::vector<float>& maxNormValues);

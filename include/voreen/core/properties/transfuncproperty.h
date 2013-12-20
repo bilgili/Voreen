@@ -57,6 +57,13 @@ public:
         ALL                = 15 ///< aggregation of all editor widgets
     };
 
+    /// Automatic domain fitting behavior of the transfunc on volume changes.
+    enum DomainAutoFittingStrategy {
+        FIT_DOMAIN_NEVER    = 0,    ///< Never automatically fit domain.
+        FIT_DOMAIN_INITIAL  = 1,    ///< Fit domain to volume, if the standard domain [0.0:1.0] is currently assigned.
+        FIT_DOMAIN_ALWAYS   = 2     ///< Always fit domain to the assigned volume.
+    };
+
     /**
      * Constructor
      *
@@ -122,8 +129,9 @@ public:
      * function is resized according to the bitdepth of the volume
      *
      * @param handle volumehandle that should be assigned to this property
+     * @param channel the channel used by the property
      */
-    void setVolumeHandle(const VolumeBase* handle);
+    void setVolumeHandle(const VolumeBase* handle, size_t channel = 0);
 
     /**
      * Returns the volume that is assigned to this property.
@@ -131,6 +139,13 @@ public:
      * @return volume that is associated with this property
      */
     const VolumeBase* getVolumeHandle() const;
+
+    /**
+     * Returns the channel of the volume that is assigned to this property.
+     *
+     * @return channel of the volume that is associated with this property
+     */
+    const size_t getVolumeChannel() const;
 
     /**
      * Executes all member actions that belong to the property. Generally the owner of the
@@ -168,18 +183,12 @@ public:
     bool getLazyEditorInstantiation() const { return lazyEditorInstantiation_; }
 
     /**
-     * Returns whether the tf domain is always adapted when a new volume is passed.
+     * Determines the domain fitting behavior of the TransFunc on volume changes.
      */
-    void setAlwaysFitToDomain(bool b) {
-        alwaysFitDomain_ = b;
-    }
+    void setDomainFittingStrategy(DomainAutoFittingStrategy strategy);
 
-    /**
-     * Turn automatic domain fitting on / off.
-     */
-    bool getAlwaysFitToDomain() const {
-        return alwaysFitDomain_;
-    }
+    /// Returns the transfunc's domain fitting behavior.
+    DomainAutoFittingStrategy getDomainFittingStrategy() const;
 
     /**
      * Sets the tf domain bounds from the current volume.
@@ -203,6 +212,7 @@ protected:
     void deinitialize() throw (tgt::Exception);
 
     const VolumeBase* volume_; ///< volumehandle that is associated with the transfer function property
+    size_t channel_; ///< channel of the volumehandle that is associated with the transfer function property
 
     int editors_; ///< number that indicates what editors will appear in the tf widget
 
@@ -210,9 +220,8 @@ protected:
     /// construction of the property widget or when the user is first accessing it (lazy)
     bool lazyEditorInstantiation_;
 
-    /// Determines whether the transfer function value domain is always apated when an new volumehandle is passed to the
-    /// property.
-    bool alwaysFitDomain_;
+    /// Determines the domain fitting behavior of the transfunc, when a new volume is assigned.
+    DomainAutoFittingStrategy domainFittingStrategy_;
 
     /// Set to true, if the domain fitting should be executed after the VolumeMinMax computation has finished
     bool fitToDomainPending_;

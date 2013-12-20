@@ -65,7 +65,7 @@ void GLUTCanvas::init() {
     stencilSize_ = glutGet(GLUT_WINDOW_STENCIL_SIZE);
     depthSize_ = glutGet(GLUT_WINDOW_DEPTH_SIZE);
     doubleBuffered_ = (0 != glutGet(GLUT_WINDOW_DOUBLEBUFFER));
-    stereoViewing_ =  (0 != glutGet(GLUT_WINDOW_STEREO));
+    quadBuffered_ =  (0 != glutGet(GLUT_WINDOW_STEREO));
 
     GLCanvas::init();
 }
@@ -332,7 +332,7 @@ unsigned int GLUTCanvas::getDisplayMode() {
           (DOUBLE_BUFFER  & buffers_ ? GLUT_DOUBLE      : 0) |
           (STENCIL_BUFFER & buffers_ ? GLUT_STENCIL     : 0) |
           (ACCUM_BUFFER   & buffers_ ? GLUT_ACCUM       : 0) |
-          (STEREO_VIEWING & buffers_ ? GLUT_STEREO      : 0) |
+          (QUAD_BUFFER & buffers_ ? GLUT_STEREO      : 0) |
           (MULTISAMPLING  & buffers_ ? GLUT_MULTISAMPLE : 0));
 }
 

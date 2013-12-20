@@ -1,6 +1,52 @@
 Voreen Changelog
 ----------------
 
+2013-12-20: Voreen 4.4
+----------------------
+
+   * Features:
+     o Out-of-core rendering:
+       - efficient disk streaming for data set sizes of up to 25 GB
+       - multi-threaded octree construction, supporting arbitrary input formats
+       - SingleOctreeRaycasterCL supports iterative refinement
+       - sample workspace for combined 3D/2D rendering: large-data-exploration.vws
+     o 3D plane manipulation widget (see raycasting-arbitraryclipping.vws)
+     o Automated network layout
+     o SliceViewer supports multi-channel volumes
+     o Transfer function supports gamma correction
+     o Quad-buffered stereo rendering (see StereoCanvas processor)
+     o Scale legend for BoundingBoxRenderer and SliceViewer
+     o Pong processor: see pong-xmas.vws ;-)
+     
+   * Framework/API Changes:
+     o Introduced tgt::MatrixStack as replacement for fixed-function pipeline
+     o Octree:
+       - moved octree structures from staging to core, SingleOctreeRaycasterCL to OpenCL module
+       - disk storage path and RAM usage are set globally in application settings      
+     o Revised progress API in order to support multiple progress bars simultaneously: 
+       - introduced ProgressReporter interface, implemented by Processor and ProgressBar
+       - Processor can handle multiple progress bars
+       - added ProgressProperty
+     o Removed SliceRendererBase, moved helper functions to VolumeSliceHelper and glsl.h
+     o VolumeSliceHelper: added slice cache and slice extraction in background thread
+     o Added VolumeDiskDicom for deferred/partial loading of Dicom data sets
+     o OpenCLProperty handles kernels in different build configurations
+     o Added TransFunc::DomainFittingStrategy as replacement for alwaysFitDomain flag
+     o Added VoreenApplication::showMessageBox, implemented by VoreenApplicationQt
+     o Added CollectiveSettingsProperty
+       
+   * Bug Fixes/Minor Changes:
+     o Log level can be changed via application settings
+     o Fixed network evaluation scheduling
+     o VolumeDiskRaw::loadBrick uses file input stream (fixing large file issues)
+     o CLWrapper: fixed memory leak in CommandQueue::enqueue
+     o CMake: added /Zm1000 flag for MSVC++ (increases RAM limit for precompiled headers)
+     o Added VolumeChannelMerger and VolumeChannelSeparator processors
+     o StereoCanvas uses real-world focal length and eye separation
+     o tgt::FileSystem::fileAccessTime
+     o FloatVectorPropertyWidgets respect stepping and numdecimals settings
+
+
 2013-06-14: Voreen 4.3
 ----------------------
 

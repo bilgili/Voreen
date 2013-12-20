@@ -59,8 +59,7 @@ public:
 
 protected:
 
-    virtual void setDescriptions() { setDescription("Sample render processor for" \
-                                                    "gray-scaling an input image."); }
+    virtual void setDescriptions() { setDescription("Sample render processor that transforms its input image to gray scale."); }
     virtual void process();
 
     /**

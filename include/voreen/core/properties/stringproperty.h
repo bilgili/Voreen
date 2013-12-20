@@ -55,6 +55,14 @@ public:
      * @see Property::deserialize
      */
     virtual void deserialize(XmlDeserializer& s);
+
+    void setReadOnly(bool readOnly);
+
+    bool isReadOnly() const;
+
+protected:
+    bool readOnly_;
+
 };
 
 }

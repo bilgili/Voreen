@@ -30,6 +30,7 @@
 #include "processors/input/imagesequencesource.h"
 #include "processors/input/imagesource.h"
 #include "processors/input/imageselector.h"
+#include "processors/input/octreecreator.h"
 #include "processors/input/textsource.h"
 #include "processors/input/volumelistsource.h"
 #include "processors/input/volumesource.h"
@@ -56,12 +57,14 @@
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/buttonproperty.h"
 #include "voreen/core/properties/cameraproperty.h"
+#include "voreen/core/properties/collectivesettingsproperty.h"
 #include "voreen/core/properties/filedialogproperty.h"
 #include "voreen/core/properties/floatproperty.h"
 #include "voreen/core/properties/fontproperty.h"
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/matrixproperty.h"
 #include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/progressproperty.h"
 #include "voreen/core/properties/propertyvector.h"
 #include "voreen/core/properties/shaderproperty.h"
 #include "voreen/core/properties/stringexpressionproperty.h"
@@ -86,6 +89,7 @@
 #include "voreen/core/datastructures/geometry/pointsegmentlistgeometry.h"
 #include "voreen/core/datastructures/geometry/geometrysequence.h"
 #include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometryindexed.h"
 
 // meta data
 #include "voreen/core/datastructures/meta/aggregationmetadata.h"
@@ -95,6 +99,11 @@
 #include "voreen/core/datastructures/meta/realworldmappingmetadata.h"
 #include "voreen/core/datastructures/meta/windowstatemetadata.h"
 #include "voreen/core/datastructures/meta/zoommetadata.h"
+
+// octree
+#include "voreen/core/datastructures/octree/volumeoctree.h"
+#include "voreen/core/datastructures/octree/octreebrickpoolmanager.h"
+#include "voreen/core/datastructures/octree/octreebrickpoolmanagerdisk.h"
 
 // transfer functions
 #include "voreen/core/datastructures/transfunc/transfunc.h"
@@ -174,6 +183,7 @@ CoreModule::CoreModule(const std::string& modulePath)
     registerSerializableType(new ImageSelector());
     registerSerializableType(new GeometrySource());
     registerSerializableType(new TextSource());
+    registerSerializableType(new OctreeCreator());
 
     registerSerializableType(new CanvasRenderer());
     registerSerializableType(new VolumeSave());
@@ -210,6 +220,7 @@ CoreModule::CoreModule(const std::string& modulePath)
     registerSerializableType(new FileDialogProperty());
     registerSerializableType(new FontProperty());
     registerSerializableType(dynamic_cast<Property*>(new PropertyVector()));
+    registerSerializableType(new ProgressProperty());
     registerSerializableType(new ShaderProperty());
     registerSerializableType(new StringExpressionProperty());
     registerSerializableType(new StringProperty());
@@ -222,6 +233,7 @@ CoreModule::CoreModule(const std::string& modulePath)
     registerSerializableType(new FloatOptionProperty());
     registerSerializableType(new GLEnumOptionProperty());
     registerSerializableType(new StringOptionProperty());
+    registerSerializableType(new CollectiveSettingsProperty());
 
     // -----------------
     //  Link Evaluators
@@ -336,6 +348,8 @@ CoreModule::CoreModule(const std::string& modulePath)
     registerSerializableType(new TriangleMeshGeometrySimple());
     registerSerializableType(new TriangleMeshGeometryVec3());
     registerSerializableType(new TriangleMeshGeometryVec4Vec3());
+    registerSerializableType(new TriangleMeshGeometryUInt16IndexedVec3());
+    registerSerializableType(new TriangleMeshGeometryUInt32IndexedVec3());
     registerSerializableType(new PointListGeometryVec3());
     registerSerializableType(new PointSegmentListGeometryVec3());
 
@@ -370,6 +384,10 @@ CoreModule::CoreModule(const std::string& modulePath)
     registerSerializableType("SelectionMetaData::Processor", new SelectionMetaData<Processor*>());
     registerSerializableType(new WindowStateMetaData());
     registerSerializableType(new ZoomMetaData());
+
+    registerSerializableType(new VolumeOctree());
+    registerSerializableType(new OctreeBrickPoolManagerRAM());
+    registerSerializableType(new OctreeBrickPoolManagerDisk(64<<20, 512<<20, ""));
 
     // transfer functions
     registerSerializableType("TransFuncIntensity", new TransFunc1DKeys());

@@ -23,47 +23,37 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#include "modules/mod_sampler2d.frag"
-
-uniform sampler2D colorTexLeft_;
-uniform sampler2D colorTexRight_;
-
-uniform sampler2D depthTexLeft_;
-uniform sampler2D depthTexRight_;
+uniform vec2 screenDimRCP_;
+ 
+uniform sampler2D colorTex_;
+uniform sampler2D depthTex_;
 
 uniform int colorCode_;
-uniform bool useDepthTex_;
-uniform TextureParameters texParams_;
-
-
 
 void main() {
         vec2 fragCoord = gl_FragCoord.xy * screenDimRCP_;
-        vec4 fragColor = textureLookup2Dnormalized(colorTexLeft_, texParams_, fragCoord);
+        vec2 fragCoordLeft = vec2(fragCoord.x/2.f,fragCoord.y);
+        vec2 fragCoordRight= vec2(fragCoordLeft.x+0.5f,fragCoord.y);
+        vec4 fragColor = texture2D(colorTex_, fragCoordLeft);
         FragData0.r = fragColor.r;
         FragData0.a = fragColor.a;
         
-        fragColor = textureLookup2Dnormalized(colorTexRight_, texParams_, fragCoord);
+        fragColor = texture2D(colorTex_, fragCoordRight);
 
         if(colorCode_ == 2){ //RED_CYAN
             FragData0.gb = fragColor.gb;
-            FragData0.a = max(FragData0.a,fragColor.a);
-            //FragData0 = vec4(0.0,1.0,1.0,1.0);
+            FragData0.a = max(FragData0.a,fragColor.a);            
         } else if(colorCode_ == 1){ //RED_BLUE
             FragData0.b = fragColor.b;
             FragData0.g = 0.0;
             FragData0.a = max(FragData0.a,fragColor.a);
-            //FragData0 = vec4(0.0,0.0,1.0,1.0);
         } else { //RED_GREEN
             FragData0.g = fragColor.g;
             FragData0.b = 0.0;
             FragData0.a = max(FragData0.a,fragColor.a);
-            //FragData0 = vec4(0.0,1.0,0.0,1.0);
         }
         
-        if(useDepthTex_){
-            float FragDepthLeft = textureLookup2Dnormalized(depthTexLeft_, texParams_, fragCoord).z;
-            float FragDepthRight = textureLookup2Dnormalized(depthTexRight_, texParams_, fragCoord).z;
-            gl_FragDepth = max(FragDepthLeft,FragDepthRight);
-        }
+        float FragDepthLeft = texture2D(depthTex_, fragCoordLeft).z;
+        float FragDepthRight = texture2D(depthTex_, fragCoordRight).z;
+        gl_FragDepth = max(FragDepthLeft,FragDepthRight);
 }

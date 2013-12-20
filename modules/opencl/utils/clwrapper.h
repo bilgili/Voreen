@@ -61,6 +61,7 @@ class SharedTexture;
 class ImageObject2D;
 class ImageObject3D;
 class MemoryObject;
+class CommandQueue;
 
 // Nvidia OpenCL SDK versions prior to 3.0 declared functions with __cdecl.
 // Newer versions use __stdcall. This will adapt our code to the one used.
@@ -211,12 +212,18 @@ public:
     bool isExtensionSupported(std::string ext) const;
     bool supportsGlSharing() const { return isExtensionSupported("cl_khr_gl_sharing"); }
     cl_uint getMaxWorkGroupSize() const;
+
+    bool hasImageSupport() const;
+    tgt::ivec2 getMaxImageSize2D() const;
+    tgt::ivec3 getMaxImageSize3D() const;
+
 protected:
     cl_device_id id_;
 
     std::string name_;
     std::string extensionString_;
     std::set<std::string> extensions_;
+
     bool imageSupport_;
     tgt::ivec2 maxImageSize2D_;
     tgt::ivec3 maxImageSize3D_;
@@ -276,7 +283,12 @@ std::string Context::getInfo(cl_context_info info) const;
 //---------------------------------------------------------
 
 class VRN_CORE_API Event {
+    friend class CommandQueue;
+
 public:
+    Event() : id_(0) {
+    }
+
     Event(cl_event id) : id_(id) {
         //if(id_)
             //LCL_ERROR(clRetainEvent(id_));
@@ -294,6 +306,11 @@ public:
     }
 
     void wait() const { LCL_ERROR(clWaitForEvents(1, &id_)); }
+
+    void releaseEvent() {
+        if (id_)
+            clReleaseEvent(id_);
+    }
 
     template<class T>
     T getInfo(cl_event_info info) const {
@@ -363,66 +380,72 @@ public:
     cl_int flush() { return LCL_ERROR(clFlush(id_)); }
     cl_int finish() { return LCL_ERROR(clFinish(id_)); }
 
-    Event enqueue(const Kernel* kernel);
-    Event enqueue(const Kernel* kernel, size_t globalWorkSize, size_t localWorkSizes);
-    Event enqueue(const Kernel* kernel, size_t globalWorkSize);
-    Event enqueue(const Kernel* kernel, tgt::svec2 globalWorkSizes, tgt::svec2 localWorkSizes);
-    Event enqueue(const Kernel* kernel, tgt::svec2 globalWorkSizes);
-    Event enqueue(const Kernel* kernel, tgt::svec3 globalWorkSizes, tgt::svec3 localWorkSizes);
-    Event enqueue(const Kernel* kernel, tgt::svec3 globalWorkSizes);
-    Event enqueue(const Kernel* kernel, const std::vector<size_t>& globalWorkSizes, const std::vector<size_t>& localWorkSizes);
+    void enqueue(const Kernel* kernel, Event* event = 0);
+    void enqueue(const Kernel* kernel, size_t globalWorkSize, size_t localWorkSizes, Event* event = 0);
+    void enqueue(const Kernel* kernel, size_t globalWorkSize, Event* event = 0);
+    void enqueue(const Kernel* kernel, tgt::svec2 globalWorkSizes, tgt::svec2 localWorkSizes, Event* event = 0);
+    void enqueue(const Kernel* kernel, tgt::svec2 globalWorkSizes, Event* event = 0);
+    void enqueue(const Kernel* kernel, tgt::svec3 globalWorkSizes, tgt::svec3 localWorkSizes, Event* event = 0);
+    void enqueue(const Kernel* kernel, tgt::svec3 globalWorkSizes, Event* event = 0);
+    void enqueue(const Kernel* kernel, const std::vector<size_t>& globalWorkSizes, const std::vector<size_t>& localWorkSizes, Event* event = 0);
     //TODO: add method with offsets
     //TODO: wrap clEnqueueNativeKernel
 
-    Event enqueueReadBuffer(const Buffer* buffer, void* data, bool blocking = true);
-    Event enqueueReadBuffer(const Buffer* buffer, size_t byteOffset, size_t numBytes, void* data, bool blocking = true);
+    void enqueueReadBuffer(const Buffer* buffer, void* data, bool blocking = true, Event* event = 0);
+    void enqueueReadBuffer(const Buffer* buffer, size_t byteOffset, size_t numBytes, void* data, bool blocking = true, Event* event = 0);
 
-    Event enqueueWriteBuffer(const Buffer* buffer, void* data, bool blocking = true);
-    Event enqueueWriteBuffer(const Buffer* buffer, size_t byteOffset, size_t numBytes, void* data, bool blocking = true);
+    void enqueueWriteBuffer(const Buffer* buffer, void* data, bool blocking = true, Event* event = 0);
+    void enqueueWriteBuffer(const Buffer* buffer, size_t byteOffset, size_t numBytes, void* data, bool blocking = true, Event* event = 0);
 
     //FIND: k_nguyen add enqueueCopyImage
-    Event enqueueCopyBuffer(const Buffer &src, const Buffer &dst, size_t src_offset, size_t dst_offset, size_t size);
+    void enqueueCopyBuffer(const Buffer &src, const Buffer &dst, size_t src_offset, size_t dst_offset, size_t size, Event* event = 0);
 
-    Event enqueueCopyImage(const ImageObject2D &src,
+    void enqueueCopyImage(const ImageObject2D &src,
                            const ImageObject2D &dst,
                            const size_t src_origin[3],
                            const size_t dst_origin[3],
-                           const size_t region[3]);
-    Event enqueueWriteImage(const ImageObject2D &img,
+                           const size_t region[3],
+                           Event* event = 0);
+    void enqueueWriteImage(const ImageObject2D &img,
                             tgt::Texture *tex,
                             const size_t origin[3],
                             const size_t region[3],
-                            bool blocking=true);
-    Event enqueueReadImage(const ImageObject2D &img,
+                            bool blocking=true,
+                            Event* event = 0);
+    void enqueueReadImage(const ImageObject2D &img,
                            tgt::Texture *tex,
                            const size_t origin[3],
                            const size_t region[3],
-                           bool blocking=true);
-    Event enqueueReadImage(const ImageObject2D &img,
+                           bool blocking=true,
+                           Event* event = 0);
+    void enqueueReadImage(const ImageObject2D &img,
                            tgt::Texture *tex,
-                           bool blocking=true);
+                           bool blocking=true,
+                           Event* event = 0);
 
-    Event enqueueCopyImageToBuffer(const ImageObject2D &src,
+    void enqueueCopyImageToBuffer(const ImageObject2D &src,
                                    const Buffer &dst,
                                    const size_t origin[3],
                                    const size_t region[3],
-                                   size_t   dst_offset = 0);
+                                   size_t   dst_offset = 0,
+                                   Event* event = 0);
 
-    Event enqueueCopyBufferToImage(const Buffer &src,
+    void enqueueCopyBufferToImage(const Buffer &src,
                                    const ImageObject2D &dst,
                                    size_t src_offset,
                                    const size_t dst_origin[3],
-                                   const size_t region[3]);
+                                   const size_t region[3],
+                                   Event* event = 0);
 
     //
 
     //TODO: add methods with offset + size
     //TODO: wrap clEnqueueCopyBuffer
 
-    Event enqueueAcquireGLObject(const MemoryObject* obj);
-    Event enqueueReleaseGLObject(const MemoryObject* obj);
+    void enqueueAcquireGLObject(const MemoryObject* obj, Event* event = 0);
+    void enqueueReleaseGLObject(const MemoryObject* obj, Event* event = 0);
 
-    Event enqueueMarker();
+    void enqueueMarker(Event* event = 0);
     void enqueueBarrier();
     void enqueueWaitForEvent(const Event* event);
     void enqueueWaitForEvents(const std::vector<Event*>& event);
@@ -556,7 +579,7 @@ public:
     ///flags: CL_MEM_READ_WRITE CL_MEM_WRITE_ONLY CL_MEM_READ_ONLY CL_MEM_USE_HOST_PTR CL_MEM_ALLOC_HOST_PTR CL_MEM_COPY_HOST_PTR
     //Buffer(const Context& context, cl_mem_flags flags, size_t size, void* hostPtr = 0);
     //TODO: const hostPtr
-    Buffer(const Context* context, cl_mem_flags flags, size_t size, const void* hostPtr = 0);
+    Buffer(const Context* context, cl_mem_flags flags, size_t size, const void* hostPtr = 0, cl_int* err = 0);
     virtual ~Buffer();
 
     size_t getSize() const { return size_; }
@@ -800,10 +823,11 @@ typedef tgt::vec2 float2;
 void fillGradientModesPropertyCL(StringOptionProperty& gradientMode);
 void fillShadingModesPropertyCL(StringOptionProperty& shadeMode);
 void fillCompositingModesPropertyCL(StringOptionProperty& compositingMode);
+void fillClassificationModesPropertyCL(StringOptionProperty* prop);
 std::string getGradientDefineCL(std::string gradientMode, std::string functionName);
 std::string getShaderDefineCL(std::string shadeMode, std::string functionName, std::string n = "n", std::string pos = "pos", std::string lPos = "lPos", std::string cPos = "cPos", std::string ka = "ka", std::string kd = "kd", std::string ks = "ks");
 std::string getCompositingDefineCl(std::string compositingMode, std::string functionName, std::string result = "result", std::string color = "color", std::string samplePos = "samplePos", std::string gradient = "gradient", std::string t = "t", std::string samplingStepSize = "samplingStepSize", std::string tDepth = "tDepth");
-
+std::string getShaderDefineFunctionCL(const std::string mode, const std::string& defineName);
 } //namespace cl
 
 } //namespace voreen

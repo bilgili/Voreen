@@ -206,15 +206,15 @@ void LightWidgetRenderer::render() {
         glMaterialfv(GL_FRONT_AND_BACK,    GL_SPECULAR,    ye_specular);
         LGL_ERROR;
 
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glTranslatef(lightPosition_.get().x, lightPosition_.get().y, lightPosition_.get().z);
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
+        MatStack.translate(lightPosition_.get().x, lightPosition_.get().y, lightPosition_.get().z);
         LGL_ERROR;
 
         gluSphere(quadric,0.03f,20,20);
         LGL_ERROR;
 
-        glPopMatrix();
+        MatStack.popMatrix();
         LGL_ERROR;
         glPopAttrib();
         LGL_ERROR;
@@ -230,16 +230,16 @@ void LightWidgetRenderer::renderPicking() {
     if (showLightWidget_.get()) {
         GLUquadricObj* quadric = gluNewQuadric();
 
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glTranslatef(lightPosition_.get().x, lightPosition_.get().y, lightPosition_.get().z);
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
+        MatStack.translate(lightPosition_.get().x, lightPosition_.get().y, lightPosition_.get().z);
         LGL_ERROR;
 
         idManager_->setGLColor(this);
         gluSphere(quadric,0.03f,20,20);
         LGL_ERROR;
 
-        glPopMatrix();
+        MatStack.popMatrix();
         gluDeleteQuadric(quadric);
         LGL_ERROR;
     }

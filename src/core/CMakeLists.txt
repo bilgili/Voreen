@@ -60,6 +60,10 @@ SET(VRN_CORE_SOURCES
     datastructures/meta/realworldmappingmetadata.cpp
     datastructures/meta/windowstatemetadata.cpp
     datastructures/meta/zoommetadata.cpp
+    datastructures/octree/octreebrickpoolmanager.cpp
+    datastructures/octree/octreebrickpoolmanagerdisk.cpp
+    datastructures/octree/volumeoctree.cpp
+    datastructures/octree/volumeoctreebase.cpp
     datastructures/roi/roiaggregation.cpp
     datastructures/roi/roiunion.cpp
     datastructures/roi/roisubtract.cpp
@@ -92,6 +96,7 @@ SET(VRN_CORE_SOURCES
     datastructures/volume/volumehash.cpp
     datastructures/volume/volumelist.cpp
     datastructures/volume/volumeminmax.cpp
+    datastructures/volume/volumeminmaxmagnitude.cpp
     datastructures/volume/volumepreview.cpp
     datastructures/volume/volumerepresentation.cpp
     datastructures/volume/volumetexture.cpp
@@ -160,6 +165,7 @@ SET(VRN_CORE_SOURCES
     properties/boolproperty.cpp
     properties/buttonproperty.cpp
     properties/cameraproperty.cpp
+    properties/collectivesettingsproperty.cpp
     properties/condition.cpp
     properties/eventproperty.cpp
     properties/filedialogproperty.cpp
@@ -170,6 +176,7 @@ SET(VRN_CORE_SOURCES
     properties/matrixproperty.cpp 
     properties/numericproperty.cpp
     properties/optionproperty.cpp
+    properties/progressproperty.cpp
     properties/property.cpp
     properties/propertyowner.cpp
     properties/propertyvector.cpp
@@ -193,6 +200,7 @@ SET(VRN_CORE_SOURCES
     utils/commandlineparser.cpp
     utils/glsl.cpp
     utils/hashing.cpp
+    utils/memoryinfo.cpp
     utils/observer.cpp
     utils/stringutils.cpp
     utils/statistics.cpp
@@ -277,6 +285,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/datastructures/geometry/geometrysequence.h
     ../../include/voreen/core/datastructures/geometry/meshgeometry.h
     ../../include/voreen/core/datastructures/geometry/trianglemeshgeometry.h
+    ../../include/voreen/core/datastructures/geometry/trianglemeshgeometryindexed.h
     ../../include/voreen/core/datastructures/geometry/meshlistgeometry.h
     ../../include/voreen/core/datastructures/geometry/pointlistgeometry.h
     ../../include/voreen/core/datastructures/geometry/pointsegmentlistgeometry.h
@@ -292,6 +301,13 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/datastructures/meta/selectionmetadata.h
     ../../include/voreen/core/datastructures/meta/windowstatemetadata.h
     ../../include/voreen/core/datastructures/meta/zoommetadata.h
+    ../../include/voreen/core/datastructures/octree/brickpoolmanagerqueue.h
+    ../../include/voreen/core/datastructures/octree/octreebrickpoolmanager.h
+    ../../include/voreen/core/datastructures/octree/octreebrickpoolmanagerdisk.h
+    ../../include/voreen/core/datastructures/octree/octreeutils.h
+    ../../include/voreen/core/datastructures/octree/volumeoctree.h
+    ../../include/voreen/core/datastructures/octree/volumeoctreebase.h
+    ../../include/voreen/core/datastructures/octree/volumeoctreenodegeneric.h
     ../../include/voreen/core/datastructures/roi/roiaggregation.h
     ../../include/voreen/core/datastructures/roi/roiunion.h
     ../../include/voreen/core/datastructures/roi/roisubtract.h
@@ -326,6 +342,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/datastructures/volume/volumehash.h
     ../../include/voreen/core/datastructures/volume/volumelist.h
     ../../include/voreen/core/datastructures/volume/volumeminmax.h
+    ../../include/voreen/core/datastructures/volume/volumeminmaxmagnitude.h
     ../../include/voreen/core/datastructures/volume/volumeoperator.h
     ../../include/voreen/core/datastructures/volume/volumepreview.h
     ../../include/voreen/core/datastructures/volume/volumerepresentation.h
@@ -369,6 +386,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/interaction/voreentrackball.h
 
     ../../include/voreen/core/io/progressbar.h
+    ../../include/voreen/core/io/progressreporter.h
     ../../include/voreen/core/io/textfilereader.h
     ../../include/voreen/core/io/volumereader.h
     ../../include/voreen/core/io/volumeserializer.h
@@ -432,6 +450,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/properties/buttonproperty.h
     ../../include/voreen/core/properties/callmemberaction.h
     ../../include/voreen/core/properties/cameraproperty.h
+    ../../include/voreen/core/properties/collectivesettingsproperty.h
     ../../include/voreen/core/properties/condition.h
     ../../include/voreen/core/properties/eventproperty.h
     ../../include/voreen/core/properties/filedialogproperty.h
@@ -442,6 +461,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/properties/matrixproperty.h
     ../../include/voreen/core/properties/numericproperty.h
     ../../include/voreen/core/properties/optionproperty.h
+    ../../include/voreen/core/properties/progressproperty.h
     ../../include/voreen/core/properties/property.h
     ../../include/voreen/core/properties/propertyowner.h
     ../../include/voreen/core/properties/propertyvector.h
@@ -472,6 +492,7 @@ SET(VRN_CORE_HEADERS
     ../../include/voreen/core/utils/exception.h
     ../../include/voreen/core/utils/glsl.h
     ../../include/voreen/core/utils/hashing.h
+    ../../include/voreen/core/utils/memoryinfo.h
     ../../include/voreen/core/utils/observer.h
     ../../include/voreen/core/utils/stringutils.h
     ../../include/voreen/core/utils/statistics.h

@@ -149,11 +149,11 @@ void InteractiveRegistrationWidget::process() {
     if (render_.get()) {
         GLUquadricObj* quadric = gluNewQuadric();
 
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+        MatStack.loadIdentity();
         glOrtho(0, outport_.getSize().x, 0, outport_.getSize().y, -100.0f, 100.0f);
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.loadIdentity();
         LGL_ERROR;
 
         glPushAttrib(GL_ALL_ATTRIB_BITS);
@@ -162,7 +162,7 @@ void InteractiveRegistrationWidget::process() {
         glEnable(GL_BLEND);
 
         // Center of rotation sphere:
-        glTranslatef(c.x, c.y, 0.0f);
+        MatStack.translate(c.x, c.y, 0.0f);
         gluSphere(quadric, sphereRadius_.get(), 32, 16);
 
         // rotation circle:
@@ -195,7 +195,7 @@ void InteractiveRegistrationWidget::process() {
         glLineWidth(1.0f);
 
         // translation cross-arrow-thing:
-        glTranslatef(sphereRadius_.get()*3.0f, sphereRadius_.get()*3.0f, 0.0f);
+        MatStack.translate(sphereRadius_.get()*3.0f, sphereRadius_.get()*3.0f, 0.0f);
         //gluSphere(quadric, sphereRadius_.get(), 32, 16);
 
         glColor4fv(sphereColor_.get().elem);
@@ -242,8 +242,8 @@ void InteractiveRegistrationWidget::process() {
 
         LGL_ERROR;
 
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.loadIdentity();
     }
 
     outport_.deactivateTarget();
@@ -262,7 +262,7 @@ void InteractiveRegistrationWidget::process() {
 
         // Center of rotation sphere:
         glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTranslatef(c.x, c.y, 0.0f);
+        MatStack.translate(c.x, c.y, 0.0f);
         gluSphere(quadric, sphereRadius_.get(), 32, 16);
 
         // rotation circle:
@@ -279,7 +279,7 @@ void InteractiveRegistrationWidget::process() {
 
         // translation cross-arrow-thing:
         glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
-        glTranslatef(sphereRadius_.get()*3.0f, sphereRadius_.get()*3.0f, 0.0f);
+        MatStack.translate(sphereRadius_.get()*3.0f, sphereRadius_.get()*3.0f, 0.0f);
         //gluSphere(quadric, sphereRadius_.get(), 32, 16);
         glBegin(GL_TRIANGLES);
             // Arrows:
@@ -326,10 +326,10 @@ void InteractiveRegistrationWidget::process() {
         LGL_ERROR;
     }
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.loadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
     LGL_ERROR;
 }
 

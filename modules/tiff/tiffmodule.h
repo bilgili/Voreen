@@ -28,6 +28,8 @@
 
 #include "voreen/core/voreenmodule.h"
 
+#include "voreen/core/properties/boolproperty.h"
+
 namespace voreen {
 
 class TiffModule : public VoreenModule {
@@ -38,6 +40,12 @@ public:
     virtual std::string getDescription() const {
         return "Provides a volume reader for multi-image TIFF files, using the libtiff library.";
     }
+
+private:
+    /// Determine directory count of a (OME-)Tiff sequence only for the first and last file,
+    /// and estimate it for the other files. This speeds up the initial opening of a (OME-)Tiff sequence.
+    BoolProperty estimateDirectoryCount_;
+
 };
 
 } // namespace

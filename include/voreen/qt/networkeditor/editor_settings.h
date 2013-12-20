@@ -82,6 +82,10 @@ enum NetworkEditorStyles {
     NWESTYLE_CLASSIC_PRINT = 1
 };
 
+enum NetworkEditorGraphLayouts {
+    NWEGL_SUGIYAMA = 0
+};
+
     /**
      * NetworkEditor Settings
      */

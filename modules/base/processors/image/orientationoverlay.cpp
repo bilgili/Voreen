@@ -163,19 +163,19 @@ void OrientationOverlay::process() {
 
     //draw the cube in the desired position
     // set modelview and projection matrices
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
 
-    tgt::loadMatrix(tgt::mat4::createOrtho(-1,1,1,-1,-2,2));
+    MatStack.loadMatrix(tgt::mat4::createOrtho(-1,1,1,-1,-2,2));
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glTranslatef(shiftX_.get()*2.0f-1.0f, shiftY_.get()*2.0f-1.0f, 0);
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.translate(shiftX_.get()*2.0f-1.0f, shiftY_.get()*2.0f-1.0f, 0);
     tgt::mat4 view = camera_.get().getViewMatrix().getRotationalPart();
 
-    glScalef((float)outport_.getSize().y / (float)outport_.getSize().x, 1, 1);
+    MatStack.scale((float)outport_.getSize().y / (float)outport_.getSize().x, 1, 1);
 
-    tgt::multMatrix(view);
+    MatStack.multMatrix(view);
 
     glClearDepth(1);
 
@@ -197,10 +197,10 @@ void OrientationOverlay::process() {
     // restore OpenGL state
     glCullFace(GL_BACK);
     glDisable(GL_CULL_FACE);
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
     LGL_ERROR;
 
     glEnable(GL_DEPTH_TEST);

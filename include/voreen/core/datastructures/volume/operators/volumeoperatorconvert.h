@@ -54,7 +54,7 @@ public:
      * @param srcVolume The volume to be converted. Must not be null.
      */
     VolumeOperatorConvert() :
-        progressBar_(0),
+        progressReporter_(0),
         inputIntensityRange_(-1.0)
     {}
 
@@ -88,12 +88,12 @@ public:
      * Assigns a progress bar that should be used by the
      * operator for indicating progress.
      */
-    void setProgressBar(ProgressBar* progress) {
-        progressBar_ = progress;
+    void setProgressReporter(ProgressReporter* progress) {
+        progressReporter_ = progress;
     }
 
 protected:
-    ProgressBar* progressBar_;  ///< to be used by concrete subclasses for indicating progress
+    ProgressReporter* progressReporter_;  ///< to be used by concrete subclasses for indicating progress
 private:
     tgt::dvec2 inputIntensityRange_;
 };
@@ -124,25 +124,25 @@ Volume* VolumeOperatorConvert::apply(const VolumeBase* srcVolumeHandle) const th
     RealWorldMapping destMapping;
     if (srcUInt8 && destUInt8) {
         LINFOC("voreen.VolumeOperatorConvert" ,"No conversion necessary: source and dest type equal (VolumeRAM_UInt8)");
-        VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::svec3(0, 0, 0), srcUInt8->getDimensions(), progressBar_)
+        VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::svec3(0, 0, 0), srcUInt8->getDimensions(), progressReporter_)
             destUInt8->voxel(i) = srcUInt8->voxel(i);
         destMapping = srcVolumeHandle->getRealWorldMapping();
     }
     else if (srcUInt16 && destUInt16) {
         LINFOC("voreen.VolumeOperatorConvert" ,"No conversion necessary: source and dest type equal (VolumeRAM_UInt16)");
-        VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::svec3(0, 0, 0), srcUInt16->getDimensions(), progressBar_)
+        VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::svec3(0, 0, 0), srcUInt16->getDimensions(), progressReporter_)
             destUInt16->voxel(i) = srcUInt16->voxel(i);
         destMapping = srcVolumeHandle->getRealWorldMapping();
     }
     else if (srcUInt16 && destUInt8) {
         LINFOC("voreen.VolumeOperatorConvert", "Using accelerated conversion from VolumeRAM_UInt16 -> VolumeRAM_UInt8");
-        VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::svec3(0, 0, 0), srcUInt16->getDimensions(), progressBar_)
+        VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::svec3(0, 0, 0), srcUInt16->getDimensions(), progressReporter_)
             destUInt8->voxel(i) = srcUInt16->voxel(i) >> 8;
         destMapping = srcVolumeHandle->getRealWorldMapping();
     }
     else if (srcUInt8 && destUInt16) {
         LINFOC("voreen.VolumeOperatorConvert", "Using accelerated conversion from VolumeRAM_UInt8 -> VolumeRAM_UInt16");
-        VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::svec3(0, 0, 0), srcUInt8->getDimensions(), progressBar_)
+        VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::svec3(0, 0, 0), srcUInt8->getDimensions(), progressReporter_)
             destUInt16->voxel(i) = srcUInt8->voxel(i) << 8;
         destMapping = srcVolumeHandle->getRealWorldMapping();
     }
@@ -204,14 +204,14 @@ Volume* VolumeOperatorConvert::apply(const VolumeBase* srcVolumeHandle) const th
         // differentiate single-channel from multi-channel volumes
         if (srcVolume->getNumChannels() == 1) {
             LINFOC("voreen.VolumeOperatorConvert", "Using fallback with setVoxelNormalized and getVoxelNormalized (single-channel)");
-            VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::ivec3(0, 0, 0), srcVolume->getDimensions(), progressBar_)
+            VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::ivec3(0, 0, 0), srcVolume->getDimensions(), progressReporter_)
                 destVolume->setVoxelNormalized(srcVolume->getVoxelNormalized(i)*scale + offset, i);
         }
         else {
             tgtAssert(srcVolume->getNumChannels() == destVolume->getNumChannels(), "channel-count mis-match");
             size_t numChannels = srcVolume->getNumChannels();
             LINFOC("voreen.VolumeOperatorConvert", "Using fallback with setVoxelNormalized and getVoxelNormalized (" << numChannels << " channels)");
-            VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::ivec3(0, 0, 0), srcVolume->getDimensions(), progressBar_) {
+            VRN_FOR_EACH_VOXEL_WITH_PROGRESS(i, tgt::ivec3(0, 0, 0), srcVolume->getDimensions(), progressReporter_) {
                 for (size_t channel=0; channel < numChannels; channel++)
                     destVolume->setVoxelNormalized(srcVolume->getVoxelNormalized(i, channel)*scale + offset, i, channel);
             }
@@ -222,8 +222,8 @@ Volume* VolumeOperatorConvert::apply(const VolumeBase* srcVolumeHandle) const th
         destMapping = RealWorldMapping::combine(RealWorldMapping(1.f/scale, -offset/scale, ""), srcVolumeHandle->getRealWorldMapping());
     }
 
-    if (progressBar_)
-        progressBar_->setProgress(1.f);
+    if (progressReporter_)
+        progressReporter_->setProgress(1.f);
 
     Volume* destVolumeHandle = new Volume(destVolume, srcVolumeHandle);
     destVolumeHandle->setRealWorldMapping(destMapping);

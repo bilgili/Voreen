@@ -42,6 +42,17 @@ namespace voreen {
  */
 class VRN_CORE_API BackgroundThread {
 
+    /**
+     * struct for keeping track of the current state of a background thread.
+     */
+    struct ThreadProgressState {
+
+        ThreadProgressState() : message_(""), progress_(0.f) {}
+
+        std::string message_;           ///< the current message (e.g. for setting it in a processor's progress bar)
+        float progress_;                ///< the current progress. should be within the range [0, 1]
+    };
+
     public:
 
         BackgroundThread() : finished_(false), running_(false) {}
@@ -74,7 +85,24 @@ class VRN_CORE_API BackgroundThread {
         /// indicates if the background thread is currently running
         virtual bool isRunning() { return running_;}
 
+        ThreadProgressState getProgress() const {
+            stateMutex_.lock();
+            ThreadProgressState copy = state_;
+            stateMutex_.unlock();
+            return copy;
+        }
+
     protected:
+
+        /**
+         * This sets the current state of the background thread.
+         */
+        void setProgress(std::string message, float progress) {
+            stateMutex_.lock();
+            state_.message_ = message;
+            state_.progress_ = progress;
+            stateMutex_.unlock();
+        }
 
         /// overwrite this method that the internal thread is supposed to execute
         virtual void threadMain() = 0;
@@ -94,6 +122,9 @@ class VRN_CORE_API BackgroundThread {
 
         bool finished_; ///< indicates if background computation is complete
         bool running_; ///< indicates if background computation is currently running
+
+        ThreadProgressState state_; ///< current state, can be set using setProgress() by the thread or queried by using getProgress (e.g. from the processor)
+        mutable boost::mutex stateMutex_;   ///< mutex for synchronizing setProgress() and getProgress()
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -157,6 +188,17 @@ class ProcessorBackgroundThread : public BackgroundThread {
                 running_ = false;
                 return;
             }
+        }
+
+        /**
+         * This sets the current state of the background thread and invalidates the processor afterwards.
+         */
+        void setProgressInvalidateProcessor(std::string message, float progress) {
+            stateMutex_.lock();
+            state_.message_ = message;
+            state_.progress_ = progress;
+            stateMutex_.unlock();
+            processor_->invalidate();
         }
 
         T* processor_; ///< the processor starting the background thread

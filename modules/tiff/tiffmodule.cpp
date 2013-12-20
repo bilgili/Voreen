@@ -32,9 +32,12 @@ namespace voreen {
 
 TiffModule::TiffModule(const std::string& modulePath)
     : VoreenModule(modulePath)
+    , estimateDirectoryCount_("estimateDirectoryCount", "Estimate Directory Count", true)
 {
     setID("TIFF");
     setGuiName("TIFF");
+
+    addProperty(estimateDirectoryCount_);
 
     registerVolumeReader(new TiffVolumeReader());
     registerVolumeReader(new OMETiffVolumeReader());

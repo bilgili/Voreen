@@ -104,9 +104,9 @@ bool bindVolumeTexture(const VolumeBase* vh, const tgt::TextureUnit* texUnit, GL
 
     if (resident != GL_TRUE){
         if(GpuCaps.getVendor() == tgt::GpuCapabilities::GPU_VENDOR_ATI){
-            LDEBUGC("voreen.glsl", "texture not resident " /*<< volume->meta().getFileName()*/);
+            LDEBUGC("voreen.glsl", "texture not resident " << vh->getOrigin().getPath());
         } else {
-            LWARNINGC("voreen.glsl", "texture not resident " /*<< volume->meta().getFileName()*/);
+            LWARNINGC("voreen.glsl", "texture not resident " << vh->getOrigin().getPath());
         }
     }
     LGL_ERROR;
@@ -128,48 +128,73 @@ bool bindVolumeTexture(const VolumeBase* vh, const tgt::TextureUnit* texUnit, GL
     return true;
 }
 
-void setUniform(tgt::Shader* shader, const std::string& imageUniform, const std::string& structUniform, const Slice* sl, const tgt::TextureUnit* texUnit) {
-    bool ignoreErr = shader->getIgnoreUniformLocationError();
-    shader->setIgnoreUniformLocationError(true);
+void setUniform(tgt::Shader* shader, const std::string& textureUniform, const std::string& structUniform, const VolumeSliceGL* slice, const tgt::TextureUnit* texUnit) {
+    tgtAssert(shader, "null pointer passed");
+    tgtAssert(slice, "null pointer passed");
+    tgtAssert(slice->getTexture(), "volume slice has not texture");
+    tgtAssert(texUnit, "null pointer passed");
 
-    if(texUnit)
-        shader->setUniform(imageUniform, texUnit->getUnitNumber());
+    // check state of slice shader
+    if (!shader->isActivated()) {
+        LERRORC("voreen.glsl", "bindSliceTexture() slice shader not activated");
+        return;
+    }
 
-    // volume size, i.e. dimensions of the proxy geometry in world coordinates
-    shader->setUniform(structUniform + ".datasetDimensions_", tgt::vec3(sl->getTexture()->getDimensions()));
-    shader->setUniform(structUniform + ".datasetDimensionsRCP_", vec3(1.f) / tgt::vec3(sl->getTexture()->getDimensions()));
-
-    // volume spacing, i.e. voxel size
-    //shader->setUniform(structUniform + ".datasetSpacing_", sl->getSpacing());
-    //shader->setUniform(structUniform + ".datasetSpacingRCP_", vec3(1.f) / sl->getSpacing());
-
-    shader->setUniform(structUniform + ".numChannels_", static_cast<GLint>(sl->getTexture()->getNumChannels()));
-    //shader->setUniform(structUniform + ".numChannels_", static_cast<GLint>(1));
-
-    // volume's transformation matrix
-    //shader->setUniform(structUniform + ".physicalToWorldMatrix_", sl->getPhysicalToWorldMatrix());
-
-    //tgt::mat4 invTm = sl->getWorldToPhysicalMatrix();
-    //shader->setUniform(structUniform + ".worldToPhysicalMatrix_", invTm);
-
-    shader->setUniform(structUniform + ".worldToTextureMatrix_", sl->getWorldToTextureMatrix());
-    shader->setUniform(structUniform + ".textureToWorldMatrix_", sl->getTextureToWorldMatrix());
-
+    // pass tex unit
+    if (texUnit)
+        shader->setUniform(textureUniform, texUnit->getUnitNumber());
     LGL_ERROR;
 
-    // construct shader real-world mapping by combining volume rwm and pixel transfer mapping
-    RealWorldMapping rwm = sl->getRealWorldMapping();
-    //RealWorldMapping transferMapping;
-    //if (sl->getRepresentation<VolumeGL>())
-        //transferMapping = sl->getRepresentation<VolumeGL>()->getPixelTransferMapping();
-    //else
-        //LWARNINGC("voreen.glsl", "setUniform(): no VolumeGL");
-    //RealWorldMapping shaderMapping = RealWorldMapping::combine(transferMapping.getInverseMapping(), rwm);
-    RealWorldMapping shaderMapping = rwm;
-    shader->setUniform(structUniform + ".rwmScale_", shaderMapping.getScale());
-    shader->setUniform(structUniform + ".rwmOffset_", shaderMapping.getOffset());
+    // determine real-world-mapping
+    RealWorldMapping rwm = slice->getRealWorldMapping();
+    bool isSignedInteger = slice->getBaseType() == "int8"  ||
+                           slice->getBaseType() == "int16" ||
+                           slice->getBaseType() == "int32" ||
+                           slice->getBaseType() == "int64"   ;
+    if (isSignedInteger) {
+        // map signed integer types from [-1.0:1.0] to [0.0:1.0] in order to avoid clamping of negative values
+        // => the pixel transfer mapping has to be reverted in the shader (see bindSliceTexture() below)
+        RealWorldMapping pixelTransferMapping(0.5f, 0.5f, "");
+        rwm = RealWorldMapping::combine(pixelTransferMapping.getInverseMapping(), rwm);
+    }
 
-    shader->setIgnoreUniformLocationError(ignoreErr);
+    // pass TextureParameters struct values to shader
+    //shader->setIgnoreUniformLocationError(true);
+    shader->setUniform(structUniform + ".dimensions_", tgt::vec2(slice->getTexture()->getDimensions().xy()));
+    shader->setUniform(structUniform + ".dimensionsRCP_", tgt::vec2(1.0f) / tgt::vec2(slice->getTexture()->getDimensions().xy()));
+    shader->setUniform(structUniform + ".matrix_", tgt::mat4::identity);
+    shader->setUniform(structUniform + ".numChannels_", (int)slice->getTexture()->getNumChannels());
+    shader->setUniform(structUniform + ".rwmScale_", rwm.getScale());
+    shader->setUniform(structUniform + ".rwmOffset_", rwm.getOffset());
+    //shader->setIgnoreUniformLocationError(false);
+    LGL_ERROR;
+}
+
+bool bindSliceTexture(const VolumeSliceGL* slice, const tgt::TextureUnit* texUnit,
+    GLint filterMode /*= GL_LINEAR*/, GLint wrapMode /*= GL_CLAMP_TO_EDGE*/, tgt::vec4 borderColor /*= tgt::vec4(0.f)*/)
+{
+    tgtAssert(slice, "null pointer passed");
+    tgtAssert(texUnit, "null pointer passed");
+
+    /// bind slicetexture to unit
+    texUnit->activate();
+    slice->bind();
+    LGL_ERROR;
+
+    // set texture filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filterMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filterMode);
+    LGL_ERROR;
+
+    // set texture wrapping
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor.elem);
+    LGL_ERROR;
+
+    texUnit->setZeroUnit();
+
+    return true;
 }
 
 std::string generateStandardShaderHeader(const tgt::GpuCapabilities::GlVersion* version) {

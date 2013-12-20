@@ -99,7 +99,7 @@ void VolumeFiltering::applyOperator() {
 
         if (filteringOperator_.isSelected("median")) {
             //volOpMedian.setProgressBar(progressBar_);
-            transformed = VolumeOperatorMedian::APPLY_OP(input, kernelSize_.getValue(), progressBar_);
+            transformed = VolumeOperatorMedian::APPLY_OP(input, kernelSize_.getValue(), this);
         }
         //else if (filteringOperator_.isSelected("erosion")) {
             //VolumeOperatorErosion volOpErosion(kernelSize_.getValue());

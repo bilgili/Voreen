@@ -42,11 +42,20 @@ namespace voreen {
 /// Base class for all TriangleMeshGeometries.
 class VRN_CORE_API TriangleMeshGeometryBase : public Geometry {
 public:
+
+    enum VertexLayout {
+        SIMPLE,
+        VEC3,
+        VEC4VEC3
+    };
+
     TriangleMeshGeometryBase();
 
     virtual size_t getNumTriangles() const = 0;
     virtual bool isEmpty() const = 0;
     virtual void clear() = 0;
+    virtual VertexLayout getVertexLayout() const = 0;
+
 private:
 };
 
@@ -131,6 +140,8 @@ public:
 
     /// Clips all triangles against the plane and closes the mesh. Works only for convex meshes.
     virtual void clip(const tgt::plane& clipPlane, double epsilon = 1e-5);
+
+    virtual Geometry* clone() const;
 
 protected:
     virtual void updateBoundingBox() const;
@@ -247,9 +258,9 @@ void TriangleMeshGeometry<V>::render() const {
     if(isEmpty())
         return;
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    tgt::multMatrix(getTransformationMatrix());
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.multMatrix(getTransformationMatrix());
 
     glBindBuffer(GL_ARRAY_BUFFER, bufferObject_);
 
@@ -257,7 +268,7 @@ void TriangleMeshGeometry<V>::render() const {
     glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(triangles_.size() * 3));
     VertexType::disableVertexAttributePointers();
 
-    glPopMatrix();
+    MatStack.popMatrix();
 }
 
 template <class V>
@@ -351,23 +362,18 @@ void TriangleMeshGeometry<V>::clip(const tgt::plane& clipPlane, double epsilon) 
     // Is closing necessary?
     if (edgeList.size() > 1) {
         // Sort edges to produce contiguous vertex order...
-        bool reverseLastEdge = false;
         for (size_t i = 0; i < edgeList.size() - 1; ++i) {
+            VertexType connectionVertex = edgeList.at(i).second;
             for (size_t j = i + 1; j < edgeList.size(); ++j) {
-                VertexType connectionVertex;
-                if (reverseLastEdge)
-                    connectionVertex = edgeList.at(i).first;
-                else
-                    connectionVertex = edgeList.at(i).second;
-
                 if (distance(edgeList.at(j).first.pos_, connectionVertex.pos_) < epsilon) {
                     std::swap(edgeList.at(i + 1), edgeList.at(j));
-                    reverseLastEdge = false;
                     break;
                 }
                 else if (distance(edgeList.at(j).second.pos_, connectionVertex.pos_) < epsilon) {
+                    VertexType tmp = edgeList.at(j).first;
+                    edgeList.at(j).first = edgeList.at(j).second;
+                    edgeList.at(j).second = tmp;
                     std::swap(edgeList.at(i + 1), edgeList.at(j));
-                    reverseLastEdge = true;
                     break;
                 }
             }
@@ -378,24 +384,34 @@ void TriangleMeshGeometry<V>::clip(const tgt::plane& clipPlane, double epsilon) 
             edgeList.at(i).second.setNormal(pl.n);
         }
 
-        // Convert sorted edge list to sorted vertex list...
+        // for concavity test: find best suited projection plane
+        int index = (tgt::maxElem(tgt::abs(pl.n)) + 1) % 3;
+        float signum = 0.f;
+        bool foundConcavity = false;
+
+        // Convert sorted edge list to sorted vertex list. Test for concavities in the resulting polygon.
         std::vector<VertexType> closingFaceVertices;
         for (size_t i = 0; i < edgeList.size(); ++i) {
-            bool reverseEdge = (i != 0) && !(distance(closingFaceVertices.at(closingFaceVertices.size() - 1).pos_, edgeList.at(i).first.pos_) < epsilon);
+            // find vec2 perpendicular to projection of edge onto the selected plane
+            tgt::vec2 perp = normalize(tgt::vec2(edgeList.at(i).first.pos_[(index + 1) % 3] - edgeList.at(i).second.pos_[(index + 1) % 3], edgeList.at(i).second.pos_[index] - edgeList.at(i).first.pos_[index]));
+            tgt::vec3 controlVec = tgt::vec3(edgeList.at((i+1) % edgeList.size()).first.pos_ - edgeList.at(i).first.pos_);
+            if(signum == 0.f && i != edgeList.size() - 1)
+                signum = tgt::sign(tgt::dot(perp, tgt::vec2(controlVec[index], controlVec[(index + 1) % 3])));
 
-            VertexType first = (reverseEdge ? edgeList.at(i).second : edgeList.at(i).first);
-            VertexType second = (reverseEdge ? edgeList.at(i).first : edgeList.at(i).second);
+            if(signum != 0.f) {
+                float res = tgt::dot(perp, tgt::vec2(controlVec[index], controlVec[(index + 1) % 3]));
+                if(signum * res < 0.f && std::abs(res) > epsilon)
+                    foundConcavity = true;
+            }
 
             if (i == 0)
-                closingFaceVertices.push_back(first);
+                closingFaceVertices.push_back(VertexType::interpolate(edgeList.at(edgeList.size() - 1).second, edgeList.at(i).first, 0.5f));
             else
-                closingFaceVertices.at(closingFaceVertices.size() - 1) = VertexType::interpolate(closingFaceVertices.at(closingFaceVertices.size() - 1), first, 0.5f);
-
-            if (i < (edgeList.size() - 1))
-                closingFaceVertices.push_back(second);
-            else
-                closingFaceVertices[0] = VertexType::interpolate(closingFaceVertices[0], second, 0.5f);
+                closingFaceVertices.push_back(VertexType::interpolate(edgeList.at(i - 1).second, edgeList.at(i).first, 0.5f));
         }
+
+        if(foundConcavity)
+            LWARNINGC("trianglemeshgeometry.clip", "Trying to clip concave geometry, may result in undefined behaviour. Possible reason: optimized proxy geometry with optimization level >= visible bricks.");
 
         // Convert vertex order to counter clockwise if necessary...
         tgt::vec3 closingFaceNormal(0, 0, 0);
@@ -515,13 +531,22 @@ void TriangleMeshGeometry<V>::clipTriangle(const TriangleType& in, std::vector<T
     }
 
     if(onPlaneVertices.size() == 2) {
-        edgeList.push_back(std::pair<VertexType, VertexType>(onPlaneVertices[0], onPlaneVertices[1]));
+        if(distance(onPlaneVertices[0].pos_, onPlaneVertices[1].pos_) > epsilon)
+            edgeList.push_back(std::pair<VertexType, VertexType>(onPlaneVertices[0], onPlaneVertices[1]));
     }
     else if(onPlaneVertices.size() == 0) {
     }
     else {
         tgtAssert(false, "Should not come here.");
     }
+}
+
+template<class V>
+Geometry* TriangleMeshGeometry<V>::clone() const {
+    TriangleMeshGeometry<V>* newGeom = static_cast<TriangleMeshGeometry<V>*>(create());
+    newGeom->triangles_ = triangles_;
+    newGeom->setTransformationMatrix(getTransformationMatrix());
+    return newGeom;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -531,6 +556,7 @@ class VRN_CORE_API TriangleMeshGeometryVec3 : public TriangleMeshGeometry<Vertex
 public:
     virtual Geometry* create() const { return new TriangleMeshGeometryVec3(); }
     virtual std::string getClassName() const { return "TriangleMeshGeometryVec3"; }
+    virtual TriangleMeshGeometryBase::VertexLayout getVertexLayout() const { return VEC3; }
 
     /// Creates a mesh containing a cube specified by two vertices.
     static TriangleMeshGeometryVec3* createCube(VertexType llfVertex, VertexType urbVertex);
@@ -547,6 +573,7 @@ class VRN_CORE_API TriangleMeshGeometryVec4Vec3 : public TriangleMeshGeometry<Ve
 public:
     virtual Geometry* create() const { return new TriangleMeshGeometryVec4Vec3(); }
     virtual std::string getClassName() const { return "TriangleMeshGeometryVec4Vec3"; }
+    virtual TriangleMeshGeometryBase::VertexLayout getVertexLayout() const { return VEC4VEC3; }
 
     static TriangleMeshGeometryVec4Vec3* createCube(tgt::vec3 coordLlf, tgt::vec3 coordUrb, tgt::vec3 colorLlf, tgt::vec3 colorUrb, float alpha, tgt::vec3 texLlf, tgt::vec3 texUrb);
 
@@ -566,6 +593,7 @@ class VRN_CORE_API TriangleMeshGeometrySimple : public TriangleMeshGeometry<Vert
 public:
     virtual Geometry* create() const { return new TriangleMeshGeometrySimple(); }
     virtual std::string getClassName() const { return "TriangleMeshGeometrySimple"; }
+    virtual TriangleMeshGeometryBase::VertexLayout getVertexLayout() const { return SIMPLE; }
 
     static TriangleMeshGeometrySimple* createCube(tgt::vec3 coordLlf, tgt::vec3 coordUrb);
 };

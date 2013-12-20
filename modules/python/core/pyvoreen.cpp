@@ -1222,6 +1222,7 @@ static PyObject* voreen_rotateCamera(PyObject* /*self*/, PyObject* args) {
 
     // rotate by trackball
     VoreenTrackball track(camProp);
+    track.setCenter(camProp->get().getFocus());
     track.rotate(tgt::quat::createQuat(f1, tgt::vec3(f2, f3, f4)));
     camProp->invalidate();
 

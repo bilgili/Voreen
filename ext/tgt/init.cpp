@@ -29,6 +29,7 @@
 #include "tgt/assert.h"
 #include "tgt/singleton.h"
 #include "tgt/gpucapabilities.h"
+#include "tgt/matrixstack.h"
 #include "tgt/tesselator.h"
 #include "tgt/texturemanager.h"
 #include "tgt/shadermanager.h"
@@ -41,7 +42,7 @@
 
 namespace tgt {
 
-void init(InitFeature::Features featureset, LogLevel logLevel) {
+void init(InitFeature::Features featureset, LogLevel /*logLevel*/) {
     if (featureset & InitFeature::SHADER_MANAGER) {
         featureset = (InitFeature::Features) (featureset | InitFeature::GPU_PROPERTIES | InitFeature::FILE_SYSTEM);
     }
@@ -52,12 +53,6 @@ void init(InitFeature::Features featureset, LogLevel logLevel) {
 
     if (featureset & InitFeature::LOG_MANAGER) {
         LogManager::init();
-        if (featureset & InitFeature::LOG_TO_CONSOLE) {
-            ConsoleLog* log = new ConsoleLog();
-            log->addCat("", true, logLevel);
-            LogMgr.addLog(log);
-        }
-        // LogMgr disposes all its logs
     }
 
     if (featureset & InitFeature::FILE_SYSTEM)
@@ -106,6 +101,7 @@ void initGL(InitFeature::Features featureset) {
 
     // starting shadermanager
     ShaderManager::init();
+    MatrixStack::init();
 }
 
 void deinitGL() {
