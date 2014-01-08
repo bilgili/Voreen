@@ -32,6 +32,10 @@ SET(VRN_QT_SOURCES
     networkeditor/styles/nwestyle_classic.cpp
     networkeditor/styles/nwestyle_classic_print.cpp
 
+    #graphlayouts
+    networkeditor/graphlayouts/nwegl_base.cpp
+    networkeditor/graphlayouts/nwegl_sugiyama.cpp
+    
     #gi
     networkeditor/graphicitems/nwebasegraphicsitem.cpp
 
@@ -132,6 +136,7 @@ SET(VRN_QT_SOURCES
     widgets/property/matrixpropertywidget.cpp
     widgets/property/optionpropertywidget.cpp
     widgets/property/processorpropertieswidget.cpp
+    widgets/property/progresspropertywidget.cpp
     widgets/property/propertyownerwidget.cpp
     widgets/property/propertyvectorwidget.cpp
     widgets/property/qpropertywidget.cpp
@@ -151,13 +156,14 @@ SET(VRN_QT_SOURCES
     widgets/transfunc/colorpicker.cpp
     widgets/transfunc/doubleslider.cpp
     widgets/transfunc/histogrampainter.cpp
+    widgets/transfunc/quadrupleslider.cpp
     widgets/transfunc/transfunceditor.cpp
     widgets/transfunc/transfunc1dkeyseditor.cpp
-    widgets/transfunc/transfunc1dhistogrampainter.cpp
+    widgets/transfunc/transfuncpropertywidgetpainter.cpp
     widgets/transfunc/transfunc1dkeyspainter.cpp
-    widgets/transfunc/transfunc1drampeditor.cpp
     widgets/transfunc/transfunc2dprimitiveseditor.cpp
     widgets/transfunc/transfunc2dprimitivespainter.cpp
+    widgets/transfunc/transfunciohelperqt.cpp
     widgets/transfunc/transfuncmappingcanvas.cpp
     widgets/transfunc/transfuncmappingcanvasramp.cpp
     widgets/transfunc/transfuncplugin.cpp
@@ -269,6 +275,7 @@ SET(VRN_QT_HEADERS
     ../../include/voreen/qt/widgets/property/matrixpropertywidget.h
     ../../include/voreen/qt/widgets/property/optionpropertywidget.h
     ../../include/voreen/qt/widgets/property/processorpropertieswidget.h
+    ../../include/voreen/qt/widgets/property/progresspropertywidget.h
     ../../include/voreen/qt/widgets/property/propertyownerwidget.h
     ../../include/voreen/qt/widgets/property/propertyvectorwidget.h
     ../../include/voreen/qt/widgets/property/qpropertywidget.h
@@ -286,14 +293,16 @@ SET(VRN_QT_HEADERS
     ../../include/voreen/qt/widgets/transfunc/colorpicker.h
     ../../include/voreen/qt/widgets/transfunc/doubleslider.h
     ../../include/voreen/qt/widgets/transfunc/histogrampainter.h
+    ../../include/voreen/qt/widgets/transfunc/quadrupleslider.h
     ../../include/voreen/qt/widgets/transfunc/transfunceditor.h
     ../../include/voreen/qt/widgets/transfunc/transfunc1dkeyseditor.h
-    ../../include/voreen/qt/widgets/transfunc/transfunc1drampeditor.h
     ../../include/voreen/qt/widgets/transfunc/transfunc2dprimitiveseditor.h
     ../../include/voreen/qt/widgets/transfunc/transfunc2dprimitivespainter.h
+    ../../include/voreen/qt/widgets/transfunc/transfunciohelperqt.h
     ../../include/voreen/qt/widgets/transfunc/transfuncmappingcanvas.h
     ../../include/voreen/qt/widgets/transfunc/transfuncmappingcanvasramp.h
     ../../include/voreen/qt/widgets/transfunc/transfuncplugin.h
+    ../../include/voreen/qt/widgets/transfunc/transfuncpropertywidgetpainter.h    
 )
 
 # headers that do not need to run through moc
@@ -327,6 +336,10 @@ SET(VRN_QT_HEADERS_NONMOC
     ../../include/voreen/qt/networkeditor/styles/nwestyle_classic.h
     ../../include/voreen/qt/networkeditor/styles/nwestyle_classic_print.h
 
+    #graphlayouts
+    ../../include/voreen/qt/networkeditor/graphlayouts/nwegl_base.h
+    ../../include/voreen/qt/networkeditor/graphlayouts/nwegl_sugiyama.h
+
     ## widgets ##
     
     ../../include/voreen/qt/widgets/choicelistcombobox.h
@@ -341,8 +354,7 @@ SET(VRN_QT_HEADERS_NONMOC
     ../../include/voreen/qt/widgets/property/qpropertywidgetwitheditorwindow.h
     ../../include/voreen/qt/widgets/property/vecpropertywidget.h
     
-    ../../include/voreen/qt/widgets/transfunc/transfunc1dkeyspainter.h
-    ../../include/voreen/qt/widgets/transfunc/transfunc1dhistogrampainter.h
+    ../../include/voreen/qt/widgets/transfunc/transfunc1dkeyspainter.h    
     
     ../../ext/tgt/qt/qtcanvas.h
     ../../ext/tgt/qt/qttimer.h

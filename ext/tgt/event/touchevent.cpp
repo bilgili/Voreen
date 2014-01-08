@@ -27,12 +27,13 @@
 namespace tgt {
 
 
-TouchEvent::TouchEvent(Event::Modifier mod, TouchPoint::State touchPointStates, DeviceType deviceType, const std::deque<TouchPoint> &touchPoints)
+TouchEvent::TouchEvent(Event::Modifier mod, TouchPoint::State touchPointStates, DeviceType deviceType, const std::deque<TouchPoint> &touchPoints, const tgt::ivec2& viewport)
     : Event()
     , mod_(mod)
     , deviceType_(deviceType)
     , touchPointStates_(touchPointStates)
     , touchPoints_(touchPoints)
+    , viewport_(viewport)
 {
 }
 

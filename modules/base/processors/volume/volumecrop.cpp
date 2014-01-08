@@ -41,11 +41,11 @@ VolumeCrop::VolumeCrop()
     , inport_(Port::INPORT, "volumehandle.input", "Volume Input")
     , outport_(Port::OUTPORT, "volumehandle.output", "Volume Output", false)
     , clipRight_("rightClippingPlane", "Right Clip Plane (x)", 0, 0, 100000)
-    , clipLeft_("leftClippingPlane", "Left Clip Plane (x)", 1, 1, 100000)
+    , clipLeft_("leftClippingPlane", "Left Clip Plane (x)", 1, 0, 100000)
     , clipFront_("frontClippingPlane", "Front Clip Plane (y)", 0, 0, 100000)
-    , clipBack_("backClippingPlane", "Back Clip Plane (y)", 1, 1, 100000)
+    , clipBack_("backClippingPlane", "Back Clip Plane (y)", 1, 0, 100000)
     , clipBottom_("bottomClippingPlane", "Bottom Clip Plane (z)", 0, 0, 100000)
-    , clipTop_("topClippingPlane", "Top Clip Plane (z)", 1, 1, 100000)
+    , clipTop_("topClippingPlane", "Top Clip Plane (z)", 1, 0, 100000)
     , continuousCropping_("continuousCropping", "Continuous Cropping", false)
     , button_("button", "Crop")
     , croppedDimensions_("croppedDimensions", "Cropped Dimensions",
@@ -77,8 +77,6 @@ VolumeCrop::VolumeCrop()
 
     croppedDimensions_.setWidgetsEnabled(false);
     croppedSize_.setWidgetsEnabled(false);
-
-    oldVolumeDimensions_ = tgt::ivec3(0,0,0);
 }
 
 Processor* VolumeCrop::create() const {
@@ -88,13 +86,7 @@ Processor* VolumeCrop::create() const {
 void VolumeCrop::process() {
     tgtAssert(inport_.getData(), "no input volume");
 
-    if (oldVolumeDimensions_ == tgt::ivec3(0,0,0))
-        oldVolumeDimensions_ = inport_.getData()->getDimensions();
-
     // adapt clipping plane properties on volume change
-    if (inport_.hasChanged()) {
-        adjustClipPropertiesRanges();
-    }
 
     tgt::svec3 inputDimensions = inport_.getData()->getDimensions();
 
@@ -129,7 +121,7 @@ void VolumeCrop::crop() {
     dimensions.y = clipBack_.get() - clipFront_.get() + 1;
     dimensions.z = clipTop_.get() - clipBottom_.get() + 1;
 
-    Volume* outputVolume = VolumeOperatorSubset::APPLY_OP(inport_.getData(), start, dimensions, progressBar_);
+    Volume* outputVolume = VolumeOperatorSubset::APPLY_OP(inport_.getData(), start, dimensions, this);
 
     // assign computed volume to outport
     outport_.setData(outputVolume);
@@ -137,87 +129,48 @@ void VolumeCrop::crop() {
 
 void VolumeCrop::onClipRightChange() {
     if (clipRight_.get() >= clipLeft_.get())
-        clipLeft_.set(clipRight_.get() + 1);
+        clipLeft_.set(clipRight_.get());
 }
 
 void VolumeCrop::onClipLeftChange() {
     if (clipRight_.get() >= clipLeft_.get())
-        clipRight_.set(clipLeft_.get() - 1);
+        clipRight_.set(clipLeft_.get());
 }
 
 void VolumeCrop::onClipFrontChange() {
     if (clipFront_.get() >= clipBack_.get())
-        clipBack_.set(clipFront_.get() + 1);
+        clipBack_.set(clipFront_.get());
 }
 
 void VolumeCrop::onClipBackChange() {
     if (clipFront_.get() >= clipBack_.get())
-        clipFront_.set(clipBack_.get() - 1);
+        clipFront_.set(clipBack_.get());
 }
 
 void VolumeCrop::onClipBottomChange() {
     if (clipBottom_.get() >= clipTop_.get())
-        clipTop_.set(clipBottom_.get() + 1);
+        clipTop_.set(clipBottom_.get());
 }
 
 void VolumeCrop::onClipTopChange() {
     if (clipBottom_.get() >= clipTop_.get())
-        clipBottom_.set(clipTop_.get() - 1);
+        clipBottom_.set(clipTop_.get());
 }
 
-void VolumeCrop::adjustClipPropertiesRanges() {
-    tgtAssert(inport_.getData() && inport_.getData()->getRepresentation<VolumeRAM>(), "No input volume");
-    tgt::ivec3 numSlices = inport_.getData()->getRepresentation<VolumeRAM>()->getDimensions();
+void VolumeCrop::adjustPropertiesToInput() {
+    if(inport_.hasData()) {
+        // adapt clipping plane properties to volume dimensions
+        tgt::ivec3 dim = tgt::ivec3(inport_.getData()->getDimensions());
 
-    // adapt clipping plane properties to volume dimensions
-    clipRight_.setMaxValue(numSlices.x-1);
-    clipLeft_.setMaxValue(numSlices.x-1);
+        clipRight_.setMaxValue(dim.x-1);
+        clipLeft_.setMaxValue(dim.x-1);
 
-    clipFront_.setMaxValue(numSlices.y-1);
-    clipBack_.setMaxValue(numSlices.y-1);
+        clipFront_.setMaxValue(dim.y-1);
+        clipBack_.setMaxValue(dim.y-1);
 
-    clipBottom_.setMaxValue(numSlices.z-1);
-    clipTop_.setMaxValue(numSlices.z-1);
-
-    // assign new clipping values while taking care that the right>left validation
-    // does not alter the assigned values
-    float rightVal = clipRight_.get()/static_cast<float>(oldVolumeDimensions_.x-1) * (numSlices.x-1);
-    float leftVal = clipLeft_.get()/static_cast<float>(oldVolumeDimensions_.x-1) * (numSlices.x-1);
-    clipLeft_.set(clipLeft_.getMaxValue());
-    clipRight_.set(tgt::ifloor(rightVal));
-    clipLeft_.set(tgt::ifloor(leftVal));
-
-    float frontVal = clipFront_.get()/static_cast<float>(oldVolumeDimensions_.y-1) * (numSlices.y-1);
-    float backVal = clipBack_.get()/static_cast<float>(oldVolumeDimensions_.y-1) * (numSlices.y-1);
-    clipBack_.set(clipBack_.getMaxValue());
-    clipFront_.set(tgt::ifloor(frontVal));
-    clipBack_.set(tgt::ifloor(backVal));
-
-    float bottomVal = clipBottom_.get()/static_cast<float>(oldVolumeDimensions_.z-1) * (numSlices.z-1);
-    float topVal = clipTop_.get()/static_cast<float>(oldVolumeDimensions_.z-1) * (numSlices.z-1);
-    clipTop_.set(clipTop_.getMaxValue());
-    clipBottom_.set(tgt::ifloor(bottomVal));
-    clipTop_.set(tgt::ifloor(topVal));
-
-    if (clipRight_.get() > clipRight_.getMaxValue())
-        clipRight_.set(clipRight_.getMaxValue());
-
-    if (clipLeft_.get() > clipLeft_.getMaxValue())
-        clipLeft_.set(clipLeft_.getMaxValue());
-
-    if (clipFront_.get() > clipFront_.getMaxValue())
-        clipFront_.set(clipFront_.getMaxValue());
-
-    if (clipBack_.get() > clipBack_.getMaxValue())
-        clipBack_.set(clipBack_.getMaxValue());
-
-    if (clipBottom_.get() > clipBottom_.getMaxValue())
-        clipBottom_.set(clipBottom_.getMaxValue());
-
-    if (clipTop_.get() > clipTop_.getMaxValue())
-        clipTop_.set(clipTop_.getMaxValue());
-
-    oldVolumeDimensions_ = numSlices;
+        clipBottom_.setMaxValue(dim.z-1);
+        clipTop_.setMaxValue(dim.z-1);
+    }
 }
 
 }   // namespace

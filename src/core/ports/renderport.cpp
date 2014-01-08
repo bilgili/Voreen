@@ -254,7 +254,10 @@ void RenderPort::deactivateTarget() {
             LERROR("Trying to activate RenderPort without RenderTarget");
     }
     else {
-        LERROR("deactivateTarget() called on inport");
+        if(getRenderTarget())
+            getRenderTarget()->deactivateTarget();
+        else
+            LERROR("deactivateTarget() called on inport without RenderTarget");
     }
 
     cleared_ = false;

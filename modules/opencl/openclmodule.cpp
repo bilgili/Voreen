@@ -30,6 +30,7 @@
 #include "processors/raycaster_cl.h"
 #include "processors/dynamicclprocessor.h"
 #include "processors/raytracingentryexitpoints.h"
+#include "processors/singleoctreeraycastercl.h"
 #include "processors/volumegradient_cl.h"
 
 #include "voreen/core/voreenapplication.h"
@@ -44,8 +45,6 @@ OpenCLModule::OpenCLModule(const std::string& modulePath)
     , opencl_(0)
     , context_(0)
     , queue_(0)
-    //, platform_(0)
-    //, device_(0)
     , glSharing_(true)
 {
     setID("OpenCL");
@@ -56,7 +55,10 @@ OpenCLModule::OpenCLModule(const std::string& modulePath)
     registerSerializableType(new GrayscaleCL());
     registerSerializableType(new RaycasterCL());
     registerSerializableType(new RaytracingEntryExitPoints());
+    registerSerializableType(new SingleOctreeRaycasterCL());
     registerSerializableType(new VolumeGradientCL());
+
+    addShaderPath(getModulePath("glsl"));
 }
 
 void OpenCLModule::deinitialize() throw (tgt::Exception) {

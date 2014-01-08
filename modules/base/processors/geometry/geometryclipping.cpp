@@ -33,7 +33,7 @@ GeometryClipping::GeometryClipping()
     : Processor()
     , inport_(Port::INPORT, "geometry.geometry", "Geometry Input")
     , outport_(Port::OUTPORT, "geometry.clippedgeometry", "Clipped Geometry Output")
-    , enabled_("enabled", "Enabled", true)
+    , enabled_("enabled", "Enable", true)
     , invert_("invert_", "Invert", false)
     , normal_("planeNormal", "Plane Normal", tgt::vec3(0, 1, 0), tgt::vec3(-1), tgt::vec3(1))
     , position_("planePosition", "Plane Position", 0.0f, -/*1e4*/FLT_MAX, /*1e4*/FLT_MAX, Processor::INVALID_RESULT, NumericProperty<float>::STATIC)
@@ -66,8 +66,7 @@ void GeometryClipping::process() {
     tgt::vec3 n = normalize(normal_.get());
     float d = position_.get();
 
-    n *= -1.f;
-    if (!invert_.get()) {
+    if (invert_.get()) {
         n *= -1.f;
         d *= -1.f;
     }

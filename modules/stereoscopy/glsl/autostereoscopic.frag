@@ -23,27 +23,37 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#include "modules/mod_sampler2d.frag"
-
-uniform sampler2D colorTexLeft_;
-uniform sampler2D colorTexRight_;
-
-uniform sampler2D depthTexLeft_;
-uniform sampler2D depthTexRight_;
-
-uniform bool useDepthTex_;
-uniform TextureParameters texParams_;
-
+uniform vec2 screenDimRCP_;
+uniform sampler2D colorTex_;
+uniform sampler2D depthTex_;
+uniform int interleaveCode_;
 void main() {
-    if((mod(trunc(gl_FragCoord.x), 2.0) < 0.5)){ //left        
-        vec2 fragCoord = vec2(gl_FragCoord.x/2.0,gl_FragCoord.y) * screenDimRCP_;        
-        FragData0 = textureLookup2Dnormalized(colorTexLeft_, texParams_, fragCoord);        
-        if(useDepthTex_)
-            gl_FragDepth = textureLookup2Dnormalized(depthTexLeft_, texParams_, fragCoord).z;
-    } else { //right
-        vec2 fragCoord = vec2((gl_FragCoord.x-1.0)/2.0,gl_FragCoord.y) * screenDimRCP_;
-        FragData0 = textureLookup2Dnormalized(colorTexRight_, texParams_, fragCoord);        
-        if(useDepthTex_)
-            gl_FragDepth = textureLookup2Dnormalized(depthTexRight_, texParams_, fragCoord).z;
-    }    
+    vec2 fragCoord = gl_FragCoord.xy * screenDimRCP_;
+    vec2 fragCoordLeft = vec2(fragCoord.x/2.f,fragCoord.y);
+    vec2 fragCoordRight= vec2(fragCoordLeft.x+0.5f,fragCoord.y);
+    if(interleaveCode_ == 0) { //vertical
+        if(mod(int(gl_FragCoord.x), 2) == 0){ //left
+            FragData0 = texture2D(colorTex_, fragCoordLeft);
+            gl_FragDepth = texture2D(depthTex_, fragCoordLeft).z;
+        } else { //right
+            FragData0 = texture2D(colorTex_, fragCoordRight);
+            gl_FragDepth = texture2D(depthTex_, fragCoordRight).z;
+        }    
+    } else if(interleaveCode_ == 1) { //horizontal
+        if(mod(int(gl_FragCoord.y), 2) == 0){ //left        
+            FragData0 = texture2D(colorTex_, fragCoordLeft);
+            gl_FragDepth = texture2D(depthTex_, fragCoordLeft).z;
+        } else { //right
+            FragData0 = texture2D(colorTex_, fragCoordRight);
+            gl_FragDepth = texture2D(depthTex_, fragCoordRight).z;
+        }
+    } else { //checker
+        if(mod(int(gl_FragCoord.x), 2) + mod(int(gl_FragCoord.y), 2) != 1) {
+           FragData0 = texture2D(colorTex_, fragCoordLeft);
+           gl_FragDepth = texture2D(depthTex_, fragCoordLeft).z;
+        } else { //right
+            FragData0 = texture2D(colorTex_, fragCoordRight);
+            gl_FragDepth = texture2D(depthTex_, fragCoordRight).z;
+        }
+    }
 }

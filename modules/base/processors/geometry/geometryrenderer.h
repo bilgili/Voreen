@@ -31,6 +31,7 @@
 #include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/shaderproperty.h"
 #include "voreen/core/properties/vectorproperty.h"
 
 namespace voreen {
@@ -49,11 +50,13 @@ public:
     virtual CodeState getCodeState() const    { return CODE_STATE_STABLE;  }
 
     virtual bool isReady() const;
+    virtual void compile();
 
     /**
      * Calls render() on the Geometry object.
      */
     virtual void render();
+    virtual void process();
 
 protected:
     virtual void setDescriptions() {
@@ -61,6 +64,7 @@ protected:
     }
 
     virtual void updatePropertyVisibilities();
+    std::string generateHeader();
 
     GeometryPort inport_;
     RenderPort texPort_;
@@ -79,6 +83,11 @@ protected:
     FloatVec4Property lightSpecular_;       ///< The light source's specular color
     FloatProperty materialShininess_;   /// The material's specular exponent
 
+    BoolProperty useShader_;
+    ShaderProperty shaderProp_;
+    BoolProperty enableClipping_;
+    FloatVec3Property planeNormal_;
+    FloatProperty planeDistance_;
 };
 
 }

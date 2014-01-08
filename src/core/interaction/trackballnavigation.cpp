@@ -243,10 +243,17 @@ void TrackballNavigation::wheelEvent(tgt::MouseEvent* e) {
     if (trackballEnabled_) {
 
         if (mode_ == ZOOM_MODE) {
-                trackball_->zoom( getZoomFactor( mouseWheelZoomAcuteness_,
-                    ( mouseWheelUpZoomIn_ && (e->button()&MouseEvent::MOUSE_WHEEL_UP)) ||
-                    (!mouseWheelUpZoomIn_ && (e->button()&MouseEvent::MOUSE_WHEEL_DOWN))
-                    ));
+                bool zoomIn = (mouseWheelUpZoomIn_ && (e->button()&MouseEvent::MOUSE_WHEEL_UP)) || (!mouseWheelUpZoomIn_ && (e->button()&MouseEvent::MOUSE_WHEEL_DOWN));
+                trackball_->zoom(getZoomFactor( mouseWheelZoomAcuteness_, zoomIn));
+                if(!zoomIn) {
+                    // since the zoom acuteness is different for zooming in and out, we need a slight correction for one wheel direction
+                    // so that moving n steps in and n steps out again results in the same camera position
+                    tgt::dvec3 pos = cameraProperty_->get().getPosition();
+                    double acuSq = mouseWheelZoomAcuteness_ * mouseWheelZoomAcuteness_;
+                    pos -= tgt::dvec3(cameraProperty_->get().getFocus()) / (1.0 - acuSq);
+                    pos *= (1.0 - 1.0 / acuSq);
+                    cameraProperty_->setPosition(tgt::vec3(pos));
+                }
                 e->accept();
         }
         else if (mode_ == ROLL_MODE) {

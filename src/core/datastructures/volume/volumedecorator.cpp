@@ -25,6 +25,10 @@
 
 #include "voreen/core/datastructures/volume/volumedecorator.h"
 
+#include "voreen/core/datastructures/volume/histogram.h"
+#include "voreen/core/datastructures/volume/volumehash.h"
+#include "voreen/core/utils/hashing.h"
+
 using std::string;
 using tgt::vec3;
 using tgt::mat4;
@@ -39,13 +43,30 @@ VolumeDecoratorIdentity::VolumeDecoratorIdentity(const VolumeBase* vhb) : base_(
 //-------------------------------------------------------------------------------------------------
 
 VolumeDecoratorReplace::VolumeDecoratorReplace(const VolumeBase* vhb,
-    const std::string& key, MetaDataBase* value)
+    const std::string& key, MetaDataBase* value, bool keepDerivedData)
     : VolumeDecoratorIdentity(vhb)
     , key_(key)
     , value_(value)
 {
     tgtAssert(key != "", "empty key passed");
     tgtAssert(value, "null pointer passed as value");
+
+    // create volume hash by concatenating hash of underlying volume with the replace item
+    if (vhb->hasDerivedData<VolumeHash>()) {
+        VolumeHash* newHash = new VolumeHash();
+        newHash->setHash(VoreenHash::getHash(vhb->getHash() + "-" + value->toString()));
+        addDerivedData(newHash);
+    }
+
+    // copy over derived data (TODO: handle other derived data types)
+    if (keepDerivedData) {
+        if (vhb->hasDerivedData<VolumeHistogramIntensity>())
+            addDerivedData(new VolumeHistogramIntensity(*vhb->getDerivedData<VolumeHistogramIntensity>()));
+
+        if (vhb->hasDerivedData<VolumeMinMax>())
+            addDerivedData(new VolumeMinMax(*vhb->getDerivedData<VolumeMinMax>()));
+    }
+
 }
 
 std::vector<std::string> VolumeDecoratorReplace::getMetaDataKeys() const {

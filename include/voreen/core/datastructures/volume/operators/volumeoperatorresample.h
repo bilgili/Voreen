@@ -42,20 +42,20 @@ public:
      * @param newDims the target dimensions
      * @param filter The filtering mode to use for calculating the resampled values.
      */
-    virtual Volume* apply(const VolumeBase* volume, tgt::ivec3 newDims, VolumeRAM::Filter filter, ProgressBar* progressBar = 0) const = 0;
+    virtual Volume* apply(const VolumeBase* volume, tgt::ivec3 newDims, VolumeRAM::Filter filter, ProgressReporter* progressReporter = 0) const = 0;
 };
 
 // Generic implementation:
 template<typename T>
 class VolumeOperatorResampleGeneric : public VolumeOperatorResampleBase {
 public:
-    virtual Volume* apply(const VolumeBase* volume, tgt::ivec3 newDims, VolumeRAM::Filter filter, ProgressBar* progressBar = 0) const;
+    virtual Volume* apply(const VolumeBase* volume, tgt::ivec3 newDims, VolumeRAM::Filter filter, ProgressReporter* progressReporter = 0) const;
     //Implement isCompatible using a handy macro:
     IS_COMPATIBLE
 };
 
 template<typename T>
-Volume* VolumeOperatorResampleGeneric<T>::apply(const VolumeBase* vh, tgt::ivec3 newDims, VolumeRAM::Filter filter, ProgressBar* progressBar) const {
+Volume* VolumeOperatorResampleGeneric<T>::apply(const VolumeBase* vh, tgt::ivec3 newDims, VolumeRAM::Filter filter, ProgressReporter* progressReporter) const {
     const VolumeRAM* vol = vh->getRepresentation<VolumeRAM>();
     if(!vol)
         return 0;
@@ -84,8 +84,8 @@ Volume* VolumeOperatorResampleGeneric<T>::apply(const VolumeBase* vh, tgt::ivec3
         throw; // throw it to the caller
     }
 
-    if (progressBar)
-        progressBar->setProgress(0.f);
+    if (progressReporter)
+        progressReporter->setProgress(0.f);
 
     /*
         Filter from the source volume to the target volume.
@@ -94,8 +94,8 @@ Volume* VolumeOperatorResampleGeneric<T>::apply(const VolumeBase* vh, tgt::ivec3
     case VolumeRAM::NEAREST:
         for (pos.z = 0; pos.z < newDims.z; ++pos.z) {
 
-            if (progressBar)
-                progressBar->setProgress(static_cast<float>(pos.z) / static_cast<float>(newDims.z));
+            if (progressReporter)
+                progressReporter->setProgress(static_cast<float>(pos.z) / static_cast<float>(newDims.z));
 
             nearest.z = static_cast<float>(pos.z) * ratio.z;
 
@@ -115,8 +115,8 @@ Volume* VolumeOperatorResampleGeneric<T>::apply(const VolumeBase* vh, tgt::ivec3
     case VolumeRAM::LINEAR:
         for (pos.z = 0; pos.z < newDims.z; ++pos.z) {
 
-            if (progressBar)
-                progressBar->setProgress(static_cast<float>(pos.z) / static_cast<float>(newDims.z));
+            if (progressReporter)
+                progressReporter->setProgress(static_cast<float>(pos.z) / static_cast<float>(newDims.z));
 
             nearest.z = static_cast<float>(pos.z) * ratio.z;
 
@@ -151,8 +151,8 @@ Volume* VolumeOperatorResampleGeneric<T>::apply(const VolumeBase* vh, tgt::ivec3
     case VolumeRAM::CUBIC:
         for (pos.z = 0; pos.z < newDims.z; ++pos.z) {
 
-            if (progressBar)
-                progressBar->setProgress(static_cast<float>(pos.z) / static_cast<float>(newDims.z));
+            if (progressReporter)
+                progressReporter->setProgress(static_cast<float>(pos.z) / static_cast<float>(newDims.z));
 
             nearest.z = static_cast<float>(pos.z) * ratio.z;
 
@@ -169,8 +169,8 @@ Volume* VolumeOperatorResampleGeneric<T>::apply(const VolumeBase* vh, tgt::ivec3
         break;
     }
 
-    if (progressBar)
-        progressBar->setProgress(1.f);
+    if (progressReporter)
+        progressReporter->setProgress(1.f);
 
     Volume* h = new Volume(v, vh);
     h->setSpacing(vh->getSpacing() * ratio);

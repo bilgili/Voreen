@@ -26,21 +26,25 @@
 #ifndef VRN_MULTIPLANARSLICERENDERER_H
 #define VRN_MULTIPLANARSLICERENDERER_H
 
-#include "slicerendererbase.h"
+#include "voreen/core/processors/volumerenderer.h"
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/cameraproperty.h"
 #include "voreen/core/interaction/camerainteractionhandler.h"
+#include "voreen/core/datastructures/volume/volumeslicehelper.h"
+#include "voreen/core/properties/transfuncproperty.h"
+
 #include "tgt/glmath.h"
 #include "tgt/camera.h"
 
 namespace tgt {
     class TextureUnit;
+    class Shader;
 }
 
 namespace voreen {
 
-class VRN_CORE_API MultiplanarSliceRenderer : public SliceRendererBase {
+class VRN_CORE_API MultiplanarSliceRenderer : public VolumeRenderer {
 public:
     MultiplanarSliceRenderer();
     virtual ~MultiplanarSliceRenderer();
@@ -53,16 +57,36 @@ public:
 protected:
     virtual void process();
     virtual void beforeProcess();
-    enum SliceAlignment { SLICE_XY, SLICE_XZ, SLICE_YZ };
+    virtual void initialize() throw (tgt::Exception);
+    virtual void deinitialize() throw (tgt::Exception);
 
 protected:
-    virtual void renderSlice(SliceAlignment sliceAlign, int sliceNo, tgt::TextureUnit& texUnit);
-    virtual void updateNumSlices();
+    enum TextureMode {
+        TEXTURE_2D,
+        TEXTURE_3D
+    };
 
-protected:
     virtual void setDescriptions() {
         setDescription("Renders three orthogonal slices, aligned to the x-, y- and z-axis.");
     }
+
+    virtual void renderSlice(SliceAlignment sliceAlign, int sliceNo, tgt::TextureUnit& texUnit);
+    virtual void updatePropertyConfiguration();
+
+    virtual std::string generateHeader();
+
+    /// Recompiles the shader.
+    bool rebuildShader();
+
+    RenderPort outport_;
+    VolumePort inport_;
+
+    TransFuncProperty transferFunc1_;
+    TransFuncProperty transferFunc2_;
+    TransFuncProperty transferFunc3_;
+    TransFuncProperty transferFunc4_;
+
+    OptionProperty<TextureMode> texMode_;     ///< use 2D slice textures or 3D volume texture?
 
     BoolProperty renderXYSlice_;
     BoolProperty renderXZSlice_;
@@ -72,6 +96,8 @@ protected:
     IntProperty sliceNumberYZ_;
     CameraProperty camProp_;
     CameraInteractionHandler* cameraHandler_;
+
+    tgt::Shader* sliceShader_;
 
     static const std::string loggerCat_;
 };

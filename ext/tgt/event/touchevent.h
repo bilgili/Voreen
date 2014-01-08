@@ -42,7 +42,7 @@ public:
         TouchPad
     };
 
-    TouchEvent(Event::Modifier mod, TouchPoint::State touchPointStates, DeviceType deviceType, const std::deque<TouchPoint> &touchPoints);
+    TouchEvent(Event::Modifier mod, TouchPoint::State touchPointStates, DeviceType deviceType, const std::deque<TouchPoint> &touchPoints, const tgt::ivec2& viewport = tgt::ivec2(-1));
     ~TouchEvent();
     DeviceType deviceType() const;
     TouchPoint::State touchPointStates() const;
@@ -52,6 +52,9 @@ public:
     Event::Modifier modifiers() const;
 
     virtual int getEventType();
+    const tgt::ivec2& getViewport() {
+        return viewport_;
+    }
 
 private:
     DeviceType deviceType_;

@@ -49,6 +49,8 @@
 #include <string>
 #include <vector>
 
+#include "./volumediskdicom.h"
+
 namespace voreen {
 
 /**
@@ -148,6 +150,28 @@ public:
     /// find series in a study of a patient of a DICOM SCP using C-FIND
     std::vector<SeriesInfo> findNetworkSeries(const std::string& remote, const std::string& call, uint16_t portno, const std::string& patientID, const std::string& StudyID) const throw (tgt::FileException);
 #endif
+
+protected:
+
+    friend class VolumeDiskDicom;
+
+    /**
+     * Used by VolumeDiskDicom class to load several dicom slices of a volume.
+     * Does not support multiframe files, only one slice per file.
+     *
+     * @param info the DicomInfo object containing the necessary meta information (e.g. what the GdcmVolumeReader returns in a VolumeDiskDicom object)
+     * @param sliceFiles the list of (correctly ordered!) slices (e.g. what the GdcmVolumeReader returns in a VolumeDiskDicom object)
+     */
+    virtual VolumeRAM* loadDicomSlices(DicomInfo info, std::vector<std::string> sliceFiles) throw (tgt::FileException);
+
+    /**
+     * Used by VolumeDiskDicom class to load a multiframe volume.
+     * Does currently only support single files (ie. sliceFiles may not have more than one element)
+     *
+     * @param info the DicomInfo object containing the necessary meta information (e.g. what the GdcmVolumeReader returns in a VolumeDiskDicom object)
+     * @param sliceFiles the list of (correctly ordered!) slices (e.g. what the GdcmVolumeReader returns in a VolumeDiskDicom object)
+     */
+    virtual VolumeRAM* loadMultiframeDicomFile(const DicomInfo& info, const std::vector<std::string>& sliceFiles) throw (tgt::FileException);
 
 private:
 
@@ -257,14 +281,14 @@ private:
     /**
      * Helper function that reads a single slice.
      *
+     * @param dataStorage pointer to an array in which the data should be stored
      * @param fileName name of the file to be loaded
-     * @param posScalar the position in the scalars_ array where this particular slice's pixel data should begin
-     * @param numberOfFrames the number of frames for multiframe images (for non-multiframe images 1)
-     * @param rwmDiffers is only true, if rescale intercept and slope differ within the slices
+     * @param posScalar offset into the dataStorage array where this particular slice's pixel data should begin
+     * @param info DicomInfo object containig meta information about the volume (e.g. for rescaling)
      *
      * @return returns the number of voxels rendered
      */
-    virtual int loadSlice(const std::string& fileName, size_t posScalar, int numberOfFrames = 1, bool rwmDiffers = false);
+    virtual int loadSlice(char* dataStorage, const std::string& fileName, size_t posScalar, DicomInfo info);
 
     /**
      * Helper method that finds the correct rescale slope and intercept values for a list of slices where these differ.
@@ -317,6 +341,12 @@ private:
      * Helper method that uses search parameters of a VolumeURL with "dicom-scp" protocol to construct a local temporary path
      */
     std::string constructLocalPathFromNetworkOrigin(const VolumeURL& o) const;
+
+    /**
+     * Helper method that takes a data type string and converts it to the gdcm representation of the pixel format.
+     * If the type cannot be converted, gdcm::PixelFormat::UNKNOWN is returned.
+     */
+    gdcm::PixelFormat baseTypeStringToGdcm(const std::string& format) const;
 
     DicomInfo info_; ///< Object containing all relevant meta information about the volume
 

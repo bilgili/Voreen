@@ -100,19 +100,19 @@ void TripleView::renderPortQuad(RenderPort& rp, tgt::vec3 translate, tgt::vec3 s
     rp.bindColorTexture(GL_TEXTURE0);
     rp.getColorTexture()->enable();
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-    glTranslatef(translate.x, translate.y, translate.z);
-    glScalef(scale.x, scale.y, scale.z);
+    MatStack.translate(translate.x, translate.y, translate.z);
+    MatStack.scale(scale.x, scale.y, scale.z);
 
     glDepthFunc(GL_ALWAYS);
     renderQuad();
     glDepthFunc(GL_LESS);
 
-    glLoadIdentity();
+    MatStack.loadIdentity();
     rp.getColorTexture()->disable();
 }
 
 void TripleView::renderLargeSmallSmall(RenderPort& large, RenderPort& small1, RenderPort& small2) {
-    glMatrixMode(GL_MODELVIEW);
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
     outport_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -142,15 +142,15 @@ void TripleView::renderLargeSmallSmall(RenderPort& large, RenderPort& small1, Re
     }
 
     outport_.deactivateTarget();
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
     LGL_ERROR;
 }
 
 void TripleView::process() {
     switch(configuration_.getValue()) {
         case abc: {
-                      glMatrixMode(GL_MODELVIEW);
+                      MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
                       outport_.activateTarget();
                       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -179,8 +179,8 @@ void TripleView::process() {
                       }
 
                       outport_.deactivateTarget();
-                      glMatrixMode(GL_MODELVIEW);
-                      glLoadIdentity();
+                      MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+                      MatStack.loadIdentity();
                       LGL_ERROR;
                   }
                   break;

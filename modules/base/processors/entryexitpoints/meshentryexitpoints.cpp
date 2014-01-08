@@ -202,13 +202,13 @@ void MeshEntryExitPoints::process() {
     }
 
     // set modelview and projection matrices
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    tgt::loadMatrix(camera_.get().getProjectionMatrix(entryPort_.isReady() ? entryPort_.getSize() : exitPort_.getSize()));
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadMatrix(camera_.get().getProjectionMatrix(entryPort_.isReady() ? entryPort_.getSize() : exitPort_.getSize()));
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    tgt::loadMatrix(camera_.get().getViewMatrix());
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadMatrix(camera_.get().getViewMatrix());
 
     if (cameraInsideVolumeTechnique_.isSelected("gpu")) {
         if (jitterEntryPoints_.get()) {
@@ -249,10 +249,10 @@ void MeshEntryExitPoints::process() {
     }
 
     // restore OpenGL state
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
     LGL_ERROR;
 
     TextureUnit::setZeroUnit();
@@ -263,13 +263,13 @@ void MeshEntryExitPoints::process() {
 }
 
 void MeshEntryExitPoints::jitterEntryPoints(RenderPort& entryPort, RenderPort& exitPort, RenderPort& outport) {
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
     shaderProgramJitter_->activate();
     tgt::Camera cam = camera_.get();
@@ -302,21 +302,21 @@ void MeshEntryExitPoints::jitterEntryPoints(RenderPort& entryPort, RenderPort& e
     shaderProgramJitter_->deactivate();
     outport.deactivateTarget();
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
     LGL_ERROR;
 }
 
 void MeshEntryExitPoints::fillEntryPoints(RenderPort& firstBackPort, RenderPort& firstFrontPort, RenderPort& outport, const Geometry* geometry) {
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
     shaderProgramInsideVolume_->activate();
     tgt::Camera cam = camera_.get();
@@ -366,10 +366,10 @@ void MeshEntryExitPoints::fillEntryPoints(RenderPort& firstBackPort, RenderPort&
     shaderProgramInsideVolume_->deactivate();
     outport.deactivateTarget();
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
     LGL_ERROR;
 }
 

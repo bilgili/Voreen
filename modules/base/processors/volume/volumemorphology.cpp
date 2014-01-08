@@ -100,10 +100,10 @@ void VolumeMorphology::applyOperator() {
         Volume* transformed = 0;
 
         if (morphologicOperator_.isSelected("dilation")) {
-            transformed = VolumeOperatorDilation::APPLY_OP(input, kernelSize_.getValue(), progressBar_);
+            transformed = VolumeOperatorDilation::APPLY_OP(input, kernelSize_.getValue(), (ProgressReporter*)this);
         }
         else if (morphologicOperator_.isSelected("erosion")) {
-            transformed = VolumeOperatorErosion::APPLY_OP(input, kernelSize_.getValue(),progressBar_);
+            transformed = VolumeOperatorErosion::APPLY_OP(input, kernelSize_.getValue(), this);
         }
         else {
             LERROR("Unknown operator: " << morphologicOperator_.get());

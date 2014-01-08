@@ -275,7 +275,7 @@ void VolumeCreate::createBlobs(const tgt::ivec3& dimensions, VolumeRAM_UInt8* ta
 
     max -= radius;
 
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), progressBar_) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), this) {
         vec3 vox(static_cast<float>(pos.x), static_cast<float>(pos.y), static_cast<float>(pos.z));
         float b1 = 1.0f / distance(blob1, vox);
         float b2 = 1.0f / distance(blob2, vox);
@@ -309,7 +309,7 @@ void VolumeCreate::createBlobs2(const tgt::ivec3 &dimensions, VolumeRAM_UInt8* t
 
     max -= radius;
 
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), progressBar_) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), this) {
         vec3 vox(static_cast<float>(pos.x), static_cast<float>(pos.y), static_cast<float>(pos.z));
         float b1 = 1.0f / distance(blob1, vox);
         float b2 = 1.0f / distance(blob2, vox);
@@ -342,7 +342,7 @@ void VolumeCreate::createBlobs3(const tgt::ivec3& dimensions, VolumeRAM_UInt8* t
     float max = (1.0f / distance(blob1, m)) + (1.0f / distance(blob1, m)) + (1.0f / distance(blob3, m));
 
     max -= radius;
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), progressBar_) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), this) {
         vec3 vox(static_cast<float>(pos.x), static_cast<float>(pos.y), static_cast<float>(pos.z));
         float b1 = 1.0f / distance(blob1, vox);
         float b2 = 1.0f / distance(blob2, vox);
@@ -367,7 +367,7 @@ void VolumeCreate::createSphere(const tgt::ivec3& dimensions, VolumeRAM_UInt8* t
 
     float radius = center.x * 0.8f;
 
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), progressBar_) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), this) {
         vec3 vox(static_cast<float>(pos.x), static_cast<float>(pos.y), static_cast<float>(pos.z));
         float r = length(center - vox);
 
@@ -388,7 +388,7 @@ void VolumeCreate::createDoubleSphere(const tgt::ivec3& dimensions, VolumeRAM_UI
     float radius = center.x * 0.8f;
     float radius2 = center.x * 0.4f;
 
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), progressBar_) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), this) {
         vec3 vox(static_cast<float>(pos.x), static_cast<float>(pos.y), static_cast<float>(pos.z));
         float r = length(center2 - vox);
 
@@ -414,7 +414,7 @@ void VolumeCreate::createTorus(const tgt::ivec3& dimensions, VolumeRAM_UInt8* ta
     float radius = center.x * 0.55f;
     float radius2 = center.x * 0.4f;
 
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), progressBar_) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), this) {
         vec3 vox(static_cast<float>(pos.x), static_cast<float>(pos.y), static_cast<float>(pos.z));
         vec3 diff = center2 - vox;
         float r = pow(radius - sqrt((diff.x * diff.x) + (diff.y * diff.y)), 2.0f) + (diff.z*diff.z);
@@ -436,7 +436,7 @@ void VolumeCreate::createDoubleTorus(const tgt::ivec3& dimensions, VolumeRAM_UIn
     float radius2 = center.x * 0.4f;
     float radius3 = center.x * 0.2f;
 
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), progressBar_) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), this) {
         vec3 vox(static_cast<float>(pos.x), static_cast<float>(pos.y), static_cast<float>(pos.z));
         vec3 diff = center2 - vox;
         float r = pow(radius - sqrt((diff.x * diff.x) + (diff.y * diff.y)), 2.0f) + (diff.z*diff.z);
@@ -464,7 +464,7 @@ void VolumeCreate::createDoublePartialTorus(const tgt::ivec3& dimensions, Volume
 
     float angleTh = numShapes_.get() / (float)numShapes_.getMaxValue(); //using numShapes to avoid separate property
 
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), progressBar_) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), this) {
         vec3 vox(static_cast<float>(pos.x), static_cast<float>(pos.y), static_cast<float>(pos.z));
         vec3 diff = center2 - vox;
 
@@ -512,7 +512,7 @@ void VolumeCreate::createBumpySphere(const tgt::ivec3& dimensions, VolumeRAM_UIn
 
     max -= radius;
 
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), progressBar_) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), this) {
         vec3 vox(static_cast<float>(pos.x), static_cast<float>(pos.y), static_cast<float>(pos.z));
         float b1 = 1.f / distance(blob1, vox);
         float b2 = 1.f / distance(blob2, vox);
@@ -539,7 +539,7 @@ void VolumeCreate::createSphereCoord(const tgt::ivec3& dimensions, VolumeRAM_4xU
 
     float radius = center.x * 0.8f;
 
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), progressBar_) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(0,0,0), svec3(dimensions), this) {
         vec3 vox(static_cast<float>(pos.x), static_cast<float>(pos.y), static_cast<float>(pos.z));
         float r = length(center - vox);
 
@@ -579,7 +579,7 @@ void VolumeCreate::createSynth(const tgt::ivec3& dimensions, VolumeRAM_UInt8* ta
 
     fillSphere(target, center, radius, 96);
 
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(5,5,5), svec3(dimensions.x - 5, dimensions.y - 5, 5+dimensions.z/10), progressBar_) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, svec3(5,5,5), svec3(dimensions.x - 5, dimensions.y - 5, 5+dimensions.z/10), this) {
         target->voxel(pos) = 128;
     }
 }

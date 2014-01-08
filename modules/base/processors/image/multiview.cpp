@@ -136,13 +136,13 @@ void MultiView::process() {
     if(renderPorts_.empty())
         return;
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glOrtho(0.f, 1.f, 0.f, 1.f, 0.f, 1.f);
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
     outport_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -155,7 +155,7 @@ void MultiView::process() {
             RenderPort* target = renderPorts_.at(i);
 
             if(target->isReady()) {
-                glPushMatrix();
+                MatStack.pushMatrix();
                 float locTransX = static_cast<float>(i - ((i / gridResolution_.x) * gridResolution_.x));
                 float locTransY = static_cast<float>(gridResolution_.y - (i / gridResolution_.x) - 1);
 
@@ -165,14 +165,14 @@ void MultiView::process() {
                 target->bindColorTexture();
                 glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
-                glScalef(invRes.x, invRes.y, 1.0f);
-                glTranslatef(locTransX, locTransY, 0.0f);
+                MatStack.scale(invRes.x, invRes.y, 1.0f);
+                MatStack.translate(locTransX, locTransY, 0.0f);
 
                 renderQuad();
 
-                glLoadIdentity();
+                MatStack.loadIdentity();
                 target->getColorTexture()->disable();
-                glPopMatrix();
+                MatStack.popMatrix();
             }
         }
 
@@ -215,10 +215,10 @@ void MultiView::process() {
 
     outport_.deactivateTarget();
     tgt::TextureUnit::setZeroUnit();
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
     LGL_ERROR;
 }
 

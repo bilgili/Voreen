@@ -118,8 +118,8 @@ void VertexVec4Vec3::setupVertexAttributePointers() {
 
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexVec4Vec3), (void*)sizeof(tgt::vec3));
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(VertexVec4Vec3), (void*)(sizeof(tgt::vec3) + sizeof(tgt::vec4)));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexVec4Vec3), (void*)sizeof(tgt::vec3));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(VertexVec4Vec3), (void*)(sizeof(tgt::vec3) + sizeof(tgt::vec4)));
 }
 
 void VertexVec4Vec3::disableVertexAttributePointers() {

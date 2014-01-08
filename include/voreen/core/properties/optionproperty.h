@@ -49,7 +49,10 @@ public:
     {}
 
     virtual void select(const std::string& key) = 0;
+    virtual void selectByKey(const std::string& key) = 0;
+    virtual void selectByIndex(int index) = 0;
     virtual const std::string& getKey() const = 0;
+    virtual int getSelectedIndex() const = 0;
     virtual bool isSelected(const std::string& key) const = 0;
     virtual bool hasKey(const std::string& key) const = 0;
 
@@ -58,27 +61,42 @@ public:
 
     virtual std::string getOptionDescription(const std::string& key) const = 0;
     virtual void setOptionDescription(const std::string& key, const std::string& desc) = 0;
-
-    /**
-     * @see Property::deserialize
-     */
-    virtual void deserialize(XmlDeserializer& s);
 };
 
 // ----------------------------------------------------------------------------
 
 template<class T>
-struct Option {
+struct Option : public Serializable {
     Option(const std::string& key, const std::string& description, const T& value)
         : key_(key)
         , description_(description)
         , value_(value)
     {}
+    Option() {}
+
+    // cannot serialize value in general, must be specialized (see functions below)
+    virtual void serialize(XmlSerializer& s) const {
+        tgtAssert(false, "Cannot serialize option, unspecialized for this type!");
+    }
+
+    virtual void deserialize(XmlDeserializer& s) {
+        tgtAssert(false, "Cannot deserialize option, unspecialized for this type!");
+    }
+
 
     std::string key_;
     std::string description_;
     T value_;
 };
+
+template<> VRN_CORE_API void Option<int>::serialize(XmlSerializer& s) const;
+template<> VRN_CORE_API void Option<int>::deserialize(XmlDeserializer& s);
+template<> VRN_CORE_API void Option<float>::serialize(XmlSerializer& s) const;
+template<> VRN_CORE_API void Option<float>::deserialize(XmlDeserializer& s);
+template<> VRN_CORE_API void Option<GLenum>::serialize(XmlSerializer& s) const;
+template<> VRN_CORE_API void Option<GLenum>::deserialize(XmlDeserializer& s);
+template<> VRN_CORE_API void Option<std::string>::serialize(XmlSerializer& s) const;
+template<> VRN_CORE_API void Option<std::string>::deserialize(XmlDeserializer& s);
 
 // ----------------------------------------------------------------------------
 
@@ -90,7 +108,7 @@ template<class T>
 class OptionProperty : public OptionPropertyBase {
 public:
     OptionProperty(const std::string& id, const std::string& guiText,
-        int invalidationLevel=Processor::INVALID_RESULT);
+        int invalidationLevel=Processor::INVALID_RESULT, bool serializeOptions = false);
     OptionProperty();
     virtual ~OptionProperty() {}
 
@@ -100,14 +118,17 @@ public:
     virtual std::string getTypeDescription() const { return "OptionProperty"; }
 
     virtual void addOption(const std::string& key, const std::string& description, const T& value);
+    virtual bool removeOption(const std::string& key);
 
     virtual void select(const std::string& key);
     virtual void selectByKey(const std::string& key);
+    virtual void selectByIndex(int index);
     virtual void selectByValue(const T& value);
     virtual bool isSelected(const std::string& key) const;
     virtual void reset();
 
     virtual const std::string& getKey() const { return get(); }
+    virtual int getSelectedIndex() const;
     std::string getDescription() const;
     T getValue() const;
 
@@ -122,12 +143,16 @@ public:
     virtual std::vector<std::string> getDescriptions() const;
 
     virtual void serialize(XmlSerializer& s) const;
+    virtual void deserialize(XmlDeserializer& s);
 
 protected:
     const Option<T>* getOption(const std::string& key) const;
     Option<T>* getOption(const std::string& key);
 
     std::vector<Option<T> > options_;
+    // if options depend on run time information, such as incoming data, it is possible to serialize the options themselves along
+    // with the currently selected value. This behaviour can be enabled in the constructor and is saved in this boolean.
+    bool serializeOptions_;
 };
 
 // ----------------------------------------------------------------------------
@@ -135,15 +160,16 @@ protected:
 
 template<class T>
 OptionProperty<T>::OptionProperty(const std::string& id, const std::string& guiText,
-                                  int invalidationLevel)
+                                  int invalidationLevel, bool serializeOptions)
     : OptionPropertyBase(id, guiText, invalidationLevel)
+    , serializeOptions_(serializeOptions)
 {
     addValidation(OptionPropertyValidation(this)); // is at position 0 in the validations_ vector
 }
 
 template<class T>
 voreen::OptionProperty<T>::OptionProperty()
-    : OptionPropertyBase("", "", Processor::INVALID_RESULT)
+    : OptionPropertyBase("", "", Processor::INVALID_RESULT), serializeOptions_(false)
 {}
 
 template<class T>
@@ -182,6 +208,33 @@ void OptionProperty<T>::addOption(const std::string& key, const std::string& des
 }
 
 template<class T>
+bool OptionProperty<T>::removeOption(const std::string& key) {
+    //option property must have at least one option
+    if(options_.size() == 1) {
+        return false;
+    }
+    //find option
+    for(typename std::vector<Option<T> >::iterator it = options_.begin(); it < options_.end(); it++) {
+        if(it->key_ == key){
+            if(isSelected(key)) {
+                //if it is default value, replace it by first option in line
+                if(defaultValue_ == key) {
+                    if(options_[0].key_ == key)
+                        setDefaultValue(options_[1].key_);
+                    else
+                        setDefaultValue(options_[0].key_);
+                }
+                set(defaultValue_);
+            }
+            options_.erase(it);
+            return true;
+        }
+    }
+    //option does not exist
+    return false;
+}
+
+template<class T>
 void OptionProperty<T>::select(const std::string& key) {
     set(key);
 }
@@ -196,11 +249,22 @@ void OptionProperty<T>::selectByValue(const T& value) {
     // find the option that fits the value
     for (size_t i = 0; i < options_.size(); ++i) {
         if (options_[i].value_ == value) {
-            set(options_[i].key_);
+            selectByKey(options_[i].key_);
             return;
         }
     }
     // if nothing was set the value was not valid
+    LERROR("Unknown value selected: " << value);
+    throw Condition::ValidationFailed();
+}
+
+template<class T>
+void voreen::OptionProperty<T>::selectByIndex(int index)  {
+    if (index >= 0 && index < options_.size()) {
+        selectByKey(options_.at(index).key_);
+        return;
+    }
+    LERROR("Invalid option index: " << index);
     throw Condition::ValidationFailed();
 }
 
@@ -264,6 +328,17 @@ std::string OptionProperty<T>::getDescription() const {
 }
 
 template<class T>
+int OptionProperty<T>::getSelectedIndex() const {
+    const Option<T>* curOption = getOption(get());
+    for (size_t i=0; i<options_.size(); i++) {
+        if (options_.at(i).key_ == curOption->key_)
+            return (int)i;
+    }
+
+    return -1;
+}
+
+template<class T>
 std::vector<std::string> OptionProperty<T>::getKeys() const {
     std::vector<std::string> keys;
     for (size_t i = 0; i < options_.size(); ++i)
@@ -315,19 +390,46 @@ Option<T>* voreen::OptionProperty<T>::getOption(const std::string& key) {
 template<typename T>
 void OptionProperty<T>::serialize(XmlSerializer& s) const {
     Property::serialize(s);
+    if(serializeOptions_)
+        s.serialize("Options", options_, "Option");
 
     s.serialize("value", getKey());
+}
+
+template<typename T>
+void OptionProperty<T>::deserialize(XmlDeserializer& s) {
+    Property::deserialize(s);
+    if(serializeOptions_) {
+        try {
+            std::vector<Option<T> > tmpOptions;
+            s.deserialize("Options", tmpOptions, "Option");
+            options_.clear();
+            options_ = tmpOptions;
+        } catch(SerializationException&) {
+            s.removeLastError();
+        }
+    }
+
+    std::string id;
+    s.deserialize("value", id);
+    try {
+        select(id);
+    }
+    catch (Condition::ValidationFailed& /*e*/) {
+        s.addError("Invalid option value: " + id);
+    }
 }
 
 //
 // concrete types
 //
 
-class IntOptionProperty : public OptionProperty<int> {
+class VRN_CORE_API IntOptionProperty : public OptionProperty<int> {
 public:
     IntOptionProperty(const std::string& id, const std::string& guiText,
-                      int invalidationLevel = Processor::INVALID_RESULT) :
-        OptionProperty<int>(id, guiText, invalidationLevel)
+                      int invalidationLevel = Processor::INVALID_RESULT,
+                      bool serializeOptions = false) :
+        OptionProperty<int>(id, guiText, invalidationLevel, serializeOptions)
     {}
 
     IntOptionProperty() :
@@ -342,11 +444,12 @@ public:
     virtual std::string getTypeDescription() const { return "IntegerOption"; }
 };
 
-class FloatOptionProperty : public OptionProperty<float> {
+class VRN_CORE_API FloatOptionProperty : public OptionProperty<float> {
 public:
     FloatOptionProperty(const std::string& id, const std::string& guiText,
-                        int invalidationLevel = Processor::INVALID_RESULT) :
-        OptionProperty<float>(id, guiText, invalidationLevel)
+                        int invalidationLevel = Processor::INVALID_RESULT,
+                        bool serializeOptions = false) :
+        OptionProperty<float>(id, guiText, invalidationLevel, serializeOptions)
     {}
 
     FloatOptionProperty() :
@@ -357,11 +460,12 @@ public:
     virtual std::string getTypeDescription() const { return "FloatOption"; }
 };
 
-class GLEnumOptionProperty : public OptionProperty<GLenum> {
+class VRN_CORE_API GLEnumOptionProperty : public OptionProperty<GLenum> {
 public:
     GLEnumOptionProperty(const std::string& id, const std::string& guiText,
-                         int invalidationLevel = Processor::INVALID_RESULT) :
-        OptionProperty<GLenum>(id, guiText, invalidationLevel)
+                         int invalidationLevel = Processor::INVALID_RESULT,
+                         bool serializeOptions = false) :
+        OptionProperty<GLenum>(id, guiText, invalidationLevel, serializeOptions)
     {}
 
     GLEnumOptionProperty() :
@@ -377,11 +481,12 @@ public:
 };
 
 // since option ids are already strings, an additional value is not necessarily required for string option properties
-class StringOptionProperty : public OptionProperty<std::string> {
+class VRN_CORE_API StringOptionProperty : public OptionProperty<std::string> {
 public:
     StringOptionProperty(const std::string& id, const std::string& guiText,
-                         int invalidationLevel = Processor::INVALID_RESULT) :
-        OptionProperty<std::string>(id, guiText, invalidationLevel)
+                         int invalidationLevel = Processor::INVALID_RESULT,
+                         bool serializeOptions = false) :
+        OptionProperty<std::string>(id, guiText, invalidationLevel, serializeOptions)
     {}
 
     StringOptionProperty() :

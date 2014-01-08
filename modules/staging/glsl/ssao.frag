@@ -69,17 +69,18 @@ vec3 readNormal(in vec2 coord) {
     vec3 p1 = vec3(offset1, depth1 - depth);
     vec3 p2 = vec3(offset2, depth2 - depth);
 
-    vec3 normal = cross(p1, p2);
-    normal.z = -normal.z;
+    vec3 normal = cross(p2, p1);
 
     return normalize(normal);
 }
 
 //Ambient Occlusion form factor:
 float occFF(in vec3 ddiff,in vec3 cnorm, in float c1, in float c2){
-    vec3 vv = normalize(ddiff);
     float rd = length(ddiff);
-    return (1.0 - clamp(dot(readNormal(fragCoord + vec2(c1,c2)), -vv), 0.0, 1.0)) * clamp(dot(cnorm, vv), 0.0, 1.0) * (1.0 - 1.0 / sqrt(1.0 / (rd*rd) + 1.0));
+    if(rd < 0.03)
+        return 0.0;
+    vec3 vv = normalize(ddiff);
+    return clamp(dot(readNormal(fragCoord + vec2(c1,c2)), vv), 0.0, 1.0) * clamp(dot(cnorm, vv), 0.0, 1.0) * (1.0 - 1.0 / sqrt(1.0 / (rd*rd) + 1.0));
 }
 
 void main() {
@@ -105,12 +106,11 @@ void main() {
     float ph = incy;
 
     float cdepth = 0.1 * abs(p.z);
-
     float sumWeight = 0.f;
 
     for(int i = -numIts_; i < numIts_; ++i) {
         for(int j = -numIts_; j < numIts_; ++j) {
-            if(i == 0 && j == 0)
+            if((length(vec2(i, j)) > float(numIts_) + 0.5) || (i == 0 && j == 0))
                 continue;
 
             float npw = (i * pw + 0.5 * colorParams_.dimensionsRCP_.x * random.x) / cdepth;
@@ -122,11 +122,11 @@ void main() {
 
             vec3 ddiff  = posFromDepth(fragCoord + vec2(npw,nph)) - p;
 
-            float ff = (4.0 / length(vec2(i, j))) * occFF(ddiff,n,npw,nph);
+            float ff = (1.0 / length(vec2(i, j))) * occFF(ddiff,n,npw,nph);
             ao.a   += ff;
             ao.xyz += ff * texture2D(colorTex_, fragCoord+vec2(npw,nph)).xyz;
 
-            sumWeight += 4.0 / length(vec2(i, j));
+            sumWeight += 1.0 / length(vec2(i, j));
         }
     }
 

@@ -1,15 +1,29 @@
 <?xml version="1.0" ?>
 <VoreenData version="1">
     <Workspace version="2" GlobalDescription="">
-        <ProcessorNetwork version="11">
+        <ProcessorNetwork version="15">
+            <MetaData>
+                <MetaItem name="ZoomCenter" type="Vec2MetaData">
+                    <value x="-45" y="-330" />
+                </MetaItem>
+            </MetaData>
             <Processors>
                 <Processor type="VolumeSource" name="VolumeSource" id="ref0">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-103" y="-490" />
                     </MetaData>
                     <Properties>
-                        <Property name="volumeURL" url="input/walnut_uint8.vvd?preferredReader=VvdVolumeReader" />
+                        <Property mapKey="volumeInfo" name="volumeInfo" />
+                        <Property mapKey="volumeURL" name="volumeURL" url="input/walnut_uint8.vvd?preferredReader=VvdVolumeReader" />
                     </Properties>
+                    <Inports />
+                    <Outports>
+                        <Port name="volumehandle.volumehandle" direction="0" portID="volumehandle.volumehandle" guiName="Volume Output" allowMultipleConnections="true" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSpacing" id="ref1">
@@ -21,16 +35,33 @@
 disabled]]>
                     </name>
                     <Properties>
-                        <Property name="enabled" value="false" />
-                        <Property name="mode" value="replace" />
-                        <Property name="spacingDisplay">
+                        <Property mapKey="enabled" name="enabled" value="false" />
+                        <Property mapKey="mode" name="mode" value="replace" />
+                        <Property mapKey="reset" name="reset" />
+                        <Property mapKey="spacingDisplay" name="spacingDisplay">
                             <value x="0.03389831" y="0.03409091" z="0.03360849" />
                         </Property>
-                        <Property name="spacingX" value="1" />
-                        <Property name="spacingY" value="1" />
-                        <Property name="spacingZ" value="1" />
-                        <Property name="uniformSpacing" value="false" />
+                        <Property mapKey="spacingX" name="spacingX" value="0.03389831" />
+                        <Property mapKey="spacingY" name="spacingY" value="0.03409091" />
+                        <Property mapKey="spacingZ" name="spacingZ" value="0.03360849" />
+                        <Property mapKey="uniformSpacing" name="uniformSpacing" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.input" direction="1" portID="volumehandle.input" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="volumehandle.output" direction="0" portID="volumehandle.output" guiName="Volume Output" allowMultipleConnections="true" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSave" name="VolumeSave" id="ref4">
@@ -38,10 +69,22 @@ disabled]]>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-242" y="-230" />
                     </MetaData>
                     <Properties>
-                        <Property name="continousSave" value="false" />
-                        <Property name="outputFilename" value="output/disabled.vvd" />
-                        <Property name="save" />
+                        <Property mapKey="continousSave" name="continousSave" value="false" />
+                        <Property mapKey="outputFilename" name="outputFilename" noPathSet="false" value="output/disabled.vvd" />
+                        <Property mapKey="save" name="save" />
+                        <Property mapKey="saveOnPathChange" name="saveOnPathChange" value="true" />
+                        <Property mapKey="volumeInfo" name="volumeInfo" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.input" direction="1" portID="volumehandle.input" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSpacing" id="ref2">
@@ -53,16 +96,33 @@ disabled]]>
 replace]]>
                     </name>
                     <Properties>
-                        <Property name="enabled" value="true" />
-                        <Property name="mode" value="replace" />
-                        <Property name="spacingDisplay">
-                            <value x="1" y="1" z="1" />
+                        <Property mapKey="enabled" name="enabled" value="true" />
+                        <Property mapKey="mode" name="mode" value="replace" />
+                        <Property mapKey="reset" name="reset" />
+                        <Property mapKey="spacingDisplay" name="spacingDisplay">
+                            <value x="1" y="2.20000005" z="3.29999995" />
                         </Property>
-                        <Property name="spacingX" value="1" />
-                        <Property name="spacingY" value="1" />
-                        <Property name="spacingZ" value="1" />
-                        <Property name="uniformSpacing" value="false" />
+                        <Property mapKey="spacingX" name="spacingX" value="1" />
+                        <Property mapKey="spacingY" name="spacingY" value="2.20000005" />
+                        <Property mapKey="spacingZ" name="spacingZ" value="3.29999995" />
+                        <Property mapKey="uniformSpacing" name="uniformSpacing" value="false" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.input" direction="1" portID="volumehandle.input" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="volumehandle.output" direction="0" portID="volumehandle.output" guiName="Volume Output" allowMultipleConnections="true" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSave" name="VolumeSave 2" id="ref5">
@@ -70,10 +130,22 @@ replace]]>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-103" y="-230" />
                     </MetaData>
                     <Properties>
-                        <Property name="continousSave" value="false" />
-                        <Property name="outputFilename" value="output/replace.vvd" />
-                        <Property name="save" />
+                        <Property mapKey="continousSave" name="continousSave" value="false" />
+                        <Property mapKey="outputFilename" name="outputFilename" noPathSet="false" value="output/replace.vvd" />
+                        <Property mapKey="save" name="save" />
+                        <Property mapKey="saveOnPathChange" name="saveOnPathChange" value="true" />
+                        <Property mapKey="volumeInfo" name="volumeInfo" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.input" direction="1" portID="volumehandle.input" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSpacing" id="ref3">
@@ -85,16 +157,33 @@ replace]]>
 scale]]>
                     </name>
                     <Properties>
-                        <Property name="enabled" value="true" />
-                        <Property name="mode" value="scale" />
-                        <Property name="spacingDisplay">
+                        <Property mapKey="enabled" name="enabled" value="true" />
+                        <Property mapKey="mode" name="mode" value="scale" />
+                        <Property mapKey="reset" name="reset" />
+                        <Property mapKey="spacingDisplay" name="spacingDisplay">
                             <value x="0.08474577" y="0.08522727" z="0.08402123" />
                         </Property>
-                        <Property name="spacingX" value="2.5" />
-                        <Property name="spacingY" value="2.5" />
-                        <Property name="spacingZ" value="2.5" />
-                        <Property name="uniformSpacing" value="true" />
+                        <Property mapKey="spacingX" name="spacingX" value="2.5" />
+                        <Property mapKey="spacingY" name="spacingY" value="2.5" />
+                        <Property mapKey="spacingZ" name="spacingZ" value="2.5" />
+                        <Property mapKey="uniformSpacing" name="uniformSpacing" value="true" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.input" direction="1" portID="volumehandle.input" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports>
+                        <Port name="volumehandle.output" direction="0" portID="volumehandle.output" guiName="Volume Output" allowMultipleConnections="true" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="blockEvents" name="blockEvents" value="false" />
+                            </Properties>
+                        </Port>
+                    </Outports>
                     <InteractionHandlers />
                 </Processor>
                 <Processor type="VolumeSave" name="VolumeSave 3" id="ref6">
@@ -102,10 +191,22 @@ scale]]>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="46" y="-230" />
                     </MetaData>
                     <Properties>
-                        <Property name="continousSave" value="false" />
-                        <Property name="outputFilename" value="output/scale.vvd" />
-                        <Property name="save" />
+                        <Property mapKey="continousSave" name="continousSave" value="false" />
+                        <Property mapKey="outputFilename" name="outputFilename" noPathSet="false" value="output/scale.vvd" />
+                        <Property mapKey="save" name="save" />
+                        <Property mapKey="saveOnPathChange" name="saveOnPathChange" value="true" />
+                        <Property mapKey="volumeInfo" name="volumeInfo" />
                     </Properties>
+                    <Inports>
+                        <Port name="volumehandle.input" direction="1" portID="volumehandle.input" guiName="Volume Input" allowMultipleConnections="false" invalidationLevel="1">
+                            <Properties>
+                                <Property mapKey="textureBorderIntensity" name="textureBorderIntensity" value="0" />
+                                <Property mapKey="textureClampMode_" name="textureClampMode_" value="clamp-to-edge" />
+                                <Property mapKey="textureFilterMode_" name="textureFilterMode_" value="linear" />
+                            </Properties>
+                        </Port>
+                    </Inports>
+                    <Outports />
                     <InteractionHandlers />
                 </Processor>
             </Processors>
@@ -161,9 +262,6 @@ scale]]>
             </Connections>
             <CoProcessorConnections />
             <PropertyLinks />
-            <PropertyStateCollections />
-            <PropertyStateFileReferences />
-            <PropertyStateDirectoryReferences />
         </ProcessorNetwork>
         <Animation />
     </Workspace>

@@ -517,7 +517,7 @@ VolumeList* ECAT7VolumeReader::read(const std::string &url, int volumeId)
 
         if (getProgressBar()) {
             getProgressBar()->setTitle("Loading Volume");
-            getProgressBar()->setMessage("Loading volume: " + fileName);
+            getProgressBar()->setProgressMessage("Loading volume: " + fileName);
         }
 
         VolumeRAM* vol;

@@ -26,18 +26,28 @@
 #ifndef VRN_ORTHOGONALSLICERENDERER_H
 #define VRN_ORTHOGONALSLICERENDERER_H
 
-#include "modules/base/processors/render/slicerendererbase.h"
+#include "voreen/core/processors/volumerenderer.h"
 #include "voreen/core/properties/cameraproperty.h"
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/boolproperty.h"
 #include "voreen/core/interaction/camerainteractionhandler.h"
+#include "voreen/core/datastructures/transfunc/transfunc.h"
+#include "voreen/core/datastructures/volume/volumeslicehelper.h"
 #include "tgt/camera.h"
 
+#include "voreen/core/properties/transfuncproperty.h"
+#include "voreen/core/properties/floatproperty.h"
+#include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/fontproperty.h"
+
+#include "voreen/core/ports/volumeport.h"
+#include "voreen/core/ports/renderport.h"
 #include "voreen/core/ports/genericcoprocessorport.h"
 
 namespace voreen {
 
-class FlowOrthogonalSliceRenderer : public SliceRendererBase {
+class FlowOrthogonalSliceRenderer : public VolumeRenderer {
 public:
     FlowOrthogonalSliceRenderer();
     virtual ~FlowOrthogonalSliceRenderer();
@@ -59,7 +69,23 @@ public:
 protected:
     enum SliceAlignment { SLICE_XY, SLICE_XZ, SLICE_ZY };
 
+    enum TextureMode {
+        TEXTURE_2D,
+        TEXTURE_3D
+    };
+
 protected:
+    virtual void initialize() throw (tgt::Exception);
+    virtual void deinitialize() throw (tgt::Exception);
+
+    /**
+     * \see Processor::beforeProcess()
+     */
+    virtual void beforeProcess();
+
+    virtual std::string buildShaderHeader();
+    bool rebuildShader();
+
     static tgt::vec3 permuteComponents(const tgt::vec3& input, const tgt::ivec3& permutation);
     void onSlicePositionChange();
     virtual void renderSlice(const SliceAlignment& sliceAlign, const float sliceNo);
@@ -71,6 +97,15 @@ protected:
     virtual void setDescriptions() {
         setDescription("Renders slices orthogonal to each other and aligned to the x-, y- or/and z-axis.");
     }
+
+    RenderPort outport_;
+    VolumePort inport_;
+
+    TransFuncProperty transferFunc_;
+
+    OptionProperty<TextureMode> texMode_;     ///< use 2D slice textures or 3D volume texture?
+
+    tgt::Shader* sliceShader_;
 
     tgt::ivec3 volumeDimensions_;
     tgt::ivec3 slicePositions_;

@@ -121,7 +121,7 @@ bool TabbedView::isReady() const {
 }
 
 void TabbedView::process() {
-    glMatrixMode(GL_MODELVIEW);
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
     outport_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -133,11 +133,11 @@ void TabbedView::process() {
     }
 
     if(renderAtBottom_.get())
-        glTranslatef(0.0f, +offset, 0.0f);
+        MatStack.translate(0.0f, +offset, 0.0f);
     else
-        glTranslatef(0.0f, -offset, 0.0f);
+        MatStack.translate(0.0f, -offset, 0.0f);
 
-    glScalef(1.0f, scale, 1.0f);
+    MatStack.scale(1.0f, scale, 1.0f);
 
     RenderPort* currentPort = 0;
     switch(currentView_.get()) {
@@ -164,13 +164,13 @@ void TabbedView::process() {
     }
 
     if(!hideTabbar_.get()) {
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.loadIdentity();
         // render buttons with fonts in screenspace
-        glTranslatef(-1.0f, -1.0f, 0.0f);
+        MatStack.translate(-1.0f, -1.0f, 0.0f);
         float scaleFactorX = 2.0f / (float)outport_.getSize().x;
         float scaleFactorY = 2.0f / (float)outport_.getSize().y;
-        glScalef(scaleFactorX, scaleFactorY, 1.0f);
+        MatStack.scale(scaleFactorX, scaleFactorY, 1.0f);
 
         //float yStart = 0.0f;
         float yStart = (float)outport_.getSize().y;
@@ -241,7 +241,7 @@ void TabbedView::process() {
 
         glLineWidth(1.0f);
     }
-    glLoadIdentity();
+    MatStack.loadIdentity();
 
     outport_.deactivateTarget();
     LGL_ERROR;

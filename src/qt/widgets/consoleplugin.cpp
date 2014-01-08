@@ -145,7 +145,8 @@ ConsolePlugin::ConsolePlugin(QWidget* parent, tgt::LogLevel logLevel, bool autoS
     vboxLayout->addWidget(consoleText_);
     setLayout(vboxLayout);
 
-    if (tgt::LogManager::isInited()) {
+    //< only add log, if console log is already present (otherwise assuming that logging is disabled entirely)
+    if (tgt::LogManager::isInited() && LogMgr.getConsoleLog()) {
         log_ = new ConsoleLogQt(this, "", "", "color: brown; font-weight: bold", "color: red; font-weight: bold");
         log_->addCat("", true, logLevel);
         LogMgr.addLog(log_);

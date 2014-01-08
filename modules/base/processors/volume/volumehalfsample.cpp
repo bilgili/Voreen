@@ -58,7 +58,7 @@ void VolumeHalfsample::process() {
         return;
     }
 
-    Volume* outputVolume = VolumeOperatorHalfsample::APPLY_OP(inputVolume, progressBar_);
+    Volume* outputVolume = VolumeOperatorHalfsample::APPLY_OP(inputVolume, this);
     outport_.setData(outputVolume);
 
 }

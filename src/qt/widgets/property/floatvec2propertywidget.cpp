@@ -33,8 +33,11 @@ namespace voreen {
 FloatVec2PropertyWidget::FloatVec2PropertyWidget(FloatVec2Property* prop, QWidget* parent)
     : VecPropertyWidget<DoubleSliderSpinBoxWidget, FloatVec2Property, float>(prop, 2, parent)
 {
+    tgtAssert(prop, "null pointer passed");
     connect((const QObject*)widgets_[0], SIGNAL(valueChanged(double)), this, SLOT(setProperty(double)));
     connect((const QObject*)widgets_[1], SIGNAL(valueChanged(double)), this, SLOT(setProperty(double)));
+    vectorProp_->setStepping(prop->getStepping());
+    vectorProp_->setNumDecimals(prop->getNumDecimals());
     updateFromProperty();
 }
 

@@ -73,7 +73,7 @@ VolumeURL::VolumeURL(const VolumeURL& rhs)
 
 VolumeURL::VolumeURL(const std::string& url) {
     parseURL(url, protocol_, path_, searchParameterMap_);
-    path_ = cleanupPath(path_);
+    path_ = tgt::FileSystem::cleanupPath(path_);
 }
 
 VolumeURL::~VolumeURL() {
@@ -95,26 +95,29 @@ bool VolumeURL::operator==(const VolumeURL& rhs) const {
 VolumeURL::VolumeURL(const std::string& protocol, const std::string& filepath, const std::string& searchString) {
     // TODO: validate parameters
     protocol_ = protocol;
-    path_ = cleanupPath(filepath);
+    path_ = tgt::FileSystem::cleanupPath(filepath);
     searchParameterMap_ = parseSearchString(searchString);
 }
 
 void VolumeURL::serialize(XmlSerializer& s) const {
    std::string basePath = tgt::FileSystem::dirName(s.getDocumentPath());
+   VolumeURL originConv;
    if (!basePath.empty()) {
         VolumeSerializerPopulator serializerPopulator;
-        VolumeURL originConv;
         try {
             originConv = serializerPopulator.getVolumeSerializer()->convertOriginToRelativePath(*this, basePath);
         }
         catch (tgt::UnsupportedFormatException& e) {
             throw SerializationException(std::string(e.what()));
         }
-        s.serialize("url", originConv.getURL());
     }
     else {
-        s.serialize("url", getURL());
+        originConv = *this;
     }
+
+    // serialize with unix path separators for platform consistency
+    std::string url = constructURL(originConv.getProtocol(), tgt::FileSystem::cleanupPath(originConv.getPath(), false), originConv.searchParameterMap_);
+    s.serialize("url", url);
 }
 
 void VolumeURL::deserialize(XmlDeserializer& s) {
@@ -157,7 +160,7 @@ void VolumeURL::deserialize(XmlDeserializer& s) {
         path_ = originConv.getPath();
     }
 
-    path_ = cleanupPath(path_);
+    path_ = tgt::FileSystem::cleanupPath(path_);
 }
 
 std::string VolumeURL::getURL() const {
@@ -178,18 +181,6 @@ std::string VolumeURL::getSearchString() const {
 
 std::string VolumeURL::getProtocol() const {
     return protocol_;
-}
-
-std::string VolumeURL::cleanupPath(const std::string& url) {
-    std::string result = url;
-    // replace backslashes in path
-    string::size_type posSearchString = result.find("?");
-    string::size_type pos = result.find("\\");
-    while (pos < posSearchString && pos != string::npos) {
-        result[pos] = '/';
-        pos = result.find("\\");
-    }
-    return result;
 }
 
 void VolumeURL::addSearchParameter(const std::string& key, const std::string& value) {
@@ -248,17 +239,17 @@ std::string VolumeURL::convertURLToRelativePath(const std::string& url, const st
     VolumeSerializerPopulator serializerPopulator;
     VolumeURL origin(url);
     VolumeURL originConv;
-    std::string result;
     try {
         originConv = serializerPopulator.getVolumeSerializer()->convertOriginToRelativePath(origin, basePath);
-        result = originConv.getURL();
     }
     catch (tgt::UnsupportedFormatException& e) {
         LWARNING(std::string(e.what()));
-        result = url;
+        originConv = origin;
     }
 
-    return cleanupPath(result);
+    // serialize with unix path separators for platform consistency
+    std::string result = constructURL(originConv.getProtocol(), tgt::FileSystem::cleanupPath(originConv.getPath(), false), originConv.searchParameterMap_);
+    return result;
 }
 
 std::string VolumeURL::convertURLToAbsolutePath(const std::string& url, const std::string& basePath) {
@@ -278,10 +269,11 @@ std::string VolumeURL::convertURLToAbsolutePath(const std::string& url, const st
         result = url;
     }
 
-    return cleanupPath(result);
+    return result;
+    //return tgt::FileSystem::cleanupPath(result);
 }
 
-std::string VolumeURL::constructURL(const std::string& protocol, const std::string& path, const std::map<std::string, std::string>& searchParameters) const {
+std::string VolumeURL::constructURL(const std::string& protocol, const std::string& path, const std::map<std::string, std::string>& searchParameters) {
     std::string url = path;
 
     if (!protocol.empty())
@@ -293,7 +285,7 @@ std::string VolumeURL::constructURL(const std::string& protocol, const std::stri
     return url;
 }
 
-std::string VolumeURL::constructSearchString(const std::map<std::string, std::string>& searchParameters) const {
+std::string VolumeURL::constructSearchString(const std::map<std::string, std::string>& searchParameters) {
     std::string searchString;
     for (std::map<std::string, std::string>::const_iterator it = searchParameters.begin(); it != searchParameters.end(); ++it) {
         if (!searchString.empty())
@@ -303,7 +295,7 @@ std::string VolumeURL::constructSearchString(const std::map<std::string, std::st
     return searchString;
 }
 
-void VolumeURL::parseURL(const std::string& url, std::string& protocol, std::string& path, std::map<std::string, std::string>& searchParameters) const {
+void VolumeURL::parseURL(const std::string& url, std::string& protocol, std::string& path, std::map<std::string, std::string>& searchParameters) {
     // protocol
     string::size_type sep_pos = url.find("://");
     if (sep_pos == std::string::npos) {
@@ -342,7 +334,7 @@ void VolumeURL::parseURL(const std::string& url, std::string& protocol, std::str
     searchParameters = parseSearchString(searchString);
 }
 
-std::map<std::string, std::string> VolumeURL::parseSearchString(std::string searchString) const {
+std::map<std::string, std::string> VolumeURL::parseSearchString(std::string searchString)  {
     std::map<std::string, std::string> searchParameters;
 
     // temporarily replace escaped '&' by '#1#' and '=' by '#2#' in order to allow splitting
@@ -372,7 +364,7 @@ std::map<std::string, std::string> VolumeURL::parseSearchString(std::string sear
     return searchParameters;
 }
 
-std::string VolumeURL::escapeString(const std::string& str) const {
+std::string VolumeURL::escapeString(const std::string& str) {
     std::string result = str;
 
     result = strReplaceAll(result, "\\", "\\\\");
@@ -384,7 +376,7 @@ std::string VolumeURL::escapeString(const std::string& str) const {
     return result;
 }
 
-std::string VolumeURL::unescapeString(const std::string& str) const {
+std::string VolumeURL::unescapeString(const std::string& str) {
     std::string result = str;
 
     result = strReplaceAll(result, "\\?", "?");
@@ -672,7 +664,7 @@ void VolumeBase::notifyDelete() {
         observers[i]->volumeDelete(this);
 }
 
-void VolumeBase::notifyReload() {
+void VolumeBase::notifyChanged() {
     std::vector<VolumeObserver*> observers = getObservers();
     for (size_t i=0; i<observers.size(); ++i)
         observers[i]->volumeChange(this);
@@ -796,7 +788,7 @@ bool Volume::reloadVolume() {
     ProgressBar* progressDialog = VoreenApplication::app()->createProgressDialog();
     if (progressDialog) {
         progressDialog->setTitle("Loading volume");
-        progressDialog->setMessage("Loading volume ...");
+        progressDialog->setProgressMessage("Loading volume ...");
     }
     VolumeSerializerPopulator populator(progressDialog);
 
@@ -829,7 +821,7 @@ bool Volume::reloadVolume() {
     }
 
     // inform observers
-    notifyReload();
+    notifyChanged();
     return true;
 }
 

@@ -199,7 +199,7 @@ void VolumeCombine::combineVolumes(Volume* combinedVolume, const VolumeBase* fir
     const VolumeRAM* v2 = secondVolume->getRepresentation<VolumeRAM>();
     VolumeRAM* vc = combinedVolume->getWritableRepresentation<VolumeRAM>();
 
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, tgt::ivec3(0), combinedVolume->getDimensions(), progressBar_) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, tgt::ivec3(0), combinedVolume->getDimensions(), const_cast<VolumeCombine*>(this)) {
         for (size_t referenceChannel = 0; referenceChannel < combinedVolume->getNumChannels(); ++referenceChannel) {
             size_t otherChannel = (combinedVolume->getNumChannels() == otherVolume->getNumChannels()) ? referenceChannel : 0;
 
@@ -312,7 +312,7 @@ void VolumeCombine::combineVolumesOnCommonGrid(Volume* combinedVolume, const Vol
     const VolumeRAM* v2 = secondVolume->getRepresentation<VolumeRAM>();
     VolumeRAM* vc = combinedVolume->getWritableRepresentation<VolumeRAM>();
 
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, tgt::ivec3(0), combinedVolume->getDimensions(), progressBar_) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(pos, tgt::ivec3(0), combinedVolume->getDimensions(), const_cast<VolumeCombine*>(this)) {
         for (size_t referenceChannel = 0; referenceChannel < combinedVolume->getNumChannels(); ++referenceChannel) {
             size_t otherChannel = (combinedVolume->getNumChannels() == otherVolume->getNumChannels()) ? referenceChannel : 0;
             float valFirst = v1->getVoxelNormalized(pos, referenceChannel);

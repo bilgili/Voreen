@@ -217,7 +217,7 @@ void VolumeGL::generateTexture(const VolumeRAM* volume)
     }
     else if (dynamic_cast<const VolumeAtomic<tgt::Vector2<float> >*>(volume)) {
         format = GL_LUMINANCE_ALPHA;
-        internalFormat = GL_LUMINANCE_ALPHA;
+        internalFormat = GL_RG32F;
         dataType = GL_FLOAT;
     }
     else if (dynamic_cast<const VolumeAtomic<tgt::Vector2<double> >*>(volume)) {
@@ -268,7 +268,7 @@ void VolumeGL::generateTexture(const VolumeRAM* volume)
     }
     else if (dynamic_cast<const VolumeAtomic<tgt::Vector3<float> >*>(volume)) {
         format = GL_RGB;
-        internalFormat = GL_RGB;
+        internalFormat = GL_RGB32F;
         dataType = GL_FLOAT;
     }
     else if (dynamic_cast<const VolumeAtomic<tgt::Vector3<double> >*>(volume)) {
@@ -319,7 +319,7 @@ void VolumeGL::generateTexture(const VolumeRAM* volume)
     }
     else if (dynamic_cast<const VolumeAtomic<tgt::Vector4<float> >*>(volume)) {
         format = GL_RGBA;
-        internalFormat = GL_RGBA;
+        internalFormat = GL_RGBA32F;
         dataType = GL_FLOAT;
     }
     else if (dynamic_cast<const VolumeAtomic<tgt::Vector4<double> >*>(volume)) {

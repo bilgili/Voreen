@@ -66,6 +66,8 @@ CameraWidget::CameraWidget(CameraProperty* cameraProp, QWidget* parent)
     , AXIAL_INV_VIEW(tgt::vec3(0.0f, 0.0f, 1.0f))
     , CORONAL_INV_VIEW(tgt::vec3(0.0f, -1.0f, 0.0f))
     , SAGITTAL_INV_VIEW(tgt::vec3(-1.0f, 0.0f, 0.0f))
+    , fpsCounter_(0)
+    , secondCounter_(0)
 {
     setObjectName("CameraWidget");
 
@@ -74,12 +76,14 @@ CameraWidget::CameraWidget(CameraProperty* cameraProp, QWidget* parent)
     track_ = &cameraProp_->getTrackball();
 
     setWindowIcon(QIcon(":/qt/icons/trackball-reset.png"));
-    timer_ = new QBasicTimer();
+    rotationTimer_ = new QBasicTimer();
+    orientationTimer_ = new QBasicTimer();
     rotateX_ = rotateY_ = rotateZ_ = false;
 }
 
 CameraWidget::~CameraWidget() {
-    delete timer_;
+    delete rotationTimer_;
+    delete orientationTimer_;
 
     delete cameraPosition_;
     delete focusVector_;
@@ -94,6 +98,8 @@ CameraWidget::~CameraWidget() {
 
     delete fovyProp_;
     delete ratioProp_;
+
+    delete angleSpeed_;
 }
 
 void CameraWidget::createWidgets() {
@@ -147,11 +153,11 @@ void CameraWidget::createWidgets() {
     upBox->setLayout(upLayout);
 
     //cameraPosition_ = new FloatVec3Property("Position", "Position", tgt::vec3(0.0f), tgt::vec3(-FLT_MAX), tgt::vec3(FLT_MAX));
-    cameraPosition_ = new FloatVec3Property("Position", "Position", tgt::vec3(0.0f), tgt::vec3(-100000.0f), tgt::vec3(100000.0f));
+    cameraPosition_ = new FloatVec3Property("Position", "Position", tgt::vec3(0.0f), tgt::vec3(-1000000.0f), tgt::vec3(1000000.0f));
     cameraPosition_->set(cameraProp_->get().getPosition());
 
     //focusVector_ = new FloatVec3Property("Focus", "Focus", tgt::vec3(0.0f), tgt::vec3(-FLT_MAX), tgt::vec3(FLT_MAX));
-    focusVector_ = new FloatVec3Property("Focus", "Focus", tgt::vec3(0.0f), tgt::vec3(-100000.0f), tgt::vec3(100000.0f));
+    focusVector_ = new FloatVec3Property("Focus", "Focus", tgt::vec3(0.0f), tgt::vec3(-1000000.0f), tgt::vec3(1000000.0f));
     focusVector_->set(cameraProp_->get().getFocus());
 
     upVector_ = new FloatVec3Property("Upvector", "Upvector", tgt::vec3(0.0f), tgt::vec3(-1.0f), tgt::vec3(1.0f));
@@ -212,11 +218,23 @@ void CameraWidget::createWidgets() {
     rotateAroundX_ = new QCheckBox(tr("Continually rotate around x-Axis"));
     rotateAroundY_ = new QCheckBox(tr("Continually rotate around y-Axis"));
     rotateAroundZ_ = new QCheckBox(tr("Continually rotate around z-Axis"));
-    //continueSpin_  = new QCheckBox(tr("Give trackball a spin with\neach mouse-movement"));
+    angleSpeed_    = new FloatProperty("angle.speed", "Angle Speed", 90.f, 1.f, 360.f);
+    angleSpeed_->setStepping(0.1f);
+    angleSpeed_->setNumDecimals(3);
+    FloatPropertyWidget* angleSpeed = dynamic_cast<FloatPropertyWidget*>(wf.createWidget(angleSpeed_));
+    angleSpeed_->addWidget(angleSpeed);
+    QHBoxLayout* speedLay = new QHBoxLayout();
+    speedLay->addWidget(new QLabel(tr("Angle increase per second: ")));
+    speedLay->addWidget(angleSpeed);
+    fpsLabel_ = new QLabel(tr("FPS:"));
+    fpsLabel_->setEnabled(false);
 
     vboxLayout->addWidget(rotateAroundX_);
     vboxLayout->addWidget(rotateAroundY_);
     vboxLayout->addWidget(rotateAroundZ_);
+    vboxLayout->addLayout(speedLay);
+    vboxLayout->addWidget(fpsLabel_);
+
 //    vboxLayout->addWidget(continueSpin_);
     motionBox_->setLayout(vboxLayout);
     cameraLayout->addWidget(motionBox_);
@@ -416,11 +434,8 @@ void CameraWidget::toBelow() {
 }
 
 void CameraWidget::toBehind() {
-    // This is not very pretty, admittedly.  The quaternion should be (0, 0.5*sqrt(2), 0.5*sqrt(2), 0)
-    // to be precise, but that seems to be some kind of edge case that breaks the modelview-matrix which
-    // can also not be reached by turning the trackball by mouse.  So, we use a quaternion that is approximately
-    // the mathematically correct one; the difference is so small that one cannot see any.
-    quat q = normalize(quat(0.00306279f, 0.710406f, 0.708503f, 0.00167364f));
+    const float c = 0.5f * sqrtf(2.0f);
+    quat q = normalize(quat(0.0f, c, c, 0.0f));
     applyOrientation(q);
 }
 
@@ -441,22 +456,23 @@ void CameraWidget::toRight() {
 }
 
 void CameraWidget::applyOrientation(const quat& q) {
-    std::vector<float> keyframe;
-    keyframe.push_back(q.x);
-    keyframe.push_back(q.y);
-    keyframe.push_back(q.z);
-    keyframe.push_back(q.w);
-    // convert log value from slider to real distance
-    float dist = slDistance_->value() / CAM_DIST_SCALE_FACTOR;
-    float maxDist = cameraProp_->getMaxValue();
-    float minDist = cameraProp_->getMinValue();
-    float maxLog = log(maxDist);
-    float minLog = log(minDist);
-    float scale = (maxLog - minLog) / (maxDist - minDist);
-    dist = exp(minLog + scale * (dist - minDist));
-    keyframe.push_back(dist);
+    orientationKeyframe_.clear();
 
-    applyOrientationAndDistanceAnimated(keyframe);
+    orientationKeyframe_.push_back(q.x);
+    orientationKeyframe_.push_back(q.y);
+    orientationKeyframe_.push_back(q.z);
+    orientationKeyframe_.push_back(q.w);
+
+    CameraProperty* camera = track_->getCamera();
+    tgt::quat oldQuat = camera->get().getQuat();
+    orientationKeyframe_.push_back(oldQuat.x);
+    orientationKeyframe_.push_back(oldQuat.y);
+    orientationKeyframe_.push_back(oldQuat.z);
+    orientationKeyframe_.push_back(oldQuat.w);
+
+    cameraProp_->toggleInteractionMode(true, comboOrientation_);
+    orientationTimer_->start(1, this);
+    orientationStopwatch_.start();
 }
 
 void CameraWidget::updateDistance() {
@@ -529,30 +545,44 @@ void CameraWidget::distanceSliderReleased() {
     cameraProp_->toggleInteractionMode(false, slDistance_);
 }
 
-void CameraWidget::timerEvent(QTimerEvent* /*event*/) {
+void CameraWidget::timerEvent(QTimerEvent* event) {
+    if(event->timerId() == rotationTimer_->timerId())
+        updateRotation();
+    else
+        updateOrientation();
+}
 
+void CameraWidget::updateRotation() {
+    rotationStopwatch_.stop();
     if (!track_)
         return;
 
-    if (rotateX_ || rotateY_ || rotateZ_) {
-         //continueSpin_->setCheckState(Qt::Unchecked);
-//         painter_->setTrackballContinousSpin(false);
-     }
+    secondCounter_ += rotationStopwatch_.getRuntime();
+    fpsCounter_++;
+    if(secondCounter_ > 1000) {
+        fpsLabel_->setText(QString("FPS: ").append(QString::number(1000.f * static_cast<float>(fpsCounter_) / static_cast<float>(secondCounter_))));
+        fpsCounter_ = 0;
+        secondCounter_ = 0;
+    }
+
+    float c = tgt::deg2rad(static_cast<float>(rotationStopwatch_.getRuntime()) * 0.001f);
 
     if (rotateX_)
-        track_->rotate(tgt::vec3(1.f, 0.f, 0.f), 0.05f);
+        track_->rotate(tgt::vec3(1.f, 0.f, 0.f), angleSpeed_->get() * c);
 
     if (rotateY_)
-        track_->rotate(tgt::vec3(0.f, 1.f, 0.f), 0.05f);
+        track_->rotate(tgt::vec3(0.f, 1.f, 0.f), angleSpeed_->get() * c);
 
     if (rotateZ_)
-        track_->rotate(tgt::vec3(0.f, 0.f, 1.f), 0.05f);
+        track_->rotate(tgt::vec3(0.f, 0.f, 1.f), angleSpeed_->get() * c);
 
     if (rotateX_ || rotateY_ || rotateZ_) {
         if (comboOrientation_->currentIndex() != 0)
             comboOrientation_->setCurrentIndex(0);
     }
 
+    rotationStopwatch_.reset();
+    rotationStopwatch_.start();
     cameraProp_->invalidate();
     cameraProp_->notifyChange();
 }
@@ -652,49 +682,37 @@ void CameraWidget::checkCameraState() {
     }
 }
 
-void CameraWidget::applyOrientationAndDistanceAnimated(std::vector<float> keyframe) {
+void CameraWidget::updateOrientation() {
     tgtAssert(track_, "No trackball");
+
+    if(orientationKeyframe_.size() != 8)
+        return;
+
+    tgt::quat newQuat = tgt::quat(&(*(orientationKeyframe_.begin())));
+
     CameraProperty* camera = track_->getCamera();
+    tgt::quat oldQuat = tgt::quat(&(*(orientationKeyframe_.begin() + 4)));;
 
-    tgt::quat newQuat;
-    newQuat.x = keyframe[0];
-    newQuat.y = keyframe[1];
-    newQuat.z = keyframe[2];
-    newQuat.w = keyframe[3];
-    float newDist = keyframe[4];
+    float t = ((float)orientationStopwatch_.getRuntime()) * 0.001f;
 
-    float t = 0.1f;
+    tgt::quat tmp = tgt::slerpQuat(oldQuat, newQuat, std::min(1.f, t));
+    tgt::quat curQuat = camera->get().getQuat();
+    curQuat.invert();
+    track_->rotate(curQuat);
+    track_->rotate(tmp);
 
-    tgt::quat oldQuat = camera->get().getQuat();
-    float oldDist = camera->get().getFocalLength();
-    resetCameraPosition();
-    tgt::quat initQuat = camera->get().getQuat();
-    initQuat.invert();
-
-    cameraProp_->toggleInteractionMode(true, comboOrientation_);
-    // todo: use timer
-    for (int i = 0; i <= 9; ++i) {
-        tgt::quat tmp = tgt::slerpQuat(oldQuat, newQuat, std::min(t, 1.f));
-        float tmpDist = t*(newDist - oldDist) + oldDist;
-        resetCameraPosition();
-        track_->zoomAbsolute(tmpDist);
-        track_->rotate(initQuat);
-        track_->rotate(tmp);
-
-        cameraProp_->invalidate();
-        cameraProp_->notifyChange();
-        qApp->processEvents();
-
-        t += 0.1f;
-    }
-    cameraProp_->toggleInteractionMode(false, comboOrientation_);
-
-    resetCameraPosition();
-    track_->zoomAbsolute(newDist);
-    track_->rotate(initQuat);
-    track_->rotate(newQuat);
-
+    cameraProp_->invalidate();
     cameraProp_->notifyChange();
+
+    if(t >= 1.f) {
+        orientationTimer_->stop();
+        orientationStopwatch_.stop();
+        orientationStopwatch_.reset();
+        cameraProp_->toggleInteractionMode(false, comboOrientation_);
+        orientationKeyframe_.clear();
+    }
+
+    qApp->processEvents();
 }
 
 void CameraWidget::showEvent(QShowEvent* event) {
@@ -708,17 +726,17 @@ void CameraWidget::enableContSpin(bool /*b*/) {
 
 void CameraWidget::enableX(bool b) {
     rotateX_ = b;
-    setTimerState();
+    setRotationTimerState();
 }
 
 void CameraWidget::enableY(bool b) {
     rotateY_ = b;
-    setTimerState();
+    setRotationTimerState();
 }
 
 void CameraWidget::enableZ(bool b) {
     rotateZ_ = b;
-    setTimerState();
+    setRotationTimerState();
 }
 
 void CameraWidget::switchProjection(int m) {
@@ -851,17 +869,24 @@ void CameraWidget::restoreCamera() {
         restoreCamera(s);
 }
 
-void CameraWidget::setTimerState() {
-    if (timer_->isActive()) {
+void CameraWidget::setRotationTimerState() {
+    if (rotationTimer_->isActive()) {
         if (!(rotateX_ || rotateY_ || rotateZ_)) {
             cameraProp_->toggleInteractionMode(false, this);
-            timer_->stop();
+            rotationTimer_->stop();
+            rotationStopwatch_.reset();
+            fpsLabel_->setText(QString("FPS:"));
+            fpsLabel_->setEnabled(false);
+            fpsCounter_ = 0;
+            secondCounter_ = 0;
         }
     }
     else {
         if (rotateX_ || rotateY_ || rotateZ_) {
             cameraProp_->toggleInteractionMode(true, this);
-            timer_->start(25, this);
+            rotationTimer_->start(1, this);
+            rotationStopwatch_.start();
+            fpsLabel_->setEnabled(true);
         }
     }
 }

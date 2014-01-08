@@ -137,7 +137,7 @@ namespace voreen {
 
         if (getProgressBar()) {
             getProgressBar()->setTitle("Loading volume");
-            getProgressBar()->setMessage("Loading volume: " + tgt::FileSystem::fileName(fileName));
+            getProgressBar()->setProgressMessage("Loading volume: " + tgt::FileSystem::fileName(fileName));
         }
 
         // >>>>>>>>>>>>> TO DO: update progress per upload step >>>>>>>>>>>

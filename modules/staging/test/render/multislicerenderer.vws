@@ -5,7 +5,7 @@
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
-                        <item type="Canvas" ref="ref52" />
+                        <item type="MultiSliceRenderer" ref="ref15" />
                     </values>
                 </MetaItem>
                 <MetaItem name="Zoom" type="ZoomMetaData">
@@ -14,7 +14,7 @@
                     <transform.row2 x="-2477.22705078125" y="293.13604736328125" z="1" />
                 </MetaItem>
                 <MetaItem name="ZoomCenter" type="Vec2MetaData">
-                    <value x="48.29948425" y="946.23083496" />
+                    <value x="1420.44396973" y="131.72587585" />
                 </MetaItem>
                 <MetaItem name="ZoomFactor" type="FloatMetaData" value="0.45549139" />
                 <MetaItem name="autoLinkCameras" type="BoolMetaData" value="false" />
@@ -23,10 +23,10 @@
                 <Processor type="Canvas" name="Canvas" id="ref47">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-392" y="396" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="4" y="4" width="256" height="256" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="33" y="674" width="256" height="256" />
                         <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
                         <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
-                            <value x="1284" y="4" />
+                            <value x="33" y="674" />
                         </MetaItem>
                         <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
                             <value x="256" y="256" />
@@ -38,6 +38,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/max_alpha.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -194,6 +195,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -236,11 +238,11 @@
                         <Property mapKey="textureFilterMode2_" name="textureFilterMode2_" value="linear" />
                         <Property mapKey="textureFilterMode3_" name="textureFilterMode3_" value="linear" />
                         <Property mapKey="textureFilterMode4_" name="textureFilterMode4_" value="linear" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.134868" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -266,11 +268,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.13385826" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -282,11 +284,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -298,11 +300,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -358,6 +360,7 @@
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
+                                <Property mapKey="interactionHandler.multitouch" name="interactionHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.shift" name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.wheelZoom" name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="interactionHandler.zoom" name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -442,6 +445,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -460,6 +464,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/min_alpha.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -510,11 +515,11 @@
                         <Property mapKey="textureFilterMode2_" name="textureFilterMode2_" value="linear" />
                         <Property mapKey="textureFilterMode3_" name="textureFilterMode3_" value="linear" />
                         <Property mapKey="textureFilterMode4_" name="textureFilterMode4_" value="linear" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.134868" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -540,11 +545,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="110" />
@@ -556,11 +561,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -572,11 +577,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -632,6 +637,7 @@
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
+                                <Property mapKey="interactionHandler.multitouch" name="interactionHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.shift" name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.wheelZoom" name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="interactionHandler.zoom" name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -698,6 +704,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -716,6 +723,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/replace.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -766,11 +774,11 @@
                         <Property mapKey="textureFilterMode2_" name="textureFilterMode2_" value="linear" />
                         <Property mapKey="textureFilterMode3_" name="textureFilterMode3_" value="linear" />
                         <Property mapKey="textureFilterMode4_" name="textureFilterMode4_" value="linear" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.134868" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -796,11 +804,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.13385826" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -812,11 +820,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -828,11 +836,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -888,6 +896,7 @@
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
+                                <Property mapKey="interactionHandler.multitouch" name="interactionHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.shift" name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.wheelZoom" name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="interactionHandler.zoom" name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -954,6 +963,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -972,6 +982,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/deactivate.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -1022,11 +1033,11 @@
                         <Property mapKey="textureFilterMode2_" name="textureFilterMode2_" value="linear" />
                         <Property mapKey="textureFilterMode3_" name="textureFilterMode3_" value="linear" />
                         <Property mapKey="textureFilterMode4_" name="textureFilterMode4_" value="linear" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.134868" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -1052,11 +1063,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.13385826" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -1068,11 +1079,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -1084,11 +1095,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -1144,6 +1155,7 @@
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
+                                <Property mapKey="interactionHandler.multitouch" name="interactionHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.shift" name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.wheelZoom" name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="interactionHandler.zoom" name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -1210,6 +1222,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -1228,6 +1241,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/add.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -1278,11 +1292,11 @@
                         <Property mapKey="textureFilterMode2_" name="textureFilterMode2_" value="linear" />
                         <Property mapKey="textureFilterMode3_" name="textureFilterMode3_" value="linear" />
                         <Property mapKey="textureFilterMode4_" name="textureFilterMode4_" value="linear" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.134868" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -1308,11 +1322,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.13385826" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -1324,11 +1338,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -1340,11 +1354,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -1400,6 +1414,7 @@
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
+                                <Property mapKey="interactionHandler.multitouch" name="interactionHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.shift" name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.wheelZoom" name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="interactionHandler.zoom" name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -1466,6 +1481,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -1484,6 +1500,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/subtract.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -1534,11 +1551,11 @@
                         <Property mapKey="textureFilterMode2_" name="textureFilterMode2_" value="linear" />
                         <Property mapKey="textureFilterMode3_" name="textureFilterMode3_" value="linear" />
                         <Property mapKey="textureFilterMode4_" name="textureFilterMode4_" value="linear" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.04330709" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -1564,11 +1581,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.13385826" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -1580,11 +1597,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -1596,11 +1613,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -1656,6 +1673,7 @@
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
+                                <Property mapKey="interactionHandler.multitouch" name="interactionHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.shift" name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.wheelZoom" name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="interactionHandler.zoom" name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -1722,6 +1740,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -1740,6 +1759,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/multiply.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -1790,11 +1810,11 @@
                         <Property mapKey="textureFilterMode2_" name="textureFilterMode2_" value="linear" />
                         <Property mapKey="textureFilterMode3_" name="textureFilterMode3_" value="linear" />
                         <Property mapKey="textureFilterMode4_" name="textureFilterMode4_" value="linear" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.134868" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -1820,11 +1840,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.13385826" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -1836,11 +1856,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -1852,11 +1872,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -1912,6 +1932,7 @@
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
+                                <Property mapKey="interactionHandler.multitouch" name="interactionHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.shift" name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.wheelZoom" name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="interactionHandler.zoom" name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -1954,11 +1975,11 @@
                         <Property mapKey="textureFilterMode2_" name="textureFilterMode2_" value="linear" />
                         <Property mapKey="textureFilterMode3_" name="textureFilterMode3_" value="linear" />
                         <Property mapKey="textureFilterMode4_" name="textureFilterMode4_" value="linear" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.134868" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -1984,11 +2005,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.13385826" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -2000,11 +2021,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -2016,11 +2037,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -2076,6 +2097,7 @@
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
+                                <Property mapKey="interactionHandler.multitouch" name="interactionHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.shift" name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.wheelZoom" name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="interactionHandler.zoom" name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -2142,6 +2164,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -2160,6 +2183,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/divide.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -2186,6 +2210,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/difference.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -2260,6 +2285,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -2302,11 +2328,11 @@
                         <Property mapKey="textureFilterMode2_" name="textureFilterMode2_" value="linear" />
                         <Property mapKey="textureFilterMode3_" name="textureFilterMode3_" value="linear" />
                         <Property mapKey="textureFilterMode4_" name="textureFilterMode4_" value="linear" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.134868" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -2332,11 +2358,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.13385826" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -2348,11 +2374,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -2364,11 +2390,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -2424,6 +2450,7 @@
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
+                                <Property mapKey="interactionHandler.multitouch" name="interactionHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.shift" name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.wheelZoom" name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="interactionHandler.zoom" name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -2466,11 +2493,11 @@
                         <Property mapKey="textureFilterMode2_" name="textureFilterMode2_" value="linear" />
                         <Property mapKey="textureFilterMode3_" name="textureFilterMode3_" value="linear" />
                         <Property mapKey="textureFilterMode4_" name="textureFilterMode4_" value="linear" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.134868" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -2496,11 +2523,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.13385826" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -2512,11 +2539,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -2528,11 +2555,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -2588,6 +2615,7 @@
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
+                                <Property mapKey="interactionHandler.multitouch" name="interactionHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.shift" name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.wheelZoom" name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="interactionHandler.zoom" name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -2654,6 +2682,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -2672,6 +2701,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/decal.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -2746,6 +2776,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -2788,11 +2819,11 @@
                         <Property mapKey="textureFilterMode2_" name="textureFilterMode2_" value="linear" />
                         <Property mapKey="textureFilterMode3_" name="textureFilterMode3_" value="linear" />
                         <Property mapKey="textureFilterMode4_" name="textureFilterMode4_" value="linear" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" width="619" height="463" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.134868" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -2818,11 +2849,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.13385826" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -2834,11 +2865,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -2850,11 +2881,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -2910,6 +2941,7 @@
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
+                                <Property mapKey="interactionHandler.multitouch" name="interactionHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.shift" name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.wheelZoom" name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="interactionHandler.zoom" name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -2928,6 +2960,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/over.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -2954,6 +2987,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/set_hue.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -3028,6 +3062,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -3070,11 +3105,11 @@
                         <Property mapKey="textureFilterMode2_" name="textureFilterMode2_" value="linear" />
                         <Property mapKey="textureFilterMode3_" name="textureFilterMode3_" value="linear" />
                         <Property mapKey="textureFilterMode4_" name="textureFilterMode4_" value="linear" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" width="619" height="463" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -3086,11 +3121,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" width="619" height="463" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.134868" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -3116,11 +3151,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -3132,11 +3167,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -3192,6 +3227,7 @@
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
+                                <Property mapKey="interactionHandler.multitouch" name="interactionHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.shift" name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.wheelZoom" name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="interactionHandler.zoom" name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -3258,6 +3294,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -3276,6 +3313,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/blend.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -3326,11 +3364,11 @@
                         <Property mapKey="textureFilterMode2_" name="textureFilterMode2_" value="linear" />
                         <Property mapKey="textureFilterMode3_" name="textureFilterMode3_" value="linear" />
                         <Property mapKey="textureFilterMode4_" name="textureFilterMode4_" value="linear" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" width="619" height="463" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.134868" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -3356,11 +3394,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" width="619" height="463" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.13385826" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -3372,11 +3410,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -3388,11 +3426,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="1">
                             <MetaData>
                                 <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -3448,6 +3486,7 @@
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
+                                <Property mapKey="interactionHandler.multitouch" name="interactionHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.shift" name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.wheelZoom" name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="interactionHandler.zoom" name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -3514,6 +3553,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -3556,11 +3596,11 @@
                         <Property mapKey="textureFilterMode2_" name="textureFilterMode2_" value="nearest" />
                         <Property mapKey="textureFilterMode3_" name="textureFilterMode3_" value="nearest" />
                         <Property mapKey="textureFilterMode4_" name="textureFilterMode4_" value="nearest" />
-                        <Property mapKey="transferFunction1" name="transferFunction1" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction1" name="transferFunction1" domainFittingStrategy="0">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" width="619" height="463" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.13779527" split="false">
                                         <colorL r="153" g="0" b="255" a="255" />
@@ -3586,11 +3626,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction2" name="transferFunction2" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction2" name="transferFunction2" domainFittingStrategy="0">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" width="619" height="463" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.23228346" split="false">
                                         <colorL r="0" g="0" b="0" a="3" />
@@ -3602,11 +3642,11 @@
                                 <domain x="23" y="27.32352829" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction3" name="transferFunction3" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction3" name="transferFunction3" domainFittingStrategy="0">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" width="619" height="463" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -3618,11 +3658,11 @@
                                 <domain x="0" y="1" />
                             </TransferFunction>
                         </Property>
-                        <Property mapKey="transferFunction4" name="transferFunction4" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction4" name="transferFunction4" domainFittingStrategy="0">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" width="619" height="463" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.25984251" split="false">
                                         <colorL r="0" g="0" b="0" a="0" />
@@ -3678,6 +3718,7 @@
                     <InteractionHandlers>
                         <Handler name="interactionHandler">
                             <Properties>
+                                <Property mapKey="interactionHandler.multitouch" name="interactionHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.shift" name="interactionHandler.shift" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="interactionHandler.wheelZoom" name="interactionHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="1" shareEvents="false" />
                                 <Property mapKey="interactionHandler.zoom" name="interactionHandler.zoom" lod="1" enabled="true" mouseAction="127" mouseButtons="4" keyCode="0" modifier="0" shareEvents="false" />
@@ -3696,6 +3737,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/4_nearest.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -3754,6 +3796,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="0" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="monochrome" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
@@ -3789,6 +3832,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="0" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="monochrome" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
@@ -3824,6 +3868,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="0" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="monochrome" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
@@ -3859,6 +3904,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="0" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="monochrome" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
@@ -3894,6 +3940,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="0" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="monochrome" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
@@ -3929,6 +3976,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="0" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="monochrome" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
@@ -3964,6 +4012,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="0" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="monochrome" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
@@ -3999,6 +4048,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="0" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="monochrome" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
@@ -4034,6 +4084,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="0" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="monochrome" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
@@ -4069,6 +4120,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="0" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="monochrome" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
@@ -4104,6 +4156,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="0" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="monochrome" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
@@ -4139,6 +4192,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="0" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="monochrome" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
@@ -4174,6 +4228,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="0" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="monochrome" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>
@@ -4209,6 +4264,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="0" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="monochrome" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="0" y="0" z="0" w="1" />
                         </Property>

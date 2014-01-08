@@ -105,27 +105,35 @@ public:
      */
     virtual void deserialize(XmlDeserializer& s);
 
-    void setDefines(std::string defs);
-    std::string getDefines() const;
+    /// Assigns the build options for the specified program.
+    void setDefines(std::string defs, size_t programID = 0);
+    /// Returns the build options for the specified program.
+    std::string getDefines(size_t programID = 0) const;
 
-    cl::Program* getProgram() const;
-    void rebuild();
+    /// Returns the program with the specified id. @see setDefines
+    cl::Program* getProgram(size_t programID = 0) const;
+
+    /// Rebuilds all programs.
+    bool rebuild();
 
     void setProgramSource(const std::string& programSource);
     void resetProgramSource();
     void setProgramFilename(const std::string& programFilename);
     void resetProgramFilename();
 
-    /// Deletes the OpenCL program.
+    /// Deletes the OpenCL programs.
     void clearProgram();
+
+    static const std::string loggerCat_;
 
 private:
     std::string getProgramAsString(std::string filename);
 
-    std::string programDefines_;
+    std::vector<std::string> programDefines_;
     std::string originalProgramFilename_;
 
-    cl::Program* program_;
+    std::vector<cl::Program*> programs_;
+
 };
 
 }   // namespace

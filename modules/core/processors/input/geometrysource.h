@@ -117,6 +117,8 @@ private:
     IntProperty skipItemCount_;         ///< data item to skip in the point list file after reading each point
     ButtonProperty loadGeometry_;
     ButtonProperty clearGeometry_;
+    BoolProperty useIndexedGeometry_;
+    BoolProperty calculateNormals_;
 
     GeometryPort outport_;
 

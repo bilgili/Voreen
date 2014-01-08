@@ -289,22 +289,22 @@ void TransFunc2DPrimitives::updateTexture() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     // set correct projection and modelview matrices
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glOrtho(0.f, 1.f, 0.f, 1.f, -2.f, 1.f);
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
     // paint primitives
     paint();
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 
     fbo_->deactivate();
     LGL_ERROR;

@@ -60,7 +60,7 @@ void main() {
             fragDepth = depth1;
         }
     #elif defined(MODE_ALPHA_COMPOSITING)
-        if (depth1 < depth0) {
+        if (depth1 <= depth0) {
             fragColor.rgb = color1.rgb + color0.rgb * color0.a * (1.0 - color1.a);
             fragColor.a = color1.a + color0.a * (1.0 - color1.a);
         }

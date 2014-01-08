@@ -261,7 +261,7 @@ Volume* DcmtkVolumeReader::readDicomFiles(const vector<string> &fileNames,
 
     while (it_files != fileNames.end()) {
         if (getProgressBar()) {
-            getProgressBar()->setMessage("Reading slice '" + tgt::FileSystem::fileName(*it_files) + "' ...");
+            getProgressBar()->setProgressMessage("Reading slice '" + tgt::FileSystem::fileName(*it_files) + "' ...");
             getProgressBar()->setProgress(static_cast<float>(i) / static_cast<float>(fileNames.size()));
         }
         i++;
@@ -495,7 +495,7 @@ Volume* DcmtkVolumeReader::readDicomFiles(const vector<string> &fileNames,
     i = 0;
     while (it_slices != slices.end()) {
         if (getProgressBar()) {
-            getProgressBar()->setMessage("Loading slice '" + tgt::FileSystem::fileName((*it_slices).first) + "' ...");
+            getProgressBar()->setProgressMessage("Loading slice '" + tgt::FileSystem::fileName((*it_slices).first) + "' ...");
             getProgressBar()->setProgress(static_cast<float>(i) / static_cast<float>(slices.size()));
         }
         i++;

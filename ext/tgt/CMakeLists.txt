@@ -35,6 +35,7 @@ SET(TGT_SOURCES
     init.cpp
     light.cpp
     logmanager.cpp
+    matrixstack.cpp
     naturalcubicspline.cpp
     painter.cpp
     shadermanager.cpp

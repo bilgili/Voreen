@@ -84,6 +84,9 @@ void RenderTarget::initialize(GLint internalColorFormat, GLint internalDepthForm
         case GL_R32F:
             colorTex_ = new Texture(0, size, GL_RED, GL_R32F, GL_FLOAT, Texture::LINEAR);
             break;
+        case GL_R32UI:
+            colorTex_ = new Texture(0, size, GL_RED_INTEGER, GL_R32UI, GL_UNSIGNED_INT , Texture::LINEAR);
+            break;
         case GL_LUMINANCE32F_ARB:
             colorTex_ = new Texture(0, size, GL_LUMINANCE, GL_LUMINANCE32F_ARB, GL_FLOAT, Texture::LINEAR);
             break;

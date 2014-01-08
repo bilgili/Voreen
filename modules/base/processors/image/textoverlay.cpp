@@ -177,11 +177,11 @@ void TextOverlay::process() {
     if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
         compile();
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.loadIdentity();
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
 
     glClearDepth(1.0);
 
@@ -233,7 +233,7 @@ void TextOverlay::process() {
 }
 
 void TextOverlay::renderOverlay() {
-    glPushMatrix();
+    MatStack.pushMatrix();
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     glDisable(GL_LIGHTING);
@@ -253,10 +253,10 @@ void TextOverlay::renderOverlay() {
         break;
     }
     // render font(s)
-    glTranslatef(-1,-1,0);
+    MatStack.translate(-1,-1,0);
     float scaleFactorX = 2.0f / (float)inport_.getSize().x;
     float scaleFactorY = 2.0f / (float)inport_.getSize().y;
-    glScalef(scaleFactorX, scaleFactorY, 1);
+    MatStack.scale(scaleFactorX, scaleFactorY, 1);
 
     float offsetY = 7;
 
@@ -318,7 +318,7 @@ void TextOverlay::renderOverlay() {
     }
 
     glPopAttrib();
-    glPopMatrix();
+    MatStack.popMatrix();
 }
 
 std::string TextOverlay::collectText(std::string key) {

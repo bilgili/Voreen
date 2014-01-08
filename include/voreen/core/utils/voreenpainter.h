@@ -49,11 +49,6 @@ class CanvasRenderer;
 class VRN_CORE_API VoreenPainter : public tgt::Painter {
 public:
 
-    // FIXME: probably this should defined (and renamed...and converted to enum) in tgt? (jms)
-    static const int VRN_MONOSCOPIC            = 0x61;
-    static const int VRN_STEREOSCOPIC          = 0x62;
-    static const int VRN_AUTOSTEREOSCOPIC      = 0x62;
-
     /**
      * Constructor. Initializes the VoreenPainter.
      *
@@ -99,18 +94,11 @@ public:
     void renderToSnapshot(const std::string& fileName, const tgt::ivec2& size)
         throw (std::bad_alloc, tgt::FileException);
 
-    /**
-     * Currently not functional.
-     */
-    void setStereoMode(int stereoMode);
-
 protected:
 
     NetworkEvaluator* evaluator_;
 
     CanvasRenderer* canvasRenderer_;
-
-    int stereoMode_; ///< The current view-mode: either monoscopic or stereoscopic view.
 
     static const std::string loggerCat_;
 

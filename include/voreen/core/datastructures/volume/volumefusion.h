@@ -135,9 +135,9 @@ public:
     // getters and setters
     //
 
-    virtual int getBitsAllocated() const;
-    virtual int getNumChannels() const;
-    virtual int getBytesPerVoxel() const;
+    virtual size_t getBitsAllocated() const;
+    virtual size_t getNumChannels() const;
+    virtual size_t getBytesPerVoxel() const;
     /// Returns the number of bytes held in one channel.
     virtual size_t getNumBytes() const;
 
@@ -247,12 +247,12 @@ throw (std::bad_alloc)
 }
 
 template<class T, size_t N>
-VolumeFusion<T, N>* VolumeFusion<T, N>::getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset) const throw (std::bad_alloc) {
+VolumeFusion<T, N>* VolumeFusion<T, N>::getSubVolume(tgt::svec3 offset, tgt::svec3 dimensions) const throw (std::bad_alloc) {
     VolumeAtomic<T>* volumes[N];
 
     try {
         for (size_t i = 0; i < N; ++i) {
-                volumes[i] = volumes_[i]->getSubVolume(dimensions, offset);
+                volumes[i] = volumes_[i]->getSubVolume(offset, dimensions);
         }
     }
     catch (std::bad_alloc) {
@@ -300,17 +300,17 @@ void VolumeFusion<T, N>::setVoxelNormalized(float value, size_t x, size_t y, siz
 //
 
 template<class T, size_t N>
-int VolumeFusion<T, N>::getBitsAllocated() const {
+size_t VolumeFusion<T, N>::getBitsAllocated() const {
     return volumes_[0]->getBitsAllocated();
 }
 
 template<class T, size_t N>
-int VolumeFusion<T, N>::getNumChannels() const {
+size_t VolumeFusion<T, N>::getNumChannels() const {
     return N;
 }
 
 template<class T, size_t N>
-int VolumeFusion<T, N>::getBytesPerVoxel() const {
+size_t  VolumeFusion<T, N>::getBytesPerVoxel() const {
     return volumes_[0]->getBytesPerVoxel();
 }
 

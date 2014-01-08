@@ -344,8 +344,10 @@ public:
 
     /**
      * Removes double and trailing path separators.
+     * @param native if true, native path separators will be used (\ on Windows, / on Unix).
+     *  Otherwise, Unix path separators will be used.
      */
-    static std::string cleanupPath(std::string path);
+    static std::string cleanupPath(std::string path, bool native = true);
 
     /**
      * Splits a path into its directory/file components.
@@ -410,7 +412,11 @@ public:
     /// Returns the size (in bytes) of all files in the directory.
     static uint64_t dirSize(const std::string& directory, const bool recursive = true);
 
+    /// Returns the last time the specified file has been modified.
     static time_t fileTime(const std::string& filename);
+
+    /// Returns the last time the specified file has been accessed.
+    static time_t fileAccessTime(const std::string& filename);
 
     /**
      * Reads the content of the the directory, ignoring "." and ".."
@@ -499,6 +505,14 @@ public:
      */
     static void copyFile(const std::string& srcFile, const std::string& destFile)
         throw (tgt::Exception);
+
+    /**
+     * Sets the access and modification times of the specified file
+     * to the current timestamp.
+     */
+    static void updateFileTime(const std::string& filename)
+        throw (tgt::Exception);
+
 
 protected:
     std::map<std::string, FileFactory*> virtualFS_;

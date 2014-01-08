@@ -51,11 +51,17 @@ protected:
         setDescription("Modifies the volume's voxel spacing, either by replacing or scaling it. The volume's transformation matrix is not changed.");
     }
 
+    virtual void initialize() throw (tgt::Exception);
     virtual void process();
+
+    virtual void adjustPropertiesToInput();
 
 private:
     void spacingChanged(int dim);
     void uniformScalingChanged();
+    void resetSpacing();
+
+    void adjustPropertyVisibility();
 
     VolumePort inport_;
     VolumePort outport_;
@@ -66,6 +72,7 @@ private:
     FloatProperty spacingX_;
     FloatProperty spacingY_;
     FloatProperty spacingZ_;
+    ButtonProperty reset_;
     FloatVec3Property spacingDisplay_;
 
     static const std::string loggerCat_; ///< category used in logging

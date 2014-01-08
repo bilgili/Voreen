@@ -117,7 +117,7 @@ void AlignedSliceProxyGeometry::update() {
     if(!volh)
         return;
 
-    TriangleMeshGeometryVec3* slice = getSliceGeometry(volh, sliceAlignment_.getValue(), floatSliceIndex_.get(), true, restrictToMainVolume_.get() ? std::vector<const VolumeBase*>() : secondaryVolumePort_.getAllData());
+    TriangleMeshGeometryVec3* slice = VolumeSliceHelper::getSliceGeometry(volh, sliceAlignment_.getValue(), floatSliceIndex_.get(), true, restrictToMainVolume_.get() ? std::vector<const VolumeBase*>() : secondaryVolumePort_.getAllData());
 
     //calculate plane equation:
     tgt::plane p(slice->getTriangle(0).v_[0].pos_, slice->getTriangle(0).v_[1].pos_, slice->getTriangle(0).v_[2].pos_);

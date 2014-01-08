@@ -114,10 +114,13 @@ void VolumeURLProperty::loadVolume() throw (tgt::FileException, std::bad_alloc){
     ProgressBar* progressBar = getProgressBar();
     if (progressBar) {
         progressBar->setTitle("Loading volume");
-        progressBar->setMessage("Loading volume ...");
+        progressBar->setProgressMessage("Loading volume ...");
     }
     VolumeSerializerPopulator serializerPopulator(progressBar);
     VolumeList* volumeList = serializerPopulator.getVolumeSerializer()->read(url);
+
+    if (progressBar)
+        progressBar->hide();
 
     if (volumeList && !volumeList->empty()) {
         VolumeBase* handle = volumeList->first();

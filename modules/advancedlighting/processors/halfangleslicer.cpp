@@ -165,13 +165,13 @@ void HalfAngleSlicer::process() {
 
     glDisable(GL_DEPTH_TEST);
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    tgt::loadMatrix(eyeCamera_.get().getProjectionMatrix(outport_.getSize()));
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadMatrix(eyeCamera_.get().getProjectionMatrix(outport_.getSize()));
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    tgt::loadMatrix(eyeCamera_.get().getViewMatrix());
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadMatrix(eyeCamera_.get().getViewMatrix());
 
     slicingPrg->activate();
     glEnable(GL_BLEND);
@@ -212,8 +212,8 @@ void HalfAngleSlicer::process() {
         lightport_.activateTarget();
 
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-        glPushMatrix();
-        tgt::loadMatrix(lightCamera_.getViewMatrix());
+        MatStack.pushMatrix();
+        MatStack.loadMatrix(lightCamera_.getViewMatrix());
         setGlobalShaderParameters(slicingPrg, &lightCamera_);
         slicingPrg->setUniform("secondPass_", true);
 
@@ -221,7 +221,7 @@ void HalfAngleSlicer::process() {
             for (unsigned int curPoint=0; curPoint<6; curPoint++)
                 glVertex2i(curPoint, curSlice);
         glEnd();
-        glPopMatrix();
+        MatStack.popMatrix();
 
         lightport_.deactivateTarget();
     }
@@ -230,10 +230,10 @@ void HalfAngleSlicer::process() {
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
 
-    glPopMatrix();
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
 
     slicingPrg->deactivate();
 

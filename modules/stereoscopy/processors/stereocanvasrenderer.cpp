@@ -37,10 +37,6 @@
 #include "tgt/filesystem.h"
 #include "tgt/camera.h"
 
-#ifdef VRN_MODULE_DEVIL
-#include "modules/devil/devilmodule.h"
-#endif
-
 namespace voreen {
 
 const std::string StereoCanvasRenderer::loggerCat_("voreen.stereoscopy.StereoCanvasRenderer");
@@ -51,94 +47,117 @@ const std::string StereoCanvasRenderer::loggerCat_("voreen.stereoscopy.StereoCan
 StereoCanvasRenderer::StereoCanvasRenderer()
     : CanvasRenderer()
     //ports
-    , tempPort_(Port::OUTPORT, "private.temp", "TempPort")
-    , storagePort_(Port::OUTPORT, "private.storage", "StoragePort")
+    , tmpPort_(Port::OUTPORT, "private.tmp", "TmpPort")
+    , sideBySidePort_(Port::OUTPORT, "private.sidebyside", "StoragePort")
+    , finalPort_(Port::OUTPORT, "private.final", "FinalPort")
     //properties
-        //stereo settings
-    , stereoModeProp_("stereoModeProp","Stereo Mode")
-    , eyeInvertProp_("eyeInvertProp","Invert Eyes", false)
-    , calibrateDisplayProp_("calibrateDisplay", "Show Calibration", false)
-    , anaglyphModeProp_("anaglyphModeProp","Anaglyph Mode")
         //camera settings
     , cameraProp_("cameraProp","Camera", tgt::Camera(tgt::vec3(0.0f, 0.0f, 50.f), tgt::vec3(0.0f, 0.0f, 0.0f), 
                                                  tgt::vec3(0.0f, 1.0f, 0.0f), 45.f,1.f,0.1f,500.f))
-    , cameraHandler_(0)
-    , eyeSeparationProp_("eyeSeparationProp","Eye Separation", 1.f, 0.0f, 10.0f)
+    //stereoscopic method
+    , stereoModeProp_("stereoModeProp","Stereoscopic Method")
+    , anaglyphModeProp_("anaglyphModeProp","Anaglyph Color")
+    , autostereoscopicModeProp_("autostereoscopicModeProp","Autostereoscopic Interleaving")
+    , eyeInvertProp_("eyeInvertProp","Invert Eyes", false)
+    , calibrateDisplayProp_("calibrateDisplay", "Show Calibration", false)
+        //frustum settings
     , stereoAxisModeProp_("stereoAxisModeProp","Stereo Axis Mode")
+    , eyeSeparationProp_("eyeSeparationProp","Eye Separation (cm)", 6.5f, 0.0f, 12.0f)
+    , focalLengthProp_("focalLengthProp","Display Distance (cm)", 60.f, 10.f, 300.0f)
+    , focalWidthProp_("focalWidthProp","Display Width (cm)", 45.f, 1.f, 200.0f)
+    , relativeFocalLengthProp_("relativeFocalLengthProp","Focal Plane Factor", 0.5f, 0.001f, 1.0f)
+    , useRealWorldFrustumProp_("useRealWorldFrustum", "Use Real-World Frustum Size", false)
         //events
     , mouseMoveEventProp_("mouseEvent.move", "Move Event", this, &StereoCanvasRenderer::mouseMove,
       tgt::MouseEvent::MOUSE_BUTTON_NONE, tgt::MouseEvent::MOTION | tgt::MouseEvent::CLICK | tgt::MouseEvent::ENTER_EXIT, tgt::MouseEvent::MODIFIER_NONE)
-    //in case pof head tracking
-#ifdef VRN_MODULE_HEADTRACKING
-    , coPort_(Port::INPORT, "coInport", "coInport", false)
-#endif
     //set member to default value
     , calibrationRightTexture_(0), calibrationLeftTexture_(0)
-    , splitScreenShader_(0), anaglyphShader_(0), autostereoscopicShader_(0)
+    , sideBySideShader_(0), anaglyphShader_(0), autostereoscopicShader_(0), copyTextureShader_(0)
     , previousCameraProjectionMode_(tgt::Camera::PERSPECTIVE)
     , nextExpectedImage_(NORMAL)
     , lastRunWasInInteractionMode_(false) 
     , w8ingOn2Eye_(false)
 {
-
     //port settings (normal render port added by CanvasRenderer)
-    addPrivateRenderPort(tempPort_);
-    addPrivateRenderPort(storagePort_);
-#ifdef VRN_MODULE_HEADTRACKING
-    addPort(coPort_);
-#endif
+    addPrivateRenderPort(tmpPort_);
+    addPrivateRenderPort(sideBySidePort_);
+    addPrivateRenderPort(finalPort_);
+
+    //event handler for splitscreen
     addEventProperty(mouseMoveEventProp_);
 
-    // stereo settings
+    // stereoscopic method
     addProperty(stereoModeProp_);
         stereoModeProp_.addOption("nostereo","No Stereo",StereoCanvasRenderer::NO_STEREO_MODE);
-        stereoModeProp_.addOption("splitscreen","Split Screen",StereoCanvasRenderer::SPLITSCREEN_STEREO_MODE);
+        stereoModeProp_.addOption("splitscreen","Side by Side",StereoCanvasRenderer::SPLITSCREEN_STEREO_MODE);
         stereoModeProp_.addOption("autostereoscopic","Auto-Stereoscopic",StereoCanvasRenderer::AUTOSTEREOSCOPIC_STEREO_MODE);
         stereoModeProp_.addOption("anaglyph","Anaglyph",StereoCanvasRenderer::ANAGLYPH_STEREO_MODE);
-        //stereoModeProp_.addOption("quadbuffer","Quadbuffer",StereoCanvasRenderer::QUADBUFFER_STEREO_MODE);
+        stereoModeProp_.addOption("quadbuffer","Quadbuffer",StereoCanvasRenderer::QUADBUFFER_STEREO_MODE);
         stereoModeProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::stereoModeOnChange));
-        stereoModeProp_.setGroupID("stereo settings");
-    addProperty(eyeInvertProp_);
-        eyeInvertProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::eyeInvertOnChange));
-        eyeInvertProp_.setGroupID("stereo settings");
-    addProperty(calibrateDisplayProp_);
-        calibrateDisplayProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::calibrateDisplayOnChange));
-        calibrateDisplayProp_.setGroupID("stereo settings");
+        stereoModeProp_.setGroupID("stereoscopic method");
     addProperty(anaglyphModeProp_);
         anaglyphModeProp_.addOption("redcyan","Red - Cyan",StereoCanvasRenderer::RED_CYAN);
         anaglyphModeProp_.addOption("redblue","Red - Blue",StereoCanvasRenderer::RED_BLUE);
         anaglyphModeProp_.addOption("redgreen","Red - Green",StereoCanvasRenderer::RED_GREEN);
-        anaglyphModeProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::anaglyphModeOnChange));
-        anaglyphModeProp_.setGroupID("stereo settings");
-    setPropertyGroupGuiName("stereo settings", "Stereo Settings");
+        anaglyphModeProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::invalidateFinalPort));
+        anaglyphModeProp_.setGroupID("stereoscopic method");
+    addProperty(autostereoscopicModeProp_);
+        autostereoscopicModeProp_.addOption("vertical","Vertica-Interleaved",StereoCanvasRenderer::VERTICAL_INTERLEAVED);
+        autostereoscopicModeProp_.addOption("horizontal","Horizontal-Interleaved",StereoCanvasRenderer::HORIZONTAL_INTERLEAVED);
+        autostereoscopicModeProp_.addOption("checker","Checker-Interleaved",StereoCanvasRenderer::CHECKER_INTERLEAVED);
+        autostereoscopicModeProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::invalidateFinalPort));
+        autostereoscopicModeProp_.setGroupID("stereoscopic method");
+    addProperty(eyeInvertProp_);
+        eyeInvertProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::invalidateSideBySidePort));
+        eyeInvertProp_.setGroupID("stereoscopic method");
+    addProperty(calibrateDisplayProp_);
+        calibrateDisplayProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::invalidateSideBySidePort));
+        calibrateDisplayProp_.setGroupID("stereoscopic method");
+    setPropertyGroupGuiName("stereoscopic method", "Stereoscopic Method");
 
-    // camera settings
-    addProperty(cameraProp_);
-        cameraProp_.setGroupID("camera settings");
-        cameraHandler_ = new CameraInteractionHandler("cameraHandler", "Camera", &cameraProp_);
-        addInteractionHandler(cameraHandler_);
-    addProperty(eyeSeparationProp_);
-        eyeSeparationProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::eyeSeparationOnChange));
-        eyeSeparationProp_.setGroupID("camera settings");
+    //frustum settings
     addProperty(stereoAxisModeProp_);
         stereoAxisModeProp_.addOption("onAxis", "On Axis", tgt::Camera::ON_AXIS);
         stereoAxisModeProp_.addOption("onAxisHMD","On Axis (HMD)",tgt::Camera::ON_AXIS_HMD);
         stereoAxisModeProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::stereoAxisModeOnChange));
-        stereoAxisModeProp_.setGroupID("camera settings");
-    setPropertyGroupGuiName("camera settings", "Camera Settings");
+        stereoAxisModeProp_.setGroupID("frustum settings");
+    addProperty(eyeSeparationProp_);
+        eyeSeparationProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::eyeSeparationOnChange));
+        eyeSeparationProp_.setGroupID("frustum settings");
+    addProperty(useRealWorldFrustumProp_);
+        useRealWorldFrustumProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::useRealWorldFrustumPropOnChange));
+        useRealWorldFrustumProp_.setGroupID("frustum settings");
+    addProperty(focalLengthProp_);
+        focalLengthProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::focalLengthOnChange));
+        focalLengthProp_.setGroupID("frustum settings");
+    addProperty(focalWidthProp_);
+        focalWidthProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::focalWidthOnChange));
+        focalWidthProp_.setGroupID("frustum settings");
+    addProperty(relativeFocalLengthProp_);
+        relativeFocalLengthProp_.onChange(CallMemberAction<StereoCanvasRenderer>(this, &StereoCanvasRenderer::relativeFocalLengthPropOnChange));
+        relativeFocalLengthProp_.setNumDecimals(3);
+        relativeFocalLengthProp_.setGroupID("frustum settings");
+    setPropertyGroupGuiName("frustum settings", "Frustum Settings");
+
+        // camera settings
+    addProperty(cameraProp_);
+
+    focalLengthOnChange();
+    focalWidthOnChange();
+    relativeFocalLengthPropOnChange();
+    useRealWorldFrustumPropOnChange();
 }
 
 StereoCanvasRenderer::~StereoCanvasRenderer() {
-    //delete camera handle
-    delete cameraHandler_;
 }
 
 void StereoCanvasRenderer::initialize() throw (tgt::Exception) {
     CanvasRenderer::initialize();
     //load shaders
-    splitScreenShader_ = ShdrMgr.loadSeparate("passthrough.vert", "copyimagesplitscreen.frag", generateHeader(), false);
+    sideBySideShader_ = ShdrMgr.loadSeparate("passthrough.vert", "copyimagesplitscreen.frag", generateHeader(), false);
     anaglyphShader_ = ShdrMgr.loadSeparate("passthrough.vert", "anaglyph.frag", generateHeader(), false);
     autostereoscopicShader_ = ShdrMgr.loadSeparate("passthrough.vert", "autostereoscopic.frag", generateHeader(), false);
+    copyTextureShader_ = ShdrMgr.loadSeparate("passthrough.vert", "copytexture.frag", generateHeader(), false);
     //load textures
     calibrationRightTexture_ = TexMgr.load(VoreenApplication::app()->getResourcePath("textures/stereocalibrationR.png"));
     calibrationLeftTexture_ = TexMgr.load(VoreenApplication::app()->getResourcePath("textures/stereocalibrationL.png"));
@@ -153,12 +172,14 @@ void StereoCanvasRenderer::initialize() throw (tgt::Exception) {
 
 void StereoCanvasRenderer::deinitialize() throw (tgt::Exception) {
     //delete shaders
-    ShdrMgr.dispose(splitScreenShader_);
-    splitScreenShader_ = 0;
+    ShdrMgr.dispose(sideBySideShader_);
+    sideBySideShader_ = 0;
     ShdrMgr.dispose(anaglyphShader_);
     anaglyphShader_ = 0;
     ShdrMgr.dispose(autostereoscopicShader_);
     autostereoscopicShader_ = 0;
+    ShdrMgr.dispose(copyTextureShader_);
+    copyTextureShader_ = 0;
     //delete textures
     if (calibrationRightTexture_)
        TexMgr.dispose(calibrationRightTexture_);
@@ -171,51 +192,6 @@ void StereoCanvasRenderer::deinitialize() throw (tgt::Exception) {
     cam->setProjectionMode(previousCameraProjectionMode_);
     //call super function
     CanvasRenderer::deinitialize();
-}
-
-void StereoCanvasRenderer::onEvent(tgt::Event* e) {
-    if (canvas_) {
-        canvas_->getGLFocus();
-        tgt::MouseEvent* me = dynamic_cast<tgt::MouseEvent*>(e);
-        //pass, if no mouseevent and stereo mode is split screen
-        if (!me || mouseMoveEventProp_.accepts(me) || stereoModeProp_.getValue() != SPLITSCREEN_STEREO_MODE) {
-            RenderProcessor::onEvent(e);
-            return;
-        }
-
-        //set right viewport for mouse events in split screen mode
-        tgt::ivec2 view = me->viewport();
-        switch(stereoModeProp_.getValue()){
-            case NO_STEREO_MODE:
-            case AUTOSTEREOSCOPIC_STEREO_MODE:
-            case ANAGLYPH_STEREO_MODE:
-            case QUADBUFFER_STEREO_MODE:
-                //should not get here
-                tgtAssert(false,"StereoCanvasRenderer::onEvent: Unexpected stereo mode");
-                break;
-            case SPLITSCREEN_STEREO_MODE:
-                view.x /= 2;
-                if (me->x() < (me->viewport().x / 2)) {
-                    tgt::MouseEvent newme(me->x(), me->y(), me->action(), me->modifiers(), me->button(), view);
-                    newme.ignore();  // accepted is set to true by default
-                    inport_.distributeEvent(&newme);
-                    if (newme.isAccepted())
-                        me->accept();
-                }
-                else {
-                    tgt::MouseEvent newme(me->x() - (me->viewport().x / 2), me->y(), me->action(), me->modifiers(), me->button(), view);
-                    newme.ignore();  // accepted is set to true by default
-                    inport_.distributeEvent(&newme);
-                    if (newme.isAccepted())
-                        me->accept();
-                }
-                break;
-            default:
-                //should not get here
-                tgtAssert(false,"StereoCanvasRenderer::onEvent: Unexpected stereo mode");
-                break;
-        }    
-    }
 }
 
 void StereoCanvasRenderer::process() {
@@ -239,14 +215,17 @@ void StereoCanvasRenderer::process() {
                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                    return;
                 } 
-                copyIntoStorage(calibrationLeftTexture_,calibrationRightTexture_);
+                copyIntoSideBySide(calibrationLeftTexture_,calibrationRightTexture_);
                 copyIntoCanvas();
             } 
             else {
-                if(inport_.hasChanged() || !storagePort_.hasValidResult())
+                if(inport_.hasChanged() || !sideBySidePort_.hasValidResult())
                     processStereo();
-                else
-                    copyIntoCanvas(); 
+                else if(!finalPort_.hasValidResult()) {
+                    copyIntoFinal();
+                    copyIntoCanvas();
+                } else
+                    copyIntoCanvas();
             }
         } 
         else { // not ready (show error texture)
@@ -254,7 +233,7 @@ void StereoCanvasRenderer::process() {
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 return;
             }
-            copyIntoStorage(errorTex_,errorTex_);
+            copyIntoSideBySide(errorTex_,errorTex_);
             copyIntoCanvas();
         } 
         break;
@@ -273,38 +252,33 @@ void StereoCanvasRenderer::process() {
 //      resize functions                                                                                            
 //------------------------------------------------------------------------------------------------------------------
 void StereoCanvasRenderer::resizeAllPorts(tgt::ivec2 newsize) {
-    tgt::ivec2 size;
+    tgt::ivec2 halfNewSize(newsize.x/2,newsize.y);
+    tgt::ivec2 doubleNewSize(newsize.x*2,newsize.y);
     switch(stereoModeProp_.getValue()){
     case NO_STEREO_MODE:
-    case ANAGLYPH_STEREO_MODE:
         inport_.requestSize(newsize);
-        storagePort_.resize(newsize);
-        tempPort_.resize(newsize);
-        nextExpectedImage_ = NORMAL;
-        invalidate();
+        tmpPort_.resize(newsize);
+        sideBySidePort_.resize(newsize);
+        break;
+    case ANAGLYPH_STEREO_MODE:
+    case AUTOSTEREOSCOPIC_STEREO_MODE:
+    case QUADBUFFER_STEREO_MODE:
+        inport_.requestSize(newsize);
+        tmpPort_.resize(newsize);
+        sideBySidePort_.resize(doubleNewSize);
         break;
     case SPLITSCREEN_STEREO_MODE:
-    case AUTOSTEREOSCOPIC_STEREO_MODE:
-        size = newsize;
-        size.x /= 2;
-        inport_.requestSize(size);
-        storagePort_.resize(newsize);
-        tempPort_.resize(size);
-        nextExpectedImage_ = NORMAL;
-        invalidate();
-        break;
-    case QUADBUFFER_STEREO_MODE:
-        size = newsize;
-        size.x *= 2;
-        inport_.requestSize(newsize);
-        storagePort_.resize(size);
-        tempPort_.resize(newsize);
-        nextExpectedImage_ = NORMAL;
-        invalidate();
+        inport_.requestSize(halfNewSize);
+        tmpPort_.resize(halfNewSize);
+        sideBySidePort_.resize(newsize);
         break;
     default:
         break;
     }
+    finalPort_.resize(newsize);
+    //reset camera
+    nextExpectedImage_ = NORMAL;
+    invalidate();
 }
 
 void StereoCanvasRenderer::canvasResized(tgt::ivec2 newsize) {
@@ -362,19 +336,19 @@ void StereoCanvasRenderer::setCanvas(tgt::GLCanvas* canvas) {
 }
 
 //------------------------------------------------------------------------------------------------------------------
-//      get/renderTo texture functions                                                                              
+//      get/render to texture functions                                                                              
 //------------------------------------------------------------------------------------------------------------------
 const tgt::Texture* StereoCanvasRenderer::getImageColorTexture() const {
     switch(stereoModeProp_.getValue()){
         case NO_STEREO_MODE:
             return CanvasRenderer::getImageColorTexture();
             break;
-        case SPLITSCREEN_STEREO_MODE:
         case ANAGLYPH_STEREO_MODE:
         case AUTOSTEREOSCOPIC_STEREO_MODE:
+        case SPLITSCREEN_STEREO_MODE:
         case QUADBUFFER_STEREO_MODE:
-            if (storagePort_.hasRenderTarget())
-                return storagePort_.getColorTexture(); 
+            if (finalPort_.hasRenderTarget())
+                return finalPort_.getColorTexture(); 
             else
                 return 0; 
             break;
@@ -385,23 +359,7 @@ const tgt::Texture* StereoCanvasRenderer::getImageColorTexture() const {
 }
 
 tgt::Texture* StereoCanvasRenderer::getImageColorTexture(){
-     switch(stereoModeProp_.getValue()){
-        case NO_STEREO_MODE:
-            return CanvasRenderer::getImageColorTexture();
-            break;
-        case SPLITSCREEN_STEREO_MODE:
-        case ANAGLYPH_STEREO_MODE:
-        case AUTOSTEREOSCOPIC_STEREO_MODE:
-        case QUADBUFFER_STEREO_MODE:
-            if (storagePort_.hasRenderTarget())
-                return storagePort_.getColorTexture(); 
-            else
-                return 0; 
-            break;
-        default:
-            tgtAssert(false,"Unknown StereoMode!");
-            return 0;
-    }
+    return const_cast<tgt::Texture*>(getImageColorTexture());
 }
 
 const tgt::Texture* StereoCanvasRenderer::getImageDepthTexture() const{
@@ -409,14 +367,15 @@ const tgt::Texture* StereoCanvasRenderer::getImageDepthTexture() const{
         case NO_STEREO_MODE:
             return CanvasRenderer::getImageDepthTexture();
             break;
-        case SPLITSCREEN_STEREO_MODE:
         case ANAGLYPH_STEREO_MODE:
         case AUTOSTEREOSCOPIC_STEREO_MODE:
+        case SPLITSCREEN_STEREO_MODE:
         case QUADBUFFER_STEREO_MODE:
-            if (storagePort_.hasRenderTarget())
-                return storagePort_.getDepthTexture(); 
+            if (finalPort_.hasRenderTarget())
+                return finalPort_.getDepthTexture(); 
             else
                 return 0; 
+            break;
             break;
         default:
             tgtAssert(false,"Unknown StereoMode!");
@@ -425,24 +384,8 @@ const tgt::Texture* StereoCanvasRenderer::getImageDepthTexture() const{
 }
     
 tgt::Texture* StereoCanvasRenderer::getImageDepthTexture() {
-    switch(stereoModeProp_.getValue()){
-        case NO_STEREO_MODE:
-            return CanvasRenderer::getImageDepthTexture();
-            break;
-        case SPLITSCREEN_STEREO_MODE:
-        case ANAGLYPH_STEREO_MODE:
-        case AUTOSTEREOSCOPIC_STEREO_MODE:
-        case QUADBUFFER_STEREO_MODE:
-            if (storagePort_.hasRenderTarget())
-                return storagePort_.getDepthTexture(); 
-            else
-                return 0; 
-            break;
-        default:
-            tgtAssert(false,"Unknown StereoMode!");
-            return 0;
-    }
-}   
+   return const_cast<tgt::Texture*>(getImageDepthTexture());
+}
 
 bool StereoCanvasRenderer::renderToImage(const std::string &filename) {
     switch(stereoModeProp_.getValue()){
@@ -458,7 +401,7 @@ bool StereoCanvasRenderer::renderToImage(const std::string &filename) {
                 return false;
             }
 
-            if (!storagePort_.hasRenderTarget()) {
+            if (!finalPort_.hasRenderTarget()) {
                 LWARNING("StereoCanvasRenderer::renderToImage(): storagePort has no data");
                 return false;
             }
@@ -466,8 +409,8 @@ bool StereoCanvasRenderer::renderToImage(const std::string &filename) {
             renderToImageError_.clear();
 
             try {
-                storagePort_.saveToImage(filename);
-                LINFO("Saved rendering " << storagePort_.getSize() << " to file: " << tgt::FileSystem::cleanupPath(renderToImageFilename_));
+                finalPort_.saveToImage(filename);
+                LINFO("Saved rendering " << finalPort_.getSize() << " to file: " << tgt::FileSystem::cleanupPath(renderToImageFilename_));
             }
             catch (std::bad_alloc& /*e*/) {
                 LERROR("Exception in StereoCanvasRenderer::renderToImage(): bad allocation (" << getID() << ")");
@@ -504,12 +447,12 @@ bool StereoCanvasRenderer::renderToImage(const std::string &filename, tgt::ivec2
                 return false;
             }
 
-            if (!storagePort_.hasRenderTarget()) {
+            if (!finalPort_.hasRenderTarget()) {
                 LWARNING("StereoCanvasRenderer::renderToImage(): storagePort has no data");
                 return false;
             }
 
-            oldDimensions = storagePort_.getSize();
+            oldDimensions = finalPort_.getSize();
             // resize texture container to desired image dimensions and propagate change
             resizeAllPorts(dimensions);
             canvas_->getGLFocus();
@@ -535,90 +478,166 @@ bool StereoCanvasRenderer::renderToImage(const std::string &filename, tgt::ivec2
 void StereoCanvasRenderer::stereoModeOnChange() {
     nextExpectedImage_ = NORMAL;
     canvasResized(canvasSize_.get());
-    //get autostereo frustum right
-    if(stereoModeProp_.getValue() != AUTOSTEREOSCOPIC_STEREO_MODE) {
-        if(BoolMetaData* meta = dynamic_cast<BoolMetaData*>(getMetaDataContainer().getMetaData("AutoStereoscopicFrustum"))) {
-            if(meta->getValue()){
-                meta->setValue(false);
-                const_cast<tgt::Camera*>(&cameraProp_.get())->setFrustTop(cameraProp_.get().getFrustTop()*2.f);
-                const_cast<tgt::Camera*>(&cameraProp_.get())->setFrustBottom(cameraProp_.get().getFrustBottom()*2.f);
-                cameraProp_.invalidate();
-            }
-        } else {
-            getMetaDataContainer().addMetaData("AutoStereoscopicFrustum", new BoolMetaData(false));
-        }
-    }
     //switch based on StereoMode
     switch(stereoModeProp_.getValue()) {
     case NO_STEREO_MODE:
+        anaglyphModeProp_.setVisible(false);
+        autostereoscopicModeProp_.setVisible(false);
+        stereoAxisModeProp_.setWidgetsEnabled(false);
         eyeInvertProp_.set(false);
         eyeInvertProp_.setWidgetsEnabled(false);
         calibrateDisplayProp_.set(false);
         calibrateDisplayProp_.setWidgetsEnabled(false);
-        anaglyphModeProp_.setVisible(false);
         eyeSeparationProp_.setWidgetsEnabled(false);
+        focalLengthProp_.setWidgetsEnabled(false);
+        focalWidthProp_.setWidgetsEnabled(false);
+        relativeFocalLengthProp_.setWidgetsEnabled(false);
+        useRealWorldFrustumProp_.setWidgetsEnabled(false);
         stereoAxisModeProp_.setWidgetsEnabled(false);
         break;
-    case AUTOSTEREOSCOPIC_STEREO_MODE:
-        if(BoolMetaData* meta = dynamic_cast<BoolMetaData*>(getMetaDataContainer().getMetaData("AutoStereoscopicFrustum"))) {
-            if(!meta->getValue()){
-                meta->setValue(true);
-                const_cast<tgt::Camera*>(&cameraProp_.get())->setFrustTop(cameraProp_.get().getFrustTop()/2.f);
-                const_cast<tgt::Camera*>(&cameraProp_.get())->setFrustBottom(cameraProp_.get().getFrustBottom()/2.f);
-                cameraProp_.invalidate();
-            }
-        } else {
-            getMetaDataContainer().addMetaData("AutoStereoscopicFrustum", new BoolMetaData(true));
-            const_cast<tgt::Camera*>(&cameraProp_.get())->setFrustTop(cameraProp_.get().getFrustTop()/2.f);
-            const_cast<tgt::Camera*>(&cameraProp_.get())->setFrustBottom(cameraProp_.get().getFrustBottom()/2.f);
-            cameraProp_.invalidate();
-        }
-        //no break
     case QUADBUFFER_STEREO_MODE:
     case SPLITSCREEN_STEREO_MODE:
+        anaglyphModeProp_.setVisible(false);
+        autostereoscopicModeProp_.setVisible(false);
+        stereoAxisModeProp_.setWidgetsEnabled(true);
         eyeInvertProp_.setWidgetsEnabled(true);
         calibrateDisplayProp_.setWidgetsEnabled(true);
-        anaglyphModeProp_.setVisible(false);
         eyeSeparationProp_.setWidgetsEnabled(true);
+        useRealWorldFrustumProp_.setWidgetsEnabled(true);
+        focalLengthProp_.setWidgetsEnabled(useRealWorldFrustumProp_.get());
+        focalWidthProp_.setWidgetsEnabled(useRealWorldFrustumProp_.get());
+        relativeFocalLengthProp_.setWidgetsEnabled(!useRealWorldFrustumProp_.get());
+        stereoAxisModeProp_.setWidgetsEnabled(true);
+        break;
+    case AUTOSTEREOSCOPIC_STEREO_MODE:
+        anaglyphModeProp_.setVisible(false);
+        autostereoscopicModeProp_.setVisible(true);
+        stereoAxisModeProp_.setWidgetsEnabled(true);
+        eyeInvertProp_.setWidgetsEnabled(true);
+        calibrateDisplayProp_.setWidgetsEnabled(true);
+        eyeSeparationProp_.setWidgetsEnabled(true);
+        useRealWorldFrustumProp_.setWidgetsEnabled(true);
+        focalLengthProp_.setWidgetsEnabled(useRealWorldFrustumProp_.get());
+        focalWidthProp_.setWidgetsEnabled(useRealWorldFrustumProp_.get());
+        relativeFocalLengthProp_.setWidgetsEnabled(!useRealWorldFrustumProp_.get());
         stereoAxisModeProp_.setWidgetsEnabled(true);
         break;
     case ANAGLYPH_STEREO_MODE:
+        anaglyphModeProp_.setVisible(true);
+        autostereoscopicModeProp_.setVisible(false);
+        stereoAxisModeProp_.setWidgetsEnabled(true);
         eyeInvertProp_.setWidgetsEnabled(true);
         calibrateDisplayProp_.setWidgetsEnabled(true);
-        anaglyphModeProp_.setVisible(true);
         eyeSeparationProp_.setWidgetsEnabled(true);
+        useRealWorldFrustumProp_.setWidgetsEnabled(true);
+        focalLengthProp_.setWidgetsEnabled(useRealWorldFrustumProp_.get());
+        focalWidthProp_.setWidgetsEnabled(useRealWorldFrustumProp_.get());
+        relativeFocalLengthProp_.setWidgetsEnabled(!useRealWorldFrustumProp_.get());
         stereoAxisModeProp_.setWidgetsEnabled(true);
         break;
     default:
         tgtAssert(false,"Unknown StereoMode!");
         break;
     }
-    storagePort_.invalidateResult(); //force new rendering
+    finalPort_.invalidateResult(); //force new rendering
 }
 
-void StereoCanvasRenderer::eyeInvertOnChange() {
-    storagePort_.invalidateResult();
+void StereoCanvasRenderer::invalidateSideBySidePort() {
+    sideBySidePort_.invalidateResult();
     invalidate();
 }
 
-void StereoCanvasRenderer::calibrateDisplayOnChange() {
-    storagePort_.invalidateResult();
-    invalidate();
-}
-
-void StereoCanvasRenderer::anaglyphModeOnChange() {
-    storagePort_.invalidateResult();
+void StereoCanvasRenderer::invalidateFinalPort() {
+    finalPort_.invalidateResult();
     invalidate();
 }
 
 void StereoCanvasRenderer::eyeSeparationOnChange() {
-    if(cameraProp_.setStereoEyeSeparation(eyeSeparationProp_.get()))
+    // convert to mm
+    if(cameraProp_.setStereoEyeSeparation(eyeSeparationProp_.get() * 10.f))
         cameraProp_.invalidate();
 }
 
 void StereoCanvasRenderer::stereoAxisModeOnChange() {
     if(cameraProp_.setStereoAxisMode(stereoAxisModeProp_.getValue()))
         cameraProp_.invalidate();
+}
+
+void StereoCanvasRenderer::focalLengthOnChange() {
+    // convert to mm
+    if(cameraProp_.setStereoFocalLength(focalLengthProp_.get() * 10.f))
+        cameraProp_.invalidate();
+}
+
+void StereoCanvasRenderer::focalWidthOnChange() {
+    // convert to mm
+    if(cameraProp_.setStereoWidth(focalWidthProp_.get() * 10.f))
+        cameraProp_.invalidate();
+}
+
+void StereoCanvasRenderer::relativeFocalLengthPropOnChange() {
+    float foc = relativeFocalLengthProp_.get();
+    float maxDist = relativeFocalLengthProp_.getMaxValue();
+    float minDist = relativeFocalLengthProp_.getMinValue();
+    float maxLog = log(maxDist);
+    float minLog = log(minDist);
+    float scale = (maxLog - minLog) / (maxDist - minDist);
+    foc = std::exp(minLog + scale * (foc - minDist));
+    if(cameraProp_.setStereoRelativeFocalLength(foc))
+        cameraProp_.invalidate();
+}
+
+void StereoCanvasRenderer::useRealWorldFrustumPropOnChange() {
+    focalLengthProp_.setWidgetsEnabled(useRealWorldFrustumProp_.get());
+    focalWidthProp_.setWidgetsEnabled(useRealWorldFrustumProp_.get());
+    relativeFocalLengthProp_.setWidgetsEnabled(!useRealWorldFrustumProp_.get());
+    if(cameraProp_.setUseRealWorldFrustum(useRealWorldFrustumProp_.get()))
+        cameraProp_.invalidate();
+}
+
+void StereoCanvasRenderer::onEvent(tgt::Event* e) {
+    if (canvas_) {
+        canvas_->getGLFocus();
+        tgt::MouseEvent* me = dynamic_cast<tgt::MouseEvent*>(e);
+        //pass, if no mouseevent and stereo mode is split screen
+        if (!me || mouseMoveEventProp_.accepts(me) || stereoModeProp_.getValue() != SPLITSCREEN_STEREO_MODE) {
+            RenderProcessor::onEvent(e);
+            return;
+        }
+
+        //set right viewport for mouse events in split screen mode
+        tgt::ivec2 view = me->viewport();
+        switch(stereoModeProp_.getValue()){
+            case NO_STEREO_MODE:
+            case AUTOSTEREOSCOPIC_STEREO_MODE:
+            case ANAGLYPH_STEREO_MODE:
+            case QUADBUFFER_STEREO_MODE:
+                //should not get here
+                tgtAssert(false,"StereoCanvasRenderer::onEvent: Unexpected stereo mode");
+                break;
+            case SPLITSCREEN_STEREO_MODE:
+                view.x /= 2;
+                if (me->x() < (me->viewport().x / 2)) {
+                    tgt::MouseEvent newme(me->x(), me->y(), me->action(), me->modifiers(), me->button(), view);
+                    newme.ignore();  // accepted is set to true by default
+                    inport_.distributeEvent(&newme);
+                    if (newme.isAccepted())
+                        me->accept();
+                }
+                else {
+                    tgt::MouseEvent newme(me->x() - (me->viewport().x / 2), me->y(), me->action(), me->modifiers(), me->button(), view);
+                    newme.ignore();  // accepted is set to true by default
+                    inport_.distributeEvent(&newme);
+                    if (newme.isAccepted())
+                        me->accept();
+                }
+                break;
+            default:
+                //should not get here
+                tgtAssert(false,"StereoCanvasRenderer::onEvent: Unexpected stereo mode");
+                break;
+        }    
+    }
 }
 
 void StereoCanvasRenderer::mouseMove(tgt::MouseEvent* e) {
@@ -647,7 +666,7 @@ void StereoCanvasRenderer::mouseMove(tgt::MouseEvent* e) {
 }
 
 //------------------------------------------------------------------------------------------------------------------
-//      render functions                                                                                            
+//      copy functions                                                                                            
 //------------------------------------------------------------------------------------------------------------------
 void StereoCanvasRenderer::processStereo() {
     if(nextExpectedImage_ == NORMAL){
@@ -659,7 +678,7 @@ void StereoCanvasRenderer::processStereo() {
         switch(nextExpectedImage_){
         case LEFT_1:
             copyIntoCanvas();
-            copyIntoPort(&inport_,&tempPort_);
+            copyIntoPort(&inport_,&tmpPort_);
             lastRunWasInInteractionMode_ = interactionMode();
             nextExpectedImage_ = RIGHT_1; 
             if (cameraProp_.setStereoEyeMode(tgt::Camera::EYE_RIGHT))
@@ -668,13 +687,13 @@ void StereoCanvasRenderer::processStereo() {
             break;
         case RIGHT_1:
             if(interactionMode() == lastRunWasInInteractionMode_){
-                copyIntoStorage(&tempPort_,&inport_);
+                copyIntoSideBySide(&tmpPort_,&inport_);
                 copyIntoCanvas();
                 w8ingOn2Eye_ = false;
                 nextExpectedImage_ = RIGHT_2;
             }
             else { //interactionMode toggeled
-                copyIntoPort(&inport_,&tempPort_);
+                copyIntoPort(&inport_,&tmpPort_);
                 lastRunWasInInteractionMode_ = interactionMode();
                 nextExpectedImage_ = LEFT_2;
                 copyIntoCanvas();
@@ -685,7 +704,7 @@ void StereoCanvasRenderer::processStereo() {
             break;
         case RIGHT_2:
             copyIntoCanvas();
-            copyIntoPort(&inport_,&tempPort_);
+            copyIntoPort(&inport_,&tmpPort_);
             lastRunWasInInteractionMode_ = interactionMode();
             nextExpectedImage_ = LEFT_2;
             if(cameraProp_.setStereoEyeMode(tgt::Camera::EYE_LEFT))
@@ -694,13 +713,13 @@ void StereoCanvasRenderer::processStereo() {
             break;
         case LEFT_2:
             if (interactionMode() == lastRunWasInInteractionMode_) {
-                copyIntoStorage(&inport_,&tempPort_);
+                copyIntoSideBySide(&inport_,&tmpPort_);
                 copyIntoCanvas();
                 nextExpectedImage_ = LEFT_1; 
                 w8ingOn2Eye_ = false;
             } 
             else { //interactionMode toggeled
-                copyIntoPort(&inport_,&tempPort_);
+                copyIntoPort(&inport_,&tmpPort_);
                 lastRunWasInInteractionMode_ = interactionMode();
                 nextExpectedImage_ = RIGHT_1;
                 copyIntoCanvas();
@@ -714,6 +733,115 @@ void StereoCanvasRenderer::processStereo() {
             break;
         }
     }
+}
+
+void StereoCanvasRenderer::copyIntoPort(RenderPort* input, RenderPort* output){
+    output->activateTarget(); 
+        // activate shader
+        copyTextureShader_->activate();
+        // bind input textures
+        input->bindTextures(GL_TEXTURE0, GL_TEXTURE1);
+        // pass texture parameters to the shader
+        copyTextureShader_->setUniform("colorTex_", 0);
+        copyTextureShader_->setUniform("depthTex_", 1);
+        LGL_ERROR;
+        // execute the shader
+        renderQuad();
+        copyTextureShader_->deactivate();
+    output->deactivateTarget(); 
+    glActiveTexture(GL_TEXTURE0); //default voreen settings 
+    LGL_ERROR;    
+}
+
+void StereoCanvasRenderer::copyIntoSideBySide(tgt::Texture* colorLeft, tgt::Texture* colorRight, tgt::Texture* depthLeft, tgt::Texture* depthRight){
+    //invert eye textures
+    if (eyeInvertProp_.get()){
+        tgt::Texture* help = colorLeft;
+        colorLeft = colorRight;
+        colorRight = help;
+        help = depthLeft;
+        depthLeft = depthRight;
+        depthRight = help;
+    }
+
+    sideBySidePort_.activateTarget();
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // activate shader
+    sideBySideShader_->activate();
+
+    sideBySideShader_->setUniform("screenDim_", static_cast<tgt::vec2>(tmpPort_.getSize()));
+    sideBySideShader_->setUniform("screenDimRCP_", 1.f / static_cast<tgt::vec2>(tmpPort_.getSize()));
+    
+    // pass texture parameters to the shader
+    glActiveTexture(GL_TEXTURE0);
+    colorLeft->bind();
+    sideBySideShader_->setUniform("colorTexLeft_", 0);
+    if(depthLeft) {
+        glActiveTexture(GL_TEXTURE1);
+        depthLeft->bind();
+        sideBySideShader_->setUniform("depthTexLeft_", 1);
+        sideBySideShader_->setUniform("useDepthTexLeft_",true);
+    } else {
+        sideBySideShader_->setUniform("useDepthTexLeft_",false);
+    }
+    glActiveTexture(GL_TEXTURE2);
+    colorRight->bind();
+    sideBySideShader_->setUniform("colorTexRight_", 2);
+    if(depthRight) {
+        glActiveTexture(GL_TEXTURE3);
+        depthRight->bind();
+        sideBySideShader_->setUniform("depthTexRight_", 3);
+        sideBySideShader_->setUniform("useDepthTexRight_",true);
+    } else {
+        sideBySideShader_->setUniform("useDepthTexRight_",false);
+    }
+
+    renderQuad();
+
+    sideBySideShader_->deactivate();
+    sideBySidePort_.deactivateTarget();
+    sideBySidePort_.validateResult();
+
+    glActiveTexture(GL_TEXTURE0); //default voreen settings
+    LGL_ERROR;
+    //update final result
+    copyIntoFinal();
+}
+
+void StereoCanvasRenderer::copyIntoSideBySide(RenderPort* left, RenderPort* right){
+    copyIntoSideBySide(left->getColorTexture(), right->getColorTexture(),
+                    left->getDepthTexture(), right->getDepthTexture());
+}
+
+void StereoCanvasRenderer::copyIntoFinal() {
+    finalPort_.activateTarget();
+    //switch based on StereoMode
+    switch(stereoModeProp_.getValue()) {
+    case NO_STEREO_MODE:
+        //shouldn't get here
+        tgtAssert(false,"copyIntoCanvas does not support NO_STEREO_MODE!!!");
+        finalPort_.deactivateTarget();
+        break;
+    case AUTOSTEREOSCOPIC_STEREO_MODE:
+        renderAutostereoscopic();
+        break;
+    case ANAGLYPH_STEREO_MODE:
+        renderAnaglyph();
+        break;
+    case SPLITSCREEN_STEREO_MODE:
+    case QUADBUFFER_STEREO_MODE:
+        renderSplitScreen();
+        break;
+    default:
+        //shouldn't get here
+        tgtAssert(false,"Unknown StereoMode!!!");
+        break;
+    }
+    finalPort_.deactivateTarget();
+    glActiveTexture(GL_TEXTURE0); //default voreen settings
+    LGL_ERROR;
 }
 
 void StereoCanvasRenderer::copyIntoCanvas(){
@@ -732,28 +860,53 @@ void StereoCanvasRenderer::copyIntoCanvas(){
     case ANAGLYPH_STEREO_MODE:
     case SPLITSCREEN_STEREO_MODE:
         // activate shader
-        shader_->activate();
-        // set common uniforms
-        setGlobalShaderParameters(shader_);
-        // manually pass the viewport dimensions to the shader,
-        // since setGlobalShaderParameters() expects a render outport, which we do not have    
-        shader_->setIgnoreUniformLocationError(true);
-        shader_->setUniform("screenDim_", static_cast<tgt::vec2>(canvas_->getSize()));
-        shader_->setUniform("screenDimRCP_", 1.f / static_cast<tgt::vec2>(canvas_->getSize()));
-        shader_->setIgnoreUniformLocationError(false);
-        // pass texture parameters to the shader 
-        // bind input textures
-        storagePort_.bindTextures(GL_TEXTURE0, GL_TEXTURE1);
-        shader_->setUniform("colorTex_", 0);
-        shader_->setUniform("depthTex_", 1);
-        storagePort_.setTextureParameters(shader_, "texParams_");
+        copyTextureShader_->activate();
+        // manually pass the viewport dimensions to the shader
+        finalPort_.bindTextures(GL_TEXTURE0, GL_TEXTURE1);
+        copyTextureShader_->setUniform("colorTex_", 0);
+        copyTextureShader_->setUniform("depthTex_", 1);
         LGL_ERROR;
         renderQuad();
-        shader_->deactivate();
+        copyTextureShader_->deactivate();
         break;
     case QUADBUFFER_STEREO_MODE:
-        //TODO
-        LERROR("QUADBUFFER_STEREO_MODE not implemented yet!");
+        //render left
+        glDrawBuffer(GL_BACK_LEFT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        copyTextureShader_->activate();
+        finalPort_.bindTextures(GL_TEXTURE0, GL_TEXTURE1);
+        copyTextureShader_->setUniform("colorTex_", 0);
+        copyTextureShader_->setUniform("depthTex_", 1);
+        LGL_ERROR;
+        glDepthFunc(GL_ALWAYS);
+        glBegin(GL_QUADS);
+            glTexCoord2f(0.f, 0.f);
+            glVertex2f(-1.f, -1.f);
+            glTexCoord2f(0.5f, 0.f);
+            glVertex2f(1.f, -1.f);
+            glTexCoord2f(0.5f, 1.0f);
+            glVertex2f(1.f, 1.f);
+            glTexCoord2f(0.f, 1.0f);
+            glVertex2f(-1.f, 1.f);
+        glEnd();
+        //quadcopyShader_->deactivate();
+        //right buffer
+        glDrawBuffer(GL_BACK_RIGHT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBegin(GL_QUADS);
+            glTexCoord2f(0.5f, 0.f);
+            glVertex2f(-1.f, -1.f);
+            glTexCoord2f(1.f, 0.f);
+            glVertex2f(1.f, -1.f);
+            glTexCoord2f(1.f, 1.f);
+            glVertex2f(1.f, 1.f);
+            glTexCoord2f(0.5f, 1.f);
+            glVertex2f(-1.f, 1.f);
+        glEnd();
+        glDepthFunc(GL_LESS);
+        copyTextureShader_->deactivate();
+        //set back to normel
+        glDrawBuffer(GL_BACK);
         break;
     default:
         //shouldn't get here
@@ -765,201 +918,46 @@ void StereoCanvasRenderer::copyIntoCanvas(){
     LGL_ERROR; 
 }
 
-void StereoCanvasRenderer::copyIntoPort(RenderPort* input, RenderPort* output){
-    output->activateTarget(); 
-        // activate shader
-        shader_->activate();
-
-        // set common uniforms
-        setGlobalShaderParameters(shader_);
-
-        // manually pass the viewport dimensions to the shader,
-        // since setGlobalShaderParameters() expects a render outport, which we do not have
-        shader_->setIgnoreUniformLocationError(true);
-        shader_->setUniform("screenDim_", output->getSize());
-        shader_->setUniform("screenDimRCP_", 1.f / static_cast<tgt::vec2>(output->getSize()));
-        shader_->setIgnoreUniformLocationError(false);
-
-        // bind input textures
-        input->bindTextures(GL_TEXTURE0, GL_TEXTURE1);
-
-        // pass texture parameters to the shader
-        shader_->setUniform("colorTex_", 0);
-        shader_->setUniform("depthTex_", 1);
-        input->setTextureParameters(shader_, "texParams_");
-        LGL_ERROR;
-
-        // execute the shader
-        renderQuad();
-        shader_->deactivate();
-    
-    output->deactivateTarget(); 
-
-    glActiveTexture(GL_TEXTURE0); //default voreen settings 
-    LGL_ERROR;    
-}
-
-void StereoCanvasRenderer::copyIntoStorage(tgt::Texture* left, tgt::Texture* right){
-    //invert eye textures
-    if (eyeInvertProp_.get()){
-        tgt::Texture* help = left;
-        left = right;
-        right = help;
-    }
-
-    storagePort_.activateTarget();
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    tgt::Shader* modeShader;
-
-    switch(stereoModeProp_.getValue()) {
-    case NO_STEREO_MODE:
-        //shouldn't get here
-        tgtAssert(false,"NO_STEREO_MODE is not supported!!!");
-        break;
-    case AUTOSTEREOSCOPIC_STEREO_MODE:
-        modeShader = autostereoscopicShader_;
-        break;
-    case ANAGLYPH_STEREO_MODE:
-        modeShader = anaglyphShader_;
-        break;
-    case QUADBUFFER_STEREO_MODE:
-    case SPLITSCREEN_STEREO_MODE:
-        modeShader = splitScreenShader_;
-        break;
-    default:
-        //shouldn't get here
-        tgtAssert(false,"Unknown StereoMode!!!");
-        break;
-    }
-
-    // activate shader
-    modeShader->activate();
-
-    // set common uniforms
-    setGlobalShaderParameters(modeShader);
-
-    // manually pass the viewport dimensions to the shader,
-    // since setGlobalShaderParameters() expects a render outport, which we do not have  
-    modeShader->setIgnoreUniformLocationError(true);
-    modeShader->setUniform("screenDim_", static_cast<tgt::vec2>(tempPort_.getSize()));
-    modeShader->setUniform("screenDimRCP_", 1.f / static_cast<tgt::vec2>(tempPort_.getSize()));
-    modeShader->setIgnoreUniformLocationError(false);
-
-    // pass texture parameters to the shader
-    // bind input textures
-    glActiveTexture(GL_TEXTURE0);
-    left->bind();
-    modeShader->setUniform("colorTexLeft_", 0);
-    LGL_ERROR;
-
-    glActiveTexture(GL_TEXTURE1);
-    right->bind();
-    modeShader->setUniform("colorTexRight_", 1);
-    LGL_ERROR;
-
-    modeShader->setUniform("useDepthTex_",false);
-    if (modeShader == anaglyphShader_)
-        modeShader->setUniform("colorCode_", static_cast<int>(anaglyphModeProp_.getValue()));
-
-    storagePort_.setTextureParameters(modeShader, "texParams_");    
- 
-    renderQuad();
-
-    modeShader->deactivate();       
-    storagePort_.deactivateTarget();
-    storagePort_.validateResult();
-
-    glActiveTexture(GL_TEXTURE0); //default voreen settings
-    LGL_ERROR;
-}
-
-void StereoCanvasRenderer::copyIntoStorage(RenderPort* left, RenderPort* right){
-    //invert eye textures
-    if(eyeInvertProp_.get()){
-        RenderPort* help = left;
-        left = right;
-        right = help;
-    }
-
-    storagePort_.activateTarget();
-
-    tgt::Shader* modeShader;
-
-    switch(stereoModeProp_.getValue()) {
-    case NO_STEREO_MODE:
-        //shouldn't get here
-        tgtAssert(false,"NO_STEREO_MODE is not supported!!!");
-        break;
-    case AUTOSTEREOSCOPIC_STEREO_MODE:
-        modeShader = autostereoscopicShader_;
-        break;
-    case ANAGLYPH_STEREO_MODE:
-        modeShader = anaglyphShader_;
-        break;
-    case QUADBUFFER_STEREO_MODE:
-    case SPLITSCREEN_STEREO_MODE:
-        modeShader = splitScreenShader_;
-        break;
-    default:
-        //shouldn't get here
-        tgtAssert(false,"Unknown StereoMode!!!");
-        break;
-    }
-
-    // activate shader
-    modeShader->activate();
-
-    // set common uniforms
-    setGlobalShaderParameters(modeShader);
-
-    // manually pass the viewport dimensions to the shader,
-    // since setGlobalShaderParameters() expects a render outport, which we do not have  
-    modeShader->setIgnoreUniformLocationError(true);
-    modeShader->setUniform("screenDim_", static_cast<tgt::vec2>(tempPort_.getSize()));
-    modeShader->setUniform("screenDimRCP_", 1.f / static_cast<tgt::vec2>(tempPort_.getSize()));
-    modeShader->setIgnoreUniformLocationError(false);
-
-    // pass texture parameters to the shader
-    // bind input textures
-    left->bindTextures(GL_TEXTURE0, GL_TEXTURE1);
-    modeShader->setUniform("colorTexLeft_", 0);
-    modeShader->setUniform("depthTexLeft_", 1);
-    LGL_ERROR;
-   
-    right->bindTextures(GL_TEXTURE2, GL_TEXTURE3);
-    modeShader->setUniform("colorTexRight_", 2);
-    modeShader->setUniform("depthTexRight_", 3);
-    LGL_ERROR;
-
-    modeShader->setUniform("useDepthTex_",true);
-    if(modeShader == anaglyphShader_)
-        modeShader->setUniform("colorCode_", static_cast<int>(anaglyphModeProp_.getValue()));
-
-    right->setTextureParameters(modeShader, "texParams_");
-
-    renderQuad();
-
-    modeShader->deactivate();
-    storagePort_.deactivateTarget();
-    storagePort_.validateResult();
-
-    glActiveTexture(GL_TEXTURE0); //default voreen settings
-    LGL_ERROR;
-}
-
-#ifdef VRN_MODULE_HEADTRACKING
 //------------------------------------------------------------------------------------------------------------------
-//      head tracking functions                                                                                     
+//      render functions                                                                                            
 //------------------------------------------------------------------------------------------------------------------
-void StereoCanvasRenderer::getTrackingUpdate(){
-    if(!w8ingOn2Eye_ && coPort_.isConnected()){
-        TrackingProcessorBase* tpb = dynamic_cast<TrackingProcessorBase*>(coPort_.getConnectedProcessor());
-        if(tpb)
-            tpb->updateTracker();
-    }
+void StereoCanvasRenderer::renderAnaglyph() {
+    // activate shader
+    anaglyphShader_->activate();
+    // manually pass the viewport dimensions to the shader
+    anaglyphShader_->setUniform("screenDimRCP_", 1.f / static_cast<tgt::vec2>(canvas_->getSize()));
+    sideBySidePort_.bindTextures(GL_TEXTURE0, GL_TEXTURE1);
+    anaglyphShader_->setUniform("colorTex_", 0);
+    anaglyphShader_->setUniform("depthTex_", 1);
+    anaglyphShader_->setUniform("colorCode_", static_cast<int>(anaglyphModeProp_.getValue()));
+    LGL_ERROR;
+    renderQuad();
+    anaglyphShader_->deactivate();
 }
-#endif
+
+void StereoCanvasRenderer::renderAutostereoscopic() {
+    // activate shader
+    autostereoscopicShader_->activate();
+    // manually pass the viewport dimensions to the shader
+    autostereoscopicShader_->setUniform("screenDimRCP_", 1.f / static_cast<tgt::vec2>(canvas_->getSize()));
+    sideBySidePort_.bindTextures(GL_TEXTURE0, GL_TEXTURE1);
+    autostereoscopicShader_->setUniform("colorTex_", 0);
+    autostereoscopicShader_->setUniform("depthTex_", 1);
+    autostereoscopicShader_->setUniform("interleaveCode_", static_cast<int>(autostereoscopicModeProp_.getValue()));
+    LGL_ERROR;
+    renderQuad();
+    autostereoscopicShader_->deactivate();
+}
+
+void StereoCanvasRenderer::renderSplitScreen() {
+    // activate shader
+    copyTextureShader_->activate();
+    sideBySidePort_.bindTextures(GL_TEXTURE0, GL_TEXTURE1);
+    copyTextureShader_->setUniform("colorTex_", 0);
+    copyTextureShader_->setUniform("depthTex_", 1);
+    LGL_ERROR;
+    renderQuad();
+    copyTextureShader_->deactivate();
+}
 
 } // namespace voreen

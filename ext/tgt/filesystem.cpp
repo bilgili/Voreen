@@ -35,16 +35,19 @@
 #include <fstream>
 #include <stack>
 #include <sys/stat.h>
+#include <time.h>
 
 #ifndef WIN32
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <utime.h>
 #include <dirent.h>
 #else
 #include <windows.h>
 #include <tchar.h>
 #include <direct.h>
+#include <sys/utime.h>
 #endif
 
 using std::string;
@@ -849,33 +852,58 @@ bool FileSystem::comparePaths(const std::string& path1, const std::string& path2
     return (pathAbs1 == pathAbs2);
 }
 
-string FileSystem::cleanupPath(std::string path) {
-    string::size_type p = 0;
-    while (p != string::npos) {
-        // check all combinations of path separators
-        p = path.find("//");
-        if (p == string::npos)
-            p = path.find("\\\\");
-        if (p == string::npos)
-            p = path.find("\\/");
-        if (p == string::npos)
-            p = path.find("/\\");
+string FileSystem::cleanupPath(std::string path, bool native /*= true*/) {
 
-        if (p != string::npos)
-            path = path.substr(0, p) + path.substr(p + 1);
+    if (path.empty())
+        return "";
+
+    // remove double path separators
+    string::size_type p_start = 0;
+#ifdef WIN32
+    // do not convert windows network path prefix "\\", if on windows
+    if (path.length() >= 2 && path.substr(0, 2) == "\\\\")
+        p_start = 2;
+#endif
+    string::size_type p = p_start;
+    while (p != string::npos) {
+        string::size_type p_next;
+        p_next = path.find("//", p);
+        if (p_next == string::npos)
+            p_next = path.find("\\\\", p);
+        if (p_next == string::npos)
+            p_next = path.find("\\/", p);
+        if (p_next == string::npos)
+            p_next = path.find("/\\", p);
+
+        if (p_next != string::npos)
+            path = path.substr(0, p_next) + path.substr(p_next + 1);
+
+        p = p_next;
     }
 
     // remove trailing separator
     if (path.find_last_of(PATH_SEPARATORS) == path.size() - 1)
         path = path.substr(0, path.size() - 1);
 
+    // convert to win or unix separators
 #ifdef WIN32
-    // convert to native windows separators
-    path = replaceAllCharacters(path, '/', '\\');
-    // convert drive letter to uppercase
-    if ((path.size()>1) && isalpha(path[0]) && (path[1] == ':'))
-        std::transform(path.begin(), path.begin()+1, path.begin(), toupper);
+    bool convertToWin = native;
+#else
+    bool convertToWin = false;
 #endif
+    if (convertToWin) {
+        // convert to native windows separators
+        path = replaceAllCharacters(path, '/', '\\');
+
+        // convert drive letter to uppercase
+        if ((path.size()>1) && isalpha(path[0]) && (path[1] == ':'))
+            std::transform(path.begin(), path.begin()+1, path.begin(), toupper);
+    }
+    else {
+        // convert to unix separators
+        tgtAssert(p_start < path.length(), "invalid p_start param"); // see above
+        path = path.substr(0, p_start) + replaceAllCharacters(path.substr(p_start), '\\', '/');
+    }
 
     return path;
 }
@@ -1066,6 +1094,16 @@ void FileSystem::copyFile(const std::string& srcFile, const std::string& destFil
         throw tgt::FileException("writing to dest file failed", destFile);
 }
 
+void FileSystem::updateFileTime(const std::string& filename) throw (tgt::Exception) {
+    if (!fileExists(filename))
+        throw tgt::Exception("File does not exist: " + filename);
+
+    struct utimbuf newTime;
+    newTime.actime = time(NULL);       /* set atime to current time */
+    newTime.modtime = time(NULL);      /* set mtime to current time */
+    utime(filename.c_str(), &newTime);
+}
+
 bool FileSystem::fileExists(const std::string& filename) {
     if (filename.empty())
         return false;
@@ -1118,6 +1156,23 @@ time_t FileSystem::fileTime(const std::string& filename) {
     struct stat st;
     if(stat(converted.c_str(), &st) == 0) {
         return st.st_mtime;
+    }
+    else {
+        // error
+        return 0;
+    }
+}
+
+time_t FileSystem::fileAccessTime(const std::string& filename) {
+    if (filename.empty())
+        return 0;
+
+    std::string converted = replaceAllCharacters(filename, badSlash_, goodSlash_);
+    removeTrailingCharacters(converted, goodSlash_);
+
+    struct stat st;
+    if(stat(converted.c_str(), &st) == 0) {
+        return st.st_atime;
     }
     else {
         // error

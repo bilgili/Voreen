@@ -129,6 +129,18 @@ void DicomInfo::setPatientId(std::string id){
     patientId_ = id;
 }
 
+void DicomInfo::setRwmDiffers(bool d) {
+    rwmDiffers_ = d;
+}
+
+void DicomInfo::setFormat(std::string format) {
+    format_ = format;
+}
+
+void DicomInfo::setBaseType(std::string type) {
+    baseType_ = type;
+}
+
 int DicomInfo::getDx() const {
     return dx_;
 }
@@ -228,4 +240,16 @@ std::string DicomInfo::getPatientName() const {
 
 std::string DicomInfo::getPatientId() const {
     return patientId_;
+}
+
+bool DicomInfo::rwmDiffers() const {
+    return rwmDiffers_;
+}
+
+std::string DicomInfo::getFormat() const {
+    return format_;
+}
+
+std::string DicomInfo::getBaseType() const {
+    return baseType_;
 }

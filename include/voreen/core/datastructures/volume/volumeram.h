@@ -70,7 +70,7 @@ public:
     virtual VolumeRAM* createNew(const tgt::svec3& dimensions, bool allocMem = false) const throw (std::bad_alloc) = 0;
 
     /// Create new volume which contains part of the data of the current volume.
-    virtual VolumeRAM* getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset = tgt::svec3(0,0,0)) const throw (std::bad_alloc,std::invalid_argument) = 0;
+    virtual VolumeRAM* getSubVolume(tgt::svec3 offset, tgt::svec3 dimensions) const throw (std::bad_alloc,std::invalid_argument) = 0;
 
     /// Returns the number of bytes held in the \a data_ array.
     virtual size_t getNumBytes() const = 0;
@@ -111,6 +111,12 @@ public:
      * in case of multiple channels, this means that the maximum euclidian vector length is returned.
      */
     virtual float maxMagnitude() const = 0;
+
+    /**
+     * Returns the value with the smallest magnitude (absolute value) contained in the volume;
+     * in case of multiple channels, this means that the minimum euclidian vector length is returned.
+     */
+    virtual float minMagnitude() const = 0;
 
     //------------------------------------------------------
 

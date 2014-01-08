@@ -51,6 +51,10 @@ void LinkEvaluatorCameraId::eval(Property* src, Property* dst) throw (VoreenExce
     cam.setProjectionMode(srcCam.getProjectionMode());
     cam.setStereoEyeMode(srcCam.getStereoEyeMode(), false);
     cam.setStereoEyeSeparation(srcCam.getStereoEyeSeparation(), false);
+    cam.setStereoWidth(srcCam.getStereoWidth(), false);
+    cam.setStereoFocalLength(srcCam.getStereoFocalLength(), false);
+    cam.setStereoRelativeFocalLength(srcCam.getStereoRelativeFocalLength(), false);
+    cam.setUseRealWorldFrustum(srcCam.getUseRealWorldFrustum(), false);
     cam.setStereoAxisMode(srcCam.getStereoAxisMode(), false);
     cam.enableOffset(srcCam.isOffsetEnabled());
     cam.setOffset(srcCam.getOffset());
@@ -216,9 +220,18 @@ void LinkEvaluatorTransFuncId::eval(Property* src, Property* dst) throw (VoreenE
         return;
     }
 
-    TransFunc* tf = srcCast->get()->clone();
+    TransFunc* srcTF = srcCast->get();
+    TransFunc* destTF = dstCast->get();
 
-    dstCast->set(tf);
+    if (destTF && typeid(srcTF) == typeid(destTF)) { //< try to avoid the creation/deletion of tf objects
+        destTF->updateFrom(srcTF);
+        dstCast->invalidate();
+    }
+    else { //< use cloning as fallback
+        dstCast->set(srcTF->clone());
+    }
+
+    dstCast->setDomainFittingStrategy(srcCast->getDomainFittingStrategy());
 }
 
 bool LinkEvaluatorTransFuncId::arePropertiesLinkable(const Property* p1, const Property* p2) const {

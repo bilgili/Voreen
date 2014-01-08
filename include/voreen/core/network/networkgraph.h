@@ -513,6 +513,14 @@ public:
      */
     std::vector<Processor*> getProcessors(const bool sortByID = false) const;
 
+     /**
+     * Returns all graphNodes from this graph
+     *
+     * @return  Vector containing pointer to all GraphNode objects within this graph.
+     */
+
+    std::vector<NetworkGraph::GraphNode*> getGraphNodes() const;
+
     /**
      * Returns a subset of this graph containing only processors with ports and connections
      * between them, which match the given PortTypeCheck criteria. All other processors
@@ -594,6 +602,9 @@ public:
      * @return Set of predecessing processors without duplicates, including the passed ones.
      */
     std::set<Processor*> getPredecessors(const std::set<Processor*>& processors) const;
+
+    /// @overload
+    std::set<Processor*> getPredecessors(const std::vector<Processor*>& processors) const;
 
     /// @overload
     std::set<Processor*> getPredecessors(Processor* processor) const;

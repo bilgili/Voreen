@@ -140,8 +140,7 @@ std::string VolumeViewHelper::getVolumePath(const VolumeBase* handle) {
     if (handle) {
         const Volume* vh = dynamic_cast<const Volume*>(handle);
         if(vh) {
-            QString fn = QString::fromStdString(vh->getOrigin().getPath());
-            volumeName = fn.section('/',0, -2).toStdString();
+            volumeName = tgt::FileSystem::dirName(handle->getOrigin().getPath());
         }
     }
     else {
@@ -166,25 +165,11 @@ std::string VolumeViewHelper::getVolumeSpacing(const VolumeBase* volume) {
 }
 
 std::string VolumeViewHelper::getVolumeMemorySize(const VolumeBase* volume) {
-    std::stringstream out;
-
-    size_t bytes = volume->getBytesPerVoxel()*tgt::hmul(volume->getDimensions());
-    float mb = tgt::round(bytes/104857.6f) / 10.f;    //calculate mb with 0.1f precision
-    float kb = tgt::round(bytes/102.4f) / 10.f;
-    if (mb >= 0.5f) {
-        out << mb << " MB";
-    }
-    else if (kb >= 0.5f) {
-        out << kb << " kB";
-    }
-    else {
-        out << bytes << " bytes";
-    }
-    return out.str();
+    return formatMemorySize(getVolumeMemorySizeByte(volume));
 }
 
-size_t VolumeViewHelper::getVolumeMemorySizeByte(const VolumeBase* volume) {
-    return volume->getNumVoxels()*volume->getBytesPerVoxel();
+uint64_t VolumeViewHelper::getVolumeMemorySizeByte(const VolumeBase* volume) {
+    return static_cast<uint64_t>(volume->getNumVoxels())*volume->getBytesPerVoxel()*volume->getNumChannels();
 
 }
 

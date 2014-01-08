@@ -166,15 +166,15 @@ void PointSegmentListRenderer::generateDisplayList(const std::vector<std::vector
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     if (coordinateSystem_.get() != "world") {
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadIdentity();
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+        MatStack.pushMatrix();
+        MatStack.loadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
+        MatStack.loadIdentity();
         if (coordinateSystem_.get() == "viewport") {
-            glTranslatef(-1.f, -1.f, 0.f);
-            glScalef(2.f/viewport_.x, 2.f/viewport_.y, 1.f);
+            MatStack.translate(-1.f, -1.f, 0.f);
+            MatStack.scale(2.f/viewport_.x, 2.f/viewport_.y, 1.f);
         }
     }
 
@@ -192,16 +192,16 @@ void PointSegmentListRenderer::generateDisplayList(const std::vector<std::vector
         glLightfv(GL_LIGHT0, GL_SPECULAR, vec4(0.6f, 0.6f, 0.6f, 1.f).elem);
         glLightf(GL_LIGHT0, GL_SPOT_EXPONENT, 128.f);
 
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
+        MatStack.loadIdentity();
         glLightfv(GL_LIGHT0, GL_POSITION, vec4(1.f, 1.f, 10.f, 1.f).elem);
-        glPopMatrix();
+        MatStack.popMatrix();
     }
 
     glMatrixMode(GL_MODELVIEW_MATRIX);
-    glPushMatrix();
-    tgt::multMatrix(m);
+    MatStack.pushMatrix();
+    MatStack.multMatrix(m);
 
     // render: point primitives
     if (renderingPrimitiveProp_.get() == "points") {
@@ -281,23 +281,23 @@ void PointSegmentListRenderer::generateDisplayList(const std::vector<std::vector
                     }
                 }
 
-                glPushMatrix();
-                tgt::translate(segmentList[i][j]);
+                MatStack.pushMatrix();
+                MatStack.translate(segmentList[i][j]);
                 gluSphere(quadric, sphereDiameter_.get(), sphereSlicesStacks_.get(), sphereSlicesStacks_.get());
-                glPopMatrix();
+                MatStack.popMatrix();
 
             }
         }
         gluDeleteQuadric(quadric);
 
     }
-    glPopMatrix();
+    MatStack.popMatrix();
 
     if (coordinateSystem_.get() != "world") {
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
+        MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+        MatStack.popMatrix();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.popMatrix();
     }
 
     glPopAttrib();

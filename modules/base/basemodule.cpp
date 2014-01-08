@@ -39,16 +39,17 @@
 #include "processors/geometry/geometryprocessor.h"
 #include "processors/geometry/geometryrenderer.h"
 #include "processors/geometry/geometryclipping.h"
-#include "processors/geometry/geometryclippingwidget.h"
 #include "processors/geometry/geometryslabclipping.h"
 #include "processors/geometry/geometrytransformation.h"
 #include "processors/geometry/geometrytransformationvolume.h"
 #include "processors/geometry/lightwidgetrenderer.h"
+#include "processors/geometry/planemanipulation.h"
 #include "processors/geometry/planewidgetprocessor.h"
 #include "processors/geometry/pointlistrenderer.h"
 #include "processors/geometry/pointsegmentlistrenderer.h"
 #include "processors/geometry/quadricrenderer.h"
 #include "processors/geometry/slicepositionrenderer.h"
+#include "processors/geometry/trianglemeshconverter.h"
 
 // image
 #include "processors/image/background.h"
@@ -177,16 +178,17 @@ BaseModule::BaseModule(const std::string& modulePath) : VoreenModule(modulePath)
     registerSerializableType(new GeometryProcessor());
     registerSerializableType(new GeometryRenderer());
     registerSerializableType(new GeometryClipping());
-    registerSerializableType(new GeometryClippingWidget());
     registerSerializableType(new GeometrySlabClipping());
     registerSerializableType(new GeometryTransformation());
     registerSerializableType(new GeometryTransformationVolume());
     registerSerializableType(new LightWidgetRenderer());
+    registerSerializableType(new PlaneManipulation());
     registerSerializableType(new PlaneWidgetProcessor());
     registerSerializableType(new PointListRenderer());
     registerSerializableType(new PointSegmentListRenderer());
     registerSerializableType(new QuadricRenderer());
     registerSerializableType(new SlicePositionRenderer());
+    registerSerializableType(new TriangleMeshConverter());
 
     // image
     registerSerializableType(new Background());

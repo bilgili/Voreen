@@ -39,8 +39,8 @@ tgt::Color ColorMap::GeneratingIterator::operator*() {
         tgt::vec4 foo = ColorMap::rgbToHsv(base);
 
         float mult = static_cast<float>(floor(static_cast<float>(currentIndex_)/cc));
-        foo.x += mult*37;
-        foo.x = fmod(foo.x, 360);
+        foo.x += mult*37.f;
+        foo.x = fmod(foo.x, 360.f);
 
         float mult2 = (base.r + base.g + base.b)/6.f;
         foo.y *= (mult2 + 1.f);

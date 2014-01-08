@@ -14,16 +14,17 @@ SET(MOD_CORE_SOURCES
     ${MOD_DIR}/processors/geometry/geometryprocessor.cpp
     ${MOD_DIR}/processors/geometry/geometryrenderer.cpp
     ${MOD_DIR}/processors/geometry/geometryclipping.cpp
-    ${MOD_DIR}/processors/geometry/geometryclippingwidget.cpp
     ${MOD_DIR}/processors/geometry/geometryslabclipping.cpp
     ${MOD_DIR}/processors/geometry/geometrytransformation.cpp
     ${MOD_DIR}/processors/geometry/geometrytransformationvolume.cpp
     ${MOD_DIR}/processors/geometry/lightwidgetrenderer.cpp
+    ${MOD_DIR}/processors/geometry/planemanipulation.cpp
     ${MOD_DIR}/processors/geometry/planewidgetprocessor.cpp
     ${MOD_DIR}/processors/geometry/pointlistrenderer.cpp
     ${MOD_DIR}/processors/geometry/pointsegmentlistrenderer.cpp
     ${MOD_DIR}/processors/geometry/quadricrenderer.cpp
     ${MOD_DIR}/processors/geometry/slicepositionrenderer.cpp
+    ${MOD_DIR}/processors/geometry/trianglemeshconverter.cpp
     
     ${MOD_DIR}/processors/image/background.cpp
     ${MOD_DIR}/processors/image/binaryimageprocessor.cpp
@@ -69,7 +70,6 @@ SET(MOD_CORE_SOURCES
     ${MOD_DIR}/processors/render/simpleraycaster.cpp
     ${MOD_DIR}/processors/render/singlevolumeraycaster.cpp
     ${MOD_DIR}/processors/render/singlevolumeslicer.cpp
-    ${MOD_DIR}/processors/render/slicerendererbase.cpp
     ${MOD_DIR}/processors/render/sliceviewer.cpp
     
     ${MOD_DIR}/processors/utility/clockprocessor.cpp
@@ -138,16 +138,17 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/processors/geometry/geometryprocessor.h
     ${MOD_DIR}/processors/geometry/geometryrenderer.h
     ${MOD_DIR}/processors/geometry/geometryclipping.h
-    ${MOD_DIR}/processors/geometry/geometryclippingwidget.h
     ${MOD_DIR}/processors/geometry/geometryslabclipping.h
     ${MOD_DIR}/processors/geometry/geometrytransformation.h
     ${MOD_DIR}/processors/geometry/geometrytransformationvolume.h
     ${MOD_DIR}/processors/geometry/lightwidgetrenderer.h
+    ${MOD_DIR}/processors/geometry/planemanipulation.h
     ${MOD_DIR}/processors/geometry/planewidgetprocessor.h
     ${MOD_DIR}/processors/geometry/pointlistrenderer.h
     ${MOD_DIR}/processors/geometry/pointsegmentlistrenderer.h
     ${MOD_DIR}/processors/geometry/quadricrenderer.h
     ${MOD_DIR}/processors/geometry/slicepositionrenderer.h
+    ${MOD_DIR}/processors/geometry/trianglemeshconverter.h
     
     ${MOD_DIR}/processors/image/background.h
     ${MOD_DIR}/processors/image/binaryimageprocessor.h
@@ -193,7 +194,6 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/processors/render/simpleraycaster.h
     ${MOD_DIR}/processors/render/singlevolumeraycaster.h
     ${MOD_DIR}/processors/render/singlevolumeslicer.h
-    ${MOD_DIR}/processors/render/slicerendererbase.h
     ${MOD_DIR}/processors/render/sliceviewer.h
     
     ${MOD_DIR}/processors/utility/clockprocessor.h

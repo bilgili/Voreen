@@ -41,8 +41,8 @@ __constant sampler_t gradSmp = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_CLAMP | 
  * @param volumeStruct additional information about the passed volume
  * @param samplePos the sample's position in texture space
  */
-float4 calcGradientRFD(image3d_t volumeTex, VolumeParameters volumeStruct, float4 samplePos) {
-    float4 offset = volumeStruct.datasetDimensionsRCP_;
+float4 calcGradientRFD(image3d_t volumeTex, __constant VolumeParameters* volumeStruct, float4 samplePos) {
+    float4 offset = (*volumeStruct).datasetDimensionsRCP_;
 
     float v = read_imagef(volumeTex, gradSmp, samplePos).x;
     float v0 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(offset.x, 0.0f, 0.0f, 0.0f)).x;
@@ -50,8 +50,8 @@ float4 calcGradientRFD(image3d_t volumeTex, VolumeParameters volumeStruct, float
     float v2 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(0.0f, 0.0f, offset.z, 0.0f)).x;
 
     float4 gradient = (float4)(v - v0, v - v1, v - v2, 0.0f);
-    gradient *= volumeStruct.datasetSpacingRCP_;
-    gradient *= volumeStruct.rwmScale_;
+    gradient *= (*volumeStruct).datasetSpacingRCP_;
+    gradient *= (*volumeStruct).rwmScale_;
     return gradient;
 }
 
@@ -63,8 +63,8 @@ float4 calcGradientRFD(image3d_t volumeTex, VolumeParameters volumeStruct, float
  * @param volumeStruct additional information about the passed volume
  * @param samplePos the sample's position in texture space
  */
-float4 calcGradientGFD(image3d_t volumeTex, VolumeParameters volumeStruct, float4 samplePos) {
-    float4 offset = volumeStruct.datasetDimensionsRCP_;
+float4 calcGradientGFD(image3d_t volumeTex, __constant VolumeParameters* volumeStruct, float4 samplePos) {
+    float4 offset = (*volumeStruct).datasetDimensionsRCP_;
 
     float v = read_imagef(volumeTex, gradSmp, samplePos).y;
     float v0 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(offset.x, 0.0f, 0.0f, 0.0f)).y;
@@ -72,8 +72,8 @@ float4 calcGradientGFD(image3d_t volumeTex, VolumeParameters volumeStruct, float
     float v2 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(0.0f, 0.0f, offset.z, 0.0f)).y;
 
     float4 gradient = (float4)(v - v0, v - v1, v - v2, 0.0f);
-    gradient *= volumeStruct.datasetSpacingRCP_;
-    gradient *= volumeStruct.rwmScale_;
+    gradient *= (*volumeStruct).datasetSpacingRCP_;
+    gradient *= (*volumeStruct).rwmScale_;
     return gradient;
 }
 
@@ -85,8 +85,8 @@ float4 calcGradientGFD(image3d_t volumeTex, VolumeParameters volumeStruct, float
  * @param volumeStruct additional information about the passed volume
  * @param samplePos the sample's position in texture space
  */
-float4 calcGradientBFD(image3d_t volumeTex, VolumeParameters volumeStruct, float4 samplePos) {
-    float4 offset = volumeStruct.datasetDimensionsRCP_;
+float4 calcGradientBFD(image3d_t volumeTex, __constant VolumeParameters* volumeStruct, float4 samplePos) {
+    float4 offset = (*volumeStruct).datasetDimensionsRCP_;
 
     float v = read_imagef(volumeTex, gradSmp, samplePos).z;
     float v0 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(offset.x, 0.0f, 0.0f, 0.0f)).z;
@@ -94,8 +94,8 @@ float4 calcGradientBFD(image3d_t volumeTex, VolumeParameters volumeStruct, float
     float v2 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(0.0f, 0.0f, offset.z, 0.0f)).z;
 
     float4 gradient = (float4)(v - v0, v - v1, v - v2, 0.0f);
-    gradient *= volumeStruct.datasetSpacingRCP_;
-    gradient *= volumeStruct.rwmScale_;
+    gradient *= (*volumeStruct).datasetSpacingRCP_;
+    gradient *= (*volumeStruct).rwmScale_;
     return gradient;
 }
 
@@ -107,8 +107,8 @@ float4 calcGradientBFD(image3d_t volumeTex, VolumeParameters volumeStruct, float
  * @param volumeStruct additional information about the passed volume
  * @param samplePos the sample's position in texture space
  */
-float4 calcGradientAFD(image3d_t volumeTex, VolumeParameters volumeStruct, float4 samplePos) {
-    float4 offset = volumeStruct.datasetDimensionsRCP_;
+float4 calcGradientAFD(image3d_t volumeTex, __constant VolumeParameters* volumeStruct, float4 samplePos) {
+    float4 offset = (*volumeStruct).datasetDimensionsRCP_;
 
     float v = read_imagef(volumeTex, gradSmp, samplePos).w;
     float v0 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(offset.x, 0.0f, 0.0f, 0.0f)).w;
@@ -116,8 +116,8 @@ float4 calcGradientAFD(image3d_t volumeTex, VolumeParameters volumeStruct, float
     float v2 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(0.0f, 0.0f, offset.z, 0.0f)).w;
 
     float4 gradient = (float4)(v - v0, v - v1, v - v2, 0.0f);
-    gradient *= volumeStruct.datasetSpacingRCP_;
-    gradient *= volumeStruct.rwmScale_;
+    gradient *= (*volumeStruct).datasetSpacingRCP_;
+    gradient *= (*volumeStruct).rwmScale_;
     return gradient;
 }
 
@@ -129,8 +129,8 @@ float4 calcGradientAFD(image3d_t volumeTex, VolumeParameters volumeStruct, float
  * @param volumeStruct additional information about the passed volume
  * @param samplePos the sample's position in texture space
  */
-float4 calcGradientR(image3d_t volumeTex, VolumeParameters volumeStruct, float4 samplePos) {
-    float4 offset = volumeStruct.datasetDimensionsRCP_;
+float4 calcGradientR(image3d_t volumeTex, __constant VolumeParameters* volumeStruct, float4 samplePos) {
+    float4 offset = (*volumeStruct).datasetDimensionsRCP_;
 
     float v0 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(offset.x, 0.0f, 0.0f, 0.0f)).x;
     float v1 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(0.0f, offset.y, 0.0f, 0.0f)).x;
@@ -140,8 +140,8 @@ float4 calcGradientR(image3d_t volumeTex, VolumeParameters volumeStruct, float4 
     float v5 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(0.0f, 0.0f, -offset.z, 0.0f)).x;
 
     float4 gradient = (float4)(v3 - v0, v4 - v1, v5 - v2, 0.0f);
-    gradient *= volumeStruct.datasetSpacingRCP_ * 0.5;
-    gradient *= volumeStruct.rwmScale_;
+    gradient *= (*volumeStruct).datasetSpacingRCP_ * 0.5f;
+    gradient *= (*volumeStruct).rwmScale_;
     return gradient;
 }
 
@@ -153,8 +153,8 @@ float4 calcGradientR(image3d_t volumeTex, VolumeParameters volumeStruct, float4 
  * @param volumeStruct additional information about the passed volume
  * @param samplePos the sample's position in texture space
  */
-float4 calcGradientG(image3d_t volumeTex, VolumeParameters volumeStruct, float4 samplePos) {
-    float4 offset = volumeStruct.datasetDimensionsRCP_;
+float4 calcGradientG(image3d_t volumeTex, __constant VolumeParameters* volumeStruct, float4 samplePos) {
+    float4 offset = (*volumeStruct).datasetDimensionsRCP_;
 
     float v0 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(offset.x, 0.0f, 0.0f, 0.0f)).y;
     float v1 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(0.0f, offset.y, 0.0f, 0.0f)).y;
@@ -164,8 +164,8 @@ float4 calcGradientG(image3d_t volumeTex, VolumeParameters volumeStruct, float4 
     float v5 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(0.0f, 0.0f, -offset.z, 0.0f)).y;
 
     float4 gradient = (float4)(v3 - v0, v4 - v1, v5 - v2, 0.0f);
-    gradient *= volumeStruct.datasetSpacingRCP_ * 0.5;
-    gradient *= volumeStruct.rwmScale_;
+    gradient *= (*volumeStruct).datasetSpacingRCP_ * 0.5f;
+    gradient *= (*volumeStruct).rwmScale_;
     return gradient;
 }
 
@@ -177,8 +177,8 @@ float4 calcGradientG(image3d_t volumeTex, VolumeParameters volumeStruct, float4 
  * @param volumeStruct additional information about the passed volume
  * @param samplePos the sample's position in texture space
  */
-float4 calcGradientB(image3d_t volumeTex, VolumeParameters volumeStruct, float4 samplePos) {
-    float4 offset = volumeStruct.datasetDimensionsRCP_;
+float4 calcGradientB(image3d_t volumeTex, __constant VolumeParameters* volumeStruct, float4 samplePos) {
+    float4 offset = (*volumeStruct).datasetDimensionsRCP_;
 
     float v0 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(offset.x, 0.0f, 0.0f, 0.0f)).z;
     float v1 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(0.0f, offset.y, 0.0f, 0.0f)).z;
@@ -188,8 +188,8 @@ float4 calcGradientB(image3d_t volumeTex, VolumeParameters volumeStruct, float4 
     float v5 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(0.0f, 0.0f, -offset.z, 0.0f)).z;
 
     float4 gradient = (float4)(v3 - v0, v4 - v1, v5 - v2, 0.0f);
-    gradient *= volumeStruct.datasetSpacingRCP_ * 0.5;
-    gradient *= volumeStruct.rwmScale_;
+    gradient *= (*volumeStruct).datasetSpacingRCP_ * 0.5f;
+    gradient *= (*volumeStruct).rwmScale_;
     return gradient;
 }
 
@@ -201,8 +201,8 @@ float4 calcGradientB(image3d_t volumeTex, VolumeParameters volumeStruct, float4 
  * @param volumeStruct additional information about the passed volume
  * @param samplePos the sample's position in texture space
  */
-float4 calcGradientA(image3d_t volumeTex, VolumeParameters volumeStruct, float4 samplePos) {
-    float4 offset = volumeStruct.datasetDimensionsRCP_;
+float4 calcGradientA(image3d_t volumeTex, __constant VolumeParameters* volumeStruct, float4 samplePos) {
+    float4 offset = (*volumeStruct).datasetDimensionsRCP_;
 
     float v0 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(offset.x, 0.0f, 0.0f, 0.0f)).w;
     float v1 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(0.0f, offset.y, 0.0f, 0.0f)).w;
@@ -212,8 +212,8 @@ float4 calcGradientA(image3d_t volumeTex, VolumeParameters volumeStruct, float4 
     float v5 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(0.0f, 0.0f, -offset.z, 0.0f)).w;
 
     float4 gradient = (float4)(v3 - v0, v4 - v1, v5 - v2, 0.0f);
-    gradient *= volumeStruct.datasetSpacingRCP_ * 0.5;
-    gradient *= volumeStruct.rwmScale_;
+    gradient *= (*volumeStruct).datasetSpacingRCP_ * 0.5f;
+    gradient *= (*volumeStruct).rwmScale_;
     return gradient;
 }
 
@@ -225,8 +225,8 @@ float4 calcGradientA(image3d_t volumeTex, VolumeParameters volumeStruct, float4 
  * @param volumeStruct additional information about the passed volume
  * @param samplePos the sample's position in texture space
  */
-float4 calcGradientSobel(image3d_t volumeTex, VolumeParameters volumeStruct, float4 samplePos) {
-    float4 offset = volumeStruct.datasetDimensionsRCP_;
+float4 calcGradientSobel(image3d_t volumeTex, __constant VolumeParameters* volumeStruct, float4 samplePos) {
+    float4 offset = (*volumeStruct).datasetDimensionsRCP_;
 
     /*
      * [ 1 2 3 ] [ 10 11 12 ] [ 19 20 21 ]
@@ -264,22 +264,22 @@ float4 calcGradientSobel(image3d_t volumeTex, VolumeParameters volumeStruct, flo
     float v26 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(-offset.x,      0.0f, -offset.z,   0.0f)).w;
     float v27 = read_imagef(volumeTex, gradSmp, samplePos + (float4)(-offset.x,  offset.y, -offset.z,   0.0f)).w;
 
-    float gx =      v01 + 2.0*v02 +     v03    /* 0 0 0 */   -     v19 - 2.0*v20 -     v21
-               +2.0*v04 + 4.0*v05 + 2.0*v06    /* 0 0 0 */   - 2.0*v22 - 4.0*v23 - 2.0*v24
-                   +v07 + 2.0*v08 +     v09    /* 0 0 0 */   -     v25 - 2.0*v26 -     v27;
+    float gx =      v01 + 2.0f*v02 +     v03    /* 0 0 0 */   -     v19 - 2.0f*v20 -     v21
+               +2.0f*v04 + 4.0f*v05 + 2.0f*v06    /* 0 0 0 */   - 2.0*v22 - 4.0f*v23 - 2.0f*v24
+                   +v07 + 2.0f*v08 +     v09    /* 0 0 0 */   -     v25 - 2.0f*v26 -     v27;
 
-    float gy =     -v01 /* 0 */ +     v03    - 2.0*v10 /* 0 */ + 2.0*v12    -     v19 /* 0 */ +     v21
-               -2.0*v04 /* 0 */ + 2.0*v06    - 4.0*v13 /* 0 */ + 4.0*v15    - 2.0*v22 /* 0 */ + 2.0*v24
-                   -v07 /* 0 */ +     v09    - 2.0*v16 /* 0 */ + 2.0*v18    -     v25 /* 0 */ +     v27;
+    float gy =     -v01 /* 0 */ +     v03    - 2.0f*v10 /* 0 */ + 2.0f*v12    -     v19 /* 0 */ +     v21
+               -2.0f*v04 /* 0 */ + 2.0f*v06    - 4.0f*v13 /* 0 */ + 4.0f*v15    - 2.0f*v22 /* 0 */ + 2.0f*v24
+                   -v07 /* 0 */ +     v09    - 2.0f*v16 /* 0 */ + 2.0f*v18    -     v25 /* 0 */ +     v27;
 
-    float gz = v01 + 2.0*v02 + v03    + 2.0*v10 + 4.0*v11 + 2.0*v12    + v19 + 2.0*v20 + v21
+    float gz = v01 + 2.0f*v02 + v03    + 2.0f*v10 + 4.0f*v11 + 2.0f*v12    + v19 + 2.0f*v20 + v21
                    /* 0 0 0 */                 /* 0 0 0 */                    /* 0 0 0 */
-              -v07 - 2.0*v08 - v09    - 2.0*v16 - 4.0*v17 - 2.0*v18    - v25 - 2.0*v26 - v27;
+              -v07 - 2.0f*v08 - v09    - 2.0f*v16 - 4.0f*v17 - 2.0f*v18    - v25 - 2.0f*v26 - v27;
 
     float4 gradient = (float4)(-gx, -gy, -gz, 0.0f);
-    gradient *= volumeStruct.datasetSpacingRCP_ * 0.5;
-    gradient /=  16.0; // sum of all positive elements
-    gradient *= volumeStruct.rwmScale_;
+    gradient *= (*volumeStruct).datasetSpacingRCP_ * 0.5f;
+    gradient /=  16.0f; // sum of all positive elements
+    gradient *= (*volumeStruct).rwmScale_;
     return gradient;
 }
 
@@ -292,8 +292,8 @@ float4 calcGradientSobel(image3d_t volumeTex, VolumeParameters volumeStruct, flo
  * @param volumeStruct additional information about the passed volume
  * @param samplePos the sample's position in texture space
  */
-float4 calcGradientFiltered(image3d_t volumeTex, VolumeParameters volumeStruct, float4 samplePos) {
-    float4 delta = volumeStruct.datasetDimensionsRCP_;
+float4 calcGradientFiltered(image3d_t volumeTex, __constant VolumeParameters* volumeStruct, float4 samplePos) {
+    float4 delta = (*volumeStruct).datasetDimensionsRCP_;
 
     float4 g0 = calcGradientA(volumeTex, volumeStruct, samplePos);
     float4 g1 = calcGradientA(volumeTex, volumeStruct, samplePos + (float4)(-delta.x, -delta.y, -delta.z, 0.0f));
@@ -304,9 +304,9 @@ float4 calcGradientFiltered(image3d_t volumeTex, VolumeParameters volumeStruct, 
     float4 g6 = calcGradientA(volumeTex, volumeStruct, samplePos + (float4)( delta.x,  delta.y, -delta.z, 0.0f));
     float4 g7 = calcGradientA(volumeTex, volumeStruct, samplePos + (float4)(-delta.x,  delta.y,  delta.z, 0.0f));
     float4 g8 = calcGradientA(volumeTex, volumeStruct, samplePos + (float4)( delta.x, -delta.y, -delta.z, 0.0f));
-    float4 mix0 = mix(mix(g1, g2, 0.5), mix(g3, g4, 0.5), 0.5);
-    float4 mix1 = mix(mix(g5, g6, 0.5), mix(g7, g8, 0.5), 0.5);
-    return mix(g0, mix(mix0, mix1, 0.5), 0.75);
+    float4 mix0 = mix(mix(g1, g2, 0.5f), mix(g3, g4, 0.5f), 0.5f);
+    float4 mix1 = mix(mix(g5, g6, 0.5f), mix(g7, g8, 0.5f), 0.5f);
+    return mix(g0, mix(mix0, mix1, 0.5f), 0.75f);
 }
 
 /**
@@ -318,7 +318,7 @@ float4 calcGradientFiltered(image3d_t volumeTex, VolumeParameters volumeStruct, 
  * @param samplePos the sample's position in texture space
  */
 
-float4 calcGradient(image3d_t volumeTex, VolumeParameters volumeStruct, float4 samplePos) {
+float4 calcGradient(image3d_t volumeTex, __constant VolumeParameters* volumeStruct, float4 samplePos) {
     return calcGradientA(volumeTex, volumeStruct, samplePos);
 }
 

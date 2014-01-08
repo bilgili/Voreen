@@ -127,8 +127,11 @@ std::string VolumeDiskOmeTiff::getHash() const {
     std::string configStr;
 
     // datastack properties
-    for (size_t i=0; i<datastack_.files_.size(); i++)
+    for (size_t i=0; i<datastack_.files_.size(); i++) {
         configStr += datastack_.files_.at(i).filename_ + "#";
+        configStr += genericToString(tgt::FileSystem::fileTime(datastack_.files_.at(i).filename_)) + "#";
+        configStr += genericToString(tgt::FileSystem::fileSize(datastack_.files_.at(i).filename_)) + "#";
+    }
     configStr += datastack_.datatype_ + "#";
     configStr += datastack_.dimensionOrder_ + "#";
     configStr += itos(datastack_.sizeC_) + "#";
@@ -185,7 +188,8 @@ VolumeRAM* VolumeDiskOmeTiff::loadSlices(const size_t firstZSlice, const size_t 
     // load volume
     std::vector<VolumeRAM*> ramVolumes;
     ramVolumes = omeTiffReader.loadVolumesIntoRam(datastack_, static_cast<int>(channel_), static_cast<int>(timestep_),
-        static_cast<int>(firstZSlice), static_cast<int>(lastZSlice));
+        tgt::ivec3(0, 0, static_cast<int>(firstZSlice)),
+        tgt::ivec3(static_cast<int>(getDimensions().x-1), static_cast<int>(getDimensions().y-1), static_cast<int>(lastZSlice)));
     tgtAssert(!ramVolumes.empty(), "no ram volume returned (exception expected)");
     if (ramVolumes.size() > 1) {
         LWARNING("OmeTiff volume reader returned more than one volume. Discarding surplus volumes.");
@@ -199,8 +203,30 @@ VolumeRAM* VolumeDiskOmeTiff::loadSlices(const size_t firstZSlice, const size_t 
 VolumeRAM* VolumeDiskOmeTiff::loadBrick(const tgt::svec3& offset, const tgt::svec3& dimensions) const
     throw (tgt::Exception)
 {
-    LWARNING("Brick loading from OME-Tiff datastacks currently not supported!");
-    throw tgt::Exception("Brick loading from OME-Tiff datastacks currently not supported!");
+    tgt::ivec3 llf = tgt::ivec3(offset);
+    tgt::ivec3 urb = llf + tgt::ivec3(dimensions) - tgt::ivec3(1);
+
+    tgtAssert(tgt::hand(tgt::lessThan(llf, tgt::ivec3(datastack_.volumeDim_))), "invalid offset");
+    tgtAssert(tgt::hand(tgt::lessThan(urb, tgt::ivec3(datastack_.volumeDim_))), "invalid dimensions");
+    tgtAssert(!datastack_.files_.empty(), "ometiff datastack has no files");
+
+    LDEBUG("Loading OmeTiff brick: filename=" << datastack_.files_.front().filename_ << ", channel=" << channel_ << ", timestep=" << timestep_
+        << ", llf=" << llf << ", urb=" << urb);
+
+    // create OME Tiff reader without progress bar
+    OMETiffVolumeReader omeTiffReader(0);
+
+    // load volume
+    std::vector<VolumeRAM*> ramVolumes;
+    ramVolumes = omeTiffReader.loadVolumesIntoRam(datastack_, static_cast<int>(channel_), static_cast<int>(timestep_), llf, urb);
+    tgtAssert(!ramVolumes.empty(), "no ram volume returned (exception expected)");
+    if (ramVolumes.size() > 1) {
+        LWARNING("OmeTiff volume reader returned more than one volume. Discarding surplus volumes.");
+        for (size_t i=1; i<ramVolumes.size(); i++)
+            delete ramVolumes.at(i);
+    }
+
+    return ramVolumes.front();
 }
 
 } // namespace voreen

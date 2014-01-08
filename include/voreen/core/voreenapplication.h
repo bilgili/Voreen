@@ -28,6 +28,7 @@
 
 #include "voreen/core/voreenmodule.h"
 #include "voreen/core/properties/property.h"
+#include "voreen/core/properties/optionproperty.h"
 #include "voreen/core/properties/propertyowner.h"
 #include "voreen/core/io/serialization/serializablefactory.h"
 
@@ -306,6 +307,12 @@ public:
     bool useCaching() const;
     void setUseCaching(bool useCaching);
 
+    /// Returns the CPU RAM limit in bytes set for the entire application.
+    size_t getCpuRamLimit() const;
+
+    /// Sets the application's CPU RAM limit in bytes.
+    void setCpuRamLimit(size_t ramLimit);
+
     //
     // Modules
     //
@@ -432,7 +439,7 @@ public:
      * @param handler The event handler that will be used
      *  for broadcasting the timer events. Must not be null.
      *
-     * @note You have to override this function in a toolkit specific subclass
+     * @note You have to override this function in a toolkit-specific subclass
      *  in order to actual create a timer. The standard implementation returns
      *  the null pointer.
      */
@@ -441,11 +448,22 @@ public:
     /**
      * Factory method for progress dialogs.
      *
-     * @note You have to override this function in a toolkit specific subclass
+     * @note You have to override this function in a toolkit-specific subclass
      *  in order to actual create a progress dialog. The standard implementation returns
      *  the null pointer.
      */
     virtual ProgressBar* createProgressDialog() const;
+
+    /**
+     * Displays a message box.
+     *
+     * @param error If true, an error message is shown, otherwise a standard info message.
+     *
+     * @note You have to override this function in a toolkit-specific subclass
+     *  in order to actually display a message box. The standard implementation
+     *  does nothing.
+     */
+    virtual void showMessageBox(const std::string& title, const std::string& message, bool error=false) const;
 
 
     //
@@ -469,9 +487,11 @@ public:
     std::string getCachePath(const std::string& filename = "") const;
 
     /// Delete cache entries until cache is smaller than maxSize MBs.
-    void cleanCache(int maxSize) const;
+    void cleanCache() const;
     /// Delete content of cache.
     void deleteCache();
+    /// Clears the cache path property, thereby resetting the cache path to userDataPath/cache.
+    void resetCachePath();
 
     /**
      * Constructs an absolute path consisting of the resource directory (voreen/resource) and
@@ -562,16 +582,17 @@ private:
      */
     virtual void timerEvent(tgt::TimeEvent* e);
 
+    /// Sets up the logging framework according to the current property settings.
+    void initLogging(std::string& htmlLogFile);
+
+    void logLevelChanged();
+
     static VoreenApplication* app_;
 
     ApplicationFeatures appFeatures_;  ///< application configuration as passed to the constructor
     std::string binaryName_;    ///< name of the application binary set in the constructor
 
     // command line options
-    bool enableLogging_;        ///< if false, console and HTML file logging is disabled
-    tgt::LogLevel logLevel_;    ///< log level to use for console and HTML loggers
-    bool enableFileLogging_;    ///< determines whether logging to an HTML file is enabled
-    std::string logFile_;       ///< HTML log file (if empty, HTML logging is disabled)
     std::string overrideGLSLVersion_;   ///< if set, the detected GLSL version is overridden by this
 
     // further settings
@@ -597,12 +618,24 @@ private:
 
     // settings properties for caching
     BoolProperty* useCaching_;
-    IntProperty* cacheLimit_;
+    IntProperty* volumeCacheLimit_;
+    IntProperty* octreeCacheLimit_;
+    FileDialogProperty* cachePath_;
+    ButtonProperty* resetCachePath_;
     ButtonProperty* deleteCache_;
 
+    // CPU RAM properties
+    IntProperty* cpuRamLimit_;
+
     // setting properties regarding GPU memory
-    FloatProperty* availableGraphicsMemory_;
+    IntProperty* availableGraphicsMemory_;
     ButtonProperty* refreshAvailableGraphicsMemory_;
+
+    // logging settings
+    BoolProperty* enableLogging_;               ///< if false, console and HTML file logging is disabled
+    OptionProperty<tgt::LogLevel>* logLevel_;   ///< log level to use for console and HTML loggers
+    BoolProperty* enableHTMLLogging_;           ///< determines whether logging to an HTML file is enabled
+    FileDialogProperty* htmlLogFile_;           ///< HTML log file
 
     // settings properties for regression testing
     FileDialogProperty* testDataPath_;

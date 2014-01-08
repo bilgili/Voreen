@@ -142,6 +142,9 @@ public:
 
     virtual std::string getClassName() const { return "TransFunc1DKeys";     }
     virtual TransFunc* create() const        { return new TransFunc1DKeys(); }
+    virtual TransFunc* clone() const;
+
+    virtual void updateFrom(const TransFunc* transfunc);
 
     /**
      * Operator to compare two TransFuncIntensity objects. True is returned when the width of the
@@ -280,7 +283,7 @@ public:
      * @param filename the name of the file the transfer function will be saved to
      * @return true, if the operation was successfull, false otherwise
      */
-    bool save(const std::string& filename) const;
+    virtual bool save(const std::string& filename) const;
 
     /**
      * Saves transfer function to a XML file. The extension of the file is tfi.
@@ -318,27 +321,7 @@ public:
      * @param filename the name of the file, which should be opened
      * @return true if loading succeeds, false otherwise
      */
-    bool load(const std::string& filename);
-
-    /**
-     * Sets the lower and upper intensity thresholds to given values. The thresholds have to be normalized
-     * to the range [0,1]. The texture is not updated at this time.
-     *
-     * @param lower lower threshold
-     * @param upper upper threshold
-     */
-    void setThresholds(float lower, float upper);
-
-    /**
-     * @overload
-     */
-    void setThresholds(const tgt::vec2& thresholds);
-
-    /**
-     * Returns the lower and upper intensity thresholds of the tranfer function.
-     * The thresholds are normalized within the range [0,1].
-     */
-    tgt::vec2 getThresholds() const;
+    virtual bool load(const std::string& filename);
 
     /**
      * Updates the transfer function's state from the passed
@@ -356,15 +339,16 @@ public:
      */
     virtual void deserialize(XmlDeserializer& s);
 
-    /**
-     * Retuns a copy of this object.
-     */
-    virtual TransFunc* clone() const;
-
+    /** Also invalidates the pre-integration table. */
+    virtual void invalidateTexture();
     virtual int getNumDimensions() const { return 1; }
     virtual tgt::vec2 getDomain(int dimension = 0) const;
     virtual void setDomain(tgt::vec2 domain, int dimension = 0);
     virtual void setDomain(float lower, float upper, int dimension) { setDomain(tgt::vec2(lower, upper), dimension); }
+    virtual void setThresholds(const tgt::vec2& thresholds, size_t dimension = 0);
+    virtual void setThresholds(float lower, float upper, size_t dimension = 0) { setThresholds(tgt::vec2(lower, upper), dimension); }
+    virtual tgt::vec2 getThresholds(size_t dimension = 0) const;
+
 
     virtual void reset();
 
@@ -378,6 +362,11 @@ public:
      * @param computeOnGPU @see PreIntegrationTable
      */
     const PreIntegrationTable* getPreIntegrationTable(float samplingStepSize = 1.f, size_t dimension = 0, bool useIntegral = true, bool computeOnGPU = false);
+
+    /**
+     * Inverts the order of all keys.
+     */
+    void invertKeys();
 
 protected:
     /**
@@ -469,10 +458,9 @@ protected:
 
     std::vector<TransFuncMappingKey*> keys_; ///< internal representation of the transfer function as a set of keys
 
-    float lowerThreshold_; ///< lower threshold
-    float upperThreshold_; ///< upper threshold
+    tgt::vec2 threshold_;   ///< threshold normalized
 
-    tgt::vec2 domain_;
+    tgt::vec2 domain_;      ///< domain in real world
 
     PreIntegrationTableMap preIntegrationTableMap_; ///< contains several pre-integration tables for the tf
 

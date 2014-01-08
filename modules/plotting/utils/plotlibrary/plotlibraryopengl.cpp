@@ -62,15 +62,15 @@ bool PlotLibraryOpenGl::setRenderStatus() {
         //check, if the canvas is big enough
         if (marginLeft_+marginRight_>=windowSize_.x || marginTop_+marginBottom_>=windowSize_.y)
             return false;
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+        MatStack.loadIdentity();
         glOrtho(xl-static_cast<double>(marginLeft_)/plotToViewportScale_.x
         , xr+static_cast<double>(marginRight_)/plotToViewportScale_.x
         , yl-static_cast<double>(marginBottom_)/plotToViewportScale_.y
         , yr+static_cast<double>(marginTop_)/plotToViewportScale_.y
         , zl-1, zr+1);
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.loadIdentity();
         if (dimension_ == TWO) {
             //set up clipping planes
             tgt::dvec2 leftBottom = convertViewportToPlotCoordinates(tgt::ivec2(marginLeft_,marginBottom_));
@@ -107,17 +107,17 @@ bool PlotLibraryOpenGl::setRenderStatus() {
             glEnable(GL_LIGHT0);
             glEnable(GL_NORMALIZE);
         }
-        tgt::loadMatrix(camera_.getViewMatrix());
+        MatStack.loadMatrix(camera_.getViewMatrix());
         //plot into [-0.5,0.5]^3
         glTranslated(-0.5,-0.5,-0.5);
         glScaled(1/domain_[0].size(),1/domain_[1].size(),1/domain_[2].size());
         glTranslated(-domain_[0].getLeft(),-domain_[1].getLeft(),-domain_[2].getLeft());
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+        MatStack.loadIdentity();
         if (orthographicCameraFlag_)
             glOrtho(-.9,.9,-.9,.9,-2,10);
         else
-            tgt::loadMatrix(camera_.getProjectionMatrix(windowSize_));
+            MatStack.loadMatrix(camera_.getProjectionMatrix(windowSize_));
         GLdouble eqnLeft[4] = {1.0, 0.0, 0.0, -domain_[X_AXIS].getLeft()};
         GLdouble eqnRight[4] = {-1.0, 0.0, 0.0, domain_[X_AXIS].getRight()};
         GLdouble eqnBottom[4] = {0.0, 1.0, 0.0, -domain_[Y_AXIS].getLeft()};
@@ -131,7 +131,7 @@ bool PlotLibraryOpenGl::setRenderStatus() {
         // labeling the axes)
         calculateSelectionEdges();
     }
-    glMatrixMode(GL_MODELVIEW);
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
     //some settings are not used for drawing pickable objects
     if (!usePlotPickingManager_) {
         //enable antialiasing
@@ -863,14 +863,14 @@ void PlotLibraryOpenGl::renderColorMapLegend(const PlotData& data, int column, i
     const std::string& label    = data.getColumnLabel(column);
 
     // switch to viewport coordinates
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glOrtho(0.0f, windowSize_.x, 0.f, windowSize_.y, -1.0f, 1.0f);
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
     glDisable(GL_DEPTH_TEST);
 
@@ -922,10 +922,10 @@ void PlotLibraryOpenGl::renderColorMapLegend(const PlotData& data, int column, i
 
     glEnable(GL_DEPTH_TEST);
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
     LGL_ERROR;
 }
 
@@ -1013,13 +1013,13 @@ void PlotLibraryOpenGl::renderAxes() {
     if (dimension_ == TWO) {
     //draw arrows with viewport coordinates
         int arrowSize = 5; // in pixel
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+        MatStack.pushMatrix();
+        MatStack.loadIdentity();
         glOrtho(0.0f, windowSize_.x, 0.f, windowSize_.y, -1.0f, 1.0f);
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
+        MatStack.loadIdentity();
         glBegin(GL_LINES);
             glVertex2i(windowSize_.x-marginRight_, marginBottom_);
             glVertex2i(windowSize_.x-marginRight_+4*arrowSize, marginBottom_);
@@ -1035,10 +1035,10 @@ void PlotLibraryOpenGl::renderAxes() {
             glVertex2i(marginLeft_ - arrowSize, windowSize_.y-marginTop_+2*arrowSize);
             glVertex2i(marginLeft_, windowSize_.y-marginTop_+4*arrowSize);
         glEnd();
-        glPopMatrix();
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
+        MatStack.popMatrix();
+        MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+        MatStack.popMatrix();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
     }
     else if (dimension_ == THREE) {
         if (centerAxesFlag_) {
@@ -1361,45 +1361,45 @@ void PlotLibraryOpenGl::renderLabel(tgt::vec3 pos, const SmartLabel::Alignment a
     if (!viewCoordinates)
         pos = convertPlotCoordinatesToViewport3(pos);
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glOrtho(0.0f, windowSize_.x, 0.f, windowSize_.y, -1.0f, 1.0f);
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
     glDisable(GL_DEPTH_TEST);
     SmartLabelGroupBaseOpenGl::renderSingleLabel(&labelFont_, text, pos, fontColor_, fontSize_, align, static_cast<float>(padding));
     glEnable(GL_DEPTH_TEST);
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
     LGL_ERROR;
 }
 
 void PlotLibraryOpenGl::renderLabel(tgt::dvec2 pos, const SmartLabel::Alignment align, const std::string& text, int padding) {
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glOrtho(0.0f, windowSize_.x, 0.f, windowSize_.y, -1.0f, 1.0f);
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
     glDisable(GL_DEPTH_TEST);
     SmartLabelGroupBaseOpenGl::renderSingleLabel(&labelFont_, text, tgt::vec3((float)pos.x, (float)pos.y, 0), fontColor_,
             fontSize_, align, static_cast<float>(padding));
     glEnable(GL_DEPTH_TEST);
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
     LGL_ERROR;
 }
 
@@ -1438,23 +1438,23 @@ void PlotLibraryOpenGl::renderPlotLabels() {
 void PlotLibraryOpenGl::renderSmartLabelGroup(SmartLabelGroupBase* smg) {
     smg->performLayout();
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glOrtho(0.0f, windowSize_.x, 0.f, windowSize_.y, -1.0f, 1.0f);
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
     glDisable(GL_DEPTH_TEST);
     smg->render();
     glEnable(GL_DEPTH_TEST);
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
     LGL_ERROR;
 }
 
@@ -1465,10 +1465,10 @@ void PlotLibraryOpenGl::resetRenderStatus() {
     glLineWidth(1.f);
     glEnable(GL_DEPTH_TEST);
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.loadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
 
     glDisable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ZERO);
@@ -1513,7 +1513,7 @@ void PlotLibraryOpenGl::renderGlyph(plot_t x, plot_t y, plot_t z, plot_t size) {
         glEnd();
         return;
     }
-    glPushMatrix();
+    MatStack.pushMatrix();
     glTranslated(x,y,z);
     glScaled(domain_[X_AXIS].size()/500, domain_[Y_AXIS].size()/500, domain_[Z_AXIS].size()/500);
     if (texture_ != 0 && !usePlotPickingManager_) {
@@ -1568,7 +1568,7 @@ void PlotLibraryOpenGl::renderGlyph(plot_t x, plot_t y, plot_t z, plot_t size) {
     if (texture_ != 0 && !usePlotPickingManager_)
         glDisable(GL_TEXTURE_2D);
     glEnable(GL_DEPTH_TEST);
-    glPopMatrix();
+    MatStack.popMatrix();
     LGL_ERROR;
 }
 

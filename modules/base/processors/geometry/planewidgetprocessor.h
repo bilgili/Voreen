@@ -71,6 +71,8 @@ protected:
     virtual void initialize() throw (tgt::Exception);
     virtual void deinitialize() throw (tgt::Exception);
 
+    //onChange
+    void propertyVisibilityOnChange();
 private:
     struct Manipulator {
         Manipulator(int axis, int corner, FloatProperty* prop, FloatProperty* oppositeProp, bool inverted) :
@@ -117,6 +119,7 @@ private:
     GLuint sphereDisplayList_;          ///< displaylist for rendering of a sphere
 
     BoolProperty enable_;
+    BoolProperty showHandles_;
     FloatProperty manipulatorScaling_;
     FloatVec4Property xColor_;
     FloatVec4Property yColor_;

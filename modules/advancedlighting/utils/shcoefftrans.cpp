@@ -359,7 +359,12 @@ void SHCoeffTrans::bindCoeffVolume(tgt::Shader* shader, CoeffVolume* cv, Texture
 
 void SHCoeffTrans::setRCShaderUniforms(tgt::Shader* rcProg) {
     // deprecated, but might be useful for debugging
-    //bindCoeffVolume(rcProg, tfVolume_, true);
+    TextureUnit transVolUnit(true);
+    bindCoeffVolume(rcProg, tfVolume_, &transVolUnit);
+    if(normVolume_) {
+        TextureUnit normVolUnit(true);
+        bindCoeffVolume(rcProg, normVolume_, &normVolUnit);
+    }
 
     TextureUnit coeffUnit0(true), coeffUnit1(true), coeffUnit2(true), coeffUnit3(true),
                 coeffUnit4(true), coeffUnit5(true), coeffUnit6(true), coeffUnit7(true),
@@ -459,13 +464,13 @@ void SHCoeffTrans::calcCoeffs() {
     // for future use
     //coeffPrg_->setUniform("numCoeffs_", (int)numCoeffs_);
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glOrtho(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
 
     glDisable(GL_DEPTH_TEST);
@@ -548,10 +553,10 @@ void SHCoeffTrans::calcCoeffs() {
     glEnable(GL_DEPTH_TEST);
 
     glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 
     coeffPrg_->deactivate();
 
@@ -640,13 +645,13 @@ void SHCoeffTrans::executeSecondPass() {
     //coeffPrg2_->setUniform("numCoeffs_", (int)numCoeffs_);
 
     //LGL_ERROR;
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glOrtho(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
 
     glDisable(GL_DEPTH_TEST);
@@ -705,10 +710,10 @@ void SHCoeffTrans::executeSecondPass() {
     //glEnable(GL_DEPTH_TEST);
 
     glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 
     coeffPrg2_->deactivate();
     TextureUnit::setZeroUnit();
@@ -739,17 +744,18 @@ void SHCoeffTrans::generateNormals() {
     glGetIntegerv(GL_VIEWPORT, viewport);
     glViewport(0, 0, dims.x, dims.y);
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
 
     LGL_ERROR;
     glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
 
     std::vector<GLenum> buffers = std::vector<GLenum>();
     buffers.push_back(GL_COLOR_ATTACHMENT0_EXT);
@@ -767,7 +773,6 @@ void SHCoeffTrans::generateNormals() {
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
-    TextureUnit::setZeroUnit();
 
     normPrg_->setUniform("volume_", volUnit.getUnitNumber());
     normPrg_->setUniform("volSize_", dims);
@@ -785,10 +790,10 @@ void SHCoeffTrans::generateNormals() {
     glEnable(GL_DEPTH_TEST);
 
     glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 
     normPrg_->deactivate();
     TextureUnit::setZeroUnit();
@@ -811,13 +816,13 @@ void SHCoeffTrans::generateTfVolume() {
     TextureUnit transferUnit;
     tfProp_->get()->setUniform(tfPrg_, "transferFunc_", "transferFuncTex_", transferUnit.getUnitNumber());
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
 
     LGL_ERROR;
@@ -902,10 +907,10 @@ void SHCoeffTrans::generateTfVolume() {
     glEnable(GL_DEPTH_TEST);
 
     glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 
     for(size_t i = 0; i < logVols.size(); i++)
         delete logVols[i];

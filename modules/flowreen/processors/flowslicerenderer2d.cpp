@@ -147,13 +147,13 @@ void FlowSliceRenderer2D::process() {
 
     imgOutport_.activateTarget("FlowSliceRenderer2D::process()");
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glOrtho(0.0f, viewportSize.x, 0.0f, viewportSize.y, -1.0f, 1.0f);
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glActiveTexture(GL_TEXTURE0);
@@ -169,7 +169,7 @@ void FlowSliceRenderer2D::process() {
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    glTranslatef(slicePos.x, slicePos.y, 0.0f);
+    MatStack.translate(slicePos.x, slicePos.y, 0.0f);
     glBegin(GL_QUADS);
         glMultiTexCoord2f(GL_TEXTURE0, 0.0f, 0.0f);
         glVertex2f(0.0f, 0.0f);
@@ -188,10 +188,10 @@ void FlowSliceRenderer2D::process() {
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     glDisable(GL_TEXTURE_2D);
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 
     imgOutport_.deactivateTarget();
 }

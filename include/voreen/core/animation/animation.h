@@ -44,6 +44,7 @@ class SerializableFactory;
 #ifdef DLL_TEMPLATE_INST
 template class VRN_CORE_API Observable<AnimationObserver>;
 #endif
+
 /**
  * Mainclass to create an animation.
  */

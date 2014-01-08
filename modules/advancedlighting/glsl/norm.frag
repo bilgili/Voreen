@@ -154,7 +154,7 @@ vec3 calcNormalFiltered(in vec3 samplePos) {
 void main() {
     // Calculate the tex-coordinate of the current voxel
     vec3 pos = vec3(gl_FragCoord.xy, curSlice_) / vec3(volSize_);
-    pos.z += 0.5 / float(volSize_.z);
+    //pos.z += 0.5 / float(volSize_.z);
 
     delta = 1.0 / vec3(volSize_);
 

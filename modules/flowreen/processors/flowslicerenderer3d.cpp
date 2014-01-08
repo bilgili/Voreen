@@ -106,10 +106,10 @@ void FlowSliceRenderer3D::process() {
     // important: save current camera state before using the processor's camera or
     // successive processors will use those settings!
     //
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
 
     camProp_.look(imgOutport_.getSize());
 
@@ -141,10 +141,10 @@ void FlowSliceRenderer3D::process() {
 
     rebuildTexture_ = false;
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 
     imgOutport_.deactivateTarget();
 }

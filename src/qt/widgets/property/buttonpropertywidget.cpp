@@ -58,4 +58,8 @@ CustomLabel* ButtonPropertyWidget::getNameLabel() const {
     //return QPropertyWidget::getNameLabel();
 }
 
+void ButtonPropertyWidget::updateFromPropertySlot() {
+    button_->setText(property_->getGuiName().c_str());
+}
+
 } // namespace

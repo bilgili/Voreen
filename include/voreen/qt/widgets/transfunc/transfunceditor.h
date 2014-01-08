@@ -33,14 +33,13 @@
 
 namespace voreen {
 
-//forward declaration
-class VolumeBase;
+    class VolumeBase;
 
 /**
  * Abstract base class for all transfer function widgets. It provides methods to open a Filedialog
  * for loading and saving of a transfer function and a slot for switching coarseness mode on and off.
  */
-class TransFuncEditor : public QWidget {
+class TransFuncEditor : public QWidget , public VolumeObserver {
     Q_OBJECT
 
 public:
@@ -91,22 +90,10 @@ public:
      */
     const QString getTitle();
 
-    /**
-     * Opens a filedialog and returns the choosen filename.
-     *
-     * @param filter filter with endings of supported file formats
-     * @return the choosen filename
-     */
-    const QString getOpenFileName(QString filter);
-
-    /**
-     * Opens a savefiledialog and returns the filename the user entered.
-     *
-     * @param filters filter with endings of supported file formats
-     * @return filename the user entered.
-     */
-    const QString getSaveFileName(QStringList filters);
-
+    // VolumeObserver methods:
+    virtual void volumeDelete(const VolumeBase* source) = 0;
+    virtual void volumeChange(const VolumeBase* source) = 0;
+    virtual void derivedDataThreadFinished(const VolumeBase* source, const VolumeDerivedData* derivedData) = 0;
 signals:
     /**
      * This signal is emitted when the transfer function has changed.
@@ -125,7 +112,7 @@ public slots:
 protected:
     TransFuncProperty* property_; ///< the transfer function property that belongs to this plugin
 
-    const VolumeBase* volume_; ///< the volume that is associated with the transfer function this widget belongs to
+    const VolumeBase* volume_; ///< TODO: remove it.
 
     QString title_; ///< name of the editor that is displayed in the gui
 };

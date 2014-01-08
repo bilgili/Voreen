@@ -33,6 +33,8 @@
 #include "voreen/qt/networkeditor/editor_settings.h"
 #include "voreen/core/properties/intproperty.h"
 #include "voreen/core/properties/optionproperty.h"
+#include "voreen/core/properties/boolproperty.h"
+#include "voreen/core/properties/floatproperty.h"
 
 #include "voreen/qt/progressdialog.h"
 
@@ -93,6 +95,11 @@ public:
     virtual ProgressDialog* createProgressDialog() const;
 
     /**
+     * Displays a message box.
+     */
+    virtual void showMessageBox(const std::string& title, const std::string& message, bool error=false) const;
+
+    /**
      * Clears the QSettings used by this application.
      */
     virtual void resetApplicationSettings();
@@ -123,6 +130,13 @@ private:
     ///Properties for the network editor
     IntProperty scaleProcessorFontSizeProperty_;
     OptionProperty<NetworkEditorStyles> networkEditorStyleProperty_;
+    OptionProperty<NetworkEditorGraphLayouts> networkEditorGraphLayoutsProperty_;
+    FloatProperty sugiShiftXProperty_;
+    BoolProperty sugiOverlapProperty_;
+    BoolProperty sugiMedianProperty_;
+    BoolProperty sugiPortFlushProperty_;
+
+
 
     static VoreenApplicationQt* qtApp_;
     QMainWindow* mainWindow_;

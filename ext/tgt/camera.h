@@ -33,6 +33,7 @@
 #include "tgt/vector.h"
 #include "tgt/line.h"
 #include "tgt/matrix.h"
+#include "tgt/matrixstack.h"
 #include "tgt/quaternion.h"
 #include "tgt/glcanvas.h"
 
@@ -115,12 +116,12 @@ public:
     vec3 getFocusWithOffsets() const;
 
     const Frustum& getFrustum() const { return frust_; }
-    Frustum getFrustumWithOffsets() const;
+    Frustum getFrustumWithOffsets(float windowRatio) const;
 
     float getFovy() const { return frust_.getFovy(); }
     float getRatio() const { return frust_.getRatio(); }
-    float getNearDist() const { return frust_.getNearDist(); }
-    float getFarDist() const { return frust_.getFarDist(); }
+    float getNearDist(bool includeOffsets = true) const;
+    float getFarDist(bool includeOffsets = true) const;
     float getFrustLeft() const { return frust_.getLeft(); }
     float getFrustRight() const { return frust_.getRight(); }
     float getFrustTop() const { return frust_.getTop(); }
@@ -225,10 +226,32 @@ public:
     }
 
     bool setStereoEyeMode(StereoEyeMode mode, bool updateCam = true);
+    bool setStereoFocalLength(float focallength, bool updateCam = true);
+    bool setStereoWidth(float width, bool updateCam = true);
 
     StereoEyeMode getStereoEyeMode() const {
         return eyeMode_;
     }
+
+    float getStereoFocalLength() const   {
+        return stereoFocalLength_;
+    }
+
+    float getStereoWidth() const   {
+        return stereoWidth_;
+    }
+
+    float getStereoRelativeFocalLength() const {
+        return stereoRelativeFocalLength_;
+    }
+
+    float getUseRealWorldFrustum() const {
+        return useRealWorldFrustum_;
+    }
+
+    float getRealWorldToFrustumFactor() const;
+    bool setStereoRelativeFocalLength(float stereoRelativeFocalLength, bool updateCam = true);
+    bool setUseRealWorldFrustum(bool useRealWorldFrustum, bool updateCam = true);
 
     bool setStereoEyeSeparation(float separation, bool updateCam = true);
 
@@ -334,7 +357,7 @@ protected:
         viewMatrix_ = mat4::createLookAt(getPositionWithOffsets(), getFocusWithOffsets(), getUpVector() );
     }
 
-    Frustum stereoFrustumShift() const;
+    Frustum stereoFrustumShift(float windowRatio) const;
     tgt::vec3 getStereoShift() const;
 
     vec3 position_; /// location of the camera
@@ -353,8 +376,12 @@ protected:
 
     /// Parameters used for stereo viewing
     float eyeSeparation_;
+    float stereoFocalLength_;
+    float stereoWidth_;
     StereoEyeMode eyeMode_;
     StereoAxisMode axisMode_;
+    float stereoRelativeFocalLength_;
+    bool useRealWorldFrustum_;
 
     /// Parameters used for camera offsetting (e.g. headtracking)
     bool useOffset_;

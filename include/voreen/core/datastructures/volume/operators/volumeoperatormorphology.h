@@ -33,20 +33,20 @@ namespace voreen {
 // Base class, defines interface for the operator (-> apply):
 class VRN_CORE_API VolumeOperatorErosionBase : public UnaryVolumeOperatorBase {
 public:
-    virtual Volume* apply(const VolumeBase* volume, int kernelSize = 3, ProgressBar* progressBar = 0) const = 0;
+    virtual Volume* apply(const VolumeBase* volume, int kernelSize = 3, ProgressReporter* progressReporter = 0) const = 0;
 };
 
 // Generic implementation:
 template<typename T>
 class VolumeOperatorErosionGeneric : public VolumeOperatorErosionBase {
 public:
-    virtual Volume* apply(const VolumeBase* volume, int kernelSize = 3, ProgressBar* progressBar = 0) const;
+    virtual Volume* apply(const VolumeBase* volume, int kernelSize = 3, ProgressReporter* progressReporter = 0) const;
     //Implement isCompatible using a handy macro:
     IS_COMPATIBLE
 };
 
 template<typename T>
-Volume* VolumeOperatorErosionGeneric<T>::apply(const VolumeBase* vh, int kernelSize, ProgressBar* progressBar) const {
+Volume* VolumeOperatorErosionGeneric<T>::apply(const VolumeBase* vh, int kernelSize, ProgressReporter* progressReporter) const {
     const VolumeRAM* v = vh->getRepresentation<VolumeRAM>();
     if(!v)
         return 0;
@@ -64,7 +64,7 @@ Volume* VolumeOperatorErosionGeneric<T>::apply(const VolumeBase* vh, int kernelS
     // kernel is separable => consecutively apply 1D kernel along each axis instead of a 3D kernel
 
     // x-direction (volumeVol -> outputVol)
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS_SUB_TASK(pos, tgt::ivec3(0), volDim, progressBar, 0.f, 1.f/3) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS_SUB_TASK(pos, tgt::ivec3(0), volDim, progressReporter, 0.f, 1.f/3) {
         size_t xmin = pos.x >= halfKernelDim ? pos.x - halfKernelDim : 0;
         size_t xmax = std::min(pos.x+halfKernelDim, volDim.x-1);
 
@@ -77,7 +77,7 @@ Volume* VolumeOperatorErosionGeneric<T>::apply(const VolumeBase* vh, int kernelS
     }
 
     // y-direction (outputVol -> volumeVol)
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS_SUB_TASK(pos, tgt::ivec3(0), volDim, progressBar, 1.f/3, 1.f/3) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS_SUB_TASK(pos, tgt::ivec3(0), volDim, progressReporter, 1.f/3, 1.f/3) {
         size_t ymin = pos.y >= halfKernelDim ? pos.y - halfKernelDim : 0;
         size_t ymax = std::min(pos.y+halfKernelDim, volDim.y-1);
 
@@ -90,7 +90,7 @@ Volume* VolumeOperatorErosionGeneric<T>::apply(const VolumeBase* vh, int kernelS
     }
 
     // z-direction (volumeVol -> outputVol)
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS_SUB_TASK(pos, tgt::ivec3(0), volDim, progressBar, 2.f/3, 1.f/3) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS_SUB_TASK(pos, tgt::ivec3(0), volDim, progressReporter, 2.f/3, 1.f/3) {
         size_t zmin = pos.z >= halfKernelDim ? pos.z - halfKernelDim : 0;
         size_t zmax = std::min(pos.z+halfKernelDim, volDim.z-1);
 
@@ -102,8 +102,8 @@ Volume* VolumeOperatorErosionGeneric<T>::apply(const VolumeBase* vh, int kernelS
         output->voxel(pos) = val;
     }
 
-    if (progressBar)
-        progressBar->setProgress(1.f);
+    if (progressReporter)
+        progressReporter->setProgress(1.f);
 
     return new Volume(output, vh);
 }
@@ -115,20 +115,20 @@ typedef UniversalUnaryVolumeOperatorGeneric<VolumeOperatorErosionBase> VolumeOpe
 // Base class, defines interface for the operator (-> apply):
 class VolumeOperatorDilationBase : public UnaryVolumeOperatorBase {
 public:
-    virtual Volume* apply(const VolumeBase* volume, int kernelSize = 3, ProgressBar* progressBar = 0) const = 0;
+    virtual Volume* apply(const VolumeBase* volume, int kernelSize = 3, ProgressReporter* progressReporter = 0) const = 0;
 };
 
 // Generic implementation:
 template<typename T>
 class VolumeOperatorDilationGeneric : public VolumeOperatorDilationBase {
 public:
-    virtual Volume* apply(const VolumeBase* volume, int kernelSize = 3, ProgressBar* progressBar = 0) const;
+    virtual Volume* apply(const VolumeBase* volume, int kernelSize = 3, ProgressReporter* progressReporter = 0) const;
     //Implement isCompatible using a handy macro:
     IS_COMPATIBLE
 };
 
 template<typename T>
-Volume* VolumeOperatorDilationGeneric<T>::apply(const VolumeBase* vh, int kernelSize, ProgressBar* progressBar) const {
+Volume* VolumeOperatorDilationGeneric<T>::apply(const VolumeBase* vh, int kernelSize, ProgressReporter* progressReporter) const {
     const VolumeRAM* v = vh->getRepresentation<VolumeRAM>();
     if(!v)
         return 0;
@@ -146,7 +146,7 @@ Volume* VolumeOperatorDilationGeneric<T>::apply(const VolumeBase* vh, int kernel
     // kernel is separable => consecutively apply 1D kernel along each axis instead of a 3D kernel
 
     // x-direction (inputVol -> outputVol)
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS_SUB_TASK(pos, tgt::ivec3(0), volDim, progressBar, 0.f, 1.f/3) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS_SUB_TASK(pos, tgt::ivec3(0), volDim, progressReporter, 0.f, 1.f/3) {
         size_t xmin = pos.x >= halfKernelDim ? pos.x - halfKernelDim : 0;
         size_t xmax = std::min(pos.x+halfKernelDim, volDim.x-1);
 
@@ -159,7 +159,7 @@ Volume* VolumeOperatorDilationGeneric<T>::apply(const VolumeBase* vh, int kernel
     }
 
     // y-direction (outputVol -> inputVol)
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS_SUB_TASK(pos, tgt::ivec3(0), volDim, progressBar, 1.f/3, 1.f/3) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS_SUB_TASK(pos, tgt::ivec3(0), volDim, progressReporter, 1.f/3, 1.f/3) {
         size_t ymin = pos.y >= halfKernelDim ? pos.y - halfKernelDim : 0;
         size_t ymax = std::min(pos.y+halfKernelDim, volDim.y-1);
 
@@ -172,7 +172,7 @@ Volume* VolumeOperatorDilationGeneric<T>::apply(const VolumeBase* vh, int kernel
     }
 
     // z-direction (inputVol -> outputVol)
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS_SUB_TASK(pos, tgt::ivec3(0), volDim, progressBar, 2.f/3, 1.f/3) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS_SUB_TASK(pos, tgt::ivec3(0), volDim, progressReporter, 2.f/3, 1.f/3) {
         size_t zmin = pos.z >= halfKernelDim ? pos.z - halfKernelDim : 0;
         size_t zmax = std::min(pos.z+halfKernelDim, volDim.z-1);
 
@@ -184,8 +184,8 @@ Volume* VolumeOperatorDilationGeneric<T>::apply(const VolumeBase* vh, int kernel
         output->voxel(pos) = val;
     }
 
-    if (progressBar)
-        progressBar->setProgress(1.f);
+    if (progressReporter)
+        progressReporter->setProgress(1.f);
 
     return new Volume(output, vh);
 }

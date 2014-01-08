@@ -211,25 +211,25 @@ void ButtonOverlayProcessor::renderOverlayImage() {
     glDisable(GL_TEXTURE_2D);
 
     overlayPort_.activateTarget();
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.loadIdentity();
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
 
-    glMatrixMode(GL_TEXTURE);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::TEXTURE);
+    MatStack.loadIdentity();
 
     glClearDepth(1.0);
     glDisable(GL_DEPTH_TEST);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     pickingPort_.activateTarget();
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.loadIdentity();
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
 
     glClearDepth(1.0);
     glDisable(GL_DEPTH_TEST);
@@ -324,12 +324,12 @@ void ButtonOverlayProcessor::renderFont(int i, tgt::ivec2& center) {
 #ifndef VRN_MODULE_FONTRENDERING
     LWARNING("Empty output, enable module 'fontrendering'.");
 #endif
-    glPushMatrix();
-    glLoadIdentity();
-    glTranslatef(-1,-1,0);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
+    MatStack.translate(-1,-1,0);
     float scaleFactorX = 2.0f / (float)inport_.getSize().x;
     float scaleFactorY = 2.0f / (float)inport_.getSize().y;
-    glScalef(scaleFactorX, scaleFactorY, 1);
+    MatStack.scale(scaleFactorX, scaleFactorY, 1);
 
     glColor4f(1.0f, 1.0f, 1.0f, opacity_.get());
 
@@ -338,7 +338,7 @@ void ButtonOverlayProcessor::renderFont(int i, tgt::ivec2& center) {
 
     font_->setTextAlignment(tgt::Font::Center);
     font_->render(tgt::vec3((float)center.x - buttonRadiusX_.get(), (float)center.y + ((buttonRadiusY_.get()-(float)fontSize_.get())/2.0f) - 3.0f, 0), nameProps_.at(i)->get());
-    glPopMatrix();
+    MatStack.popMatrix();
 }
 
 

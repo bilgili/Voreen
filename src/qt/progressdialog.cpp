@@ -90,13 +90,13 @@ void ProgressDialog::hide() {
     progressDialog_->hide();
 }
 
-void ProgressDialog::setMessage(const std::string& message) {
+void ProgressDialog::setProgressMessage(const std::string& message) {
     // GUI operations are only allowed in the GUI thread
     bool isGuiThread = (QThread::currentThread() == QCoreApplication::instance()->thread());
     if (!isGuiThread)
         return;
 
-    ProgressBar::setMessage(message);
+    ProgressBar::setProgressMessage(message);
     progressDialog_->setLabelText(QString::fromStdString(message));
 }
 

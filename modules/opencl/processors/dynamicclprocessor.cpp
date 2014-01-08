@@ -575,7 +575,7 @@ bool DynamicCLProcessor::isReady() const {
 }
 
 void DynamicCLProcessor::serialize(XmlSerializer& s) const {
-    VolumeRenderer::serialize(s);
+    const bool usePointerContentSerialization = s.getUsePointerContentSerialization();
     try {
         // HACK to ensure the cl editor window size and position are preserved
         WindowStateMetaData* meta = new WindowStateMetaData(
@@ -586,22 +586,38 @@ void DynamicCLProcessor::serialize(XmlSerializer& s) const {
             getProcessorWidget()->getSize().y);
 
         openclProp_.getMetaDataContainer().addMetaData("ProcessorWidget", meta);
-        openclProp_.serialize(s);
-    }
-    catch (SerializationException &e) {
+
+        std::vector<const Property*> clVec;
+        clVec.push_back(&openclProp_);
+
+        // serialize properties
+        s.setUsePointerContentSerialization(true);
+        s.serialize("PriorityProperty", clVec, "Property");
+
+    } catch (SerializationException &e) {
         LWARNING(std::string("OpenCL program serialization failed: ") + e.what());
     }
+    s.setUsePointerContentSerialization(usePointerContentSerialization);
+    VolumeRenderer::serialize(s);
 }
 
 void DynamicCLProcessor::deserialize(XmlDeserializer& s) {
 
+    const bool usePointerContentSerialization = s.getUsePointerContentSerialization();
     try {
-        openclProp_.deserialize(s);
+        std::vector<Property*> clVec;
+        clVec.push_back(&openclProp_);
+
+        // deserialize property
+        s.setUsePointerContentSerialization(true);
+        s.deserialize("PriorityProperty", clVec, "Property");
+        //openclProp_.deserialize(s);
     } catch (XmlSerializationNoSuchDataException) {
         s.removeLastError();
     }
 
     initializePortsAndProperties(openclProp_.get().programSource_);
+    s.setUsePointerContentSerialization(usePointerContentSerialization);
     VolumeRenderer::deserialize(s);
 }
 

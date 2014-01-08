@@ -34,20 +34,20 @@ namespace voreen {
 // Base class, defines interface for the operator (-> apply):
 class VRN_CORE_API VolumeOperatorInvertBase : public UnaryVolumeOperatorBase {
 public:
-    virtual Volume* apply(const VolumeBase* volume, ProgressBar* progressBar = 0) const = 0;
+    virtual Volume* apply(const VolumeBase* volume, ProgressReporter* progressReporter = 0) const = 0;
 };
 
 // Generic implementation:
 template<typename T>
 class VolumeOperatorInvertGeneric : public VolumeOperatorInvertBase {
 public:
-    virtual Volume* apply(const VolumeBase* volume, ProgressBar* progressBar = 0) const;
+    virtual Volume* apply(const VolumeBase* volume, ProgressReporter* progressReporter = 0) const;
     //Implement isCompatible using a handy macro:
     IS_COMPATIBLE
 };
 
 template<typename T>
-Volume* VolumeOperatorInvertGeneric<T>::apply(const VolumeBase* vh, ProgressBar* progressBar) const {
+Volume* VolumeOperatorInvertGeneric<T>::apply(const VolumeBase* vh, ProgressReporter* progressReporter) const {
     const VolumeRAM* v = vh->getRepresentation<VolumeRAM>();
     if(!v)
         return 0;
@@ -59,11 +59,11 @@ Volume* VolumeOperatorInvertGeneric<T>::apply(const VolumeBase* vh, ProgressBar*
     VolumeAtomic<T>* out = va->clone();
 
     T max = VolumeOperatorMaxValue::apply(va);
-    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(index, tgt::svec3(0, 0, 0), out->getDimensions(), progressBar) {
+    VRN_FOR_EACH_VOXEL_WITH_PROGRESS(index, tgt::svec3(0, 0, 0), out->getDimensions(), progressReporter) {
         out->voxel(index) = max - out->voxel(index);
     }
-    if (progressBar)
-        progressBar->setProgress(1.f);
+    if (progressReporter)
+        progressReporter->setProgress(1.f);
 
     return new Volume(out, vh);
 }

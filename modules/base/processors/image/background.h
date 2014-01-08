@@ -58,6 +58,8 @@ protected:
     virtual void initialize() throw (tgt::Exception);
     virtual void deinitialize() throw (tgt::Exception);
 
+    virtual std::string generateHeader(const tgt::GpuCapabilities::GlVersion* version = 0);
+
     /**
      * Render the background
      */
@@ -99,6 +101,7 @@ protected:
     FileDialogProperty filename_;
     FloatProperty tile_;
     StringOptionProperty modeProp_;
+    StringOptionProperty blendMode_;
 
     RenderPort inport_;
     RenderPort outport_;

@@ -38,6 +38,8 @@
 
 uniform mat4 viewMatrixInverse_;
 uniform mat4 projectionMatrixInverse_;
+uniform mat4 viewMatrix_;
+uniform mat4 projectionMatrix_;
 uniform vec3 cameraPosition_;
 uniform float near_;
 uniform float far_;
@@ -47,6 +49,7 @@ uniform float clippingGradientDepth_; // fix gradients this far into the volume
 vec3 worldPos_;
 vec3 worldDir_;
 float curDepth_;
+float firstDepth_;
 
 struct RayState {
     bool active_;
@@ -243,6 +246,11 @@ vec4 rayTraversal(in float exitDepth, in vec4 inColor) {
             ray4.pos_ += ray4.dir_;
         }
 #endif
+
+        if(firstDepth_ < 0.0 && result.a > 0.0) {
+            vec2 tmp = (projectionMatrix_ * viewMatrix_ * vec4(worldPos_, 1.0)).zw;
+            firstDepth_ = tmp.x / tmp.y;
+        }
         worldPos_ += worldDir_;
 
         finished = earlyRayTermination(result.a, EARLY_RAY_TERMINATION_OPACITY);
@@ -317,6 +325,7 @@ void main() {
         // composite:
         vec4 color  = vec4(0.0);
         curDepth_ = distance(worldPos_, cameraPosition_);
+        firstDepth_ = -1.f;
 
         while(head != 0U) {
             LinkedListStruct cur = linkedList_[head];
@@ -329,6 +338,11 @@ void main() {
                 float numSteps = ceil((cur.depth_ - curDepth_) / samplingStepSize_);
                 curDepth_ += samplingStepSize_ * numSteps;
                 worldPos_ += worldDir_ * numSteps;
+            }
+
+            if(firstDepth_ < 0.0 && cur.proxyGeometryId_ == 0) {
+                vec2 tmp = (projectionMatrix_ * viewMatrix_ * vec4(worldPos_, 1.0)).zw;
+                firstDepth_ = tmp.x / tmp.y;
             }
 
             if(cur.proxyGeometryId_ != 0) {
@@ -447,8 +461,11 @@ void main() {
         }
         FragData0 = color;
 
-        // take first depth:
-        gl_FragDepth = 0.5; //TODO
+        // take first non-proxy-geometry fragment depth as depth value
+        if(firstDepth_ >= 0.0)
+            gl_FragDepth = firstDepth_;
+        else
+            gl_FragDepth = 1.0;
     }
 
     //#ifdef OP0

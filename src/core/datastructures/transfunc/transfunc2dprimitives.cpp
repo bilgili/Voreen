@@ -72,6 +72,39 @@ TransFunc2DPrimitives::~TransFunc2DPrimitives() {
     }
 }
 
+TransFunc* TransFunc2DPrimitives::clone() const {
+    TransFunc2DPrimitives* func = new TransFunc2DPrimitives();
+
+    func->updateFrom(this);
+
+    return func;
+}
+
+void TransFunc2DPrimitives::updateFrom(const TransFunc* transfunc) {
+    tgtAssert(transfunc, "null pointer passed");
+
+    const TransFunc2DPrimitives* tf2D = dynamic_cast<const TransFunc2DPrimitives*>(transfunc);
+    if (!tf2D) {
+        LWARNING("updateFrom(): passed parameter is not of type TransFunc2DPrimitives");
+        return;
+    }
+
+    dimensions_ = tf2D->dimensions_;
+    format_ = tf2D->format_;
+    dataType_ = tf2D->dataType_;
+    filter_ = tf2D->filter_;
+    domainIntensity_ = tf2D->domainIntensity_;
+    domainGradientMagnitude_ = tf2D->domainGradientMagnitude_;
+
+    primitives_.clear();
+    std::vector<TransFuncPrimitive*>::const_iterator it;
+    for(it = tf2D->primitives_.begin(); it!=tf2D->primitives_.end(); it++) {
+        primitives_.push_back((*it)->clone());
+    }
+
+    textureInvalid_ = true;
+}
+
 std::string TransFunc2DPrimitives::getShaderDefines(const std::string& defineName) const {
     return TransFunc::getShaderDefines(defineName) + "#define CLASSIFICATION_REQUIRES_GRADIENT\n";
 }
@@ -290,22 +323,22 @@ void TransFunc2DPrimitives::updateTexture() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     // set correct projection and modelview matrices
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
     glOrtho(0.f, 1.f, 0.f, 1.f, -2.f, 1.f);
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadIdentity();
 
     // paint primitives
     paint();
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 
     fbo_->deactivate();
     LGL_ERROR;
@@ -401,29 +434,6 @@ void TransFunc2DPrimitives::setDomain(tgt::vec2 domain, int dimension) {
     else {
         tgtAssert(false, "invalid dimension");
     }
-}
-
-TransFunc* TransFunc2DPrimitives::clone() const {
-    TransFunc2DPrimitives* func = new TransFunc2DPrimitives();
-
-    func->dimensions_.x = dimensions_.x;
-    func->dimensions_.y = dimensions_.y;
-    func->dimensions_.z = dimensions_.z;
-    func->format_ = format_;
-    func->dataType_ = dataType_;
-    func->filter_ = filter_;
-    func->domainIntensity_ = domainIntensity_;
-    func->domainGradientMagnitude_ = domainGradientMagnitude_;
-
-    func->primitives_.clear();
-    std::vector<TransFuncPrimitive*>::const_iterator it;
-    for(it = primitives_.begin(); it!=primitives_.end(); it++) {
-        func->primitives_.push_back((*it)->clone());
-    }
-
-    func->textureInvalid_ = true;
-
-    return func;
 }
 
 void TransFunc2DPrimitives::createTex() {

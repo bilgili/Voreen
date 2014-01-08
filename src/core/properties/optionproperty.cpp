@@ -27,17 +27,60 @@
 
 namespace voreen {
 
-void OptionPropertyBase::deserialize(XmlDeserializer& s) {
-    Property::deserialize(s);
+template<>
+void Option<int>::serialize(XmlSerializer& s) const {
+    s.serialize("Key", key_);
+    s.serialize("Description", description_);
+    s.serialize("Value", value_);
+}
 
-    std::string id;
-    s.deserialize("value", id);
-    try {
-        select(id);
-    }
-    catch (Condition::ValidationFailed& /*e*/) {
-        s.addError("Invalid option value: " + id);
-    }
+template<>
+void Option<int>::deserialize(XmlDeserializer& s) {
+    s.deserialize("Key", key_);
+    s.deserialize("Description", description_);
+    s.deserialize("Value", value_);
+}
+
+template<>
+void Option<float>::serialize(XmlSerializer& s) const {
+    s.serialize("Key", key_);
+    s.serialize("Description", description_);
+    s.serialize("Value", value_);
+}
+
+template<>
+void Option<float>::deserialize(XmlDeserializer& s) {
+    s.deserialize("Key", key_);
+    s.deserialize("Description", description_);
+    s.deserialize("Value", value_);
+}
+
+template<>
+void Option<GLenum>::serialize(XmlSerializer& s) const {
+    s.serialize("Key", key_);
+    s.serialize("Description", description_);
+    s.serialize("Value", value_);
+}
+
+template<>
+void Option<GLenum>::deserialize(XmlDeserializer& s) {
+    s.deserialize("Key", key_);
+    s.deserialize("Description", description_);
+    s.deserialize("Value", value_);
+}
+
+template<>
+void Option<std::string>::serialize(XmlSerializer& s) const {
+    s.serialize("Key", key_);
+    s.serialize("Description", description_);
+    s.serialize("Value", value_);
+}
+
+template<>
+void Option<std::string>::deserialize(XmlDeserializer& s) {
+    s.deserialize("Key", key_);
+    s.deserialize("Description", description_);
+    s.deserialize("Value", value_);
 }
 
 // ============================================================================

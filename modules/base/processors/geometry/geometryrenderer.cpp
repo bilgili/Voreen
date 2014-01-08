@@ -25,6 +25,7 @@
 
 #include "geometryrenderer.h"
 #include "voreen/core/datastructures/geometry/geometry.h"
+#include "voreen/core/datastructures/geometry/trianglemeshgeometry.h"
 
 namespace voreen {
 
@@ -43,6 +44,11 @@ GeometryRenderer::GeometryRenderer()
     , lightDiffuse_("lightDiffuse", "Diffuse Light", tgt::Color(0.8f, 0.8f, 0.8f, 1.f))
     , lightSpecular_("lightSpecular", "Specular Light", tgt::Color(0.6f, 0.6f, 0.6f, 1.f))
     , materialShininess_("materialShininess", "Shininess", 60.f, 0.1f, 128.f)
+    , useShader_("use.shader", "Use shader", false)
+    , shaderProp_("geometry.prg", "Shader", "trianglemesh.frag", "trianglemesh.vert", "trianglemesh.geom")
+    , enableClipping_("enable.clipping", "Enable on-the-fly clipping", false)
+    , planeNormal_("plane.normal", "Clipping plane normal", tgt::vec3(0.f, 0.f, 1.f), tgt::vec3(-1.f), tgt::vec3(1.f))
+    , planeDistance_("plane.distance", "Clipping plane distance", 0.f, -10000.f, 10000.f)
 {
     addPort(inport_);
     addPort(texPort_);
@@ -79,6 +85,15 @@ GeometryRenderer::GeometryRenderer()
     addProperty(lightSpecular_);
     addProperty(materialShininess_);
 
+    addProperty(useShader_);
+    addProperty(shaderProp_);
+    addProperty(enableClipping_);
+    addProperty(planeNormal_);
+    addProperty(planeDistance_);
+
+    useShader_.onChange(CallMemberAction<GeometryRenderer>(this, &GeometryRenderer::updatePropertyVisibilities));
+    enableClipping_.onChange(CallMemberAction<GeometryRenderer>(this, &GeometryRenderer::updatePropertyVisibilities));
+
     // assign lighting properties to property group
     lightPosition_.setGroupID("lighting");
     lightAmbient_.setGroupID("lighting");
@@ -94,12 +109,25 @@ Processor* GeometryRenderer::create() const {
     return new GeometryRenderer();
 }
 
+void GeometryRenderer::compile() {
+    shaderProp_.setHeader(generateHeader());
+    shaderProp_.rebuild();
+}
+
 bool GeometryRenderer::isReady() const {
     return inport_.isReady();
 }
 
 void GeometryRenderer::render() {
     tgtAssert(inport_.hasData(), "No geometry");
+
+    if(useShader_.get() && (!shaderProp_.hasValidShader() || getInvalidationLevel() >= Processor::INVALID_PROGRAM))
+        compile();
+
+    if(useShader_.get() && !shaderProp_.hasValidShader()) {
+        LERROR("Shader for geometry failed to compile");
+        return;
+    }
 
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glPolygonMode(GL_FRONT_AND_BACK, polygonMode_.getValue());
@@ -130,9 +158,39 @@ void GeometryRenderer::render() {
         LGL_ERROR;
     }
 
+    // for triangle meshes, we need to use a correctly layouted shader
+    if(useShader_.get()) {
+        tgt::Shader* prog = shaderProp_.getShader();
+        prog->activate();
+        setGlobalShaderParameters(prog, &camera_);
+        prog->setIgnoreUniformLocationError(true);
+
+        prog->setUniform("enableLighting_", enableLighting_.get());
+        if(enableLighting_.get()) {
+            prog->setUniform("lightPosition_", lightPosition_.get());
+            prog->setUniform("lightSource_.ambientColor_", lightAmbient_.get().xyz());
+            prog->setUniform("lightSource_.diffuseColor_", lightDiffuse_.get().xyz());
+            prog->setUniform("lightSource_.specularColor_", lightSpecular_.get().xyz());
+            //prog->setUniform("lightSource_.attenuation_", tgt::vec3(1.f, 0.f, 0.f));
+            prog->setUniform("shininess_", materialShininess_.get());
+        }
+
+        prog->setUniform("enableClipping_", enableClipping_.get());
+        if(enableClipping_.get())
+            prog->setUniform("plane_", tgt::vec4(normalize(planeNormal_.get()), planeDistance_.get()));
+    }
+
     inport_.getData()->render();
 
+    if(useShader_.get())
+        shaderProp_.getShader()->deactivate();
+
     glPopAttrib();
+}
+
+void GeometryRenderer::process() {
+    if(useShader_.get() && getInvalidationLevel() >= Processor::INVALID_PROGRAM)
+        compile();
 }
 
 void GeometryRenderer::updatePropertyVisibilities() {
@@ -140,14 +198,25 @@ void GeometryRenderer::updatePropertyVisibilities() {
     lineWidth_.setVisible(polygonMode_.isSelected("line"));
 
     bool lighting = enableLighting_.get();
-    /*lightPosition_.setVisible(lighting);
-    lightAmbient_.setVisible(lighting);
-    lightDiffuse_.setVisible(lighting);
-    lightSpecular_.setVisible(lighting);
-    materialShininess_.setVisible(lighting); */
     setPropertyGroupVisible("lighting", lighting);
 
     textureMode_.setVisible(mapTexture_.get());
+
+    shaderProp_.setVisible(useShader_.get());
+    enableClipping_.setVisible(useShader_.get());
+    planeNormal_.setVisible(useShader_.get() && enableClipping_.get());
+    planeDistance_.setVisible(useShader_.get() && enableClipping_.get());
+}
+
+std::string GeometryRenderer::generateHeader() {
+    std::string header = GeometryRendererBase::generateHeader();
+    if(const TriangleMeshGeometryBase* tmgb = dynamic_cast<const TriangleMeshGeometryBase*>(inport_.getData())) {
+        if(tmgb->getVertexLayout() == TriangleMeshGeometryBase::VEC3)
+            header += "#define TRIANGLE_VEC3\n";
+        else if(tmgb->getVertexLayout() == TriangleMeshGeometryBase::VEC4VEC3)
+            header += "#define TRIANGLE_VEC4_VEC3\n";
+    }
+    return header;
 }
 
 }

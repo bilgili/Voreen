@@ -40,10 +40,15 @@ void main() {
     float depth1 = textureLookup2Dnormalized(depthTex1_, textureParameters1_, p*screenDimRCP_).z;
 
     vec4 fragColor;
+#if defined(BLEND_MODE_ALPHA)
     fragColor.rgb = color1.rgb * color1.a + color0.rgb * color0.a * (1.0 - color1.a);
-    // If working with soft-rendered fonts, this version should be preferred if possible, otherwise the blending leads to artefacts
-    //fragColor.rgb = color1.a > 0.0 ? color1.rgb : color0.rgb;
     fragColor.a = color1.a + color0.a * (1.0 - color1.a);
+#elif defined(BLEND_MODE_ADD)
+    //fragColor = color0 + color1;
+    //fragColor.a = max(color0.a, color1.a);
+    fragColor.rgba = color1.rgba + color0.rgba * (1.0 - color1.a);
+    fragColor = min(fragColor, vec4(1.0));
+#endif
     float fragDepth = min(depth0, depth1);
 
     FragData0 = fragColor;

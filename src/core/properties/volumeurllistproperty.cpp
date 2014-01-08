@@ -164,11 +164,14 @@ void VolumeURLListProperty::loadVolume(const std::string& url)
     ProgressBar* progressBar = getProgressBar();
     if (progressBar) {
         progressBar->setTitle("Loading volume");
-        progressBar->setMessage("Loading volume ...");
+        progressBar->setProgressMessage("Loading volume ...");
     }
 
     VolumeSerializerPopulator serializerPopulator(progressBar);
     VolumeBase* handle = serializerPopulator.getVolumeSerializer()->read(VolumeURL(url));
+
+    if (progressBar)
+        progressBar->hide();
 
     if (handle) {
         // url may have been altered by loading routine

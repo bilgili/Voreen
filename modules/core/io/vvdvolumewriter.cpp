@@ -50,8 +50,8 @@ void VvdVolumeWriter::write(const std::string& filename, const VolumeBase* volum
         return;
     }
 
-    std::string vvdname = filename;
-    std::string rawname = getFileNameWithoutExtension(filename) + ".raw";
+    std::string vvdname = tgt::FileSystem::cleanupPath(filename);
+    std::string rawname = tgt::FileSystem::fullBaseName(vvdname) + ".raw";
     LINFO("saving " << vvdname << " and " << rawname);
 
     // VVD: ---------------------------

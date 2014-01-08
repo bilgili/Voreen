@@ -28,6 +28,7 @@
 
 #include "voreen/core/properties/propertyowner.h"
 #include "voreen/core/utils/observer.h"
+#include "voreen/core/io/progressreporter.h"
 #include "voreen/core/processors/profiling.h"
 
 #include "tgt/exception.h"
@@ -63,7 +64,8 @@ template class VRN_CORE_API Observable<ProcessorObserver>;
 /**
  * The base class for all processor classes used in Voreen.
  */
-class VRN_CORE_API Processor : public PropertyOwner, public tgt::EventListener, public Observable<ProcessorObserver> {
+class VRN_CORE_API Processor : public PropertyOwner, public tgt::EventListener,
+                               public Observable<ProcessorObserver>, public ProgressReporter {
 
     friend class NetworkEvaluator;
     friend class VoreenModule;
@@ -201,6 +203,10 @@ public:
     /// @todo more doc
     virtual bool isEndProcessor() const;
 
+
+    /// Is this processor a source processor as it does not have any in ports?
+    virtual bool isSource() const;
+
     /**
      * @brief Returns the processor's data flow inports.
      * This does not include its co-processor inports.
@@ -305,20 +311,50 @@ public:
     virtual bool usesExpensiveComputation() const;
 
     /**
-     * Updates the progress bar, if one has been assigned.
+     * Delegates the passed progress value to all assigned progress bars.
      *
      * @param progress The overall progress of the operations
      *  performed in process(). Range: [0.0, 1.0]
      *
      * @see usesExpensiveComputation
+     * @see addProgressBar
      */
-    void setProgress(float progress);
+    virtual void setProgress(float progress);
+    virtual float getProgress() const;
 
     /**
-     * Assigns a progress handler that the processor may use for indicating progress
-     * of time-consuming operations. Usually assigned by the GUI layer.
+     * Delegates the passed progress range to all assigned progress bars.
+     *
+     * @param range Range into which the progress value will be transformed,
+     * i.e., actualProgress = progressRange.x + progress*(progressRange.y-progressRange.x)
+     * Must be a subrange of [0.f;1.f]. Default range is [0.f;1.f].
+     *
+     * @see usesExpensiveComputation
+     * @see addProgressBar
      */
-    virtual void setProgressBar(ProgressBar* progressBar);
+    virtual void setProgressRange(const tgt::vec2& range);
+    virtual tgt::vec2 getProgressRange() const;
+
+    /**
+     * Delegates the passed progress message to all assigned progress bars.
+     *
+     * @see usesExpensiveComputation
+     * @see addProgressBar
+     */
+    virtual void setProgressMessage(const std::string& message);
+    virtual std::string getProgressMessage() const;
+
+    /**
+     * Assigns a progress bar that the processor may use for indicating progress
+     * of time-consuming operations. Usually assigned by the GUI layer.
+     *
+     * @note The processor does not take ownership of the progress bar!
+     *
+     * @see usesExpensiveComputation
+     * @see setProgress
+     * @see setProgressMessage
+     */
+    virtual void addProgressBar(ProgressReporter* progressBar);
 
     /**
      * @see PropertyOwner::serialize
@@ -404,6 +440,14 @@ protected:
      * the superclass' function as \e last statement, if you do so.
      */
     virtual void afterProcess();
+
+    /**
+     * Is called by the NetworkEvaluator, if an inport of the processor has changed.
+     *
+     * The default implementation does nothing.
+     * It is intended to be used for instance to adjust the min/max range of numeric properties.
+     */
+    virtual void adjustPropertiesToInput();
 
     /// Calls clear() on all outports
     virtual void clearOutports();
@@ -500,6 +544,13 @@ protected:
     /// Sets the description
     void setDescription(std::string desc);
 
+    /**
+     * Returns true, if the processor has been deserialized and the first process() call has not been
+     * conducted, yet. This flag is intended to help a processor to decide whether it should react to
+     * input data changes.
+     */
+    bool firstProcessAfterDeserialization() const;
+
     /// Set to true after successful initialization.
     ProcessorState processorState_;
 
@@ -517,8 +568,9 @@ protected:
      * of time-consuming operations.
      *
      * @see setProgress
+     * @see addProgressBar
      */
-    ProgressBar* progressBar_;
+    std::vector<ProgressReporter*> progressBars_;
 
 protected:
     /**
@@ -581,6 +633,9 @@ protected:
 
     /// This mutex is locked by the NetworkEvaluator before beforeProcess() and unlocked after afterProcess().
     boost::mutex mutex_;
+
+    /// Is true during the time interval between the processor deserialization and the first process() call.
+    bool firstProcessAfterDeserialization_;
 
     /**
      * Contains the associated meta data.

@@ -152,7 +152,12 @@ void VvdObject::deserialize(XmlDeserializer& s) {
     metaData_.renameMetaData("spacing", "Spacing");
     metaData_.renameMetaData("offset", "Offset");
 
-    s.deserialize("DerivedData", derivedData_, "DerivedItem");
+    try {
+        s.deserialize("DerivedData", derivedData_, "DerivedItem");
+    }
+    catch (XmlSerializationNoSuchDataException& /*e*/) {
+        s.removeLastError();
+    }
 }
 
 } // namespace voreen

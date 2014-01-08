@@ -104,10 +104,10 @@ ENDIF()
 
 # platform-dependent configuration
 IF(VRN_MSVC)
-    LIST(APPEND VRN_DEFINITIONS -DNOMINMAX -D_CRT_SECURE_NO_DEPRECATE)
-
+    LIST(APPEND VRN_DEFINITIONS -DNOMINMAX -D_CRT_SECURE_NO_DEPRECATE -DPSAPI_VERSION=1)
+    
     # Windows API dependencies
-    LIST(APPEND VRN_EXTERNAL_LIBRARIES netapi32 version)
+    LIST(APPEND VRN_EXTERNAL_LIBRARIES netapi32 version psapi)
 
     # Disable warnings for Microsoft compiler:
     # C4305: 'identifier' : truncation from 'type1' to 'type2'
@@ -132,6 +132,9 @@ IF(VRN_MSVC)
     # prevents rarely-used header files from being automatically included by windows.h (esp. winsock) 
     LIST(APPEND VRN_DEFINITIONS -DWIN32_LEAN_AND_MEAN)
     
+    # disable warning on std::copy call with unchecked parameters
+    LIST(APPEND VRN_DEFINITIONS -D_SCL_SECURE_NO_WARNINGS)
+    
     # allows 32 Bit builds to use more than 2GB RAM (VC++ only)
     SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /LARGEADDRESSAWARE")
     SET(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
@@ -147,6 +150,11 @@ IF(VRN_MSVC)
         ENDIF()
     ENDIF()
 
+    # set RAM usage to 1000% for PCH
+    IF(VRN_PRECOMPILED_HEADER)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zm1000")
+    ENDIF()
+    
     # enable/disable incremental linking in debug builds
     If(VRN_INCREMENTAL_LINKING)
 		IF(NOT VRN_PRECOMPILED_HEADER)

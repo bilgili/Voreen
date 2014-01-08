@@ -1246,10 +1246,10 @@ void ExplosionProxyGeometry::registerForSelecting(std::vector<Brick> bricklist) 
     }
 
     // set modelview and projection matrices
-    glMatrixMode(GL_PROJECTION);
-    tgt::loadMatrix(camera_.get().getProjectionMatrix(pickingBuffer_.getSize()));
-    glMatrixMode(GL_MODELVIEW);
-    tgt::loadMatrix(camera_.get().getViewMatrix());
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.loadMatrix(camera_.get().getProjectionMatrix(pickingBuffer_.getSize()));
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadMatrix(camera_.get().getViewMatrix());
     LGL_ERROR;
 
     for (i = 0; i < bricklist.size(); ++i) {
@@ -1265,10 +1265,10 @@ void ExplosionProxyGeometry::registerForSelecting(std::vector<Brick> bricklist) 
     }
 
     // restore matrices
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.loadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
     LGL_ERROR;
 }
 

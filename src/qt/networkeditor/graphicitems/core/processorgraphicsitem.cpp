@@ -63,7 +63,7 @@ ProcessorGraphicsItem::ProcessorGraphicsItem(Processor* processor, NetworkEditor
         qreal width = boundRect.width() * 0.8;
         qreal height = 8;
         progressBar_ = new ProgressBarGraphicsItem(this, center, width, height);
-        processor_->setProgressBar(progressBar_);
+        processor_->addProgressBar(progressBar_);
     }
 
     dynamic_cast<Observable<ProcessorObserver>* >(processor_)->addObserver(this);

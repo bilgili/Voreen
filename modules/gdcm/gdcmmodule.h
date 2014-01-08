@@ -29,6 +29,7 @@
 #include "voreen/core/voreenmodule.h"
 #include "voreen/core/properties/stringproperty.h"
 #include "voreen/core/properties/intproperty.h"
+#include "voreen/core/properties/boolproperty.h"
 
 namespace voreen {
 
@@ -61,6 +62,14 @@ public:
         return scpPortProperty_.get();
     }
 
+    bool ignoreSliceSpacing() const {
+        return ignoreSliceSpacing_.get();
+    }
+
+    bool useGdcmRescaling() const {
+        return useGdcmRescaling_.get();
+    }
+
 private:
     StringProperty aetProperty_; ///< user (SCU) AE Title
     IntProperty incomingPortProperty_; ///< port for incoming connection
@@ -68,6 +77,9 @@ private:
     StringProperty scpUrlProperty_; ///< default DICOM SCP (standard when connecting)
     StringProperty scpAetProperty_; ///< AET of the default SCP
     IntProperty scpPortProperty_; ///< port to connect to the default SCP
+
+    BoolProperty ignoreSliceSpacing_;   ///< if selected the dataset is read despite the fact that the slice spacing differs more than 10% within the dataset
+    BoolProperty useGdcmRescaling_;     ///< if enabled the rescaling of datasets with intercept and slope varying between the slices is handled by GDCM (might lead to problems very few cases), otherwise a slower method is used
 };
 
 } //end namespace

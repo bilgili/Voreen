@@ -179,18 +179,15 @@ struct VRN_CORE_API VolumeURL : public Serializable {
     static std::string convertURLToRelativePath(const std::string& url, const std::string& basePath);
     static std::string convertURLToAbsolutePath(const std::string& url, const std::string& basePath);
 
-    /// Replaces backslashes.
-    static std::string cleanupPath(const std::string& path);
-
 private:
-    std::string constructURL(const std::string& protocol, const std::string& path, const std::map<std::string, std::string>& searchParameters) const;
-    void parseURL(const std::string& url, std::string& protocol, std::string& path, std::map<std::string, std::string>& searchParameters) const;
+    static std::string constructURL(const std::string& protocol, const std::string& path, const std::map<std::string, std::string>& searchParameters);
+    static void parseURL(const std::string& url, std::string& protocol, std::string& path, std::map<std::string, std::string>& searchParameters);
 
-    std::string constructSearchString(const std::map<std::string, std::string>& searchParameterMap) const;
-    std::map<std::string, std::string> parseSearchString(std::string searchString) const;
+    static std::string constructSearchString(const std::map<std::string, std::string>& searchParameterMap);
+    static std::map<std::string, std::string> parseSearchString(std::string searchString);
 
-    std::string escapeString(const std::string& str) const;
-    std::string unescapeString(const std::string& str) const;
+    static std::string escapeString(const std::string& str);
+    static std::string unescapeString(const std::string& str);
 
     std::string protocol_;  //< protocol portion of the URL (may be empty)
     std::string path_;      //< path portion of the URL
@@ -482,7 +479,7 @@ public:
      * Notifies the registered VolumeObservers that a reload
      * of the volume was done.
      */
-    void notifyReload();
+    void notifyChanged();
 
     template<class T>
     void derivedDataThreadFinished(VolumeDerivedDataThreadBase* ddt) const;

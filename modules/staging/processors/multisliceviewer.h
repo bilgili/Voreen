@@ -51,9 +51,9 @@ class SliceCache {
     struct CacheEntry {
         tgt::plane plane_;
         std::string volumeId_; //both md5 hashes
-        Slice* slice_;
+        VolumeSliceGL* slice_;
 
-        CacheEntry(tgt::plane pl, std::string volumeId, Slice* sl) : plane_(pl), volumeId_(volumeId), slice_(sl) {}
+        CacheEntry(tgt::plane pl, std::string volumeId, VolumeSliceGL* sl) : plane_(pl), volumeId_(volumeId), slice_(sl) {}
     };
     public:
     SliceCache(int cacheSize, float samplingRate);
@@ -65,11 +65,11 @@ class SliceCache {
     float getSamplingRate() const { return samplingRate_; }
     void setSamplingRate(float samplingRate);
 
-    Slice* getSlice(tgt::plane pl, const VolumeBase* vh) const;
+    VolumeSliceGL* getSlice(tgt::plane pl, const VolumeBase* vh) const;
 
     void clear();
 private:
-    void setSlice(Slice* m, tgt::plane pl, const VolumeBase* vh) const;
+    void setSlice(VolumeSliceGL* m, tgt::plane pl, const VolumeBase* vh) const;
 
     mutable std::list<CacheEntry> slices_;
     int cacheSize_;

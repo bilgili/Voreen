@@ -51,7 +51,7 @@ HistogramPainter::~HistogramPainter() {
     delete cache_;
 }
 
-void HistogramPainter::setHistogram(const VolumeHistogramIntensity* histogram) {
+void HistogramPainter::setHistogram(const Histogram1D* histogram) {
     //delete histogram_;
     histogram_ = histogram;
     delete cache_;
@@ -59,7 +59,7 @@ void HistogramPainter::setHistogram(const VolumeHistogramIntensity* histogram) {
     update();
 }
 
-const VolumeHistogramIntensity* HistogramPainter::getHistogram() const {
+const Histogram1D* HistogramPainter::getHistogram() const {
     return histogram_;
 }
 
@@ -100,7 +100,7 @@ void HistogramPainter::paintEvent(QPaintEvent* event) {
             paint.setBrush(QColor(200, 0, 0, 120));
             paint.setRenderHint(QPainter::Antialiasing, true);
 
-            int histogramWidth = static_cast<int>(histogram_->getBucketCount());
+            int histogramWidth = static_cast<int>(histogram_->getNumBuckets());
             tgt::vec2 p;
 
             // Qt can't handle polygons that have more than 65536 points
@@ -113,7 +113,7 @@ void HistogramPainter::paintEvent(QPaintEvent* event) {
 
             for (int x=0; x < histogramWidth; ++x) {
                 float xpos = static_cast<float>(x) / histogramWidth;
-                xpos = histogram_->getHistogram().getMinValue() + (histogram_->getHistogram().getMaxValue() - histogram_->getHistogram().getMinValue()) * xpos;
+                xpos = histogram_->getMinValue() + (histogram_->getMaxValue() - histogram_->getMinValue()) * xpos;
                 // Do some simple clipping here, as the automatic clipping of drawPolygon()
                 // gets very slow if lots of polygons have to be clipped away, e.g. when
                 // zooming to small part of the histogram.
@@ -128,7 +128,7 @@ void HistogramPainter::paintEvent(QPaintEvent* event) {
                         points[vi][count].ry() = p.y;
                         count++;
                     }
-                    float value = (yAxisLogarithmic_ ? histogram_->getLogNormalized(x) : histogram_->getNormalized(x));
+                    float value = (yAxisLogarithmic_ ? histogram_->getBucketLogNormalized(x) : histogram_->getBucketNormalized(x));
                     p = wtos(tgt::vec2(xpos, value * (yRange_[1] - yRange_[0]) + yRange_[0]));
 
                     // optimization: if the y-coord has not changed from the two last points

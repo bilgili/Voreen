@@ -242,11 +242,11 @@ void TransFuncOverlay::process() {
                 glDisable(GL_TEXTURE_1D);
             glEnable(GL_DEPTH_TEST);
             //render fonts
-            glPushMatrix();
-                glTranslatef(-1.f,-1.f,0.f);
+            MatStack.pushMatrix();
+                MatStack.translate(-1.f,-1.f,0.f);
                 float scaleFactorX = 2.0f / (float)privatePort_.getSize().x;
                 float scaleFactorY = 2.0f / (float)privatePort_.getSize().y;
-                glScalef(scaleFactorX, scaleFactorY, 1.f);
+                MatStack.scale(scaleFactorX, scaleFactorY, 1.f);
                 glColor4f(fontColor_.get().r,fontColor_.get().g,fontColor_.get().b,fontColor_.get().a*overlayOpacity_.get());
                 fontProp_.get()->setSize(privatePort_.getSize().y/12);
                 fontProp_.get()->setVerticalTextAlignment(tgt::Font::Middle);
@@ -267,7 +267,7 @@ void TransFuncOverlay::process() {
                 strstr.str("");
                 strstr << tfi->getDomain(0).y * scalingProp_.get();
                 fontProp_.get()->render(tgt::vec3(privatePort_.getSize().x*0.3f,privatePort_.getSize().y*0.85f,0), strstr.str());
-            glPopMatrix();
+            MatStack.popMatrix();
         glPopAttrib();
          // render border around overlay
         if (renderBorder_.get()) {

@@ -48,8 +48,7 @@ public:
     virtual ~RaycasterCL();
 
     virtual std::string getClassName() const    { return "RaycasterCL"; }
-    virtual std::string getModuleName() const   { return "opencl"; }
-    virtual std::string getCategory() const     { return "Raycaster"; }
+    virtual std::string getCategory() const     { return "Raycasting"; }
     virtual CodeState getCodeState() const      { return CODE_STATE_EXPERIMENTAL; }
     virtual bool isReady() const;
 

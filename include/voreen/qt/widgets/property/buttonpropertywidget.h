@@ -52,7 +52,7 @@ protected:
     QPushButton* button_;
 
 protected slots:
-    virtual void updateFromPropertySlot() {};
+    virtual void updateFromPropertySlot();
 
 };
 

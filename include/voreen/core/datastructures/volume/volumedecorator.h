@@ -89,7 +89,7 @@ public:
     }
 
     virtual void volumeChange(const VolumeBase* /*source*/) {
-        notifyReload();
+        notifyChanged();
     }
 
 protected:
@@ -108,7 +108,7 @@ public:
      * @param key Key of the MetaData item to replace.
      * @param value New Value. The decorator takes ownership.
      */
-    VolumeDecoratorReplace(const VolumeBase* vhb, const std::string& key, MetaDataBase* value);
+    VolumeDecoratorReplace(const VolumeBase* vhb, const std::string& key, MetaDataBase* value, bool keepDerivedData);
     ~VolumeDecoratorReplace() { delete value_; }
 
     virtual std::vector<std::string> getMetaDataKeys() const;
@@ -129,7 +129,7 @@ protected:
 class VRN_CORE_API VolumeDecoratorReplaceTransformation : public VolumeDecoratorReplace {
 public:
     VolumeDecoratorReplaceTransformation(const VolumeBase* vhb, tgt::mat4 matrix) :
-      VolumeDecoratorReplace(vhb, "Transformation", new Mat4MetaData(matrix)) {}
+      VolumeDecoratorReplace(vhb, "Transformation", new Mat4MetaData(matrix), true) {}
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -138,7 +138,7 @@ public:
 class VRN_CORE_API VolumeDecoratorReplaceSpacing : public VolumeDecoratorReplace {
 public:
     VolumeDecoratorReplaceSpacing(const VolumeBase* vhb, tgt::vec3 spacing) :
-      VolumeDecoratorReplace(vhb, "Spacing", new Vec3MetaData(spacing)) {}
+      VolumeDecoratorReplace(vhb, "Spacing", new Vec3MetaData(spacing), true) {}
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -147,7 +147,7 @@ public:
 class VRN_CORE_API VolumeDecoratorReplaceOffset : public VolumeDecoratorReplace {
 public:
     VolumeDecoratorReplaceOffset(const VolumeBase* vhb, tgt::vec3 offset) :
-      VolumeDecoratorReplace(vhb, "Offset", new Vec3MetaData(offset)) {}
+      VolumeDecoratorReplace(vhb, "Offset", new Vec3MetaData(offset), true) {}
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -156,7 +156,7 @@ public:
 class VRN_CORE_API VolumeDecoratorReplaceRealWorldMapping : public VolumeDecoratorReplace {
 public:
     VolumeDecoratorReplaceRealWorldMapping(const VolumeBase* vhb, RealWorldMapping rwm) :
-      VolumeDecoratorReplace(vhb, "RealWorldMapping", new RealWorldMappingMetaData(rwm)) {}
+      VolumeDecoratorReplace(vhb, "RealWorldMapping", new RealWorldMappingMetaData(rwm), false) {}
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -165,7 +165,7 @@ public:
 class VRN_CORE_API VolumeDecoratorReplaceTimestep : public VolumeDecoratorReplace {
 public:
     VolumeDecoratorReplaceTimestep(const VolumeBase* vhb, float timestep) :
-      VolumeDecoratorReplace(vhb, "Timestep", new FloatMetaData(timestep)) {}
+      VolumeDecoratorReplace(vhb, "Timestep", new FloatMetaData(timestep), true) {}
 };
 
 } // namespace

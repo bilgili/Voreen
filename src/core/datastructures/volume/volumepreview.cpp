@@ -25,6 +25,7 @@
 
 #include "voreen/core/datastructures/volume/volumepreview.h"
 #include "voreen/core/datastructures/volume/volumedisk.h"
+#include "voreen/core/datastructures/octree/volumeoctreebase.h"
 
 namespace voreen {
 
@@ -79,6 +80,8 @@ VolumeDerivedData* VolumePreview::createFrom(const VolumeBase* handle) const {
 
     const VolumeRAM* volumeRam = 0;
     const VolumeDisk* volumeDisk = 0;
+    const VolumeOctreeBase* volumeOctree = 0;
+    bool volumeRamCreated = false;
     if (handle->hasRepresentation<VolumeRAM>()) {
         volumeRam = handle->getRepresentation<VolumeRAM>();
         tgtAssert(volumeRam, "no volume");
@@ -86,6 +89,12 @@ VolumeDerivedData* VolumePreview::createFrom(const VolumeBase* handle) const {
     else if (handle->hasRepresentation<VolumeDisk>()) {
         volumeDisk = handle->getRepresentation<VolumeDisk>();
         tgtAssert(volumeDisk, "no volume");
+        volumeRamCreated = true;
+    }
+    else if (handle->hasRepresentation<VolumeOctreeBase>()) {
+        volumeOctree = handle->getRepresentation<VolumeOctreeBase>();
+        tgtAssert(volumeOctree, "no volume");
+        volumeRamCreated = true;
     }
 
     tgt::vec3 position;
@@ -106,8 +115,21 @@ VolumeDerivedData* VolumePreview::createFrom(const VolumeBase* handle) const {
         }
         position.z = 0;
     }
+    else if (volumeOctree) {
+        try {
+            volumeRam = volumeOctree->createSlice(XY_PLANE, offset);
+        }
+        catch (tgt::Exception& e) {
+            LERROR(e.what());
+        }
+        if (!volumeRam) {
+            LERROR("VolumeOctree::loadSlices failed to create a RAM volume");
+            return 0;
+        }
+        position.z = 0;
+    }
     else {
-        LERROR("Neither VolumeRAM nor VolumeDisk available");
+        LERROR("Neither VolumeRAM nor VolumeDisk nor VolumeOctree available");
         return 0;
     }
 
@@ -128,7 +150,7 @@ VolumeDerivedData* VolumePreview::createFrom(const VolumeBase* handle) const {
         }
     }
 
-    if(volumeDisk) {
+    if (volumeRamCreated) {
         delete volumeRam;
         volumeRam = 0;
     }

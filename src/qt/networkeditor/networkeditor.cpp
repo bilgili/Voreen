@@ -51,6 +51,10 @@
 #include "voreen/qt/networkeditor/styles/nwestyle_classic.h"
 #include "voreen/qt/networkeditor/styles/nwestyle_classic_print.h"
 
+//graph layouts
+#include "voreen/qt/networkeditor/graphlayouts/nwegl_base.h"
+#include "voreen/qt/networkeditor/graphlayouts/nwegl_sugiyama.h"
+
 //graphic items
     //core
 #include "voreen/qt/networkeditor/graphicitems/core/processorgraphicsitem.h"
@@ -85,6 +89,7 @@
 #include <QClipboard>
 #include <QMenu>
 #include <QList>
+#include <iostream>
 
 namespace voreen {
 
@@ -99,6 +104,7 @@ NetworkEditor::NetworkEditor(QWidget* parent, ProcessorNetwork* network, Network
     , currentLayer_(NetworkEditorLayerUndefined)
     , currentCursorMode_(NetworkEditorCursorSelectMode)
     , currentStyle_(0)
+    , currentGraphLayout_(0)
     , currentToolTipMode_(true)
     //editor buttons
     , layerButtonContainer_(0), dataFlowLayerButton_(0), linkingLayerButton_(0)
@@ -107,7 +113,8 @@ NetworkEditor::NetworkEditor(QWidget* parent, ProcessorNetwork* network, Network
     , cameraLinkingLayerButtonContainer_(0), linkCamerasAutoButton_(0), linkCamerasButton_(0), removeAllCameraLinksButton_(0)
     , portSizeLinkingLayerButtonContainer_(0), linkPortSizeAutoButton_(0), linkPortSizeButton_(0), removeAllPortSizeLinksButton_(0)
     , stopButtonContainer_(0), stopNetworkEvaluatorButton_(0), networkEvaluatorIsLockedByButton_(false)
-    , navigationButtonContainer_(0), selectCursorButton_(0), moveCursorButton_(0), centerViewButton_(0)
+    , navigationButtonContainer_(0), selectCursorButton_(0), moveCursorButton_(0)
+    , layoutButtonContainer_(0), centerViewButton_(0), graphLayoutButton_(0)
     //scale
     , needsScale_(false)
     //navigation
@@ -148,6 +155,36 @@ NetworkEditor::NetworkEditor(QWidget* parent, ProcessorNetwork* network, Network
         if(IntProperty* prop = dynamic_cast<IntProperty*>(appQt->getProperty("scaleProcessorFontSize"))){
             ON_PROPERTY_CHANGE((*prop),NetworkEditor,processorFontOnChange);
         }
+        //
+        if(OptionProperty<NetworkEditorGraphLayouts>* prop = dynamic_cast<OptionProperty<NetworkEditorGraphLayouts>*>(appQt->getProperty("networkEditorGraphLayoutsProperty"))){
+            switch(prop->getValue()){
+            case NWEGL_SUGIYAMA: {
+                currentGraphLayout_ = new NWEGL_Sugiyama();
+                qreal shift = 300.f; bool overlap = false, median = true, portflush = true;
+                if(FloatProperty* shiftProp = dynamic_cast<FloatProperty*>(appQt->getProperty("sugiShiftXProperty"))) {
+                    shift = shiftProp->get();
+                    ON_PROPERTY_CHANGE((*shiftProp),NetworkEditor,updateGraphLayout);
+                }
+                if(BoolProperty* overlapProp = dynamic_cast<BoolProperty*>(appQt->getProperty("sugiOverlapProperty"))) {
+                    overlap = overlapProp->get();
+                    ON_PROPERTY_CHANGE((*overlapProp),NetworkEditor,updateGraphLayout);
+                }
+                if(BoolProperty* medianProp = dynamic_cast<BoolProperty*>(appQt->getProperty("sugiMedianProperty"))) {
+                    median = medianProp->get();
+                    ON_PROPERTY_CHANGE((*medianProp),NetworkEditor,updateGraphLayout);
+                }
+                if(BoolProperty* portflushProp = dynamic_cast<BoolProperty*>(appQt->getProperty("sugiPortFlushProperty"))) {
+                    portflush = portflushProp->get();
+                    ON_PROPERTY_CHANGE((*portflushProp),NetworkEditor,updateGraphLayout);
+                }
+                static_cast<NWEGL_Sugiyama*>(currentGraphLayout_)->setSortParameter(shift,overlap,median,portflush);
+            } break;
+            default:
+                tgtAssert(false,"Unknown NetworkEditorGraphLayout!!!");
+                LERROR("Unknown NetworkEditorGraphLayout!!!");
+                break;
+            }
+        }
     }
 
     //paint settings
@@ -173,6 +210,7 @@ NetworkEditor::~NetworkEditor() {
     delete scene();
     setScene(0);
     delete currentStyle_;
+    delete currentGraphLayout_;
 }
 //---------------------------------------------------------------------------------------------------------------
 //                  general members and functions
@@ -188,7 +226,7 @@ void NetworkEditor::setProcessorNetwork(ProcessorNetwork* network) {
     evaluator_->unlock();
     networkEvaluatorIsLockedByButton_ = false;
     stopNetworkEvaluatorButton_->setIcon(QIcon(":/qt/icons/player-pause.png"));
-    stopNetworkEvaluatorButton_->setToolTip(tr("Stop the automatic evaluation of the network"));
+    stopNetworkEvaluatorButton_->setToolTip(tr("Stop automatic network evaluation"));
     stopNetworkEvaluatorButton_->setChecked(false);
 
     if (processorNetwork_)
@@ -291,6 +329,7 @@ void NetworkEditor::createContextMenuActions() {
     createPortOwnerPortSizeLinksAction_ = new QAction(tr("Create Processor Render Size Links"), this);
     aggregateAction_ = new QAction(QIcon(":/qt/icons/aggregate.png"), tr("Aggregate"), this);
     deaggregateAction_ = new QAction(QIcon(":/qt/icons/deaggregate.png"), tr("Deaggregate"), this);  // this action will be added to the menus on demand
+    sortSubNetworkAction_ = new QAction(QIcon(":/qt/icons/sortGraph.png"), tr("Sort Selected Processors"), this);
     //bundleAction_ = new QAction(QIcon(":/voreenve/icons/aggregate.png"), tr("Bundle links"), this);
     //unbundleAction_ = new QAction(QIcon(":/voreenve/icons/deaggregate.png"), tr("Unbundle links"), this);
     //addHandleAction_ = new QAction(QIcon(":/qt/icons/edit_add.png"), tr("Add handle"), this);
@@ -316,6 +355,7 @@ void NetworkEditor::createContextMenuActions() {
     connect(createPortOwnerPortSizeLinksAction_, SIGNAL(triggered()), this, SLOT(createPortSizeLinksActionSlot()));
     connect(aggregateAction_, SIGNAL(triggered()), this, SLOT(aggregateActionSlot()));
     connect(deaggregateAction_, SIGNAL(triggered()), this, SLOT(deaggregateActionSlot()));
+    connect(sortSubNetworkAction_, SIGNAL(triggered()), this, SLOT(sortSubNetwork()));
     //connect(bundleAction_, SIGNAL(triggered()), this, SLOT(bundleLinksSlot()));
     //connect(unbundleAction_, SIGNAL(triggered()), this, SLOT(unbundleLinksSlot()));
     //connect(addHandleAction_, SIGNAL(triggered()), this, SLOT(addHandleSlot()));
@@ -1464,6 +1504,31 @@ void NetworkEditor::styleOnChange() {
     }
 }
 
+void NetworkEditor::updateGraphLayout() {
+    if(VoreenApplicationQt* appQt = dynamic_cast<VoreenApplicationQt*>(VoreenApplicationQt::app())){
+        if(OptionProperty<NetworkEditorGraphLayouts>* prop = dynamic_cast<OptionProperty<NetworkEditorGraphLayouts>*>(appQt->getProperty("networkEditorGraphLayoutsProperty"))){
+            switch(prop->getValue()){
+            case NWEGL_SUGIYAMA: {
+                qreal shift = 300.f; bool overlap = false, median = true, portflush = true;
+                if(FloatProperty* shiftProp = dynamic_cast<FloatProperty*>(appQt->getProperty("sugiShiftXProperty")))
+                    shift = shiftProp->get();
+                if(BoolProperty* overlapProp = dynamic_cast<BoolProperty*>(appQt->getProperty("sugiOverlapProperty")))
+                    overlap = overlapProp->get();
+                if(BoolProperty* medianProp = dynamic_cast<BoolProperty*>(appQt->getProperty("sugiMedianProperty")))
+                    median = medianProp->get();
+                if(BoolProperty* portflushProp = dynamic_cast<BoolProperty*>(appQt->getProperty("sugiPortFlushProperty")))
+                    portflush = portflushProp->get();
+                static_cast<NWEGL_Sugiyama*>(currentGraphLayout_)->setSortParameter(shift,overlap,median,portflush);
+            } break;
+            default:
+                tgtAssert(false,"Unknown NetworkEditorGraphLayout!!!");
+                LERROR("Unknown NetworkEditorGraphLayout!!!");
+                break;
+            }
+        }
+    }
+}
+
 void NetworkEditor::setStyle(NWEStyle_Base* style) {
     delete currentStyle_;
     currentStyle_ = style;
@@ -1645,7 +1710,7 @@ void NetworkEditor::initilizeEditorButtons() {
     dataFlowLayerButton_ = new QToolButton;
         dataFlowLayerButton_->setIcon(QIcon(":/qt/icons/dataflow-mode.png"));
         dataFlowLayerButton_->setIconSize(NWEMainButtonSize);
-        dataFlowLayerButton_->setToolTip(tr("switch to data flow mode (ctrl+1)"));
+        dataFlowLayerButton_->setToolTip(tr("Switch to data flow mode (ctrl+1)"));
         dataFlowLayerButton_->setCheckable(true);
         dataFlowLayerButton_->setShortcut(Qt::CTRL + Qt::Key_1);
         connect(dataFlowLayerButton_, SIGNAL(clicked()), this, SLOT(setLayerToDataFlow()));
@@ -1653,7 +1718,7 @@ void NetworkEditor::initilizeEditorButtons() {
     linkingLayerButton_ = new QToolButton;
         linkingLayerButton_->setIcon(QIcon(":/qt/icons/linking-mode.png"));
         linkingLayerButton_->setIconSize(NWEMainButtonSize);
-        linkingLayerButton_->setToolTip(tr("switch to linking mode (ctrl+2)"));
+        linkingLayerButton_->setToolTip(tr("Switch to linking mode (ctrl+2)"));
         linkingLayerButton_->setCheckable(true);
         linkingLayerButton_->setShortcut(Qt::CTRL + Qt::Key_2);
         connect(linkingLayerButton_, SIGNAL(clicked()), this, SLOT(setLayerToLinking()));
@@ -1677,35 +1742,46 @@ void NetworkEditor::initilizeEditorButtons() {
 
 //navigation
     navigationButtonContainer_ = new QWidget(this);
-    QGridLayout* navigationButtonContainerLayout = new QGridLayout(navigationButtonContainer_);
+    QHBoxLayout* navigationButtonContainerLayout = new QHBoxLayout(navigationButtonContainer_);
     navigationButtonContainerLayout->setMargin(NWEButtonBackgroundMargin);
     //create buttons
     selectCursorButton_ = new QToolButton;
         selectCursorButton_->setIcon(QIcon(":/qt/icons/cursor_arrow.svg"));
         selectCursorButton_->setIconSize(NWEMainButtonSize);
-        selectCursorButton_->setToolTip(tr("use to select items"));
+        selectCursorButton_->setToolTip(tr("Select network items"));
         selectCursorButton_->setCheckable(true);
         selectCursorButton_->setChecked(true);
         connect(selectCursorButton_, SIGNAL(clicked()), this, SLOT(setCursorSelect()));
-        navigationButtonContainerLayout->addWidget(selectCursorButton_,0,0);
+        navigationButtonContainerLayout->addWidget(selectCursorButton_);
     moveCursorButton_ = new QToolButton;
         moveCursorButton_->setIcon(QIcon(":/qt/icons/cursor_hand.svg"));
         moveCursorButton_->setIconSize(NWEMainButtonSize);
-        moveCursorButton_->setToolTip(tr("use to navigate in scene (shift)"));
+        moveCursorButton_->setToolTip(tr("Navigate in network (shift)"));
         moveCursorButton_->setCheckable(true);
         connect(moveCursorButton_, SIGNAL(clicked()), this, SLOT(setCursorMove()));
-        navigationButtonContainerLayout->addWidget(moveCursorButton_,0,1);
-
+        navigationButtonContainerLayout->addWidget(moveCursorButton_);
     QButtonGroup* navigationButtonGroup = new QButtonGroup(this);
         navigationButtonGroup->addButton(selectCursorButton_);
         navigationButtonGroup->addButton(moveCursorButton_);
 
+//layout
+    layoutButtonContainer_ = new QWidget(this);
+    QHBoxLayout* layoutButtonContainerLayout = new QHBoxLayout(layoutButtonContainer_);
+    layoutButtonContainerLayout->setMargin(NWEButtonBackgroundMargin);
+
     centerViewButton_ = new QToolButton;
         centerViewButton_->setIcon(QIcon(":/qt/icons/center.png"));
         centerViewButton_->setIconSize(NWEMainButtonSize);
-        centerViewButton_->setToolTip(tr("view the whole network"));
+        centerViewButton_->setToolTip(tr("Overview entire network"));
         connect(centerViewButton_, SIGNAL(clicked()), this, SLOT(setViewCenter()));
-        navigationButtonContainerLayout->addWidget(centerViewButton_);
+        layoutButtonContainerLayout->addWidget(centerViewButton_);
+
+    graphLayoutButton_ = new QToolButton;
+        graphLayoutButton_->setIcon(QIcon(":/qt/icons/sortGraph.png"));
+        graphLayoutButton_->setIconSize(NWEMainButtonSize);
+        graphLayoutButton_->setToolTip(tr("Lay out network graph"));
+        connect(graphLayoutButton_, SIGNAL(clicked()), this, SLOT(sortEntireNetwork()));
+        layoutButtonContainerLayout->addWidget(graphLayoutButton_);
 
     layoutEditorButtons();
 }
@@ -1715,11 +1791,9 @@ void NetworkEditor::layoutEditorButtons() {
     int x = size().width() - layerButtonContainer_->size().width() - NWEButtonBorderSpacingX;
     int y = NWEButtonBorderSpacingY;
     layerButtonContainer_->move(x,y);
-
 //linking buttons
     x = size().width() - NWEMainButtonSize.width() - NWEButtonBorderSpacingX - NWEButtonBackgroundMargin*3;
     linkingLayerButtonContainer_->move(x,y);
-
 //general linking buttons
     x -= generalLinkingLayerButtonContainer_->width();
     y += layerButtonContainer_->size().height() + NWEMarginLayerToLinking - NWEButtonBackgroundMargin*2;
@@ -1730,16 +1804,18 @@ void NetworkEditor::layoutEditorButtons() {
 //port size linking buttons
     y += portSizeLinkingLayerButtonContainer_->height() + linkingLayerButtonContainer_->layout()->contentsMargins().top();
     portSizeLinkingLayerButtonContainer_->move(x,y);
-
 //stop network button
-    x = size().width() - stopButtonContainer_->size().width() - NWEButtonBorderSpacingX;;
+    x = size().width() - stopButtonContainer_->size().width() - NWEButtonBorderSpacingX;
     y = size().height() - stopButtonContainer_->size().height() - NWEButtonBorderSpacingY;
     stopButtonContainer_->move(x,y);
-
 //navigation buttons
     x = NWEButtonBorderSpacingX;
     y = NWEButtonBorderSpacingY;
     navigationButtonContainer_->move(x,y);
+//layout button
+    x = NWEButtonBorderSpacingX;
+    y = size().height() - layoutButtonContainer_->size().height() - NWEButtonBorderSpacingY;
+    layoutButtonContainer_->move(x,y);
 }
 
 bool NetworkEditor::cameraLinksHidden() {
@@ -1919,16 +1995,129 @@ void NetworkEditor::toggleNetworkEvaluator() {
         evaluator_->unlock();
         networkEvaluatorIsLockedByButton_ = false;
         stopNetworkEvaluatorButton_->setIcon(QIcon(":/qt/icons/player-pause.png"));
-        stopNetworkEvaluatorButton_->setToolTip(tr("Stop the automatic evaluation of the network"));
+        stopNetworkEvaluatorButton_->setToolTip(tr("Stop automatic network evaluation"));
         evaluator_->process();
     }
     else {
         evaluator_->lock();
         stopNetworkEvaluatorButton_->setIcon(QIcon(":/qt/icons/player-start.png"));
-        stopNetworkEvaluatorButton_->setToolTip(tr("Start the automatic evaluation of the network"));
+        stopNetworkEvaluatorButton_->setToolTip(tr("Start automatic network evaluation"));
         networkEvaluatorIsLockedByButton_ = true;
     }
 }
+
+void NetworkEditor::sortEntireNetwork() {
+    //return, if nothing to do
+    if(!getProcessorNetwork() || getProcessorNetwork()->getProcessors().empty())
+        return;
+
+    tgtAssert(currentGraphLayout_, "No GraphLayout");
+
+    //list that saves all positions of processors before repositioning
+    std::vector<std::pair<QPointF,Processor*> > savePosList;
+    //the current network processors
+    std::vector<Processor*> processors = getProcessorNetwork()->getProcessors();
+    //save position of all processors before sorting anything
+    for (size_t j = 0; j < processors.size(); j++) {
+        QMap<Processor*,ProcessorGraphicsItem*>::const_iterator i = processorItemMap_.constBegin();
+        while (i != processorItemMap_.constEnd()) {
+            if(processors[j] == i.key()) {
+                QPointF pos = i.value()->pos();
+                std::pair<QPointF,Processor*> savePos = std::make_pair(pos,processors[j]);
+                savePosList.push_back(savePos);
+                ++i;
+            }
+            else ++i;
+        }
+    }
+
+    // empty vector to indicate a sort of the entire network
+    std::vector<Processor*> selectedProc;
+    currentGraphLayout_->sort(getProcessorNetwork(),&selectedProc,&processorItemMap_);
+
+    //center view
+    setViewCenter();
+
+    //popup that asks if you want to keep changes. if not, reset position of all processors
+    if (QMessageBox::information(NULL, "Network Layout", "An automatic network layout has been created. Do you want to keep the result?", QMessageBox::Yes, QMessageBox::No) == QMessageBox::No) {
+        //undo changes
+        for(size_t it = 0; it < savePosList.size(); it++) {
+            for (size_t it2 = 0; it2 < processors.size(); it2++) {
+                if (savePosList[it].second == processors[it2]) {
+                    QMap<Processor*,ProcessorGraphicsItem*>::const_iterator i = processorItemMap_.constBegin();
+                    while (i != processorItemMap_.constEnd()) {
+                        if (i.key() == processors[it2]) {
+                            QPointF pos = savePosList[it].first;
+                            i.value()->setPos(pos);
+                            ++i;
+                        }
+                        else ++i;
+                    }
+                }
+            }
+        }
+        setViewCenter();
+    } else {
+        //save changes
+        foreach (ProcessorGraphicsItem* processorItem, processorItemMap_.values()) {
+            processorItem->saveMeta();
+        }
+    }
+}
+
+void NetworkEditor::sortSubNetwork() {
+    tgtAssert(currentGraphLayout_, "No GraphLayout");
+
+    //get selected Processors
+    std::vector<Processor*> selectedProc;
+    //list that saves positions of delected processors before repositioning
+    std::vector<std::pair<QPointF,Processor*> > savePosList;
+    //the current network processors
+    std::vector<Processor*> processors = getProcessorNetwork()->getProcessors();
+    foreach (QGraphicsItem* item, scene()->selectedItems()) {
+        if(item->type() == UserTypesProcessorGraphicsItem) {
+            ProcessorGraphicsItem* procItem = qgraphicsitem_cast<ProcessorGraphicsItem*>(item);
+            Processor* processor = procItem->getProcessor();
+            selectedProc.push_back(processor);
+            std::pair<QPointF,Processor*> savePos = std::make_pair(procItem->pos(),processor);
+            savePosList.push_back(savePos);
+        }
+    }
+    tgtAssert(selectedProc.size() > 1, "sortSubNetwork called on less then 2 items!");
+
+    //sort
+    currentGraphLayout_->sort(getProcessorNetwork(),&selectedProc,&processorItemMap_);
+
+    //popup that asks if you want to keep changes. if not, reset position of all processors
+    if (QMessageBox::information(NULL, "Sorting Network", "The processor items have been sorted. Do you want to keep the result?", QMessageBox::Yes, QMessageBox::No) == QMessageBox::No) {
+        //undo changes
+        for(size_t it = 0; it < savePosList.size(); it++) {
+            for (size_t it2 = 0; it2 < processors.size(); it2++) {
+                if (savePosList[it].second == processors[it2]) {
+                    QMap<Processor*,ProcessorGraphicsItem*>::const_iterator i = processorItemMap_.constBegin();
+                    while (i != processorItemMap_.constEnd()) {
+                        if (i.key() == processors[it2]) {
+                            QPointF pos = savePosList[it].first;
+                            i.value()->setPos(pos);
+                            ++i;
+                        }
+                        else ++i;
+                    }
+                }
+            }
+        }
+    } else {
+        //save changes
+        foreach (QGraphicsItem* item, scene()->selectedItems()) {
+            if(item->type() == UserTypesProcessorGraphicsItem)
+            {
+                ProcessorGraphicsItem* procItem = qgraphicsitem_cast<ProcessorGraphicsItem*>(item);
+                procItem->saveMeta();
+            }
+        }
+    }
+}
+
 
 void NetworkEditor::setViewCenter() {
     resetMatrix();
@@ -2761,6 +2950,8 @@ void NetworkEditor::contextMenuEvent(QContextMenuEvent* event) {
                 currentMenu.addAction(deleteInnerLinksAction_);
                 currentMenu.addAction(deleteInnerCameraLinksAction_);
                 currentMenu.addAction(deleteInnerPortSizeLinksAction_);
+                currentMenu.addSeparator();
+                currentMenu.addAction(sortSubNetworkAction_);
                 currentMenu.addSeparator();
                 currentMenu.addAction(aggregateAction_);
             }

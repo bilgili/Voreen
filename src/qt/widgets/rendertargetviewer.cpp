@@ -538,6 +538,8 @@ QString RenderTargetViewer::internalTypeToString(GLint internalType) {
         case GL_RGB16F_ARB: return "GL_RGB16F_ARB";
         case GL_RGBA16F_ARB: return "GL_RGBA16F_ARB";
         case GL_RGBA32F_ARB: return "GL_RGBA32F_ARB";
+        case GL_R32F: return "GL_R32F";
+        case GL_R32UI: return "GL_R32UI";
         case GL_LUMINANCE: return "GL_LUMINANCE";
         case GL_LUMINANCE32F_ARB: return "GL_LUMINANCE32F_ARB";
         case GL_DEPTH_COMPONENT16: return "GL_DEPTH_COMPONENT16";
@@ -799,6 +801,12 @@ void RenderTargetViewer::paintPort(RenderPort* rp, int index) {
                 glReadPixels(origPos.x, origPos.y, 1, 1, GL_RGBA, GL_UNSIGNED_SHORT, val.elem);
                 currentTexel_ = tgt::vec4(val);
                 currentValueScale_ = 65535.f;
+            }
+            else if(rp->getColorTexture()->getInternalFormat() == GL_R32UI) {
+                GLuint val;
+                glReadPixels(origPos.x, origPos.y, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, &val);
+                currentTexel_ = tgt::vec4(val,0.f,0.f,0.f);
+                currentValueScale_ = 4294967295.f;
             }
             else {  // all float formats are treated equally
                 glReadPixels(origPos.x, origPos.y, 1, 1, GL_RGBA, GL_FLOAT, currentTexel_.elem);

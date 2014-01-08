@@ -109,6 +109,8 @@ void monteCarloInt(in vec3 pos, inout mat4 result0, inout mat4 result1) {
     float maxDim = float(max(origVolSize_.x, max(origVolSize_.y, origVolSize_.z)));
     vec3 cs = vec3(origVolSize_) / maxDim;
     vec3 shadRayDelta = 1.0 / (vec3(maxDim));
+    //vec3 shadRayDelta = cs / (vec3(maxDim));
+    //vec3 shadRayDelta = 1.0 / vec3(origVolSize_);
 
     #ifdef CONSIDER_NORMALS
     vec3 normal = normalize(2.0*texture3D(normVolume_, pos).xyz - 1.0);
@@ -126,25 +128,20 @@ void monteCarloInt(in vec3 pos, inout mat4 result0, inout mat4 result1) {
 
             // calculate the tex-coord of the current sample
             vec2 sampleCoord = vec2(i, j) / float(sampleNumSqrt_);
-            sampleCoord += 0.5 / float(sampleNumSqrt_);
+            //sampleCoord += 0.5 / float(sampleNumSqrt_);
 
             vec4 sample = texture(lightSamples_, sampleCoord);
             // look up the vector that points towards the current sample
             vec3 dir = normalize(2.0*sample.xyz - 1.0);
+
+            #if (defined(CONSIDER_NORMALS) && !defined(SH_BLEED_SUB)) || defined(SH_SUBSURFACE) || defined(SH_BLEED_SUB)
+            //float dp = dot(dir, normal);
+            //if(dp <= 0.0)
+                //continue;
+            //dp = clamp(dp, 0.0, 1.0);
+            #endif
+
             dir /= cs;
-
-            #if defined(CONSIDER_NORMALS) && !defined(SH_BLEED_SUB)
-            float dp = dot(dir, normal);
-            if(dp <= 0.0)
-                continue;
-            #endif
-
-            #if defined(SH_SUBSURFACE) || defined(SH_BLEED_SUB)
-            float dp = dot(dir, normal);
-            if(dp <= 0.0)
-                continue;
-            #endif
-
             // the initial increment we use to step through the volume along the ray
             vec3 shadInc  = shadRayDelta * dir;
 
@@ -153,7 +150,7 @@ void monteCarloInt(in vec3 pos, inout mat4 result0, inout mat4 result1) {
             float shadFac = 1.0;
 
             // we start one step from the current position to avoid artifacts (we don't want the voxel to bleed on itself)
-            vec3 shadPos = pos + 2.0 * shadInc;
+            vec3 shadPos = pos + 3.0 * shadInc;
 
             // if we want color-bleeding, we need something to save the accumulated color in
             #ifndef SH_SHADOWED
@@ -174,6 +171,7 @@ void monteCarloInt(in vec3 pos, inout mat4 result0, inout mat4 result1) {
 
                 // look up the color value at this position of the ray in the tf-volume, with the counter variable as mipmap-level
                 rayColor = texture3DLod(tfVolume_, shadPos, level);
+                //rayColor = texelFetch(tfVolume_, ivec3(pow(0.5, level) * shadPos * vec3(volSize_)), int(level));
 
                 #ifdef SH_ERI
                 // double the ray-increment, according to ritschel paper (see SHCoeffTrans class for details)
@@ -222,7 +220,7 @@ void monteCarloInt(in vec3 pos, inout mat4 result0, inout mat4 result1) {
                 //helper += coeffs[0] * shadFac * dp;
                 //#elif defined(CONSIDER_NORMALS)
                 #if defined(CONSIDER_NORMALS) || defined(SH_SUBSURFACE)
-                shadFac *= dp;
+                //shadFac *= dp;
                 #endif
 
                 #if !defined(SH_BLEEDING) && !defined(SH_BLEED_SUB)

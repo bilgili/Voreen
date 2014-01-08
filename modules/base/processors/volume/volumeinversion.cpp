@@ -74,7 +74,7 @@ void VolumeInversion::invertVolume() {
 
     if (handle->getRepresentation<VolumeRAM>()) {
         //VolumeRAM* v = handle->getRepresentation<VolumeRAM>()->clone();
-        Volume* v = VolumeOperatorInvert::APPLY_OP(handle, progressBar_);
+        Volume* v = VolumeOperatorInvert::APPLY_OP(handle, this);
         outport_.setData(v);
     }
     else {

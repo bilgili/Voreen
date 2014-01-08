@@ -98,7 +98,7 @@ bool QuadView::isReady() const {
 
 void QuadView::process() {
     if (maximized_.get() == 0) {
-        glMatrixMode(GL_MODELVIEW);
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
         outport_.activateTarget();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -106,14 +106,14 @@ void QuadView::process() {
             inport1_.bindColorTexture(GL_TEXTURE0);
             inport1_.getColorTexture()->enable();
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-            glTranslatef(-0.5f, 0.5f, 0.0f);
-            glScalef(0.5f, 0.5f, 1.0f);
+            MatStack.translate(-0.5f, 0.5f, 0.0f);
+            MatStack.scale(0.5f, 0.5f, 1.0f);
 
             glDepthFunc(GL_ALWAYS);
             renderQuad();
             glDepthFunc(GL_LESS);
 
-            glLoadIdentity();
+            MatStack.loadIdentity();
             inport1_.getColorTexture()->disable();
         }
 
@@ -121,14 +121,14 @@ void QuadView::process() {
             inport2_.bindColorTexture(GL_TEXTURE0);
             inport2_.getColorTexture()->enable();
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-            glTranslatef(0.5f, 0.5f, 0.0f);
-            glScalef(0.5f, 0.5f, 1.0f);
+            MatStack.translate(0.5f, 0.5f, 0.0f);
+            MatStack.scale(0.5f, 0.5f, 1.0f);
 
             glDepthFunc(GL_ALWAYS);
             renderQuad();
             glDepthFunc(GL_LESS);
 
-            glLoadIdentity();
+            MatStack.loadIdentity();
             inport2_.getColorTexture()->disable();
         }
 
@@ -136,14 +136,14 @@ void QuadView::process() {
             inport3_.bindColorTexture(GL_TEXTURE0);
             inport3_.getColorTexture()->enable();
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-            glTranslatef(-0.5f, -0.5f, 0.0f);
-            glScalef(0.5f, 0.5f, 1.0f);
+            MatStack.translate(-0.5f, -0.5f, 0.0f);
+            MatStack.scale(0.5f, 0.5f, 1.0f);
 
             glDepthFunc(GL_ALWAYS);
             renderQuad();
             glDepthFunc(GL_LESS);
 
-            glLoadIdentity();
+            MatStack.loadIdentity();
             inport3_.getColorTexture()->disable();
         }
 
@@ -151,14 +151,14 @@ void QuadView::process() {
             inport4_.bindColorTexture(GL_TEXTURE0);
             inport4_.getColorTexture()->enable();
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-            glTranslatef(0.5f, -0.5f, 0.0f);
-            glScalef(0.5f, 0.5f, 1.0f);
+            MatStack.translate(0.5f, -0.5f, 0.0f);
+            MatStack.scale(0.5f, 0.5f, 1.0f);
 
             glDepthFunc(GL_ALWAYS);
             renderQuad();
             glDepthFunc(GL_LESS);
 
-            glLoadIdentity();
+            MatStack.loadIdentity();
             inport4_.getColorTexture()->disable();
         }
 
@@ -178,8 +178,8 @@ void QuadView::process() {
         }
 
         outport_.deactivateTarget();
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.loadIdentity();
         LGL_ERROR;
     }
     else {
@@ -199,7 +199,7 @@ void QuadView::process() {
                     renderQuad();
                     glDepthFunc(GL_LESS);
 
-                    glLoadIdentity();
+                    MatStack.loadIdentity();
                     inport1_.getColorTexture()->disable();
                     outport_.deactivateTarget();
                     break;
@@ -217,7 +217,7 @@ void QuadView::process() {
                     renderQuad();
                     glDepthFunc(GL_LESS);
 
-                    glLoadIdentity();
+                    MatStack.loadIdentity();
                     inport2_.getColorTexture()->disable();
                     outport_.deactivateTarget();
                     break;
@@ -235,7 +235,7 @@ void QuadView::process() {
                     renderQuad();
                     glDepthFunc(GL_LESS);
 
-                    glLoadIdentity();
+                    MatStack.loadIdentity();
                     inport3_.getColorTexture()->disable();
                     outport_.deactivateTarget();
                     break;
@@ -253,7 +253,7 @@ void QuadView::process() {
                     renderQuad();
                     glDepthFunc(GL_LESS);
 
-                    glLoadIdentity();
+                    MatStack.loadIdentity();
                     inport4_.getColorTexture()->disable();
                     outport_.deactivateTarget();
                     break;
@@ -407,7 +407,7 @@ void QuadView::onEvent(tgt::Event* e) {
     }
 
     tgt::MouseEvent* me = dynamic_cast<tgt::MouseEvent*>(e);
-    if(me && !(mouseMoveEventProp_.accepts(me) || (maximizeEventProp_.accepts(me) && maximizeOnDoubleClick_.get()))) {
+    if (me && !(maximized_.get() == 0 && mouseMoveEventProp_.accepts(me)) && !(maximizeEventProp_.accepts(me) && maximizeOnDoubleClick_.get())) {
         distributeMouseEvent(me);
         return;
     }

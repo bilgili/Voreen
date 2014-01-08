@@ -27,77 +27,71 @@
 #include "modules/mod_sampler3d.frag"
 #include "modules/mod_transfunc.frag"
 
+// slice/volume
 #ifdef SLICE_TEXTURE_MODE_2D
-    uniform sampler2D sliceTex_;               // slice texture
-    uniform TextureParameters sliceTexParameters_; // slice texture parameters
-    uniform float rwmScale_;                // RealWorldMapping slope
-    uniform float rwmOffset_;               // RealWorldMapping intercept
+uniform sampler2D sliceTex_;               // slice texture
+uniform TextureParameters sliceTexParams_; // slice texture parameters
 #else defined(SLICE_TEXTURE_MODE_3D)
-    uniform VolumeParameters volumeStruct_;
-    uniform sampler3D volume_;    // volume data set
+uniform sampler3D volume_;                 // volume data set
+uniform VolumeParameters volumeParams_;
 #endif
 
-uniform TransFuncParameters transferFunc_;
-uniform TF_SAMPLER_TYPE transferFuncTex_;
-
-uniform int numChannels_;                       // number of channels in volume
-
-vec3 rgb2hsv(vec3 colorRGB) {
-    float minComponent = min(colorRGB.r, min(colorRGB.g, colorRGB.b));
-    float maxComponent = max(colorRGB.r, max(colorRGB.g, colorRGB.b));
-    float delta = maxComponent - minComponent;
-
-    vec3 result;
-    result.b = maxComponent;
-    if (maxComponent != 0.0) result.g = delta / maxComponent;
-    else result.g = 0.0;
-    if (result.g == 0.0) result.r = 0.0; // no hue
-    else {
-        if (colorRGB.r == maxComponent) result.r = (colorRGB.g - colorRGB.b) / delta;
-        else if (colorRGB.g == maxComponent) result.r = 2 + (colorRGB.b - colorRGB.r) / delta;
-        else if (colorRGB.b == maxComponent) result.r = 4 + (colorRGB.r - colorRGB.g) / delta;
-        result.r *= 60.0;
-        if (result.r < 0.0) result.r += 360.0;
-        result.r /= 360.0;
-    }
-    return result;
-}
+// transfer functions
+uniform TF_SAMPLER_TYPE transFuncTex_;
+uniform TransFuncParameters transFuncParams_;
+#if NUM_CHANNELS > 1
+uniform TF_SAMPLER_TYPE transFuncTex2_;
+uniform TransFuncParameters transFuncParams2_;
+#endif
+#if NUM_CHANNELS > 2
+uniform TF_SAMPLER_TYPE transFuncTex3_;
+uniform TransFuncParameters transFuncParams3_;
+#endif
+#if NUM_CHANNELS > 3
+uniform TF_SAMPLER_TYPE transFuncTex4_;
+uniform TransFuncParameters transFuncParams4_;
+#endif
 
 void main() {
     // fetch intensity
 #ifdef SLICE_TEXTURE_MODE_2D
-    vec4 intensity = textureLookup2Dnormalized(sliceTex_, sliceTexParameters_, gl_TexCoord[0].xy);
-    intensity.a *= rwmScale_;
-    intensity.a += rwmOffset_;
+    vec4 intensity = textureLookup2Dnormalized(sliceTex_, sliceTexParams_, gl_TexCoord[0].xy);
+    intensity *= sliceTexParams_.rwmScale_;
+    intensity += sliceTexParams_.rwmOffset_;
 #else if defined(SLICE_TEXTURE_MODE_3D)
-    vec4 intensity = getVoxel(volume_, volumeStruct_, gl_TexCoord[0].xyz);
+    vec4 intensity = getVoxel(volume_, volumeParams_, gl_TexCoord[0].xyz);
+    // NOTE: real-world-mapping is already applied by getVoxel()
+    //intensity.a *= volumeParams_.rwmScale_;
+    //intensity.a += volumeParams_.rwmOffset_;
 #endif
 
+    // compositing mode: add channels
+    vec4 result;
+#if NUM_CHANNELS == 1 // assuming alpha-texture
+    result = applyTF(transFuncParams_, transFuncTex_, intensity.a);
+#elif NUM_CHANNELS == 2 // assuming luminance-alpha texture
+    vec4 channel1 = applyTF(transFuncParams_, transFuncTex_, intensity.r);
+    vec4 channel2 = applyTF(transFuncParams2_, transFuncTex2_, intensity.g);
+    result = clamp(channel1 + channel2, vec4(0.0), vec4(1.0));
+#elif NUM_CHANNELS == 3 // assuming RGB texture
+    vec4 channel1 = applyTF(transFuncParams_, transFuncTex_, intensity.r);
+    vec4 channel2 = applyTF(transFuncParams2_, transFuncTex2_, intensity.g);
+    vec4 channel3 = applyTF(transFuncParams3_, transFuncTex3_, intensity.b);
+    result = clamp(channel1 + channel2 + channel3, vec4(0.0), vec4(1.0));
+#elif NUM_CHANNELS == 4 // assuming RGBA texture
+    vec4 channel1 = applyTF(transFuncParams_, transFuncTex_, intensity.r);
+    vec4 channel2 = applyTF(transFuncParams2_, transFuncTex2_, intensity.g);
+    vec4 channel3 = applyTF(transFuncParams3_, transFuncTex3_, intensity.b);
+    vec4 channel4 = applyTF(transFuncParams4_, transFuncTex4_, intensity.a);
+    result = channel1 + channel2 + channel3 + channel4;
+#else // more than four channels => unknown texture type => only use alpha-value
+    result = applyTF(transFuncParams_, transFuncTex_, intensity.a);
+#endif
 
-    vec4 mat;
-
-    if (numChannels_ == 1) {
-        // Assuming Intensity only volume - get value via the transfer function.
-        mat = applyTF(transferFunc_, transferFuncTex_, intensity.a);
-    }
-    else if (numChannels_ == 3) {
-        // Assuming RGB volume - convert RGB to HSV and apply transfer function to hue.
-        vec4 tfColor = applyTF(transferFunc_, transferFuncTex_, rgb2hsv(intensity.rgb).r);
-        mat = vec4(intensity.rgb, tfColor.a);
-    }
-    else if (numChannels_ == 4) {
-        // Assuming RGBA volume - no transfer function lookup necessary
-        mat = intensity;
-    }
-    else {
-        // something bad happened
-        mat = vec4(1.0);
-    }
-
-    vec4 fragColor = mat;
+    vec4 fragColor = result;
     FragData0 = fragColor;
 
-    if (mat.a > 0.0)
+    if (result.a > 0.0)
         gl_FragDepth = gl_FragCoord.z;
     else
         gl_FragDepth = 1.0;

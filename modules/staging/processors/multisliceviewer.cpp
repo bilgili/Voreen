@@ -44,7 +44,7 @@ SliceCache::SliceCache(int cacheSize, float samplingRate) : cacheSize_(cacheSize
 SliceCache::~SliceCache() {
 }
 
-Slice* SliceCache::getSlice(tgt::plane pl, const VolumeBase* vh) const {
+VolumeSliceGL* SliceCache::getSlice(tgt::plane pl, const VolumeBase* vh) const {
     std::string volumeId = vh->getHash();
     for(std::list<CacheEntry>::iterator it=slices_.begin(); it != slices_.end(); it++) {
         if( ((*it).plane_.toVec4() == pl.toVec4()) &&
@@ -58,13 +58,13 @@ Slice* SliceCache::getSlice(tgt::plane pl, const VolumeBase* vh) const {
             return ce.slice_;
         }
     }
-    Slice* sl = getVolumeSlice(vh, pl, samplingRate_);
+    VolumeSliceGL* sl = VolumeSliceHelper::getVolumeSlice(vh, pl, samplingRate_);
     setSlice(sl, pl, vh);
     LDEBUGC("", "Returning new slice!");
     return sl;
 }
 
-void SliceCache::setSlice(Slice* sl, tgt::plane pl, const VolumeBase* vh) const {
+void SliceCache::setSlice(VolumeSliceGL* sl, tgt::plane pl, const VolumeBase* vh) const {
     slices_.push_front(CacheEntry(pl, vh->getHash(), sl));
 
     // Limit size:
@@ -429,7 +429,7 @@ void MultiSliceViewer::process() {
     const VolumeBase* volh = getMainInport()->getData();
 
     // Calculate geometry:
-    TriangleMeshGeometryVec3* slice = getSliceGeometry(volh, sliceAlignment_.getValue(), (float)getSliceIndex(), true, restrictToMainVolume_.get() ? std::vector<const VolumeBase*>() : getSecondaryVolumes());
+    TriangleMeshGeometryVec3* slice = VolumeSliceHelper::getSliceGeometry(volh, sliceAlignment_.getValue(), (float)getSliceIndex(), true, restrictToMainVolume_.get() ? std::vector<const VolumeBase*>() : getSecondaryVolumes());
     geomPort_.setData(slice);
 
     //calculate plane equation:
@@ -449,13 +449,13 @@ void MultiSliceViewer::process() {
 
     // set modelview and projection matrices
     tgt::Camera cam = camera_.get();
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    tgt::loadMatrix(cam.getProjectionMatrix(outport_.getSize()));
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.loadMatrix(cam.getProjectionMatrix(outport_.getSize()));
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    tgt::loadMatrix(cam.getViewMatrix());
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
+    MatStack.loadMatrix(cam.getViewMatrix());
 
     // activate shader program
     eepShader_->activate();
@@ -475,10 +475,10 @@ void MultiSliceViewer::process() {
     eepShader_->deactivate();
 
     // restore OpenGL state
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
     LGL_ERROR;
 
     TextureUnit::setZeroUnit();
@@ -538,8 +538,9 @@ void MultiSliceViewer::process() {
                     );
         }
         else {
-            Slice* slice = sliceCache_.getSlice(p, inport1_.getData());
+            VolumeSliceGL* slice = sliceCache_.getSlice(p, inport1_.getData());
             setUniform(sh_, "volume1_", "volumeStruct1_", slice, &volUnit1);
+            sh_->setUniform("volumeStruct1_.worldToTextureMatrix_", slice->getWorldToTextureMatrix());
             volUnit1.activate();
             slice->getTexture()->bind();
             LGL_ERROR;
@@ -558,8 +559,9 @@ void MultiSliceViewer::process() {
         }
         else {
             volUnit2.activate();
-            Slice* slice = sliceCache_.getSlice(p, inport2_.getData());
+            VolumeSliceGL* slice = sliceCache_.getSlice(p, inport2_.getData());
             setUniform(sh_, "volume2_", "volumeStruct2_", slice, &volUnit2);
+            sh_->setUniform("volumeStruct2_.worldToTextureMatrix_", slice->getWorldToTextureMatrix());
             slice->getTexture()->bind();
             LGL_ERROR;
         }
@@ -577,8 +579,9 @@ void MultiSliceViewer::process() {
         }
         else {
             volUnit3.activate();
-            Slice* slice = sliceCache_.getSlice(p, inport3_.getData());
+            VolumeSliceGL* slice = sliceCache_.getSlice(p, inport3_.getData());
             setUniform(sh_, "volume3_", "volumeStruct3_", slice, &volUnit3);
+            sh_->setUniform("volumeStruct3_.worldToTextureMatrix_", slice->getWorldToTextureMatrix());
             slice->getTexture()->bind();
             LGL_ERROR;
         }
@@ -596,8 +599,9 @@ void MultiSliceViewer::process() {
         }
         else {
             volUnit4.activate();
-            Slice* slice = sliceCache_.getSlice(p, inport4_.getData());
+            VolumeSliceGL* slice = sliceCache_.getSlice(p, inport4_.getData());
             setUniform(sh_, "volume4_", "volumeStruct4_", slice, &volUnit4);
+            sh_->setUniform("volumeStruct4_.worldToTextureMatrix_", slice->getWorldToTextureMatrix());
             slice->getTexture()->bind();
             LGL_ERROR;
         }
@@ -666,9 +670,9 @@ void MultiSliceViewer::process() {
         vec3 p = volh->getVoxelToWorldMatrix() * pVoxel;
         tgt::vec2 c = camera_.get().project(outport_.getSize(), p).xy();
 
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+        MatStack.pushMatrix();
+        MatStack.loadIdentity();
         tgt::vec2 ss = outport_.getSize();
         glOrtho(0, ss.x, 0, ss.y, 0, 1);
 
@@ -698,8 +702,8 @@ void MultiSliceViewer::process() {
 
         glDisable(GL_BLEND);
 
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
+        MatStack.popMatrix();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
         LGL_ERROR;
         glPopAttrib();
     }

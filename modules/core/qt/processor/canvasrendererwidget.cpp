@@ -162,7 +162,13 @@ void CanvasRendererWidget::showScreenshotTool() {
 
 void CanvasRendererWidget::updateFromProcessor() {
     if (canvasWidget_ && processor_) {
-        //handle show cursor
+        // handle show canvas
+        BoolProperty* showCanvasProp = dynamic_cast<BoolProperty*>(processor_->getProperty("showCanvas"));
+        if (showCanvasProp) {
+            setVisible(showCanvasProp->get());
+        }
+
+        // handle show cursor
         Property* prop = processor_->getProperty("showCursor");
         if(prop) {
             BoolProperty* bp = dynamic_cast<BoolProperty*>(prop);
@@ -173,7 +179,7 @@ void CanvasRendererWidget::updateFromProcessor() {
                     canvasWidget_->setCursor(Qt::BlankCursor);
             }
         }
-        //handle fullscreen
+        // handle fullscreen
         prop = processor_->getProperty("showFullScreen");
         if(prop) {
             BoolProperty* bp = dynamic_cast<BoolProperty*>(prop);

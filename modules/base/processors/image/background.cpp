@@ -107,6 +107,7 @@ Background::Background()
                 FileDialogProperty::OPEN_FILE, Processor::INVALID_RESULT)
     , tile_("repeat", "Repeat Background", 1.0f, 0.f, 100.f)
     , modeProp_("backgroundModeAsString", "Type")
+    , blendMode_("blendMode", "Blend Mode", Processor::INVALID_PROGRAM)
     , inport_(Port::INPORT, "image.input", "Image Input")
     , outport_(Port::OUTPORT, "image.output", "Image Output")
     , privatePort_(Port::OUTPORT, "image.tmp", "image.tmp", false)
@@ -136,6 +137,12 @@ Background::Background()
 #endif
     addProperty(angle_);
     addProperty(tile_);
+
+    blendMode_.addOption("alpha-blending",      "Alpha Blending",   "BLEND_MODE_ALPHA");
+    //blendMode_.addOption("weighted-average",  "Weighted Average", "BLEND_MODE_WEIGHTED_AVERAGE");
+    blendMode_.addOption("add",                 "Add",              "BLEND_MODE_ADD");
+    blendMode_.selectByKey("alpha-blending");
+    addProperty(blendMode_);
 
     addPort(inport_);
     addPort(outport_);
@@ -177,11 +184,11 @@ void Background::process() {
     if (getInvalidationLevel() >= Processor::INVALID_PROGRAM)
         compile();
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.loadIdentity();
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
 
     glClearDepth(1.0);
 
@@ -232,6 +239,12 @@ void Background::process() {
     LGL_ERROR;
 }
 
+std::string Background::generateHeader(const tgt::GpuCapabilities::GlVersion* version /*= 0*/) {
+    std::string header = ImageProcessor::generateHeader(version);
+    header += "#define " + blendMode_.getValue() + "\n";
+    return header;
+}
+
 void Background::renderBackground() {
     glDisable(GL_LIGHTING);
     glDisable(GL_TEXTURE_2D);
@@ -246,14 +259,14 @@ void Background::renderBackground() {
     }
     else if (modeProp_.isSelected("gradient")) {
         // linear gradient
-        glPushMatrix();
-        glLoadIdentity();
-        glRotatef(static_cast<float>(angle_.get()), 0.0f, 0.0f, 1.0f);
+        MatStack.pushMatrix();
+        MatStack.loadIdentity();
+        MatStack.rotate(static_cast<float>(angle_.get()), 0.0f, 0.0f, 1.0f);
 
         // when you rotate the texture, you need to scale it.
         // otherwise the edges don't cover the complete screen
         // magic number: 0.8284271247461900976033774484194f = sqrt(8)-2;
-        glScalef(1.0f + (45 - abs(angle_.get() % 90 - 45)) / 45.0f*0.8284271247461900976033774484194f,
+        MatStack.scale(1.0f + (45 - abs(angle_.get() % 90 - 45)) / 45.0f*0.8284271247461900976033774484194f,
             1.0f + (45 - abs(angle_.get() % 90 - 45)) / 45.0f*0.8284271247461900976033774484194f, 1.0f);
 
         glBegin(GL_QUADS);
@@ -264,7 +277,7 @@ void Background::renderBackground() {
         glVertex2f( 1.0, 1.0);
         glVertex2f(-1.0, 1.0);
         glEnd();
-        glPopMatrix();
+        MatStack.popMatrix();
         LGL_ERROR;
     }
     else if (modeProp_.isSelected("radial")) {
@@ -280,8 +293,8 @@ void Background::renderBackground() {
             glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
             LGL_ERROR;
 
-            glPushMatrix();
-            glScalef(1.44f, 1.44f, 0.0f);
+            MatStack.pushMatrix();
+            MatStack.scale(1.44f, 1.44f, 0.0f);
 
             glBegin(GL_QUADS);
             glTexCoord2f(0.0f, 0.0f);
@@ -294,7 +307,7 @@ void Background::renderBackground() {
             glVertex2f( -1.0f, 1.0f);
             glEnd();
 
-            glPopMatrix();
+            MatStack.popMatrix();
 
             glDisable(GL_TEXTURE_2D);
             LGL_ERROR;
@@ -591,6 +604,5 @@ void Background::createEmptyTexture() {
 void Background::invalidateTexture() {
     textureInvalid_ = true;
 }
-
 
 } // namespace

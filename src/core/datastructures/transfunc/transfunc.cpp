@@ -39,7 +39,8 @@ TransFunc::TransFunc(int width, int height, int depth,
     , format_(format)
     , dataType_(dataType)
     , filter_(filter)
-    , ignoreAlpha_(false)
+    , alphaMode_(TF_USE_ALPHA)
+    , gammaValue_(1.f)
     , textureInvalid_(true)
 {
     //fitDimensions(dimensions_.x, dimensions_.y, dimensions_.z);
@@ -50,6 +51,34 @@ TransFunc::~TransFunc() {
         delete tex_;
         LGL_ERROR;
     }
+}
+
+TransFunc* TransFunc::clone() const {
+    TransFunc* func = new TransFunc(dimensions_.x,dimensions_.y,dimensions_.z);
+
+    func->updateFrom(this);
+
+    return func;
+}
+
+void TransFunc::updateFrom(const TransFunc* transfunc) {
+    tgtAssert(transfunc, "null pointer passed");
+
+    dimensions_ = transfunc->getDimensions();
+    format_ = transfunc->format_;
+    dataType_ = transfunc->dataType_;
+    filter_ = transfunc->filter_;
+    alphaMode_ = transfunc->alphaMode_;
+    gammaValue_ = transfunc->gammaValue_;
+
+    TransFunc* tempthis = const_cast<TransFunc*>(transfunc);
+    GLubyte* pixels = tempthis->getPixelData();
+    int factor = tempthis->getTexture()->getBpp();
+    GLubyte* newpixels = new GLubyte[tgt::hmul(dimensions_) * factor];
+    for (int i=0;i<dimensions_.x*dimensions_.y*dimensions_.z*factor;i++) {
+        newpixels[i] = pixels[i];
+    }
+    setPixelData(newpixels);
 }
 
 const std::vector<std::string>& TransFunc::getLoadFileFormats() const {
@@ -172,11 +201,13 @@ tgt::ivec3 TransFunc::getDimensions() const {
 }
 
 void TransFunc::fitDimensions(int& width, int& height, int& depth) const {
-    int maxTexSize;
-    if (depth == 1)
-        maxTexSize = GpuCaps.getMaxTextureSize();
-    else
-        maxTexSize = GpuCaps.getMax3DTextureSize();
+    int maxTexSize = 1024;
+    if (tgt::Singleton<tgt::GpuCapabilities>::isInited()) {
+        if (depth == 1)
+            maxTexSize = GpuCaps.getMaxTextureSize();
+        else
+            maxTexSize = GpuCaps.getMax3DTextureSize();
+    }
 
     if (maxTexSize < width)
         width = maxTexSize;
@@ -192,12 +223,20 @@ bool TransFunc::load(const std::string& /*filename*/) {
     return false;  // override in a subclass
 }
 
+bool TransFunc::save(const std::string& /*filename*/) const {
+    return false;  // override in a subclass
+}
+
 void TransFunc::serialize(XmlSerializer& s) const {
-    s.serialize("ignoreAlpha", ignoreAlpha_);
+    s.serialize("alphaMode", static_cast<int>(alphaMode_));
+    s.serialize("gammaValue", gammaValue_);
 }
 
 void TransFunc::deserialize(XmlDeserializer& s) {
-    s.optionalDeserialize("ignoreAlpha", ignoreAlpha_, false);
+    int tmp;
+    s.optionalDeserialize("alphaMode", tmp, static_cast<int>(TF_USE_ALPHA));
+    alphaMode_ = static_cast<TransFunc::AlphaMode>(tmp);
+    s.optionalDeserialize("gammaValue", gammaValue_, 1.f);
     invalidateTexture();
 }
 
@@ -220,27 +259,6 @@ GLubyte* TransFunc::getPixelData() {
     return tex_->getPixelData();
 }
 
-TransFunc* TransFunc::clone() const {
-    TransFunc* func = new TransFunc(dimensions_.x,dimensions_.y,dimensions_.z);
-    func->dimensions_.x = dimensions_.x;
-    func->dimensions_.y = dimensions_.y;
-    func->dimensions_.z = dimensions_.z;
-    func->format_ = format_;
-    func->dataType_ = dataType_;
-    func->filter_ = filter_;
-
-    TransFunc* tempthis = const_cast<TransFunc*>(this);
-    GLubyte* pixels = tempthis->getPixelData();
-    int factor = tempthis->getTexture()->getBpp();
-    GLubyte* newpixels = new GLubyte[tgt::hmul(dimensions_) * factor];
-    for (int i=0;i<dimensions_.x*dimensions_.y*dimensions_.z*factor;i++) {
-        newpixels[i] = pixels[i];
-    }
-    func->setPixelData(newpixels);
-
-    return func;
-}
-
 GLint TransFunc::getFormat() const {
     return format_;
 }
@@ -255,6 +273,18 @@ void TransFunc::setDomain(tgt::vec2 domain, int dimension /*= 0*/) {
 
 void TransFunc::setDomain(float lower, float upper, int dimension) {
     setDomain(tgt::vec2(lower, upper), dimension);
+}
+
+void TransFunc::setThresholds(float lower, float upper, size_t dimension) {
+    setThresholds(tgt::vec2(lower,upper),dimension);
+}
+
+void TransFunc::setThresholds(const tgt::vec2& thresholds, size_t dimension) {
+    // no-op
+}
+
+tgt::vec2 TransFunc::getThresholds(size_t dimension) const {
+    return tgt::vec2(0.f,1.f);
 }
 
 float TransFunc::realWorldToNormalized(float rw, int dimension) const {
@@ -296,47 +326,93 @@ float TransFunc::normalizedToRealWorld(float n, const tgt::vec2& domain) {
     return domain.x + (domain.y - domain.x) * n;
 }
 
-void TransFunc::setIgnoreAlpha(bool ia) {
-    if(ia != ignoreAlpha_) {
-        ignoreAlpha_ = ia;
+void TransFunc::setAlphaMode(AlphaMode mode) {
+    if(mode != alphaMode_) {
+        alphaMode_ = mode;
         invalidateTexture();
     }
 }
 
-bool TransFunc::getIgnoreAlpha() const {
-    return ignoreAlpha_;
+TransFunc::AlphaMode TransFunc::getAlphaMode() const {
+    return alphaMode_;
+}
+
+void TransFunc::setGammaValue(float gamma) {
+    if(gamma != gammaValue_) {
+        gammaValue_ = gamma;
+        invalidateTexture();
+    }
+}
+
+float TransFunc::getGammaValue() const {
+    return gammaValue_;
 }
 
 ///------------------------------------------------------------------------------------------------
 
 TransFuncMetaData::TransFuncMetaData()
     : MetaDataBase()
-    , transFunc_(0)
-{}
+{
+    transFunc_.push_back(0);
+}
 
 TransFuncMetaData::TransFuncMetaData(TransFunc* transfunc)
     : MetaDataBase()
-    , transFunc_(transfunc)
-{}
+{
+    transFunc_.push_back(transfunc);
+}
+
+TransFuncMetaData::TransFuncMetaData(const std::vector<TransFunc*>& transfunc)
+    : MetaDataBase()
+{
+    transFunc_.assign(transfunc.begin(),transfunc.end());
+}
 
 TransFuncMetaData::~TransFuncMetaData() {
-    delete transFunc_;
-    transFunc_ = 0;
+    for(size_t i = 0; i < transFunc_.size(); i++)
+        delete transFunc_[i];
 }
 
 MetaDataBase* TransFuncMetaData::clone() const {
-    if (transFunc_)
-        return new TransFuncMetaData(transFunc_->clone());
+    if (transFunc_.empty())
+        return new TransFuncMetaData();
+    else {
+        std::vector<TransFunc*> newFunc;
+        for(size_t i = 0; i < transFunc_.size(); i++) {
+            if(transFunc_[i])
+                newFunc.push_back(transFunc_[i]->clone());
+            else
+                newFunc.push_back(0);
+        }
+        return new TransFuncMetaData(newFunc);
+    }
+}
+
+void TransFuncMetaData::setTransferFunction(TransFunc* transfunc, size_t channel) {
+    if(channel < transFunc_.size()) {
+        delete transFunc_[channel];
+        transFunc_[channel] = transfunc;
+    } else {
+        while (channel >= transFunc_.size())
+            transFunc_.push_back(0);
+        transFunc_[channel] = transfunc;
+    }
+}
+
+void TransFuncMetaData::setTransferFunction(const std::vector<TransFunc*>& transfunc) {
+    for(size_t i = 0; i < transFunc_.size(); i++)
+        delete transFunc_[i];
+    transFunc_.assign(transfunc.begin(),transfunc.end());
+}
+
+TransFunc* TransFuncMetaData::getTransferFunction(size_t channel) const {
+    if (channel < transFunc_.size())
+        return transFunc_[channel];
     else
-        return new TransFuncMetaData(0);
+        return 0;
 }
 
-void TransFuncMetaData::setTransferFunction(TransFunc* transfunc) {
-    delete transFunc_;
-    transFunc_ = transfunc;
-}
-
-TransFunc* TransFuncMetaData::getTransferFunction() const {
+const std::vector<TransFunc*>& TransFuncMetaData::getValue() const {
     return transFunc_;
 }
 
@@ -349,7 +425,7 @@ std::string TransFuncMetaData::toString(const std::string& /*component*/) const 
 }
 
 void TransFuncMetaData::serialize(XmlSerializer& s) const {
-    if (transFunc_) {
+    if (!transFunc_.empty()) {
         try {
             s.serialize("transfunc", transFunc_);
         }
@@ -360,15 +436,19 @@ void TransFuncMetaData::serialize(XmlSerializer& s) const {
 }
 
 void TransFuncMetaData::deserialize(XmlDeserializer& s) {
-    delete transFunc_;
-    transFunc_ = 0;
+    for(size_t i = 0; i < transFunc_.size(); i++)
+        delete transFunc_[i];
+    transFunc_.clear();
     try {
         s.deserialize("transfunc", transFunc_);
     }
     catch (SerializationException& e) {
         LERRORC("voreen.TransFuncMetaData", std::string("Failed to deserialize transfunc: ") + e.what());
     }
+}
 
+size_t TransFuncMetaData::getNumChannels() const {
+    return transFunc_.size();
 }
 
 } // namespace voreen

@@ -68,39 +68,21 @@ struct Plane {
     Plane(T a, T b, T c, T _d)
         : n(a, b, c)
         , d(_d)
-    {
-        // correct sign of d
-        //if (d > T(0)) {
-            n = -n;
-            d = -d;
-        //}
-    }
+    {}
 
     /// creates a plane with a unit length normal and a distance <br>
     /// BEWARE: It is your job to ensure that [a, b, c] is a unit vector
     Plane(const Vector3<T>& _n, T _d)
         : n(_n)
         , d(_d)
-    {
-        // correct sign of d
-        //if (d > T(0)) {
-            n = -n;
-            d = -d;
-        //}
-    }
+    {}
 
     /**
      * Creates a plane defined by three points.
      */
     Plane(const Vector3<T>& v1, const Vector3<T>& v2, const Vector3<T>& v3) {
-        n = normalize( cross(v1 - v2, v2 - v3) );
-        d = -dot(v1, n);
-
-        // correct sign of d
-        //if (d > T(0)) {
-            n = -n;
-            d = -d;
-        //}
+        n = normalize( cross(v2 - v1, v3 - v1) );
+        d = dot(v1, n);
     }
 
     /// creates a plane with one from another type
@@ -125,7 +107,7 @@ struct Plane {
      * @return the signed distance from the plane to the point
     */
     T distance(const Vector3<T>& v) const {
-        return dot(n, v) + d;
+        return dot(n, v) - d;
     }
 
     /**
@@ -362,11 +344,10 @@ Plane<T> Plane<T>::transform(tgt::mat4 m) const {
     tgt::mat4 mInv;
     m.invert(mInv);
     tgt::mat4 mInvTr = transpose(mInv);
-    vec4 tr = mInvTr * toVec4();
-    float l = length(tr.xyz());
-    tr /= l;
+    vec3 newNorm = normalize((mInvTr * vec4(n, T(0))).xyz());
+    float newDist = dot(newNorm, (m * vec4(d * n, T(1))).xyz());
 
-    return Plane<T>(tr.xyz(), tr.w);
+    return Plane<T>(newNorm, newDist);
 }
 
 template<class T>

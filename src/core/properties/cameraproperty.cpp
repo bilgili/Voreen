@@ -98,6 +98,34 @@ bool CameraProperty::setStereoEyeSeparation(float separation) {
     return result;
 }
 
+bool CameraProperty::setStereoRelativeFocalLength(float stereoRelativeFocalLength) {
+    bool result = value_.setStereoRelativeFocalLength(stereoRelativeFocalLength);
+    if(result)
+        notifyChange();
+    return result;
+}
+
+bool CameraProperty::setUseRealWorldFrustum(bool useRealWorldFrustum) {
+    bool result = value_.setUseRealWorldFrustum(useRealWorldFrustum);
+    if(result)
+        notifyChange();
+    return result;
+}
+
+bool CameraProperty::setStereoFocalLength(float focallength) {
+    bool result = value_.setStereoFocalLength(focallength);
+    if(result)
+        notifyChange();
+    return result;
+}
+
+bool CameraProperty::setStereoWidth(float width) {
+    bool result = value_.setStereoWidth(width);
+    if(result)
+        notifyChange();
+    return result;
+}
+
 bool CameraProperty::setStereoEyeMode(tgt::Camera::StereoEyeMode mode) {
     bool result = value_.setStereoEyeMode(mode);
     if(result)
@@ -165,14 +193,18 @@ void CameraProperty::serialize(XmlSerializer& s) const {
     s.serialize("frustRight", value_.getFrustRight());
     s.serialize("frustBottom", value_.getFrustBottom());
     s.serialize("frustTop", value_.getFrustTop());
-    s.serialize("frustNear", value_.getNearDist());
-    s.serialize("frustFar", value_.getFarDist());
+    s.serialize("frustNear", value_.getNearDist(false));
+    s.serialize("frustFar", value_.getFarDist(false));
 
     s.serialize("fovy", value_.getFovy());
 
     s.serialize("eyeMode", (int)value_.getStereoEyeMode());
     s.serialize("eyeSeparation", value_.getStereoEyeSeparation());
     s.serialize("axisMode", (int)value_.getStereoAxisMode());
+    s.serialize("stereoFocalLengh", value_.getStereoFocalLength());
+    s.serialize("stereoWidth", value_.getStereoWidth());
+    s.serialize("stereoRelativeFocalLength", value_.getStereoRelativeFocalLength());
+    s.serialize("useRealWorldFrustum", value_.getUseRealWorldFrustum());
 
     s.serialize("trackball", trackball_);
 
@@ -238,13 +270,22 @@ void CameraProperty::deserialize(XmlDeserializer& s) {
 
     try {
         int eyeMode, axisMode;
-        float eyeSep;
+        float eyeSep, focalLength, focalWidth, stereoRelativeFocalLength;
+        bool useRealWorldFrustum;
         s.deserialize("eyeMode", eyeMode);
         s.deserialize("eyeSeparation", eyeSep);
         s.deserialize("axisMode", axisMode);
         value_.setStereoEyeMode((tgt::Camera::StereoEyeMode)eyeMode, false);
         value_.setStereoEyeSeparation(eyeSep, false);
         value_.setStereoAxisMode((tgt::Camera::StereoAxisMode)axisMode, false);
+        s.deserialize("stereoFocalLengh", focalLength);
+        value_.setStereoFocalLength(focalLength, false);
+        s.deserialize("stereoWidth", focalWidth);
+        value_.setStereoWidth(focalWidth, false);
+        s.deserialize("stereoRelativeFocalLength", stereoRelativeFocalLength);
+        value_.setStereoRelativeFocalLength(stereoRelativeFocalLength, false);
+        s.deserialize("useRealWorldFrustum", useRealWorldFrustum);
+        value_.setUseRealWorldFrustum(useRealWorldFrustum, false);
     }
     catch(SerializationException&) {
         s.removeLastError();

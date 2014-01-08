@@ -26,6 +26,7 @@
 #ifndef VRN_GLSL_H
 #define VRN_GLSL_H
 
+#include "voreen/core/voreencoreapi.h"
 #include "voreen/core/datastructures/volume/volume.h"
 #include "voreen/core/datastructures/volume/volumeslicehelper.h"
 #include "voreen/core/properties/optionproperty.h"
@@ -35,21 +36,23 @@
 
 namespace voreen {
 
-void setUniform(tgt::Shader* shader, const std::string& volumeUniform, const std::string& structUniform, const VolumeBase* vh, const tgt::TextureUnit* texUnit, const tgt::Camera* camera = 0, const tgt::vec4& lightPosition = tgt::vec4(0.f));
+void VRN_CORE_API setUniform(tgt::Shader* shader, const std::string& volumeUniform, const std::string& structUniform, const VolumeBase* vh, const tgt::TextureUnit* texUnit, const tgt::Camera* camera = 0, const tgt::vec4& lightPosition = tgt::vec4(0.f));
 
-bool bindVolumeTexture(const VolumeBase* vh, const tgt::TextureUnit* texUnit, GLint filterMode = GL_LINEAR, GLint wrapMode = GL_CLAMP_TO_EDGE, tgt::vec4 borderColor = tgt::vec4(0.f));
+bool VRN_CORE_API bindVolumeTexture(const VolumeBase* vh, const tgt::TextureUnit* texUnit, GLint filterMode = GL_LINEAR, GLint wrapMode = GL_CLAMP_TO_EDGE, tgt::vec4 borderColor = tgt::vec4(0.f));
 
-void setUniform(tgt::Shader* shader, const std::string& imageUniform, const std::string& structUniform, const Slice* sl, const tgt::TextureUnit* texUnit);
+void VRN_CORE_API setUniform(tgt::Shader* shader, const std::string& textureUniform, const std::string& structUniform, const VolumeSliceGL* sl, const tgt::TextureUnit* texUnit);
 
-std::string generateStandardShaderHeader(const tgt::GpuCapabilities::GlVersion* version = 0);
+bool VRN_CORE_API bindSliceTexture(const VolumeSliceGL* slice, const tgt::TextureUnit* texUnit, GLint filterMode = GL_LINEAR, GLint wrapMode = GL_CLAMP_TO_EDGE, tgt::vec4 borderColor = tgt::vec4(0.f));
+
+std::string VRN_CORE_API generateStandardShaderHeader(const tgt::GpuCapabilities::GlVersion* version = 0);
 
 // Helper functions for shading mode:
 
 /// Fill a given property with available shading modes
-void fillShadingModesProperty(StringOptionProperty& shadeMode);
+void VRN_CORE_API fillShadingModesProperty(StringOptionProperty& shadeMode);
 
 /// Generate a shader define based on the chosen shading mode
-std::string getShaderDefine(std::string shadeMode, std::string functionName, std::string n = "n", std::string pos = "pos", std::string lPos = "lPos", std::string cPos = "cPos", std::string ka = "ka", std::string kd = "kd", std::string ks = "ks");
+std::string VRN_CORE_API getShaderDefine(std::string shadeMode, std::string functionName, std::string n = "n", std::string pos = "pos", std::string lPos = "lPos", std::string cPos = "cPos", std::string ka = "ka", std::string kd = "kd", std::string ks = "ks");
 
 }  // namespace voreen
 

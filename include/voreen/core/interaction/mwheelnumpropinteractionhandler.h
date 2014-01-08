@@ -131,13 +131,15 @@ void MWheelNumPropInteractionHandler<T>::onEvent(tgt::Event* eve) {
         // mouse action with wheel button => continous increment/decrement
         if (mouseEve->button() == tgt::MouseEvent::MOUSE_BUTTON_MIDDLE) {
             if (mouseEve->action() == tgt::MouseEvent::PRESSED) {
-                // tore initial mouse position
+                // store initial mouse position, start interaction mode
                 lastMousePos_ = mouseEve->coord();
+                numProp_->toggleInteractionMode(true, this);
                 accept = true;
             }
             else if (mouseEve->action() == tgt::MouseEvent::RELEASED) {
-                // clear mouse position
+                // clear mouse position, leave interaction mode
                 lastMousePos_ = tgt::ivec2(-1);
+                numProp_->toggleInteractionMode(false, this);
                 accept = true;
             }
             else if (mouseEve->action() == tgt::MouseEvent::MOTION) {

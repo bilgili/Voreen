@@ -66,6 +66,10 @@ CameraProperty* LightSourceProperty::getCamera() {
     }
 }
 
+bool LightSourceProperty::hasCamera() const {
+    return camProp_ != 0;
+}
+
 void LightSourceProperty::setCamera(CameraProperty* cam) {
     camProp_ = cam;
     if(camProp_) {

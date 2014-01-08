@@ -29,6 +29,8 @@
 #include <cstdio>
 #include <iomanip>
 
+#include "tgt/vector.h" // for tgt::round
+
 namespace voreen {
 
 std::string itos(int i, int stringLength /*= -1*/, char fillChar /*= '0'*/) {
@@ -57,6 +59,17 @@ std::string itos(uint64_t i, int stringLength /*= -1*/, char fillChar /*= '0'*/)
         s << i;
     return s.str();
 }
+
+#ifdef __APPLE__
+std::string itos(long unsigned int i, int stringLength /*= -1*/, char fillChar /*= '0'*/) {
+    std::stringstream s;
+    if(stringLength > 0)
+        s << std::setw(stringLength) << std::setfill(fillChar) << i;
+    else
+        s << i;
+    return s.str();
+}
+#endif
 
 std::string ftos(float f, int precision /* =-1*/) {
     char buffer[50];
@@ -236,6 +249,99 @@ bool startsWith(const std::string& input, const std::string& start) {
     }
     else
         return false;
+}
+
+std::string formatMemorySize(uint64_t bytes) {
+    // calculate GB/MB/kB with 0.1f precision
+    float gb = tgt::round(static_cast<float>(bytes)/107374182.4f) / 10.f;
+    float mb = tgt::round(static_cast<float>(bytes)/104857.6f) / 10.f;
+    float kb = tgt::round(static_cast<float>(bytes)/102.4f) / 10.f;
+
+    // select appropriate unit
+    std::stringstream out;
+    if (gb >= 1.0f)
+        out << gb << " GB";
+    else if (mb >= 1.0f)
+        out << mb << " MB";
+    else if (kb >= 1.0f)
+        out << kb << " kB";
+    else
+        out << bytes << " bytes";
+
+    return out.str();
+}
+
+std::string formatSpatialLength(float base_mm) {
+    // calculate km/m/cm/mm/micron/nm with 0.1f precision
+    float km  = tgt::round(base_mm/100000.f) / 10.f;
+    float m   = tgt::round(base_mm/100.f) / 10.f;
+    float cm  = tgt::round(base_mm) / 10.f;
+    float mm  = tgt::round(base_mm*10.f) / 10.f;
+    float mu  = tgt::round(base_mm*10000.f) / 10.f;
+    float nm  = tgt::round(base_mm*10000000.f) / 10.f;
+
+    // select appropriate unit
+    std::stringstream out;
+    if (km >= 1.0f)
+        out << km << " km";
+    else if (m >= 1.0f)
+        out << m << " m";
+    else if (cm >= 1.0f)
+        out << cm << " cm";
+    else if (mm >= 1.0f)
+        out << mm << " mm";
+    else if (mu >= 1.0f)
+        out << mu << " µm";
+    else
+        out << nm << " nm";
+
+    return out.str();
+}
+
+VRN_CORE_API std::string formatSpatialLength(const tgt::vec3& position) {
+    // calculate km/m/cm/mm/micron/nm with 0.1f precision
+    tgt::vec3 posKM  = tgt::round(position/100000.f) / 10.f;
+    tgt::vec3 posM   = tgt::round(position/100.f) / 10.f;
+    tgt::vec3 posCM  = tgt::round(position) / 10.f;
+    tgt::vec3 posMM  = tgt::round(position*10.f) / 10.f;
+    tgt::vec3 posMU = tgt::round(position*10000.f) / 10.f;
+    tgt::vec3 posNM  = tgt::round(position*10000000.f) / 10.f;
+
+    // select appropriate unit
+    std::stringstream out;
+    if (posKM.x >= 1.0f || posKM.y >= 1.0f || posKM.z > 1.0f)
+        out << posKM << " km";
+    else if (posM.x >= 1.0f || posM.y >= 1.0f || posM.z > 1.0f)
+        out << posM << " m";
+    else if (posCM.x >= 1.0f || posCM.y >= 1.0f || posCM.z > 1.0f)
+        out << posCM << " cm";
+    else if (posMM.x >= 1.0f || posMM.y >= 1.0f || posMM.z > 1.0f)
+        out << posMM << " mm";
+    else if (posMU.x >= 1.0f || posMU.y >= 1.0f || posMU.z > 1.0f)
+        out << posMU << " µm";
+    else
+        out << posNM << " nm";
+
+    return out.str();
+}
+
+VRN_CORE_API std::string formatTime(const size_t time) {
+    // calculate min/sec/ms
+    size_t min  = time / 60000; // 1000ms*60sec
+    size_t sec  = (time - min*60000)/1000;
+    size_t ms   = time % 1000;
+
+    // select appropriate unit
+    std::stringstream out;
+    if (min >= 1) {
+        out << min << ":" << itos(sec,2) << "." << itos(ms,3) << " min";
+    }
+    else if (sec >= 1)
+        out << sec << "." << itos(ms,3) << " sec";
+    else
+        out << ms << " ms";
+
+    return out.str();
 }
 
 } // namespace

@@ -52,7 +52,7 @@ public:
 protected:
     virtual void setDescriptions() {
         setDescription("Clips the input geometry against an arbitrarily oriented clipping plane.\
-<p>See GeometryClippingWidget for a convenient manipulation of the plane.</p>");
+                        <p>See PlaneManipulation for a convenient visual manipulation of the plane.</p>");
     }
 
     virtual void process();

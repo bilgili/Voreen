@@ -158,8 +158,10 @@ public:
     {
         size_t numItems;
         deserialize(key+".numItems", numItems);
-        data.assign(numItems, T());
-        deserializeBinaryBlob(key+".data", reinterpret_cast<unsigned char*>(&data[0]), sizeof(T) * data.size());
+        if (numItems > 0) {
+            data.assign(numItems, T());
+            deserializeBinaryBlob(key+".data", reinterpret_cast<unsigned char*>(&data[0]), sizeof(T) * data.size());
+        }
     }
 
     /**

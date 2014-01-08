@@ -46,6 +46,7 @@ const std::string CanvasRenderer::loggerCat_("voreen.core.CanvasRenderer");
 
 CanvasRenderer::CanvasRenderer()
     : RenderProcessor()
+    , showCanvas_("showCanvas", "Show Canvas", true)
     , canvasSize_("canvasSize", "Canvas Size", tgt::ivec2(256), tgt::ivec2(32), tgt::ivec2(2 << 12), Processor::VALID)
     , showCursor_("showCursor", "Show Cursor", true)
     , showFullScreen_("showFullScreen", "Show Fullscreen (F11)", false)
@@ -61,6 +62,8 @@ CanvasRenderer::CanvasRenderer()
     addPort(inport_);
     addProperty(canvasSize_);
 
+    addProperty(showCanvas_);
+
     addProperty(showCursor_);
     addProperty(showFullScreen_);
 
@@ -71,6 +74,8 @@ CanvasRenderer::CanvasRenderer()
     setPropertyGroupGuiName("screenshot", "Screenshot");
 
     canvasSize_.onChange(CallMemberAction<CanvasRenderer>(this, &CanvasRenderer::sizePropChanged));
+
+    showCanvas_.onChange(CallMemberAction<CanvasRenderer>(this, &CanvasRenderer::boolPropertyChanged));
     showCursor_.onChange(CallMemberAction<CanvasRenderer>(this, &CanvasRenderer::boolPropertyChanged));
     showFullScreen_.onChange(CallMemberAction<CanvasRenderer>(this, &CanvasRenderer::boolPropertyChanged));
     saveScreenshotButton_.onChange(CallMemberAction<CanvasRenderer>(this, &CanvasRenderer::saveScreenshotClicked));
@@ -311,15 +316,20 @@ bool CanvasRenderer::renderToImage(const std::string &filename, tgt::ivec2 dimen
     }
 
     tgt::ivec2 oldDimensions = inport_.getSize();
+
     // resize texture container to desired image dimensions and propagate change
-    canvas_->getGLFocus();
-    inport_.requestSize(dimensions);
+    if (oldDimensions != dimensions) {
+        canvas_->getGLFocus();
+        inport_.requestSize(dimensions);
+    }
 
     // render with adjusted viewport size
     bool success = renderToImage(filename);
 
     // reset texture container dimensions from canvas size
-    inport_.requestSize(oldDimensions);
+    if (oldDimensions != dimensions) {
+        inport_.requestSize(oldDimensions);
+    }
 
     return success;
 }

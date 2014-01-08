@@ -40,14 +40,16 @@ VolumeSpacing::VolumeSpacing()
     enableProcessing_("enabled", "Enable", false),
     mode_("mode", "Mode"),
     uniformSpacing_("uniformSpacing", "Uniform Spacing", false),
-    spacingX_("spacingX", "Spacing X", 1.0f, 0.0001f, 1000.f),
-    spacingY_("spacingY", "Spacing Y", 1.0f, 0.0001f, 1000.f),
-    spacingZ_("spacingZ", "Spacing Z", 1.0f, 0.0001f, 1000.f),
-    spacingDisplay_("spacingDisplay", "Resulting Spacing", tgt::vec3(1.0f), tgt::vec3(0.0f), tgt::vec3(1000.f))
+    spacingX_("spacingX", "Spacing X (mm)", 1.f, 0.000001f, 1000.f),
+    spacingY_("spacingY", "Spacing Y (mm)", 1.f, 0.000001f, 1000.f),
+    spacingZ_("spacingZ", "Spacing Z (mm)", 1.f, 0.000001f, 1000.f),
+    reset_("reset", "Reset Spacing"),
+    spacingDisplay_("spacingDisplay", "Resulting Spacing (mm)", tgt::vec3(1.0f), tgt::vec3(0.0f), tgt::vec3(1000.f))
 {
     addPort(inport_);
     addPort(outport_);
 
+    enableProcessing_.onChange(CallMemberAction<VolumeSpacing>(this, &VolumeSpacing::adjustPropertyVisibility));
     addProperty(enableProcessing_);
 
     mode_.addOption("replace", "Replace");
@@ -56,14 +58,20 @@ VolumeSpacing::VolumeSpacing()
 
     addProperty(uniformSpacing_);
 
-    spacingX_.setNumDecimals(5);
-    spacingY_.setNumDecimals(5);
-    spacingZ_.setNumDecimals(5);
+    spacingX_.setNumDecimals(6);
+    spacingX_.setStepping(0.001f);
+    spacingY_.setNumDecimals(6);
+    spacingY_.setStepping(0.001f);
+    spacingZ_.setNumDecimals(6);
+    spacingZ_.setStepping(0.001f);
     addProperty(spacingX_);
     addProperty(spacingY_);
     addProperty(spacingZ_);
+    reset_.onChange(CallMemberAction<VolumeSpacing>(this, &VolumeSpacing::resetSpacing));
+    addProperty(reset_);
 
     spacingDisplay_.setWidgetsEnabled(false);
+    spacingDisplay_.setNumDecimals(6);
     addProperty(spacingDisplay_);
 
     spacingX_.onChange(
@@ -79,6 +87,11 @@ VolumeSpacing::VolumeSpacing()
 
 Processor* VolumeSpacing::create() const {
     return new VolumeSpacing();
+}
+
+void VolumeSpacing::initialize() throw (tgt::Exception) {
+    VolumeProcessor::initialize();
+    adjustPropertyVisibility();
 }
 
 void VolumeSpacing::process() {
@@ -124,6 +137,57 @@ void VolumeSpacing::spacingChanged(int dim) {
 void VolumeSpacing::uniformScalingChanged() {
     if (uniformSpacing_.get())
         spacingChanged(0);
+}
+
+void VolumeSpacing::adjustPropertiesToInput() {
+    const VolumeBase* inputVolume = inport_.getData();
+
+    // only adjust spacing, if processor is disabled (= no effect on output volume) or the initial setting is still active
+    // => a spacing that has been changed by the user is not overwritten
+    tgt::vec3 curSpacing = tgt::vec3(spacingX_.get(), spacingY_.get(), spacingZ_.get());
+    if (!enableProcessing_.get() || curSpacing == tgt::vec3(1.f)) {
+        if (mode_.isSelected("replace")) {
+            spacingX_.set(inputVolume ? inputVolume->getSpacing().x : 1.f);
+            spacingY_.set(inputVolume ? inputVolume->getSpacing().y : 1.f);
+            spacingZ_.set(inputVolume ? inputVolume->getSpacing().z : 1.f);
+        }
+        else if (mode_.isSelected("scale")) {
+            spacingX_.set(1.f);
+            spacingY_.set(1.f);
+            spacingZ_.set(1.f);
+        }
+    }
+}
+
+void VolumeSpacing::resetSpacing() {
+    if (mode_.isSelected("replace")) {
+        const VolumeBase* inputVolume = inport_.getData();
+        if (inputVolume) {
+            spacingX_.set(inputVolume->getSpacing().x);
+            spacingY_.set(inputVolume->getSpacing().y);
+            spacingZ_.set(inputVolume->getSpacing().z);
+        }
+        else {
+            spacingX_.set(1.f);
+            spacingY_.set(1.f);
+            spacingZ_.set(1.f);
+        }
+    }
+    else if (mode_.isSelected("scale")) {
+        spacingX_.set(1.f);
+        spacingY_.set(1.f);
+        spacingZ_.set(1.f);
+    }
+}
+
+void VolumeSpacing::adjustPropertyVisibility() {
+    bool enabled = enableProcessing_.get();
+    mode_.setWidgetsEnabled(enabled);
+    uniformSpacing_.setWidgetsEnabled(enabled);
+    spacingX_.setWidgetsEnabled(enabled);
+    spacingY_.setWidgetsEnabled(enabled);
+    spacingZ_.setWidgetsEnabled(enabled);
+    reset_.setWidgetsEnabled(enabled);
 }
 
 }   // namespace

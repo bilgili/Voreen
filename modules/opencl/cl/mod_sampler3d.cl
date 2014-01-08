@@ -27,7 +27,7 @@
  * 4x4 float matrix
  */
 
-typedef struct _mat4 {
+typedef struct _mat4{
         float4 x,y,z,w;
 } mat4;
 
@@ -36,37 +36,31 @@ typedef struct _mat4 {
  * its dimensions and spacing. Additionally, the reciprocal
  * values of all parameters are available (suffix RCP) .
  */
-typedef struct __attribute__((packed)){
+typedef struct _VolumeParameters/*__attribute__ ((aligned (512)))*/{
+
+    mat4 physicalToWorldMatrix_;     // (see Volume)
+    mat4 worldToPhysicalMatrix_;
+    mat4 worldToTextureMatrix_;
+    mat4 textureToWorldMatrix_;
 
     //Note: This is unfortunately not supported by all vendors:
     //sampler3D volume_;              // the actual dataset
-
+    float4 cameraPositionPhysical_;        // camera position in volume object coordinates (see mod_shading.frag)
+    float4 lightPositionPhysical_;         // light position in volume object coordinates (see mod_shading.frag)
     float4 datasetDimensions_;        // the dataset's resolution, e.g. [ 256.0, 128.0, 128.0]
     float4 datasetDimensionsRCP_;
 
     float4 datasetSpacing_;           // set dataset's voxel size, e.g. [ 0.02, 0.05, 0.05]
     float4 datasetSpacingRCP_;
-
     float4 volumeCubeSize_;           // the volume's size in physical coordinates, e.g. [ 1.0, 0.5, 0.5]
     float4 volumeCubeSizeRCP_;
 
     float4 volumeOffset_;             // see VolumeHandle::getOffset()
-
     int bitDepth_;                  // the volume's bit depth
-
     float rwmScale_;                // RealWorldMapping slope
     float rwmOffset_;               // RealWorldMapping intercept
-
     int numChannels_;
-
-    mat4 physicalToWorldMatrix_;     // (see Volume)
-    mat4 worldToPhysicalMatrix_;
-
-    mat4 worldToTextureMatrix_;
-    mat4 textureToWorldMatrix_;
-
-    float4 cameraPositionPhysical_;        // camera position in volume object coordinates (see mod_shading.frag)
-    float4 lightPositionPhysical_;         // light position in volume object coordinates (see mod_shading.frag)
+    float4 d1, d2, d3, d4, d5, d6;
 } VolumeParameters;
 
 float4 texToPhysical(float4 samplePos, VolumeParameters volumeParams) {

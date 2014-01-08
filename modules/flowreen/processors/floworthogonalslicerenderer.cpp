@@ -34,7 +34,12 @@ using tgt::TextureUnit;
 namespace voreen {
 
 FlowOrthogonalSliceRenderer::FlowOrthogonalSliceRenderer()
-    : SliceRendererBase(),
+    : VolumeRenderer(),
+    outport_(Port::OUTPORT, "image.outport", "Image Output", true, Processor::INVALID_RESULT, RenderPort::RENDERSIZE_RECEIVER),
+    inport_(Port::INPORT, "volumehandle.volumehandle", "Volume Input"),
+    transferFunc_("transferFunction", "Transfer Function"),
+    texMode_("textureMode", "Texture Mode", Processor::INVALID_PROGRAM),
+    sliceShader_(0),
     volumeDimensions_(1),
     slicePositions_(-1, -1, -1),
     useXYSliceProp_("useXYSliceProp", "render xy-slice:", true),
@@ -48,6 +53,20 @@ FlowOrthogonalSliceRenderer::FlowOrthogonalSliceRenderer()
     cpInport_(Port::INPORT, "coprocessor.slicepositionsInput", "coprocessor.slicepositionsInput", false),
     cpOutport_(Port::OUTPORT, "coprocessor.slicepositions")
 {
+    //inport_.addCondition(new PortConditionVolumeTypeGL());
+    inport_.showTextureAccessProperties(true);
+    addPort(inport_);
+    addPort(outport_);
+
+    addProperty(transferFunc_);
+
+    // texture mode (2D/3D)
+    texMode_.addOption("2d-texture", "2D Textures", TEXTURE_2D);
+    texMode_.addOption("3d-texture", "3D Texture", TEXTURE_3D);
+    texMode_.selectByKey("3d-texture");
+    addProperty(texMode_);
+    texMode_.setGroupID(inport_.getID() + ".textureAccess");
+
     CallMemberAction<FlowOrthogonalSliceRenderer> sliceChangeAction(this,
         &FlowOrthogonalSliceRenderer::onSlicePositionChange);
     useXYSliceProp_.onChange(sliceChangeAction);
@@ -107,6 +126,7 @@ void FlowOrthogonalSliceRenderer::process() {
         volumeDimensions_ = inport_.getData()->getRepresentation<VolumeRAM>()->getDimensions();
         updateNumSlices();  // validate the currently set values and adjust them if necessary
         transferFunc_.setVolumeHandle(inport_.getData());
+        rebuildShader(); //set num channels
     }
 
     outport_.activateTarget("FlowOrthogonalSliceRenderer::process()");
@@ -118,9 +138,35 @@ void FlowOrthogonalSliceRenderer::process() {
         return;
     }
 
+    // activate the shader and set the needed uniforms
     TextureUnit volumeUnit, transferUnit;
     tgt::Camera cam = camProp_.get();
-    setupVolumeShader(sliceShader_, inport_.getData(), &volumeUnit, &transferUnit, &cam, lightPosition_.get()); // also binds the volume
+    sliceShader_->activate();
+    LGL_ERROR;
+    if(inport_.getData()->getNumChannels() >= 1)
+        transferFunc_.get()->setUniform(sliceShader_, "transFuncParams_", "transFuncTex_", transferUnit.getUnitNumber());
+    if(inport_.getData()->getNumChannels() >= 2)
+        transferFunc_.get()->setUniform(sliceShader_, "transFuncParams2_", "transFuncTex2_", transferUnit.getUnitNumber());
+    if(inport_.getData()->getNumChannels() >= 3)
+        transferFunc_.get()->setUniform(sliceShader_, "transFuncParams3_", "transFuncTex3_", transferUnit.getUnitNumber());
+    if(inport_.getData()->getNumChannels() >= 4)
+        transferFunc_.get()->setUniform(sliceShader_, "transFuncParams4_", "transFuncTex4_", transferUnit.getUnitNumber());
+
+    //sliceShader_->setUniform("numChannels_", static_cast<GLint>(inport_.getData()->getNumChannels())); done in header
+    LGL_ERROR;
+
+    // bind volume
+    std::vector<VolumeStruct> volumeTextures;
+    volumeTextures.push_back(VolumeStruct(
+        inport_.getData(),
+        &volumeUnit,
+        "volume_","volumeParams_",
+        inport_.getTextureClampModeProperty().getValue(),
+        tgt::vec4(inport_.getTextureBorderIntensityProperty().get()),
+        inport_.getTextureFilterModeProperty().getValue())
+        );
+    bindVolumes(sliceShader_, volumeTextures, &cam, lightPosition_.get());
+    LGL_ERROR;
 
     FlowOrthogonalSliceRenderer* other = cpInport_.getConnectedProcessor();
     if (other != 0) {
@@ -140,10 +186,10 @@ void FlowOrthogonalSliceRenderer::process() {
     // important: save current camera state before using the processor's camera or
     // successive processors will use those settings!
     //
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.pushMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.pushMatrix();
 
     camProp_.look(outport_.getSize());
 
@@ -163,14 +209,14 @@ void FlowOrthogonalSliceRenderer::process() {
         renderSlice(SLICE_ZY, sliceNo);
     }
 
-    deactivateShader();
+    sliceShader_->deactivate();
     outport_.deactivateTarget();
     TextureUnit::setZeroUnit();
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.popMatrix();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.popMatrix();
 }
 
 const tgt::ivec3& FlowOrthogonalSliceRenderer::getSlicePositions() const {
@@ -231,6 +277,57 @@ void FlowOrthogonalSliceRenderer::renderSlice(const SliceAlignment& sliceAlign, 
         glTexCoord3fv(ul.elem);
         glVertex3fv( ((ul * textureSize) + llb).elem );
     glEnd();
+}
+
+void FlowOrthogonalSliceRenderer::initialize() throw (tgt::Exception) {
+    VolumeRenderer::initialize();
+
+    sliceShader_ = ShdrMgr.load("sl_base", buildShaderHeader(), false);
+    LGL_ERROR;
+}
+
+void FlowOrthogonalSliceRenderer::deinitialize() throw (tgt::Exception) {
+    ShdrMgr.dispose(sliceShader_);
+    sliceShader_ = 0;
+    VolumeRenderer::deinitialize();
+}
+
+// protected methods
+//
+
+void FlowOrthogonalSliceRenderer::beforeProcess() {
+    VolumeRenderer::beforeProcess();
+
+    if (invalidationLevel_ >= Processor::INVALID_PROGRAM)
+        rebuildShader();
+}
+
+std::string FlowOrthogonalSliceRenderer::buildShaderHeader() {
+    std::string header = VolumeRenderer::generateHeader();
+
+    if (texMode_.isSelected("2d-texture"))
+        header += "#define SLICE_TEXTURE_MODE_2D \n";
+    else if (texMode_.isSelected("3d-texture"))
+        header += "#define SLICE_TEXTURE_MODE_3D \n";
+    else {
+        LWARNING("Unknown texture mode: " << texMode_.get());
+    }
+
+    if(inport_.getData())
+        header += "#define NUM_CHANNELS " + itos(inport_.getData()->getNumChannels()) + " \n";
+
+    header += transferFunc_.get()->getShaderDefines();
+
+    return header;
+}
+
+bool FlowOrthogonalSliceRenderer::rebuildShader() {
+    // do nothing if there is no shader at the moment
+    if (!sliceShader_)
+        return false;
+
+    sliceShader_->setHeaders(buildShaderHeader());
+    return sliceShader_->rebuild();
 }
 
 void FlowOrthogonalSliceRenderer::setSlicePropertiesVisible(const bool visible) {

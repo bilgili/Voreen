@@ -62,12 +62,12 @@ const std::string Processor::loggerCat_("voreen.Processor");
 Processor::Processor()
     : PropertyOwner("<unknown>", "<unknown>")
     , processorState_(PROCESSOR_STATE_NOT_INITIALIZED)
-    , progressBar_(0)
     , moduleName_("undefined")
     , processorWidget_(0)
     , invalidationVisited_(false)
     , interactionModeVisited_(false)
     , eventVisited_(false)
+    , firstProcessAfterDeserialization_(false)
 {
     //setDescriptions(); // not allowed
 }
@@ -102,7 +102,6 @@ Processor* Processor::clone() const {
         return 0;
     }
 }
-
 
 void Processor::initialize() throw (tgt::Exception) {
     if(description_ == "")
@@ -195,6 +194,11 @@ void Processor::beforeProcess() {
 
 void Processor::afterProcess() {
     setValid();
+    firstProcessAfterDeserialization_ = false;
+}
+
+void Processor::adjustPropertiesToInput() {
+
 }
 
 void Processor::clearOutports() {
@@ -478,6 +482,10 @@ bool Processor::isEndProcessor() const {
     return (outports_.empty() && coProcessorOutports_.empty());
 }
 
+bool Processor::isSource() const {
+    return (inports_.empty() && coProcessorInports_.empty() && coProcessorOutports_.empty());
+}
+
 void Processor::serialize(XmlSerializer& s) const {
     // meta data
     metaDataContainer_.serialize(s);
@@ -593,6 +601,7 @@ void Processor::deserialize(XmlDeserializer& s) {
     s.setUsePointerContentSerialization(usePointerContentSerialization);
     // --- static resources end ---
 
+    firstProcessAfterDeserialization_ = true;
 }
 
 MetaDataContainer& Processor::getMetaDataContainer() const {
@@ -640,13 +649,47 @@ std::string Processor::getPortDescription(const std::string& portId) const {
     }
 }
 
-void Processor::setProgressBar(ProgressBar* progressBar) {
-    progressBar_ = progressBar;
+bool Processor::usesExpensiveComputation() const {
+    return false;
 }
 
 void Processor::setProgress(float progress) {
-    if (progressBar_)
-        progressBar_->setProgress(progress);
+    for (size_t i=0; i<progressBars_.size(); i++)
+        progressBars_.at(i)->setProgress(progress);
+}
+float Processor::getProgress() const {
+    if (!progressBars_.empty())
+        return progressBars_.front()->getProgress();
+    else
+        return 0.f;
+}
+
+void Processor::setProgressRange(const tgt::vec2& range) {
+    for (size_t i=0; i<progressBars_.size(); i++)
+        progressBars_.at(i)->setProgressRange(range);
+}
+
+tgt::vec2 Processor::getProgressRange() const {
+    if (!progressBars_.empty())
+        return progressBars_.front()->getProgressRange();
+    else
+        return tgt::vec2(0.f, 1.f);
+}
+
+void Processor::setProgressMessage(const std::string& message) {
+    for (size_t i=0; i<progressBars_.size(); i++)
+        progressBars_.at(i)->setProgressMessage(message);
+}
+std::string Processor::getProgressMessage() const {
+    if (!progressBars_.empty())
+        return progressBars_.front()->getProgressMessage();
+    else
+        return "";
+}
+
+void Processor::addProgressBar(ProgressReporter* progressReporter) {
+    tgtAssert(progressReporter, "null pointer passed");
+    progressBars_.push_back(progressReporter);
 }
 
 ProcessorWidget* Processor::getProcessorWidget() const {
@@ -763,8 +806,8 @@ void Processor::notifyStateChanged() const {
         procObservers[i]->stateChanged(this);
 }
 
-bool Processor::usesExpensiveComputation() const {
-    return false;
+bool Processor::firstProcessAfterDeserialization() const {
+    return firstProcessAfterDeserialization_;
 }
 
 } // namespace voreen

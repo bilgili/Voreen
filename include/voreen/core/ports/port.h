@@ -38,13 +38,42 @@
 
 namespace voreen {
 
+class Port;
 class PortCondition;
+
+/**
+ * Interface for port observers.
+ */
+class VRN_CORE_API PortObserver : public Observer {
+public:
+    /**
+     * This method is called by the observed port after a connection is added.
+     *
+     * @param source the calling port
+     * @param connectedPort the conneted port
+     */
+    virtual void afterConnectionAdded(const Port* source, const Port* connectedPort) = 0;
+
+    /**
+     * This method is called by the observed port before a connection is removed.
+     *
+     * @param source the calling port
+     * @param connectedPort the conneted port
+     */
+    virtual void beforeConnectionRemoved(const Port* source, const Port*) = 0;
+};
+
+//-------------------------------------------------------------------------------------------------------------
+
+#ifdef DLL_TEMPLATE_INST
+template class VRN_CORE_API Observable<PortObserver>;
+#endif
 
 /**
  * This class describes a port of a Processor. Processors are connected
  * by their ports.
  */
-class VRN_CORE_API Port : public PropertyOwner {
+class VRN_CORE_API Port : public PropertyOwner, public Observable<PortObserver> {
 
     friend class Aggregation;
     friend class PortCondition;
@@ -353,6 +382,21 @@ public:
 
     virtual void deserialize(XmlDeserializer& s);
 
+    /**
+     * Notifies the registered PortObservers about the creation
+     * of a new connection.
+     *
+     * @param connectedPort the connected port
+     */
+    void notifyAfterConnectionAdded(const Port* connectedPort);
+
+    /**
+     * Notifies the registered PortObservers about the pending
+     * deletion of the a connection.
+     *
+     * @param connectedPort the connected port
+     */
+    void notifyBeforeConnectionRemoved(const Port* connectedPort);
 protected:
     /**
      * If this gets new data, it will forward it to all ports in the list.

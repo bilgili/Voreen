@@ -160,15 +160,15 @@ void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList, 
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     if (coordinateSystem_.get() != "world") {
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadIdentity();
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+        MatStack.pushMatrix();
+        MatStack.loadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
+        MatStack.loadIdentity();
         if (coordinateSystem_.get() == "viewport") {
-            glTranslatef(-1.f, -1.f, 0.f);
-            glScalef(2.f/viewport_.x, 2.f/viewport_.y, 1.f);
+            MatStack.translate(-1.f, -1.f, 0.f);
+            MatStack.scale(2.f/viewport_.x, 2.f/viewport_.y, 1.f);
         }
     }
 
@@ -189,19 +189,19 @@ void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList, 
         tgt::Material material(color_.get(), color_.get(), color_.get(), 75.f);
         material.activate();
 
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
+        MatStack.loadIdentity();
         glLightfv(GL_LIGHT0, GL_POSITION, vec4(1.f, 1.f, 10.f, 1.f).elem);
-        glPopMatrix();
+        MatStack.popMatrix();
     }
 
 
     // render: point primitives
     if (renderingPrimitiveProp_.get() == "points") {
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        tgt::multMatrix(m);
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
+        MatStack.multMatrix(m);
 
         glColor4fv(color_.get().elem);
         glPointSize(pointSize_.get());
@@ -213,14 +213,14 @@ void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList, 
         }
         glEnd();
 
-        glPopMatrix();
+        MatStack.popMatrix();
     }
 
     // render: line strip
     if (renderingPrimitiveProp_.get() == "line-strip") {
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        tgt::multMatrix(m);
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.pushMatrix();
+        MatStack.multMatrix(m);
 
         glColor4fv(color_.get().elem);
         glLineWidth(pointSize_.get());
@@ -232,7 +232,7 @@ void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList, 
         }
         glEnd();
 
-        glPopMatrix();
+        MatStack.popMatrix();
     }
 
     // render: spheres
@@ -240,19 +240,19 @@ void PointListRenderer::generateDisplayList(const std::vector<vec3>& pointList, 
         GLUquadricObj* quadric = gluNewQuadric();
         glColor4fv(color_.get().elem);
         for (size_t i=0; i<pointList.size(); ++i) {
-            glPushMatrix();
-            tgt::translate(m * pointList[i]);
+            MatStack.pushMatrix();
+            MatStack.translate(m * pointList[i]);
             gluSphere(quadric, sphereDiameter_.get(), sphereSlicesStacks_.get(), sphereSlicesStacks_.get());
-            glPopMatrix();
+            MatStack.popMatrix();
         }
         gluDeleteQuadric(quadric);
     }
 
     if (coordinateSystem_.get() != "world") {
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
+        MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+        MatStack.popMatrix();
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+        MatStack.popMatrix();
     }
 
     glPopAttrib();

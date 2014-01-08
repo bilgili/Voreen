@@ -96,6 +96,10 @@ public:
      */
     void resetEditor();
 
+    ///VolumeObserver functions TODO
+    void volumeDelete(const VolumeBase* source) {};
+    void volumeChange(const VolumeBase* source) {};
+    void derivedDataThreadFinished(const VolumeBase* source, const VolumeDerivedData* derivedData) {};
 public slots:
     /**
      * Opens a filedialog and loads the selected transfer function.

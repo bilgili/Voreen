@@ -42,8 +42,6 @@ VoreenPainter::VoreenPainter(tgt::GLCanvas* canvas, NetworkEvaluator* evaluator,
     tgtAssert(canvas, "No canvas");
     tgtAssert(evaluator_, "No network evaluator");
     tgtAssert(canvasRenderer_, "No canvas renderer");
-
-    stereoMode_ = VRN_MONOSCOPIC;
 }
 
 VoreenPainter::~VoreenPainter() {
@@ -75,11 +73,11 @@ void VoreenPainter::sizeChanged(const tgt::ivec2& size) {
     // setup viewport, projection etc.:
     glViewport(0, 0, static_cast<GLint>(validSize.x), static_cast<GLint>(validSize.y));
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::PROJECTION);
+    MatStack.loadIdentity();
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
 
     tgtAssert(canvasRenderer_, "No canvas renderer");
     canvasRenderer_->canvasResized(size);
@@ -95,8 +93,6 @@ void VoreenPainter::paint() {
         LWARNING("No network evaluator assigned");
         return;
     }
-
-    if (stereoMode_ == VRN_STEREOSCOPIC) { // TODO: resupport stereo
 //         glDrawBuffer(GL_BACK_LEFT);
 // //         camera->setStereo(true); <- TODO doesn't exist anymore, FL
 //         camera->setEye(tgt::Camera::EYE_LEFT);
@@ -120,12 +116,11 @@ void VoreenPainter::paint() {
 //         glDrawBuffer(GL_BACK);
 // //         camera->setStereo(false); // doesn't exist anymore, FL
 //         camera->setEye(tgt::Camera::EYE_MIDDLE);
-    }
-    else {
-        if (!evaluator_->isLocked())
-            getCanvas()->getGLFocus();
-        evaluator_->process();
-    }
+
+    if (!evaluator_->isLocked())
+        getCanvas()->getGLFocus();
+    evaluator_->process();
+
 }
 
 void VoreenPainter::repaint() {
@@ -138,10 +133,6 @@ void VoreenPainter::renderToSnapshot(const std::string& fileName, const tgt::ive
     tgtAssert(canvasRenderer_, "No canvas renderer");
     canvasRenderer_->renderToImage(fileName, size);
 
-}
-
-void VoreenPainter::setStereoMode(int stereoMode) {
-    stereoMode_ = stereoMode;
 }
 
 NetworkEvaluator* VoreenPainter::getEvaluator() const {

@@ -59,8 +59,6 @@ TransFuncMappingCanvas::TransFuncMappingCanvas(QWidget* parent, TransFunc1DKeys*
     , noColor_(noColor)
     , xAxisText_(xAxisText)
     , yAxisText_(yAxisText)
-    , histogramNeedsUpdate_(false)
-    , histogramThreadRunning_(false)
 {
     xRange_ = vec2(0.f, 1.f);
     yRange_ = vec2(0.f, 1.f);
@@ -155,11 +153,6 @@ void TransFuncMappingCanvas::resizeEvent(QResizeEvent* event) {
             cellSize[component] /= factor[k];
         }
     }
-}
-
-void TransFuncMappingCanvas::showEvent(QShowEvent* event) {
-    QWidget::showEvent(event);
-    updateHistogram(); // only if necessary
 }
 
 void TransFuncMappingCanvas::showKeyContextMenu(QMouseEvent* event) {
@@ -346,9 +339,9 @@ void TransFuncMappingCanvas::paintEvent(QPaintEvent* event) {
     paint.drawRect(0, 0, width() - 1, height() - 1);
 
     paint.setMatrixEnabled(false);
-    if (histogramThreadRunning_) {
+    if (!histogramPainter_->getHistogram()) {
         paint.setPen(Qt::red);
-        paint.drawText(QRectF(0, 7, width() - 1, height() - 8), tr("Calculating histogram..."), QTextOption(Qt::AlignHCenter));
+        paint.drawText(QRectF(0, 7, width() - 1, height() - 8), tr("No volume or calculating histogram"), QTextOption(Qt::AlignHCenter));
     }
 }
 
@@ -878,7 +871,7 @@ void TransFuncMappingCanvas::updateCoordinates(QPoint pos, vec2 values) {
     QToolTip::showText(mapToGlobal(pos), QString(os.str().c_str()));
 }
 
-void TransFuncMappingCanvas::updateHistogram() {
+/*void TransFuncMappingCanvas::updateHistogram() {
 
     if (!histogramNeedsUpdate_)
         return;
@@ -900,7 +893,7 @@ void TransFuncMappingCanvas::updateHistogram() {
     }
     else if (volume_ /**&&  // only calculate histogram, if a VolumeRAM or VolumeDiskRaw representation are present (hack)
             (volume_->hasRepresentation<VolumeRAM>()) ||
-            (volume_->hasRepresentation<VolumeDisk>() && dynamic_cast<const VolumeDiskRaw*>(volume_->getRepresentation<VolumeDisk>()))*/ ) {
+            (volume_->hasRepresentation<VolumeDisk>() && dynamic_cast<const VolumeDiskRaw*>(volume_->getRepresentation<VolumeDisk>()))*//* ) {
         volume_->getDerivedDataThreaded<VolumeHistogramIntensity>();
         histogramThreadRunning_ = true;
         setHistogram(0);
@@ -944,7 +937,7 @@ void TransFuncMappingCanvas::derivedDataThreadFinished(const VolumeBase* source,
         histogramThreadRunning_ = false;
         update();
     }
-}
+}*/
 
 void TransFuncMappingCanvas::setTransFunc(TransFunc1DKeys* tf) {
     tf_ = tf;
@@ -960,7 +953,7 @@ void TransFuncMappingCanvas::setYAxisText(const std::string& text) {
     yAxisText_ = QString(text.c_str());
 }
 
-void TransFuncMappingCanvas::setHistogram(const VolumeHistogramIntensity* histogram) {
+void TransFuncMappingCanvas::setHistogram(const Histogram1D* histogram) {
     tgtAssert(histogramPainter_, "no histogram painter");
     histogramPainter_->setHistogram(histogram);
 }

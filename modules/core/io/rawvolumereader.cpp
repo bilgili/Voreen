@@ -405,7 +405,7 @@ VolumeList* RawVolumeReader::readSlices(const std::string &url, size_t firstSlic
     if (getProgressBar()) {
         getProgressBar()->setTitle("Loading Volume");
         // getProgress()->setMessage("Loading volume: " + tgt::FileSystem::fileName(fileName));
-        getProgressBar()->setMessage("Loading volume: " + fileName);
+        getProgressBar()->setProgressMessage("Loading volume: " + fileName);
     }
     VolumeReader::read(volume, fin);
 

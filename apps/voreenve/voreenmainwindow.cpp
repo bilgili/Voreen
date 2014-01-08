@@ -27,6 +27,7 @@
 
 #include "tgt/gpucapabilities.h"
 #include "tgt/filesystem.h"
+#include "tgt/logmanager.h"
 #include "tgt/qt/qtcanvas.h"
 
 #include "voreen/core/processors/processor.h"
@@ -319,6 +320,9 @@ void VoreenMainWindow::initialize(VoreenSplashScreen* splash) {
     if (splash)
         splash->showMessage("Initializing OpenGL...", 0.50f);
 
+    if (tgt::Singleton<tgt::LogManager>::isInited())
+        LINFO("Log file: " << tgt::FileSystem::cleanupPath(LogMgr.getLogDir() + "/" + VoreenApplication::app()->getLogFile()));
+
     // initGL requires a valid OpenGL context
     sharedContext_ = new tgt::QtCanvas("Init Canvas", tgt::ivec2(32, 32), tgt::GLCanvas::RGBADD, this, true);
     sharedContext_->init(); //neccessary?
@@ -417,8 +421,6 @@ void VoreenMainWindow::initialize(VoreenSplashScreen* splash) {
 
     loadWindowSettings();
 
-    setGuiMode(guiMode_);
-
     // hide splash
     if (splash) {
         splash->showMessage("Initialization complete.", 1.0f);
@@ -448,6 +450,8 @@ void VoreenMainWindow::initialize(VoreenSplashScreen* splash) {
     }
 
     startupComplete("workspace");
+
+    setGuiMode(guiMode_);
 }
 
 void VoreenMainWindow::deinitialize() {

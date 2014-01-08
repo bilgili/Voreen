@@ -78,7 +78,7 @@ int Splitter::getSplitIndex() const {
 }
 
 void Splitter::process() {
-    glMatrixMode(GL_MODELVIEW);
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
     outport_.activateTarget();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -89,17 +89,17 @@ void Splitter::process() {
 
         vec3 t = vec3(0.0f);
         t[getSplitIndex()] = ((position_.get() * 0.5f) * 2.0f) - 1.0f;
-        glTranslatef(t.x, t.y, t.z);
+        MatStack.translate(t.x, t.y, t.z);
 
         vec3 s = vec3(1.0f);
         s[getSplitIndex()] = position_.get();
-        glScalef(s.x, s.y, s.z);
+        MatStack.scale(s.x, s.y, s.z);
 
         glDepthFunc(GL_ALWAYS);
         renderQuad();
         glDepthFunc(GL_LESS);
 
-        glLoadIdentity();
+        MatStack.loadIdentity();
         inport1_.getColorTexture()->disable();
     }
 
@@ -110,17 +110,17 @@ void Splitter::process() {
 
         vec3 t = vec3(0.0f);
         t[getSplitIndex()] = (((position_.get() + 1.0f) * 0.5f) * 2.0f) - 1.0f;
-        glTranslatef(t.x, t.y, t.z);
+        MatStack.translate(t.x, t.y, t.z);
 
         vec3 s = vec3(1.0f);
         s[getSplitIndex()] = 1.0f - position_.get();
-        glScalef(s.x, s.y, s.z);
+        MatStack.scale(s.x, s.y, s.z);
 
         glDepthFunc(GL_ALWAYS);
         renderQuad();
         glDepthFunc(GL_LESS);
 
-        glLoadIdentity();
+        MatStack.loadIdentity();
         inport2_.getColorTexture()->disable();
     }
 
@@ -145,8 +145,8 @@ void Splitter::process() {
     }
 
     outport_.deactivateTarget();
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
+    MatStack.loadIdentity();
     LGL_ERROR;
 }
 

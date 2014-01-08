@@ -284,6 +284,8 @@ void NetworkEvaluator::process() {
     // prevent parallel execution in multithreaded/event dispatching environments
     lock();
 
+    LDEBUG("Starting network evaluation");
+
     if (renderingOrder_.empty()) {
         LDEBUG("process(): rendering order is not defined!");
     }
@@ -318,13 +320,21 @@ void NetworkEvaluator::process() {
             continue;
         }
 
+        // trigger property adjustment on on input change
+        for (size_t i = 0; i < currentProcessor->inports_.size(); i++) {
+            if (currentProcessor->inports_[i]->hasChanged()) {
+                currentProcessor->adjustPropertiesToInput();
+                break;
+            }
+        }
+
         bool needsProcessing = true;
         if (currentProcessor->isValid())
             needsProcessing = false;
 
         // run the processor, if it needs processing and is ready
         if (needsProcessing) {
-            if(currentProcessor->isReady()) {
+            if (currentProcessor->isReady()) {
 
                 // increase iteration counters
                 for (size_t j=0; j<loopPortMap_[currentProcessor].size(); ++j) {
@@ -438,20 +448,24 @@ void NetworkEvaluator::process() {
                 // TODO: rename "invalid" to "needsProcessing"
                 //currentProcessor->setValid();
             }
-        }
+        } // needsProcessing
+
+        currentProcessor->firstProcessAfterDeserialization_ = false;
 
     }   // for (rendering order)
 
     if (glMode_)
         LGL_ERROR;
 
-    unlock();
-
     // notify observers
     for (size_t j = 0; j < observers.size(); ++j)
         observers[j]->afterNetworkProcess();
     if (glMode_)
         LGL_ERROR;
+
+    LDEBUG("Finished network evaluation");
+
+    unlock();
 
     if (processPending_) {
         // make sure that canvases are repainted, if their update has been blocked by the locked evaluator
@@ -514,7 +528,6 @@ void NetworkEvaluator::forceUpdate() {
     invalidateProcessors();
     process();
 }
-
 
 // protected methods
 //
@@ -903,7 +916,7 @@ void NetworkEvaluator::CheckOpenGLStateObserver::checkState(Processor* p) {
     }
 
     if (!checkGL(GL_MATRIX_MODE, GL_MODELVIEW)) {
-        glMatrixMode(GL_MODELVIEW);
+        MatStack.matrixMode(tgt::MatrixStack::MODELVIEW);
         warn(p, "glMatrixMode was not set to GL_MODELVIEW");
     }
 

@@ -73,6 +73,7 @@ void OptionPropertyWidget::updateFromPropertySlot() {
 void OptionPropertyWidget::setProperty(int index) {
     if (!disconnected_) {
         property_->set(cBox_->itemData(index).toString().toStdString());
+        property_->invalidate();
         emit modified();
     }
 }

@@ -313,7 +313,7 @@ private:
      * also not use the OpenGLStateObserver.
      */
     bool glMode_;
-
+    
     /**
      * If this member is set to true, the method <code>assignRenderTargets()</code>
      * will not attempt to assign the same target in multiple ports on processors
@@ -325,6 +325,7 @@ private:
     /// Vector containing all processors which can be rendered. This vector is obtained
     /// by sorting netGraph_ topological.
     std::vector<Processor*> renderingOrder_;
+
 
     /// Maps from processors to their loop inports.
     /// Is used for incrementing the current iteration counter.

@@ -19,10 +19,12 @@ SET(MOD_CORE_HEADERS
 SET(MOD_QT_MODULECLASS StereoscopyModuleQt)
 
 SET(MOD_QT_SOURCES
+    ${MOD_DIR}/qt/processor/stereocanvasrendererwidget.cpp
     ${MOD_DIR}/qt/processor/stereoscopyprocessorwidgetfactory.cpp    
 )  
     
 SET(MOD_QT_HEADERS
+    ${MOD_DIR}/qt/processor/stereocanvasrendererwidget.h
 )
 
 SET(MOD_QT_HEADERS_NONMOC

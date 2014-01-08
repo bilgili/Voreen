@@ -168,7 +168,7 @@ void ImageSequenceSource::loadImageSequence(const std::string& d)
     tgt::Texture::Filter filterMode = textureFiltering_.get() ? tgt::Texture::LINEAR : tgt::Texture::NEAREST;
     for (size_t i=0; i<filenames.size(); ++i) {
         if (progressDialog) {
-            progressDialog->setMessage("Loading " + filenames[i] + " ...");
+            progressDialog->setProgressMessage("Loading " + filenames[i] + " ...");
             progressDialog->setProgress(static_cast<float>(i) / static_cast<float>(filenames.size()));
         }
         LINFO("Loading image " << filenames[i] << " ...");

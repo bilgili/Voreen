@@ -70,18 +70,34 @@ template<typename T, int ND>
         }
 
         uint64_t getBucket(size_t b1, size_t b2, ... /* size_t for each further dimension */) const {
-            int c[ND];
-            c[0] = static_cast<int>(b1);
-            c[1] = static_cast<int>(b2);
+            if(ND >= 2) {
+                int c[ND];
 
-            va_list args;
-            va_start(args, b2);
-            for(int i=2; i<ND; i++)
-                c[i] = static_cast<int>(va_arg(args, size_t));
-            va_end(args);
+                c[0] = static_cast<int>(b1);
+                c[std::min(1,ND-1)] = static_cast<int>(b2); //Workaround to fix WARNING C4789 UNDER VC11
 
-            int b = getBucketNumber(c);
-            return getBucket(b);
+                va_list args;
+                va_start(args, b2);
+                for(int i=2; i<ND; i++)
+                    c[i] = static_cast<int>(va_arg(args, size_t));
+                va_end(args);
+
+                int b = getBucketNumber(c);
+                return getBucket(b);
+            } else {
+                tgtAssert(false, "histogram needs at least 2 dimensions for this function!");
+                return 0;
+            }
+        }
+
+        uint64_t getMaxBucket() const {
+            //TODO: optimize?
+            uint64_t max = 0;
+            for(size_t i=0; i<getNumBuckets(); i++)
+                if(buckets_[i] > max)
+                    max = buckets_[i];
+
+            return max;
         }
 
         /// Returns the normalized count in the bucket (getBucket(b) / getMaxBucket())
@@ -89,10 +105,33 @@ template<typename T, int ND>
             return (float) getBucket(b) / (float) getMaxBucket();
         }
 
+        float getBucketLogNormalized(int b) const {
+            return (logf(static_cast<float>(1+getBucket(b)) ) / logf( static_cast<float>(1+getMaxBucket())));
+        }
+
+
         void increaseBucket(size_t b) {
             if(b < getNumBuckets()) {
                 buckets_[b]++;
                 numSamples_++;
+            }
+            else
+                tgtAssert(false, "Index out of range!");
+        }
+
+        void increaseBucket(size_t bucket, uint64_t value) {
+            if(bucket < getNumBuckets()) {
+                buckets_[bucket] += value;
+                numSamples_ += value;
+            }
+            else
+                tgtAssert(false, "Index out of range!");
+        }
+
+        void decreaseBucket(size_t b) {
+            if(b < getNumBuckets() && buckets_[b] > 0) {
+                buckets_[b]--;
+                numSamples_--;
             }
             else
                 tgtAssert(false, "Index out of range!");
@@ -104,16 +143,6 @@ template<typename T, int ND>
 
         T getMaxValue(int dim) const {
             return maxValues_[dim];
-        }
-
-        uint64_t getMaxBucket() const {
-            //TODO: optimize?
-            uint64_t max = 0;
-            for(size_t i=0; i<getNumBuckets(); i++)
-                if(buckets_[i] > max)
-                    max = buckets_[i];
-
-            return max;
         }
 
         virtual void serialize(XmlSerializer& s) const {
@@ -286,7 +315,9 @@ class VRN_CORE_API Histogram1D : public Histogram1DGeneric<float> {
         Histogram1D() : Histogram1DGeneric<float>(0.f, 1.f, 256) {}
 };
 
-VRN_CORE_API Histogram1D createHistogram1DFromVolume(const VolumeBase* handle, int bucketCount, size_t channel = 0);
+VRN_CORE_API Histogram1D createHistogram1DFromVolume(const VolumeBase* handle, size_t bucketCount, size_t channel = 0);
+VRN_CORE_API Histogram1D createHistogram1DFromVolume(const VolumeBase* handle, size_t bucketCount, float realWorldMin, float realWorldMax, size_t channel = 0);
+
 
 //--------------------------------------------------------------------------
 
@@ -333,7 +364,7 @@ public:
 
     /// Returns the number of channel histograms stored in this derived data.
     size_t getNumChannels() const;
-    
+
     /// Returns the number buckets of the specified channel histogram.
     size_t getBucketCount(size_t channel = 0) const;
 

@@ -34,19 +34,23 @@ namespace voreen {
     : QPropertyWidget(prop, parent)
     , prop_(prop)
     , tabbed_(tabbed)
+    , groupName_(guiName)
 {
     if(tabbed) {
         tabWidget_ = new QTabWidget(this);
         layout_->addWidget(tabWidget_);
+        groupBox_ = 0;
     }
     else {
-        QGroupBox* gBox = new QGroupBox(QString::fromStdString(guiName), this);
-        gridLayout_ = new QGridLayout(gBox);
+        tabWidget_ = 0;
+        groupBox_ = new QGroupBox(QString::fromStdString(guiName), this);
+        gridLayout_ = new QGridLayout();
         gridLayout_->setSpacing(2);
         gridLayout_->setColumnStretch(0, 1);
         gridLayout_->setColumnStretch(1, 2);
         gridLayout_->setContentsMargins(5, 2, 2, 5);
-        layout_->addWidget(gBox);
+        groupBox_->setLayout(gridLayout_);
+        layout_->addWidget(groupBox_);
         QIcon icon = QIcon(":/qt/icons/expand-minus.png");
         hideWidgetButton_ = new QPushButton(icon, "", this);
         hideWidgetButton_->setGeometry(QRect(10, 10, 10, 10));
@@ -136,6 +140,10 @@ bool GroupPropertyWidget::isAnyPropertyVisible(Property::LODSetting lod) {
 
 Property* GroupPropertyWidget::getProperty() const {
     return prop_;
+}
+
+std::string GroupPropertyWidget::getGroupName() const {
+    return groupName_;
 }
 
 

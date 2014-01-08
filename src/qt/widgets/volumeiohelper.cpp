@@ -69,7 +69,7 @@ VolumeIOHelper::VolumeIOHelper(QWidget* parent, FileMode fileMode)
     progressBar_ = VoreenApplication::app()->createProgressDialog();
     if (progressBar_) {
         progressBar_->setTitle("Loading volume");
-        progressBar_->setMessage("Loading volume ...");
+        progressBar_->setProgressMessage("Loading volume ...");
     }
     volumeSerializerPopulator_ = new VolumeSerializerPopulator(progressBar_);
 

@@ -26,6 +26,7 @@
 #include "voreen/core/datastructures/volume/volumerepresentation.h"
 #include "voreen/core/datastructures/volume/volumedisk.h"
 #include "voreen/core/datastructures/volume/volumegl.h"
+#include "voreen/core/datastructures/octree/volumeoctreebase.h"
 
 using tgt::vec3;
 using tgt::svec3;
@@ -52,10 +53,12 @@ size_t VolumeRepresentation::getNumVoxels() const {
 
 ConverterFactory::ConverterFactory() {
     addConverter(new RepresentationConverterLoadFromDisk());
+    addConverter(new RepresentationConverterOctreeToRAM());
+
     addConverter(new RepresentationConverterLoadFromDiskToGL());
     addConverter(new RepresentationConverterUploadGL());
-    addConverter(new RepresentationConverterDownloadGL());
 
+    addConverter(new RepresentationConverterDownloadGL());
 }
 
 ConverterFactory::~ConverterFactory() {

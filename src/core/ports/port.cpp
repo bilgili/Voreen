@@ -97,6 +97,8 @@ bool Port::connect(Port* inport) {
         connectedPorts_.push_back(inport);
         inport->connectedPorts_.push_back(this);
         getProcessor()->invalidate(invalidationLevel_);
+        notifyAfterConnectionAdded(inport);
+        inport->notifyAfterConnectionAdded(this);
         inport->invalidatePort();
         return true;
     }
@@ -109,6 +111,9 @@ void Port::disconnect(Port* other) {
 
     for (size_t i = 0; i < connectedPorts_.size(); ++i) {
         if (connectedPorts_[i] == other) {
+            notifyBeforeConnectionRemoved(other);
+            other->notifyBeforeConnectionRemoved(this);
+
             connectedPorts_.erase(connectedPorts_.begin() + i);
             other->disconnect(this);
             getProcessor()->invalidate(invalidationLevel_);
@@ -525,6 +530,18 @@ void Port::deserialize(XmlDeserializer& s) {
     }
 
     PropertyOwner::deserialize(s);
+}
+
+void Port::notifyAfterConnectionAdded(const Port* connectedPort) {
+    std::vector<PortObserver*> observers = Observable<PortObserver>::getObservers();
+    for (size_t i=0; i<observers.size(); ++i)
+        observers[i]->afterConnectionAdded(this, connectedPort);
+}
+
+void Port::notifyBeforeConnectionRemoved(const Port* connectedPort) {
+    std::vector<PortObserver*> observers = Observable<PortObserver>::getObservers();
+    for (size_t i=0; i<observers.size(); ++i)
+        observers[i]->beforeConnectionRemoved(this, connectedPort);
 }
 
 } // namespace voreen

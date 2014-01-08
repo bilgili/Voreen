@@ -28,6 +28,7 @@
 
 #include "voreen/core/processors/processor.h"
 #include "tgt/quaternion.h"
+#include "tgt/stopwatch.h"
 
 #include <QLabel>
 #include <QComboBox>
@@ -140,12 +141,13 @@ private:
     void checkCameraState();
 
     void applyOrientation(const tgt::quat& q);
-    void applyOrientationAndDistanceAnimated(std::vector<float> keyframe);
+    void updateOrientation();
+    void updateRotation();
 
     void resetCameraPosition();
 
     /// enabled or disables timer based on whether rotation is active
-    void setTimerState();
+    void setRotationTimerState();
     virtual void timerEvent(QTimerEvent* event);
     void showEvent(QShowEvent* event);
 
@@ -176,7 +178,9 @@ private:
     QCheckBox* rotateAroundY_;
     QCheckBox* rotateAroundZ_;
     QCheckBox* continueSpin_;
-    QBasicTimer* timer_;
+    QBasicTimer* rotationTimer_;
+    QBasicTimer* orientationTimer_;
+    std::vector<float> orientationKeyframe_;
 
     QComboBox* comboProjection_;
 
@@ -189,6 +193,9 @@ private:
 
     FloatProperty* fovyProp_;
     FloatProperty* ratioProp_;
+
+    FloatProperty* angleSpeed_;
+    QLabel* fpsLabel_;
 
     // trackball: move around world origin, scene center or shifted center?
     QComboBox* shiftTrackballCenter_;
@@ -205,6 +212,11 @@ private:
 
     QToolButton* buSaveTrackball_;
     QToolButton* buRestoreTrackball_;
+
+    tgt::Stopwatch rotationStopwatch_;
+    tgt::Stopwatch orientationStopwatch_;
+    unsigned int fpsCounter_;
+    unsigned int secondCounter_;
 };
 
 } // namespace voreen

@@ -26,6 +26,7 @@
 #include "voreen/qt/widgets/transfunc/transfunc2dprimitiveseditor.h"
 
 #include "voreen/qt/widgets/transfunc/transfunc2dprimitivespainter.h"
+#include "voreen/qt/widgets/transfunc/transfunciohelperqt.h"
 #include "voreen/core/datastructures/transfunc/transfunc2dprimitives.h"
 #include "voreen/core/datastructures/transfunc/transfuncprimitive.h"
 #include "voreen/core/datastructures/volume/volumeram.h"
@@ -324,46 +325,24 @@ void TransFunc2DPrimitivesEditor::fitToDomain() {
 }
 
 void TransFunc2DPrimitivesEditor::loadTransferFunction() {
-    // create filter with supported file formats
-    QString filter = "transfer function (";
-    for (size_t i = 0; i < transFuncGradient_->getLoadFileFormats().size(); ++i) {
-        std::string temp = "*." + transFuncGradient_->getLoadFileFormats()[i] + " ";
-        filter.append(temp.c_str());
+    if (!transFuncGradient_) {
+        LWARNING("No valid transfer function assigned");
+        return;
     }
-    filter.replace(filter.length()-1, 1, ")");
 
-    QString fileName = getOpenFileName(filter);
-    if (!fileName.isEmpty()) {
-        // deselect current selected primitive. Primitive gets deleted on successfull loading.
-        painter_->deselectPrimitive();
-        if (transFuncGradient_->load(fileName.toStdString())) {
-            painter_->updateTF();
-            transCanvas_->update();
-        }
-        else {
-            QMessageBox::critical(this, tr("Error"),
-                                  tr("The selected transfer function could not be loaded."));
-            LERROR("The selected transfer function could not be loaded. Maybe the file is corrupt.");
-        }
+    if(TransFuncIOHelperQt::loadTransferFunction(transFuncGradient_)) {
+        painter_->updateTF();
+        transCanvas_->update();
     }
 }
 
 void TransFunc2DPrimitivesEditor::saveTransferFunction() {
-    QStringList filter;
-    for (size_t i = 0; i < transFuncGradient_->getSaveFileFormats().size(); ++i) {
-        std::string temp = "transfer function (*." + transFuncGradient_->getSaveFileFormats()[i] + ")";
-        filter << temp.c_str();
+    if (!transFuncGradient_) {
+        LWARNING("No valid transfer function assigned");
+        return;
     }
 
-    QString fileName = getSaveFileName(filter);
-    if (!fileName.isEmpty()) {
-        //save transfer function to disk
-        if (!transFuncGradient_->save(fileName.toStdString())) {
-            QMessageBox::critical(this, tr("Error"),
-                                  tr("The transfer function could not be saved."));
-            LERROR("The transfer function could not be saved. Maybe the disk is full?");
-        }
-    }
+    TransFuncIOHelperQt::saveTransferFunction(transFuncGradient_);
 }
 
 void TransFunc2DPrimitivesEditor::toggleShowGrid() {

@@ -5,7 +5,7 @@
             <MetaData>
                 <MetaItem name="ProcessorSelection" type="SelectionMetaData::Processor">
                     <values>
-                        <item type="ExplosionProxyGeometry" ref="ref6" />
+                        <item type="SingleVolumeRaycaster" ref="ref0" />
                     </values>
                 </MetaItem>
                 <MetaItem name="Zoom" type="ZoomMetaData">
@@ -58,13 +58,13 @@
                         <Property mapKey="lightDiffuse" name="lightDiffuse">
                             <value x="0.80000001" y="0.80000001" z="0.80000001" w="1" />
                         </Property>
-                        <Property mapKey="lightPosition" name="lightPosition" FollowCam="false" MaxDist="10">
+                        <Property mapKey="lightPosition" name="lightPosition" FollowCam="false" MaxDist="10.25">
                             <MetaData>
                                 <MetaItem name="FollowCamera" type="BoolMetaData" value="false" />
                             </MetaData>
                             <value x="-4.69999981" y="7.09000015" z="1.22000003" w="0" />
-                            <Center x="0" y="0" z="0" />
-                            <LightPos x="-4.69999981" y="7.09000015" z="1.22000003" w="1" />
+                            <Center x="0.02499998" y="0.02499998" z="0.02499998" />
+                            <LightPos x="-4.45245743" y="7.28722286" z="0.86016637" w="1" />
                         </Property>
                         <Property mapKey="lightSpecular" name="lightSpecular">
                             <value x="0.60000002" y="0.60000002" z="0.60000002" w="1" />
@@ -77,11 +77,11 @@
                         </Property>
                         <Property mapKey="samplingRate" name="samplingRate" value="4.5" />
                         <Property mapKey="shading" name="shading" value="phong" />
-                        <Property mapKey="transferFunction" name="transferFunction" AlwaysFitDomain="false">
+                        <Property mapKey="transferFunction" name="transferFunction" domainFittingStrategy="0">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="545" y="286" width="619" height="463" />
                             </MetaData>
-                            <TransferFunction type="TransFuncIntensity" ignoreAlpha="false" lower="0" upper="1">
+                            <TransferFunction type="TransFuncIntensity" alphaMode="1" gammaValue="1" lower="0" upper="1">
                                 <Keys>
                                     <key type="TransFuncMappingKey" intensity="0.12135922" split="false">
                                         <colorL r="153" g="0" b="255" a="0" />
@@ -161,10 +161,10 @@
                 <Processor type="Canvas" name="Canvas" id="ref3">
                     <MetaData>
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-310" y="705" />
-                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="-896" y="285" width="512" height="512" />
+                        <MetaItem name="ProcessorWidget" type="WindowStateMetaData" visible="true" x="73" y="194" width="512" height="512" />
                         <MetaItem name="preferedDevelopmentCanvasFS" type="BoolMetaData" value="false" />
                         <MetaItem name="preferedDevelopmentCanvasPosition" type="IVec2MetaData">
-                            <value x="-896" y="285" />
+                            <value x="73" y="194" />
                         </MetaItem>
                         <MetaItem name="preferedDevelopmentCanvasSize" type="IVec2MetaData">
                             <value x="512" y="512" />
@@ -176,6 +176,7 @@
                         </Property>
                         <Property mapKey="saveScreenshot" name="saveScreenshot" />
                         <Property mapKey="screenshotFilename" name="screenshotFilename" noPathSet="false" value="output/rendering.png" />
+                        <Property mapKey="showCanvas" name="showCanvas" value="true" />
                         <Property mapKey="showCursor" name="showCursor" value="true" />
                         <Property mapKey="showFullScreen" name="showFullScreen" value="false" />
                     </Properties>
@@ -198,6 +199,7 @@
                     <Properties>
                         <Property mapKey="angle" name="angle" value="18" />
                         <Property mapKey="backgroundModeAsString" name="backgroundModeAsString" value="gradient" />
+                        <Property mapKey="blendMode" name="blendMode" value="alpha-blending" />
                         <Property mapKey="color1" name="color1">
                             <value x="1" y="1" z="1" w="1" />
                         </Property>
@@ -303,6 +305,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="true" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" enabled="true" mouseAction="31" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="true" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" enabled="true" mouseAction="31" mouseButtons="1" keyCode="0" modifier="3" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="true" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" enabled="true" mouseAction="31" mouseButtons="100" keyCode="0" modifier="0" shareEvents="false" />
@@ -361,6 +364,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" enabled="false" mouseAction="31" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="false" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" enabled="false" mouseAction="31" mouseButtons="1" keyCode="0" modifier="3" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="false" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" enabled="false" mouseAction="31" mouseButtons="100" keyCode="0" modifier="0" shareEvents="false" />
@@ -373,14 +377,27 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-714" y="118" />
                     </MetaData>
                     <Properties>
-                        <Property mapKey="boundingBoxStippleFactor" name="boundingBoxStippleFactor" value="1" />
-                        <Property mapKey="boundingBoxStipplePattern" name="boundingBoxStipplePattern" value="65535" />
-                        <Property mapKey="boundingBoxWidth" name="boundingBoxWidth" value="1" />
-                        <Property mapKey="planeAlpha" name="planeAlpha" value="0.25" />
-                        <Property mapKey="renderPlanes" name="renderPlanes" value="true" />
+                        <Property mapKey="alphaFactorXPlane" name="alphaFactorXPlane" value="0" />
+                        <Property mapKey="alphaFactorYPlane" name="alphaFactorYPlane" value="0" />
+                        <Property mapKey="alphaFactorZPlane" name="alphaFactorZPlane" value="0" />
+                        <Property mapKey="deprecatedStippleFactor" name="deprecatedStippleFactor" value="1" />
+                        <Property mapKey="deprecatedStipplePattern" name="deprecatedStipplePattern" value="65535" />
+                        <Property mapKey="enable" name="enable" value="true" />
+                        <Property mapKey="lineXWidth" name="lineXWidth" value="1" />
+                        <Property mapKey="lineYWidth" name="lineYWidth" value="1" />
+                        <Property mapKey="lineZWidth" name="lineZWidth" value="1" />
+                        <Property mapKey="renderSphere" name="renderSphere" value="false" />
                         <Property mapKey="renderXSlice" name="renderXSlice" value="true" />
                         <Property mapKey="renderYSlice" name="renderYSlice" value="true" />
                         <Property mapKey="renderZSlice" name="renderZSlice" value="true" />
+                        <Property mapKey="sphereColor" name="sphereColor">
+                            <value x="1" y="1" z="0" w="1" />
+                        </Property>
+                        <Property mapKey="sphereDepthTest" name="sphereDepthTest" value="false" />
+                        <Property mapKey="sphereRadius" name="sphereRadius" value="0.01" />
+                        <Property mapKey="sphereXPos" name="sphereXPos" value="0" />
+                        <Property mapKey="sphereYPos" name="sphereYPos" value="0" />
+                        <Property mapKey="sphereZPos" name="sphereZPos" value="0" />
                         <Property mapKey="xColor" name="xColor">
                             <value x="1" y="0" z="0" w="0" />
                         </Property>
@@ -411,7 +428,13 @@
                         <MetaItem name="ProcessorGraphicsItem" type="PositionMetaData" x="-633" y="274" />
                     </MetaData>
                     <Properties>
+                        <Property mapKey="enable.clipping" name="enable.clipping" value="false" />
                         <Property mapKey="enableLighting" name="enableLighting" value="false" />
+                        <Property mapKey="geometry.prg" name="geometry.prg" fragmentModified="false" fragmentIsExternal="false" vertexModified="false" vertexIsExternal="false" geometryModified="false" geometryIsExternal="false">
+                            <MetaData>
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" />
+                            </MetaData>
+                        </Property>
                         <Property mapKey="lightAmbient" name="lightAmbient">
                             <value x="0.40000001" y="0.40000001" z="0.40000001" w="1" />
                         </Property>
@@ -427,9 +450,14 @@
                         <Property mapKey="lineWidth" name="lineWidth" value="1" />
                         <Property mapKey="mapTexture" name="mapTexture" value="false" />
                         <Property mapKey="materialShininess" name="materialShininess" value="60" />
+                        <Property mapKey="plane.distance" name="plane.distance" value="0" />
+                        <Property mapKey="plane.normal" name="plane.normal">
+                            <value x="0" y="0" z="1" />
+                        </Property>
                         <Property mapKey="pointSize" name="pointSize" value="1" />
                         <Property mapKey="polygonMode" name="polygonMode" value="line" />
                         <Property mapKey="textureMode" name="textureMode" value="replace" />
+                        <Property mapKey="use.shader" name="use.shader" value="false" />
                     </Properties>
                     <Inports>
                         <Port name="inport.geometry" direction="1" portID="inport.geometry" guiName="Geometry Input" allowMultipleConnections="false" invalidationLevel="20">
@@ -493,6 +521,7 @@
                                 <Property mapKey="cameraHandler.moveUp" name="cameraHandler.moveUp" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="114" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.multitouch" name="cameraHandler.multitouch" lod="1" enabled="false" mouseAction="0" mouseButtons="0" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.rotate" name="cameraHandler.rotate" enabled="false" mouseAction="31" mouseButtons="1" keyCode="0" modifier="0" shareEvents="false" />
+                                <Property mapKey="cameraHandler.rotatecont" name="cameraHandler.rotatecont" lod="1" enabled="false" mouseAction="127" mouseButtons="1" keyCode="0" modifier="2" shareEvents="false" />
                                 <Property mapKey="cameraHandler.shift" name="cameraHandler.shift" enabled="false" mouseAction="31" mouseButtons="1" keyCode="0" modifier="3" shareEvents="false" />
                                 <Property mapKey="cameraHandler.wheelZoom" name="cameraHandler.wheelZoom" lod="1" enabled="false" mouseAction="16" mouseButtons="96" keyCode="0" modifier="0" shareEvents="false" />
                                 <Property mapKey="cameraHandler.zoom" name="cameraHandler.zoom" enabled="false" mouseAction="31" mouseButtons="100" keyCode="0" modifier="0" shareEvents="false" />
@@ -621,7 +650,7 @@
                     <Properties>
                         <Property mapKey="camera" name="camera" projectionMode="1" maxValue="512.5" minValue="0.05" frustLeft="-0.02071068" frustRight="0.02071068" frustBottom="-0.02071068" frustTop="0.02071068" frustNear="0.05" frustFar="514.54998779" fovy="45" eyeMode="1" eyeSeparation="1" axisMode="0" centerOption="0" adaptOnChange="true" id="ref24">
                             <MetaData>
-                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="-1276" y="6" />
+                                <MetaItem name="EditorWindow" type="WindowStateMetaData" visible="false" x="631" y="308" />
                             </MetaData>
                             <position x="5.74937916" y="2.9934783" z="8.22029591" />
                             <focus x="0.03883153" y="-0.75958544" z="0.29971588" />

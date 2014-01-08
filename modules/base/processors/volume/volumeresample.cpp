@@ -153,7 +153,7 @@ void VolumeResample::resampleVolume() {
 
         tgt::ivec3 dimensions(resampleDimensionX_.get(), resampleDimensionY_.get(), resampleDimensionZ_.get());
         try {
-            Volume* v = VolumeOperatorResample::APPLY_OP(inport_.getData(), dimensions, filter, progressBar_);
+            Volume* v = VolumeOperatorResample::APPLY_OP(inport_.getData(), dimensions, filter, this);
             outport_.setData(v);
         }
         catch (const std::bad_alloc&) {

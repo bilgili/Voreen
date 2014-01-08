@@ -90,6 +90,8 @@ VolumeDiskRaw::~VolumeDiskRaw() {
 
 std::string VolumeDiskRaw::getHash() const {
     std::string configStr = getFileName() + "#";
+    configStr += genericToString(tgt::FileSystem::fileTime(getFileName())) + "#";
+    configStr += genericToString(tgt::FileSystem::fileSize(getFileName())) + "#";
     configStr += getFormat() + "#";
     configStr += genericToString(getDimensions()) + "#";
     configStr += itos((int)offset_) + "#";
@@ -225,75 +227,78 @@ VolumeRAM* VolumeDiskRaw::loadSlices(const size_t firstSlice, const size_t lastS
     return vr;
 }
 
-VolumeRAM* VolumeDiskRaw::loadBrick(const tgt::svec3& pOffset, const tgt::svec3& pDimensions) const
+VolumeRAM* VolumeDiskRaw::loadBrick(const tgt::svec3& brickOffset, const tgt::svec3& brickDim) const
     throw (tgt::Exception)
 {
-    //check for wrong parameter
-    if(tgt::hmul(pDimensions) == 0)
-        throw std::invalid_argument("requested brick dimensions are zero!");
-    if(!tgt::hand(tgt::lessThanEqual(pOffset+pDimensions,getDimensions())))
-        throw std::invalid_argument("requested brick outside volume date!");
+    // check parameters
+    if (tgt::hmul(brickDim) == 0)
+        throw std::invalid_argument("requested brick dimensions are zero");
+    if (!tgt::hand(tgt::lessThanEqual(brickOffset+brickDim, getDimensions())))
+        throw std::invalid_argument("requested brick (at least partially) outside volume dimensions");
 
-    //create new VolumeRam
+    LDEBUG("Loading brick: offset=" << brickOffset << ", dim=" << brickDim);
+
+    // open file
+    std::ifstream infile(getFileName().c_str(), std::ios::in | std::ios::binary);
+    if (infile.fail())
+        throw tgt::FileException("Failed to open file for reading: " + getFileName());
+
+    // create output VolumeRAM
     VolumeFactory vf;
-    VolumeRAM* vr = vf.create(getFormat(), pDimensions);
+    VolumeRAM* vr = vf.create(getFormat(), brickDim);
     if (!vr)
         throw VoreenException("Failed to create VolumeRAM");
 
-    //open file
-    FILE* fin;
-    fin = fopen(getFileName().c_str(),"rb");
-    if (!fin)
-        throw tgt::FileException("Failed to open file for reading: " + getFileName());
-
-    size_t bytesPerVoxel = static_cast<size_t>(vr->getBitsAllocated() / 8);
-    size_t numVoxels = pDimensions.x;
-    size_t numBytes = numVoxels * bytesPerVoxel;
+    size_t bytesPerVoxel = vr->getBytesPerVoxel();
+    size_t numVoxelsPerLine = brickDim.x;
+    size_t numBytesPerLine = numVoxelsPerLine * bytesPerVoxel;
 
     int64_t offset = getOffset();
-    if(offset < 0) {
+    if (offset < 0) {
         //Assume data is aligned to end of file.
 
         // get file size:
-        fseek(fin, 0, SEEK_END);
-        int64_t fileSize = ftell(fin);
-        rewind(fin);
+        infile.seekg( 0, infile.end);
+        std::streampos fileSize = infile.tellg();
+        infile.seekg( 0, infile.beg);
 
         //calculate real offset:
-        offset = fileSize - hmul(getDimensions())*bytesPerVoxel;
+        offset = static_cast<std::string::size_type>(fileSize) - hmul(getDimensions())*bytesPerVoxel;
     }
 
-    //modify offset to start at first slice
-    offset += getDimensions().x*getDimensions().y*pOffset.z*bytesPerVoxel;
+    // modify file offset to start at first slice
+    offset += (dimensions_.x*dimensions_.y*brickOffset.z + dimensions_.x*brickOffset.y + brickOffset.x)*bytesPerVoxel;
+    infile.seekg(offset);
 
-    fseek(fin, static_cast<long>(offset), SEEK_SET);
+    // read lines into ram
+    size_t destOffset = 0;
+    char* destBuffer = reinterpret_cast<char*>(vr->getData());
+    for (size_t z = 0; z < brickDim.z; z++){
+        for (size_t y = 0; y < brickDim.y; y++) {
 
-    //read into ram
-    size_t pointerOffset = 0;
-    for(size_t z = 0; z < pDimensions.z; z++){
-        for(size_t y = 0; y < pDimensions.y; y++) {
-            //read into ram
-            if(fread(reinterpret_cast<char*>(vr->getData())+pointerOffset, numBytes, 1, fin) != 1) {
-                fclose(fin);
+            // read line into ram and write to dest buffer
+            infile.read(destBuffer+destOffset, numBytesPerLine);
+            if (infile.fail()) {
+                infile.close();
                 delete vr;
                 throw tgt::FileException("Failed to read from file: " + getFileName());
             }
-            //move offset
-            pointerOffset += numBytes;
+            // move dest offset by one line
+            destOffset += numBytesPerLine;
 
-            //move to next read
-            if(y < pDimensions.y)
-                fseek(fin, static_cast<long>(getDimensions().x-pDimensions.x),SEEK_SET);
+            // move file handle to next line
+            infile.seekg((dimensions_.x-brickDim.x)*bytesPerVoxel, std::ios_base::cur);
         }
-        //move to next read
-        if(z < pDimensions.z)
-            fseek(fin,static_cast<long>((getDimensions().x*getDimensions().y)-(pDimensions.x*pDimensions.y)),SEEK_SET);
+
+        // move file offset to next slice
+        infile.seekg((dimensions_.y-brickDim.y)*dimensions_.x*bytesPerVoxel, std::ios_base::cur);
+
     }
 
-    fclose(fin);
+    infile.close();
 
     //swap endian
-    if(getSwapEndian()) {
+    if (getSwapEndian()) {
         Volume* tempHandle = new Volume(vr, vec3(1.0f), vec3(0.0f));
         VolumeOperatorSwapEndianness::APPLY_OP(tempHandle);
         tempHandle->releaseAllRepresentations();

@@ -43,6 +43,8 @@ class NetworkEvaluator;
 class AggregationMetaData;
 //style
 class NWEStyle_Base;
+//graph layouts
+class NWEGL_Base;
 //graphic items
 class AggregationGraphicsItem;
 class ProcessorGraphicsItem;
@@ -162,6 +164,7 @@ private:
     NetworkEditorLayer currentLayer_;
     NetworkEditorCursorMode currentCursorMode_;
     NWEStyle_Base* currentStyle_;
+    NWEGL_Base* currentGraphLayout_;
     bool currentToolTipMode_;
 
 public:
@@ -174,6 +177,7 @@ protected:
     void setCursorMode(NetworkEditorCursorMode mode);
     void setStyle(NWEStyle_Base* style);
         void styleOnChange();
+        void updateGraphLayout();
     void processorFontOnChange();
     void setToolTipMode(bool mode);
 public slots:
@@ -204,11 +208,13 @@ private:
     QWidget* stopButtonContainer_;
         QToolButton* stopNetworkEvaluatorButton_;
         bool networkEvaluatorIsLockedByButton_;
-
     QWidget* navigationButtonContainer_;
         QToolButton* selectCursorButton_;
         QToolButton* moveCursorButton_;
+    QWidget* layoutButtonContainer_;
         QToolButton* centerViewButton_;
+        QToolButton* graphLayoutButton_;
+
 public:
     bool cameraLinksHidden();
     bool portSizeLinksHidden();
@@ -232,6 +238,8 @@ private slots:
     void linkPortSize();
     void linkPortSizeAutoChanged();
     void removeAllPortSizeLinks();
+    void sortEntireNetwork();
+    void sortSubNetwork();
     void setViewCenter();
     void setCursorSelect();
     void setCursorMove();
@@ -291,6 +299,7 @@ protected:
     QAction* createPortOwnerPortSizeLinksAction_;
     QAction* aggregateAction_;
     QAction* deaggregateAction_;
+    QAction* sortSubNetworkAction_;
     //QAction* bundleAction_;
     //QAction* unbundleAction_;
     //QAction* addHandleAction_;

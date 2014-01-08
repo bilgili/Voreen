@@ -35,6 +35,9 @@ struct TextureParameters {
     vec2 dimensions_;        // the texture's resolution, e.g. [256.0, 128.0]
     vec2 dimensionsRCP_;
     mat4 matrix_;            // texture coordinate transformation
+    int numChannels_;
+    float rwmScale_;         // RealWorldMapping slope
+    float rwmOffset_;        // RealWorldMapping intercept
 };
 
 // Texture lookup function for 2D textures,

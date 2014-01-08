@@ -48,6 +48,8 @@ void StringPropertyWidget::updateFromPropertySlot() {
     if(st != lineEdit_->text())
         lineEdit_->setText(st);
     lineEdit_->blockSignals(false);
+
+    lineEdit_->setReadOnly(property_->isReadOnly());
 }
 
 void StringPropertyWidget::setProperty(const QString& text) {

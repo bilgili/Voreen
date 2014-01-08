@@ -123,11 +123,18 @@ public:
     virtual float maxNormalizedValue(size_t channel = 0) const;
 
     /**
-     * Returns the value with maximum magnitude contained contained in the volume, converted to float.
+     * Returns the value with maximum magnitude contained in the volume, converted to float.
      * This function chooses between a scalar implementation or a euclidian vector length method,
      * in case the volume has multiple channels.
      */
     virtual float maxMagnitude() const;
+
+    /**
+     * Returns the value with minimum magnitude contained in the volume, converted to float.
+     * This function chooses between a scalar implementation or a euclidian vector length method,
+     * in case the volume has multiple channels.
+     */
+    virtual float minMagnitude() const;
 
     virtual size_t getNumBytes() const;
 
@@ -214,6 +221,12 @@ protected:
 
     // Helper method for non-scalar maximum magnitude (euclidian vector length)
     float maxMagnitudeImpl(IsScalar<false>) const;
+
+    // Helper method for scalar minimum magnitude
+    float minMagnitudeImpl(IsScalar<true>) const;
+
+    // Helper method for non-scalar minimum magnitude (euclidian vector length)
+    float minMagnitudeImpl(IsScalar<false>) const;
 
     T* data_;
 
@@ -366,7 +379,7 @@ throw (std::bad_alloc)
 }
 
 template<class T>
-VolumeAtomic<T>* VolumeAtomic<T>::getSubVolume(tgt::svec3 dimensions, tgt::svec3 offset) const
+VolumeAtomic<T>* VolumeAtomic<T>::getSubVolume(tgt::svec3 offset, tgt::svec3 dimensions) const
     throw (std::bad_alloc, std::invalid_argument)
 {
     //check wrong parameters
@@ -581,9 +594,36 @@ float VolumeAtomic<T>::maxMagnitudeImpl(IsScalar<false>) const {
     return std::sqrt(maxMagnitude);
 }
 
+// scalar
+template<typename T>
+float VolumeAtomic<T>::minMagnitudeImpl(IsScalar<true>) const {
+    float minMagnitude = FLT_MAX;
+    for (size_t i=0; i<numVoxels_; i++) {
+        T val = voxel(i);
+        minMagnitude = std::min(minMagnitude, std::abs((float)val));
+    }
+    return minMagnitude;
+}
+
+// non-scalar: use VolumeElement::calcSquaredDifference for vectors (TODO difference unnecessary, implement VolumeElement::getSquaredMagnitude)
+template<typename T>
+float VolumeAtomic<T>::minMagnitudeImpl(IsScalar<false>) const {
+    float minMagnitude = FLT_MAX;
+    for (size_t i=0; i<numVoxels_; i++) {
+        T val = voxel(i);
+        minMagnitude = std::min(minMagnitude, static_cast<float>(VolumeElement<T>::calcSquaredDifference(val, VolumeElement<T>::getZero())));
+    }
+    return std::sqrt(minMagnitude);
+}
+
 template<class T>
 float VolumeAtomic<T>::maxMagnitude() const {
     return maxMagnitudeImpl(IsScalar<std::numeric_limits<T>::is_specialized>());
+}
+
+template<class T>
+float VolumeAtomic<T>::minMagnitude() const {
+    return minMagnitudeImpl(IsScalar<std::numeric_limits<T>::is_specialized>());
 }
 
 template<class T>

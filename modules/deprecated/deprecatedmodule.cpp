@@ -26,6 +26,7 @@
 #include "deprecatedmodule.h"
 
 #include "processors/buttonoverlayprocessor.h"
+#include "processors/geometryclippingwidget.h"
 #include "processors/textseriessource.h"
 #include "processors/volumeseriessource.h"
 #include "processors/rawtexturesource.h"
@@ -50,6 +51,7 @@ DeprecatedModule::DeprecatedModule(const std::string& modulePath)
     addShaderPath(getModulePath("glsl"));
 
     registerSerializableType(new ButtonOverlayProcessor());
+    registerSerializableType(new GeometryClippingWidget());
     registerSerializableType(new TextSeriesSource());
     registerSerializableType(new VolumeSeriesSource());
     registerSerializableType(new RawTextureSource());
