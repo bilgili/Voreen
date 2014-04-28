@@ -109,6 +109,8 @@ MACRO(ADD_GCC_PRECOMPILED_HEADER _targetName _input )
     STRING(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" _flags_var_name)
     SET(_compiler_FLAGS ${${_flags_var_name}})
 
+    LIST(APPEND _compiler_FLAGS ${CMAKE_CXX_FLAGS})
+
     GET_TARGET_PROPERTY(_type ${_targetName} TYPE)
     IF(${_type} MATCHES SHARED_LIBRARY)
         LIST(APPEND _compiler_FLAGS "-fPIC")
@@ -119,11 +121,29 @@ MACRO(ADD_GCC_PRECOMPILED_HEADER _targetName _input )
     LIST(APPEND _compiler_FLAGS "-I${item}")
     ENDFOREACH(item)
 
-
     GET_DIRECTORY_PROPERTY(_directory_flags DEFINITIONS)
     LIST(APPEND _compiler_FLAGS ${_directory_flags})
 
+    # make sure to get potential build-type dependent compile flags (introduced for QT_DEBUG / QT_NO_DEBUG)
+    IF(CMAKE_BUILD_TYPE)
+        STRING(TOUPPER ${CMAKE_BUILD_TYPE} _upper_build_type)
+        GET_DIRECTORY_PROPERTY(_directory_flags "COMPILE_DEFINITIONS_${_upper_build_type}")
+        FOREACH(item ${_directory_flags})
+            LIST(APPEND _compiler_FLAGS "-D${item}")
+        ENDFOREACH(item)
+    ELSE()
+        GET_DIRECTORY_PROPERTY(_directory_flags COMPILE_DEFINITIONS)
+        FOREACH(item ${_directory_flags})
+            LIST(APPEND _compiler_FLAGS "-D${item}")
+        ENDFOREACH(item)
+    ENDIF()
+
+    # copy pch file to build directory, gcc expects it in the same directory
+    FILE(COPY ${_input} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
     SEPARATE_ARGUMENTS(_compiler_FLAGS)
+    LIST(REMOVE_DUPLICATES _compiler_FLAGS)
+
     #MESSAGE("_compiler_FLAGS: ${_compiler_FLAGS}")
     #message("${CMAKE_CXX_COMPILER} ${_compiler_FLAGS} -x c++-header -o ${_output} ${_source}")
     ADD_CUSTOM_COMMAND(
