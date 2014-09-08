@@ -75,6 +75,7 @@
 #include "processors/image/multiview.h"
 #include "processors/image/orientationoverlay.h"
 #include "processors/image/quadview.h"
+#include "processors/image/quadimageprocessor.h"
 #include "processors/image/regionofinterest2d.h"
 #include "processors/image/splitter.h"
 #include "processors/image/textoverlay.h"
@@ -212,6 +213,7 @@ BaseModule::BaseModule(const std::string& modulePath) : VoreenModule(modulePath)
     registerSerializableType(new NonMinMaxSuppression());
     registerSerializableType(new OrientationOverlay());
     registerSerializableType(new QuadView());
+    registerSerializableType(new QuadImageProcessor());
     registerSerializableType(new RegionOfInterest2D());
     registerSerializableType(new Splitter());
     registerSerializableType(new TextOverlay());

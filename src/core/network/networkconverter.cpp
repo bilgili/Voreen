@@ -327,6 +327,7 @@ void NetworkConverter11to12::convertVolumeContainer(TiXmlElement* workspaceNode)
 void NetworkConverter12to13::convert(TiXmlElement* elem) {
     changePropertyName(elem, "UnaryImageProcessor", "shader", "shader.program");
     changePropertyName(elem, "BinaryImageProcessor", "shader", "shader.program");
+    changePropertyName(elem, "QuadImageProcessor", "shader", "shader.program");
 }
 
 //----------------------------------------------------------------------------

@@ -114,7 +114,7 @@ RawVolumeWidget::RawVolumeWidget(QWidget* parent, const QString& filename, std::
     numTimeFramesSpin_ = new QSpinBox();
     numTimeFramesSpin_->setMinimumWidth(60);
     numTimeFramesSpin_->setMinimum(1);
-    numTimeFramesSpin_->setMaximum(512);
+    numTimeFramesSpin_->setMaximum(8192);
 
 
     objectModelBox->setTitle("Object Model");

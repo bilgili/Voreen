@@ -48,6 +48,7 @@ SET(MOD_CORE_SOURCES
     ${MOD_DIR}/processors/image/nonminmaxsuppression.cpp
     ${MOD_DIR}/processors/image/orientationoverlay.cpp
     ${MOD_DIR}/processors/image/quadview.cpp
+    ${MOD_DIR}/processors/image/quadimageprocessor.cpp
     ${MOD_DIR}/processors/image/splitter.cpp
     ${MOD_DIR}/processors/image/textoverlay.cpp
     ${MOD_DIR}/processors/image/tripleview.cpp
@@ -172,6 +173,7 @@ SET(MOD_CORE_HEADERS
     ${MOD_DIR}/processors/image/nonminmaxsuppression.h
     ${MOD_DIR}/processors/image/orientationoverlay.h
     ${MOD_DIR}/processors/image/quadview.h
+    ${MOD_DIR}/processors/image/quadimageprocessor.h
     ${MOD_DIR}/processors/image/regionofinterest2d.h
     ${MOD_DIR}/processors/image/splitter.h
     ${MOD_DIR}/processors/image/textoverlay.h

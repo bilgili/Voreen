@@ -407,7 +407,16 @@ std::string VolumeBase::getHash() const {
 }
 
 std::string VolumeBase::getRawDataHash() const {
-    return getDerivedData<VolumeHash>()->getHash();
+
+    VolumeHash *hash = getDerivedData<VolumeHash>();
+    if(!hash)
+    {
+        VolumeHash *hash = new VolumeHash();
+        hash->createFrom( this );
+        addDerivedDataInternal< VolumeHash >( hash );
+    }
+
+    return getDerivedData<VolumeHash>()->getHash( );
 }
 
 std::string VolumeBase::getMetaDataHash() const {
