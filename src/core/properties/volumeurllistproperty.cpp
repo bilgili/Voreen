@@ -73,14 +73,15 @@ void VolumeURLListProperty::setURLs(const std::vector<std::string>& URLs, bool s
     invalidate();
 }
 
-void VolumeURLListProperty::addURL(const std::string& url, bool selected /*=true*/) {
+void VolumeURLListProperty::addURL(const std::string& url, bool selected /*=true*/, bool invalidateUI /*=true*/) {
     if (containsURL(url))
         return;
 
     value_.push_back(url);
     selectionMap_[url] = selected;
 
-    invalidate();
+    if( invalidateUI )
+        invalidate();
 }
 
 const std::vector<std::string>& VolumeURLListProperty::getURLs() const {
@@ -91,7 +92,7 @@ bool VolumeURLListProperty::containsURL(const std::string& url) const {
     return std::find(value_.begin(), value_.end(), url) != value_.end();
 }
 
-void VolumeURLListProperty::removeURL(const std::string& url) {
+void VolumeURLListProperty::removeURL(const std::string& url, bool invalidateUI /*=true*/) {
     if (!containsURL(url)) {
         LWARNING("removeURL(): passed URL not contained by this property: " << url);
         return;
@@ -112,7 +113,8 @@ void VolumeURLListProperty::removeURL(const std::string& url) {
     selectionMap_.erase(url);
     ownerMap_.erase(url);
 
-    invalidate();
+    if( invalidateUI )
+        invalidate();
 }
 
 VolumeList* VolumeURLListProperty::getVolumes(bool selectedOnly /*= true*/) const {
@@ -147,7 +149,7 @@ VolumeBase* VolumeURLListProperty::getVolume(const std::string& url) const {
     return result;
 }
 
-void VolumeURLListProperty::loadVolume(const std::string& url)
+void VolumeURLListProperty::loadVolume(const std::string& url, bool invalidateUI /*=true*/)
         throw (tgt::FileException, std::bad_alloc) {
 
     if (!containsURL(url)) {
@@ -193,7 +195,8 @@ void VolumeURLListProperty::loadVolume(const std::string& url)
         ownerMap_[handle->getOrigin().getURL()] = true;
     }
 
-    invalidate();
+    if(invalidateUI)
+        invalidate();
 }
 
 void VolumeURLListProperty::loadVolumes(bool selectedOnly /*= false*/, bool removeOnFailure /*= false*/) {
@@ -208,7 +211,7 @@ void VolumeURLListProperty::loadVolumes(bool selectedOnly /*= false*/, bool remo
             continue;
 
         try {
-            loadVolume(url);
+            loadVolume(url, false);
         }
         catch (tgt::FileException& e) {
             LERROR(e.what());
@@ -226,26 +229,46 @@ void VolumeURLListProperty::loadVolumes(bool selectedOnly /*= false*/, bool remo
 
     if (removeOnFailure) {
         for (size_t i=0; i<failedURLs.size(); i++)
-            removeURL(failedURLs.at(i));
+            removeURL(failedURLs.at(i), false);
     }
+
+    invalidate();
+}
+
+void VolumeURLListProperty::addVolume_(VolumeBase* handle, bool owner /*= false*/, bool selected /*= false*/) {
+    tgtAssert(handle, "null pointer passed");
+
+    std::string url = handle->getOrigin().getURL();
+    if (!containsURL(url))
+        addURL(url, selected, false);
+    else
+        removeVolume(handle, false);
+
+    handleMap_[url] = handle;
+    ownerMap_[url] = owner;
 }
 
 void VolumeURLListProperty::addVolume(VolumeBase* handle, bool owner /*= false*/, bool selected /*= false*/) {
     tgtAssert(handle, "null pointer passed");
 
-    std::string url = handle->getOrigin().getURL();
-    if (!containsURL(url))
-        addURL(url, selected);
-    else
-        removeVolume(handle);
-
-    handleMap_[url] = handle;
-    ownerMap_[url] = owner;
-
+    addVolume_( handle, owner, selected );
     invalidate();
 }
 
-void VolumeURLListProperty::removeVolume(VolumeBase* handle) {
+void VolumeURLListProperty::addVolumes(VolumeList* collection, bool owner /*= false*/) {
+    tgtAssert(collection, "null pointer passed");
+
+    for (size_t i = 0 ; i< collection->size(); i++)
+    {
+        VolumeBase* handle = collection->at(i);
+        addVolume_( handle, owner, true );
+    }
+    invalidate();
+}
+
+
+
+void VolumeURLListProperty::removeVolume(VolumeBase* handle, bool invalidateUI /*=true*/) {
     tgtAssert(handle, "null pointer passed");
     std::string url = handle->getOrigin().getURL();
     if (!containsURL(url)) {
@@ -260,7 +283,8 @@ void VolumeURLListProperty::removeVolume(VolumeBase* handle) {
     handleMap_.erase(url);
     ownerMap_[url] = false;
 
-    invalidate();
+    if( invalidateUI )
+        invalidate();
 }
 
 void VolumeURLListProperty::setSelected(const std::string& url, bool selected) {
@@ -351,7 +375,8 @@ void VolumeURLListProperty::deserialize(XmlDeserializer& s) {
 void VolumeURLListProperty::clear() {
     std::vector<std::string> urls = getURLs();
     for (size_t i=0; i<urls.size(); i++)
-        removeURL(urls.at(i));
+        removeURL(urls.at(i), false);
+    invalidate();
 }
 
 bool VolumeURLListProperty::isOwner(const std::string& url) const {

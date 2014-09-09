@@ -75,7 +75,7 @@ QPixmap VolumeViewHelper::generateBorderedPreview(const VolumeBase* handle, int 
         return pixmap;
     }
     else {
-        LWARNINGC("voreenqt.VolumeViewHelper", "VolumePreview not available");
+        // LWARNINGC("voreenqt.VolumeViewHelper", "VolumePreview not available");
         return QPixmap(height, height);
     }
 }

@@ -37,6 +37,7 @@
 #include "voreen/core/io/progressbar.h"
 #include "voreen/core/datastructures/volume/volumeatomic.h"
 #include "voreen/core/datastructures/volume/volumefusion.h"
+#include "voreen/core/datastructures/volume/volumepreview.h"
 #include "voreen/core/datastructures/volume/operators/volumeoperatorresize.h"
 #include "voreen/core/datastructures/volume/operators/volumeoperatorswapendianness.h"
 

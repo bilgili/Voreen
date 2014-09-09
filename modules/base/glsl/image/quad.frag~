@@ -23,59 +23,34 @@
  *                                                                                 *
  ***********************************************************************************/
 
-#ifndef VRN_VOLUMEURLISTPROPERTYWIDGET_H
-#define VRN_VOLUMEURLISTPROPERTYWIDGET_H
+#include "modules/mod_sampler2d.frag"
+
+uniform sampler2D colorTex0_;
+uniform sampler2D depthTex0_;
+uniform TextureParameters texParams0_;
+uniform sampler2D colorTex1_;
+uniform sampler2D depthTex1_;
+uniform TextureParameters texParams1_;
+uniform sampler2D colorTex2_;
+uniform sampler2D depthTex2_;
+uniform TextureParameters texParams2_;
+uniform sampler2D colorTex3_;
+uniform sampler2D depthTex3_;
+uniform TextureParameters texParams3_;
 
 
-#include "voreen/core/datastructures/volume/volumelist.h"
-#include "voreen/core/properties/volumeurllistproperty.h"
-#include "voreen/core/datastructures/volume/volumeram.h"
-
-#include "voreen/qt/widgets/property/qpropertywidget.h"
-#include "voreen/qt/widgets/volumeiohelper.h"
-
-#include <QDialog>
-#include <QCheckBox>
-#include <QTreeWidget>
-
-namespace voreen {
-
-
-class VolumeURLListPropertyWidget : public QPropertyWidget {
-    Q_OBJECT
-
-public:
-    VolumeURLListPropertyWidget(VolumeURLListProperty* volumeCollectionProp, QWidget* parent);
-
-    /// Returns the null pointer, since this widget does not need a separate label.
-    virtual CustomLabel* getNameLabel() const;
-
-
-protected slots:
-    virtual void updateFromPropertySlot();
-
-private:
-    void updateSelection();
-
-    VolumeURLListProperty* urlListProperty_;
-    VolumeIOHelper volumeIOHelper_;
-
-    QTreeWidget* volumeTreeWidget_;
-    QPushButton* loadButton_;
-    QPushButton* clearButton_;
-    QCheckBox* selectAll_;
-
-    static const std::string loggerCat_;
-
-private slots:
-    void volumeLoaded(const VolumeBase* handle);
-    void volumesLoaded(const VolumeList* collection);
-    void clearVolumes();
-
-    void itemSelected(QTreeWidgetItem*, int);
-    void selectAll(bool);
-};
-
-} //namespace
-
-#endif // VRN_VOLUMEURLISTPROPERTYWIDGET_H
+void main() {
+    vec2 p = gl_FragCoord.xy * screenDimRCP_;
+    vec4 color0 = textureLookup2Dnormalized(colorTex0_, texParams0_, p);
+    float depth0 = textureLookup2Dnormalized(depthTex0_, texParams0_, p).z;
+    vec4 color1 = textureLookup2Dnormalized(colorTex1_, texParams1_, p);
+    float depth1 = textureLookup2Dnormalized(depthTex1_, texParams1_, p).z;
+    vec4 color2 = textureLookup2Dnormalized(colorTex2_, texParams2_, p);
+    float depth2 = textureLookup2Dnormalized(depthTex2_, texParams2_, p).z;
+    vec4 color3 = textureLookup2Dnormalized(colorTex3_, texParams3_, p);
+    float depth3 = textureLookup2Dnormalized(depthTex3_, texParams3_, p).z;
+    vec4 resColor0 = mix(color0, color1, 0.5);
+    vec4 resColor1 = mix(color2, color3, 0.5);
+    FragData0 = mix(resColor0, resColor1, 0.5);
+    gl_FragDepth = min(depth0, depth1);
+}
