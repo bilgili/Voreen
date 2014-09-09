@@ -469,20 +469,23 @@ void VolumeIOHelper::loadRawVolume(const std::string& filenameStd) {
 
     // load raw volume
     try {
+        VolumeList* collection = new VolumeList();
         for (int frame=0; frame < numFrames; ++frame) {
             RawVolumeReader rawReader(progressBar_);
             rawReader.setReadHints(dim, spacing, objectModel, format, frame, headerSkip, bigEndian);
-            VolumeList* collection = rawReader.read(filename.toStdString());
-            if (collection && !collection->empty()) {
-                tgtAssert(collection->size() == 1, "More than one raw volume returned");
-                Volume* volumeHandle = static_cast<Volume*>(collection->first());
+            VolumeList* coll = rawReader.read(filename.toStdString());
+            if (coll && !coll->empty()) {
+                tgtAssert(coll->size() == 1, "More than one raw volume returned");
+                Volume* volumeHandle = static_cast<Volume*>(coll->first());
                 oldVolumePosition(volumeHandle);
                 volumeHandle->setPhysicalToWorldMatrix(trafoMat);
                 volumeHandle->setTimestep(static_cast<float>(frame));
-                emit(volumeLoaded(volumeHandle));
+                collection->add( coll );
             }
-            delete collection;
+            delete coll;
         }
+        emit(volumesLoaded(collection));
+        delete collection;
     }
     catch (const tgt::FileException& e) {
         LERROR(e.what());

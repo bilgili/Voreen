@@ -80,6 +80,7 @@ VolumeURLListPropertyWidget::VolumeURLListPropertyWidget(VolumeURLListProperty* 
 
     connect(loadButton_, SIGNAL(clicked()), &volumeIOHelper_, SLOT(showFileOpenDialog()));
     connect(&volumeIOHelper_, SIGNAL(volumeLoaded(const VolumeBase*)), this, SLOT(volumeLoaded(const VolumeBase*)));
+    connect(&volumeIOHelper_, SIGNAL(volumesLoaded(const VolumeList*)), this, SLOT(volumesLoaded(const VolumeList*)));
     connect(clearButton_, SIGNAL(clicked()), this, SLOT(clearVolumes()));
 
     connect(volumeTreeWidget_, SIGNAL(itemClicked(QTreeWidgetItem*, int)), this, SLOT(itemSelected(QTreeWidgetItem*, int)));
@@ -162,6 +163,10 @@ void VolumeURLListPropertyWidget::updateSelection() {
 
 void VolumeURLListPropertyWidget::volumeLoaded(const VolumeBase* handle) {
     urlListProperty_->addVolume(const_cast<VolumeBase*>(handle), true, true);
+}
+
+void VolumeURLListPropertyWidget::volumesLoaded(const VolumeList* collection) {
+    urlListProperty_->addVolumes(const_cast<VolumeList*>(collection), true);
 }
 
 void VolumeURLListPropertyWidget::clearVolumes() {

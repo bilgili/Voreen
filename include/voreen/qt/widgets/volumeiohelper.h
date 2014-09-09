@@ -70,6 +70,13 @@ signals:
     void volumeLoaded(const VolumeBase* handle);
 
     /**
+     * Is emitted after a volumes has been loaded.
+     *
+     * @param handle the loaded volume
+     */
+    void volumesLoaded(const VolumeList* collection);
+
+    /**
      * Is emitted after a volume has been written to disk.
      *
      * @param handle the save volume

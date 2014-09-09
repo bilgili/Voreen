@@ -90,14 +90,17 @@ public:
      *
      * @param url the URL to add to the property
      * @param selected if true, the added URL is marked as selected
+     * @param invalidateUI if true, the ui is invalidated
      */
-    void addURL(const std::string& url, bool selected = false);
+    void addURL(const std::string& url, bool selected = false, bool invalidateUI = true );
 
     /**
      * Removes the passed URL and deletes the corresponding volume,
      * if the handle is owned by the property.
+     * @param url the URL to remove from the property
+     * @param invalidateUI if true, the ui is invalidated
      */
-    void removeURL(const std::string& url);
+    void removeURL(const std::string& url, bool invalidateUI = true);
 
     /**
      * Returns the stored list of source URLs.
@@ -121,12 +124,22 @@ public:
     void addVolume(VolumeBase* handle, bool owner = false, bool selected = false);
 
     /**
+     * Adds the passed handle's URLs to the property and stores the handle.
+     * If the handle's URL is already registered and has a volume assigned,
+     * the volume is replaced by the passed one.
+     *
+     * @param handle the volume to add to the property
+     * @param owner if true, the property takes ownership of the volume
+     */
+    void addVolumes(VolumeList* collection, bool owner);
+
+    /**
      * Removes the passed volume and deletes it, if it is owned by the property.
      * The volume's URL is not removed from the property.
-     *
+     * @param invalidateUI if true, the ui is invalidated
      * @see removeURL
      */
-    void removeVolume(VolumeBase* handle);
+    void removeVolume(VolumeBase* handle, bool invalidateUI = true);
 
     /**
      * Returns a collection containing the volumes that have
@@ -161,10 +174,10 @@ public:
      * @note The property takes ownership of the loaded volume
      *       and deletes it when the URL is removed from the property
      *       or the property is destructed.
-     *
+     * @param invalidateUI if true, the ui is invalidated
      * @throws FileException, bad_alloc if the volume could not be loaded
      */
-    void loadVolume(const std::string& url)
+    void loadVolume(const std::string& url, bool invalidateUI=true)
         throw (tgt::FileException, std::bad_alloc);
 
     /**
@@ -215,6 +228,8 @@ private:
     ProgressBar* progressBar_;
 
     static const std::string loggerCat_;
+
+    void addVolume_(VolumeBase* handle, bool owner, bool selected);
 };
 
 } // namespace voreen

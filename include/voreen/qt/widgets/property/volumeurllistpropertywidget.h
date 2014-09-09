@@ -50,6 +50,7 @@ public:
     /// Returns the null pointer, since this widget does not need a separate label.
     virtual CustomLabel* getNameLabel() const;
 
+
 protected slots:
     virtual void updateFromPropertySlot();
 
@@ -68,6 +69,7 @@ private:
 
 private slots:
     void volumeLoaded(const VolumeBase* handle);
+    void volumesLoaded(const VolumeList* collection);
     void clearVolumes();
 
     void itemSelected(QTreeWidgetItem*, int);
